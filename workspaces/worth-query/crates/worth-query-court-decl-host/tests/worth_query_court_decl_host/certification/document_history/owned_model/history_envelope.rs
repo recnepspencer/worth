@@ -18,6 +18,8 @@ enum Stage {
     EditMember(&'static str, u64),
     MoveToOtherModel(&'static str),
     AddMember(&'static str, u64),
+    /// Installed in the program, but not enrolled in the history.
+    RecreateMember,
 }
 
 fn branch(host: &world::Host, document: &world::Document<'_>) -> WorthQueryProductBranch {
@@ -71,6 +73,11 @@ fn record<'a>(
                     })
                     .unwrap();
             }
+            Stage::RecreateMember => {
+                envelope
+                    .push_stage::<ApplicationNoOutputGraph, _>(generation::Input { restore: false })
+                    .unwrap();
+            }
             Stage::AddMember(key, value) => {
                 envelope
                     .push_stage::<ApplicationNoOutputGraph, _>(birth::Intent {
@@ -95,12 +102,16 @@ fn recorded(execution: Execution<'_>) -> (world::Document<'_>, WorthQueryHistory
     }
 }
 
-/// The refused stage and the scope and model its refusal names.
-fn refused_as_unowned(execution: Execution<'_>) -> (world::Document<'_>, usize, EntityId, EntityId) {
-    let (document, denial) = match execution {
+fn refused(execution: Execution<'_>) -> (world::Document<'_>, Denial) {
+    match execution {
         Err(failure) => failure.into_parts(),
         Ok(other) => panic!("the envelope must refuse: {other:?}"),
-    };
+    }
+}
+
+/// The refused stage and the scope and model its refusal names.
+fn refused_as_unowned(execution: Execution<'_>) -> (world::Document<'_>, usize, EntityId, EntityId) {
+    let (document, denial) = refused(execution);
     let Denial::Stage {
         ordinal,
         denial: UnownedOperationScope { subject, model },
@@ -187,6 +198,32 @@ fn an_unowned_existing_scope_refuses_at_admission() {
     assert_eq!(current(&host, &document), head);
     assert_eq!(model_value(&host, own, "a"), 1);
     assert_eq!(world::member_value(&host, own, "loose"), 55);
+    close(&host, document);
+}
+
+/// The first stage is enrolled, so the record is reserved; the second is an
+/// installed operation this history does not enroll.
+#[test]
+fn an_unenrolled_operation_stage_refuses_at_admission() {
+    let host = world::install();
+    let document = world::attach(&host);
+    let head = current(&host, &document);
+    let own = branch(&host, &document);
+    let stages = [Stage::EditModel(2), Stage::RecreateMember];
+    let (document, denial) = refused(record(&host, document, "unenrolled-stage", &stages));
+    assert!(
+        matches!(
+            denial,
+            Denial::Stage {
+                ordinal: 1,
+                denial: WorthQueryDocumentHistoryDenial::OperationNotDeclared
+            }
+        ),
+        "{denial:?}"
+    );
+    assert_eq!(current(&host, &document), head);
+    assert_eq!(model_value(&host, own, "a"), 1);
+    assert_eq!(world::member_value(&host, own, "direct"), 11);
     close(&host, document);
 }
 

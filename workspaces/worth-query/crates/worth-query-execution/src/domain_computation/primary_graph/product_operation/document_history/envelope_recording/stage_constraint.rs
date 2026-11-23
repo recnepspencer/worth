@@ -6,6 +6,7 @@ use super::super::{
 use super::stage_ownership::EnvelopeStageEnrollment;
 use crate::{
     basis::{WorthQueryProductBranch, WorthQueryProductObservationLease},
+    domain_computation::authorization::admitted_request::AdmittedRequestCurrentness,
     domain_computation::primary_graph::{
         WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
         WorthQueryExpectedProductBranch, WorthQueryPrimaryGraphApplicationRuntime,
@@ -34,6 +35,7 @@ pub struct WorthQueryDocumentHistoryEnvelopeConstraint {
     candidate: WorthQueryProductBranch,
     enrollment: EnvelopeStageEnrollment,
     refusal: Mutex<Option<(usize, Denial)>>,
+    request: Mutex<Option<AdmittedRequestCurrentness>>,
 }
 
 impl WorthQueryDocumentHistoryEnvelopeConstraint {
@@ -59,6 +61,28 @@ impl WorthQueryDocumentHistoryEnvelopeConstraint {
 
     pub(super) fn enrollment(&self) -> &EnvelopeStageEnrollment {
         &self.enrollment
+    }
+
+    /// The request the stages were admitted under, once a stage has passed.
+    /// The bound output trees are recorded under this same request.
+    pub(in super::super) fn admitted_request(&self) -> Option<AdmittedRequestCurrentness> {
+        self.request
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Keep the admission whose authentication ends first.
+    fn retain_request(&self, admitted: AdmittedRequestCurrentness) {
+        let mut retained = self
+            .request
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if retained.as_ref().is_none_or(|kept| {
+            admitted.authentication_deadline() < kept.authentication_deadline()
+        }) {
+            *retained = Some(admitted);
+        }
     }
 
     fn original_source(&self) -> WorthQueryProductBranch {
@@ -87,6 +111,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             candidate: candidate.branch(),
             enrollment: EnvelopeStageEnrollment::of(self)?,
             refusal: Mutex::new(None),
+            request: Mutex::new(None),
         }))
     }
 }
@@ -149,6 +174,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             restriction.source.relational_basis(),
             ordinal,
             admitted,
-        )
+        )?;
+        restriction.retain_request(admitted.retain_admitted_request());
+        Ok(())
     }
 }

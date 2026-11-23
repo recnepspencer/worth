@@ -41,6 +41,7 @@ where
     P: ApplicationProgramDefinition<S>,
     K: serde::Serialize + Send + Sync + 'static,
     Payload: WorthQueryHistoryPayloadMode<S, H>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
@@ -49,6 +50,10 @@ where
     /// This call is one-shot. It either records the step, names the step an
     /// earlier call already recorded, or returns the document at its prior
     /// head with nothing pending. `metadata` is stored with the step.
+    ///
+    /// A document with bound output trees records every tree at the commit
+    /// before the head moves. The call drives their producers until all of
+    /// them are recorded or the request can no longer advance.
     pub fn execute_recorded(
         self,
         metadata: WorthQueryHistoryStepMetadata,
@@ -60,6 +65,7 @@ where
         let Self {
             document,
             envelope,
+            principal,
             scope,
         } = self;
         let refuse = |document, denial| Err(WorthQueryHistoryEditEnvelopeFailure { document, denial });
@@ -82,7 +88,6 @@ where
                 _ => ControlFlow::Break(()),
             }
         });
-        let access = program_publication_access();
         let (reservation, candidate, constraint) = match admission {
             Admission::Unreached => {
                 let denial = match executed {
@@ -121,58 +126,21 @@ where
                 return refuse(document, denial);
             }
         };
-        let mut owners = Some((reservation, candidate));
-        let adopted = document
-            .owner
-            .application()
-            .with_application_advancement(scope, |phase| {
-                let (reservation, candidate) = owners.take().expect("the phase runs once");
-                let abandon = |reservation, candidate| {
-                    document.owner.abandon_history_envelope(
-                        Some(&phase),
-                        &access,
-                        reservation,
-                        Some(candidate),
-                    );
-                };
-                if let Err((stage, denial)) = document.owner.confirm_history_envelope_scopes(
-                    &phase,
-                    &access,
-                    &candidate,
-                    &constraint,
-                ) {
-                    abandon(reservation, candidate);
-                    return Err(match stage {
-                        Some(ordinal) => Denial::Stage { ordinal, denial },
-                        None => Denial::Adoption(denial),
-                    });
-                }
-                document
-                    .owner
-                    .adopt_history_envelope(&phase, &access, reservation, candidate, receipt.receipt())
-                    .map_err(|failure| {
-                        let (reservation, candidate, denial) = failure.into_parts();
-                        abandon(reservation, candidate);
-                        Denial::Adoption(denial)
-                    })
-            });
-        if let Some((reservation, candidate)) = owners {
-            // The request could not advance again, so the commit stays private.
-            document
-                .owner
-                .abandon_history_envelope(None, &access, reservation, Some(candidate));
+        let sealed = sealing::Committed {
+            document: &document,
+            principal,
+            scope,
+            constraint: &constraint,
+            receipt: &receipt,
         }
-        match adopted {
-            Ok(Ok(step)) => Ok(WorthQueryHistoryEditEnvelopeOutcome::Recorded {
+        .seal((reservation, candidate));
+        match sealed {
+            Ok(step) => Ok(WorthQueryHistoryEditEnvelopeOutcome::Recorded {
                 document,
                 step,
                 receipt,
             }),
-            Ok(Err(denial)) => refuse(document, denial),
-            Err(cause) => refuse(
-                document,
-                Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)),
-            ),
+            Err(denial) => refuse(document, denial),
         }
     }
 }

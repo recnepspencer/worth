@@ -9,13 +9,17 @@ use WorthQueryHistoryEditEnvelopeDenial as Denial;
 use WorthQueryHistoryEditEnvelopeOutcome as Outcome;
 
 mod metadata;
+mod output_forest;
 mod recording;
 mod replay;
 mod rollback;
 
-type Execution<'a> = Result<
-    WorthQueryHistoryEditEnvelopeOutcome<'a, Schema, History>,
-    WorthQueryHistoryEditEnvelopeFailure<'a, Schema, History>,
+/// The model history document under either outputs mode.
+type Document<'a, O> =
+    WorthQueryApplicationHistoryDocument<'a, Schema, History, OrdinaryHistoryPayload, O>;
+type Execution<'a, O = WorthQueryHistoryNoOutputs> = Result<
+    WorthQueryHistoryEditEnvelopeOutcome<'a, Schema, History, OrdinaryHistoryPayload, O>,
+    WorthQueryHistoryEditEnvelopeFailure<'a, Schema, History, OrdinaryHistoryPayload, O>,
 >;
 
 /// The model edit (stage 0) and the member edit (stage 1) under one caller key.
@@ -39,13 +43,13 @@ fn metadata(bytes: &[u8]) -> WorthQueryHistoryStepMetadata {
 }
 
 /// Author both stages on the document and execute them as one recorded step.
-fn record<'a>(
+fn record<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
     host: &'a world::Host,
-    document: world::Document<'a>,
+    document: Document<'a, O>,
     scope: &WorthQueryRequestScope,
     stages: Stages,
     metadata: WorthQueryHistoryStepMetadata,
-) -> Execution<'a> {
+) -> Execution<'a, O> {
     let principal = authenticate_operator(host.installed_schema(), scope);
     let branch = document
         .selection(&host.request(&principal, scope))
@@ -56,14 +60,14 @@ fn record<'a>(
 }
 
 /// `record` for a document whose branch the caller already read.
-fn record_on<'a>(
+fn record_on<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
     host: &'a world::Host,
-    document: world::Document<'a>,
+    document: Document<'a, O>,
     scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     stages: Stages,
     metadata: WorthQueryHistoryStepMetadata,
-) -> Execution<'a> {
+) -> Execution<'a, O> {
     let principal = authenticate_operator(host.installed_schema(), scope);
     let request = host.request(&principal, scope).on_branch(branch);
     let mut envelope = document.edit_envelope(host, &request, stages.key.to_owned())?;
@@ -82,7 +86,7 @@ fn record_on<'a>(
     envelope.execute_recorded(metadata, ExecutionAllocationPolicy::SystemAllocation)
 }
 
-fn recorded(execution: Execution<'_>) -> (world::Document<'_>, WorthQueryHistoryStep) {
+fn recorded<O>(execution: Execution<'_, O>) -> (Document<'_, O>, WorthQueryHistoryStep) {
     match execution {
         Ok(Outcome::Recorded { document, step, .. }) => (document, step),
         Ok(other) => panic!("the envelope must record: {other:?}"),
@@ -90,7 +94,7 @@ fn recorded(execution: Execution<'_>) -> (world::Document<'_>, WorthQueryHistory
     }
 }
 
-fn refused(execution: Execution<'_>) -> (world::Document<'_>, Denial) {
+fn refused<O>(execution: Execution<'_, O>) -> (Document<'_, O>, Denial) {
     match execution {
         Err(failure) => failure.into_parts(),
         Ok(other) => panic!("the envelope must refuse: {other:?}"),
@@ -107,7 +111,10 @@ struct Observed {
     member: u64,
 }
 
-fn observe(host: &world::Host, document: &world::Document<'_>) -> Observed {
+fn observe<O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    host: &world::Host,
+    document: &Document<'_, O>,
+) -> Observed {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -141,7 +148,10 @@ fn observe(host: &world::Host, document: &world::Document<'_>) -> Observed {
 
 /// Closing disposes every head the document still holds, including a
 /// candidate an abandoned envelope left for it.
-fn close(host: &world::Host, document: world::Document<'_>) {
+fn close<O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    host: &world::Host,
+    document: Document<'_, O>,
+) {
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
     assert!(host.runtime().branches().pending_cleanup().is_empty());

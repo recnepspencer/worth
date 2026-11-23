@@ -5,7 +5,9 @@ use crate::application_entry::mutation::envelope::{
     WorthQueryEditEnvelopeExecutionDenial, WorthQueryEditEnvelopeModeDenial,
     WorthQueryEditStageToken, WorthQueryRuntimeEditEnvelope,
 };
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+};
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::ApplicationProgramDefinition,
@@ -14,6 +16,7 @@ use worth_query_execution::facade::application_installation::WorthQueryProgramAp
 
 mod outcome;
 mod recording;
+mod sealing;
 pub use outcome::{
     WorthQueryHistoryEditEnvelopeDenial, WorthQueryHistoryEditEnvelopeFailure,
     WorthQueryHistoryEditEnvelopeOutcome,
@@ -37,11 +40,12 @@ pub struct WorthQueryHistoryEditEnvelope<
 > {
     document: WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>,
     envelope: WorthQueryRuntimeEditEnvelope<'request, 'program, S, P, K>,
+    principal: &'request WorthQueryAuthenticatedExternalPrincipal<S>,
     scope: &'request WorthQueryRequestScope,
 }
 
-impl<'runtime, S, H, Payload>
-    WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, WorthQueryHistoryNoOutputs>
+impl<'runtime, S, H, Payload, Outputs>
+    WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
 where
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
@@ -55,8 +59,8 @@ where
         request: &WorthQueryApplicationRequest<'request, 'request, 'request, S>,
         key: K,
     ) -> Result<
-        WorthQueryHistoryEditEnvelope<'runtime, 'request, 'program, S, H, P, K, Payload>,
-        WorthQueryHistoryEditEnvelopeFailure<'runtime, S, H, Payload>,
+        WorthQueryHistoryEditEnvelope<'runtime, 'request, 'program, S, H, P, K, Payload, Outputs>,
+        WorthQueryHistoryEditEnvelopeFailure<'runtime, S, H, Payload, Outputs>,
     >
     where
         P: ApplicationProgramDefinition<S>,
@@ -82,6 +86,7 @@ where
                 .edit_envelope()
                 .idempotency(key)
                 .runtime_stages(program),
+            principal: request.principal,
             scope: request.scope,
             document: self,
         })

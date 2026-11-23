@@ -63,6 +63,9 @@ pub enum WorthQueryHistoryEditEnvelopeDenial {
     /// The envelope ended without committing; the outcome names its stage.
     Envelope(WorthQueryEditEnvelopeOutcome),
     Execution(WorthQueryEditEnvelopeExecutionDenial),
+    /// The stages committed on the private candidate, but a bound output tree
+    /// could not be recorded at that commit. The candidate was discarded.
+    Outputs(WorthQueryHistoryOutputDenial),
     /// The stages committed on the private candidate, but the document head
     /// could not adopt it. The candidate was discarded with its commit.
     Adoption(WorthQueryDocumentHistoryDenial),
