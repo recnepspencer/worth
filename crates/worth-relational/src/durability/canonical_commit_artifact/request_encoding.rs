@@ -17,15 +17,6 @@ use worth_execution::{
 };
 
 impl Artifact {
-    /// The payload digest a resident original frame records, read without
-    /// hashing. Its one verification is the capture's embedding of the same
-    /// frame, which refuses a frame whose payload differs from this digest.
-    pub(crate) fn recorded_payload_digest(
-        bytes: &[u8],
-    ) -> Result<[u8; 32], super::RelationalCanonicalCommitArtifactFrameRefusal> {
-        CanonicalCommitArtifactHeader::inspect(bytes).map(|(header, _)| *header.digest.as_bytes())
-    }
-
     pub(crate) fn from_owned_original(
         bytes: worth_execution::ExecutionImmutableBytes,
         execution: &ExecutionRequest<'_, '_>,

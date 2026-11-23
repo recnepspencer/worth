@@ -62,7 +62,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
     contribution_records: Option<&[crate::transactions::data::primitives::RecordRef]>,
     source_input: Option<
         &crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead<
-            crate::runtime::RelationalAppliedCandidateReadIdentity,
+            crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity,
         >,
     >,
     live_inputs: Option<&mut crate::publication::live_publication_inputs::LivePublicationInputs>,

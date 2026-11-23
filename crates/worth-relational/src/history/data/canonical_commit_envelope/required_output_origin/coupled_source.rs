@@ -2,9 +2,9 @@
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
-use crate::mvcc::CoupledSource;
-use crate::mvcc::RelationalAuthoredRetirement;
-use crate::mvcc::RelationalCoupledAuthoredPublication;
+use crate::mvcc::publication::application_publication::CoupledSource;
+use crate::mvcc::publication::application_publication::RelationalAuthoredRetirement;
+use crate::mvcc::publication::application_publication::RelationalCoupledAuthoredPublication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
@@ -21,7 +21,7 @@ pub(super) fn install_empty(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     group: &RelationalCoupledAuthoredPublication,
     lease: Option<&ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,
@@ -97,7 +97,7 @@ pub(super) fn install(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     group: &RelationalCoupledAuthoredPublication,
     lease: Option<&ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,

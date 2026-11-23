@@ -3,7 +3,7 @@ use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
 use crate::history::data::RequiredOutputRoutePosition;
-use crate::mvcc::RelationalCoupledAuthoredPublication;
+use crate::mvcc::publication::application_publication::RelationalCoupledAuthoredPublication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
@@ -24,7 +24,7 @@ pub(super) fn install(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     group: RelationalCoupledAuthoredPublication,
     live_inputs: &mut crate::publication::live_publication_inputs::LivePublicationInputs,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -62,9 +62,9 @@ pub(super) fn install(
             .stages
             .len()
             .saturating_add(usize::from(group.binding.owners.source.is_edit()));
-        let source_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+        let source_memory = crate::mvcc::transaction::normalized_plan::reserve_copy(
             execution,
-            crate::mvcc::plan_copy_admission::slots::<crate::identity::data::EntityId>(
+            crate::mvcc::transaction::normalized_plan::slots::<crate::identity::data::EntityId>(
                 source_count,
             ),
         )?
@@ -93,7 +93,7 @@ pub(super) fn install(
         )?;
         let mut participants = Vec::with_capacity(group.parts.len());
         for part in group.parts {
-            let crate::mvcc::RelationalCoupledProducerPosture::Publication(publication) =
+            let crate::mvcc::publication::application_publication::RelationalCoupledProducerPosture::Publication(publication) =
                 part.publication
             else {
                 continue;
@@ -143,7 +143,7 @@ pub(super) fn install(
                 created,
                 created_relations,
                 state,
-                crate::mvcc::RequiredOutputPublicationAdmission {
+                crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission {
                     inputs: part.inputs.unwrap_or_default(),
                     installed: installed.clone(),
                     publication,

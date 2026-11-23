@@ -36,7 +36,7 @@ pub(crate) fn emit_filtered_artifact(
 }
 
 impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
-    fn new(
+    pub(crate) fn new(
         profile: &'runtime RelationalDiagnosticsProfile,
         store: &'runtime RelationalDiagnosticArtifactStore,
         scope: DiagnosticsScope,

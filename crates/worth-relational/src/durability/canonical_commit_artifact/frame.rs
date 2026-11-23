@@ -2,9 +2,10 @@
 //! verification order is cost-ordered and version-first so bytes from any
 //! other format version refuse as unknown rather than as malformed.
 
+use super::frame_contract::MAXIMUM_ARTIFACT_BYTES;
+use super::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal as Refusal;
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
-use super::RelationalCanonicalCommitArtifactFrameRefusal as Refusal;
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
@@ -68,14 +69,20 @@ impl CanonicalCommitArtifactHeader {
             digest: Digest::recorded(fixed(frame, DIGEST_OFFSET)?),
         };
         let declared = u64::from_le_bytes(fixed(frame, LENGTH_OFFSET)?);
-        if declared > (super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64 {
+        if declared > (MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64 {
             return Err(Refusal::SizeLimit {
                 declared_payload: declared,
-                maximum_frame: super::MAXIMUM_ARTIFACT_BYTES,
+                maximum_frame: MAXIMUM_ARTIFACT_BYTES,
             });
         }
         Ok((header, declared_payload(frame, declared)?))
     }
+}
+
+/// Read the recorded digest before a separately budgeted verification of the
+/// actual original frame. This only reads the framing contract.
+pub(crate) fn recorded_payload_digest(frame: &[u8]) -> Result<[u8; 32], Refusal> {
+    CanonicalCommitArtifactHeader::inspect(frame).map(|(header, _)| *header.digest.as_bytes())
 }
 
 fn fixed<const N: usize>(frame: &[u8], offset: usize) -> Result<[u8; N], Refusal> {
@@ -133,18 +140,18 @@ fn content_artifact_ceiling_includes_header_and_refuses_before_payload_or_digest
         commit_id: CommitId(1),
         digest: Digest::unsealed(),
     }
-    .emit((super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64);
+    .emit((MAXIMUM_ARTIFACT_BYTES - HEADER_LEN) as u64);
     assert!(matches!(
         CanonicalCommitArtifactHeader::verify(&header),
         Err(Refusal::TruncatedPayload { .. })
     ));
-    let excessive = (super::MAXIMUM_ARTIFACT_BYTES - HEADER_LEN + 1) as u64;
+    let excessive = (MAXIMUM_ARTIFACT_BYTES - HEADER_LEN + 1) as u64;
     header[LENGTH_OFFSET..].copy_from_slice(&excessive.to_le_bytes());
     assert_eq!(
         CanonicalCommitArtifactHeader::verify(&header).unwrap_err(),
         Refusal::SizeLimit {
             declared_payload: excessive,
-            maximum_frame: super::MAXIMUM_ARTIFACT_BYTES
+            maximum_frame: MAXIMUM_ARTIFACT_BYTES
         }
     );
 }

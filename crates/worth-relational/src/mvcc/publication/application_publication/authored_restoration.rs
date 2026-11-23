@@ -19,6 +19,27 @@ pub struct RelationalAuthoredRestoration {
     pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) aggregate_memberships: Vec<crate::aggregate_identity::RestoredMembership>,
 }
+impl<'restoration> From<&'restoration RelationalAuthoredRestoration>
+    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::AuthoredRestorationFacts<'restoration>
+{
+    fn from(restoration: &'restoration RelationalAuthoredRestoration) -> Self {
+        Self {
+            retirement: &restoration.retirement,
+            inverse: &restoration.inverse,
+            entities: &restoration.entities,
+            relations: &restoration.relations,
+        }
+    }
+}
+
+impl<'restoration> From<&'restoration Arc<RelationalAuthoredRestoration>>
+    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::AuthoredRestorationFacts<'restoration>
+{
+    fn from(restoration: &'restoration Arc<RelationalAuthoredRestoration>) -> Self {
+        restoration.as_ref().into()
+    }
+}
+
 impl std::fmt::Debug for RelationalAuthoredRestoration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RelationalAuthoredRestoration")

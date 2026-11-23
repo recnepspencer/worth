@@ -2,8 +2,8 @@
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
-use crate::mvcc::RelationalAuthoredRetirement;
-use crate::mvcc::RequiredOutputPublication;
+use crate::mvcc::publication::application_publication::RelationalAuthoredRetirement;
+use crate::mvcc::publication::application_publication::RequiredOutputPublication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
@@ -22,7 +22,7 @@ pub(super) fn install(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     admission: &worth_proof::AdmittedAuthoredOutputRetirement,
     mut predecessor: RelationalAuthoredRetirement,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -160,7 +160,7 @@ pub(super) fn install(
             created,
             created_relations,
             state,
-            crate::mvcc::RequiredOutputPublicationAdmission {
+            crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission {
                 inputs: Default::default(),
                 installed: installed.clone(),
                 publication: RequiredOutputPublication::AuthoredRetirement {

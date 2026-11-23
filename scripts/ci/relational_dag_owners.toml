@@ -226,6 +226,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/canonical_commit_artifact/borrowed_payload" = "contracts"
 "durability/canonical_commit_artifact/encode_denial" = "contracts"
 # Canonical framing bounds and refusals are portable wire meaning.
+"durability/canonical_commit_artifact/frame.rs" = "contracts"
 "durability/canonical_commit_artifact/frame_contract" = "contracts"
 "durability/canonical_commit_artifact/frame_refusal" = "contracts"
 "durability/canonical_commit_artifact/payload_digest" = "contracts"
@@ -765,6 +766,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "change_source/commit_selection.rs" = "branch"
 "change_source/read_custody.rs" = "branch"
 "change_source/retained_observation" = "branch"
+"durability/canonical_commit_artifact/frame.rs" = "contracts"
 "durability/canonical_commit_artifact/frame_contract" = "contracts"
 "durability/data/branch_lifecycle_images.rs" = "branch"
 "durability/data/branch_root_schema_images/registrations" = "contracts"
@@ -936,3 +938,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # The published lineage batch is installed by its state owner.
 "runtime/state/subsystems/lineage/published_batch.rs" = "lineage"
+
+# Runtime binds the original certification controls to their Publication owners.
+"runtime/ownership_certification.rs" = "runtime"

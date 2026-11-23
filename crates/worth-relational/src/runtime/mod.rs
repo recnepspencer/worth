@@ -35,6 +35,7 @@ pub(crate) mod commit_strategy_validation;
 mod interruption_counters;
 mod lineage_commit;
 pub(crate) mod operation_control;
+mod ownership_certification;
 mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
 mod publication_authority;

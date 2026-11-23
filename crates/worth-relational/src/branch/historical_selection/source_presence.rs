@@ -28,7 +28,7 @@ impl RelationalHistoricalSelectionRead {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         native: &crate::runtime::RelationalRuntime,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         ownership: &crate::branch::RelationalModelOwnership,
         entity: EntityId,
         expected_kind: KindId,

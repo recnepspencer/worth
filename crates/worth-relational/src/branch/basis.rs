@@ -51,6 +51,17 @@ pub struct AdmittedRelationalBranchBasis {
     pub(crate) inner: Arc<AdmittedRelationalBranchBasisInner>,
 }
 
+impl<'basis> From<&'basis AdmittedRelationalBranchBasis>
+    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::RestorationPrestate<'basis>
+{
+    fn from(basis: &'basis AdmittedRelationalBranchBasis) -> Self {
+        Self {
+            partitions: basis.inner.root.as_ref(),
+            aspect_plans: basis.inner.root.schema_authority().aspect_plans(),
+        }
+    }
+}
+
 impl PartialEq for AdmittedRelationalBranchBasis {
     fn eq(&self, other: &Self) -> bool {
         self.inner.descriptor == other.inner.descriptor

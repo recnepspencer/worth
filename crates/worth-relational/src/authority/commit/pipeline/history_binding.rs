@@ -1,6 +1,7 @@
 use super::history_resolution_phase::resolve_authoritative_history_phase;
 use super::mutation_execution::MutatedCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
+use crate::authority::commit::phases::history::CommitHistoryPreparation;
 use crate::authority::commit::phases::schema_continuity::{
     prepare_schema_continuity_diagnostics, resolve_schema_continuity,
 };
@@ -69,15 +70,19 @@ pub(super) fn bind_commit_history(
         let commit_id = mutated.prepared.proposal_identity.commit_id();
         let admitted = &mut mutated.prepared.admitted;
         let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
-        let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
+        let (_, validation_input, _, merge_plan, commit_log, phase_timing) =
             admitted.phase_view().into_parts();
         let history = resolve_authoritative_history_phase(
             execution,
-            runtime,
+            CommitHistoryPreparation {
+                history: &runtime.history,
+                profile: &runtime.config.diagnostics.profile,
+                diagnostics: &runtime.diagnostics,
+            },
             commit_log,
             phase_timing,
-            transaction_id,
-            validation_input,
+            validation_input.basis(),
+            validation_input.merge_parent_bases(),
             version_id,
             commit_id,
             merge_plan,

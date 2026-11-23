@@ -1,5 +1,5 @@
 //! Durable current publication custody; historical payload selection stays in History.
-mod certification;
+pub(crate) mod certification;
 mod observation;
 pub use certification::CurrentOwnershipContactsForTest;
 mod cold_checkpoint_source;

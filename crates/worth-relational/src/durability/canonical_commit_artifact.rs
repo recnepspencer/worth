@@ -32,7 +32,7 @@ use frame_contract::MAXIMUM_ARTIFACT_BYTES;
 
 pub(crate) mod encode_denial;
 mod encoding;
-mod frame;
+pub(crate) mod frame;
 pub(crate) mod frame_contract;
 pub(crate) mod frame_refusal;
 pub(crate) mod input_commitment;

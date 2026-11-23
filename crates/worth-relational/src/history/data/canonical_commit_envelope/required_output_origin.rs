@@ -1,7 +1,6 @@
 //! Complete producer publication membership, independent of member data patches.
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
-use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -37,7 +36,7 @@ mod producer_retirement_header;
 mod readmission;
 mod relation_installation;
 mod relations;
-mod restoration_candidate;
+pub(crate) mod restoration_candidate;
 pub(crate) use restoration_candidate::validate as validate_authored_restoration_candidate;
 mod restoration_header;
 mod retention;

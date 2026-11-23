@@ -144,7 +144,7 @@ pub(super) fn validate<'a>(
         &runtime.history.execution(),
         context,
     )
-    .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;
+    .map_err(|stop| super::relation_context(stop, "predecessor", basis.descriptor(), candidate))?;
     Ok(origin.as_ref())
 }
 

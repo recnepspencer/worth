@@ -74,10 +74,11 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     assert!(matches!(*locked, PublishedSnapshotRetirement::Removed(_)));
     drop(locked);
     create_entity(execution, &runtime, "move-original-root-off-main");
-    assert!(matches!(
-        runtime.delete_branch(execution, &target).unwrap(),
-        crate::branch::RelationalBranchDeletionOutcome::Deleted(_)
-    ));
+    assert!(runtime
+        .delete_branch(execution, &target)
+        .unwrap()
+        .deleted()
+        .is_some());
     runtime.run_branch_root_reclamation_pass();
     assert!(original_root.upgrade().is_some(), "the exact original issued root survives head movement, branch removal and real reclamation while its binding awaits retirement");
     // A real original closeout joins this SAME pending retirement, rather than

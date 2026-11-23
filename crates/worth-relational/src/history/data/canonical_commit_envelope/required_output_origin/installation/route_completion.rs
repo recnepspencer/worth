@@ -220,11 +220,9 @@ pub(super) fn install_route(
         let current = if retiring {
             CurrentPublicationFrame::Retiring(envelope)
         } else {
-            CurrentPublicationFrame::Complete(
-                envelope
-                    .validate_output_origins(context)
-                    .map_err(|stop| relation_context(stop, "candidate", basis, envelope))?,
-            )
+            CurrentPublicationFrame::Complete(envelope.validate_output_origins(context).map_err(
+                |stop| relation_context(stop, "candidate", basis.descriptor(), envelope),
+            )?)
         };
         crate::history::data::publication_relations::validate(
         &basis.inner.root,
@@ -238,7 +236,7 @@ pub(super) fn install_route(
         validated_history,&runtime.history.execution(),
         context,
     )
-    .map_err(|stop| relation_context(stop, "candidate", basis, envelope))?;
+    .map_err(|stop| relation_context(stop, "candidate", basis.descriptor(), envelope))?;
     }
     if retiring
         && envelope
