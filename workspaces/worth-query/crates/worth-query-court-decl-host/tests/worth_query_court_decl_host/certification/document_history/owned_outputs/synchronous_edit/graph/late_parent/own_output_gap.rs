@@ -8,6 +8,12 @@
 use super::*;
 use family::c3b::self_relation;
 use family::decision_write;
+thread_local! {
+    /// The model `decision-write` derives from (per court, on its thread).
+    /// With `a`, one stage on `a` re-derives `self-relation(a)` as the head
+    /// round and reopens it through member `m`.
+    static CHILD_SOURCE: std::cell::Cell<&'static str> = const { std::cell::Cell::new("b") };
+}
 pub struct Start;
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "owned-outputs.late-parent.own-gap-start";
@@ -75,7 +81,7 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
         row: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         assert_eq!(row.key.as_str(), "first:a");
-        Ok(vec![decision_write::Demand("b".into())])
+        Ok(vec![decision_write::Demand(CHILD_SOURCE.with(std::cell::Cell::get).into())])
     }
 }
 pub type Tree = ApplicationOutputGraph<
@@ -147,27 +153,39 @@ fn a_successor_recreating_its_unique_output_commits_the_sequential_world() {
     own_output_relation_commits("own-output-unique");
 }
 
-/// The preserved-entity variant (#277 court 7): after the first edit commits
-/// `first:a` (11), a second stage (`b = 9`) re-enters `self-relation(a)` in
-/// its Preserve posture and its child sets m = 10, so `first:a` reopens again.
-/// The successor's `FirstOf` read reaches `first:a` through a link that
-/// predates the chain (uncovered), and the record exists at the chain head:
-/// its value is read there, the view is coherent, and the edit commits the
-/// sequential world, `first:a` = 2 + 10.
+/// The preserved-entity variant (#277 court 7), with `decision-write` on
+/// model `a`. The first edit (`a = 8`) commits `first:a` = 8 + 9. The second
+/// (`a = 9`) re-enters `self-relation(a)` in its Preserve posture: the head
+/// round writes `first:a` = 9 + 9, its child sets m = 10, and `first:a`
+/// reopens as a successor round of its own chain. The successor's `FirstOf`
+/// read reaches `first:a` through a link that predates the chain (uncovered),
+/// and the record exists at the chain head: its value is read there, the view
+/// is coherent, and the edit commits the sequential world, `first:a` = 9 + 10.
 #[test]
 fn a_successor_reaching_its_preserved_record_commits_the_sequential_world() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
-    own_output_relation_commits_then("own-output-preserved-first", |_execution, host, request| {
-        let head = courts::native_head(host);
+    CHILD_SOURCE.with(|source| source.set("a"));
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_program_with_other_model::<Program>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    for (idempotency, value) in [("own-output-preserved-first", 8), ("own-output-preserved", 9)] {
+        let head = courts::native_head(&host);
+        let contacts = host.producer_contacts_on_this_thread_for_test();
         let mut edit = request
             .edit_envelope()
-            .idempotency("own-output-preserved".to_owned())
-            .runtime_stages(host)
+            .idempotency(idempotency.to_owned())
+            .runtime_stages(&host)
             .ordered_authored()
             .unwrap();
         edit.push_stage::<Tree, _>(edit::Intent {
-            key: "b".into(),
-            value: 9,
+            key: "a".into(),
+            value,
         })
         .unwrap();
         let outcome = edit
@@ -178,6 +196,15 @@ fn a_successor_reaching_its_preserved_record_commits_the_sequential_world() {
             matches!(outcome, Outcome::Committed(_)),
             "{outcome:?}; {events:#?}"
         );
+        assert!(
+            events.iter().any(|event| event == "reopen task=0 owed=0"),
+            "{events:#?}"
+        );
+        assert_eq!(
+            host.producer_contacts_on_this_thread_for_test(),
+            contacts + 3,
+            "the head round, its child, and the successor round each derive"
+        );
         assert_eq!(
             request
                 .query(query::first_output::Read("first:a".into()))
@@ -185,25 +212,13 @@ fn a_successor_reaching_its_preserved_record_commits_the_sequential_world() {
                 .unwrap()
                 .rows()[0]
                 .value,
-            2 + 10
+            value + value + 1
         );
-        assert_ne!(courts::native_head(host), head);
-    });
+        assert_ne!(courts::native_head(&host), head);
+    }
 }
 
 fn own_output_relation_commits(idempotency: &str) {
-    own_output_relation_commits_then(idempotency, |_, _, _| {});
-}
-
-/// The first edit, committed and checked, then `then` on the same host.
-fn own_output_relation_commits_then(
-    idempotency: &str,
-    then: impl FnOnce(
-        &WorthQueryExecutionObservation,
-        &WorthQueryProgramApplicationRuntime<Schema, Program>,
-        &family::Request<'_, '_, '_>,
-    ),
-) {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<Program>(
@@ -242,7 +257,6 @@ fn own_output_relation_commits_then(
     );
     assert_rederived_first(&request);
     assert_ne!(courts::native_head(&host), head);
-    then(&_execution, &host, &request);
 }
 
 /// The same edit, the successor reading model `a`'s outputs' models through
