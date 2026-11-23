@@ -10,7 +10,8 @@ use std::sync::Mutex;
 
 use super::super::*;
 use worth_query_host::facade::application_naming::{
-    WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputMergeKeeper,
+    ExecutionNamingDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputMergeKeeper,
+    WorthQueryOutputNameDenial,
 };
 
 /// A held member name: one read by this run's decision, or one a court holds.
@@ -39,12 +40,14 @@ pub enum Step {
 }
 
 /// What one run does. `reads` are resolved (and named) in the decision;
-/// `deletes` must be among them; `seams` link `(key, from, to)` members.
+/// `deletes` must be among them; `unlinks` remove the seams read `(from, to)`
+/// members hold; `seams` link `(key, from, to)` members.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
     pub reads: Vec<String>,
     pub creates: Vec<String>,
     pub deletes: Vec<String>,
+    pub unlinks: Vec<(String, String)>,
     pub seams: Vec<(String, String, String)>,
     pub steps: Vec<Step>,
 }
@@ -53,6 +56,34 @@ pub struct Plan {
 struct Run {
     plan: Plan,
     names: BTreeMap<String, WorthQueryName<Member>>,
+    refused: Option<Refusal>,
+}
+
+/// The typed output-name refusal a handler met while authoring, read from
+/// `WorthQueryApplicationAttemptDenial::persistent_name_denial()`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Refusal {
+    Unschemed(String),
+    NotCreated,
+    MissingSplitDiscriminator { role: String },
+    Other(String),
+}
+
+impl Refusal {
+    fn of(denial: &WorthQueryOutputNameDenial) -> Self {
+        match denial {
+            WorthQueryOutputNameDenial::UnschemedOutput { subject_name, .. } => {
+                Self::Unschemed(subject_name.clone())
+            }
+            WorthQueryOutputNameDenial::NotCreatedOutput { .. } => Self::NotCreated,
+            WorthQueryOutputNameDenial::Assembly(
+                ExecutionNamingDenial::MissingSplitDiscriminator { role_path, .. },
+            ) => Self::MissingSplitDiscriminator {
+                role: role_path.clone(),
+            },
+            other => Self::Other(other.to_string()),
+        }
+    }
 }
 
 static RUNS: Mutex<BTreeMap<String, Run>> = Mutex::new(BTreeMap::new());
@@ -68,9 +99,14 @@ pub fn author(token: &str, plan: Plan) {
         token.to_owned(),
         Run {
             plan,
-            names: BTreeMap::new(),
+            ..Run::default()
         },
     );
+}
+
+/// The typed output-name refusal the handler met while authoring `token`.
+pub fn authoring_refusal(token: &str) -> Option<Refusal> {
+    runs().get(token).and_then(|run| run.refused.clone())
 }
 
 #[derive(Clone, Debug, WorthValue)]
@@ -81,8 +117,8 @@ pub struct Intent {
 worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.sculpt.v1" });
 worth_query_operation!(pub Sculpt for Schema, input Input; access {
     read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey")];
-    writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
-    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam];
+    read_relations: [Seam]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam]; unlinks: [Seam];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -102,13 +138,19 @@ impl OperationHandler<Schema, Binding> for Handler {
         input: &Intent,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Model>, edit::Denial> {
-        let reads = runs().get(&input.token).map(|run| run.plan.reads.clone());
+        let plan = runs().get(&input.token).map(|run| run.plan.clone());
+        let plan = plan.unwrap_or_default();
         let result = (|| {
             let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
             let mut names = BTreeMap::new();
-            for key in reads.unwrap_or_default() {
+            for key in plan.reads {
                 let member = reader.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
                 reader.entity(&member, Member::reference())?;
+                if plan.unlinks.iter().any(|(from, _)| *from == key) {
+                    reader
+                        .relations_from(Seam::reference(), &member)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
                 let name = reader
                     .reader()
                     .name_of(&member)
@@ -139,7 +181,12 @@ impl OperationHandler<Schema, Binding> for Handler {
         };
         match execute(&plan, &names, &model, writer) {
             Ok(()) => HandlerResult::Completed(edit::Edited),
-            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+            Err(cause) => {
+                if let Some(run) = runs().get_mut(&input.token) {
+                    run.refused = cause.persistent_name_denial().map(Refusal::of);
+                }
+                HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+            }
         }
     }
 }
@@ -175,6 +222,9 @@ fn execute(
     for key in &plan.reads {
         let existing = writer.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
         members.entry(key.clone()).or_insert(existing);
+    }
+    for (from, to) in &plan.unlinks {
+        writer.unlink(Seam::reference(), &members[from], &members[to])?;
     }
     for key in &plan.deletes {
         writer.delete_entity(Member::reference(), &members[key])?;

@@ -80,3 +80,66 @@ fn an_unnamed_seam_of_a_schemed_relation_refuses_missing_birth() {
         "{outcome:?}"
     );
 }
+
+/// One named seam `s-a` from `from` to `to`, minted as side 1.
+fn one_seam(from: &str, to: &str) -> Plan {
+    Plan {
+        reads: keys(&[from, to]),
+        seams: vec![("s-a".into(), from.into(), to.into())],
+        steps: vec![Step::SeamBirth("s-a".into(), seam(1))],
+        ..Plan::default()
+    }
+}
+
+#[test]
+fn deleting_an_endpoint_retires_its_named_seam_so_the_seam_re_mints() {
+    let world = World::install();
+    endpoints(&world);
+    world.committed("link", one_seam("e1", "e2"));
+    // `e1` is deleted with its seam still attached: no unlink, no posture.
+    // The seam is retained dangling for audit, and its name ends with it.
+    world.committed(
+        "drop-endpoint",
+        Plan {
+            reads: keys(&["e1"]),
+            deletes: keys(&["e1"]),
+            ..Plan::default()
+        },
+    );
+    assert!(!world.live("e1") && world.live("e2"));
+    world.committed(
+        "replacement",
+        Plan {
+            creates: keys(&["e3"]),
+            steps: vec![Step::Birth("e3".into(), birth("e-3", "authored"))],
+            ..Plan::default()
+        },
+    );
+    // The same seam identity mints again: its name is not dangling live on
+    // the retired relation (which would refuse `DuplicateBirth`).
+    world.committed("relink", one_seam("e3", "e2"));
+}
+
+#[test]
+fn unlinking_a_named_seam_retires_its_name() {
+    let world = World::install();
+    endpoints(&world);
+    world.committed("link", one_seam("e1", "e2"));
+    let live = world.sculpt("live-remint", one_seam("e2", "e1"));
+    assert!(
+        matches!(
+            naming_refusal(&live),
+            Some(LineageNameDenial::DuplicateBirth { .. })
+        ),
+        "the linked seam holds its name live: {live:?}"
+    );
+    world.committed(
+        "unlink",
+        Plan {
+            reads: keys(&["e1", "e2"]),
+            unlinks: vec![("e1".into(), "e2".into())],
+            ..Plan::default()
+        },
+    );
+    world.committed("relink", one_seam("e1", "e2"));
+}

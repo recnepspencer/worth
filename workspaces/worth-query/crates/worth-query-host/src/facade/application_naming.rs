@@ -84,8 +84,8 @@ pub use worth_query_declaration::facade::application_naming::{
 };
 pub use worth_query_execution::facade::application_naming::{
     DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
-    ExecutionNameResolveDenial, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
-    NameReadCurrentness, NameReadDependencies, NameReadStaleness, PersistentNameHolder,
-    PersistentNameReadVeto, WorthQueryDecisionNameDenial, WorthQueryOutputBirth,
-    WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+    ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial, LineagePostureKind,
+    LineageRecordTarget, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
+    PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
+    WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };

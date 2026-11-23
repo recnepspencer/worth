@@ -8,6 +8,7 @@ pub mod domain_computation;
 mod naming_bounded_depth;
 mod naming_bridge_continuity;
 mod naming_bridge_planning;
+mod naming_cascade_retirement;
 mod naming_cold_directory_recovery;
 mod naming_cold_source_fixture;
 mod naming_decision_reader;

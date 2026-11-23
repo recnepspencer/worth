@@ -177,15 +177,16 @@ pub fn release_commit_snapshot(
 }
 
 pub fn cad_schema_registry() -> RelationalSchemaRegistry {
-    cad_schema_registry_with_face_aspects(Vec::new())
+    cad_schema_registry_with_face_aspects(Vec::new(), CascadeDeletePolicy::CascadeDeleteRelations)
 }
 
-/// The CAD registry whose `Face` kind declares `face_aspects`.
+/// The CAD registry: `Face` declares `face_aspects`, relations follow `cascade`.
 pub fn cad_schema_registry_with_face_aspects(
     face_aspects: Vec<worth_relational::facade::schema::DeclaredAspectContractBinding>,
+    cascade: CascadeDeletePolicy,
 ) -> RelationalSchemaRegistry {
     let catalog = lowered_cad_catalog();
-    cad_kind_registry(face_aspects)
+    cad_kind_registry(face_aspects, cascade)
         .install_persistent_name_schemes(
             catalog.relational_registry().clone(),
             std::collections::BTreeMap::from([
@@ -209,6 +210,7 @@ pub fn cad_schema_registry_with_face_aspects(
 /// The CAD kinds alone, with no persistent name scheme installed.
 pub fn cad_kind_registry(
     face_aspects: Vec<worth_relational::facade::schema::DeclaredAspectContractBinding>,
+    cascade: CascadeDeletePolicy,
 ) -> RelationalSchemaRegistry {
     let schema_id = SchemaId("worth.tests.execution.naming.CadNaming".to_owned());
     let entity = |kind_id, kind_name: &str| EntityKindRegistration {
@@ -224,7 +226,7 @@ pub fn cad_kind_registry(
         schema_id: schema_id.clone(),
         schema_version_id: SchemaVersionId(1),
         cross_context_policy: CrossContextPolicy::AllowExplicit,
-        cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
+        cascade_delete_policy: cascade,
         aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
         relation_integrity: RelationIntegrityDeclarations::default(),
     };

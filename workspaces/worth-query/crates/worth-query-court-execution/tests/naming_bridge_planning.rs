@@ -6,7 +6,7 @@ use std::sync::Arc;
 use worth_foundational::facade::{
     aspects, AspectBinding, AspectIdentity, AspectKey, ScalarAspectType,
 };
-use worth_relational::facade::config::RelationalRuntimeProfile;
+use worth_relational::facade::config::{CascadeDeletePolicy, RelationalRuntimeProfile};
 use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use worth_relational::facade::schema::DeclaredAspectContractBinding;
 use worth_relational::facade::transactions::CommitResult;
@@ -16,17 +16,19 @@ use worth_runtime_bridge::facade::*;
 /// birth and retirement publishes a patch item a selection can hold.
 pub fn lifecycle_face_runtime() -> RelationalRuntime {
     runtime_over(
-        crate::naming_execution_fixture::cad_schema_registry_with_face_aspects(vec![
-            lifecycle_aspect(),
-        ]),
+        crate::naming_execution_fixture::cad_schema_registry_with_face_aspects(
+            vec![lifecycle_aspect()],
+            CascadeDeletePolicy::CascadeDeleteRelations,
+        ),
     )
 }
 
 /// The same kinds with no persistent name scheme installed.
 pub fn nameless_lifecycle_face_runtime() -> RelationalRuntime {
-    runtime_over(crate::naming_execution_fixture::cad_kind_registry(vec![
-        lifecycle_aspect(),
-    ]))
+    runtime_over(crate::naming_execution_fixture::cad_kind_registry(
+        vec![lifecycle_aspect()],
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    ))
 }
 
 fn lifecycle_aspect() -> DeclaredAspectContractBinding {

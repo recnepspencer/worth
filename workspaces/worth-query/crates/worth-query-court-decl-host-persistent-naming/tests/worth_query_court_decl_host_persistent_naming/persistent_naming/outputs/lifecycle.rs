@@ -201,3 +201,47 @@ fn merge_minting_a_new_name_resolves_every_parent_to_the_survivor() {
     assert_eq!(resolution(&observed, "q1"), &resolved_to("q1", "merged"));
     assert_eq!(resolution(&observed, "q2"), &resolved_to("q2", "merged"));
 }
+
+#[test]
+fn merge_keeping_a_parent_onto_a_created_record_moves_its_name_there() {
+    let world = World::install();
+    world.committed(
+        "onto",
+        Plan {
+            creates: keys(&["k1", "k2"]),
+            steps: vec![
+                Step::Birth("k1".into(), birth("k-1", "authored")),
+                Step::Birth("k2".into(), birth("k-2", "authored")),
+            ],
+            ..Plan::default()
+        },
+    );
+    let observed = world.probe("onto", &["k1", "k2"], 0);
+    let (k1, k2) = (named(&observed, "k1"), named(&observed, "k2"));
+    // Both parents are deleted; the created survivor carries `k1`'s name
+    // without a birth of its own.
+    world.committed(
+        "onto-merge",
+        Plan {
+            reads: keys(&["k1", "k2"]),
+            deletes: keys(&["k1", "k2"]),
+            creates: keys(&["kept"]),
+            steps: vec![Step::Merge(
+                vec![read("k1"), read("k2")],
+                Keeper::Onto(read("k1"), "kept".into()),
+            )],
+            ..Plan::default()
+        },
+    );
+    assert!(!world.live("k1") && !world.live("k2") && world.live("kept"));
+    probe::hold("onto-merge", "k1", k1);
+    probe::hold("onto-merge", "k2", k2);
+    let observed = world.probe("onto-merge", &["kept"], 1);
+    assert_eq!(
+        named(&observed, "kept"),
+        k1,
+        "the kept parent's exact name moves onto the created survivor"
+    );
+    assert_eq!(resolution(&observed, "k1"), &resolved_to("k1", "kept"));
+    assert_eq!(resolution(&observed, "k2"), &resolved_to("k2", "kept"));
+}

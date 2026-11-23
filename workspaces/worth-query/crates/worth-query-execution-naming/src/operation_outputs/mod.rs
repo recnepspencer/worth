@@ -48,7 +48,8 @@ impl WorthQueryOutputBirth {
     }
 
     /// Distinguishes siblings of one occurrence and role. Embedded
-    /// `WorthQueryName` references must name records born at the basis.
+    /// `WorthQueryName` references must name records live at the basis and
+    /// not retired in the committing transaction.
     pub fn with_discriminator<D: ApplicationNameDiscriminator>(
         mut self,
         discriminator: &D,

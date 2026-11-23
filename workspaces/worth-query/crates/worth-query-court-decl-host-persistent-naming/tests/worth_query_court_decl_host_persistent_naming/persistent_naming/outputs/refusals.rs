@@ -1,6 +1,8 @@
 //! Contradictory or missing output names refuse typed with zero effects.
 use super::*;
-use worth_query_host::facade::application_naming::LineagePostureKind;
+use worth_query_host::facade::application_naming::{
+    LineagePostureKind, WorthQueryOutputNameDenial,
+};
 
 fn seeded(world: &World, token: &str, members: &[&str]) {
     world.committed(
@@ -121,24 +123,111 @@ fn a_schemed_output_without_a_birth_still_refuses_missing_birth() {
 #[test]
 fn naming_an_unschemed_output_refuses_before_any_effect() {
     let world = World::install();
-    let refused = world
-        .try_sculpt(
-            "unschemed",
-            Plan {
-                creates: keys(&["owned"]),
-                steps: vec![
-                    Step::Birth("owned".into(), birth("owned", "authored")),
-                    Step::NameOwnerLink("owned".into(), birth("owner-link", "seam")),
-                ],
-                ..Plan::default()
-            },
-        )
-        .expect_err("naming an unschemed relation refuses while authoring");
-    assert!(
-        refused.contains(
-            "PersistentName(UnschemedOutput { subject: Relation, subject_name: \"ModelMember\" })"
-        ),
-        "{refused}"
+    let refused = authoring_refusal(
+        &world,
+        "unschemed",
+        Plan {
+            creates: keys(&["owned"]),
+            steps: vec![
+                Step::Birth("owned".into(), birth("owned", "authored")),
+                Step::NameOwnerLink("owned".into(), birth("owner-link", "seam")),
+            ],
+            ..Plan::default()
+        },
     );
+    assert_eq!(refused, sculpt::Refusal::Unschemed("ModelMember".into()));
     assert!(!world.live("owned"));
+}
+
+/// Runs `plan`, which the handler must refuse while authoring, and returns
+/// the typed refusal its `persistent_name_denial()` carried.
+fn authoring_refusal(world: &World, token: &str, plan: Plan) -> sculpt::Refusal {
+    let untyped = world
+        .try_sculpt(token, plan)
+        .expect_err("the output name refuses while authoring");
+    sculpt::authoring_refusal(token)
+        .unwrap_or_else(|| panic!("{token}: no typed output-name refusal behind {untyped}"))
+}
+
+#[test]
+fn a_split_piece_without_a_discriminator_refuses_while_authoring() {
+    let world = World::install();
+    seeded(&world, "undiscriminated", &["u"]);
+    let refused = authoring_refusal(
+        &world,
+        "undiscriminated-split",
+        Plan {
+            reads: keys(&["u"]),
+            deletes: keys(&["u"]),
+            creates: keys(&["u1", "u2"]),
+            steps: vec![Step::Split(
+                read("u"),
+                vec![
+                    ("u1".into(), piece("cut", 1, None)),
+                    ("u2".into(), birth("cut", "piece")),
+                ],
+            )],
+            ..Plan::default()
+        },
+    );
+    assert_eq!(
+        refused,
+        sculpt::Refusal::MissingSplitDiscriminator {
+            role: "piece".into()
+        }
+    );
+    assert!(world.live("u") && !world.live("u1") && !world.live("u2"));
+}
+
+#[test]
+fn naming_a_record_the_candidate_did_not_create_refuses_while_authoring() {
+    let world = World::install();
+    seeded(&world, "existing", &["x"]);
+    let refused = authoring_refusal(
+        &world,
+        "existing-birth",
+        Plan {
+            reads: keys(&["x"]),
+            steps: vec![Step::Birth("x".into(), birth("again", "authored"))],
+            ..Plan::default()
+        },
+    );
+    assert_eq!(refused, sculpt::Refusal::NotCreated);
+}
+
+#[test]
+fn a_posture_on_a_name_that_ended_refuses_before_staging() {
+    let world = World::install();
+    seeded(&world, "ended", &["gone", "stays"]);
+    let gone = named(&world.probe("ended", &["gone"], 0), "gone");
+    world.committed(
+        "ended-delete",
+        Plan {
+            reads: keys(&["gone"]),
+            deletes: keys(&["gone"]),
+            ..Plan::default()
+        },
+    );
+    // A court-held name outlives its record: retiring it again designates no
+    // live record at the commit basis.
+    let outcome = world.sculpt(
+        "ended-retire",
+        Plan {
+            reads: keys(&["stays"]),
+            deletes: keys(&["stays"]),
+            steps: vec![Step::Retire(Held::Name(gone))],
+            ..Plan::default()
+        },
+    );
+    assert!(
+        matches!(
+            output_refusal(&outcome),
+            Some(WorthQueryOutputNameDenial::HeldNameNotLive { .. })
+        ),
+        "{outcome:?}"
+    );
+    assert!(
+        world.live("stays"),
+        "the refused retirement deleted nothing"
+    );
 }

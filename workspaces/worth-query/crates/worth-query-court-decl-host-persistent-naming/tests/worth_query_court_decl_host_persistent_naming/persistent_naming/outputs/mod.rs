@@ -4,7 +4,7 @@
 //! validates them against the performed effects.
 use super::*;
 use worth_query_host::facade::application_naming::{
-    LineageNameDenial, WorthQueryName, WorthQueryOutputBirth,
+    LineageNameDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
 };
 
 pub mod sculpt;
@@ -150,6 +150,17 @@ pub fn naming_refusal(outcome: &Outcome) -> Option<LineageNameDenial> {
     match outcome {
         Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) => {
             denial.persistent_name_refusal().cloned()
+        }
+        _ => None,
+    }
+}
+
+/// The typed refusal of `outcome`'s declared output names, lowered against
+/// the commit basis before any effect was staged.
+pub fn output_refusal(outcome: &Outcome) -> Option<&WorthQueryOutputNameDenial> {
+    match outcome {
+        Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) => {
+            denial.persistent_name_output_denial()
         }
         _ => None,
     }

@@ -328,6 +328,8 @@ schema using `worth_query_decl::facade::application_naming`:
   [operation output names](#operation-output-names). A schemed record an
   operation creates without a declared birth still refuses `MissingBirth`
   with zero effects, and a plain deletion of a named record retires its name.
+  A named relation that retires with a deleted or replaced endpoint (retained
+  dangling for audit or cascade-deleted) retires its name the same way.
 
 #### Operation output names
 
@@ -346,7 +348,8 @@ An unnamed program carries no naming plan at all.
   never the operation's name), so two independently authored occurrences with
   identical payloads keep distinct names. `.with_discriminator(&d)` tells
   siblings of one occurrence and role apart, and may embed `WorthQueryName`s
-  born at the basis. A relation's name never includes its endpoints: two
+  live at the basis and not retired by the same operation (`AbsentBasisName`
+  otherwise). A relation's name never includes its endpoints: two
   same-role relations of one occurrence collide (`DuplicateBirth`) unless
   their discriminators differ.
 - **Regeneration (`Preserve`).** `writer.retire_entity_name(held)` (or
@@ -369,8 +372,11 @@ An unnamed program carries no naming plan at all.
 - **Refusals, all with zero effects.** Naming an output whose kind has no
   scheme, or a record the candidate did not create, refuses while authoring
   (`WorthQueryApplicationAttemptDenial::persistent_name_denial()` returns the
-  typed `WorthQueryOutputNameDenial`). A held name that no longer designates
-  one live record at the commit basis refuses before staging
+  typed `WorthQueryOutputNameDenial`; a split piece or minted merge survivor
+  without its discriminator is its
+  `Assembly(ExecutionNamingDenial::MissingSplitDiscriminator)`). A held name
+  that no longer designates one live record at the commit basis refuses
+  before staging
   (`WorthQueryApplicationCommitDenial::persistent_name_output_denial()`).
   Relational's own laws arrive as `persistent_name_refusal()` on the commit
   denial: a split whose parent survives or a merge with an unretired
