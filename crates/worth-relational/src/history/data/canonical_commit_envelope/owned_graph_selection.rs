@@ -93,6 +93,9 @@ impl CanonicalOwnedGraphSelection {
     pub(crate) fn current_relations(&self) -> &[StructuralRelationRecord] {
         &self.current_relations
     }
+    pub(crate) fn current_entities(&self) -> &[EntityId] {
+        &self.current_entities
+    }
     pub(crate) fn retired_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.current_entities.iter().copied().filter(|id| {
             self.selected_entities

@@ -1,0 +1,192 @@
+//! An installed operation whose decision reads persistent names through the
+//! tracked reader: `name_of` on live members and `resolve` on held names.
+//!
+//! The decision runs inside the real projected read attempt, so every read
+//! is admitted against the operation's realized scope and its dependency
+//! facts must seal for the operation to complete.
+use std::collections::BTreeMap;
+use std::sync::Mutex;
+
+use super::*;
+use worth_query_decl::facade::application_naming::{NameSelection, ResolvedName, WorthQueryName};
+
+/// What one probe run observed.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Observation {
+    /// `name_of` on the live member seeded under `key`.
+    Named {
+        key: String,
+        name: WorthQueryName<Member>,
+    },
+    /// `name_of` refused for `key`.
+    NameRefused { key: String, refusal: String },
+    /// The member `key` is not live at the probe's basis.
+    Absent { key: String },
+    /// A held name resolved to the live member currently keyed `key`.
+    ResolvedTo { label: String, key: String },
+    /// A held name resolved to a live member none of the probe's keys select.
+    ResolvedElsewhere { label: String },
+    /// A held name's lineage is retired at the probe's basis.
+    Retired { label: String },
+    /// Resolution refused with the stated typed denial.
+    ResolveRefused { label: String, refusal: String },
+}
+
+#[derive(Default)]
+struct Probe {
+    held: Vec<(String, WorthQueryName<Member>)>,
+    observed: Vec<Observation>,
+}
+
+static PROBES: Mutex<BTreeMap<String, Probe>> = Mutex::new(BTreeMap::new());
+
+/// Holds `name` under `label` for every later probe run carrying `token`.
+pub fn hold(token: &str, label: &str, name: WorthQueryName<Member>) {
+    let mut probes = PROBES
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    probes
+        .entry(token.to_owned())
+        .or_default()
+        .held
+        .push((label.to_owned(), name));
+}
+
+/// Takes what probe runs carrying `token` observed since the last take.
+pub fn take(token: &str) -> Vec<Observation> {
+    let mut probes = PROBES
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    probes
+        .get_mut(token)
+        .map(|probe| std::mem::take(&mut probe.observed))
+        .unwrap_or_default()
+}
+
+#[derive(Clone, Debug, WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub struct Intent {
+    pub token: String,
+    pub keys: Vec<String>,
+    pub value: u64,
+}
+worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.probe.v1" });
+worth_query_operation!(pub ProbeNames for Schema, input Input; access {
+    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey")]; writes: [ModelValue::at("ModelValue")];
+});
+fn scope(_: &Intent) -> String {
+    "a".into()
+}
+worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
+    identity "persistent-naming.probe.v1", input Input, operation ProbeNames, result edit::ResultBinding,
+    idempotency String, identity "persistent-naming.probe-key.v1", decision WorthQueryInvariantMutationTarget<Schema, Model>, denial edit::DenialBinding,
+    handler identity "persistent-naming.probe-handler.v1", program required, outputs NoApplicationMutationOutputs,
+    principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+    scope ModelKey, field ModelKey::at("ModelKey"), value scope,
+);
+pub struct Handler;
+impl OperationHandler<Schema, Binding> for Handler {
+    fn decide(
+        &self,
+        input: &Intent,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Model>, edit::Denial> {
+        let result = (|| {
+            let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+            reader.field(&model, ModelValue::at("ModelValue"))?;
+            let mut observed = Vec::new();
+            let mut live = Vec::new();
+            for key in &input.keys {
+                let member =
+                    reader.resolve_optional_entity(MemberKey::at("MemberKey"), key.clone())?;
+                let Some(member) = member else {
+                    observed.push(Observation::Absent { key: key.clone() });
+                    continue;
+                };
+                observed.push(match reader.reader().name_of(&member) {
+                    Ok(name) => Observation::Named {
+                        key: key.clone(),
+                        name,
+                    },
+                    Err(refusal) => Observation::NameRefused {
+                        key: key.clone(),
+                        refusal: format!("{refusal:?}"),
+                    },
+                });
+                live.push((key.clone(), member));
+            }
+            let held = PROBES
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .get(&input.token)
+                .map(|probe| probe.held.clone())
+                .unwrap_or_default();
+            for (label, name) in held {
+                let resolved = reader
+                    .reader()
+                    .resolve(&name, &NameSelection::Exact)
+                    .map_err(HandlerExecutionDenial::new)?;
+                observed.push(match resolved {
+                    Ok(ResolvedName::Exact(identity)) => {
+                        live.iter().find(|(_, member)| *member == identity).map_or(
+                            Observation::ResolvedElsewhere {
+                                label: label.clone(),
+                            },
+                            |(key, _)| Observation::ResolvedTo {
+                                label: label.clone(),
+                                key: key.clone(),
+                            },
+                        )
+                    }
+                    Ok(ResolvedName::Retired { .. }) => Observation::Retired { label },
+                    Ok(other) => Observation::ResolveRefused {
+                        label,
+                        refusal: format!("{other:?}"),
+                    },
+                    Err(refusal) => Observation::ResolveRefused {
+                        label,
+                        refusal: format!("{refusal:?}"),
+                    },
+                });
+            }
+            PROBES
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .entry(input.token.clone())
+                .or_default()
+                .observed = observed;
+            reader.mutation_target(&model)
+        })();
+        match result {
+            Ok(model) => HandlerResult::Completed(model),
+            Err(cause) => HandlerResult::ExecutionDenied(cause),
+        }
+    }
+    fn build_candidate(
+        &self,
+        input: &Intent,
+        model: WorthQueryInvariantMutationTarget<Schema, Model>,
+        writer: &mut CandidateWriter<'_, Schema, Binding>,
+    ) -> HandlerResult<edit::Edited, edit::Denial> {
+        let result = writer.projected_entity(&model).and_then(|model| {
+            writer.write_field(&model, ModelValue::at("ModelValue"), input.value)
+        });
+        match result {
+            Ok(()) => HandlerResult::Completed(edit::Edited),
+            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+        }
+    }
+}
+pub fn declare(
+    schema: ApplicationSchemaDeclarationBuilder<Schema>,
+) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    schema
+        .declared_operation::<ProbeNames>(
+            ProbeNames::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .application_mutation_binding::<Binding>()
+}

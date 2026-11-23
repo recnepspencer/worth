@@ -11,6 +11,7 @@ mod posture_finalization;
 mod posture_merge_validation;
 mod posture_split_validation;
 mod posture_validation;
+mod selection_continuity;
 mod staged_effects;
 
 #[cfg(test)]

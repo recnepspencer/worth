@@ -20,7 +20,9 @@ use crate::transactions::data::{MutationIntent, RecordRef, TransactionCommitErro
 
 use super::posture_drafts::{build_posture_drafts, PostureEventDraft};
 use super::posture_validation::{validate_commit_postures, ValidatedMergeTarget};
+use super::selection_continuity::extend_with_selection;
 use super::staged_effects::{entity_lineage, install_lineage_id, lineage_error};
+use crate::history::data::CanonicalOwnedGraphSelection;
 
 struct AssignedPostureEvent {
     kind: LineageEventKind,
@@ -47,6 +49,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
         postures: &[LineagePostureClaim],
+        graph_selection: Option<&CanonicalOwnedGraphSelection>,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let schema = self.runtime.schema_registry();
         let basis = self
@@ -63,6 +66,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             Some(schema),
             &basis,
             postures,
+            graph_selection,
             |staged, entity_id, lineage_id| {
                 install_lineage_id(execution, staged, entity_id, lineage_id)
             },
@@ -89,6 +93,7 @@ pub(super) fn finalize_postures_with_installer<F>(
     schema_registry: Option<&RelationalSchemaRegistry>,
     basis: &dyn LineageBasisView,
     postures: &[LineagePostureClaim],
+    graph_selection: Option<&CanonicalOwnedGraphSelection>,
     mut install_entity_lineage: F,
 ) -> Result<PreparedLineageFinalization, TransactionCommitError>
 where
@@ -104,6 +109,11 @@ where
         postures,
     )
     .map_err(TransactionCommitError::lineage_name_denial)?;
+    let repairs = match graph_selection {
+        Some(selection) => extend_with_selection(staged, basis, selection, &mut validated)
+            .map_err(TransactionCommitError::lineage_name_denial)?,
+        None => Vec::new(),
+    };
 
     let (drafts, required_lineage_ids) =
         build_posture_drafts(staged, commit, merged_plan, changed_records, basis, &validated)
@@ -130,6 +140,9 @@ where
         "all verified persistent name births must attach to emitted Create events"
     );
 
+    for repair in repairs {
+        install_entity_lineage(staged, repair.entity_id, repair.lineage_id)?;
+    }
     let mut events = Vec::with_capacity(assigned.len());
     let mut decisions = Vec::with_capacity(assigned.len());
     let mut new_nodes = Vec::new();

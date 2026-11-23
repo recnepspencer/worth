@@ -35,4 +35,5 @@ mod posture_fixtures;
 mod posture_lineage;
 mod posture_replay;
 mod resolution;
+mod scheme_composition;
 mod self_derived_basis;

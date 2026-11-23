@@ -174,6 +174,12 @@ pub(super) fn complete_deferred_lineage(
     ),
     TransactionCommitError,
 > {
+    let graph_selection = match &envelope.authority_kind {
+        crate::history::data::CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) => {
+            Some(std::sync::Arc::clone(selection))
+        }
+        _ => None,
+    };
     let prepared = runtime
         .lineage_preparation_authority()
         .ensure_lineage_for_commit(
@@ -185,6 +191,7 @@ pub(super) fn complete_deferred_lineage(
             created_entities,
             created_relations,
             naming_plan,
+            graph_selection.as_deref(),
         )?;
     let (lineage, nodes, relations) = prepared.into_parts();
     envelope.complete_lineage(lineage)?;

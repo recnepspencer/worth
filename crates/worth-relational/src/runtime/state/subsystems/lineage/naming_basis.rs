@@ -78,6 +78,13 @@ impl AuthoritativeBranchNamingState {
         self.retired_lineages.get(id).copied()
     }
 
+    pub(super) fn holder_name(
+        &self,
+        holder: &PersistentNameHolder,
+    ) -> Option<PersistentNameIdentity> {
+        self.holder_names.get(holder).copied()
+    }
+
     pub(super) fn holder_and_name_for_lineage(
         &self,
         lineage_id: LineageId,
@@ -259,6 +266,12 @@ impl LineageBasisView for BranchNamingBasisGuard<'_> {
         self.guard
             .branch_naming_state(&self.branch_id)
             .and_then(|state| state.retired_lineage(id))
+    }
+
+    fn holder_name(&self, holder: &PersistentNameHolder) -> Option<PersistentNameIdentity> {
+        self.guard
+            .branch_naming_state(&self.branch_id)
+            .and_then(|state| state.holder_name(holder))
     }
 }
 

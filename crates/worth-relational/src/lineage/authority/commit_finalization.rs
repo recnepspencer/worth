@@ -23,6 +23,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         created_entities: &CommitCreatedEntityBindings,
         created_relations: &CommitCreatedRelationBindings,
         naming_plan: Option<&CommitNamingPlan>,
+        graph_selection: Option<&crate::history::data::CanonicalOwnedGraphSelection>,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let postures = match naming_plan {
             Some(plan) => resolve_commit_naming_plan(plan, created_entities, created_relations)
@@ -36,6 +37,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             merged_plan,
             changed_records,
             &postures,
+            graph_selection,
         )
     }
 }
@@ -230,6 +232,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             None,
             &basis,
             &input.postures,
+            None,
             |staged, entity_id, lineage_id| {
                 super::staged_effects::install_lineage_id(execution, staged, entity_id, lineage_id)
             },
@@ -264,6 +267,7 @@ pub(crate) fn finalize_postures_in_working_state(
         None,
         input,
         &input.postures,
+        None,
         super::staged_effects::install_lineage_id_in_working_state,
     )
 }
@@ -287,6 +291,7 @@ pub(crate) fn test_finalize_with_schema(
         Some(schema),
         &empty,
         &[],
+        None,
         super::staged_effects::install_lineage_id_in_working_state,
     )
 }

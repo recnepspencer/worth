@@ -83,6 +83,7 @@ pub(super) fn prepare_authoritative_publication(
                     input.created_entities,
                     input.created_relations,
                     input.naming_plan,
+                    input.merged_plan.graph_selection(),
                 )?
         };
         let lineage_event_count = prepared_lineage

@@ -153,6 +153,49 @@ impl RelationalSchemaRegistry {
         Ok(self)
     }
 
+    /// Composes `additions` with this registry's installed schemes and kind
+    /// bindings, then revalidates every binding against the composed kinds.
+    ///
+    /// Empty additions return `self` unchanged. A scheme identifier already
+    /// installed with different content, or a kind already bound to a
+    /// scheme, refuses: composition never replaces an installed meaning.
+    ///
+    /// Complexity: O((S + B) log (S + B)) for S schemes and B bindings.
+    pub(crate) fn extend_persistent_name_schemes(
+        self,
+        additions: InstalledPersistentNameSchemeRegistry,
+        bindings: BTreeMap<(PersistentNameSubjectKind, KindId), String>,
+    ) -> Result<Self, SchemaRegistryError> {
+        if additions.is_empty() && bindings.is_empty() {
+            return Ok(self);
+        }
+        let mut registry = self.persistent_name_schemes.clone();
+        for scheme in additions.iter() {
+            match registry.get(scheme.scheme_id()) {
+                Some(installed) if installed == scheme => {}
+                Some(_) => {
+                    return Err(SchemaRegistryError::inconsistent_schema_basis(format!(
+                        "persistent-name scheme `{}` is already installed with different meaning",
+                        scheme.scheme_id()
+                    )))
+                }
+                None => registry
+                    .register(scheme.clone())
+                    .map_err(SchemaRegistryError::inconsistent_schema_basis)?,
+            }
+        }
+        let mut kind_map = self.kind_name_schemes.clone();
+        for (key, scheme_id) in bindings {
+            if kind_map.insert(key, scheme_id).is_some() {
+                return Err(SchemaRegistryError::inconsistent_schema_basis(format!(
+                    "kind {:?} is already bound to a persistent-name scheme",
+                    key.1
+                )));
+            }
+        }
+        self.install_persistent_name_schemes(registry, kind_map)
+    }
+
     pub fn persistent_name_schemes(&self) -> &InstalledPersistentNameSchemeRegistry {
         &self.persistent_name_schemes
     }

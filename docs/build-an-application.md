@@ -310,8 +310,24 @@ schema using `worth_query_decl::facade::application_naming`:
   Creating a schemed kind without a birth plan (`MissingBirth`), live-holder
   collisions (`DuplicateBirth`), and invalid or undeclared discriminator
   references (`InvalidDiscriminatorBasis`) refuse fail-closed with zero committed
-  effects. Automatic Query handler/producer lowering builds on this foundation
-  in subsequent slices.
+  effects.
+- **Installed worlds install their schemes.** Installing a schema that declares
+  entity or relation schemes binds each scheme to the exact kind identity the
+  installation lowered, inside the Native schema authority; a schemaless
+  schema installs bit-identically (its schema-authority digest is unchanged).
+  Readmitting an original installation whose recorded schemes differ from the
+  declaration refuses.
+- **Seeds are born named.** A bootstrap seed of a schemed kind declares its
+  role with `WorthQueryApplicationEntitySeed::persistent_name(role)` (or
+  `persistent_name_with_discriminator(role, &discriminator)`; relation seeds
+  use `WorthQueryApplicationRelationSeed::persistent_name(role)`). The seed's
+  application key is its authored occurrence. A schemed seed without a name,
+  or a named seed of an unschemed kind, refuses installation.
+- **Installed operations do not mint names yet.** An installed operation that
+  creates a record of a schemed kind refuses `MissingBirth` with zero effects:
+  the declaration language does not yet say which authored occurrence an
+  operation output is born from. Deleting a named record through an
+  operation retires its name.
 
 #### Holding and resolving names
 
@@ -350,8 +366,8 @@ replay:
   has no decision fact key: the projection refuses to seal with
   `FailedDecisionRead::PersistentName` instead, even when the handler
   swallowed the result (`PersistentNameReadVeto::for_name_of` and
-  `for_resolve` state the classification). Installed Query runtimes do not bind persistent-name
-  schemes into Relational yet, so their records carry no names. Group names
+  `for_resolve` state the classification). A handler reaches these reads
+  through `DecisionReader::reader()`. Group names
   do not resolve at runtime yet: group transitions are not part of the
   commit envelope.
 - Name reads refuse `SettlementInFlight` while any commit at or before the
@@ -374,6 +390,26 @@ continuity. Courts:
 [cold-directory restore](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cold_directory.rs),
 [decision reader](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_decision_reader.rs), and
 [Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
+
+#### Names across undo, redo, checkout and rebuild
+
+`HistoryDocument` navigation needs no naming ceremony. `undo_step`,
+`redo_to` and `checkout` select a recorded graph through Native, and Native
+derives the name continuity of that selection itself: a selected-away record
+holding a live name appends `Retire`; a restored record, which comes back at
+its exact original full-generation identity, appends `Restore` from its
+name's last retired lineage onto a fresh lineage; and a restored name still
+live on a record the selection retires continues in place (a kept-name
+`Create` plus `Replace`). A restored name still live on a record the
+selection keeps refuses `DuplicateBirth` before any effect. No earlier
+lineage event is edited, so a held name resolves to the member live at the
+checked-out node, `Retired` where the node deleted it, and a handle to a
+record the node does not hold stays refused. Unnamed records emit exactly the
+events they did before. Names are derived from the committed events alone, so
+an in-process rebuild of the lineage indexes reproduces them; durable journal
+replay of an owned-graph selection remains refused
+(`UnsupportedOwnedGraphSelectionReplay`). Court:
+[installed history continuity](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/history.rs).
 
 The runnable Slice 1B counterparts are the
 [end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),

@@ -95,8 +95,15 @@ schema authority, and mint fixed 32-byte, kind-verified, non-forgeable
 `WorthQueryName<K>` handles through `ExecutionNamingCommitAuthority` invariant
 across fresh builds, dummy pre-allocations, worker counts, forks, checkpoints,
 and tail replay—refusing `MissingBirth`, `DuplicateBirth`, and
-`InvalidDiscriminatorBasis` fail-closed with zero committed effects (automatic
-Query handler/producer lowering follows in subsequent slices). To hold a name and resolve it later at a reader's pinned basis, use
+`InvalidDiscriminatorBasis` fail-closed with zero committed effects. Installing
+a schema installs its declared schemes against the lowered kinds; seed a named
+record with `WorthQueryApplicationEntitySeed::persistent_name(role)` (relation
+seeds likewise). Installed operations creating schemed records still refuse
+`MissingBirth` until the declaration names their authored occurrence.
+`HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
+checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
+for every named record the selection retires or restores
+([names across undo, redo, checkout and rebuild](build-an-application.md#names-across-undo-redo-checkout-and-rebuild)). To hold a name and resolve it later at a reader's pinned basis, use
 `host::application_naming::ExecutionNameReader` (`entity_name_of`,
 `resolve_entity`, `relation_name_of`, `resolve_relation`) or the decision
 reader's `name_of` / `resolve`; answers are kind-checked, `Exact` refuses
