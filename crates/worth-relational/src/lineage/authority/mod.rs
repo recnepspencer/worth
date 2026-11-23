@@ -5,7 +5,6 @@ mod event_emission;
 mod mint_order;
 mod name_minting;
 mod name_readmission;
-mod pending_birth_identity;
 mod posture_allocation_drafts;
 mod posture_continuity;
 mod posture_drafts;
@@ -21,6 +20,8 @@ mod staged_effects;
 mod mint_order_tests;
 #[cfg(test)]
 mod name_minting_tests;
+#[cfg(test)]
+mod pending_birth_identity;
 
 pub(crate) use commit_births::extract_committed_name_births;
 #[cfg(test)]

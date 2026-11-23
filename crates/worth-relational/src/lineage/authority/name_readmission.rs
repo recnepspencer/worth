@@ -20,7 +20,7 @@ use crate::lineage::data::{
 };
 
 use super::discriminator_scan::extract_embedded_name_refs;
-use super::name_minting::canonical_birth_digest;
+use crate::lineage::data::canonical_birth_digest;
 
 /// Raw 32 bytes of a persisted identity, before any readmission.
 pub(crate) type PersistedNameBytes = [u8; PersistentNameIdentity::BYTE_LEN];
