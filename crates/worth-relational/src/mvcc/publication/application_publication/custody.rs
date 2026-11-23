@@ -1,8 +1,9 @@
 //! Runtime custody is issued from sealed performed results or cold native readmission.
 use crate::execution::request_stage::checkpoint;
+use crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs;
 use crate::history::data::CanonicalCommitEnvelope;
 use std::sync::Arc;
-mod current;
+pub(crate) mod current;
 mod description;
 pub(super) use current::readmit_successor;
 pub use description::RecordedRequiredOutputRole;
@@ -155,75 +156,70 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
     }
 }
 
-impl crate::runtime::RelationalRuntime {
-    /// Explicit cold readmission for a restored correspondence. Warm callers
-    /// retain the prior native holder and never traverse canonical history.
-    pub fn readmit_required_output_publication(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        installed: &super::RelationalInstalledApplicationPublicationAuthority,
-        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
-        producer: &str,
-        dependency: &[u8; 32],
-        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
-        roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
-    ) -> Result<
-        RelationalRequiredOutputPublication,
-        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
-    > {
-        if installed
-            .source_scope_ownership
-            .scope_kind(producer)
-            .is_some()
-        {
-            installed.require_current_ownership_storage(basis, meaning.source_scope)?;
-        }
-        if installed
-            .source_scope_ownership
-            .scope_kind(producer)
-            .is_some()
-            && roles
-                .iter()
-                .any(|role| role.posture != super::RequiredOutputRolePosture::Retire)
-        {
-            return current::readmit(
-                execution, installed, basis, producer, dependency, meaning, roles,
-            );
-        }
-        if installed.runtime_instance_id != self.runtime_instance_id() {
-            return Err(super::origin_denial(
-                "foreign installed publisher for cold readmission",
-            ));
-        }
-        let selected = crate::history::data::validate_codec_output_correspondence(
-            execution, self, basis, producer, dependency, meaning, roles,
+pub(crate) fn readmit_required_output_publication(
+    inputs: RetirementHistoryInputs<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    installed: &super::RelationalInstalledApplicationPublicationAuthority,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    producer: &str,
+    dependency: &[u8; 32],
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+    roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
+) -> Result<
+    RelationalRequiredOutputPublication,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
+    if installed
+        .source_scope_ownership
+        .scope_kind(producer)
+        .is_some()
+    {
+        installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+    }
+    if installed
+        .source_scope_ownership
+        .scope_kind(producer)
+        .is_some()
+        && roles
+            .iter()
+            .any(|role| role.posture != super::RequiredOutputRolePosture::Retire)
+    {
+        return current::readmit(
+            execution, installed, basis, producer, dependency, meaning, roles,
+        );
+    }
+    if installed.runtime_instance_id != inputs.projection.runtime_identity {
+        return Err(super::origin_denial(
+            "foreign installed publisher for cold readmission",
+        ));
+    }
+    let selected = crate::history::data::validate_codec_output_correspondence(
+        execution, inputs, basis, producer, dependency, meaning, roles,
+    )
+    .map_err(cold_stop)?;
+    let crate::history::data::SelectedOutputPublication {
+        evidence,
+        origin,
+        ordinal,
+    } = selected;
+    if origin.source_scope_owned {
+        installed.require_current_ownership_storage(basis, origin.meaning.source_scope)?;
+    }
+    if crate::history::data::readmit_required_output_route(execution, inputs, basis, meaning)
+        .map_err(cold_stop)?
+        != Some(
+            crate::history::data::RequiredOutputRoutePosition::Published(origin.commit.commit_id),
         )
-        .map_err(cold_stop)?;
-        let crate::history::data::SelectedOutputPublication {
-            evidence,
-            origin,
-            ordinal,
-        } = selected;
-        if origin.source_scope_owned {
-            installed.require_current_ownership_storage(basis, origin.meaning.source_scope)?;
-        }
-        if crate::history::data::readmit_required_output_route(execution, self, basis, meaning)
-            .map_err(cold_stop)?
-            != Some(
-                crate::history::data::RequiredOutputRoutePosition::Published(
-                    origin.commit.commit_id,
-                ),
-            )
-        {
-            return Err(super::origin_denial("superseded complete family publication is historical association, not a current predecessor"));
-        }
-        if installed
-            .source_scope_ownership
-            .scope_kind(&origin.producer)
-            .is_some()
-            != origin.source_scope_owned
-        {
-            return Err(
+    {
+        return Err(super::origin_denial("superseded complete family publication is historical association, not a current predecessor"));
+    }
+    if installed
+        .source_scope_ownership
+        .scope_kind(&origin.producer)
+        .is_some()
+        != origin.source_scope_owned
+    {
+        return Err(
                 crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::authored_retirement(
                         crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
@@ -231,27 +227,26 @@ impl crate::runtime::RelationalRuntime {
                     ),
                 ),
             );
-        }
-        if origin
-            .issuer
-            .as_ref()
-            .is_some_and(|issuer| !issuer.same_publication_owner(&installed.authority))
-        {
-            return Err(super::origin_denial(
-                "foreign installed owner cannot reissue live publication custody",
-            ));
-        }
-        let authority = installed
-            .authority
-            .seal_required_output_publication_at(origin.commit.commit_id.0, ordinal);
-        Ok(RelationalRequiredOutputPublication {
-            runtime_instance_id: installed.runtime_instance_id,
-            evidence,
-            origin,
-            authority,
-            readmitted_at: Some(basis.clone()),
-        })
     }
+    if origin
+        .issuer
+        .as_ref()
+        .is_some_and(|issuer| !issuer.same_publication_owner(&installed.authority))
+    {
+        return Err(super::origin_denial(
+            "foreign installed owner cannot reissue live publication custody",
+        ));
+    }
+    let authority = installed
+        .authority
+        .seal_required_output_publication_at(origin.commit.commit_id.0, ordinal);
+    Ok(RelationalRequiredOutputPublication {
+        runtime_instance_id: installed.runtime_instance_id,
+        evidence,
+        origin,
+        authority,
+        readmitted_at: Some(basis.clone()),
+    })
 }
 
 pub(super) fn cold_stop(

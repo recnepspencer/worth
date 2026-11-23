@@ -47,7 +47,7 @@ pub(crate) fn select_owned_scope_dependent(
 /// Surviving opted-in writers reached by actual retained required inputs or owned
 /// edges of a retiring authored source and its admitted source-scope closure. Selection uses the closure
 /// owner's already-authenticated current publications; this never walks history.
-pub(super) fn linked_owners(
+pub(crate) fn linked_owners(
     anchors: &[EntityId],
     retiring: &[crate::history::data::SelectedOutputPublication],
     current: &[crate::history::data::SelectedOutputPublication],

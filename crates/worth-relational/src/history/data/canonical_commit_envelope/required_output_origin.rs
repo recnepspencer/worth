@@ -17,7 +17,7 @@ pub(crate) use coupled_authored::{
 mod authored_restoration;
 mod authored_restoration_install;
 mod historical_selection;
-mod history_request;
+pub(crate) mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod inputs;
 pub(crate) mod installation;

@@ -29,4 +29,4 @@ pub(crate) use state::{
     VisibilitySnapshotStateKey,
 };
 
-pub(crate) use resolution::SnapshotReadDirectory;
+pub(crate) use resolution::{SnapshotReadDirectory, SnapshotResolutionInputs};

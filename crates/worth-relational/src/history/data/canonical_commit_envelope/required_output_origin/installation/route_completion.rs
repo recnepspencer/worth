@@ -22,7 +22,7 @@ pub(super) struct RouteCompletion<'a> {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install_route(
     envelope: &mut CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,

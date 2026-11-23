@@ -3,11 +3,11 @@ use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
 use crate::history::data::CommitId;
-use crate::history::data::SelectedAuthoredRetirement;
 use crate::identity::data::EntityId;
 use crate::identity::data::RelationId;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
+use crate::publication::ownership::authored_retirement::SelectedAuthoredRetirement;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, sync::Arc};
@@ -219,7 +219,7 @@ impl RelationalRuntime {
                     retirements,
                     coupled_owners,
                     current,
-                } = crate::history::data::select_authored_source_retirement(
+                } = crate::publication::ownership::authored_retirement::select_authored_source_retirement(
                     execution,
                     self,
                     installed,
@@ -227,7 +227,7 @@ impl RelationalRuntime {
                     anchor,
                     co_anchors,
                     roles,
-                    crate::history::data::AuthoredRetirementSelection::ClosureAndLinkedOwners,
+                    crate::publication::ownership::authored_retirement::AuthoredRetirementSelection::ClosureAndLinkedOwners,
                 )?;
                 let readmit = |selected: &crate::history::data::SelectedOutputPublication| {
                     self.readmit_canonical_publication(

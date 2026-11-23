@@ -175,4 +175,5 @@ pub(crate) mod inline_type_budget;
 
 mod visibility_read_inputs;
 
+mod required_output_reads;
 mod retirement_history_inputs;

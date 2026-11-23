@@ -1,6 +1,8 @@
 //! The runtime binds the exact visibility and record readers once per operation.
 use crate::runtime::RelationalRuntime;
-use crate::visibility::snapshot_states::{SnapshotReadDirectory, SnapshotRecordReadInputs};
+use crate::visibility::snapshot_states::{
+    SnapshotReadDirectory, SnapshotRecordReadInputs, SnapshotResolutionInputs,
+};
 use std::sync::Arc;
 
 impl RelationalRuntime {
@@ -39,6 +41,41 @@ impl<'a> From<&'a RelationalRuntime>
             instrumentation: &runtime.services.instrumentation,
             symbols: &runtime.services.symbols,
             empty_history_schema: &runtime.config.schema.registry,
+        }
+    }
+}
+
+use crate::visibility::branch_scope::HistoricalBasisInputs;
+use crate::visibility::cache_state::VisibilityCacheInputs;
+
+impl<'a> From<&'a RelationalRuntime> for HistoricalBasisInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            genesis_branch: &runtime.config.history.main_branch,
+        }
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime> for VisibilityCacheInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            runtime_identity: runtime.runtime_instance_id(),
+            cache: &runtime.visibility.cache,
+            policy: &runtime.config.visibility.cache_policy,
+            history: runtime.into(),
+            symbols: &runtime.services.symbols,
+            records: runtime.snapshot_record_read_inputs(),
+            instrumentation: &runtime.services.instrumentation,
+        }
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime> for SnapshotResolutionInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            directory: runtime.into(),
+            cache: runtime.into(),
         }
     }
 }

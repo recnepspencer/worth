@@ -46,7 +46,7 @@ impl RelationalRuntime {
         }
         let current = execution
             .run_native_with_checkpoint(|context| {
-                crate::history::data::source_scope_closure::current(
+                crate::publication::ownership::source_scope::current(
                     execution,
                     basis,
                     Some(&installed.source_scope_ownership),

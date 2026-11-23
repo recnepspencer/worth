@@ -5,7 +5,7 @@ use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::codec_field_comparison::CodecFieldLocus;
 
-mod authored_cascade;
+pub(crate) mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 mod coupled_restoration;
@@ -13,15 +13,12 @@ mod coupled_selection;
 mod historical_selection;
 pub(crate) mod history_request;
 pub(crate) use historical_selection::antecedent as historical_producer_antecedent;
-mod scope_dependents;
+pub(crate) mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
 pub(crate) use scope_dependents::OwnedScopeDependentSelection;
-mod restoration_payload;
-pub(crate) use authored_cascade::{
-    select_authored_source_retirement, AuthoredRetirementSelection, SelectedAuthoredRetirement,
-};
 mod codec_disposition;
+mod restoration_payload;
 pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;
 mod membership;
@@ -306,7 +303,7 @@ fn require_linear_history(
     Ok(())
 }
 
-pub(super) fn charge(
+pub(crate) fn charge(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     work: usize,
 ) -> Result<(), CodecRetirementClosureStop> {
@@ -321,7 +318,7 @@ pub(super) fn charge(
     .map_err(request)
 }
 
-pub(super) fn request(
+pub(crate) fn request(
     cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(cause.into())

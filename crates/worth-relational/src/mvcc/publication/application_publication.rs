@@ -11,8 +11,8 @@ mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 pub use authored_retirement::AuthoredOwnedMemberKind;
-mod native_transition_succession;
-mod restored_producer_prior;
+pub(crate) mod native_transition_succession;
+pub(crate) mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
 pub use restored_producer_prior::RelationalRestoredProducerPrior;
@@ -40,7 +40,7 @@ pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
 };
 mod producing_implementation;
-mod route_absence;
+pub(crate) mod route_absence;
 mod scope_ownership;
 pub use completion::RequiredOutputPublication;
 pub(crate) use custody::prepare as prepare_publications;

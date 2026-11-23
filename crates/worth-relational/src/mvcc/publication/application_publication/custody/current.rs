@@ -77,30 +77,8 @@ pub(super) fn readmit(
     Ok(issue(installed, basis, roster, origin, ordinal))
 }
 
-/// The current owned publication is producer-succession custody even when a
-/// Query checkpoint retains an older association. This does not read history.
-impl crate::runtime::RelationalRuntime {
-    pub fn readmit_current_owned_output_successor(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        installed: &super::super::RelationalInstalledApplicationPublicationAuthority,
-        basis: &AdmittedRelationalBranchBasis,
-        running_producer: &str,
-        meaning: &super::super::RequiredOutputPublicationMeaning,
-    ) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
-        readmit_successor(
-            self.runtime_instance_id(),
-            execution,
-            installed,
-            basis,
-            running_producer,
-            meaning,
-        )
-    }
-}
-
 /// The runtime and its scoped preparation port use this one current-custody owner.
-pub(in crate::mvcc::publication::application_publication) fn readmit_successor(
+pub(crate) fn readmit_successor(
     runtime_instance_id: u64,
     execution: &ExecutionRequest<'_, '_>,
     installed: &super::super::RelationalInstalledApplicationPublicationAuthority,

@@ -3,7 +3,8 @@ use std::sync::Arc;
 use crate::branch::RelationalBranchRoot;
 use crate::history::data::BranchId;
 use crate::identity::data::VersionId;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::visibility::branch_scope::HistoricalBasisInputs;
 
 use super::historical_denial::HistoricalVisibilityDenial;
 
@@ -33,13 +34,12 @@ impl HistoricalVisibilityBasis {
             .map(crate::history::retention::RelationalHistoricalObservationRetirement::new)
     }
     pub(crate) fn resolve_retained_commit(
-        runtime: &RelationalRuntime,
+        history: &HistorySubsystem,
         commit_id: crate::history::data::CommitId,
         branch_id: BranchId,
         version_id: VersionId,
     ) -> Result<Self, HistoricalVisibilityDenial> {
-        let retained = runtime
-            .history
+        let retained = history
             .retain_historical_root(commit_id)
             .map_err(historical_retention_denial)?
             .ok_or(HistoricalVisibilityDenial::CertificationReconstructionRequired)?;
@@ -58,18 +58,19 @@ impl HistoricalVisibilityBasis {
         })
     }
 
-    pub(crate) fn resolve(
-        runtime: &RelationalRuntime,
+    pub(crate) fn resolve<'a>(
+        inputs: impl Into<HistoricalBasisInputs<'a>>,
         version_id: VersionId,
     ) -> Result<Self, HistoricalVisibilityDenial> {
-        let branch_id = crate::visibility::branch_scope::branch_for_version(runtime, version_id)
+        let inputs = inputs.into();
+        let history = inputs.history;
+        let branch_id = crate::visibility::branch_scope::branch_for_version(inputs, version_id)
             .ok_or(HistoricalVisibilityDenial::UnknownVersion)?;
-        let commit_id = runtime
-            .history
+        let commit_id = history
             .commit_artifact_for_version(version_id)
             .map(|artifact| artifact.commit_id());
         if let Some(root) = commit_id
-            .map(|commit_id| runtime.history.retain_historical_root(commit_id))
+            .map(|commit_id| history.retain_historical_root(commit_id))
             .transpose()
             .map_err(historical_retention_denial)?
             .flatten()
@@ -85,12 +86,11 @@ impl HistoricalVisibilityBasis {
                 root: Some(Arc::new(root)),
             });
         }
-        let cell = runtime
-            .history
+        let cell = history
             .branch_cell(&branch_id)
             .ok_or(HistoricalVisibilityDenial::AuthoringBranchUnavailable)?;
         let Some(root) = cell.root() else {
-            if version_id.is_zero() && runtime.history().latest_commit().is_none() {
+            if version_id.is_zero() && history.historical_latest_commit().is_none() {
                 return Ok(Self {
                     branch_id,
                     version_id,
@@ -108,8 +108,7 @@ impl HistoricalVisibilityBasis {
             None => return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable),
         };
         if source_version.as_u64() < version_id.as_u64() {
-            let metadata_aliases_root = runtime
-                .history
+            let metadata_aliases_root = history
                 .commit_artifact_for_version(version_id)
                 .is_some_and(|artifact| root.descriptor() == Some(artifact.roots()));
             if !metadata_aliases_root {

@@ -1,7 +1,6 @@
 use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
-use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary};
-use crate::visibility::cache_state::materialize_exact_state_for_basis;
+use crate::visibility::cache_state::{materialize_exact_state_for_basis, VisibilityCacheInputs};
 
 use super::{build_visibility_state, SnapshotState, VisibilitySnapshotBasis};
 
@@ -77,29 +76,36 @@ pub(crate) fn resolve_snapshot_basis<'a>(
         .map(|binding| binding.basis)
 }
 
-pub(crate) fn resolve_snapshot_state(
-    runtime: &RelationalRuntime,
+#[derive(Clone, Copy)]
+pub(crate) struct SnapshotResolutionInputs<'a> {
+    pub(crate) directory: SnapshotReadDirectory<'a>,
+    pub(crate) cache: VisibilityCacheInputs<'a>,
+}
+
+pub(crate) fn resolve_snapshot_state<'a>(
+    inputs: impl Into<SnapshotResolutionInputs<'a>>,
     handle: &SnapshotHandle,
 ) -> Option<ResolvedVisibilitySnapshot> {
-    if handle.runtime_instance_id != runtime.runtime_instance_id() {
+    let inputs = inputs.into();
+    if handle.runtime_instance_id != inputs.directory.runtime_identity {
         return None;
     }
-    if let Some(binding) = runtime.visibility.active_handle_binding(handle.snapshot_id) {
+    if let Some(binding) = inputs
+        .directory
+        .visibility
+        .active_handle_binding(handle.snapshot_id)
+    {
         let resolved_handle = SnapshotHandle {
-            runtime_instance_id: runtime.runtime_instance_id(),
+            runtime_instance_id: inputs.directory.runtime_identity,
             branch_id: binding.branch_id,
             snapshot_id: handle.snapshot_id,
             version_id: binding.version_id,
             read_policy: binding.read_policy,
         };
         let state = materialize_exact_state_for_basis(
-            runtime,
+            inputs.cache,
             binding.basis,
-            !runtime
-                .config
-                .visibility
-                .cache_policy
-                .protect_active_snapshots,
+            !inputs.cache.policy.protect_active_snapshots,
         )?;
         return Some(ResolvedVisibilitySnapshot {
             handle: resolved_handle,
@@ -107,27 +113,28 @@ pub(crate) fn resolve_snapshot_state(
         });
     }
 
-    resolve_published_snapshot_state(runtime, handle)
+    resolve_published_snapshot_state(inputs, handle)
 }
 
 fn resolve_published_snapshot_state(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotResolutionInputs<'_>,
     handle: &SnapshotHandle,
 ) -> Option<ResolvedVisibilitySnapshot> {
-    let binding = runtime
+    let binding = inputs
+        .directory
         .visibility
         .published_snapshot_binding(handle.snapshot_id)?;
     let resolved_handle = SnapshotHandle {
-        runtime_instance_id: runtime.runtime_instance_id(),
+        runtime_instance_id: inputs.directory.runtime_identity,
         branch_id: binding.branch_id,
         snapshot_id: handle.snapshot_id,
         version_id: binding.version_id,
         read_policy: binding.read_policy,
     };
-    let state = materialize_exact_state_for_basis(runtime, binding.basis.clone(), true)
+    let state = materialize_exact_state_for_basis(inputs.cache, binding.basis.clone(), true)
         .unwrap_or_else(|| {
             build_visibility_state(
-                runtime.runtime_instance_id(),
+                inputs.directory.runtime_identity,
                 binding.basis,
                 handle.snapshot_id,
                 binding.read_policy,

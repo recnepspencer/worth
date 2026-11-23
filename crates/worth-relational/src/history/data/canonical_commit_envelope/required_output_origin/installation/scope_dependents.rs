@@ -12,7 +12,7 @@ pub(super) struct RemovedOwningScopes {
 
 pub(super) fn require_retained_sources(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
@@ -29,7 +29,7 @@ pub(super) fn require_retained_sources(
 /// Preserve the existing charged eligibility path for every non-cascading candidate.
 pub(super) fn select_removed_owning_scopes(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
@@ -79,15 +79,11 @@ pub(super) fn select_removed_owning_scopes(
     }
     let dependent = crate::history::data::select_owned_scope_dependent(
         crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
-        runtime
-            .runtime
-            .current_ownership
-            .as_deref()
-            .ok_or_else(|| {
-                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
-                    "owning-source removal requires Native current ownership storage",
-                )
-            })?,
+        runtime.current_ownership.as_deref().ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "owning-source removal requires Native current ownership storage",
+            )
+        })?,
         context,
     )
     .map_err(|failure| super::relation_stop(failure.stop))?;

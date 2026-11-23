@@ -218,7 +218,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     {
         let basis =
             crate::visibility::snapshot_states::HistoricalVisibilityBasis::resolve_retained_commit(
-                self.runtime(),
+                &self.runtime().history,
                 commit_id,
                 branch_id,
                 version_id,

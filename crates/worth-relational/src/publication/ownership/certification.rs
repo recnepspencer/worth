@@ -167,7 +167,7 @@ pub(crate) fn current_ownership_descendants(
 ) -> Result<Vec<EntityId>, TransactionCommitError> {
     execution
         .run_native_with_checkpoint(|context| {
-            let latest = crate::history::data::source_scope_closure::current(
+            let latest = crate::publication::ownership::source_scope::current(
                 execution,
                 basis,
                 None,

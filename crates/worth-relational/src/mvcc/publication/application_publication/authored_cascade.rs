@@ -105,12 +105,12 @@ impl RelationalRuntime {
         // Selection and every cold predecessor readmission share one original request scope.
         execution
             .in_scope(|_| {
-                let crate::history::data::SelectedAuthoredRetirement {
+                let crate::publication::ownership::authored_retirement::SelectedAuthoredRetirement {
                     birth,
                     co_anchors,
                     retirements: selected,
                     ..
-                } = crate::history::data::select_authored_source_retirement(
+                } = crate::publication::ownership::authored_retirement::select_authored_source_retirement(
                     execution,
                     self,
                     installed,
@@ -118,7 +118,7 @@ impl RelationalRuntime {
                     anchor,
                     co_anchors,
                     roles,
-                    crate::history::data::AuthoredRetirementSelection::SourceScopeClosure,
+                    crate::publication::ownership::authored_retirement::AuthoredRetirementSelection::SourceScopeClosure,
                 )?;
                 if selected.is_empty() && !owned_members {
                     return Ok(None);

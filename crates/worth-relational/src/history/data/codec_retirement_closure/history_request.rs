@@ -13,16 +13,16 @@ pub(crate) struct RetirementHistoryInputs<'r> {
     pub(crate) projection: ProjectionInputs<'r>,
 }
 
-pub(super) struct RuntimeHistoryRequest<'r, 'q, 'l> {
-    pub(super) input: RetirementHistoryInputs<'r>,
+pub(crate) struct RuntimeHistoryRequest<'r, 'q, 'l> {
+    pub(crate) input: RetirementHistoryInputs<'r>,
     execution: ExecutionRequest<'q, 'l>,
 }
 impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
-    pub(super) fn execution(&self) -> ExecutionRequest<'q, 'l> {
+    pub(crate) fn execution(&self) -> ExecutionRequest<'q, 'l> {
         self.execution
     }
 
-    pub(super) fn new(
+    pub(crate) fn new(
         input: impl Into<RetirementHistoryInputs<'r>>,
         execution: &ExecutionRequest<'q, 'l>,
     ) -> Self {
@@ -32,7 +32,7 @@ impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
         }
     }
 
-    pub(super) fn commit(
+    pub(crate) fn commit(
         &self,
         id: CommitId,
     ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop> {
@@ -43,7 +43,7 @@ impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
             .map_err(Stop::Request)
     }
 
-    pub(super) fn version(
+    pub(crate) fn version(
         &self,
         version: VersionId,
         context: &mut MapKernelContext<'_, '_>,

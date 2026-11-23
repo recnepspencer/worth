@@ -26,9 +26,9 @@ pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
-    readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
-    validate_codec_output_correspondence, AuthoredRetirementSelection, CodecRetirementClosureStop,
-    OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
+    readmit_required_output_route, select_authored_retirement,
+    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 pub(crate) mod canonical_record_allocation;

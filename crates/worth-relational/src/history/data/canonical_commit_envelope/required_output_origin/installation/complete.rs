@@ -1,12 +1,13 @@
 //! Complete one live required-output publication against the admitted branch.
+use super::super::history_request::{OutputPreparationInputs, OutputPreparationRequest};
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn install_required_output_origin(
+pub(crate) fn install_required_output_origin<'r>(
     envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    inputs: impl Into<OutputPreparationInputs<'r>>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -17,7 +18,7 @@ pub(crate) fn install_required_output_origin(
     admission
         .installed
         .demand_source_scope(execution, basis, &admission.publication)?;
-    let runtime = &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest::new(runtime, execution);
+    let runtime = &OutputPreparationRequest::new(inputs.into(), execution);
     let result = execution
         .in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
@@ -53,7 +54,7 @@ pub(crate) fn install_required_output_origin(
 pub(in crate::history::data::canonical_commit_envelope::required_output_origin) fn install_completion(
     envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -78,12 +79,8 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
     context
         .checkpoint(publication.admission_work())
         .map_err(origin_request)?;
-    if installed.runtime_instance_id != runtime.runtime.runtime_instance_id()
-        || installed.custom_invariant_generation
-            != runtime
-                .runtime
-                .schema_contract_runtime
-                .custom_invariant_generation
+    if installed.runtime_instance_id != runtime.runtime_instance_id
+        || installed.custom_invariant_generation != runtime.custom_invariant_generation
         || installed.schema_digest != basis.inner.root.schema_authority().authority_digest()
         || !publication.admitted_by(&installed)
         || envelope.branch_context != *basis.descriptor().branch_id()

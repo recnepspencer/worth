@@ -1,5 +1,7 @@
 //! Translate a pre-effect refusal using the candidate's original branch basis.
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::{BranchId, CommitId};
+use crate::identity::data::VersionId;
 use crate::mvcc::publication::PublicationPreparationDenial;
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
@@ -7,9 +9,27 @@ use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
-pub(super) fn transaction_error(
+/// Descriptive attribution for a denial on the exact selected branch.
+pub(super) struct PreparationFailureBasis<'a> {
+    branch_id: &'a BranchId,
+    commit_id: Option<CommitId>,
+    version: VersionId,
+}
+
+impl<'a> From<&'a AdmittedRelationalBranchBasis> for PreparationFailureBasis<'a> {
+    fn from(basis: &'a AdmittedRelationalBranchBasis) -> Self {
+        let observation = basis.observation();
+        Self {
+            branch_id: basis.identity().branch_id(),
+            commit_id: observation.commit_id(),
+            version: observation.version_id(),
+        }
+    }
+}
+
+pub(super) fn transaction_error<'a>(
     denial: PublicationPreparationDenial,
-    basis: &AdmittedRelationalBranchBasis,
+    basis: impl Into<PreparationFailureBasis<'a>>,
     commit_log: CommitLog,
 ) -> TransactionCommitError {
     let error = match denial {
@@ -20,10 +40,11 @@ pub(super) fn transaction_error(
             })
         }
         PublicationPreparationDenial::StorageUnavailable(failure) => {
+            let basis = basis.into();
             TransactionCommitError::preparation(CommitPreparationError::storage_unavailable(
-                basis.identity().branch_id().clone(),
-                basis.observation().commit_id().map(|id| id.0),
-                basis.observation().version_id(),
+                basis.branch_id.clone(),
+                basis.commit_id.map(|id| id.0),
+                basis.version,
                 failure,
             ))
         }
@@ -41,21 +62,20 @@ mod tests {
     use crate::storage::data::{
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
-    use crate::tests::support::{
-        create_entity, runtime_with_test_schema, test_owner_begin_transaction_for_main,
-    };
     use crate::transactions::data::outcomes::commit_preparation::CommitPreparationReason;
 
     #[test]
     fn root_storage_refusal_preserves_its_subject_cause_and_original_branch_basis() {
-        let host = crate::execution::test_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host);
-        let runtime = runtime_with_test_schema();
-        let entity = create_entity(execution, &runtime, "typed-root-refusal");
-        let transaction = test_owner_begin_transaction_for_main(&runtime);
-        let basis = &transaction.basis;
+        let original_branch = BranchId("typed-root-refusal".to_owned());
+        let original_commit = CommitId(27);
+        let original_version = VersionId(35);
+        let basis = PreparationFailureBasis {
+            branch_id: &original_branch,
+            commit_id: Some(original_commit),
+            version: original_version,
+        };
         let failure = RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Region(entity.partition_id),
+            subject: RelationalStorageSubject::Region(crate::identity::data::PartitionId::main()),
             cause: RelationalStorageUnavailableCause::MissingMember,
         };
         let denial = PublicationPreparationDenial::from(
@@ -69,14 +89,8 @@ mod tests {
             error.reason(),
             CommitPreparationReason::StorageUnavailable(failure)
         );
-        assert_eq!(error.branch_id(), basis.identity().branch_id());
-        assert_eq!(
-            error.expected_commit_id(),
-            basis.observation().commit_id().map(|id| id.0)
-        );
-        assert_eq!(
-            error.expected_version_id(),
-            basis.observation().version_id()
-        );
+        assert_eq!(error.branch_id(), &original_branch);
+        assert_eq!(error.expected_commit_id(), Some(original_commit.0));
+        assert_eq!(error.expected_version_id(), original_version);
     }
 }

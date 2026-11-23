@@ -37,7 +37,7 @@ pub(super) fn prepare(
     candidate: &CanonicalCommitEnvelopeBody,
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[RequiredOutputRoleTarget],
@@ -52,7 +52,7 @@ pub(super) fn prepare(
         return Ok(None);
     };
     let anchors = removal.anchors;
-    let closure = source_scope_closure::current(
+    let closure = crate::publication::ownership::source_scope::current(
         execution,
         basis,
         Some(&installed.source_scope_ownership),
@@ -64,7 +64,7 @@ pub(super) fn prepare(
         context,
     )?;
     let mut latest = source_scope_closure::from_current(
-        Arc::clone(runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
+        Arc::clone(runtime.current_ownership.as_ref().ok_or_else(|| {
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                 "producer cascade requires current Native ownership",
             )
@@ -150,7 +150,7 @@ pub(super) fn prepare(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -188,7 +188,7 @@ pub(super) fn install(
         let origin = &selected.origin;
         // Native constructs custody only for the exact canonical selection, never a caller roster.
         let predecessor = crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication {
-            runtime_instance_id: runtime.runtime.runtime_instance_id(),
+            runtime_instance_id: runtime.runtime_instance_id,
             evidence: selected.evidence,
             origin: Arc::clone(origin),
             authority: installed

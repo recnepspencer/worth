@@ -2,6 +2,7 @@
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 
 #[derive(Debug)]
@@ -89,46 +90,41 @@ impl RequiredOutputPublicationAdmission {
     }
 }
 
-impl crate::runtime::RelationalRuntime {
-    /// Funded cold admission when the recovered selector does not cover its
-    /// canonical prefix. A complete warm image uses only its reached route.
-    /// `None` means the route has a publication and requires exact predecessor
-    /// custody; it is never permission to begin another ownership birth.
-    pub fn readmit_required_output_route_absence(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        installed: &RelationalInstalledApplicationPublicationAuthority,
-        basis: &AdmittedRelationalBranchBasis,
-        meaning: &RequiredOutputPublicationMeaning,
-    ) -> Result<Option<RelationalRequiredOutputRouteAbsence>, TransactionCommitError> {
-        if installed.runtime_instance_id != self.runtime_instance_id()
-            || basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
-            || !basis.is_current()
-        {
-            return Err(origin_denial(
-                "route absence requires the exact installed native basis",
-            ));
-        }
-        if installed
-            .source_scope_ownership
-            .scope_kind(&meaning.family)
-            .is_some()
-        {
-            installed.require_current_ownership_storage(basis, meaning.source_scope)?;
-        }
-        let current = if installed.source_scope_ownership.is_empty()
-            || basis
-                .inner
-                .root
-                .output_publication_positions
-                .unresolved_prefix()
-                .is_none()
-        {
-            None
-        } else {
-            crate::publication::ownership::route_selection::read_current(execution, basis, meaning)?
-        };
-        let result = execution.in_scope(|lease| {
+pub(crate) fn readmit_required_output_route_absence(
+    inputs: RetirementHistoryInputs<'_>,
+    execution: &ExecutionRequest<'_, '_>,
+    installed: &RelationalInstalledApplicationPublicationAuthority,
+    basis: &AdmittedRelationalBranchBasis,
+    meaning: &RequiredOutputPublicationMeaning,
+) -> Result<Option<RelationalRequiredOutputRouteAbsence>, TransactionCommitError> {
+    if installed.runtime_instance_id != inputs.projection.runtime_identity
+        || basis.descriptor().runtime_instance_id() != inputs.projection.runtime_identity
+        || !basis.is_current()
+    {
+        return Err(origin_denial(
+            "route absence requires the exact installed native basis",
+        ));
+    }
+    if installed
+        .source_scope_ownership
+        .scope_kind(&meaning.family)
+        .is_some()
+    {
+        installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+    }
+    let current = if installed.source_scope_ownership.is_empty()
+        || basis
+            .inner
+            .root
+            .output_publication_positions
+            .unresolved_prefix()
+            .is_none()
+    {
+        None
+    } else {
+        crate::publication::ownership::route_selection::read_current(execution, basis, meaning)?
+    };
+    let result = execution.in_scope(|lease| {
             ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
                 lease,
                 None,
@@ -139,11 +135,11 @@ impl crate::runtime::RelationalRuntime {
                         Some(position) => Some(position),
                         None if positions.unresolved_prefix().is_some() => {
                             let historical=crate::history::data::readmit_required_output_route(
-                                execution, self, basis, meaning,
+                                execution, inputs, basis, meaning,
                             ).map_err(super::custody::cold_stop)?;
                             if installed.source_scope_ownership.is_empty() {historical} else {
                                 crate::history::data::current_route_presence::require_current_owned_route(
-                                    execution,self,basis,meaning,historical,
+                                    execution,inputs.projection.history,basis,meaning,historical,
                                 )?
                             }
                         }
@@ -176,10 +172,9 @@ impl crate::runtime::RelationalRuntime {
                 },
             )
         });
-        consult_stage(execution, CommitStage::Admission)?;
-        result
-            .map_err(super::custody::execution_stop)?
-            .map_err(super::custody::execution_stop)?
-            .0
-    }
+    consult_stage(execution, CommitStage::Admission)?;
+    result
+        .map_err(super::custody::execution_stop)?
+        .map_err(super::custody::execution_stop)?
+        .0
 }

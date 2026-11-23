@@ -4,6 +4,7 @@ use crate::authority::commit::phases::publication::CanonicalEnvelopeInputs;
 use crate::authority::commit::phases::schema_continuity::inputs::{
     SchemaContinuityInputs, SchemaContinuityRequest,
 };
+use crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationInputs;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 
@@ -46,6 +47,19 @@ impl<'a> From<&'a RelationalTransactionValidationInput> for SchemaContinuityRequ
             copied_authority: input.schema_authority_input(),
             transition: input.proposed_schema_transition(),
             reconciliation: input.schema_reconciliation_policy(),
+        }
+    }
+}
+
+impl<'a> From<&'a RelationalPreparationRuntime> for OutputPreparationInputs<'a> {
+    fn from(runtime: &'a RelationalPreparationRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            current_ownership: &runtime.current_ownership,
+            runtime_instance_id: runtime.runtime_instance_id(),
+            custom_invariant_generation: runtime
+                .schema_contract_runtime
+                .custom_invariant_generation,
         }
     }
 }

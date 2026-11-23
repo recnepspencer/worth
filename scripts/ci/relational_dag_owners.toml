@@ -296,6 +296,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/required_output_positions/presence/completion.rs" = "mutation"
 "history/mod.rs" = "runtime"
 "history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
@@ -435,6 +436,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/normalized_plan" = "mutation"
+"mvcc/transaction/reconstructed_merge_plan" = "mutation"
 "mvcc/transaction/read_denial.rs" = "branch"
 "mvcc/transaction/staging.rs" = "contracts"
 "mvcc/validation" = "mutation"
@@ -515,6 +517,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/history_identity_allocation" = "branch"
 "runtime/state/subsystems/history_ledger" = "branch"
 "runtime/state/subsystems/history_ledger_access" = "branch"
+"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
 "runtime/state/subsystems/history_memory_close" = "branch"
 "runtime/state/subsystems/history_preparation_binding" = "publication"
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
@@ -709,6 +712,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Publication completes live origins and passes filled canonical facts to Branch.
 "history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
@@ -997,3 +1001,13 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Count schema transition classifications where continuity is materialized.
 "authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"
+
+# Live authored-source retirement selects Current ownership before canonical ancestry.
+"publication/ownership/source_scope.rs" = "publication"
+"publication/ownership/authored_retirement" = "publication"
+
+# Immutable receipt discovery has no root runtime or preparation receiver.
+"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
+
+# Paid merge mutation plan reconstruction uses the normalized-intent owner.
+"mvcc/transaction/reconstructed_merge_plan" = "mutation"

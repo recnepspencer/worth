@@ -19,7 +19,7 @@ use super::coupled_authored::{
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,

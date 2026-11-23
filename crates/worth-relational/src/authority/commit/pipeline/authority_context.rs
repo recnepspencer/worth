@@ -12,7 +12,7 @@ use crate::validation::engine::InvariantExecutionResult;
 #[derive(Debug)]
 pub(super) enum CommitAuthorityInput {
     Mutation(PreparedRelationalCommitPlan),
-    Merge(crate::mvcc::OwnedMergePlan),
+    Merge(crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan),
 }
 
 #[derive(Debug)]
@@ -142,7 +142,7 @@ impl AuthoritativeCommitContext {
 
     pub(crate) fn from_merge(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: crate::mvcc::OwnedMergePlan,
+        merge_plan: crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan,
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(validation_input, merge_plan, None, None)
     }
@@ -155,7 +155,9 @@ impl AuthoritativeCommitContext {
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(
             validation_input,
-            crate::mvcc::OwnedMergePlan::from_ordinary_plan(merge_plan),
+            crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan::from_ordinary_plan(
+                merge_plan,
+            ),
             Some(diagnostics_plan),
             Some(complexity_baseline),
         )
@@ -163,7 +165,7 @@ impl AuthoritativeCommitContext {
 
     fn from_merge_execution(
         validation_input: RelationalTransactionValidationInput,
-        merge_plan: crate::mvcc::OwnedMergePlan,
+        merge_plan: crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan,
         diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
         complexity_baseline: Option<
             crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,

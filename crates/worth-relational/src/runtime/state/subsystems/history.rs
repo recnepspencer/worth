@@ -30,6 +30,8 @@ mod history_construction;
 #[path = "history_identity_allocation.rs"]
 mod history_identity_allocation;
 use history_identity_allocation::reserve_identity;
+#[path = "history_committed_receipts.rs"]
+mod history_committed_receipts;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]

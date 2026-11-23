@@ -4,7 +4,7 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 pub(super) fn validate<'a>(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     predecessor: &'a crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
@@ -12,7 +12,7 @@ pub(super) fn validate<'a>(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
-    if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
+    if predecessor.runtime_instance_id != runtime.runtime_instance_id {
         return Err(
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                 "foreign native predecessor publication custody",
@@ -61,7 +61,7 @@ pub(super) fn validate<'a>(
             .iter()
             .any(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
     {
-        let current = runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
+        let current = runtime.current_ownership.as_ref().ok_or_else(|| {
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial("live owned predecessor requires current Native custody")
         })?;
         let canonical = current

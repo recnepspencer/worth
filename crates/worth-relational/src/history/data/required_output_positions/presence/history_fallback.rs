@@ -4,14 +4,14 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputRoutePosition as Position;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 
 pub(crate) fn require_current_owned_route(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     _basis: &AdmittedRelationalBranchBasis,
     meaning: &RequiredOutputPublicationMeaning,
     selected: Option<Position>,
@@ -25,15 +25,12 @@ pub(crate) fn require_current_owned_route(
             RecordRef::Entity(meaning.source_scope),
         ))
     };
-    let envelope = runtime
-        .history
-        .canonical_envelope(publication)
-        .ok_or_else(|| {
-            refuse(Cause::PublicationOwnerUnavailable {
-                publication,
-                owner: meaning.source_scope,
-            })
-        })?;
+    let envelope = history.canonical_envelope(publication).ok_or_else(|| {
+        refuse(Cause::PublicationOwnerUnavailable {
+            publication,
+            owner: meaning.source_scope,
+        })
+    })?;
     let owned = execution
         .run_native_with_checkpoint(|context| {
             for origin in envelope.output_origins() {
