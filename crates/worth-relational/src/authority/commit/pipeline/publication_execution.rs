@@ -6,6 +6,10 @@ mod index_preparation;
 mod phase;
 mod preparation;
 mod prepared_candidate;
+mod root_capture;
+pub(crate) use root_capture::PublicationRootCapture;
+mod phase_owners;
+pub(crate) use phase_owners::PublicationPhaseOwners;
 
 use phase::finalize_publication_phase;
 use preparation::{
@@ -33,9 +37,11 @@ pub(crate) struct PublishedCommitExecution {
 mod published;
 
 /// Required request borrow proves this work belongs to the caller, without retaining it.
-pub(super) fn prepare_commit_publication_execution(
+pub(super) fn prepare_commit_publication_execution<
+    Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture),
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    owners: PublicationPhaseOwners<'_, Attach>,
     assembled: CommitPhaseBacking<AssembledCommitExecution>,
     required_output_publication: Option<
         crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
@@ -82,6 +88,8 @@ pub(super) fn prepare_commit_publication_execution(
             lineage_deferred,
         ) = assembled.into_parts();
         let predecessor_root = std::sync::Arc::clone(selected_branch_state.state().root());
+        let indexes = owners.indexes;
+        let work = owners.work;
         let publication = {
             let recovered_codec_publication_custody = admitted
                 .validation_input()
@@ -91,7 +99,7 @@ pub(super) fn prepare_commit_publication_execution(
             let naming_plan = validation_input.naming_plan();
             prepare_publication_phase(
                 execution,
-                runtime,
+                owners,
                 PreparePublicationPhaseInput {
                     lineage_deferred,
                     naming_plan,
@@ -122,8 +130,8 @@ pub(super) fn prepare_commit_publication_execution(
         };
         let prepared_indexes = index_preparation::prepare(
             execution,
-            &runtime.index_definitions,
-            runtime.commit_work_budget.as_ref(),
+            indexes,
+            work,
             &predecessor_root,
             publication.value().prepared_root(),
             admitted

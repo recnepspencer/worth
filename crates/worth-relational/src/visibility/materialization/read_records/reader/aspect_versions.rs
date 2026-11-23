@@ -31,7 +31,7 @@ mod tests {
     fn assert_native_budget_denials(first: &str, second: &str, sort: bool) {
         let (symbols, versions) = versions(first, second);
         for (memory, work, expected_work) in [(64 * 1024 * 1024, 1, true), (0, 100, false)] {
-            let lease = crate::tests::support::test_execution_authority()
+            let lease = crate::execution::test_authority::test_execution_authority()
                 .request_lease(LeaseRequest {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,

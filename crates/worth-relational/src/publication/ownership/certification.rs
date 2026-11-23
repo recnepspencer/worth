@@ -1,7 +1,11 @@
 //! Closed preflight of an external native-only verb against actual current custody.
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
-use crate::transactions::data::*;
+use crate::transactions::data::intents::mutation_intent::{
+    MutationIntent, RelationMutationIntent, UpdateRelationEndpointsIntent,
+};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::{EntityReference, RecordRef};
 use worth_execution::ExecutionRequest;
 /// Actual private rows decoded by a one-hop custody read, with their source loci.
 #[derive(Debug)]

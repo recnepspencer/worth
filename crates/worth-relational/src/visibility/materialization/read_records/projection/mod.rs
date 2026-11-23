@@ -1,5 +1,4 @@
 mod adjacency_demand;
-mod adjacency_revision;
 mod adjacency_revision_read;
 mod adjacency_support;
 pub use adjacency_support::RelationalAdjacencySupportDenial;

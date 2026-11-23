@@ -169,7 +169,7 @@ pub(super) fn publish(
     } = source.into_inner();
     let mut prepared = publication_execution::prepare_commit_publication_execution(
         request,
-        &context.runtime,
+        context.runtime.publication_phase_owners(),
         assembled,
         inputs.publication,
         inputs.materialization,

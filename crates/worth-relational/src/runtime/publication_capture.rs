@@ -1,87 +1,81 @@
-//! Capture the selected root with the exact admitted execution contracts for this round.
+//! Bind a candidate's native publication inputs and its exact Home inventory.
 use std::sync::Arc;
 
 use super::RelationalPreparationRuntime;
-use crate::branch::{
-    basis::AdmittedRelationalBranchBasis, root_selection::SelectedRelationalBranchState,
+use crate::authority::commit::pipeline::publication_execution::{
+    PublicationPhaseOwners, PublicationRootCapture,
 };
-use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
-use crate::mvcc::publication::authority::{
-    assemble_versioned_publication, PreparedRelationalPublication,
-    VersionedPublicationOriginalInputs,
-};
-use crate::mvcc::publication::validation::{
-    validate_prepared_publication, PublicationRequest, PublicationSequence,
-};
-use crate::mvcc::publication::PublicationPreparationDenial;
+use crate::branch::root::PreparedRelationalBranchRootCapture;
 
 impl RelationalPreparationRuntime {
+    fn root_capture(
+        &self,
+    ) -> PublicationRootCapture<'_, impl FnOnce(&PreparedRelationalBranchRootCapture) + '_> {
+        PublicationRootCapture {
+            history: &self.history,
+            runtime_identity: self.runtime_instance_id(),
+            symbols: &self.services.symbols,
+            planned_schema: self
+                .execution_contracts
+                .as_ref()
+                .map(|contracts| &contracts.schema),
+            storage: &self.config.storage,
+            attach_execution_inventory: |root: &PreparedRelationalBranchRootCapture| {
+                if let Some(contracts) = &self.execution_contracts {
+                    root.root()
+                        .execution_contracts
+                        .set(Arc::clone(contracts))
+                        .expect("prepared Home root has not bound any executor");
+                }
+            },
+        }
+    }
+
+    pub(crate) fn publication_phase_owners(
+        &self,
+    ) -> PublicationPhaseOwners<'_, impl FnOnce(&PreparedRelationalBranchRootCapture) + '_> {
+        PublicationPhaseOwners {
+            root: self.root_capture(),
+            work: self.commit_work_budget.as_ref(),
+            diagnostics: self.preparation_diagnostics(),
+            lineage: self.lineage_preparation_authority(),
+            fallback_schema: &self.config.schema.registry,
+            custom_invariants: &self.schema_contract_runtime.custom_invariant_registries,
+            invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
+            max_patch_records: self.config.publication.policy.max_patch_records_per_commit,
+            mirror: &self.mirror_residency,
+            indexes: &self.index_definitions,
+        }
+    }
+
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn prepare_commit_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit_id: CommitId,
-        commit_reference: RelationalCommitReceipt,
-        binding: &AdmittedRelationalBranchBasis,
-        selected_branch_state: &SelectedRelationalBranchState,
+        commit_id: crate::history::data::CommitId,
+        commit_reference: crate::history::data::RelationalCommitReceipt,
+        binding: &crate::branch::basis::AdmittedRelationalBranchBasis,
+        selected_branch_state: &crate::branch::root_selection::SelectedRelationalBranchState,
         published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    ) -> Result<PreparedRelationalPublication, PublicationPreparationDenial> {
-        let validated = validate_prepared_publication(
-            &self.history,
-            self.runtime_instance_id(),
-            PublicationRequest {
-                commit_id,
-                commit_reference: &commit_reference,
-                binding,
-                envelope: &envelope,
-                sequence: PublicationSequence::Truth,
-            },
-        )?;
-        let root = self.history.prepare_branch_root_capture(
+    ) -> Result<
+        crate::mvcc::publication::authority::PreparedRelationalPublication,
+        crate::mvcc::publication::PublicationPreparationDenial,
+    > {
+        self.root_capture().prepare_commit_publication(
             execution,
-            selected_branch_state.state(),
-            &published_partition_delta,
-            selected_branch_state.root(),
-            Arc::clone(&envelope),
-            &envelope.content,
-            schema_registry,
-            &self.services.symbols,
-            self.execution_contracts
-                .as_ref()
-                .map(|contracts| &contracts.schema),
-        )?;
-        if let Some(contracts) = &self.execution_contracts {
-            root.root()
-                .execution_contracts
-                .set(Arc::clone(contracts))
-                .expect("prepared Home root has not bound any executor");
-        }
-        let mutation = crate::config::data::MutationConfig {
-            cascade_delete_policy: self.config.storage.cascade_delete_policy,
-            adjacency_policy: self.config.storage.adjacency_policy.clone(),
-            cross_context_policy: self.config.storage.cross_context_policy,
-        };
-        assemble_versioned_publication(
-            execution,
+            commit_id,
             commit_reference,
-            validated,
-            root,
+            binding,
+            selected_branch_state,
+            published_partition_delta,
             envelope,
-            self.runtime_instance_id(),
-            Some(VersionedPublicationOriginalInputs {
-                prestate_schema: selected_branch_state
-                    .state()
-                    .root()
-                    .retained_schema_authority(),
-                mutation,
-            }),
+            schema_registry,
             output_positions,
-            None,
         )
-        .map(PreparedRelationalPublication::from_versioned)
     }
 }
 
