@@ -17,13 +17,16 @@
 //! 4. A restored name still live on a record this selection keeps, or restored
 //!    twice, refuses `DuplicateBirth` before any effect.
 //!
-//! Records without a name on this branch are untouched, so unnamed and
+//! 5. A restored record this branch never named, of a kind with an installed
+//!    scheme, refuses `MissingBirth`: it would otherwise go live unnamed.
+//!
+//! Other records without a name on this branch are untouched, so unnamed and
 //! schemaless selections emit exactly the events they emitted before.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::CanonicalOwnedGraphSelection;
-use crate::identity::data::{EntityId, LineageId, RelationId};
+use crate::identity::data::{EntityId, LineageId, RelationId, VersionId};
 use crate::lineage::data::{
     LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
     PersistentNameHolder, PersistentNameIdentity,
@@ -31,7 +34,11 @@ use crate::lineage::data::{
 use crate::runtime::WorkingState;
 
 use super::posture_validation::{mismatch, ValidatedPosture, ValidatedPostureBatch};
-use super::staged_effects::{basis_lineage_id, entity_lineage};
+use super::staged_effects::{
+    basis_lineage_id, entity_lineage, is_created_in_commit, target_kind_id,
+};
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::transactions::data::TransactionCommitError;
 
 /// A named entity kept live in place whose selected slot carries another
 /// lineage; the branch's live lineage is reinstalled so later retirements
@@ -42,22 +49,53 @@ pub(super) struct SelectionLineageRepair {
 }
 
 /// Appends the selection's derived continuity postures to `validated` and
-/// returns the in-place lineage repairs. Pure and fail-closed.
+/// returns the in-place lineage repairs; no selection derives nothing. Pure
+/// and fail-closed.
+///
+/// A selection derives its continuity alone: any caller posture beside it
+/// would claim the same records twice (a doubled `Retire` ends a lineage
+/// twice and poisons the branch name index), so it refuses before effects.
 ///
 /// Complexity: O((E + R) log (E + R + N)) for E selected/current entities,
 /// R relations and N branch names.
-pub(super) fn extend_with_selection(
+pub(super) fn selection_postures(
     staged: &WorkingState,
     basis: &dyn LineageBasisView,
-    selection: &CanonicalOwnedGraphSelection,
+    schema: Option<&RelationalSchemaRegistry>,
+    selection: Option<&CanonicalOwnedGraphSelection>,
     validated: &mut ValidatedPostureBatch,
-) -> Result<Vec<SelectionLineageRepair>, LineageNameDenial> {
-    plan(
-        staged,
-        basis,
-        &SelectionTransition::of(selection),
-        validated,
-    )
+) -> Result<Vec<SelectionLineageRepair>, TransactionCommitError> {
+    let Some(selection) = selection else {
+        return Ok(Vec::new());
+    };
+    let transition = SelectionTransition::of(selection);
+    if let Some(refusal) = caller_plan_refusal(validated, &transition) {
+        return Err(TransactionCommitError::lineage_name_denial(refusal));
+    }
+    plan(staged, basis, schema, &transition, validated)
+        .map_err(TransactionCommitError::lineage_name_denial)
+}
+
+fn caller_plan_refusal(
+    validated: &ValidatedPostureBatch,
+    transition: &SelectionTransition,
+) -> Option<LineageNameDenial> {
+    if validated.postures.is_empty() && validated.minted_births.is_empty() {
+        return None;
+    }
+    let target = validated
+        .claimed_basis_targets
+        .iter()
+        .chain(&validated.claimed_created_targets)
+        .chain(&transition.retired)
+        .chain(&transition.restored)
+        .next()
+        .copied()?;
+    Some(mismatch(
+        LineagePostureKind::Restore,
+        target,
+        "an owned-graph selection derives its own continuity and admits no naming plan",
+    ))
 }
 
 /// The record transitions one selection performs, read from its canonical
@@ -111,6 +149,7 @@ impl SelectionTransition {
 pub(super) fn plan(
     staged: &WorkingState,
     basis: &dyn LineageBasisView,
+    schema: Option<&RelationalSchemaRegistry>,
     transition: &SelectionTransition,
     validated: &mut ValidatedPostureBatch,
 ) -> Result<Vec<SelectionLineageRepair>, LineageNameDenial> {
@@ -138,6 +177,17 @@ pub(super) fn plan(
     for &target in &transition.restored {
         let holder = target.to_holder();
         let Some(name) = basis.holder_name(&holder) else {
+            // A record this branch never named may still be of a schemed
+            // kind (selected from a sibling branch): it would go live
+            // unnamed, so it refuses like any unnamed schemed birth.
+            if let Some(scheme_id) = target_kind_id(staged, target).and_then(|kind| {
+                schema.and_then(|schema| schema.scheme_id_for_kind(target.subject_kind(), kind))
+            }) {
+                return Err(LineageNameDenial::MissingBirth {
+                    target,
+                    scheme_id: scheme_id.to_owned(),
+                });
+            }
             continue;
         };
         if let Some(first) = restored_names.insert(name, holder.clone()) {
@@ -227,6 +277,22 @@ pub(super) fn plan(
         }
     }
     Ok(repairs)
+}
+
+/// The entity an allocating event must name explicitly: one its commit did
+/// not create (a selection rematerialized it at its original identity), so
+/// no `Created` patch can bind the allocation. Created entities keep binding
+/// by allocation order, leaving their events byte-identical.
+///
+/// Complexity: O(1).
+pub(super) fn rematerialized_entity(
+    staged: &WorkingState,
+    version: VersionId,
+    entity_node: Option<(EntityId, LineageId, bool)>,
+) -> Option<EntityId> {
+    let (entity_id, _, _) = entity_node?;
+    (!is_created_in_commit(staged, LineageRecordTarget::Entity(entity_id), version))
+        .then_some(entity_id)
 }
 
 fn live_name(

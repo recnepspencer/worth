@@ -63,8 +63,11 @@ impl PersistentNameBranchIndex {
                 Some(_) => return Err(PersistentNameIndexDenial::ConflictingHolder { lineage }),
                 None => {
                     self.lineage_holders.insert(lineage, holder);
-                    let prior = self.holder_lineages.insert(holder, lineage);
-                    journal.bound_lineage_holder(lineage, prior);
+                    self.holder_lineages
+                        .entry(holder)
+                        .or_default()
+                        .push((batch.commit, lineage));
+                    journal.bound_lineage_holder(lineage);
                 }
             }
         }

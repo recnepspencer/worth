@@ -5,42 +5,28 @@ use std::collections::BTreeMap;
 
 use crate::capabilities::SchemaSource;
 use crate::history::data::RelationalCommitReceipt;
-use crate::identity::data::{EntityId, LineageId, RelationId};
+use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::authority::LineagePreparationAuthority;
 use crate::lineage::data::{
     FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageDecisionKind, LineageDecisionLog, LineageDecisionRecord, LineageEventKind,
-    LineageEventRecord, LineageFinalizationArtifact, LineageNode, LineagePostureClaim,
-    LineageRecordTarget, LineageSubject, PersistentNameBirthRecord, PersistentNameIdentity,
-    PreparedLineageFinalization,
+    LineageFinalizationArtifact, LineageNode, LineagePostureClaim, LineageRecordTarget,
+    PersistentNameBirthRecord, PreparedLineageFinalization,
 };
 use crate::runtime::{LineageIdentityAllocator, WorkingState};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::{MutationIntent, RecordRef, TransactionCommitError};
 
 use super::posture_drafts::{build_posture_drafts, PostureEventDraft};
+use super::posture_events::AssignedPostureEvent;
 use super::posture_validation::{validate_commit_postures, ValidatedMergeTarget};
-use super::selection_continuity::extend_with_selection;
+use super::selection_continuity::{rematerialized_entity, selection_postures};
 use super::staged_effects::{entity_lineage, install_lineage_id, lineage_error};
 use crate::history::data::CanonicalOwnedGraphSelection;
 
-struct AssignedPostureEvent {
-    kind: LineageEventKind,
-    decision_kind: LineageDecisionKind,
-    subject: LineageSubject,
-    sources: Vec<LineageId>,
-    targets: Vec<LineageId>,
-    entity_node: Option<(EntityId, LineageId, bool)>,
-    relation_lineage: Option<(RelationId, LineageId)>,
-    name_birth: Option<PersistentNameBirthRecord>,
-    kept_name: Option<PersistentNameIdentity>,
-}
-
 impl<'runtime> LineagePreparationAuthority<'runtime> {
-    /// Production commit-finalization entry: uses Relational's installed
-    /// schema registry (never caller-supplied registries), enforces fail-closed
-    /// `MissingBirth` on schemed kinds, and queries Relational's own branch
-    /// naming state via a zero-clone read-lock guard.
+    /// Production entry over Relational's own installed schema (fail-closed
+    /// `MissingBirth`) and branch naming state (zero-clone read guard).
     pub(super) fn finalize_commit_with_installed_schema(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -109,15 +95,22 @@ where
         postures,
     )
     .map_err(TransactionCommitError::lineage_name_denial)?;
-    let repairs = match graph_selection {
-        Some(selection) => extend_with_selection(staged, basis, selection, &mut validated)
-            .map_err(TransactionCommitError::lineage_name_denial)?,
-        None => Vec::new(),
-    };
-
-    let (drafts, required_lineage_ids) =
-        build_posture_drafts(staged, commit, merged_plan, changed_records, basis, &validated)
-            .map_err(TransactionCommitError::lineage_name_denial)?;
+    let repairs = selection_postures(
+        staged,
+        basis,
+        schema_registry,
+        graph_selection,
+        &mut validated,
+    )?;
+    let (drafts, required_lineage_ids) = build_posture_drafts(
+        staged,
+        commit,
+        merged_plan,
+        changed_records,
+        basis,
+        &validated,
+    )
+    .map_err(TransactionCommitError::lineage_name_denial)?;
 
     let lineage_width = u64::try_from(required_lineage_ids)
         .map_err(|_| lineage_error("lineage id batch capacity exceeded u64".to_owned()))?;
@@ -166,21 +159,12 @@ where
         let event_id = event_start
             .checked_add(offset)
             .ok_or_else(|| lineage_error("lineage event id allocator exhausted".to_owned()))?;
-        let event = LineageEventRecord {
-            event_id,
-            commit: commit.clone(),
-            branch_id: commit.branch_id.clone(),
-            kind: item.kind,
-            sources: item.sources,
-            targets: item.targets,
-            subject: item.subject,
-            name_birth: item.name_birth,
-            kept_name: item.kept_name,
-            relation_id: item.relation_lineage.map(|(relation_id, _)| relation_id),
-        };
+        let entity_id = rematerialized_entity(staged, commit.version_id, item.entity_node);
+        let decision_kind = item.decision_kind.clone();
+        let event = item.into_record(event_id, commit, entity_id);
         decisions.push(LineageDecisionRecord {
             branch_id: event.branch_id().clone(),
-            kind: item.decision_kind,
+            kind: decision_kind,
             event_id: Some(event.event_id()),
             sources: event.sources().to_vec(),
             targets: event.targets().to_vec(),

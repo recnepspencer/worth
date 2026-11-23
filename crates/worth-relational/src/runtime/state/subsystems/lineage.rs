@@ -76,14 +76,12 @@ impl LineageSubsystem {
             };
             let mut state = self.state.write();
             for admitted in node.page_nodes() {
+                // A lineage binds one entity forever; an entity may hold
+                // several lineages across retire/restore epochs.
                 if state
                     .nodes
                     .get(&admitted.lineage_id())
                     .is_some_and(|prior| prior != admitted)
-                    || state
-                        .indexed_lineage_for_entity(admitted.entity_id())
-                        .0
-                        .is_some_and(|prior| prior != admitted.lineage_id())
                 {
                     return Err(node.reject_binding());
                 }

@@ -321,8 +321,9 @@ schema using `worth_query_decl::facade::application_naming`:
   role with `WorthQueryApplicationEntitySeed::persistent_name(role)` (or
   `persistent_name_with_discriminator(role, &discriminator)`; relation seeds
   use `WorthQueryApplicationRelationSeed::persistent_name(role)`). The seed's
-  application key is its authored occurrence. A schemed seed without a name,
-  or a named seed of an unschemed kind, refuses installation.
+  application key is its authored occurrence. Relation seeds also offer
+  `persistent_name_with_discriminator`. A schemed seed without a name, or a
+  named seed of an unschemed kind, refuses installation.
 - **Installed operations do not mint names yet.** An installed operation that
   creates a record of a schemed kind refuses `MissingBirth` with zero effects:
   the declaration language does not yet say which authored occurrence an
@@ -401,15 +402,24 @@ its exact original full-generation identity, appends `Restore` from its
 name's last retired lineage onto a fresh lineage; and a restored name still
 live on a record the selection retires continues in place (a kept-name
 `Create` plus `Replace`). A restored name still live on a record the
-selection keeps refuses `DuplicateBirth` before any effect. No earlier
+selection keeps refuses `DuplicateBirth` before any effect, a selected record
+this branch never named whose kind has an installed scheme (selected from a
+sibling branch) refuses `MissingBirth`, and a selection carrying any caller
+naming plan refuses admission (`TargetNotPristine`). A record keeps every
+lineage it was bound to, so a read pinned before the restore still sees the
+lineage live (or ended) at its basis, and checkpoint capture, validation,
+expanded restore and cold-directory restore bind each restore epoch to its
+exact entity (the event names it, since no `Created` patch does). No earlier
 lineage event is edited, so a held name resolves to the member live at the
 checked-out node, `Retired` where the node deleted it, and a handle to a
 record the node does not hold stays refused. Unnamed records emit exactly the
 events they did before. Names are derived from the committed events alone, so
 an in-process rebuild of the lineage indexes reproduces them; durable journal
 replay of an owned-graph selection remains refused
-(`UnsupportedOwnedGraphSelectionReplay`). Court:
-[installed history continuity](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/history.rs).
+(`UnsupportedOwnedGraphSelectionReplay`). Courts:
+[installed history continuity](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/history.rs),
+[Native selection naming](../crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/named_selection/mod.rs), and
+[pinned restore epochs](../crates/worth-relational/src/tests/lineage/name_epoch_restore.rs).
 
 The runnable Slice 1B counterparts are the
 [end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),

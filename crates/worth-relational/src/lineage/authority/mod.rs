@@ -7,6 +7,7 @@ mod name_readmission;
 mod posture_allocation_drafts;
 mod posture_continuity;
 mod posture_drafts;
+mod posture_events;
 mod posture_finalization;
 mod posture_merge_validation;
 mod posture_split_validation;

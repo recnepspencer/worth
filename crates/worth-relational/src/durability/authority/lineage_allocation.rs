@@ -30,6 +30,8 @@ pub(crate) enum LineageAllocationRefusal {
     MalformedRestore { event_id: u64 },
     /// An allocating event names a commit other than its envelope's.
     ForeignCommit { event_id: u64 },
+    /// An explicit entity binding on a relation allocation.
+    MalformedEntityBinding { event_id: u64 },
     /// Entity allocations and created entities are not one-to-one.
     EntityAllocationCountMismatch {
         allocations: usize,
@@ -48,6 +50,9 @@ impl LineageAllocationRefusal {
             ),
             Self::ForeignCommit { event_id } => format!(
                 "commit {commit_id} allocating lineage event {event_id} names another commit"
+            ),
+            Self::MalformedEntityBinding { event_id } => format!(
+                "commit {commit_id} relation lineage event {event_id} names an entity"
             ),
             Self::EntityAllocationCountMismatch {
                 allocations,
@@ -146,13 +151,17 @@ impl<'commit> CommitAllocationView<'commit> {
 /// Commit finalization emits allocating events in ascending record-target
 /// order, so the k-th entity allocation in event order binds the k-th
 /// created entity in ascending `EntityId` order. This holds for `Create`
-/// and `Restore` alike and never depends on patch order.
+/// and `Restore` alike and never depends on patch order. An allocation onto
+/// an entity the commit did not create (a selection restore at the original
+/// identity) names its entity on the event and binds directly; it can never
+/// also be one of the created entities.
 ///
 /// Complexity: O(events + created entities log created entities).
 pub(crate) fn entity_allocation_bindings(
     view: &CommitAllocationView<'_>,
 ) -> Result<Vec<(LineageId, EntityId)>, LineageAllocationRefusal> {
     let mut entity_lineages = Vec::new();
+    let mut bound = Vec::new();
     for event in view.events {
         let Some(allocation) = allocated_lineage(event)? else {
             continue;
@@ -162,8 +171,17 @@ pub(crate) fn entity_allocation_bindings(
                 event_id: event.event_id(),
             });
         }
-        if allocation.subject == LineageSubject::Entity {
-            entity_lineages.push(allocation.lineage);
+        match (allocation.subject, event.entity_id()) {
+            (LineageSubject::Entity, Some(entity_id)) => {
+                bound.push((allocation.lineage, entity_id))
+            }
+            (LineageSubject::Entity, None) => entity_lineages.push(allocation.lineage),
+            (LineageSubject::Relation, Some(_)) => {
+                return Err(LineageAllocationRefusal::MalformedEntityBinding {
+                    event_id: event.event_id(),
+                })
+            }
+            (LineageSubject::Relation, None) => {}
         }
     }
     let mut created_entities = view.created_entities.clone();
@@ -174,5 +192,16 @@ pub(crate) fn entity_allocation_bindings(
             created_entities: created_entities.len(),
         });
     }
-    Ok(entity_lineages.into_iter().zip(created_entities).collect())
+    if bound
+        .iter()
+        .any(|(_, entity)| created_entities.binary_search(entity).is_ok())
+    {
+        return Err(LineageAllocationRefusal::EntityAllocationCountMismatch {
+            allocations: entity_lineages.len() + bound.len(),
+            created_entities: created_entities.len(),
+        });
+    }
+    let mut bindings: Vec<_> = entity_lineages.into_iter().zip(created_entities).collect();
+    bindings.extend(bound);
+    Ok(bindings)
 }

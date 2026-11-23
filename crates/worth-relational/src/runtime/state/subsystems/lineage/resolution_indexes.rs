@@ -15,9 +15,15 @@ pub(super) struct LineageResolutionIndexes {
 }
 
 impl LineageResolutionIndexes {
+    /// Keeps an entity's newest lineage: a restore rebinds the exact record
+    /// to a fresh, strictly greater lineage, and cold demand may admit its
+    /// epochs in any order.
     pub(super) fn record_node(&mut self, node: &LineageNode) {
-        self.entity_lineages
-            .insert(node.entity_id(), node.lineage_id());
+        let newest = self
+            .entity_lineages
+            .get(&node.entity_id())
+            .map_or(node.lineage_id(), |prior| (*prior).max(node.lineage_id()));
+        self.entity_lineages.insert(node.entity_id(), newest);
     }
 
     pub(super) fn append_event(&mut self, position: usize, event: &LineageEventRecord) {

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::{BranchId, RelationalCommitReceipt};
-use crate::identity::data::{LineageId, RelationId};
+use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{PersistentNameBirthRecord, PersistentNameIdentity};
 
 /// Subject class whose continuity a [`LineageEventRecord`] records.
@@ -75,6 +75,12 @@ pub struct LineageEventRecord {
     pub(crate) kept_name: Option<PersistentNameIdentity>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) relation_id: Option<RelationId>,
+    /// The exact entity an allocating event binds when that entity was not
+    /// created by its commit: a history selection restores a record at its
+    /// original identity onto a fresh lineage, which no `Created` patch
+    /// names. Absent on every other event, so their bytes never change.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) entity_id: Option<EntityId>,
 }
 
 impl LineageEventRecord {
@@ -116,5 +122,9 @@ impl LineageEventRecord {
 
     pub fn relation_id(&self) -> Option<RelationId> {
         self.relation_id
+    }
+
+    pub fn entity_id(&self) -> Option<EntityId> {
+        self.entity_id
     }
 }

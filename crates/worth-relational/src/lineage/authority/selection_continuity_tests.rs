@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::{plan, SelectionTransition};
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
-use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, VersionId};
+use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
 use crate::lineage::authority::posture_validation::{ValidatedPosture, ValidatedPostureBatch};
 use crate::lineage::data::{
     LineageBasisView, LineageNameDenial, LineageRecordTarget, LineageSubject, PersistentNameHolder,
@@ -117,7 +117,14 @@ fn a_retired_named_record_retires_its_live_branch_lineage() {
     let mut basis = Basis::default();
     basis.live(PersistentNameHolder::Entity(ids[0]), name(1), 40);
     let mut batch = empty_batch();
-    plan(&staged, &basis, &transition(&ids, &[], &[]), &mut batch).unwrap();
+    plan(
+        &staged,
+        &basis,
+        None,
+        &transition(&ids, &[], &[]),
+        &mut batch,
+    )
+    .unwrap();
     assert!(
         matches!(
             batch.postures.as_slice(),
@@ -136,7 +143,14 @@ fn a_restored_record_restores_its_names_last_retired_lineage() {
     let mut basis = Basis::default();
     basis.retired(PersistentNameHolder::Entity(ids[0]), name(2), 41);
     let mut batch = empty_batch();
-    plan(&staged, &basis, &transition(&[], &ids, &[]), &mut batch).unwrap();
+    plan(
+        &staged,
+        &basis,
+        None,
+        &transition(&[], &ids, &[]),
+        &mut batch,
+    )
+    .unwrap();
     assert!(matches!(
         batch.postures.as_slice(),
         [ValidatedPosture::Restore { source_lineage: LineageId(41), name: n, target }]
@@ -157,6 +171,7 @@ fn a_name_live_on_a_record_the_selection_retires_continues_in_place() {
     plan(
         &staged,
         &basis,
+        None,
         &transition(&[regenerated], &[restored], &[]),
         &mut batch,
     )
@@ -182,6 +197,7 @@ fn a_restored_name_still_live_on_a_kept_record_refuses_duplicate_birth() {
     let refused = plan(
         &staged,
         &basis,
+        None,
         &transition(&[], &ids[..1], &ids[1..]),
         &mut empty_batch(),
     );
@@ -201,6 +217,7 @@ fn restoring_one_name_twice_refuses_duplicate_birth() {
     let refused = plan(
         &staged,
         &basis,
+        None,
         &transition(&[], &ids, &[]),
         &mut empty_batch(),
     );
@@ -219,6 +236,7 @@ fn unnamed_records_are_untouched_and_kept_named_slots_are_repaired() {
     let repairs = plan(
         &staged,
         &basis,
+        None,
         &transition(&ids[..1], &ids[1..2], &ids[2..]),
         &mut batch,
     )
@@ -227,5 +245,57 @@ fn unnamed_records_are_untouched_and_kept_named_slots_are_repaired() {
     assert!(matches!(
         repairs.as_slice(),
         [repair] if repair.entity_id == ids[2] && repair.lineage_id == LineageId(80)
+    ));
+}
+
+#[test]
+fn relations_retire_and_restore_by_their_own_branch_lineage() {
+    let (staged, _) = staged_with(0);
+    let (retired, restored) = (
+        RelationId::new(PartitionId::main(), 3, 1),
+        RelationId::new(PartitionId::main(), 4, 1),
+    );
+    let mut basis = Basis::default();
+    basis.live(PersistentNameHolder::Relation(retired), name(7), 90);
+    basis
+        .retired
+        .insert(name(8), (LineageSubject::Relation, LineageId(91)));
+    basis
+        .names
+        .insert(PersistentNameHolder::Relation(restored), name(8));
+    let mut batch = empty_batch();
+    let transition = SelectionTransition {
+        retired: vec![LineageRecordTarget::Relation(retired)],
+        restored: vec![LineageRecordTarget::Relation(restored)],
+        kept_entities: Vec::new(),
+    };
+    plan(&staged, &basis, None, &transition, &mut batch).unwrap();
+    assert!(batch.postures.iter().any(|posture| matches!(
+        posture,
+        ValidatedPosture::Restore { source_lineage: LineageId(91), target, .. }
+            if *target == LineageRecordTarget::Relation(restored)
+    )));
+    assert!(batch.postures.iter().any(|posture| matches!(
+        posture,
+        ValidatedPosture::Retire {
+            source_lineage: LineageId(90),
+            subject: LineageSubject::Relation,
+            ..
+        }
+    )));
+}
+
+#[test]
+fn any_caller_posture_beside_a_selection_refuses() {
+    let (_, ids) = staged_with(1);
+    let mut batch = empty_batch();
+    assert!(super::caller_plan_refusal(&batch, &transition(&ids, &[], &[])).is_none());
+    batch.postures.push(ValidatedPosture::Preserve);
+    batch
+        .claimed_basis_targets
+        .insert(LineageRecordTarget::Entity(ids[0]));
+    assert!(matches!(
+        super::caller_plan_refusal(&batch, &transition(&ids, &[], &[])),
+        Some(LineageNameDenial::LineagePostureMismatch { .. })
     ));
 }

@@ -48,6 +48,7 @@ pub(super) fn require_pristine(
         || transaction.next_savepoint_ordinal != 1
         || transaction.last_merged_plan.is_some()
         || transaction.pending_symbols.is_some()
+        || transaction.naming_plan.is_some()
         || transaction.footprint.reads().len() != 0
         || transaction.footprint.writes().len() != 0
         || transaction.footprint.write_partitions().len() != 0

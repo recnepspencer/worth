@@ -9,6 +9,7 @@ mod name_durable_references;
 mod name_durable_reopen;
 mod name_durable_wire_order;
 mod name_durable_world;
+mod name_epoch_restore;
 mod name_event_fixtures;
 mod name_group_world;
 mod name_history_continuity;

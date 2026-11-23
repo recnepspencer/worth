@@ -4,6 +4,8 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_naming::ApplicationNameDiscriminator;
+mod seed_name;
+pub(super) use seed_name::SeedPersistentName;
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationRelationRef, ApplicationScalarValueBinding, ApplicationSchema,
     ApplicationValueEncodeDenial,
@@ -30,40 +32,6 @@ pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
     fields: Vec<EncodedSeedField>,
     name: Option<SeedPersistentName>,
-}
-
-/// The declared role (and optional typed discriminator) a seed's record is
-/// born under; the seed's application key is its authored occurrence.
-pub(super) struct SeedPersistentName {
-    pub(super) role: String,
-    pub(super) discriminator: Vec<u8>,
-    pub(super) references: Vec<[u8; 32]>,
-}
-
-impl SeedPersistentName {
-    fn plain(role: &str) -> Self {
-        Self {
-            role: role.to_owned(),
-            discriminator: Vec::new(),
-            references: Vec::new(),
-        }
-    }
-
-    fn discriminated<D: ApplicationNameDiscriminator>(role: &str, discriminator: &D) -> Self {
-        let (discriminator, references) = discriminator.canonical_bytes_with_references();
-        Self {
-            role: role.to_owned(),
-            discriminator,
-            references,
-        }
-    }
-
-    fn retained_bytes(&self) -> usize {
-        self.role
-            .capacity()
-            .saturating_add(self.discriminator.capacity())
-            .saturating_add(self.references.capacity().saturating_mul(32))
-    }
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
@@ -232,6 +200,16 @@ impl<Schema, Relation, From, To> WorthQueryApplicationRelationSeed<Schema, Relat
     /// born under `role` with the seed key as its authored occurrence.
     pub fn persistent_name(mut self, role: &str) -> Self {
         self.name = Some(SeedPersistentName::plain(role));
+        self
+    }
+
+    /// As [`Self::persistent_name`], distinguished by a typed discriminator.
+    pub fn persistent_name_with_discriminator<D: ApplicationNameDiscriminator>(
+        mut self,
+        role: &str,
+        discriminator: &D,
+    ) -> Self {
+        self.name = Some(SeedPersistentName::discriminated(role, discriminator));
         self
     }
 }

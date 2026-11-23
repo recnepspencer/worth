@@ -62,15 +62,10 @@ pub(super) fn readmit(
     {
         return Err(unavailable(Cause::Damaged));
     }
-    let mut entities = [None; 256];
-    for (slot, node) in page.nodes.iter().enumerate() {
-        entities[slot] = Some(node.entity_id());
-    }
-    let entities = &mut entities[..page.nodes.len()];
-    entities.sort_unstable();
-    if entities.windows(2).any(|pair| pair[0] == pair[1]) {
-        return Err(unavailable(Cause::Damaged));
-    }
+    // One entity may hold several lineages across retire/restore epochs (a
+    // history selection restores it at its original identity onto a fresh
+    // lineage); the strictly ascending lineage order above still refuses one
+    // lineage bound twice within a page.
     Ok(page)
 }
 
