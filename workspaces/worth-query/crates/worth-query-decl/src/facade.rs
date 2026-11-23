@@ -19,11 +19,18 @@
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_history, application_identity,
-    application_naming, application_operation, application_program, application_query,
-    application_resource, application_schema, authentication, authoring, binding, branch,
-    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
-    schema_view, typed, validation, view_declaration,
+    application_operation, application_program, application_query, application_resource,
+    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
+    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
+    view_declaration,
 };
+/// Persistent naming declarations, with the derives of the two traits an
+/// application implements: `WorthQueryNameRole` and
+/// `ApplicationNameDiscriminator` each name both the trait and its derive.
+pub mod application_naming {
+    pub use worth_query_declaration::facade::application_naming::*;
+    pub use worth_query_macros::{ApplicationNameDiscriminator, WorthQueryNameRole};
+}
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_capability,
     worth_query_capability_context, worth_query_capability_context_entity_slot,

@@ -11,6 +11,50 @@
 //! let _forged: WorthQueryName<Face> = WorthQueryName::from_bytes([7u8; 32]);
 //! ```
 //!
+//! A native record handle is never a discriminator field, so no name can
+//! depend on allocation:
+//!
+//! ```compile_fail,E0277
+//! use worth_query_declaration::facade::application_naming::ApplicationNameDiscriminatorEncoder;
+//! use worth_relational::facade::identity::EntityId;
+//! fn smuggle(encoder: &mut ApplicationNameDiscriminatorEncoder, record: EntityId) {
+//!     encoder.field("record", &record);
+//! }
+//! ```
+//!
+//! A birth under a typed role is born under the role's declared name; an
+//! indexed role's index tells its repetitions apart:
+//!
+//! ```
+//! use worth_query_declaration::facade::application_naming::{
+//!     OccurrencePath, OccurrencePathDenial, WorthQueryNameRole,
+//! };
+//! use worth_query_execution_naming::facade::WorthQueryOutputBirth;
+//!
+//! #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+//! struct Instance(u32);
+//! impl WorthQueryNameRole for Instance {
+//!     const ROLE_ORDER: &'static [&'static str] = &["Instance"];
+//!     const ROLE_DEPENDENCIES: &'static [(&'static str, &'static str)] = &[];
+//!     fn role_name(&self) -> &'static str {
+//!         "Instance"
+//!     }
+//!     fn role_index(&self) -> Option<u32> {
+//!         Some(self.0)
+//!     }
+//! }
+//!
+//! let occurrence = OccurrencePath::root("pattern_1")?.index("instance", 10)?;
+//! let (second, tenth) = (
+//!     WorthQueryOutputBirth::of_role(&occurrence, Instance(2)),
+//!     WorthQueryOutputBirth::of_role(&occurrence, Instance(10)),
+//! );
+//! assert_eq!(tenth.occurrence_key(), "pattern_1/instance[10]");
+//! assert_eq!((second.role_path(), tenth.role_path()), ("Instance", "Instance"));
+//! assert!(second.has_discriminator() && second != tenth);
+//! # Ok::<(), OccurrencePathDenial>(())
+//! ```
+//!
 //! ```compile_fail,E0624
 //! use worth_query_execution_naming::facade::AdmittedCommitNames;
 //! use worth_relational::facade::runtime::RelationalRuntime;

@@ -73,7 +73,7 @@ use super::{validate_discriminator_identity, ApplicationNameDiscriminator, Erase
 /// assert_eq!(discriminator.as_bytes(), Side(1).canonical_bytes().as_slice());
 /// let _check: fn(WorthQueryName<Face>, WorthQueryName<Face>) = select;
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NameSelection {
     Exact,
     AllDescendants,
@@ -124,7 +124,7 @@ impl NameSelection {
 
 /// Sorted, deduplicated, nonempty carriers of a
 /// [`NameSelection::BoundedByCarriers`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NameCarrierSet {
     carriers: Vec<ErasedWorthQueryName>,
 }
@@ -138,7 +138,7 @@ impl NameCarrierSet {
 
 /// Canonical discriminator bytes of a [`NameSelection::KeepSide`], produced
 /// only by [`NameSelection::keep_side`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NameSideDiscriminator {
     canonical: Vec<u8>,
 }

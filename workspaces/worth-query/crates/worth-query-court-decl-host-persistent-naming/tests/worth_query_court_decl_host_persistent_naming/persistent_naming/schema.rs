@@ -2,6 +2,8 @@ use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod records;
 pub use records::*;
+mod roles;
+pub use roles::{MemberRole, SeamRole};
 #[derive(Clone, Copy, Debug)]
 pub struct Schema;
 impl Fragment for Schema {
@@ -57,23 +59,18 @@ impl Registration<Schema> for Registrations {
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
         use worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder;
-        let scheme = ApplicationNameSchemeBuilder::<Schema, Member>::new(MEMBER_SCHEME)
-            // A piece may tell itself apart by a member or a seam authored
-            // beside it; the seam scheme sorts after this one.
-            .role_order(&["authored", "seam", "piece", "merged"])
-            .role_depends_on("piece", "authored")
-            .role_depends_on("piece", "seam")
-            .split_discriminator::<outputs::MemberCut>()
-            .require_authored_occurrence()
-            .build()
-            .expect("the member scheme is well-formed");
-        let seam = ApplicationNameSchemeBuilder::<Schema, Seam>::for_relation(
-            SEAM_SCHEME,
-            Seam::reference(),
-        )
-        // A seam may tell itself apart by a member authored beside it.
-        .role_order(&["authored", "seam", "seam_piece"])
-        .role_depends_on("seam", "authored")
+        // Role order and dependencies come from the role types.
+        let scheme =
+            ApplicationNameSchemeBuilder::<Schema, Member>::from_roles::<MemberRole>(MEMBER_SCHEME)
+                .split_discriminator::<outputs::MemberCut>()
+                .require_authored_occurrence()
+                .build()
+                .expect("the member scheme is well-formed");
+        let seam = ApplicationNameSchemeBuilder::<Schema, Seam>::for_relation_from_roles::<
+            SeamRole,
+            _,
+            _,
+        >(SEAM_SCHEME, Seam::reference())
         .split_discriminator::<outputs::SeamSide>()
         .require_authored_occurrence()
         .build()

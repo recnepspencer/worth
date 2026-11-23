@@ -6,15 +6,16 @@
 //! later-role output may reference a name born by the same commit.
 use super::*;
 use probe::seams::SeamObservation;
-use worth_query_decl::facade::application_naming::NameSelection;
+use worth_query_decl::facade::application_naming::{ApplicationNameDiscriminator, NameSelection};
 use worth_query_host::facade::application_naming::{
-    LineageNameDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
+    LineageNameDenial, NameRef, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
     WorthQuerySameCommitName,
 };
 
 pub mod sculpt;
 use sculpt::{Held, HeldSeam, Keeper, Plan, SeamKeeper, Step};
 
+mod ergonomics;
 mod history;
 mod invalidation;
 mod lifecycle;
@@ -93,6 +94,27 @@ worth_query_name_discriminator! {
         identity: "worth.tests.persistent-naming.seam-side.v1",
         fields: [index]
     }
+}
+
+/// Which side of a cut a piece lies on.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.cut-side.v1")]
+pub enum CutSide {
+    Positive,
+    Negative,
+}
+
+/// A piece's side of a cut by another member, optionally along a seam.
+/// Declared once: the cutter and the seam may each have been named by an
+/// earlier commit or be named by this one.
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.sided-cut.v1")]
+pub enum SidedCut {
+    By {
+        cutter: NameRef<Member>,
+        side: CutSide,
+        along: Option<NameRef<Seam>>,
+    },
 }
 
 pub type Outcome = WorthQueryApplicationMutationOutcome<edit::Denial, edit::Edited>;

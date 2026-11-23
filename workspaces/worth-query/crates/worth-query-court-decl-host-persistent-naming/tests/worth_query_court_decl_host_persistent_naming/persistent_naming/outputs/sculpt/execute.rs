@@ -96,6 +96,24 @@ pub(super) fn execute(
                 let cut = outputs::CutAlong { side: *side, seam };
                 writer.name_created_entity(&members[key], birth.clone().with_discriminator(&cut))?
             }
+            Step::BirthSided {
+                key,
+                birth,
+                side,
+                of,
+                along,
+            } => {
+                let along = match along {
+                    Some(seam) => Some(writer.same_commit_relation_name(&seams[seam])?.into()),
+                    None => None,
+                };
+                let cut = outputs::SidedCut::By {
+                    cutter: writer.same_commit_entity_name(&members[of])?.into(),
+                    side: *side,
+                    along,
+                };
+                writer.name_created_entity(&members[key], birth.clone().with_discriminator(&cut))?
+            }
             Step::SeamBirthOf {
                 key,
                 birth,
