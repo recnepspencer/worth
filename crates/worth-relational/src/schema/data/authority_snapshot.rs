@@ -4,7 +4,11 @@ use sha2::{Digest, Sha256};
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::identity::data::KindId;
 
-use super::{AspectContractPlanRevision, RelationIntegrityPlanRevision, SchemaId, SchemaVersionId};
+use super::{
+    AspectContractPlanRevision, RelationIntegrityPlanRevision,
+    SchemaAuthorityKindNamingBindingSnapshot, SchemaAuthorityNamingSchemeSnapshot, SchemaId,
+    SchemaVersionId,
+};
 
 mod carried_projection;
 mod encoding;
@@ -25,6 +29,13 @@ pub struct SchemaAuthoritySnapshotParts {
     pub projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
     /// Required even when no content format is installed.
     pub content_formats: crate::content::RelationalContentSchemaSnapshot,
+    /// Installed persistent-name scheme contracts (omitted when empty so
+    /// schemaless roots preserve bit-exact digests and positional wire bytes).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub persistent_name_schemes: Vec<SchemaAuthorityNamingSchemeSnapshot>,
+    /// Installed kind-to-scheme bindings (omitted when empty).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub kind_name_schemes: Vec<SchemaAuthorityKindNamingBindingSnapshot>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -74,6 +85,22 @@ impl SchemaAuthoritySnapshotParts {
                     .map(|domain| domain.owned_bytes() as u64)
                     .sum(),
             );
+        let naming_scheme_storage = (self.persistent_name_schemes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<SchemaAuthorityNamingSchemeSnapshot>() as u64)
+            .saturating_add(
+                self.persistent_name_schemes
+                    .iter()
+                    .map(SchemaAuthorityNamingSchemeSnapshot::owned_allocation_capacity_bytes)
+                    .sum(),
+            );
+        let naming_binding_storage = (self.kind_name_schemes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<SchemaAuthorityKindNamingBindingSnapshot>() as u64)
+            .saturating_add(
+                self.kind_name_schemes
+                    .iter()
+                    .map(SchemaAuthorityKindNamingBindingSnapshot::owned_allocation_capacity_bytes)
+                    .sum(),
+            );
         self.entity_kinds
             .iter()
             .fold(
@@ -81,7 +108,9 @@ impl SchemaAuthoritySnapshotParts {
                     .saturating_add(relation_storage)
                     .saturating_add(derived_storage)
                     .saturating_add(domain_storage)
-                    .saturating_add(self.content_formats.owned_bytes()),
+                    .saturating_add(self.content_formats.owned_bytes())
+                    .saturating_add(naming_scheme_storage)
+                    .saturating_add(naming_binding_storage),
                 |bytes, kind| bytes.saturating_add(kind.kind_name.capacity() as u64),
             )
             .saturating_add(
@@ -180,6 +209,12 @@ fn digest_parts_for_compilation(
         hasher.update(field.field_meaning);
         hasher.update(field.format);
     }
+    super::naming_schemes::update_naming_layout_digest(
+        &mut hasher,
+        b"worth.native.naming-schema.v1\0",
+        &snapshot.persistent_name_schemes,
+        &snapshot.kind_name_schemes,
+    );
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];
     out.copy_from_slice(&digest);

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
 
@@ -49,7 +49,7 @@ impl fmt::Debug for PersistentNameIdentity {
 }
 
 /// Subject class governed by a persistent name scheme in Relational.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum PersistentNameSubjectKind {
     Entity,
     Relation,
@@ -288,6 +288,17 @@ impl InstalledPersistentNameScheme {
         self.role_ranks.get(role).copied()
     }
 
+    /// Returns declared roles in canonical ascending topological rank order.
+    pub fn ordered_roles(&self) -> Vec<String> {
+        let mut pairs: Vec<(u32, &str)> = self
+            .role_ranks
+            .iter()
+            .map(|(role, &rank)| (rank, role.as_str()))
+            .collect();
+        pairs.sort_by_key(|(rank, _)| *rank);
+        pairs.into_iter().map(|(_, role)| role.to_owned()).collect()
+    }
+
     pub const fn split_capable(&self) -> bool {
         self.split_capable
     }
@@ -334,6 +345,14 @@ impl InstalledPersistentNameSchemeRegistry {
 
     pub fn is_empty(&self) -> bool {
         self.schemes.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.schemes.len()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &InstalledPersistentNameScheme> {
+        self.schemes.values()
     }
 }
 

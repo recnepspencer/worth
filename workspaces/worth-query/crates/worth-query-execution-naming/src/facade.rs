@@ -11,9 +11,13 @@
 //! let _forged: WorthQueryName<Face> = WorthQueryName::from_bytes([7u8; 32]);
 //! ```
 //!
-//! ```compile_fail
+//! ```compile_fail,E0624
 //! use worth_query_execution_naming::facade::AdmittedCommitNames;
-//! let _forged = AdmittedCommitNames::from_committed_result();
+//! use worth_relational::facade::runtime::RelationalRuntime;
+//! use worth_relational::facade::transactions::CommitResult;
+//! fn try_forge(runtime: &RelationalRuntime, result: &CommitResult) -> AdmittedCommitNames {
+//!     AdmittedCommitNames::from_committed_result(runtime, result)
+//! }
 //! ```
 
 pub use crate::admission::AdmittedCommitNames;

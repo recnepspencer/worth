@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::{BranchId, RelationalCommitReceipt};
-use crate::identity::data::LineageId;
+use crate::identity::data::{LineageId, RelationId};
 use crate::lineage::data::{PersistentNameBirthRecord, PersistentNameIdentity};
 
 /// Subject class whose continuity a [`LineageEventRecord`] records.
@@ -73,6 +73,8 @@ pub struct LineageEventRecord {
         with = "super::event_serde::persisted_kept_name"
     )]
     pub(crate) kept_name: Option<PersistentNameIdentity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) relation_id: Option<RelationId>,
 }
 
 impl LineageEventRecord {
@@ -110,5 +112,9 @@ impl LineageEventRecord {
 
     pub fn kept_name(&self) -> Option<PersistentNameIdentity> {
         self.kept_name
+    }
+
+    pub fn relation_id(&self) -> Option<RelationId> {
+        self.relation_id
     }
 }

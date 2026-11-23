@@ -111,6 +111,7 @@ fn bind_event(
         subject: event.subject,
         name_birth,
         kept_name,
+        relation_id: None,
     })
 }
 

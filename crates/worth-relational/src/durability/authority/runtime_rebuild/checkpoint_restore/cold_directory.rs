@@ -174,6 +174,8 @@ pub(super) fn restore(
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
+    let has_naming_schemes = !runtime.config.schema.registry.persistent_name_schemes().is_empty()
+        || regions.schemas.has_persistent_name_schemes();
     let runtime = super::super::unshared_state(runtime)?;
     runtime.services.symbols = paged_symbols;
     runtime.record_identity = record_identity;
@@ -203,6 +205,15 @@ pub(super) fn restore(
                 .lineage
                 .record_relation_lineage(relation_id, lineage_id);
         }
+    }
+    if has_naming_schemes {
+        for page in &directory.manifest.lineage {
+            runtime
+                .lineage
+                .demand_node(execution, crate::identity::data::LineageId(page.first))?;
+        }
+        let _event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
+        runtime.lineage.finalize_cold_naming_basis(lane);
     }
     runtime
         .durability

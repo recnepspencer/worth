@@ -139,6 +139,16 @@ fn quote(
                 super::schema::projected(row, request)
             })?,
             "content_formats" => super::content_schema::quote(raw, request)?,
+            "persistent_name_schemes" => vector::<
+                crate::schema::data::SchemaAuthorityNamingSchemeSnapshot,
+            >(raw, request, |row| {
+                super::schema::naming_scheme(row, request)
+            })?,
+            "kind_name_schemes" => vector::<
+                crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot,
+            >(raw, request, |row| {
+                super::schema::kind_naming_binding(row, request)
+            })?,
             "format_version"
             | "carrier_digest"
             | "schema_root"

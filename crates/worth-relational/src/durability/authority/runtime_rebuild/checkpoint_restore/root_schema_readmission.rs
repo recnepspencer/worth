@@ -157,8 +157,7 @@ impl RootSchemaReadmissionCatalog {
             || !envelope
                 .schema_authority
                 .projected_member_domains
-                .is_empty()
-            || !configured.persistent_name_schemes().is_empty())
+                .is_empty())
             && configured
                 .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
                     *execution,
@@ -166,7 +165,7 @@ impl RootSchemaReadmissionCatalog {
                 .map_err(RelationalRecoveryStop::Request)?
                 == envelope.schema_authority
         {
-            // Installed typed rules/layouts already retain these genuine entry
+            // Installed typed rules/domains already retain these genuine entry
             // handles. Exact admitted meaning preserves their original issuer;
             // a changed configured recipe must keep the carrier's own registry.
             configured.clone()

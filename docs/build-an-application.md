@@ -319,7 +319,9 @@ The runnable Slice 1B counterparts are the
 [bounded-depth split court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bounded_depth.rs),
 [end-to-end posture court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_postures_e2e.rs),
 [fork-ancestry naming court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_fork_ancestry.rs),
-[durable recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_durable_recovery.rs), and
+[durable recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_durable_recovery.rs),
+[cold-directory checkpoint recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_cold_directory_recovery.rs),
+[durable naming schema-authority reopen court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_schema_authority_reopen.rs), and
 [group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs).
 
 ### 2.1 Declare operation access once

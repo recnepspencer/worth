@@ -38,6 +38,16 @@ pub(super) fn authority(
                 >(value, request, |value| {
                     projected(value, request)
                 })?,
+                "persistent_name_schemes" => vector::<
+                    crate::schema::data::SchemaAuthorityNamingSchemeSnapshot,
+                >(value, request, |value| {
+                    naming_scheme(value, request)
+                })?,
+                "kind_name_schemes" => vector::<
+                    crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot,
+                >(value, request, |value| {
+                    kind_naming_binding(value, request)
+                })?,
                 _ => OwnerAllocation::default(),
             },
         )
@@ -81,6 +91,36 @@ fn domain(
     value.fields(request, |field, value| {
         if field == "projected" {
             add(&mut bytes, identity(value, request)?)?;
+        }
+        Ok(())
+    })?;
+    Ok(bytes)
+}
+pub(super) fn naming_scheme(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<OwnerAllocation, Refusal> {
+    let mut bytes = OwnerAllocation::default();
+    value.fields(request, |field, value| {
+        add(
+            &mut bytes,
+            match field {
+                "scheme_id" | "subject_name" => text(value, request)?,
+                "ordered_roles" => vector::<String>(value, request, |value| text(value, request))?,
+                _ => OwnerAllocation::default(),
+            },
+        )
+    })?;
+    Ok(bytes)
+}
+pub(super) fn kind_naming_binding(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<OwnerAllocation, Refusal> {
+    let mut bytes = OwnerAllocation::default();
+    value.fields(request, |field, value| {
+        if field == "scheme_id" {
+            add(&mut bytes, text(value, request)?)?;
         }
         Ok(())
     })?;

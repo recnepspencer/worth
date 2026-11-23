@@ -163,6 +163,7 @@ where
             subject: item.subject,
             name_birth: item.name_birth,
             kept_name: item.kept_name,
+            relation_id: item.relation_lineage.map(|(relation_id, _)| relation_id),
         };
         decisions.push(LineageDecisionRecord {
             branch_id: event.branch_id().clone(),

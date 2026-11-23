@@ -73,6 +73,28 @@ fn validate_envelope_lineage(
             }
         }
     }
+    for event in envelope.lineage_events() {
+        if let Some(rel_id) = event.relation_id() {
+            let valid_binding = event.subject() == crate::lineage::data::LineageSubject::Relation
+                && matches!(
+                    event.kind(),
+                    crate::lineage::data::LineageEventKind::Create
+                        | crate::lineage::data::LineageEventKind::Restore
+                )
+                && event.targets().len() == 1
+                && relation_lineages.contains(&(rel_id, event.targets()[0]));
+            if !valid_binding {
+                return Err(DurabilityError::new(
+                    failure_class,
+                    format!(
+                        "recovered lineage event {} relation binding ({rel_id:?}) conflicts with commit {} relation_lineages",
+                        event.event_id(),
+                        envelope.commit.commit_id.0
+                    ),
+                ));
+            }
+        }
+    }
     let observed = crate::lineage::data::LineageFinalizationArtifact::new(
         envelope.branch_context.clone(),
         crate::lineage::data::FinalizedLineageEventBatch::new(envelope.lineage_events().to_vec()),

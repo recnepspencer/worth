@@ -60,6 +60,17 @@ pub(super) fn check_current_schema_meaning(
                             )
                             .into());
                         }
+                        if source.registry().persistent_name_schemes()
+                            != target.persistent_name_schemes()
+                            || source.registry().kind_name_schemes_map()
+                                != target.kind_name_schemes_map()
+                        {
+                            return Err(crate::durability::data::DurabilityError::new(
+                                crate::durability::data::RecoveryFailureClass::SchemaMismatch,
+                                "current persistent naming scheme layout differs from durable branch-root schema authority",
+                            )
+                            .into());
+                        }
                         recovered_codec_meaning::compare_registries(
                             source.registry(),
                             target,

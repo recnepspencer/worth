@@ -55,6 +55,19 @@ impl ReadmittedSchemas {
             Self::Original(rows) => rows.rows.get(digest),
         }
     }
+
+    pub(crate) fn has_persistent_name_schemes(&self) -> bool {
+        match self {
+            Self::Source(catalog) => catalog
+                .rows
+                .iter()
+                .any(|(_, schema)| !schema.registry().persistent_name_schemes().is_empty()),
+            Self::Original(rows) => rows
+                .rows
+                .values()
+                .any(|schema| !schema.registry().persistent_name_schemes().is_empty()),
+        }
+    }
 }
 
 impl ReadmittedRegionDirectory {
@@ -108,16 +121,6 @@ impl ReadmittedRegionDirectory {
                     *request,
                 ))
                 .map_err(RelationalRecoveryStop::Request)?;
-            if !configured_schema.persistent_name_schemes().is_empty()
-                && configured_schema
-                    .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
-                        *request,
-                    ))
-                    .map_err(RelationalRecoveryStop::Request)?
-                    == expected
-            {
-                registry = configured_schema.clone();
-            }
             registry.content_formats = registry
                 .content_formats
                 .bind_recorded(&configured_schema.content_formats)

@@ -114,6 +114,36 @@ pub(super) fn retained(
         checked(tree::<u32, CanonicalDigestId>(0)?.checked_mul(size(content.version_node_bound)?))?,
     )?;
     add(&mut bytes, size(content.name_bytes)?)?;
+    if !registry.persistent_name_schemes.is_empty() {
+        add(
+            &mut bytes,
+            tree::<String, crate::lineage::data::InstalledPersistentNameScheme>(
+                registry.persistent_name_schemes.len(),
+            )?,
+        )?;
+        for scheme in registry.persistent_name_schemes.iter() {
+            control.checkpoint().map_err(Denial::Request)?;
+            add(&mut bytes, size(scheme.scheme_id().len())?)?;
+            add(&mut bytes, size(scheme.subject_name().len())?)?;
+            let roles = scheme.ordered_roles();
+            add(&mut bytes, tree::<String, u32>(roles.len())?)?;
+            for role in &roles {
+                add(&mut bytes, size(role.len())?)?;
+            }
+        }
+    }
+    if !registry.kind_name_schemes.is_empty() {
+        add(
+            &mut bytes,
+            tree::<(crate::lineage::data::PersistentNameSubjectKind, KindId), String>(
+                registry.kind_name_schemes.len(),
+            )?,
+        )?;
+        for scheme_id in registry.kind_name_schemes.values() {
+            control.checkpoint().map_err(Denial::Request)?;
+            add(&mut bytes, size(scheme_id.capacity())?)?;
+        }
+    }
     Ok(bytes)
 }
 

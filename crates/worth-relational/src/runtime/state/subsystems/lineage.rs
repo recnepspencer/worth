@@ -293,6 +293,13 @@ impl LineageSubsystem {
             .collect()
     }
 
+    pub(crate) fn finalize_cold_naming_basis(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
+        self.state.write().finalize_cold_naming_basis(lane);
+    }
+
     pub(crate) fn replace_events(
         &self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,

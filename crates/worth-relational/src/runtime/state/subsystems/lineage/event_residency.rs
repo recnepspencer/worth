@@ -132,16 +132,22 @@ impl RuntimeLineageEventResidency {
                 .collect::<BTreeSet<_>>()
         });
         let mut selected = BTreeMap::new();
-        for (route, pages) in &self.routes {
-            if ranges
-                .as_ref()
-                .is_some_and(|ranges| !ranges.contains(&route.node_range))
-                || branches.is_some_and(|branches| !branches.contains(&route.branch_id))
-            {
-                continue;
+        if ranges.is_none() && branches.is_none() {
+            for (member, page) in &self.pages {
+                selected.insert(*member, page);
             }
-            for page in pages {
-                selected.entry(page.descriptor.member).or_insert(page);
+        } else {
+            for (route, pages) in &self.routes {
+                if ranges
+                    .as_ref()
+                    .is_some_and(|ranges| !ranges.contains(&route.node_range))
+                    || branches.is_some_and(|branches| !branches.contains(&route.branch_id))
+                {
+                    continue;
+                }
+                for page in pages {
+                    selected.entry(page.descriptor.member).or_insert(page);
+                }
             }
         }
         selected

@@ -31,6 +31,10 @@ pub use authority_snapshot::{
     schema_authority_snapshot_digest_bytes, SchemaAuthorityKindSnapshot,
     SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot, SchemaAuthoritySnapshotParts,
 };
+pub(crate) use naming_schemes::update_naming_layout_digest;
+pub use naming_schemes::{
+    SchemaAuthorityKindNamingBindingSnapshot, SchemaAuthorityNamingSchemeSnapshot,
+};
 pub use continuity::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
     DescriptorCanonicalBasisSupportPolicy, DescriptorCanonicalBasisVersion,
