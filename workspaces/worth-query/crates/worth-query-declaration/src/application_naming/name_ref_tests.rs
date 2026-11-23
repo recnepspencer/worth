@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use super::same_commit::SameCommitNameReference;
 use super::{
-    ApplicationNameDiscriminatorEncoder, NameRef, NameSelection, NamedTarget, WorthQueryName,
+    ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, IndexedRoleDiscriminator,
+    NameRef, NameSelection, NameSelectionDenial, NamedTarget, WorthQueryName,
     WorthQuerySameCommitName,
 };
 
@@ -131,4 +132,66 @@ fn a_named_target_holds_its_name_and_selection_and_orders_by_both() {
         ]
     );
     assert!(format!("{:?}", targets[0]).starts_with("NamedTarget { name: WorthQueryName"));
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct RefSide {
+    cutter: NameRef<Face>,
+}
+
+impl ApplicationNameDiscriminator for RefSide {
+    const DISCRIMINATOR_IDENTITY: &'static str = "worth.tests.ref-side.v1";
+
+    fn encode_canonical(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
+        encoder.field("cutter", &self.cutter);
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct WrappedRefSide {
+    inner: RefSide,
+}
+
+impl ApplicationNameDiscriminator for WrappedRefSide {
+    const DISCRIMINATOR_IDENTITY: &'static str = "worth.tests.wrapped-ref-side.v1";
+
+    fn encode_canonical(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
+        encoder.field("inner", &self.inner);
+    }
+}
+
+#[test]
+fn keep_side_refuses_unresolved_same_commit_references() {
+    let candidate = Arc::new(());
+    let in_commit = RefSide {
+        cutter: fresh(&candidate, 0).into(),
+    };
+    let committed_side = RefSide {
+        cutter: committed(0x42).into(),
+    };
+
+    assert_eq!(
+        NameSelection::keep_side(&in_commit),
+        Err(NameSelectionDenial::UnresolvedSameCommitReference)
+    );
+    assert_eq!(
+        NameSelection::keep_side(&WrappedRefSide {
+            inner: in_commit.clone(),
+        }),
+        Err(NameSelectionDenial::UnresolvedSameCommitReference)
+    );
+    assert_eq!(
+        NameSelection::keep_side(&IndexedRoleDiscriminator::new(2, in_commit)),
+        Err(NameSelectionDenial::UnresolvedSameCommitReference)
+    );
+    assert!(NameSelectionDenial::UnresolvedSameCommitReference
+        .to_string()
+        .contains("same-commit"));
+
+    assert!(NameSelection::keep_side(&committed_side).is_ok());
+    assert!(NameSelection::keep_side(&WrappedRefSide {
+        inner: committed_side.clone(),
+    })
+    .is_ok());
+    assert!(NameSelection::keep_side(&IndexedRoleDiscriminator::new(2, committed_side)).is_ok());
 }

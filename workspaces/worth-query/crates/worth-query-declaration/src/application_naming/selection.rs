@@ -1,6 +1,9 @@
 use std::fmt;
 
-use super::{validate_discriminator_identity, ApplicationNameDiscriminator, ErasedWorthQueryName};
+use super::{
+    validate_discriminator_identity, ApplicationNameDiscriminator,
+    ApplicationNameDiscriminatorEncoder, ErasedWorthQueryName,
+};
 
 /// How a held persistent name chooses among its live descendants.
 ///
@@ -105,7 +108,8 @@ impl NameSelection {
 
     /// Selects the live descendant born on `side`, encoded by the canonical
     /// [`super::ApplicationNameDiscriminatorEncoder`]. Refuses a discriminator
-    /// type whose declared identity is malformed.
+    /// type whose declared identity is malformed or whose value carries an
+    /// unresolved [`super::WorthQuerySameCommitName`].
     pub fn keep_side<D: ApplicationNameDiscriminator>(
         side: &D,
     ) -> Result<Self, NameSelectionDenial> {
@@ -114,10 +118,14 @@ impl NameSelection {
                 discriminator_identity: D::DISCRIMINATOR_IDENTITY.to_owned(),
             }
         })?;
+        let mut encoder = ApplicationNameDiscriminatorEncoder::new(D::DISCRIMINATOR_IDENTITY);
+        side.encode_canonical(&mut encoder);
+        let (canonical, _, same_commit_names) = encoder.finish_with_same_commit_names();
+        if !same_commit_names.is_empty() {
+            return Err(NameSelectionDenial::UnresolvedSameCommitReference);
+        }
         Ok(Self::KeepSide {
-            discriminator: NameSideDiscriminator {
-                canonical: side.canonical_bytes(),
-            },
+            discriminator: NameSideDiscriminator { canonical },
         })
     }
 }
@@ -157,6 +165,9 @@ pub enum NameSelectionDenial {
     InvalidDiscriminatorIdentity { discriminator_identity: String },
     /// A carrier filter names no carrier.
     EmptyCarrierSet,
+    /// The side discriminator carries a [`super::WorthQuerySameCommitName`]
+    /// whose digest is only minted at commit and cannot select a live side.
+    UnresolvedSameCommitReference,
 }
 
 impl fmt::Display for NameSelectionDenial {
@@ -169,6 +180,8 @@ impl fmt::Display for NameSelectionDenial {
                 "side discriminator declares malformed identity `{discriminator_identity}`"
             ),
             Self::EmptyCarrierSet => formatter.write_str("carrier filter names no carrier"),
+            Self::UnresolvedSameCommitReference => formatter
+                .write_str("side discriminator contains an unresolved same-commit name reference"),
         }
     }
 }
