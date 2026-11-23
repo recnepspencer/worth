@@ -52,8 +52,7 @@ use crate::tests::harness::model::truth_model::VisibleTruthSummary;
 pub(super) use worth_foundational::facade::AspectKey;
 
 // Test helper index:
-// - `schema`: baseline schema builders plus declared-aspect fixtures
-// - `runtime`: ordinary schema/runtime fixture construction
+// - `schema`: baseline schema and runtime builders plus declared-aspect fixtures
 // - `records`: common entity/relation verbs and branch-aware mutation helpers
 // - `history`: aspect/history digest helpers and small read utilities
 // - `inspection`: canonical inspection request builders and historical read helpers
@@ -75,8 +74,6 @@ mod inspection;
 mod records;
 #[path = "support/relation_integrity.rs"]
 mod relation_integrity;
-#[path = "support/runtime.rs"]
-mod runtime;
 #[path = "support/savepoint.rs"]
 mod savepoint;
 #[path = "support/schema.rs"]
@@ -85,6 +82,7 @@ mod schema_payload;
 #[path = "support/transaction_authority.rs"]
 mod transaction_authority;
 
+pub(crate) use crate::execution::test_authority::{test_execution_authority, test_execution_lease};
 pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
 pub(crate) use history::*;
@@ -92,7 +90,6 @@ pub(crate) use history_snapshot::demand_canonical_history_snapshot;
 pub(crate) use inspection::*;
 pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
-pub(crate) use runtime::*;
 pub(crate) use savepoint::*;
 pub(crate) use schema::*;
 pub(crate) use schema_payload::canonical_schema_envelope_input;
@@ -181,7 +178,7 @@ pub(super) fn planned_explicit_query(
     snapshot: &crate::snapshots::data::SnapshotHandle,
     label: &str,
     targets: Vec<RecordRef>,
-) -> crate::query::data::SnapshotPinnedQueryPlan {
+) -> crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan {
     runtime
         .read_truth()
         .plan_query_packet(
@@ -210,7 +207,7 @@ pub(super) fn execute_explicit_query(
     snapshot: &crate::snapshots::data::SnapshotHandle,
     label: &str,
     targets: Vec<RecordRef>,
-) -> crate::query::data::QueryExecutionOutcome {
+) -> crate::query::data::query_outcome::QueryExecutionOutcome {
     runtime
         .read_truth()
         .execute_query_plan(

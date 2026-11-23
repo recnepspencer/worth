@@ -1,7 +1,7 @@
 use crate::aspect_wire::{encode_aspect_field_locator, encode_length_prefixed_aspect_value};
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::{EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope};
-use crate::validation::data::InvariantWitnessKey;
+use crate::validation::data::execution::InvariantWitnessKey;
 
 use super::{InvariantViolationFields, RelationCardinalityBoundary, RelationEndpointBoundary};
 

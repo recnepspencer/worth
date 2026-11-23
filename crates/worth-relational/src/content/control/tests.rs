@@ -1,6 +1,6 @@
 //! Literal refusal precedence is independent of request execution machinery.
 use super::{final_denial, Denial};
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
 #[test]
 fn content_stop_precedence_preserves_exact_inner_only_for_nested_handoff() {

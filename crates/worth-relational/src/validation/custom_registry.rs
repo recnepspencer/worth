@@ -8,14 +8,10 @@ use crate::validation::data::{
 mod compilation;
 mod compilation_quote;
 mod source_inventory;
-pub(crate) use compilation::CustomInvariantCompilationDenial;
+pub(crate) use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial;
 pub(crate) use source_inventory::{CustomInvariantCompilationFunding, SourcePreparationInventory};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DuplicateCustomInvariantRegistration {
-    pub identity: CustomInvariantSemanticIdentity,
-    pub execution_point: InvariantExecutionPoint,
-}
+pub use crate::validation::data::registration_conflict::DuplicateCustomInvariantRegistration;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {

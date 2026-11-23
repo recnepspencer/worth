@@ -1,5 +1,5 @@
 //! Fixed packet declarations and live native allocation tickets share one claim door.
-use super::PacketBudgetDenial;
+use crate::execution::read_only_packets::PacketBudgetDenial;
 mod scratch;
 pub(crate) use scratch::SharedPacketScratch;
 use std::cell::{Cell, RefCell};

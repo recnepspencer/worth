@@ -73,12 +73,14 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for MergeWitnessRows<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::history::data::{CommitId, MergeBasisAncestors};
+    use crate::history::data::coordinates::CommitId;
+    use crate::history::data::merge_branch_basis::ancestors::MergeBasisAncestors;
     use crate::identity::data::{EntityId, PartitionId};
-    use crate::merge::data::{
-        DeclaredIdentityKeys, IdentityBasisName, MergePolicyName, RelationalMergeAdmittedSurfaceRow,
-    };
-    use crate::transactions::data::RecordRef;
+    use crate::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRow;
+    use crate::merge::data::identity::custom_name::IdentityBasisName;
+    use crate::merge::data::identity::declared_keys::DeclaredIdentityKeys;
+    use crate::merge::data::policy::custom_name::MergePolicyName;
+    use crate::transactions::data::primitives::RecordRef;
     use worth_foundational::facade::AspectKey;
 
     #[test]

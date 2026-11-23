@@ -1,4 +1,4 @@
-use super::RelationalCanonicalCommitArtifactDigest;
+use crate::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigest;
 
 /// Why bytes are not an intact canonical commit artifact frame. Every
 /// variant refuses before the payload is decoded; none is retried or

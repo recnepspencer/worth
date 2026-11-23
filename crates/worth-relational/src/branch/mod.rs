@@ -6,12 +6,12 @@ pub use basis::{
 mod authority;
 mod custody_witness;
 pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
-mod basis;
+pub(crate) mod basis;
 mod basis_admission_identity;
 mod basis_axis_validation;
 mod basis_counters;
 mod basis_currentness;
-mod basis_denial;
+pub(crate) mod basis_denial;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
 mod basis_observation;
@@ -37,7 +37,7 @@ mod lifecycle;
 mod materialization;
 mod model_ownership;
 mod owner_services;
-mod recorded_basis;
+pub(crate) mod recorded_basis;
 pub use model_ownership::{
     observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
     RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
@@ -46,22 +46,22 @@ pub use model_ownership::{
     RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
     RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
 };
-mod reference;
+pub(crate) mod reference;
 pub use record_advance::{
     RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,
     RelationalRecordAdvanceObservation,
 };
 pub use recorded_basis::{
-    AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
-    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
-    RelationalRecordedComponentRefusal,
+    AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent,
+    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
+    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
 };
 pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
 pub(crate) use registry::RelationalSourceRootSlot;
-mod root;
+pub(crate) mod root;
 mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
@@ -80,8 +80,8 @@ mod selected_read;
 pub(crate) use selected_read::SelectedRelationalBranchRead;
 mod sharing_cost_cell;
 mod target;
-mod transition;
-mod version;
+pub(crate) mod transition;
+pub(crate) mod version;
 
 pub(crate) use authority::issue_relational_branch_mutation_authority;
 pub(crate) use authority::issue_relational_branch_publication_authority;

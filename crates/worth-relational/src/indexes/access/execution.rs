@@ -3,9 +3,10 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::AspectFieldLocator;
 
 use crate::indexes::data::{DerivedIndexEntries, DerivedIndexGenerationId};
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::query::data::{
-    reduce_query_fragments, QueryExecutionOutcome, QueryFragmentCounters, QueryScope,
-    QueryWorkerFragment, SnapshotPinnedQueryPlan,
+    reduce_query_fragments, QueryFragmentCounters, QueryScope, QueryWorkerFragment,
 };
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::AuthoritativeFieldComparisonKey;

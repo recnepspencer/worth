@@ -1,33 +1,32 @@
-mod canonical_digest;
-mod checked_fragment_reduction;
-mod fragment_reduction;
+pub(crate) mod canonical_digest;
+pub(crate) mod checked_fragment_reduction;
+pub(crate) mod fragment_reduction;
 #[cfg(test)]
 mod fragment_reduction_tests;
-mod index_access_parity;
-mod planned_packets;
+pub(crate) mod index_access_parity;
+pub(crate) mod planned_packets;
+pub(crate) mod snapshot_pinned_plan;
 
-pub(crate) use canonical_digest::{
-    query_authoritative_entity_record_digest, query_authoritative_relation_record_digest,
-};
 #[cfg(test)]
-pub(crate) use canonical_digest::{query_index_parity_basis_digest, query_result_reduction_digest};
+pub(crate) use canonical_digest::query_index_parity_basis_digest;
 pub(crate) use checked_fragment_reduction::{
     query_reduction_scratch_bound, reduce_query_fragments_checked,
 };
 #[cfg(test)]
 pub use fragment_reduction::reduce_query_fragments;
 pub use fragment_reduction::{
-    CanonicalQueryResult, QueryComplexitySummary, QueryExecutionOutcome, QueryFragmentCounters,
-    QueryWorkerFragment, TraversalEntityVisitKey, TraversalReductionBasis,
-    TraversalRelationVisitKey,
+    CanonicalQueryResult, QueryComplexitySummary, QueryFragmentCounters, QueryWorkerFragment,
+    TraversalEntityVisitKey, TraversalReductionBasis, TraversalRelationVisitKey,
 };
-pub use index_access_parity::{
-    IndexParityMode, IndexParityVerifiedQueryOutcome, IndexQueryRejectionClass, QueryAccessPath,
-};
+pub use index_access_parity::{IndexParityMode, IndexQueryRejectionClass, QueryAccessPath};
 pub use planned_packets::{
     deterministic_query_fragment_key, DeterministicQueryFragmentKey, DeterministicQueryPlanKey,
     PartitionHint, PlannedQueryPacket, QueryAccessContract, QueryExecutionShape,
     QueryLocalityClass, QueryOrderingContract, QueryParallelLegality, QueryParallelProfitability,
     QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, QuerySerialReason, ReadPacketPlan,
-    ReductionDiscipline, SnapshotPinnedQueryPlan,
+    ReductionDiscipline,
 };
+
+pub(crate) mod query_outcome;
+
+pub(crate) mod index_parity_outcome;

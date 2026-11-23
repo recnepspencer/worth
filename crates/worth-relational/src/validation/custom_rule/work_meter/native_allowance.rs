@@ -1,46 +1,15 @@
-//! Native-funded reads spend this rule's allowance without billing their request twice.
-use super::{CustomInvariantWorkMeter, CustomPreparationStop, Ordering};
+use super::CustomInvariantWorkMeter;
 
 impl CustomInvariantWorkMeter {
     pub(crate) fn try_debit_native_work(&self, units: u64) -> bool {
-        if self.exceeded() || !self.safe_point() {
-            return false;
-        }
-        if {
-            let update_counter = &self.consumed;
-            let mut current = update_counter.load(Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = current
-                    .checked_add(units)
-                    .filter(|next| self.maximum.is_none_or(|maximum| *next <= maximum.get()))
-                else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .is_err()
-        {
-            self.stop(CustomPreparationStop::WorkExhausted);
-            return false;
-        }
-        // The Native funding context already records these units in the active
-        // request. Do not add them to LeasedCustomMeter.consumed_work again.
-        true
+        self.native_debit().try_debit_native_work(units)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::custom_rule::work_meter::native_rule_debit::CustomPreparationStop;
     use crate::validation::custom_rule::CustomPreparationBudget;
     use std::num::{NonZeroU64, NonZeroUsize};
     use worth_execution::{CancellationToken, LeaseRequest};

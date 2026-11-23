@@ -44,7 +44,9 @@ impl<'a> InvariantRuntimeView<'a> {
             })
             .unwrap_or_default();
         Self {
-            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(configuration.clone()),
+            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(
+                configuration.config.clone(),
+            ),
             prior_registry: None,
             home_target: None,
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,

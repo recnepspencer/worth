@@ -1,14 +1,15 @@
+use crate::history::data::merge_branch_basis::RelationalMergeBranchBasis;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::CommitId;
-use crate::merge::data::{
-    ExecutionReadyLoweredMergePlan, MergeConflictClass, MergeExecutionAuthorityBinding,
-    ResolvedAspectMergePolicy, VisibleMergeRecord, VisibleMergeRecordKind,
-};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::RecordRef;
+use crate::history::data::coordinates::CommitId;
+use crate::merge::data::conflicts::MergeConflictClass;
+use crate::merge::data::execution::MergeExecutionAuthorityBinding;
+use crate::merge::data::policy::ResolvedAspectMergePolicy;
+use crate::merge::data::visible_record::{VisibleMergeRecord, VisibleMergeRecordKind};
+use crate::storage::data::read_records::{EntityReadRecord, RelationReadRecord};
+use crate::transactions::data::primitives::RecordRef;
 
 use super::materialized_aspect_values::MaterializedAspectValue;
 
@@ -63,10 +64,10 @@ pub enum ExecutableAspectPlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MergeExecutableRecordProvenance {
     pub classification: MergeConflictClass,
-    pub resolution_class: crate::merge::data::MergeResolutionClass,
-    pub executable_class: crate::merge::data::MergeExecutableClass,
-    pub causal_disposition: crate::merge::data::MergeRecordCausalDisposition,
-    pub policy_proof_boundary: crate::merge::data::MergePolicyProofBoundary,
+    pub resolution_class: crate::merge::data::policy::MergeResolutionClass,
+    pub executable_class: crate::merge::data::policy::MergeExecutableClass,
+    pub causal_disposition: crate::merge::data::causal::MergeRecordCausalDisposition,
+    pub policy_proof_boundary: crate::merge::data::policy::MergePolicyProofBoundary,
     pub applied_policies: Arc<[ResolvedAspectMergePolicy]>,
 }
 
@@ -94,7 +95,7 @@ pub struct ReconcileRecordPlan {
     pub target_record: RecordRef,
     pub source_visible_snapshot: VisibleMergeRecordSnapshot,
     pub identity_basis: ReconciledIdentityBasis,
-    pub causal_disposition: crate::merge::data::MergeRecordCausalDisposition,
+    pub causal_disposition: crate::merge::data::causal::MergeRecordCausalDisposition,
     pub provenance: MergeExecutableRecordProvenance,
     pub aspect_plan: Arc<[ExecutableAspectPlan]>,
 }
@@ -122,16 +123,11 @@ pub struct BoundExecutableMergePlan {
     pub authority_binding: MergeExecutionAuthorityBinding,
     pub parent_order: Arc<[CommitId]>,
     pub record_plans: Arc<[BoundExecutableMergeRecordPlan]>,
-    pub diagnostics_plan: crate::merge::data::MergeExecutionDiagnosticsPlan,
+    pub diagnostics_plan: crate::merge::data::execution_artifacts::MergeExecutionDiagnosticsPlan,
 }
 
-pub(crate) fn bound_parent_order(
-    execution_ready: &ExecutionReadyLoweredMergePlan,
-) -> Arc<[CommitId]> {
-    Arc::from([
-        execution_ready.basis.target_head.commit_id,
-        execution_ready.basis.source_head.commit_id,
-    ])
+pub(crate) fn bound_parent_order(basis: &RelationalMergeBranchBasis) -> Arc<[CommitId]> {
+    Arc::from([basis.target_head.commit_id, basis.source_head.commit_id])
 }
 
 pub(crate) fn visible_record_snapshot(

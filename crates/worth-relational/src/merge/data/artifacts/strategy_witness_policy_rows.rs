@@ -5,15 +5,16 @@ use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
-use crate::merge::data::{
-    AspectPolicyResolutionRecord, MergeConflictClass, MergeExecutionAuthorityContract,
-    MergePolicyProofBoundary, ResolvedAspectMergePolicy,
+use crate::merge::data::artifacts::execution_authority_contract::MergeExecutionAuthorityContract;
+use crate::merge::data::conflicts::MergeConflictClass;
+use crate::merge::data::execution_authority_contract::lowered_artifact_execution_authority_contract;
+use crate::merge::data::policy::{
+    AspectPolicyResolutionRecord, MergePolicyProofBoundary, ResolvedAspectMergePolicy,
 };
-use crate::merge::{
-    aggregate_record_resolution, lowered_artifact_execution_authority_contract,
-    ownership_surface_for_policies,
+use crate::merge::data::policy_meaning::{
+    aggregate_record_resolution, ownership_surface_for_policies,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RelationalMergeAspectPolicyWitnessRow {

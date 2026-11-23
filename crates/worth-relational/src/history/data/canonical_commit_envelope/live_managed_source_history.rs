@@ -80,7 +80,21 @@ impl CanonicalCommitEnvelope {
             });
         };
         let material = RetainedSourceHistoryMaterial::capture(execution, interpretation, &prepared)
-            .map_err(|cause| cause.into_commit_error(interpretation.physical_basis()))?;
+            .map_err(|cause| {
+                cause.into_commit_error(
+                    interpretation
+                        .physical_basis()
+                        .identity()
+                        .branch_id()
+                        .clone(),
+                    interpretation
+                        .physical_basis()
+                        .observation()
+                        .commit_id()
+                        .map(|id| id.0),
+                    interpretation.physical_basis().observation().version_id(),
+                )
+            })?;
         let layout = std::alloc::Layout::new::<BoundHistory>()
             .extend(std::alloc::Layout::new::<[usize; 2]>())
             .map_err(|_| {

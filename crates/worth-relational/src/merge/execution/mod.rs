@@ -2,10 +2,8 @@ mod aspect_plan_compilation;
 mod authority_verification;
 mod lineage_continuity;
 mod plan_compilation;
-mod prepared_execution;
+pub(super) mod prepared_execution;
 mod record_plan_compilation;
-
-pub(super) use prepared_execution::execute_prepared_merge;
 
 #[cfg(test)]
 use crate::merge::data::MergeExecutionRequest;
@@ -73,12 +71,12 @@ impl<'runtime> MergeAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergeExecutionRequest,
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
-        let normalized_request =
-            super::request_normalization::normalize_bound_merge_execution_request(request)
-                .map_err(crate::merge::data::MergePlanningError::from)
-                .map_err(MergeExecutionPreparationError::Planning)?;
+        let inputs = super::request_normalization::normalize_bound_merge_execution_request(request)
+            .map_err(crate::merge::data::MergePlanningError::from)
+            .map_err(MergeExecutionPreparationError::Planning)?;
+        let normalized_request = inputs.request.clone();
         let lowered_plan = self
-            .lower_planning_scope(execution, normalized_request.clone())
+            .lower_planning_scope(execution, &inputs)
             .map_err(MergeExecutionPreparationError::Planning)?;
         let artifact = materialize_planning_artifact(execution, self.runtime, lowered_plan.clone())
             .map_err(MergeExecutionPreparationError::Planning)?;
@@ -106,6 +104,7 @@ impl<'runtime> MergeAccess<'runtime> {
         Ok(PreparedMergeExecution::from_compiled(
             compiled,
             mutation_plan,
+            (inputs.target, inputs.source),
         ))
     }
 

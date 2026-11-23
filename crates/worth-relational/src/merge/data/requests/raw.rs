@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MergeIntent {

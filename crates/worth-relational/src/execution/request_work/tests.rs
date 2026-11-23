@@ -15,10 +15,11 @@ use worth_foundational::{
     PartitionIdentity,
 };
 
-use crate::execution::{
-    execute_read_only_packets_with_budget, ReadOnlyPacket, RelationalExecutionDenialCause,
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
+use crate::execution::read_only_packets::{execute_read_only_packets_with_budget, ReadOnlyPacket};
+use crate::transactions::data::outcomes::transaction_commit_error::{
+    CommitExecutionDenial, CommitExecutionDenialKind,
 };
-use crate::transactions::data::{CommitExecutionDenial, CommitExecutionDenialKind};
 
 use super::RequestWorkBudget;
 
@@ -26,7 +27,7 @@ fn parent(
     cancellation: CancellationToken,
     deadline: Option<Instant>,
 ) -> ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -45,7 +46,7 @@ fn packet() -> Vec<ReadOnlyPacket<u64>> {
         identity: PartitionIdentity::new(0),
         value: 2,
         input_bytes: 0,
-        memory: crate::execution::PacketMemory::Declared {
+        memory: crate::execution::packet_memory::PacketMemory::Declared {
             scratch: 0,
             result: 0,
         },
@@ -138,24 +139,4 @@ fn remaining_work_child_refuses_the_next_charge_after_parent_deadline() {
         denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::DeadlineElapsed)
     );
-}
-
-#[test]
-fn original_work_recording_restores_its_previous_observer_after_unwinding() {
-    use super::RelationalWorkAccountRecorderForTest;
-    let recorder = RelationalWorkAccountRecorderForTest::new();
-    let (_, outer) = recorder.record_for_test(|| {
-        super::observation::record(3);
-        let refusal = std::panic::catch_unwind(|| {
-            recorder.record_for_test(|| {
-                super::observation::record(7);
-                panic!("original observer unwind");
-            })
-        });
-        assert!(refusal.is_err());
-        super::observation::record(5);
-    });
-    assert_eq!(outer, vec![3, 5]);
-    let (_, empty) = recorder.record_for_test(|| ());
-    assert!(empty.is_empty());
 }

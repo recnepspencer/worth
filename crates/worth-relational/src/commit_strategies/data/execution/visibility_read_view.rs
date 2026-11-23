@@ -7,10 +7,8 @@ use crate::commit_strategies::data::{
     StrategyReadScopeClass,
 };
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
-use crate::visibility::materialization::read_records::{
-    EntityRecordProjection, ProjectionAspectScope, RelationRecordProjection,
-    VisibilityProjectionView,
-};
+use crate::visibility::materialization::read_records::projection::{EntityRecordProjection, RelationRecordProjection, VisibilityProjectionView};
+use crate::visibility::materialization::read_records::projection::contracts::projection_aspect_scope::ProjectionAspectScope;
 
 #[derive(Debug, Clone, Copy)]
 pub struct StrategyVisibilityReadView<'observation, 'runtime> {
@@ -279,12 +277,12 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
     fn safe_projection<T>(
         &self,
         operation: &'static str,
-        run: impl FnOnce() -> Result<T, crate::execution::RelationalExecutionDenialCause>,
+        run: impl FnOnce() -> Result<T, crate::execution::denial_cause::RelationalExecutionDenialCause>,
     ) -> Result<T, StrategyExecutorFailure> {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
             .map_err(|unwind_value| self.projection_failure(operation, unwind_value))?
             .map_err(|cause| match cause {
-                crate::execution::RelationalExecutionDenialCause::ProjectionContract(denial) => {
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract(denial) => {
                     StrategyExecutorFailure::with_evidence(
                         StrategyExecutorFailureClass::ProjectionContractViolation,
                         operation,

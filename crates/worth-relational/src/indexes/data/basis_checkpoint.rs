@@ -1,7 +1,7 @@
 //! Authority-free checkpoint encoding of an owner's exact-basis selections.
-use super::{DerivedIndexGenerationId, DerivedIndexId};
-use crate::history::data::{BranchId, CommitId};
+use crate::history::data::coordinates::{BranchId, CommitId};
 use crate::identity::data::VersionId;
+use crate::indexes::data::definition::{DerivedIndexGenerationId, DerivedIndexId};
 use crate::schema::data::SchemaVersionId;
 use serde::{Deserialize, Serialize};
 

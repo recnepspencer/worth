@@ -136,18 +136,7 @@ impl CompanionRegistrationEpoch<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PublicationCompanionRegistrationStop {
-    OwnerUnavailable,
-    PublicationPending,
-    /// A publication holds its companion epoch; head-cell installation did not run.
-    HeadCellPublicationContended,
-    RebindRequired,
-    Superseded,
-    IdentityExhausted,
-    ForeignRuntime,
-    HeadUnavailable,
-}
+pub use super::registration_stop::PublicationCompanionRegistrationStop;
 
 /// A runtime-owned registration entry, separate from individual publications.
 #[derive(Debug, Clone)]

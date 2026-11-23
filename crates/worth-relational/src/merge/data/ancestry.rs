@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, CommitId, MergeBaseSelectionRule};
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::history::data::merge_branch_basis::MergeBaseSelectionRule;
 use crate::identity::data::VersionId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

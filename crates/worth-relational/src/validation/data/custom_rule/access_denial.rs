@@ -18,9 +18,9 @@ pub enum CustomInvariantAccessDenialKind {
     SourceProgramIdentityExhausted,
     AggregateSourceUnavailable,
     AggregatePreparationRefused,
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
     WorkBudgetExceeded,
-    Interrupted(crate::validation::custom_rule::CustomInvariantInterruption),
+    Interrupted(crate::validation::custom_rule::interruption::CustomInvariantInterruption),
     MemoryBudgetExceeded,
     MemoryAdmission(#[serde(with = "super::memory_denial")] worth_execution::MemoryLimitDenial),
 }
@@ -33,10 +33,11 @@ pub struct CustomInvariantAccessDenial {
 
 impl CustomInvariantAccessDenial {
     pub fn from_native_read(
-        cause: crate::validation::custom_rule::StructuralWalkDenialKind,
+        cause: crate::validation::data::structural_walk_denial::StructuralWalkDenialKind,
         subject: impl Into<String>,
     ) -> Self {
-        use crate::validation::custom_rule::{StructuralReadError, StructuralWalkDenialKind};
+        use crate::validation::data::structural_read::StructuralReadError;
+        use crate::validation::data::structural_walk_denial::StructuralWalkDenialKind;
         let kind = match cause {
             StructuralWalkDenialKind::Read(StructuralReadError::WorkBudgetExceeded) => {
                 CustomInvariantAccessDenialKind::WorkBudgetExceeded

@@ -4,16 +4,16 @@ use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::identity::data::KindId;
-use crate::merge::data::MergePolicyDecisionBoundary;
+use crate::merge::data::policy::MergePolicyDecisionBoundary;
 use crate::schema::data::{
     SchemaId, SchemaReconciliationClassification, SchemaReconciliationPolicy, SchemaVersionId,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
-use super::super::{IdentityBasisKind, IdentityBasisScope};
 use super::schema_reconciliation_witness_transition::{
     derive_schema_reconciliation_truth, DerivedSchemaReconciliationTruth,
 };
+use crate::merge::data::identity::{IdentityBasisKind, IdentityBasisScope};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalSchemaReconciliationWitnessPosture {
@@ -277,7 +277,7 @@ mod tests {
     use super::super::schema_reconciliation_witness::RelationalSchemaReconciliationWitness;
     use super::*;
     use crate::identity::data::{EntityId, PartitionId};
-    use crate::merge::data::{IdentityBasisKind, IdentityBasisScope};
+    use crate::merge::data::identity::{IdentityBasisKind, IdentityBasisScope};
 
     #[test]
     fn streamed_schema_witness_digests_preserve_prior_named_row_bytes_and_reject_tampering() {

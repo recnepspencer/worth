@@ -1,7 +1,9 @@
-use crate::merge::data::{
-    DeletedOnBothSidesSemantics, ExecutedMergeAspectClass, ExecutedMergeAspectDiagnosticRow,
-    ExecutedMergeRecordClass, ExecutedMergeRecordDiagnosticRow, MergeLineageContinuityVerdict,
-    SharedTruthWitness,
+use crate::merge::data::execution::executable_plan::{
+    DeletedOnBothSidesSemantics, MergeLineageContinuityVerdict, SharedTruthWitness,
+};
+use crate::merge::data::execution_artifacts::{
+    ExecutedMergeAspectClass, ExecutedMergeAspectDiagnosticRow, ExecutedMergeRecordClass,
+    ExecutedMergeRecordDiagnosticRow,
 };
 
 impl super::CanonicalDigestBytes {

@@ -2,11 +2,11 @@
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CustomInvariantFailureCause {
-    DeclaredValue(super::CustomInvariantRefusal),
-    Access(super::CustomInvariantAccessDenial),
+    DeclaredValue(crate::validation::data::custom_rule::refusal::CustomInvariantRefusal),
+    Access(crate::validation::data::custom_rule::access_denial::CustomInvariantAccessDenial),
     Stopped,
-    Content(crate::execution::RelationalExecutionDenialCause),
-    Interrupted(super::CustomInvariantInterruption),
+    Content(crate::execution::denial_cause::RelationalExecutionDenialCause),
+    Interrupted(crate::validation::custom_rule::interruption::CustomInvariantInterruption),
     ManagedIndex { detail: String },
     Allocation,
     CheckedHookRequired,

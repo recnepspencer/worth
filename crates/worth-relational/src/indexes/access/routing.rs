@@ -1,8 +1,8 @@
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexEntries, DerivedIndexGeneration, DerivedIndexKind};
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::query::data::{
     IndexQueryRejectionClass, PlannedQueryPacket, QueryAccessContract, QueryAccessPath, QueryScope,
-    SnapshotPinnedQueryPlan,
 };
 use crate::runtime::RelationalRuntime;
 

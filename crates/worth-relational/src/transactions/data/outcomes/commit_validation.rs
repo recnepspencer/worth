@@ -1,14 +1,8 @@
-use crate::validation::data::{InvariantExecutionPoint, InvariantGroupSet};
-use crate::validation::engine::{
-    InvariantExecutionDisposition, InvariantExecutionResult, InvariantObservationKind,
-};
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution_posture::InvariantExecutionDisposition;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::observation_kind::InvariantObservationKind;
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommitValidation {
-    pub summary: CommitValidationSummary,
-    pub invariant_executions: Vec<InvariantExecutionResult>,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct CommitValidationSummary {
@@ -35,32 +29,6 @@ pub struct CommitValidationSummary {
     pub publication_violation: bool,
 }
 
-impl CommitValidation {
-    pub fn invariant_executions(&self) -> &[InvariantExecutionResult] {
-        &self.invariant_executions
-    }
-
-    pub fn summarize(invariant_executions: &[InvariantExecutionResult]) -> CommitValidationSummary {
-        let mut summary = CommitValidationSummary::default();
-        for execution in invariant_executions {
-            summary.include_execution(ValidationSummaryInput {
-                execution_point: execution.metadata().execution_point(),
-                observation_kind: execution.metadata().observation_kind(),
-                consumed_groups: execution.metadata().consumed_groups(),
-                applicable_groups: execution.metadata().applicable_groups(),
-                disposition: execution.metadata().disposition(),
-                has_merged_plan: execution.metadata().has_merged_plan(),
-                results: execution.summary(),
-            });
-        }
-        summary
-    }
-
-    pub fn summary(&self) -> CommitValidationSummary {
-        self.summary
-    }
-}
-
 pub(crate) struct ValidationSummaryInput<'a> {
     pub(crate) execution_point: InvariantExecutionPoint,
     pub(crate) observation_kind: InvariantObservationKind,
@@ -68,7 +36,8 @@ pub(crate) struct ValidationSummaryInput<'a> {
     pub(crate) applicable_groups: InvariantGroupSet,
     pub(crate) disposition: InvariantExecutionDisposition,
     pub(crate) has_merged_plan: bool,
-    pub(crate) results: &'a crate::validation::engine::InvariantExecutionSummary,
+    pub(crate) results:
+        &'a crate::validation::engine::result::execution_summary::InvariantExecutionSummary,
 }
 
 impl CommitValidationSummary {

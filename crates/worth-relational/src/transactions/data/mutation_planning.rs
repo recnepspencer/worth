@@ -1,10 +1,12 @@
-use super::{
-    BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, EntityMutationIntent,
-    ExistingRecordTarget, MutationIntent, RelationIdentity, RelationMutationIntent,
-    ReplaceEntityIntent, RollbackEffect,
-};
 use crate::identity::data::PartitionId;
-use crate::validation::data::{InvariantGroup, InvariantGroupSet, InvariantPlanContract};
+use crate::transactions::data::intents::mutation_intent::{
+    BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, EntityMutationIntent,
+    MutationIntent, RelationMutationIntent, ReplaceEntityIntent,
+};
+use crate::transactions::data::outcomes::rollback::RollbackEffect;
+use crate::transactions::data::primitives::{ExistingRecordTarget, RelationIdentity};
+use crate::validation::data::contracts::InvariantPlanContract;
+use crate::validation::data::groups::{InvariantGroup, InvariantGroupSet};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,12 +185,17 @@ impl MutationIntent {
             | Self::Create(CreateIntent::BulkEntities(_)) => {
                 Some(RollbackEffect::DiscardedEntityCreation)
             }
-            Self::Entity(EntityMutationIntent::UpdateFields(super::UpdateEntityFieldsIntent {
-                entity_id,
-                ..
-            }))
+            Self::Entity(EntityMutationIntent::UpdateFields(
+                crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent {
+                    entity_id,
+                    ..
+                },
+            ))
             | Self::Entity(EntityMutationIntent::ApplyAspectPatch(
-                super::ApplyEntityAspectPatchIntent { entity_id, .. },
+                crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent {
+                    entity_id,
+                    ..
+                },
             ))
             | Self::Entity(EntityMutationIntent::Replace(ReplaceEntityIntent {
                 entity_id, ..
@@ -211,8 +218,10 @@ impl MutationIntent {
                 Some(RollbackEffect::RestoredRelation(spec.relation_id))
             }
             Self::Materialization(intent) => Some(match intent.record() {
-                super::RecordRef::Entity(entity_id) => RollbackEffect::RestoredEntity(entity_id),
-                super::RecordRef::Relation(relation_id) => {
+                crate::transactions::data::primitives::RecordRef::Entity(entity_id) => {
+                    RollbackEffect::RestoredEntity(entity_id)
+                }
+                crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
                     RollbackEffect::RestoredRelation(relation_id)
                 }
             }),
@@ -249,8 +258,10 @@ impl MutationIntent {
                 Some(ExistingRecordTarget::Relation(spec.relation_id))
             }
             Self::Materialization(intent) => Some(match intent.record() {
-                super::RecordRef::Entity(entity_id) => ExistingRecordTarget::Entity(entity_id),
-                super::RecordRef::Relation(relation_id) => {
+                crate::transactions::data::primitives::RecordRef::Entity(entity_id) => {
+                    ExistingRecordTarget::Entity(entity_id)
+                }
+                crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
                     ExistingRecordTarget::Relation(relation_id)
                 }
             }),
@@ -302,7 +313,7 @@ impl MutationIntent {
     }
 }
 
-impl super::MergedCommitPlan {
+impl crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan {
     /// Relation judgment needs its real preimage even though it claims no graph write.
     pub(crate) fn revalidates_relations(&self) -> bool {
         self.merged_intents.iter().any(|intent| {

@@ -3,13 +3,13 @@
 //!
 //! A [`PersistentNameBirthRecord`] is NEVER deserialized into a trusted
 //! [`PersistentNameIdentity`] without first passing
-//! [`crate::lineage::authority::verify_persisted_birth_digest`], which re-hashes
+//! the wire verification, which re-hashes
 //! every typed birth part and validates strictly sorted parents and canonical
 //! discriminator wire framing.
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::lineage::authority::{verify_persisted_birth_digest, PersistedBirthClaim};
+use super::birth_wire::{verify_claim_encoding, PersistedBirthClaim};
 use crate::lineage::data::{
     PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameIdentity,
     PersistentNameSubjectKind,
@@ -84,8 +84,9 @@ pub(super) mod verified_birth {
             parent_identities: wire.parent_identities,
             canonical_discriminator: wire.canonical_discriminator.clone(),
         };
-        let verified = verify_persisted_birth_digest(claim)
-            .map_err(|refusal| serde::de::Error::custom(format!("corrupt persisted birth: {refusal:?}")))?;
+        verify_claim_encoding(&claim).map_err(|refusal| {
+            serde::de::Error::custom(format!("corrupt persisted birth: {refusal:?}"))
+        })?;
         let parents = parent_bytes
             .into_iter()
             .map(PersistentNameIdentity::from_minted_digest)
@@ -98,7 +99,7 @@ pub(super) mod verified_birth {
             wire.canonical_discriminator,
         );
         Ok(Some(PersistentNameBirthRecord::new(
-            verified.identity(),
+            PersistentNameIdentity::from_minted_digest(wire.identity),
             subject_kind,
             parts,
         )))

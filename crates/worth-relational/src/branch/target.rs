@@ -96,7 +96,7 @@ impl RelationalBranchTarget {
 
 impl RelationalBranchTarget {
     pub(crate) fn roots_for_commit(
-        reference: &crate::history::data::RelationalCommitReceipt,
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
     ) -> RelationalBranchRootDescriptor {
         let mut bytes = Vec::with_capacity(24 + reference.parents.len() * 8);
         bytes.extend_from_slice(&reference.commit_id.0.to_be_bytes());
@@ -117,7 +117,7 @@ impl RelationalBranchTarget {
 
     pub(crate) fn from_commit_receipt(
         runtime_instance_id: u64,
-        reference: &crate::history::data::RelationalCommitReceipt,
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
         roots: RelationalBranchRootDescriptor,
     ) -> Self {
         Self::new(
@@ -154,8 +154,9 @@ fn write_u64(bytes: &mut Vec<u8>, value: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::branch::relational_branch_observation;
-    use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
+    use crate::branch::reference::observation::relational_branch_observation;
+    use crate::history::data::commit_receipt::RelationalCommitReceipt;
+    use crate::history::data::coordinates::{BranchId, CommitId};
     use crate::identity::data::VersionId;
     use worth_foundational::{
         FoundationalBranchReferenceGeneration, FoundationalBranchReferenceMismatchAxis,
@@ -269,7 +270,7 @@ mod tests {
         .expect_err("foreign runtime target must not cross the observation adapter");
         assert!(matches!(
             denial,
-            crate::branch::RelationalBranchObservationConstructionDenial::RuntimeInstanceMismatch {
+            crate::branch::reference::observation::RelationalBranchObservationConstructionDenial::RuntimeInstanceMismatch {
                 observation_runtime_instance_id: 11,
                 target_runtime_instance_id: 12,
             }

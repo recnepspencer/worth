@@ -5,9 +5,9 @@ use super::{
 };
 use crate::diagnostics::data::DiagnosticCode;
 use crate::identity::data::{KindId, PartitionId, VersionId};
-use crate::transactions::data::{CreatedEntityRef, EntityReference};
-use crate::validation::data::InvariantClass;
-use crate::validation::data::InvariantWitnessBasis;
+use crate::transactions::data::primitives::{CreatedEntityRef, EntityReference};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::execution::InvariantWitnessBasis;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
@@ -232,11 +232,12 @@ fn custom_invariant_failure_fields_use_typed_phase_and_failure_labels() {
         detail: "custom invariant failed".to_string(),
         fields: InvariantViolationFields::CustomInvariantFailure {
             identity: CustomInvariantFailureIdentity::new(
-                crate::validation::data::CustomInvariantSemanticIdentity {
-                    rule_id: crate::validation::data::CustomInvariantRuleId::new("custom.rule"),
-                    semantic_version: crate::validation::data::CustomInvariantSemanticVersion::new(
-                        2, 3,
+                crate::validation::data::rule_id::CustomInvariantSemanticIdentity {
+                    rule_id: crate::validation::data::rule_id::CustomInvariantRuleId::new(
+                        "custom.rule",
                     ),
+                    semantic_version:
+                        crate::validation::data::rule_id::CustomInvariantSemanticVersion::new(2, 3),
                 },
             ),
             phase: CustomInvariantFailurePhase::Execution,
@@ -273,11 +274,12 @@ fn custom_invariant_failure_witness_key_uses_typed_phase_and_failure_labels() {
         detail: "custom invariant failed".to_string(),
         fields: InvariantViolationFields::CustomInvariantFailure {
             identity: CustomInvariantFailureIdentity::new(
-                crate::validation::data::CustomInvariantSemanticIdentity {
-                    rule_id: crate::validation::data::CustomInvariantRuleId::new("custom.rule"),
-                    semantic_version: crate::validation::data::CustomInvariantSemanticVersion::new(
-                        2, 3,
+                crate::validation::data::rule_id::CustomInvariantSemanticIdentity {
+                    rule_id: crate::validation::data::rule_id::CustomInvariantRuleId::new(
+                        "custom.rule",
                     ),
+                    semantic_version:
+                        crate::validation::data::rule_id::CustomInvariantSemanticVersion::new(2, 3),
                 },
             ),
             phase: CustomInvariantFailurePhase::Preparation,
@@ -295,10 +297,11 @@ fn custom_invariant_failure_witness_key_uses_typed_phase_and_failure_labels() {
 
 #[test]
 fn invariant_failure_causes_round_trip_without_losing_application_or_access_evidence() {
-    use crate::validation::data::{
+    use crate::validation::data::custom_rule::access_denial::{
         CustomInvariantAccessDenial, CustomInvariantAccessDenialKind,
-        CustomInvariantFailureCause as Cause, CustomInvariantRefusal,
     };
+    use crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause as Cause;
+    use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
     use worth_execution::{MemoryLimitDenial, MemoryLimitLevel};
     let mut causes = vec![Cause::DeclaredValue(
         CustomInvariantRefusal::DeclaredValue {

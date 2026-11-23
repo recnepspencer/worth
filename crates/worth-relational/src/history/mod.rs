@@ -1,6 +1,6 @@
 mod access;
 mod authority;
-mod commit;
+pub(crate) mod commit;
 pub mod data;
 pub mod retention;
 

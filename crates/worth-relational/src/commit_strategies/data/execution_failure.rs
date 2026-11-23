@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StrategyExecutorFailureClass {
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
     InvalidInput,
     ReadContractViolation,
     ProjectionContractViolation,
@@ -15,7 +15,7 @@ pub enum StrategyExecutorFailureClass {
 pub enum StrategyExecutorFailureEvidence {
     ProjectionContract {
         denial:
-            crate::visibility::materialization::read_records::RelationalProjectionContractDenial,
+            crate::visibility::materialization::read_records::projection::contracts::denial::RelationalProjectionContractDenial,
     },
     AspectFieldLocator {
         #[serde(with = "crate::aspect_wire::serde_canonical_aspect_field_locator")]
@@ -31,7 +31,7 @@ pub enum StrategyExecutorFailureEvidence {
 /// A transient executor refusal: request control cannot become a serialized domain failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StrategyExecutorFailure {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Domain {
         class: StrategyExecutorFailureClass,
         detail: Arc<str>,

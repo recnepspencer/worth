@@ -4,10 +4,11 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{KindId, PartitionId};
 use crate::symbols::data::StoredSymbolText;
 use crate::symbols::data::{ClientKey, Symbol};
-use crate::transactions::data::{
-    CreateIntent, EntityReference, MutationIntent, RelationalCreatedEndpoint,
-    RelationalCreatedEntityKey, RelationalCreatedRelationKey,
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::outcomes::commit_semantic_result::creation_correspondence::{
+    RelationalCreatedEndpoint, RelationalCreatedEntityKey, RelationalCreatedRelationKey,
 };
+use crate::transactions::data::primitives::EntityReference;
 use std::cmp::Ordering;
 
 pub(super) fn validate_original_keys(

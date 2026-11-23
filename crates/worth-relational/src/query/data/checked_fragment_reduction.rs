@@ -1,15 +1,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::{EntityId, RelationId};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::read_records::{EntityReadRecord, RelationReadRecord};
 
 use super::canonical_digest::{
     entity_record_digest_checked, query_result_reduction_digest_checked,
     relation_record_digest_checked,
 };
-use super::{
-    CanonicalQueryResult, DeterministicQueryFragmentKey, QueryExecutionShape,
-    QueryOrderingContract, QueryWorkerFragment, TraversalEntityVisitKey, TraversalRelationVisitKey,
+use crate::query::data::fragment_reduction::{
+    CanonicalQueryResult, QueryWorkerFragment, TraversalEntityVisitKey, TraversalRelationVisitKey,
+};
+use crate::query::data::planned_packets::{
+    DeterministicQueryFragmentKey, QueryExecutionShape, QueryOrderingContract,
 };
 
 type EntityVisits = BTreeMap<(TraversalEntityVisitKey, String, usize), EntityReadRecord>;

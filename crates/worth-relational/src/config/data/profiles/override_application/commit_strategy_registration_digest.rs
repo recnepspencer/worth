@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 
-use crate::commit_strategies::data::CommitStrategyRegistration;
+use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 
 const REGISTRATION_SET_DIGEST_DOMAIN: &[u8] =
     b"worth.relational.config.commit_strategy_registration_set.v1";

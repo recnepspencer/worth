@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::{LineageId, RelationId};
 
 use super::digest_basis::{decision_log_digest_basis, event_batch_digest_basis};

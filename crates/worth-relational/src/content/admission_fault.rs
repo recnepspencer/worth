@@ -1,5 +1,6 @@
 //! Receiver-scoped one-shot corruption of an actual duplicate comparison.
-use super::{RelationalContentDenial as Denial, RelationalContentFormat as Format};
+use super::denial::RelationalContentDenial as Denial;
+use crate::content::registry::RelationalContentFormat as Format;
 use std::cell::RefCell;
 use worth_foundational::facade::CanonicalDigestId;
 

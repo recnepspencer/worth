@@ -1,16 +1,20 @@
+use super::visible_record::VisibleMergeRecord;
 use std::sync::Arc;
 
-use crate::history::data::{BranchId, CommitId, RelationalMergeBranchBasis};
-use crate::identity::data::{KindId, LineageId};
-use crate::merge::data::{
-    CausalAnnotationSummary, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
-    IdentityDiscoverySummary, IdentityMatchCandidate, LoweredMergePlanSummary,
-    MergeAncestrySummary, MergePlanningDecisionLog, MergePlanningDecisionLogDigestBasis,
-    MergePolicyResolutionSummary, NormalizedRelationalMergeRequest,
-    RelationalMergeRequestNormalizationDenial,
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::history::data::merge_branch_basis::RelationalMergeBranchBasis;
+use crate::merge::data::ancestry::MergeAncestrySummary;
+use crate::merge::data::causal::CausalAnnotationSummary;
+use crate::merge::data::decisions::{
+    MergePlanningDecisionLog, MergePlanningDecisionLogDigestBasis,
 };
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::RecordRef;
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope, IdentityDiscoverySummary,
+    IdentityMatchCandidate,
+};
+use crate::merge::data::policy::{LoweredMergePlanSummary, MergePolicyResolutionSummary};
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BranchTouchedRecordDelta {
@@ -43,28 +47,6 @@ pub(crate) struct HistoryScopedMergePlan {
     pub(crate) source_delta: BranchCommitDelta,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
-pub(crate) enum VisibleMergeRecordKind {
-    Entity,
-    Relation,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct VisibleMergeRecord {
-    pub(crate) record_ref: RecordRef,
-    pub(crate) record_kind: VisibleMergeRecordKind,
-    pub(crate) kind_id: Option<KindId>,
-    pub(crate) source_kind_id: Option<KindId>,
-    pub(crate) target_kind_id: Option<KindId>,
-    pub(crate) lineage_id: Option<LineageId>,
-    pub(crate) source_lineage_id: Option<LineageId>,
-    pub(crate) target_lineage_id: Option<LineageId>,
-    pub(crate) source_entity: Option<EntityReadRecord>,
-    pub(crate) target_entity: Option<EntityReadRecord>,
-    pub(crate) source_relation: Option<RelationReadRecord>,
-    pub(crate) target_relation: Option<RelationReadRecord>,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IdentityScopedMergePlan {
     pub(crate) request: NormalizedRelationalMergeRequest,
@@ -91,8 +73,8 @@ pub(crate) struct ConflictClassifiedMergePlan {
     pub(crate) candidates: Arc<[IdentityMatchCandidate]>,
     pub(crate) validated_schema_correspondences: Arc<[ValidatedSchemaDeclaredCorrespondence]>,
     pub(crate) identity_summary: IdentityDiscoverySummary,
-    pub(crate) classifications: Arc<[crate::merge::data::MergeConflictClassification]>,
-    pub(crate) conflict_summary: crate::merge::data::ConflictClassificationSummary,
+    pub(crate) classifications: Arc<[crate::merge::data::conflicts::MergeConflictClassification]>,
+    pub(crate) conflict_summary: crate::merge::data::conflicts::ConflictClassificationSummary,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,9 +89,9 @@ pub(crate) struct CausallyAnnotatedMergePlan {
     pub(crate) candidates: Arc<[IdentityMatchCandidate]>,
     pub(crate) validated_schema_correspondences: Arc<[ValidatedSchemaDeclaredCorrespondence]>,
     pub(crate) identity_summary: IdentityDiscoverySummary,
-    pub(crate) classifications: Arc<[crate::merge::data::MergeConflictClassification]>,
-    pub(crate) conflict_summary: crate::merge::data::ConflictClassificationSummary,
-    pub(crate) causal_annotations: Arc<[crate::merge::data::MergeRecordCausalAnnotation]>,
+    pub(crate) classifications: Arc<[crate::merge::data::conflicts::MergeConflictClassification]>,
+    pub(crate) conflict_summary: crate::merge::data::conflicts::ConflictClassificationSummary,
+    pub(crate) causal_annotations: Arc<[crate::merge::data::causal::MergeRecordCausalAnnotation]>,
     pub(crate) causal_summary: CausalAnnotationSummary,
 }
 
@@ -125,11 +107,11 @@ pub(crate) struct PolicyResolvedMergePlan {
     pub(crate) candidates: Arc<[IdentityMatchCandidate]>,
     pub(crate) validated_schema_correspondences: Arc<[ValidatedSchemaDeclaredCorrespondence]>,
     pub(crate) identity_summary: IdentityDiscoverySummary,
-    pub(crate) classifications: Arc<[crate::merge::data::MergeConflictClassification]>,
-    pub(crate) conflict_summary: crate::merge::data::ConflictClassificationSummary,
-    pub(crate) causal_annotations: Arc<[crate::merge::data::MergeRecordCausalAnnotation]>,
+    pub(crate) classifications: Arc<[crate::merge::data::conflicts::MergeConflictClassification]>,
+    pub(crate) conflict_summary: crate::merge::data::conflicts::ConflictClassificationSummary,
+    pub(crate) causal_annotations: Arc<[crate::merge::data::causal::MergeRecordCausalAnnotation]>,
     pub(crate) causal_summary: CausalAnnotationSummary,
-    pub(crate) policy_records: Arc<[crate::merge::data::MergePolicyResolutionRecord]>,
+    pub(crate) policy_records: Arc<[crate::merge::data::policy::MergePolicyResolutionRecord]>,
     pub(crate) policy_summary: MergePolicyResolutionSummary,
 }
 
@@ -145,13 +127,13 @@ pub(crate) struct LoweredMergePlan {
     pub(crate) candidates: Arc<[IdentityMatchCandidate]>,
     pub(crate) validated_schema_correspondences: Arc<[ValidatedSchemaDeclaredCorrespondence]>,
     pub(crate) identity_summary: IdentityDiscoverySummary,
-    pub(crate) classifications: Arc<[crate::merge::data::MergeConflictClassification]>,
-    pub(crate) conflict_summary: crate::merge::data::ConflictClassificationSummary,
-    pub(crate) causal_annotations: Arc<[crate::merge::data::MergeRecordCausalAnnotation]>,
+    pub(crate) classifications: Arc<[crate::merge::data::conflicts::MergeConflictClassification]>,
+    pub(crate) conflict_summary: crate::merge::data::conflicts::ConflictClassificationSummary,
+    pub(crate) causal_annotations: Arc<[crate::merge::data::causal::MergeRecordCausalAnnotation]>,
     pub(crate) causal_summary: CausalAnnotationSummary,
-    pub(crate) policy_records: Arc<[crate::merge::data::MergePolicyResolutionRecord]>,
+    pub(crate) policy_records: Arc<[crate::merge::data::policy::MergePolicyResolutionRecord]>,
     pub(crate) policy_summary: MergePolicyResolutionSummary,
-    pub(crate) lowered_records: Arc<[crate::merge::data::LoweredMergePlanRecord]>,
+    pub(crate) lowered_records: Arc<[crate::merge::data::policy::LoweredMergePlanRecord]>,
     pub(crate) lowered_summary: LoweredMergePlanSummary,
     pub(crate) decision_log: MergePlanningDecisionLog,
     pub(crate) decision_log_digest_basis: MergePlanningDecisionLogDigestBasis,
@@ -165,87 +147,4 @@ pub(crate) struct ValidatedSchemaDeclaredCorrespondence {
     pub(crate) target_record: RecordRef,
     pub(crate) candidate_count_for_source: usize,
     pub(crate) candidate_count_for_target: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MergePlanningError {
-    Execution(crate::execution::RelationalExecutionDenialCause),
-    RequestNormalization(RelationalMergeRequestNormalizationDenial),
-    UnboundBranchCurrentness,
-    SourceObservationDenied(crate::branch::RelationalBranchBasisDenial),
-    TargetObservationDenied(crate::branch::RelationalBranchBasisDenial),
-    MissingSourceHead {
-        branch_id: BranchId,
-    },
-    MissingTargetHead {
-        branch_id: BranchId,
-    },
-    MissingMergeBase {
-        source_branch: BranchId,
-        target_branch: BranchId,
-    },
-    /// The selected common ancestor has no indexed canonical commit receipt.
-    MissingMergeBaseCommit {
-        commit_id: CommitId,
-    },
-    /// A selected branch delta names a commit with no canonical history entry.
-    MissingDeltaCommit {
-        commit_id: CommitId,
-    },
-    MissingConflictSourceRecord {
-        record: RecordRef,
-    },
-    MissingPolicySourceRecord {
-        record: RecordRef,
-    },
-    MissingLoweringSourceRecord {
-        record: RecordRef,
-    },
-    MissingLoweringConflictClassification {
-        record: RecordRef,
-    },
-    MissingCausalAnnotation {
-        record: RecordRef,
-    },
-    MissingLoweredRecordExecutionBundle {
-        classification: crate::merge::data::MergeConflictClass,
-        readiness: crate::merge::data::MergeExecutionReadiness,
-        lowered_action: Option<crate::merge::data::LoweredMergeAction>,
-    },
-    MissingLoweredRecordDenialBundle,
-}
-
-impl From<RelationalMergeRequestNormalizationDenial> for MergePlanningError {
-    fn from(value: RelationalMergeRequestNormalizationDenial) -> Self {
-        Self::RequestNormalization(value)
-    }
-}
-
-impl From<crate::history::data::RelationalMergeBranchBasisDenial> for MergePlanningError {
-    fn from(value: crate::history::data::RelationalMergeBranchBasisDenial) -> Self {
-        match value {
-            crate::history::data::RelationalMergeBranchBasisDenial::SourceObservationDenied(
-                denial,
-            ) => Self::SourceObservationDenied(denial),
-            crate::history::data::RelationalMergeBranchBasisDenial::TargetObservationDenied(
-                denial,
-            ) => Self::TargetObservationDenied(denial),
-            crate::history::data::RelationalMergeBranchBasisDenial::MissingSourceHead {
-                branch_id,
-            } => Self::MissingSourceHead { branch_id },
-            crate::history::data::RelationalMergeBranchBasisDenial::MissingTargetHead {
-                branch_id,
-            } => Self::MissingTargetHead { branch_id },
-            crate::history::data::RelationalMergeBranchBasisDenial::MissingMergeBase {
-                source_branch,
-                target_branch,
-            } => Self::MissingMergeBase {
-                source_branch,
-                target_branch,
-            },
-            crate::history::data::RelationalMergeBranchBasisDenial::MissingMergeBaseCommit {
-                commit_id,
-            } => Self::MissingMergeBaseCommit { commit_id },
-        }
-    }
 }

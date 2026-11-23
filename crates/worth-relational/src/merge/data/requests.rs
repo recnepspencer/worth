@@ -1,18 +1,18 @@
+pub(crate) mod binding_denial;
 #[path = "requests/denial.rs"]
-mod denial;
+pub(crate) mod denial;
 #[path = "requests/digest.rs"]
-mod digest;
+pub(crate) mod digest;
 #[path = "requests/foundational.rs"]
 mod foundational;
 #[path = "requests/normalized.rs"]
-mod normalized;
+pub(crate) mod normalized;
 #[path = "requests/owner_bound.rs"]
 mod owner_bound;
 #[path = "requests/raw.rs"]
-mod raw;
+pub(crate) mod raw;
 
 pub use denial::RelationalMergeRequestNormalizationDenial;
-pub(crate) use digest::normalized_merge_request_digest;
 pub use foundational::RelationalFoundationalMergeRequest;
 pub use normalized::{
     NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,

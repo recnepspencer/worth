@@ -1,5 +1,5 @@
 //! Concrete rule/member and three touched-slice admission slots.
-use crate::validation::data::CustomInvariantTouchedSummary;
+use crate::validation::data::custom_rule::touched_scope::planned_records::CustomInvariantTouchedSummary;
 use worth_execution::ExecutionMemoryReservation;
 pub(crate) struct ValidationLeafMemory {
     pub(crate) length: usize,

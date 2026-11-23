@@ -1,11 +1,13 @@
 mod diagnostic_artifacts;
-mod execution_summary;
+pub(crate) mod execution_summary;
 mod failures;
-mod metadata;
+pub(crate) mod metadata;
 #[cfg(test)]
 mod tests;
 
-use crate::validation::data::{InvariantCheckResult, InvariantDecisionRecord};
+use crate::validation::data::execution::InvariantDecisionRecord;
+mod check_result;
+pub use check_result::InvariantCheckResult;
 
 pub use diagnostic_artifacts::{
     CustomInvariantTraceArtifact, InvariantFailureArtifact, InvariantProofBoundaryArtifact,
@@ -82,7 +84,7 @@ impl InvariantExecutionResult {
         );
         Self {
             metadata,
-            summary: InvariantExecutionSummary::from_results(&[]),
+            summary: InvariantExecutionSummary::empty(),
             results: Vec::new(),
             decision_log: Vec::new(),
         }
@@ -130,3 +132,5 @@ impl InvariantExecutionResult {
         self.results
     }
 }
+
+mod commit_trace;

@@ -11,7 +11,8 @@ use crate::schema::data::{
 /// the runtime's final schema.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SchemaContinuityAuthorityInput {
-    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     target_schema_version: SchemaVersionId,
     target_schema_authority: SchemaAuthoritySnapshot,
     descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -20,7 +21,7 @@ pub(crate) struct SchemaContinuityAuthorityInput {
 
 impl SchemaContinuityAuthorityInput {
     pub(crate) fn from_carried_registry(
-        registry: crate::branch::RetainedRelationalSchemaRegistry,
+        registry: crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry,
         authority: SchemaAuthoritySnapshot,
         descriptor_semantics_version: DescriptorSemanticsVersion,
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
@@ -43,12 +44,12 @@ impl SchemaContinuityAuthorityInput {
         descriptor_semantics_version: DescriptorSemanticsVersion,
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::branch::RelationalBranchRootCaptureDenial> {
+    ) -> Result<Self, crate::branch::root::RelationalBranchRootCaptureDenial> {
         let registry =
-            crate::branch::RetainedRelationalSchemaRegistry::copy_for_request(registry, request)?;
+            crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry::copy_for_request(registry, request)?;
         let authority = registry
             .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*request))
-            .map_err(crate::branch::RelationalBranchRootCaptureDenial::Request)?;
+            .map_err(crate::branch::root::RelationalBranchRootCaptureDenial::Request)?;
         Ok(Self::from_carried_registry(
             registry,
             authority,
@@ -63,7 +64,7 @@ impl SchemaContinuityAuthorityInput {
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
     ) -> Self {
         Self::from_shared_registry(
-            crate::branch::RetainedRelationalSchemaRegistry::from_configuration(
+            crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry::from_configuration(
                 std::sync::Arc::new(target_schema_registry),
             ),
             descriptor_semantics_version,
@@ -72,7 +73,7 @@ impl SchemaContinuityAuthorityInput {
     }
 
     pub(crate) fn from_shared_registry(
-        target_schema_registry: crate::branch::RetainedRelationalSchemaRegistry,
+        target_schema_registry: crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry,
         descriptor_semantics_version: DescriptorSemanticsVersion,
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
     ) -> Self {
@@ -109,7 +110,7 @@ impl SchemaContinuityAuthorityInput {
     /// the snapshot its commit recorded, so the new root is captured under it.
     pub(crate) fn carrying_recorded_registry(
         mut self,
-        registry: crate::branch::RetainedRelationalSchemaRegistry,
+        registry: crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry,
     ) -> Self {
         self.target_schema_registry = Some(registry);
         self
@@ -117,7 +118,8 @@ impl SchemaContinuityAuthorityInput {
 
     pub(crate) fn target_schema_registry(
         &self,
-    ) -> Option<&crate::branch::RetainedRelationalSchemaRegistry> {
+    ) -> Option<&crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>
+    {
         self.target_schema_registry.as_ref()
     }
 

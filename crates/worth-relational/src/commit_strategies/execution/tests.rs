@@ -4,13 +4,16 @@ use super::{
     bind_execution, execute_bound_strategy, CommitStrategyExecutionRegistryError,
     FrozenCommitStrategyExecutorRegistry, StrategyExecutionError,
 };
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
 use crate::commit_strategies::data::{
     CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, CanonicalStrategyInputDigest,
-    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyExecutionRegistration,
-    CommitStrategyExecutor, CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
-    CommitStrategySemanticName, CommitStrategyVersion, PersistentArtifactName,
-    StrategyExecutionResult, StrategyInputSchemaName, StrategyInputSchemaVersion,
-    StrategyIntentName, StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
+    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyFamilyName,
+    CommitStrategyId, CommitStrategyRegistration, CommitStrategySemanticName,
+    CommitStrategyVersion, PersistentArtifactName, StrategyExecutionResult,
+    StrategyInputSchemaName, StrategyInputSchemaVersion, StrategyIntentName,
+    StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
     StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
     StrategyTraversalBasis,
 };
@@ -38,7 +41,7 @@ impl CommitStrategyExecutor for EchoExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
     {
         let _ = observation
@@ -56,7 +59,7 @@ impl CommitStrategyExecutor for CrossPartitionExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
     {
         let _ = observation
@@ -77,7 +80,7 @@ impl CommitStrategyExecutor for UnsupportedContractExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
     {
         Ok(empty_result())
@@ -92,7 +95,7 @@ impl CommitStrategyExecutor for PanicExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
     {
         panic!("panic containment probe")

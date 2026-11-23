@@ -1,0 +1,2 @@
+pub const MAXIMUM_CONTENT_FRAME_BYTES: usize = 16 * 1024 * 1024;
+pub const MAXIMUM_STAGED_CONTENT_BYTES: usize = 64 * 1024 * 1024;

@@ -1,11 +1,9 @@
 //! Conditional private storage contracts preserve physical rows and installation bytes.
 use super::endpoints;
-use crate::aggregate_identity::projected_storage::{
+use super::projected_grammar::{
     COORDINATE_ASPECT, COORDINATE_FIELDS, MEMBERSHIP_ASPECT, MEMBERSHIP_FIELDS,
 };
-use crate::aggregate_identity::record::{
-    AGGREGATE_ASPECT, AGGREGATE_FIELDS, LINEAGE_ASPECT, LINEAGE_FIELDS,
-};
+use super::record_grammar::{AGGREGATE_ASPECT, AGGREGATE_FIELDS, LINEAGE_ASPECT, LINEAGE_FIELDS};
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::schema::data::{
     AggregateIdentityContractDeclaration, AggregateIdentityStorage, AspectBinding,

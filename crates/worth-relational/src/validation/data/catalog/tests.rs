@@ -4,14 +4,15 @@ use worth_foundational::facade::{
 
 use super::registration_examples::InvariantRegistrationContract;
 use super::{InvariantCatalog, InvariantRegistration};
-use crate::validation::data::{InvariantExecutionPoint, InvariantFailureEffect, InvariantRule};
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::rules::InvariantRule;
 
 #[test]
 fn canonical_catalog_digest_is_order_and_duplicate_independent_without_json_identity() {
     let unique_name =
         InvariantRegistration::commit_boundary_blocking(InvariantRule::unique_entity_aspect_field(
-            crate::tests::support::aspect_key("profile.name"),
-            crate::tests::support::field_key("value"),
+            worth_foundational::facade::AspectKey::new("profile.name").expect("valid test key"),
+            worth_foundational::facade::FieldKey::new("value").expect("valid test key"),
         ));
     let max_merged = InvariantRegistration::harness_audit_only(InvariantRule::MaxMergedIntents(2));
 
@@ -32,12 +33,12 @@ fn canonical_catalog_digest_is_order_and_duplicate_independent_without_json_iden
 #[test]
 fn catalog_digest_preserves_foundational_aspect_field_locator_identity() {
     let profile_name = catalog_for_unique_field(
-        crate::tests::support::aspect_key("profile.name"),
-        crate::tests::support::field_key("value"),
+        worth_foundational::facade::AspectKey::new("profile.name").expect("valid test key"),
+        worth_foundational::facade::FieldKey::new("value").expect("valid test key"),
     );
     let profile_value = catalog_for_unique_field(
-        crate::tests::support::aspect_key("profile.value"),
-        crate::tests::support::field_key("name"),
+        worth_foundational::facade::AspectKey::new("profile.value").expect("valid test key"),
+        worth_foundational::facade::FieldKey::new("name").expect("valid test key"),
     );
 
     assert_ne!(

@@ -17,15 +17,14 @@ use crate::merge::conflicts::relation_topology::refine_relation_topology_conflic
 use crate::merge::data::{
     ConflictClassificationSummary, ConflictClassifiedMergePlan, IdentityScopedMergePlan,
     MergeConflictClass, MergeConflictClassification, MergePlanningError,
-    NormalizedRelationalMergeRequest,
 };
 use crate::merge::MergeAccess;
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_conflict_scope(
+    pub(in crate::merge) fn plan_conflict_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<ConflictClassifiedMergePlan, MergePlanningError> {
         let identity_plan = self.plan_identity_scope(execution, request)?;
         self.classify_conflict_scope(execution, identity_plan)

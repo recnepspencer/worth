@@ -1,20 +1,38 @@
 use crate::diagnostics::data::DiagnosticCode;
-use crate::history::data::CommitId;
-use crate::publication::bundle::PublicationStage;
+use crate::history::data::coordinates::CommitId;
+use crate::publication::bundle::publication_status::PublicationStage;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::snapshots::data::SnapshotId;
-use crate::validation::data::{InvariantExecutionPoint, InvariantGroupSet};
-use crate::validation::engine::{
-    InvariantExecutionDisposition, InvariantExecutionResult, InvariantObservationKind,
-};
+use crate::snapshots::data::coordinates::SnapshotId;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution_posture::InvariantExecutionDisposition;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::observation_kind::InvariantObservationKind;
 use serde::{Deserialize, Serialize};
 
-use crate::authority::commit::preparation::planning::strategy::{
+use crate::transactions::data::preparation_strategy_posture::{
     ParallelLegality, ParallelProfitability, PreparationStrategySelection, SerialPreparationReason,
 };
 use worth_foundational::facade::AspectKey;
 
-use super::CommitStructuralSummary;
+use crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
+
+/// Descriptive evidence of an invariant pass that can be recorded in a commit log.
+pub struct CommitInvariantEvaluation {
+    pub(crate) execution_point: InvariantExecutionPoint,
+    pub(crate) observation_kind: InvariantObservationKind,
+    pub(crate) disposition: InvariantExecutionDisposition,
+    pub(crate) preparation_selected_mode: Option<PreparationStrategySelection>,
+    pub(crate) preparation_parallel_legality: Option<ParallelLegality>,
+    pub(crate) preparation_parallel_profitability: Option<ParallelProfitability>,
+    pub(crate) preparation_serial_selection_reason: Option<SerialPreparationReason>,
+    pub(crate) consumed_groups: InvariantGroupSet,
+    pub(crate) applicable_groups: InvariantGroupSet,
+    pub(crate) result_count: usize,
+    pub(crate) advisory_count: usize,
+    pub(crate) violation_count: usize,
+    pub(crate) blocking_violation: bool,
+    pub(crate) publication_violation: bool,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CommitPhase {
@@ -263,41 +281,26 @@ impl CommitLog {
         self.events.push(CommitTraceEvent::ChangedRecordsPrepared);
     }
 
-    pub fn record_invariant_outcomes(&mut self, result: &InvariantExecutionResult) {
-        let metadata = result.metadata();
-        let summary = result.summary();
-        let result_count = summary.result_count();
-        let advisory_count = summary.advisory_count();
-        let violation_count = summary.violation_count();
-        let blocking_violation = summary.has_blocking_violation();
-        let publication_violation = summary.has_publication_violation();
-
-        self.running_summary.invariant_result_count += result_count;
-        self.running_summary.invariant_advisory_count += advisory_count;
-        self.running_summary.invariant_violation_count += violation_count;
+    pub fn record_invariant_outcomes(&mut self, outcome: impl Into<CommitInvariantEvaluation>) {
+        let outcome = outcome.into();
+        self.running_summary.invariant_result_count += outcome.result_count;
+        self.running_summary.invariant_advisory_count += outcome.advisory_count;
+        self.running_summary.invariant_violation_count += outcome.violation_count;
         self.events.push(CommitTraceEvent::InvariantEvaluated {
-            execution_point: metadata.execution_point(),
-            observation_kind: metadata.observation_kind(),
-            disposition: metadata.disposition(),
-            preparation_selected_mode: metadata
-                .preparation_strategy()
-                .map(|strategy| strategy.selected_mode),
-            preparation_parallel_legality: metadata
-                .preparation_strategy()
-                .map(|strategy| strategy.parallel_legality),
-            preparation_parallel_profitability: metadata
-                .preparation_strategy()
-                .map(|strategy| strategy.parallel_profitability),
-            preparation_serial_selection_reason: metadata
-                .preparation_strategy()
-                .and_then(|strategy| strategy.serial_selection_reason),
-            consumed_groups: metadata.consumed_groups(),
-            applicable_groups: metadata.applicable_groups(),
-            result_count,
-            advisory_count,
-            violation_count,
-            blocking_violation,
-            publication_violation,
+            execution_point: outcome.execution_point,
+            observation_kind: outcome.observation_kind,
+            disposition: outcome.disposition,
+            preparation_selected_mode: outcome.preparation_selected_mode,
+            preparation_parallel_legality: outcome.preparation_parallel_legality,
+            preparation_parallel_profitability: outcome.preparation_parallel_profitability,
+            preparation_serial_selection_reason: outcome.preparation_serial_selection_reason,
+            consumed_groups: outcome.consumed_groups,
+            applicable_groups: outcome.applicable_groups,
+            result_count: outcome.result_count,
+            advisory_count: outcome.advisory_count,
+            violation_count: outcome.violation_count,
+            blocking_violation: outcome.blocking_violation,
+            publication_violation: outcome.publication_violation,
         });
     }
 

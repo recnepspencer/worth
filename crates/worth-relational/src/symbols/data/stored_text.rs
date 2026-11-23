@@ -237,7 +237,7 @@ mod tests {
         assert!(matches!(
             StoredSymbolText::admit(&ExecutionRequest::serial(&exhausted), &external),
             Err(Denial::Request(
-                crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
+                crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
             ))
         ));
     }

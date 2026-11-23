@@ -1,6 +1,6 @@
 //! Actual owned maps and copied keys of a content-registry clone.
 use super::RelationalContentFormatRegistry;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 pub(crate) struct ContentRegistryCopyGeometry {
     pub(crate) formats: usize,
     pub(crate) names: usize,
@@ -11,7 +11,7 @@ pub(crate) struct ContentRegistryCopyGeometry {
 impl RelationalContentFormatRegistry {
     pub(crate) fn copy_geometry(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
     ) -> Result<ContentRegistryCopyGeometry, Cause> {
         let mut geometry = ContentRegistryCopyGeometry {
             formats: self.formats.len(),

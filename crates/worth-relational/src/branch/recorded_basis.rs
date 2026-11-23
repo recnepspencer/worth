@@ -108,14 +108,5 @@ impl RecordedRelationalCanonicalComponent {
     }
 }
 
-#[derive(Debug)]
-pub enum RelationalRecordedComponentRefusal {
-    Request(crate::execution::RelationalExecutionDenialCause),
-    Basis(super::RelationalBranchBasisDenial),
-    Frame(super::RelationalBranchObservationConstructionDenial),
-    Source(crate::durability::data::RelationalRecoveryStop),
-    MissingPerformedCommit { commit_id: CommitId },
-    CanonicalMismatch { commit_id: CommitId },
-    PayloadEncoding { detail: String },
-    PayloadBacking(worth_execution::ExecutionRequestArrayDenial),
-}
+pub(crate) mod refusal;
+pub use refusal::RelationalRecordedComponentRefusal;

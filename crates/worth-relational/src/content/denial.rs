@@ -1,4 +1,4 @@
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 #[cfg(test)]
 mod tests;
 
@@ -46,7 +46,7 @@ content_rejections! {
     MissingContent,
     BackingUnavailable {
         identity: worth_foundational::facade::ContentRefId,
-        cause: crate::storage::data::RelationalStorageUnavailableCause,
+        cause: crate::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
     },
     FormatBindingMissing,
     FormatMismatch,

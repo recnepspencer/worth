@@ -15,7 +15,7 @@ pub(super) fn compile_bound_executable_plan(
     request: &NormalizedRelationalMergeRequest,
     execution_ready: &ExecutionReadyLoweredMergePlan,
 ) -> Result<BoundExecutableMergePlan, MergeExecutionCompilationError> {
-    let parent_order = crate::merge::data::bound_parent_order(execution_ready);
+    let parent_order = crate::merge::data::bound_parent_order(&execution_ready.basis);
     let source_records_by_ref = execution_ready
         .source_records
         .iter()

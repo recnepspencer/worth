@@ -5,7 +5,7 @@ use crate::history::data::CommitId;
 use crate::merge::data::{
     BranchCausalDot, CausalAnnotationSummary, CausallyAnnotatedMergePlan,
     ConflictClassifiedMergePlan, MergeCausalEvidenceModel, MergePlanningError,
-    MergeRecordCausalAnnotation, MergeRecordCausalDisposition, NormalizedRelationalMergeRequest,
+    MergeRecordCausalAnnotation, MergeRecordCausalDisposition,
 };
 use crate::merge::MergeAccess;
 use crate::transactions::data::RecordRef;
@@ -17,10 +17,10 @@ enum TouchedRecordKey {
 }
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_causal_scope(
+    pub(in crate::merge) fn plan_causal_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<CausallyAnnotatedMergePlan, MergePlanningError> {
         let conflict_plan = self.plan_conflict_scope(execution, request)?;
         Ok(self.annotate_causal_scope(conflict_plan))

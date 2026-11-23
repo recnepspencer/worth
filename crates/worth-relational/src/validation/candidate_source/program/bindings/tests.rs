@@ -1,6 +1,6 @@
 //! Declared names locate a recipe; only its registry's live binding is reused.
+use super::super::schema_fixture::managed_cache_schema;
 use super::*;
-use crate::tests::support::managed_cache_schema;
 #[test]
 fn managed_cache_binding_interns_exact_recipe_and_refuses_a_conflicting_live_recipe() {
     let (registry, program) = managed_cache_schema();
@@ -86,18 +86,18 @@ fn public_source_registration_rejects_a_foreign_route_even_with_its_actual_membe
         program
             .require_registry(
                 &source,
-                crate::schema::SchemaCompilationControl::Configuration
+                crate::schema::compilation_control::SchemaCompilationControl::Configuration
             )
-            .map_err(crate::validation::CustomInvariantCompilationDenial::configuration_source),
+            .map_err(crate::validation::data::compilation_denial::CustomInvariantCompilationDenial::configuration_source),
         Ok(())
     );
     assert_eq!(
         program
             .require_registry(
                 &receiving,
-                crate::schema::SchemaCompilationControl::Configuration
+                crate::schema::compilation_control::SchemaCompilationControl::Configuration
             )
-            .map_err(crate::validation::CustomInvariantCompilationDenial::configuration_source),
+            .map_err(crate::validation::data::compilation_denial::CustomInvariantCompilationDenial::configuration_source),
         Err(Denial::ForeignDefinition)
     );
 }

@@ -1,5 +1,5 @@
 //! Passive, bounded observations of actual original-request phase work.
-use super::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use std::cell::RefCell;
 use std::rc::Rc;
 

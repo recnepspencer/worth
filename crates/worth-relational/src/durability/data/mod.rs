@@ -33,10 +33,10 @@ pub(crate) use lineage_event_pages::*;
 mod native_checkpoint;
 mod native_checkpoint_capture_denial;
 mod recovery_branch_transitions;
-mod recovery_errors;
+pub(crate) mod recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
-mod recovery_stop;
+pub(crate) mod recovery_stop;
 
 pub(crate) use branch_lifecycle_images::DurableBranchLifecycleImage;
 pub(crate) use branch_root_schema_images::{

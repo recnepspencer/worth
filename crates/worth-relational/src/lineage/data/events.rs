@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, RelationalCommitReceipt};
+use crate::history::data::commit_receipt::RelationalCommitReceipt;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{PersistentNameBirthRecord, PersistentNameIdentity};
 

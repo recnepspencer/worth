@@ -113,11 +113,13 @@ fn native_diagnostic_serde_preserves_typed_authority_tree() {
         RelationalDiagnosticFields::from_diagnostic_value(RelationalDiagnosticValue::object([
             (
                 "commit",
-                RelationalDiagnosticValue::CommitId(crate::history::data::CommitId(42)),
+                RelationalDiagnosticValue::CommitId(crate::history::data::coordinates::CommitId(
+                    42,
+                )),
             ),
             (
                 "branch",
-                RelationalDiagnosticValue::BranchId(crate::history::data::BranchId(
+                RelationalDiagnosticValue::BranchId(crate::history::data::coordinates::BranchId(
                     "main".to_string(),
                 )),
             ),

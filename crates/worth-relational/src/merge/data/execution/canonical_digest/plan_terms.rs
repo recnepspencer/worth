@@ -1,9 +1,10 @@
-use crate::merge::data::{
+use crate::merge::data::execution::executable_plan::{
     AdoptSourceRecordPlan, BoundExecutableMergeRecordPlan, ConvergeDeletedOnBothSidesRecordPlan,
     ExecutableAspectPlan, MergeExecutableRecordProvenance, PreserveSharedRecordPlan,
-    ReconcileRecordPlan, ReconciledIdentityBasis, ResolvedAspectMergePolicy, SharedTruthWitness,
-    VisibleMergeRecordKind, VisibleMergeRecordSnapshot,
+    ReconcileRecordPlan, ReconciledIdentityBasis, SharedTruthWitness, VisibleMergeRecordSnapshot,
 };
+use crate::merge::data::policy::ResolvedAspectMergePolicy;
+use crate::merge::data::visible_record::VisibleMergeRecordKind;
 
 impl super::CanonicalDigestBytes {
     pub(super) fn executable_record_plans(&mut self, values: &[BoundExecutableMergeRecordPlan]) {
@@ -67,11 +68,15 @@ impl super::CanonicalDigestBytes {
         match value {
             VisibleMergeRecordSnapshot::Entity(record) => {
                 self.tag(1);
-                self.str(&crate::query::data::query_authoritative_entity_record_digest(record));
+                self.str(
+                    &crate::query::data::canonical_digest::query_authoritative_entity_record_digest(
+                        record,
+                    ),
+                );
             }
             VisibleMergeRecordSnapshot::Relation(record) => {
                 self.tag(2);
-                self.str(&crate::query::data::query_authoritative_relation_record_digest(record));
+                self.str(&crate::query::data::canonical_digest::query_authoritative_relation_record_digest(record));
             }
         }
     }

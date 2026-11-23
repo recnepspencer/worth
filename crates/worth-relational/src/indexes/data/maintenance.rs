@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{DerivedIndexGeneration, DerivedIndexId};
+use crate::indexes::data::definition::DerivedIndexId;
 
 /// Limits for change maintenance or an explicitly entered reconstruction.
 /// A cold allowance grants no reconstruction authority: ordinary maintenance
@@ -36,7 +36,7 @@ pub struct DerivedIndexMaintenanceWork {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DerivedIndexMaintenanceDenialKind {
-    Basis(crate::branch::RelationalBranchBasisDenial),
+    Basis(crate::branch::basis_denial::RelationalBranchBasisDenial),
     SnapshotUnavailable,
     CommitMismatch,
     BeforeRootMismatch,
@@ -49,18 +49,12 @@ pub enum DerivedIndexMaintenanceDenialKind {
     CandidateUnavailable,
     CandidateIndexesAlreadyPrepared,
     GenerationIdentityExhausted,
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DerivedIndexMaintenanceDenial {
     pub kind: DerivedIndexMaintenanceDenialKind,
-    pub work: DerivedIndexMaintenanceWork,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DerivedIndexMaintenanceOutcome {
-    pub generations: Vec<DerivedIndexGeneration>,
     pub work: DerivedIndexMaintenanceWork,
 }
 
@@ -78,11 +72,11 @@ pub enum DerivedIndexMaintenanceAdmissionStop<Stop> {
     Admission(Stop),
 }
 
-impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+impl From<crate::storage::substrate::maintenance::refusal::MaintenanceRefusal>
     for DerivedIndexMaintenanceDenial
 {
-    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
-        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+    fn from(cause: crate::storage::substrate::maintenance::refusal::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::refusal::MaintenanceRefusal as Refusal;
         Self {
             kind: match cause {
                 Refusal::Execution(cause) => DerivedIndexMaintenanceDenialKind::Execution(cause),
@@ -95,11 +89,11 @@ impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
     }
 }
 
-impl From<crate::storage::substrate::maintenance::MaintenanceRefusal>
+impl From<crate::storage::substrate::maintenance::refusal::MaintenanceRefusal>
     for DerivedIndexMaintenanceDenialKind
 {
-    fn from(cause: crate::storage::substrate::maintenance::MaintenanceRefusal) -> Self {
-        use crate::storage::substrate::maintenance::MaintenanceRefusal as Refusal;
+    fn from(cause: crate::storage::substrate::maintenance::refusal::MaintenanceRefusal) -> Self {
+        use crate::storage::substrate::maintenance::refusal::MaintenanceRefusal as Refusal;
         match cause {
             Refusal::Execution(cause) => Self::Execution(cause),
             Refusal::MissingPredecessor | Refusal::UnavailableChange => {

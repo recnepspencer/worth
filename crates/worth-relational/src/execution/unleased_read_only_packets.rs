@@ -1,5 +1,6 @@
 //! An unleased immutable-read kernel can refuse only for its caller's request.
-use super::{ReadOnlyPacket, RelationalExecutionDenialCause};
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
+use crate::execution::read_only_packets::ReadOnlyPacket;
 use worth_foundational::PartitionIdentity;
 
 #[derive(Debug)]

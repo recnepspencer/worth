@@ -1,10 +1,11 @@
 use sha2::{Digest, Sha256};
 
-use crate::merge::data::{
-    MergeIntent, NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
+use crate::merge::data::requests::normalized::{
+    NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
     RelationalMergeRequestFamily, RelationalMergeSchemaReconciliationPosture, RelationalMergeScope,
     RelationalMergeTopologyIntent,
 };
+use crate::merge::data::requests::raw::MergeIntent;
 
 pub(crate) fn normalized_merge_request_digest(
     request: &NormalizedRelationalMergeRequest,

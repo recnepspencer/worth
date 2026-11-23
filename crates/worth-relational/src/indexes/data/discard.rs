@@ -1,4 +1,4 @@
-use super::DerivedIndexId;
+use crate::indexes::data::definition::DerivedIndexId;
 
 /// Remove an index's currently catalogued generations at every retained basis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -1,6 +1,6 @@
 use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 use super::TouchedStructuralSet;
 

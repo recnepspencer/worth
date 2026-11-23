@@ -1,9 +1,9 @@
-use super::RelationalCanonicalCommitArtifactFrameRefusal;
-use crate::execution::RelationalExecutionDenialCause;
-use crate::history::data::CommitId;
+use super::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
+use crate::history::data::coordinates::CommitId;
+use crate::publication::patch::data::position_denial::RelationalCanonicalPositionAdmissionDenial;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
-use crate::symbols::data::RelationalFieldTextAdmissionDenial;
+use crate::symbols::data::field_text::RelationalFieldTextAdmissionDenial;
 
 /// Why artifact bytes were not readmitted as a canonical commit. Variants
 /// follow readmission order; each refuses before any later phase runs and
@@ -30,7 +30,7 @@ pub enum RelationalCanonicalCommitArtifactRefusal {
     /// The envelope's managed field text could not be readmitted.
     FieldText(RelationalFieldTextAdmissionDenial),
     /// Native content failed original-request admission.
-    Content(crate::content::RelationalContentDenial),
+    Content(crate::content::denial::RelationalContentDenial),
     /// The envelope failed canonical admission at its position.
     PositionAdmission(RelationalCanonicalPositionAdmissionDenial),
     /// The payload decodes to an admissible commit but is not that commit's

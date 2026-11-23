@@ -1,8 +1,8 @@
 //! Schema-bound direct endpoint routes preserve relation multiplicity and field meaning.
 use super::*;
-use crate::derived_relation::DerivedRelationNode;
-use crate::schema::SchemaCompilationControl;
-use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
+use crate::derived_relation::definition::DerivedRelationNode;
+use crate::schema::compilation_control::SchemaCompilationControl;
+use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as CompilationDenial;
 
 /// One direct result-relation route from a Source row to a projected endpoint.
 /// Binding checks the actual schema-owned path; its name only joins compiled

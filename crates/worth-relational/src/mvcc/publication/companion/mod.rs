@@ -4,7 +4,9 @@ pub(crate) use cell::{ManagedSourceHistoryOwner, ManagedSourceRootImage};
 mod cell;
 mod managed_fork;
 mod preflight;
+pub(crate) mod preflight_stop;
 mod registration;
+pub(crate) mod registration_stop;
 pub use managed_fork::ManagedIndexSourceForkPreparation;
 pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
 

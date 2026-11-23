@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 mod canonical_bytes;
 
-use super::{
-    CommitStrategyDescriptorDigest, CommitStrategyId, CommitStrategySemanticName,
-    PersistentArtifactName, StrategyInputSchemaName, StrategyInputSchemaVersion,
-};
+use super::{CommitStrategySemanticName, PersistentArtifactName, StrategyInputSchemaName};
+use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptorDigest;
+use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
+use crate::commit_strategies::data::strategy_id::CommitStrategyId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StrategyRequestOrigin {

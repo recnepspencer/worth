@@ -6,24 +6,26 @@ use crate::history::data::{BranchId, CommitId};
 use crate::merge::data::MergePlanningRequest;
 use crate::merge::data::{
     BranchCommitDelta, BranchDeltaSummary, BranchTouchedRecordDelta, HistoryScopedMergePlan,
-    MergePlanningError, NormalizedRelationalMergeRequest,
+    MergePlanningError,
 };
 use crate::merge::MergeAccess;
 use crate::transactions::data::RecordRef;
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_history_scope(
+    pub(in crate::merge) fn plan_history_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<HistoryScopedMergePlan, MergePlanningError> {
         crate::execution::check_request(execution).map_err(MergePlanningError::Execution)?;
         let history = self.runtime.history();
-        let (target_binding, source_binding) = request
-            .owner_bindings()
-            .ok_or(MergePlanningError::UnboundBranchCurrentness)?;
+        let crate::merge::request_normalization::BoundMergeInputs {
+            request,
+            target,
+            source,
+        } = request;
         let basis = history
-            .resolve_merge_branch_basis_from_bindings(source_binding, target_binding)
+            .resolve_merge_branch_basis_from_bindings(source, target)
             .map_err(MergePlanningError::from)?;
         let merge_base_ancestors =
             history.ancestor_closure_by_commit_id_order(basis.merge_base.commit.commit_id);
@@ -61,10 +63,10 @@ impl<'runtime> MergeAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergePlanningRequest,
     ) -> Result<HistoryScopedMergePlan, MergePlanningError> {
-        let normalized_request = self
-            .normalize_merge_planning_request(request)
-            .map_err(MergePlanningError::from)?;
-        self.plan_history_scope(execution, normalized_request)
+        let bound = self.bind_planning_request_for_test(request)?;
+        let normalized_request =
+            super::request_normalization::normalize_bound_merge_planning_request(bound)?;
+        self.plan_history_scope(execution, &normalized_request)
     }
 
     fn branch_commit_delta(

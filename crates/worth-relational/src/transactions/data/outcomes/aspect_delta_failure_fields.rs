@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::data::DiagnosticCode;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 use worth_foundational::facade::{AuthoritativePatchConstructionDenial, ContractValidationDenial};
 

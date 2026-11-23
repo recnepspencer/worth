@@ -1,9 +1,9 @@
 //! Resolve original endpoint names; never format an unresolved symbol.
 use crate::symbols::data::{ClientKey, StringInterner};
-use crate::transactions::data::{
-    EntityReference, RelationalCommitSemanticResultRefusal as Refusal,
-};
-use crate::validation::data::{InvariantVerdict, InvariantViolationFields as Fields};
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal as Refusal;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::results::InvariantViolationFields as Fields;
 
 fn canonicalize_entity(
     reference: &mut EntityReference,

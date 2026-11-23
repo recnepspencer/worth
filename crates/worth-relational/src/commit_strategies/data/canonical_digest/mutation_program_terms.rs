@@ -2,14 +2,18 @@ use super::{
     commit_strategy_digest, portable_aspect_patch_terms::write_portable_aspect_patch,
     StrategyDigestBytes,
 };
-use crate::commit_strategies::data::StrategyMutationProgramDigest;
-use crate::transactions::data::{
-    ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, AspectFieldPatch,
-    BulkEntityCreateIntent, BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent,
-    DeleteRelationIntent, EntityAspectCreateIntent, EntityMutationIntent, EntityReference,
-    EntitySpec, MaterializationMutationIntent, MutationIntent, RelationAspectCreateIntent,
-    RelationMutationIntent, RelationSpec, ReplaceEntityIntent, RevalidateEntityIntent,
-    UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent, WorkerIntentBatch,
+use crate::commit_strategies::data::execution::mutation_program::StrategyMutationProgramDigest;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent;
+use crate::transactions::data::intents::mutation_intent::{
+    ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, BulkEntityCreateIntent,
+    BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, DeleteRelationIntent,
+    EntityAspectCreateIntent, EntityMutationIntent, MutationIntent, RelationAspectCreateIntent,
+    RelationMutationIntent, ReplaceEntityIntent, RevalidateEntityIntent, UpdateEntityFieldsIntent,
+    UpdateRelationEndpointsIntent,
+};
+use crate::transactions::data::primitives::{
+    EntityReference, EntitySpec, RelationSpec, WorkerIntentBatch,
 };
 
 pub(crate) fn strategy_mutation_program_digest(

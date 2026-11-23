@@ -3,10 +3,10 @@ use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 
 use crate::identity::data::{EntityId, KindId};
-use crate::storage::data::{
+use crate::storage::data::authoritative_field_comparison_key::{
     authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
 };
-use crate::visibility::materialization::read_records::EntityProjectionRecord;
+use crate::visibility::materialization::read_records::projection::projection_records::EntityProjectionRecord;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StrategyProjectedAspectReadSet {

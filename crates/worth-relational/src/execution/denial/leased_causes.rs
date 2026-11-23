@@ -30,7 +30,7 @@ fn request(
 
 #[test]
 fn actual_child_lease_refusals_survive_both_domain_doors() {
-    let authority = crate::tests::support::test_execution_authority();
+    let authority = crate::execution::test_authority::test_execution_authority();
     let parent = authority
         .request_lease(request(1, 1024, 10, DeterminismContract::CanonicalBitwise))
         .expect("parent admitted");
@@ -104,7 +104,7 @@ fn scan_stop(
 
 #[test]
 fn actual_declared_memory_and_charge_overflow_survive_both_domain_doors() {
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     assert_both(
         || scan_stop(Some(&lease), 11, 10),
         Cause::DeclaredMemoryExhausted {
@@ -122,15 +122,15 @@ fn actual_declared_memory_and_charge_overflow_survive_both_domain_doors() {
 
 #[test]
 fn actual_work_counter_overflow_survives_both_domain_doors() {
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     assert_both(
         || {
-            crate::execution::execute_read_only_packets(
-                vec![super::super::ReadOnlyPacket {
+            crate::execution::read_only_packets::execute_read_only_packets(
+                vec![crate::execution::read_only_packets::ReadOnlyPacket {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    memory: crate::execution::PacketMemory::Declared {
+                    memory: crate::execution::packet_memory::PacketMemory::Declared {
                         scratch: 0,
                         result: 0,
                     },
@@ -152,15 +152,15 @@ fn actual_work_counter_overflow_survives_both_domain_doors() {
 
 #[test]
 fn actual_unrelated_nested_lease_and_parent_stop_survive_both_domain_doors() {
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     assert_both(
         || {
-            crate::execution::execute_read_only_packets(
-                vec![super::super::ReadOnlyPacket {
+            crate::execution::read_only_packets::execute_read_only_packets(
+                vec![crate::execution::read_only_packets::ReadOnlyPacket {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    memory: crate::execution::PacketMemory::Declared {
+                    memory: crate::execution::packet_memory::PacketMemory::Declared {
                         scratch: 0,
                         result: 0,
                     },
@@ -181,19 +181,19 @@ fn actual_unrelated_nested_lease_and_parent_stop_survive_both_domain_doors() {
 
 #[test]
 fn actual_packet_scratch_and_result_refusals_survive_both_domain_doors() {
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     for (scratch, expected) in [
         (true, Cause::ScratchCapacityExceeded),
         (false, Cause::ResultCapacityExceeded),
     ] {
         assert_both(
             || {
-                crate::execution::execute_read_only_packets(
-                    vec![super::super::ReadOnlyPacket {
+                crate::execution::read_only_packets::execute_read_only_packets(
+                    vec![crate::execution::read_only_packets::ReadOnlyPacket {
                         identity: PartitionIdentity::new(7),
                         value: (),
                         input_bytes: 0,
-                        memory: crate::execution::PacketMemory::Declared {
+                        memory: crate::execution::packet_memory::PacketMemory::Declared {
                             scratch: 0,
                             result: 0,
                         },
@@ -219,15 +219,15 @@ fn actual_packet_scratch_and_result_refusals_survive_both_domain_doors() {
 
 #[test]
 fn actual_packet_panic_survives_both_domain_doors() {
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     assert_both(
         || {
-            crate::execution::execute_read_only_packets(
-                vec![super::super::ReadOnlyPacket {
+            crate::execution::read_only_packets::execute_read_only_packets(
+                vec![crate::execution::read_only_packets::ReadOnlyPacket {
                     identity: PartitionIdentity::new(7),
                     value: (),
                     input_bytes: 0,
-                    memory: crate::execution::PacketMemory::Declared {
+                    memory: crate::execution::packet_memory::PacketMemory::Declared {
                         scratch: 0,
                         result: 0,
                     },

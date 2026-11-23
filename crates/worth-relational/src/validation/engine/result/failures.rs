@@ -1,13 +1,13 @@
-use crate::publication::bundle::PublicationStage;
-use crate::publication::data::PublicationError;
-use crate::transactions::data::{CommitConflict, ConflictClass};
-use crate::validation::data::{
-    InvariantFailureEffect, InvariantViolation, InvariantViolationFields,
-};
+use crate::publication::bundle::publication_status::PublicationStage;
+use crate::publication::data::publication_error::PublicationError;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::results::{InvariantViolation, InvariantViolationFields};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvariantFailure {
-    execution_point: crate::validation::data::InvariantExecutionPoint,
+    execution_point: crate::validation::data::execution::InvariantExecutionPoint,
     effect: InvariantFailureEffect,
     violation: InvariantViolation,
 }
@@ -19,7 +19,7 @@ impl InvariantFailure {
     }
 
     pub(crate) fn new(
-        execution_point: crate::validation::data::InvariantExecutionPoint,
+        execution_point: crate::validation::data::execution::InvariantExecutionPoint,
         effect: InvariantFailureEffect,
         violation: InvariantViolation,
     ) -> Self {
@@ -34,7 +34,7 @@ impl InvariantFailure {
         self.violation.code
     }
 
-    pub fn execution_point(&self) -> crate::validation::data::InvariantExecutionPoint {
+    pub fn execution_point(&self) -> crate::validation::data::execution::InvariantExecutionPoint {
         self.execution_point
     }
 

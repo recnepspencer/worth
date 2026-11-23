@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
 
 use crate::errors::data::ErrorContext;
-use crate::publication::data::PublicationError;
-use crate::transactions::data::CommitLog;
+use crate::publication::data::publication_error::PublicationError;
+use crate::transactions::data::commit_log::CommitLog;
 
-use super::{CommitConflict, CommitPreparationError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitExecutionDenialKind {
-    Cause(crate::execution::RelationalExecutionDenialCause),
+    Cause(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,25 +39,26 @@ pub enum TransactionCommitError {
         commit_log: CommitLog,
     },
     Interrupted {
-        interruption: crate::mvcc::RelationalInterruptionEvent,
+        interruption:
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
         context: ErrorContext,
         commit_log: CommitLog,
     },
     #[serde(skip)]
     PublicationDenied {
-        denial: crate::mvcc::RelationalPublicationDenial,
+        denial: crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial,
         context: ErrorContext,
         commit_log: CommitLog,
     },
     #[serde(skip)]
     PublicationDeferred {
-        deferred: crate::mvcc::RelationalPublicationDeferred,
+        deferred: crate::mvcc::publication::outcome::refusals::RelationalPublicationDeferred,
         context: ErrorContext,
         commit_log: CommitLog,
     },
     #[serde(skip)]
     PublicationFailed {
-        failure: crate::mvcc::RelationalPublicationFailure,
+        failure: crate::mvcc::publication::outcome::failure::RelationalPublicationFailure,
         context: ErrorContext,
         commit_log: CommitLog,
     },
@@ -65,7 +67,7 @@ pub enum TransactionCommitError {
     /// it is reopened; the reopened home resolves this position's fate.
     #[serde(skip)]
     DurabilityUnresolved {
-        unresolved: crate::durability::medium::RelationalDurabilityUnresolved,
+        unresolved: crate::durability::medium::unresolved::RelationalDurabilityUnresolved,
         context: ErrorContext,
         commit_log: CommitLog,
     },
@@ -117,12 +119,14 @@ impl TransactionCommitError {
         }
     }
 
-    pub fn interrupted(interruption: crate::mvcc::RelationalInterruptionEvent) -> Self {
+    pub fn interrupted(
+        interruption: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) -> Self {
         let operation = match interruption.boundary() {
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation => {
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation => {
                 crate::errors::data::ErrorOperation::Validate
             }
-            crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation => {
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation => {
                 crate::errors::data::ErrorOperation::Commit
             }
             _ => crate::errors::data::ErrorOperation::Publish,
@@ -137,7 +141,9 @@ impl TransactionCommitError {
         }
     }
 
-    pub(crate) fn publication_denied(denial: crate::mvcc::RelationalPublicationDenial) -> Self {
+    pub(crate) fn publication_denied(
+        denial: crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial,
+    ) -> Self {
         Self::PublicationDenied {
             denial,
             context: publication_context(),
@@ -146,7 +152,7 @@ impl TransactionCommitError {
     }
 
     pub(crate) fn publication_deferred(
-        deferred: crate::mvcc::RelationalPublicationDeferred,
+        deferred: crate::mvcc::publication::outcome::refusals::RelationalPublicationDeferred,
     ) -> Self {
         Self::PublicationDeferred {
             deferred,
@@ -155,7 +161,9 @@ impl TransactionCommitError {
         }
     }
 
-    pub(crate) fn publication_failed(failure: crate::mvcc::RelationalPublicationFailure) -> Self {
+    pub(crate) fn publication_failed(
+        failure: crate::mvcc::publication::outcome::failure::RelationalPublicationFailure,
+    ) -> Self {
         Self::PublicationFailed {
             failure,
             context: publication_context(),
@@ -164,7 +172,7 @@ impl TransactionCommitError {
     }
 
     pub(crate) fn durability_unresolved(
-        unresolved: crate::durability::medium::RelationalDurabilityUnresolved,
+        unresolved: crate::durability::medium::unresolved::RelationalDurabilityUnresolved,
     ) -> Self {
         Self::DurabilityUnresolved {
             unresolved,
@@ -289,14 +297,14 @@ impl TransactionCommitError {
     /// The unresolved durable publication, when that is why this commit stopped.
     pub fn durability_unresolved_fate(
         &self,
-    ) -> Option<&crate::durability::medium::RelationalDurabilityUnresolved> {
+    ) -> Option<&crate::durability::medium::unresolved::RelationalDurabilityUnresolved> {
         match self {
             Self::DurabilityUnresolved { unresolved, .. } => Some(unresolved),
             _ => None,
         }
     }
 
-    pub fn commit_summary(&self) -> &crate::transactions::data::CommitSummary {
+    pub fn commit_summary(&self) -> &crate::transactions::data::commit_log::CommitSummary {
         self.commit_log().summary()
     }
 }

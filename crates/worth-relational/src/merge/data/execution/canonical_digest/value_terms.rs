@@ -1,15 +1,15 @@
 use worth_foundational::facade::{AspectValueLocator, LocatorAuthority};
 
 use crate::aspect_wire;
-use crate::history::data::{BranchId, CommitId};
-use crate::merge::data::{
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::merge::data::execution::materialized_aspect_values::{
     MaterializedAspectValue, MaterializedAspectValueEvidence, MergeValueMaterialization,
     MergeValueSourceSide,
 };
-use crate::query::data::{
+use crate::query::data::canonical_digest::{
     query_authoritative_entity_record_digest, query_authoritative_relation_record_digest,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 impl super::CanonicalDigestBytes {
     pub(super) fn branch_id(&mut self, value: &BranchId) {
@@ -56,7 +56,7 @@ impl super::CanonicalDigestBytes {
 
     pub(super) fn optional_entity_snapshot(
         &mut self,
-        value: Option<&crate::storage::data::EntityReadRecord>,
+        value: Option<&crate::storage::data::read_records::EntityReadRecord>,
     ) {
         match value {
             Some(value) => {
@@ -69,7 +69,7 @@ impl super::CanonicalDigestBytes {
 
     pub(super) fn optional_relation_snapshot(
         &mut self,
-        value: Option<&crate::storage::data::RelationReadRecord>,
+        value: Option<&crate::storage::data::read_records::RelationReadRecord>,
     ) {
         match value {
             Some(value) => {

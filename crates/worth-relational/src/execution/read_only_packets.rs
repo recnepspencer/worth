@@ -27,7 +27,7 @@ pub(crate) enum PacketAdmissionDenial {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum PacketBudgetDenial {
-    ReadRequest(crate::execution::RelationalExecutionDenialCause),
+    ReadRequest(crate::execution::denial_cause::RelationalExecutionDenialCause),
     ScratchCapacityExceeded,
     UncheckedCustomKernel,
 }
@@ -40,7 +40,9 @@ impl ChargedBytes for PacketBudgetDenial {
 
 pub(crate) use super::packet_memory::PacketKernelContext;
 
-impl From<PacketExecutionStop> for crate::transactions::data::TransactionCommitError {
+impl From<PacketExecutionStop>
+    for crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError
+{
     fn from(stop: PacketExecutionStop) -> Self {
         Self::execution(stop.into())
     }
@@ -55,13 +57,13 @@ pub(crate) struct ReadOnlyPacket<T> {
     pub identity: PartitionIdentity,
     pub value: T,
     pub input_bytes: u64,
-    pub memory: super::PacketMemory,
+    pub memory: crate::execution::packet_memory::PacketMemory,
 }
 
 struct ChargedPacketInput<T> {
     value: T,
     owned_bytes: u64,
-    memory: super::PacketMemory,
+    memory: crate::execution::packet_memory::PacketMemory,
 }
 
 impl<T> ChargedBytes for ChargedPacketInput<T> {
@@ -100,7 +102,7 @@ where
 pub(crate) fn execute_read_only_packets_with_budget<P, T, F, C>(
     packets: Vec<ReadOnlyPacket<P>>,
     lease: &ExecutionResourceLease<'_>,
-    budget: Option<&super::RequestWorkBudget>,
+    budget: Option<&crate::execution::request_work::RequestWorkBudget>,
     kernel: F,
     charged_bytes: C,
 ) -> Result<Vec<T>, PacketExecutionStop>
@@ -115,16 +117,18 @@ where
     C: Fn(&T) -> u64 + Sync,
 {
     admit_read_only_packet_order(&packets).map_err(PacketExecutionStop::Admission)?;
-    if packets
-        .iter()
-        .any(|packet| matches!(packet.memory, super::PacketMemory::Tracked))
-    {
+    if packets.iter().any(|packet| {
+        matches!(
+            packet.memory,
+            crate::execution::packet_memory::PacketMemory::Tracked
+        )
+    }) {
         return super::tracked_packets::execute(packets, lease, budget, kernel, charged_bytes);
     }
     let partitions: BTreeMap<_, _> = packets
         .into_iter()
         .map(|packet| {
-            let super::PacketMemory::Declared { scratch, result } = packet.memory else {
+            let crate::execution::packet_memory::PacketMemory::Declared { scratch, result } = packet.memory else {
                 unreachable!(/* Proof: Tracked packet batches are dispatched through their own owner carriage before the untracked batch extraction path. */ "tracked batches have their own owner carriage")
             };
             (
@@ -146,7 +150,7 @@ where
             PacketExecutionStop::Admission(PacketAdmissionDenial::MemoryOverflow)
         },
     )?;
-    let outcome = super::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         budget,
         |lease| {

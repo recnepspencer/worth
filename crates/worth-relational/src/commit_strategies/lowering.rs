@@ -1,6 +1,7 @@
+use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
 use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, LoweredStrategyCommitPlan, StrategyExecutionDraft,
-    StrategyLoweringError, StrategyLoweringProvenance, StrategyLoweringSummary,
+    CanonicalStrategyCommitRequest, StrategyExecutionDraft, StrategyLoweringError,
+    StrategyLoweringProvenance, StrategyLoweringSummary,
 };
 use crate::runtime::RelationalRuntime;
 

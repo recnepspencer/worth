@@ -1,8 +1,11 @@
 use crate::identity::data::KindId;
-use crate::merge::data::{
-    AspectMergePolicyDeclaration, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
+use crate::merge::data::artifacts::schema_snapshot_digest_basis::{
     MergeSchemaKindClass, MergeSchemaKindSemanticSnapshot,
 };
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
+};
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 use crate::schema::data::{AspectContractPlanRevision, RelationIntegrityPlanRevision};
 
 impl super::CanonicalDigestBytes {

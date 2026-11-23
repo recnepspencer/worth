@@ -1,3 +1,4 @@
+use crate::commit_strategies::data::artifact_basis::StrategyArtifactBasis;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::AspectFieldLocator;
@@ -5,12 +6,13 @@ use worth_foundational::facade::AspectFieldLocator;
 use super::canonical_digest::{
     native_entity_fields_scope_digest, native_entity_replacement_scope_digest,
 };
-use super::{
+use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptor;
+use crate::commit_strategies::data::native_codec::{
     decode_aspect_field_locator, decode_aspect_field_patch, decode_aspect_value, decode_entity_id,
-    decode_string, CommitStrategyDescriptor, LoweredStrategyCommitPlan, NativeCodecReader,
+    decode_string, NativeCodecReader,
 };
 use crate::identity::data::EntityId;
-use crate::transactions::data::{EntityMutationIntent, MutationIntent};
+use crate::transactions::data::intents::mutation_intent::{EntityMutationIntent, MutationIntent};
 
 #[derive(Debug)]
 enum NativeStrategyIntentScope {
@@ -27,7 +29,7 @@ enum NativeStrategyIntentScope {
 
 pub(super) fn native_strategy_intent_scope_digest(
     descriptor: &CommitStrategyDescriptor,
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<[u8; 32]> {
     let scope = native_strategy_intent_scope(descriptor, lowered)?;
     let digest = match scope {
@@ -45,7 +47,7 @@ pub(super) fn native_strategy_intent_scope_digest(
 
 pub(super) fn native_strategy_intent_scope_targets(
     descriptor: &CommitStrategyDescriptor,
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<Vec<AspectFieldLocator>> {
     let scope = native_strategy_intent_scope(descriptor, lowered)?;
     let mut targets = match scope {
@@ -59,7 +61,7 @@ pub(super) fn native_strategy_intent_scope_targets(
 
 fn native_strategy_intent_scope(
     descriptor: &CommitStrategyDescriptor,
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<NativeStrategyIntentScope> {
     let bytes = lowered.request().canonical_input().canonical_bytes();
     match descriptor.family_name().as_str() {
@@ -73,7 +75,7 @@ fn native_strategy_intent_scope(
 
 fn native_aspect_field_scope(
     bytes: &[u8],
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<NativeStrategyIntentScope> {
     let mut reader = NativeCodecReader::new(bytes);
     let entity_id = decode_entity_id(&mut reader).ok()?;
@@ -88,7 +90,7 @@ fn native_aspect_field_scope(
 
 fn native_replica_scope(
     bytes: &[u8],
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<NativeStrategyIntentScope> {
     let mut reader = NativeCodecReader::new(bytes);
     let entity_id = decode_entity_id(&mut reader).ok()?;
@@ -102,7 +104,7 @@ fn native_replica_scope(
 
 fn native_intent_reconciliation_scope(
     bytes: &[u8],
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<NativeStrategyIntentScope> {
     let mut reader = NativeCodecReader::new(bytes);
     let entity_id = decode_entity_id(&mut reader).ok()?;
@@ -117,7 +119,7 @@ fn native_intent_reconciliation_scope(
 
 fn native_entity_replacement_scope(
     bytes: &[u8],
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Option<NativeStrategyIntentScope> {
     let mut reader = NativeCodecReader::new(bytes);
     let entity_id = decode_entity_id(&mut reader).ok()?;
@@ -133,7 +135,7 @@ fn native_entity_replacement_scope(
 }
 
 fn lowered_entity_patch_targets(
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
     entity_id: EntityId,
 ) -> Option<Vec<AspectFieldLocator>> {
     let mut targets = BTreeSet::new();

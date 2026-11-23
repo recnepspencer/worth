@@ -1,6 +1,6 @@
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 use crate::commit_strategies::{
-    data::CommitStrategyExecutionRegistration, FrozenCommitStrategyExecutorRegistry,
-    FrozenCommitStrategyRegistry,
+    FrozenCommitStrategyExecutorRegistry, FrozenCommitStrategyRegistry,
 };
 use crate::runtime::{
     CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingSubsystem,

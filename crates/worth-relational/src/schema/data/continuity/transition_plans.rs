@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::schema::data::{SchemaId, SchemaVersionId};
 
 use super::{

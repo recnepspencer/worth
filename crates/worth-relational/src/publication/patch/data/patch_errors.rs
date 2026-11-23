@@ -6,7 +6,7 @@ pub enum PatchStreamReadErrorClass {
     InvalidBatchSize,
     RetainedHistoryGap,
     /// The caller's request or an indexed envelope read was refused.
-    ReadRequest(crate::execution::RelationalExecutionDenialCause),
+    ReadRequest(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

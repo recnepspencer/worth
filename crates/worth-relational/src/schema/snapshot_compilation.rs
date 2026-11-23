@@ -1,6 +1,7 @@
 //! One canonical descriptor assembly under configuration or the original request.
-use super::{data::*, SchemaCompilationControl};
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use super::data::*;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
+use crate::schema::compilation_control::SchemaCompilationControl;
 mod allocation;
 mod recipes;
 

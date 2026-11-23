@@ -1,6 +1,13 @@
 //! Exact referenced native symbol meanings, preserving each stored custody kind.
 use super::{StringInterner, Symbol, SymbolTableSnapshot};
-use crate::transactions::data::*;
+use crate::transactions::data::{
+    aspect_field_patch::AspectFieldPatch,
+    intents::materialization_intent::MaterializationMutationIntent,
+    intents::mutation_intent::{
+        CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
+    },
+    outcomes::plan_artifacts::MergedCommitPlan,
+};
 use std::collections::BTreeSet;
 use worth_foundational::facade::{
     AspectValue, ContractValidationInput, InternedString, PortableAspectPatchOperation,

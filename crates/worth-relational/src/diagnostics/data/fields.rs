@@ -4,17 +4,17 @@ use worth_foundational::facade::{
     CanonicalBasisReadyArtifact, CanonicalFieldPath, DiagnosticMask, FieldKey, StructAspectValue,
 };
 
-use crate::history::data::BranchId;
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::BranchId;
+use crate::history::data::coordinates::CommitId;
+use crate::history::data::replay_version::ReplaySchemaVersion;
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
-use crate::indexes::data::{DerivedIndexGenerationId, DerivedIndexId};
+use crate::indexes::data::definition::{DerivedIndexGenerationId, DerivedIndexId};
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::replay::data::ReplaySchemaVersion;
 use crate::schema::data::{
     ContractId, DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion,
     SchemaBoundaryFingerprint, SchemaId, SchemaVersionId,
 };
-use crate::snapshots::data::SnapshotId;
+use crate::snapshots::data::coordinates::SnapshotId;
 
 mod aspect_value_diagnostic_terms;
 mod native_serde;

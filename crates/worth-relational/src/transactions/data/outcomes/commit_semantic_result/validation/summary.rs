@@ -1,7 +1,7 @@
 use super::RelationalInvariantExecutionMeaning;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
 use crate::transactions::data::outcomes::commit_validation::ValidationSummaryInput;
-use crate::transactions::data::CommitValidationSummary;
-use crate::validation::engine::InvariantExecutionSummary;
+use crate::validation::engine::result::execution_summary::InvariantExecutionSummary;
 
 pub(crate) fn summarize(
     executions: &[RelationalInvariantExecutionMeaning],

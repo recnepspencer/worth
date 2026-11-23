@@ -10,11 +10,14 @@ use crate::schema::data::{
     MinimumCardinalityEnforcement, PairMinimumSemantics, PartitionIsolationMode, SymmetryMode,
     UniquenessScope,
 };
-use crate::validation::data::{
-    InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect, InvariantRegistration,
-    InvariantRule, InvariantRuleDescriptor, InvariantRuleId, InvariantSemanticsClass,
-    NativeInvariantRuleId, RecordKindTag, SupportedExecutionPoints,
+use crate::validation::data::catalog::InvariantRegistration;
+use crate::validation::data::descriptor::{
+    InvariantRuleDescriptor, InvariantSemanticsClass, SupportedExecutionPoints,
 };
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::rule_id::{InvariantRuleId, NativeInvariantRuleId};
+use crate::validation::data::rules::{InvariantRule, RecordKindTag};
 
 use super::canonical_registration_tags as tags;
 

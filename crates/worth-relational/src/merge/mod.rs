@@ -27,12 +27,9 @@ mod schema_reconciliation_witness;
 mod strategy_witness;
 
 pub use access::MergeAccess;
+#[cfg(test)]
+pub(crate) use data::execution_authority_contract::lowered_artifact_execution_authority_contract;
 pub(crate) use execution_diagnostics::{
     merge_execution_success_artifact, merge_execution_summary_entry,
 };
-pub(crate) use lowering::{
-    blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
-};
-pub(crate) use planning_artifact::lowered_artifact_execution_authority_contract;
 pub use planning_observation::RelationalMergePlanningObservation;
-pub(crate) use policy::{aggregate_record_resolution, ownership_surface_for_policies};

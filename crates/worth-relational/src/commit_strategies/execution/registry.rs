@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::commit_strategies::data::{
-    CommitStrategyDescriptorDigest, CommitStrategyExecutionRegistration, CommitStrategyExecutor,
-    CommitStrategyId,
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
 };
+use crate::commit_strategies::data::{CommitStrategyDescriptorDigest, CommitStrategyId};
 
 use super::super::FrozenCommitStrategyRegistry;
 

@@ -320,9 +320,9 @@ impl InvariantRule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::data::{
-        InvariantFailureEffect, InvariantRuleId, InvariantSemanticsClass, NativeInvariantRuleId,
-    };
+    use crate::validation::data::descriptor::InvariantSemanticsClass;
+    use crate::validation::data::execution::InvariantFailureEffect;
+    use crate::validation::data::rule_id::{InvariantRuleId, NativeInvariantRuleId};
 
     #[test]
     fn native_rules_report_stable_rule_ids_and_descriptors() {

@@ -31,30 +31,6 @@ impl CustomPreparationBudget {
 }
 impl CustomInvariantWorkMeter {
     pub(super) fn loan_failed(&self, cause: ExecutionWorkLoanDenial) {
-        match cause {
-            ExecutionWorkLoanDenial::Request(stop) => self.record_native_stop(stop),
-            ExecutionWorkLoanDenial::ClosedScope | ExecutionWorkLoanDenial::ForeignScope => {
-                self.stop(CustomPreparationStop::UncheckedCustomKernel)
-            }
-        }
-    }
-    pub(crate) fn record_native_stop(&self, stop: MapKernelStop) {
-        if let Some(leased) = &self.leased {
-            leased
-                .request_stop
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .get_or_insert(stop);
-        }
-        self.stop(CustomPreparationStop::Request(stop));
-    }
-    pub(crate) fn admits_native_context(&self, context: &MapKernelContext<'_, '_>) -> bool {
-        if !context.is_current() {
-            return false;
-        }
-        match self.leased.as_ref().map(|meter| &meter.status) {
-            Some(PreparationControl::Stage(loan)) => loan.validate_context(context).is_ok(),
-            _ => true,
-        }
+        self.native_debit().loan_failed(cause);
     }
 }

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::events::LineageSubject;
 #[cfg(test)]
@@ -109,8 +109,8 @@ pub enum LineagePostureClaim {
 /// execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PendingBirthTarget {
-    CreatedEntity(crate::transactions::data::CreatedEntityRef),
-    CreatedRelation(crate::transactions::data::CreatedRelationRef),
+    CreatedEntity(crate::transactions::data::primitives::CreatedEntityRef),
+    CreatedRelation(crate::transactions::data::primitives::CreatedRelationRef),
 }
 
 /// One pending persistent-name birth attached to a transaction before

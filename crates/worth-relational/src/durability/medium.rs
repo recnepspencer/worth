@@ -43,7 +43,7 @@ pub use read_protection::{
 };
 mod recovery_source;
 mod transition_read;
-mod unresolved;
+pub(crate) mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
@@ -166,25 +166,10 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     ) -> DurablePublicationFate<String>;
 }
 
-/// Why a medium-backed publication stopped before any effect.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum RelationalDurablePublicationRefusal {
-    HomeProgramTransition(RelationalHomeProgramWriteDenial),
-    /// The medium proved the publication had no durable effect.
-    ProvenNoEffect { detail: String },
-    /// The medium moved into the runtime recovery rebuilt, so this runtime no
-    /// longer owns it and publishes nothing (D1).
-    MediumMoved,
-    /// The commit could not be encoded as its canonical artifact.
-    Encoding(
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
-    ),
-    /// The branch transition could not be encoded as its artifact.
-    TransitionEncoding(
-        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactEncodeDenial,
-    ),
-}
+pub(crate) mod publication_refusal;
+pub use publication_refusal::RelationalDurablePublicationRefusal;
 
 mod preparation_admission;
 pub(crate) use preparation_admission::RelationalDurablePreparationAdmission;
+
+pub(crate) mod home_write_denial;

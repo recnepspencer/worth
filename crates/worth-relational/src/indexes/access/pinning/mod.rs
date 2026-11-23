@@ -22,8 +22,13 @@ use super::execution::execute_index_backed_query_from_generation;
 use super::routing::{admissible_access_path, should_verify_sampled_parity};
 #[cfg(test)]
 use crate::query::data::{
-    query_index_parity_basis_digest, IndexParityMode, IndexParityVerifiedQueryOutcome,
-    QueryAccessContract, QueryAccessPath, SnapshotPinnedQueryPlan,
+    query_index_parity_basis_digest, IndexParityMode, QueryAccessContract, QueryAccessPath,
+};
+
+#[cfg(test)]
+use crate::query::data::{
+    index_parity_outcome::IndexParityVerifiedQueryOutcome,
+    snapshot_pinned_plan::SnapshotPinnedQueryPlan,
 };
 
 pub struct IndexAccess<'runtime> {
@@ -38,7 +43,7 @@ impl<'runtime> IndexAccess<'runtime> {
 #[cfg(test)]
 fn record_index_execution_shape(
     runtime: &RelationalRuntime,
-    execution: &crate::query::data::QueryExecutionOutcome,
+    execution: &crate::query::data::query_outcome::QueryExecutionOutcome,
 ) {
     let target_count = execution.complexity.target_count.max(1);
     let scope_units = execution.complexity.touched_partitions.max(1);
@@ -54,7 +59,7 @@ fn record_index_execution_shape(
 #[cfg(test)]
 fn record_index_execution_counters(
     runtime: &RelationalRuntime,
-    execution: &crate::query::data::QueryExecutionOutcome,
+    execution: &crate::query::data::query_outcome::QueryExecutionOutcome,
 ) {
     record_index_execution_shape(runtime, execution);
     runtime.performance_access().count_query_emissions(

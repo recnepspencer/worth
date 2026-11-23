@@ -9,8 +9,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use sha2::{Digest, Sha256};
-
 use crate::lineage::data::{
     DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageNameDenial, PersistentNameBirthParts, PersistentNameBirthRecord,
@@ -19,9 +17,6 @@ use crate::lineage::data::{
 };
 
 use super::discriminator_scan::extract_embedded_name_refs;
-
-/// Domain separator prefix for persistent name identity derivation.
-pub const PERSISTENT_NAME_DOMAIN_TAG: &[u8] = b"worth.relational.persistent-name.v1\0";
 
 /// Relational authority that validates birth provenance, resolves referenced
 /// discriminator and parent names, mints fixed-size persistent name identities,
@@ -52,11 +47,31 @@ impl PersistentNameMintingAuthority {
             fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
                 self.0.get(id)
             }
-            fn live_lineage(&self, _: &PersistentNameHolder) -> Option<crate::identity::data::LineageId> { None }
-            fn retired_lineage(&self, _: &PersistentNameIdentity) -> Option<(crate::lineage::data::LineageSubject, crate::identity::data::LineageId)> { None }
-            fn holder_name(&self, _: &PersistentNameHolder) -> Option<PersistentNameIdentity> { None }
+            fn live_lineage(
+                &self,
+                _: &PersistentNameHolder,
+            ) -> Option<crate::identity::data::LineageId> {
+                None
+            }
+            fn retired_lineage(
+                &self,
+                _: &PersistentNameIdentity,
+            ) -> Option<(
+                crate::lineage::data::LineageSubject,
+                crate::identity::data::LineageId,
+            )> {
+                None
+            }
+            fn holder_name(&self, _: &PersistentNameHolder) -> Option<PersistentNameIdentity> {
+                None
+            }
         }
-        Self::mint_commit_births_with_basis(registry, &MapBasis(live_holders), retired_in_commit, requests)
+        Self::mint_commit_births_with_basis(
+            registry,
+            &MapBasis(live_holders),
+            retired_in_commit,
+            requests,
+        )
     }
 
     pub(super) fn mint_commit_births_with_basis(
@@ -291,34 +306,7 @@ fn mint_identity_digest(
 /// readmission both derive identity bytes only here.
 ///
 /// Complexity: O(parts bytes + parents).
-pub(super) fn canonical_birth_digest<'parent>(
-    scheme_id: &str,
-    occurrence_key: &str,
-    role_path: &str,
-    sorted_parent_digests: impl ExactSizeIterator<
-        Item = &'parent [u8; PersistentNameIdentity::BYTE_LEN],
-    >,
-    canonical_discriminator: &[u8],
-) -> [u8; PersistentNameIdentity::BYTE_LEN] {
-    let mut hasher = Sha256::new();
-    hasher.update(PERSISTENT_NAME_DOMAIN_TAG);
-    write_len_prefixed(&mut hasher, scheme_id.as_bytes());
-    write_len_prefixed(&mut hasher, occurrence_key.as_bytes());
-    write_len_prefixed(&mut hasher, role_path.as_bytes());
-    let parent_count = u64::try_from(sorted_parent_digests.len()).expect("parent count fits u64");
-    hasher.update(parent_count.to_be_bytes());
-    for parent in sorted_parent_digests {
-        hasher.update(parent);
-    }
-    write_len_prefixed(&mut hasher, canonical_discriminator);
-    hasher.finalize().into()
-}
-
-fn write_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
-    let len = u64::try_from(bytes.len()).expect("part length fits u64");
-    hasher.update(len.to_be_bytes());
-    hasher.update(bytes);
-}
+pub(super) use crate::lineage::data::birth_digest::canonical_birth_digest;
 
 pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,

@@ -253,48 +253,6 @@ pub(super) fn blocked_reason_for_aspect(
     }
 }
 
-pub(crate) fn blocked_reason_for_deletion_class(
-    class: crate::merge::data::DeletionMergeClass,
-) -> LoweredMergeBlockedReason {
-    match class {
-        crate::merge::data::DeletionMergeClass::SourceDeletedTargetLive => {
-            LoweredMergeBlockedReason::SourceDeletedTargetLive
-        }
-        crate::merge::data::DeletionMergeClass::SourceLiveTargetDeleted => {
-            LoweredMergeBlockedReason::SourceLiveTargetDeleted
-        }
-        crate::merge::data::DeletionMergeClass::DeletedOnBothSides => {
-            LoweredMergeBlockedReason::DeletedOnBothSides
-        }
-        crate::merge::data::DeletionMergeClass::DeletedVsModified => {
-            LoweredMergeBlockedReason::DeletedVsModified
-        }
-        crate::merge::data::DeletionMergeClass::DeletedVsRewired => {
-            LoweredMergeBlockedReason::DeletedVsRewired
-        }
-    }
-}
-
-pub(crate) fn blocked_reason_for_topology_resolution_class(
-    resolution_class: MergeResolutionClass,
-) -> LoweredMergeBlockedReason {
-    match resolution_class {
-        MergeResolutionClass::Topology(TopologyExecutionClass::RelationEndpointStable) => {
-            LoweredMergeBlockedReason::ManualConflictResolutionRequired
-        }
-        MergeResolutionClass::Topology(TopologyExecutionClass::RelationEndpointRewiredLocal) => {
-            LoweredMergeBlockedReason::RelationEndpointRewiredLocal
-        }
-        MergeResolutionClass::Topology(
-            TopologyExecutionClass::RelationEndpointRewiredEscalated,
-        ) => LoweredMergeBlockedReason::RelationEndpointRewiredEscalated,
-        MergeResolutionClass::Topology(TopologyExecutionClass::TopologyRegionConflict) => {
-            LoweredMergeBlockedReason::TopologyRegionConflict
-        }
-        _ => LoweredMergeBlockedReason::ManualConflictResolutionRequired,
-    }
-}
-
 pub(super) fn is_deletion_blocked_reason(reason: LoweredMergeBlockedReason) -> bool {
     matches!(
         reason,
@@ -384,3 +342,7 @@ mod tests {
         );
     }
 }
+
+pub(crate) use crate::merge::data::blocked_posture::{
+    blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
+};

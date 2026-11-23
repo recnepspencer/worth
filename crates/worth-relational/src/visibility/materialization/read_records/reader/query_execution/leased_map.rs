@@ -5,7 +5,8 @@ use worth_execution::{
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use crate::query::data::{QueryExecutionOutcome, QueryWorkerFragment};
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::QueryWorkerFragment;
 
 const RESULT_BUDGET_DIVISOR: u64 = 4;
 

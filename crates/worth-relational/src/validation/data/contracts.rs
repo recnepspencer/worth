@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent, RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 use super::groups::{InvariantGroup, InvariantGroupSet};
 use super::rules::InvariantRule;
@@ -188,13 +189,15 @@ impl InvariantPlanContract {
 
 #[cfg(test)]
 mod tests {
-    use super::InvariantPlanContract;
     use crate::identity::data::{EntityId, Generation, KindId, LocalSlot, PartitionId};
     use crate::symbols::data::ClientKey;
-    use crate::transactions::data::{
-        BulkEntityCreateIntent, CreateIntent, DeleteEntityIntent, EntityMutationIntent, EntitySpec,
-        MergedCommitPlan, MutationIntent, ReplaceEntityIntent, TransactionId,
+    use crate::transactions::data::intents::mutation_intent::{
+        BulkEntityCreateIntent, CreateIntent, DeleteEntityIntent, EntityMutationIntent,
+        MutationIntent, ReplaceEntityIntent,
     };
+    use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+    use crate::transactions::data::primitives::{EntitySpec, TransactionId};
+    use crate::validation::data::contracts::InvariantPlanContract;
 
     #[test]
     fn entity_create_selects_relation_minimum_without_claiming_graph_mutation() {
@@ -205,7 +208,9 @@ mod tests {
                     partition_id: PartitionId(7),
                     kind_id: KindId(9),
                     client_keys: vec![ClientKey::raw("a")],
-                    field_patches: vec![crate::transactions::data::AspectFieldPatch::default()],
+                    field_patches: vec![
+                        crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
+                    ],
                 },
             ))],
         };
@@ -214,13 +219,13 @@ mod tests {
         assert!(!contract.may_invalidate_groups().is_empty());
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::SchemaCompliance));
+            .contains(crate::validation::data::groups::InvariantGroup::SchemaCompliance));
         assert!(contract
             .selected_groups()
-            .contains(crate::validation::data::InvariantGroup::RelationIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::RelationIntegrity));
         assert!(!contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::RelationIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::RelationIntegrity));
     }
 
     #[test]
@@ -237,10 +242,10 @@ mod tests {
         let contract = InvariantPlanContract::from_merged_plan(&plan);
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::AdjacencyIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::AdjacencyIntegrity));
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::LineageIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::LineageIntegrity));
     }
 
     #[test]
@@ -254,7 +259,9 @@ mod tests {
                         partition_id: PartitionId(1),
                         kind_id: KindId(9),
                         client_key: ClientKey::raw("replacement"),
-                        fields: crate::transactions::data::AspectFieldPatch::default(),
+                        fields:
+                            crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(
+                            ),
                     },
                 },
             ))],
@@ -263,10 +270,10 @@ mod tests {
         let contract = InvariantPlanContract::from_merged_plan(&plan);
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::RelationIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::RelationIntegrity));
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::AdjacencyIntegrity));
+            .contains(crate::validation::data::groups::InvariantGroup::AdjacencyIntegrity));
     }
 
     #[test]
@@ -274,9 +281,10 @@ mod tests {
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(4),
             merged_intents: vec![MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                crate::transactions::data::UpdateEntityFieldsIntent {
+                crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent {
                     entity_id: EntityId::new(PartitionId(1), LocalSlot(0).0, Generation(1).0),
-                    fields: crate::transactions::data::AspectFieldPatch::default(),
+                    fields:
+                        crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
                 },
             ))],
         };
@@ -284,15 +292,15 @@ mod tests {
         let contract = InvariantPlanContract::from_merged_plan(&plan);
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::IdentityCoherence));
+            .contains(crate::validation::data::groups::InvariantGroup::IdentityCoherence));
         assert!(contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::SchemaCompliance));
+            .contains(crate::validation::data::groups::InvariantGroup::SchemaCompliance));
         assert!(!contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::VersionVisibility));
+            .contains(crate::validation::data::groups::InvariantGroup::VersionVisibility));
         assert!(!contract
             .may_invalidate_groups()
-            .contains(crate::validation::data::InvariantGroup::PublicationCoherence));
+            .contains(crate::validation::data::groups::InvariantGroup::PublicationCoherence));
     }
 }

@@ -6,16 +6,7 @@ use crate::publication::patch::data::RecordStructuralChange;
 use crate::transactions::data::RecordRef;
 use worth_foundational::FoundationalBranchTarget;
 
-/// Internal meaning that a framed selection artifact failed to establish.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RelationalRetainedSelectionArtifactDenial {
-    SourceDescriptor,
-    EntityIdentity,
-    SchemaAgreement,
-    TargetPredecessor,
-    UnsupportedProfile,
-    SelectedRecordMeaning,
-}
+pub use crate::history::commit::artifact_denial::RelationalRetainedSelectionArtifactDenial;
 
 pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
