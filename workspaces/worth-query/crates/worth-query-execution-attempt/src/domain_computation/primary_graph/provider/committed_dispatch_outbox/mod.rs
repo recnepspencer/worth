@@ -20,6 +20,7 @@ pub use worth_query_execution_lineage::facade::primary_graph::provider::committe
 pub mod correlation;
 pub mod original_attempt;
 pub mod original_row;
+pub mod pending_recovered;
 pub mod readmission;
 pub mod record_read;
 pub mod recovered;

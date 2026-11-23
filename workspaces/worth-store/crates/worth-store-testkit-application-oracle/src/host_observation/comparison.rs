@@ -47,6 +47,12 @@ impl HostOracleComparison {
     pub fn identities_mut(&mut self) -> &mut DurableIdentityCorrespondence {
         &mut self.identities
     }
+    pub fn observe_reference(
+        &mut self,
+        reference: &StateProjection,
+    ) -> Result<(), HostDivergence> {
+        self.reference_history.observe(&reference.occurrences)
+    }
     pub fn reference_occurrences(
         &self,
         head: &HeadProjection,

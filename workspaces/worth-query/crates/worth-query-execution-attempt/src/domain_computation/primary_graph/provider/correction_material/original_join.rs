@@ -35,40 +35,66 @@ pub(super) fn admit(
         if original.program_revision().bytes() != &material.metadata.program {
             return Err(Denial::OriginalMismatch);
         }
-        let commit = match (&material.body, original.fate()) {
-            (MaterialBody::Abandoned, WorldOriginalFate::Released) => continue,
-            (MaterialBody::Captured(_), WorldOriginalFate::Released) => continue,
-            (MaterialBody::Captured(_), WorldOriginalFate::Open) => continue,
-            (MaterialBody::Ready { ready, .. }, WorldOriginalFate::Published) => &ready.commit,
-            (MaterialBody::Expired { commit }, WorldOriginalFate::Published) => commit,
-            (
-                MaterialBody::Captured(_),
-                WorldOriginalFate::Published | WorldOriginalFate::Continued,
-            )
-            | (
-                MaterialBody::Ready { .. } | MaterialBody::Expired { .. },
-                WorldOriginalFate::Open
-                | WorldOriginalFate::Continued
-                | WorldOriginalFate::Released,
-            )
-            | (
-                MaterialBody::Abandoned,
-                WorldOriginalFate::Published
-                | WorldOriginalFate::Open
-                | WorldOriginalFate::Continued,
-            ) => return Err(Denial::OriginalMismatch),
+        let expected_commit: Option<&worth_relational::facade::history::RelationalCommitReceipt> =
+            match (&material.body, original.fate()) {
+                (MaterialBody::Abandoned, WorldOriginalFate::Released) => continue,
+                (MaterialBody::Captured(_), WorldOriginalFate::Released) => continue,
+                (MaterialBody::Captured(_), WorldOriginalFate::Open) => continue,
+                // A crash after World publication (or recovered continuation) and
+                // before `seal_correction_material` appends `Ready` leaves the
+                // captured record unsealed. Bind it through the exact World-to-Native
+                // join and immutable idempotency checks below; readers still fail closed.
+                (MaterialBody::Captured(_), WorldOriginalFate::Continued)
+                    if !originals
+                        .original_observations()
+                        .any(|published| published.identity() == original.reserved_commit()) =>
+                {
+                    continue
+                }
+                (
+                    MaterialBody::Captured(_),
+                    WorldOriginalFate::Published | WorldOriginalFate::Continued,
+                ) => None,
+                (MaterialBody::Ready { ready, .. }, WorldOriginalFate::Published) => {
+                    Some(&ready.commit)
+                }
+                (MaterialBody::Expired { commit }, WorldOriginalFate::Published) => Some(commit),
+                (
+                    MaterialBody::Ready { .. } | MaterialBody::Expired { .. },
+                    WorldOriginalFate::Open
+                    | WorldOriginalFate::Continued
+                    | WorldOriginalFate::Released,
+                )
+                | (
+                    MaterialBody::Abandoned,
+                    WorldOriginalFate::Published
+                    | WorldOriginalFate::Open
+                    | WorldOriginalFate::Continued,
+                ) => return Err(Denial::OriginalMismatch),
+            };
+        let commit_id = match expected_commit {
+            Some(commit) => {
+                if !originals.original_observations().any(|published| {
+                    published.identity() == original.reserved_commit()
+                        && published.relational_commit() == Some(commit.commit_id)
+                }) {
+                    return Err(Denial::OriginalMismatch);
+                }
+                commit.commit_id
+            }
+            None => originals
+                .original_observations()
+                .find(|published| published.identity() == original.reserved_commit())
+                .and_then(|published| published.relational_commit())
+                .ok_or(Denial::OriginalMismatch)?,
         };
-        if !originals.original_observations().any(|published| {
-            published.identity() == original.reserved_commit()
-                && published.relational_commit() == Some(commit.commit_id)
-        }) {
-            return Err(Denial::OriginalMismatch);
-        }
         let index = subjects
-            .binary_search_by_key(&commit.commit_id, |subject| subject.receipt().commit_id)
+            .binary_search_by_key(&commit_id, |subject| subject.receipt().commit_id)
             .map_err(|_| Denial::NativeSourceUnavailable)?;
         let subject = &subjects[index];
-        if subject.receipt() != commit {
+        if let Some(commit) = expected_commit
+            && subject.receipt() != commit
+        {
             return Err(Denial::OriginalMismatch);
         }
         let effect = super::native_source::read_subject(request, native, &original, subject)?;

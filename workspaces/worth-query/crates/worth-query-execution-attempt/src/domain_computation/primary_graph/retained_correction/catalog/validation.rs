@@ -170,7 +170,11 @@ impl MaterialCatalog {
                     .material
                     .get(original)
                     .ok_or(Denial::MaterialNotReady)?;
-                material.available()?;
+                match &material.body {
+                    MaterialBody::Ready { .. } | MaterialBody::Captured(_) => {}
+                    MaterialBody::Expired { .. } => return Err(Denial::RetainedMaterialExpired),
+                    MaterialBody::Abandoned => return Err(Denial::Unavailable),
+                }
                 let intent = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::observe_recorded_intent(&material.metadata.intent)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?;
                 if material.metadata.key != pin.prepared()?.key
