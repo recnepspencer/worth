@@ -4,6 +4,7 @@ use crate::durability::medium::{
     RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
 };
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::tests::support::retained_byte_owner_bill;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex,
@@ -171,25 +172,6 @@ fn memory_cut_keeps_original_buffers_and_refunds_after_last_owned_clone() {
         Err(OwnedSnapshotDenial::Request(_))
     ));
     assert_eq!(zero.memory().unwrap().charged_memory_bytes(), 0);
-}
-
-// Measure the public byte owner after its original controller scope is gone.
-fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
-    let budget =
-        SerialMemoryBudget::new(Some((bytes.len() as u64).checked_add(64 * 1024).unwrap()));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let mut building =
-        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
-            .unwrap();
-    building.extend_from_slice(bytes).unwrap();
-    let owned = building.seal_immutable_bytes().unwrap();
-    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
-    let total = budget.charged_memory_bytes();
-    assert!(total > bytes.len() as u64);
-    drop(owned);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    total
 }
 
 // Original member callback custody shares this source-protection court.
@@ -360,4 +342,54 @@ fn cancelled_member_handoff_returns_original_custody_and_a_live_request_continue
         }
     }
     assert_eq!(callbacks.load(Ordering::SeqCst), 1);
+}
+
+#[derive(Debug)]
+struct DetachedTestMedium(Arc<AtomicUsize>, Arc<dyn RelationalDurableColdSource>);
+impl crate::durability::medium::RelationalDurableMedium for DetachedTestMedium {
+    fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
+        self.1.clone()
+    }
+    fn read_transition(
+        &self,
+        _: crate::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+        crate::durability::medium::RelationalDurableTransitionReadFailure,
+    > {
+        Err(crate::durability::medium::RelationalDurableTransitionReadFailure::MediumMoved)
+    }
+    fn publish(
+        &self,
+        _: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
+    ) -> crate::durability::medium::DurablePublicationFate<String> {
+        self.0.fetch_add(1, Ordering::SeqCst);
+        crate::durability::medium::DurablePublicationFate::Committed
+    }
+    fn publish_transition(
+        &self,
+        _: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+    ) -> crate::durability::medium::DurablePublicationFate<String> {
+        crate::durability::medium::DurablePublicationFate::Committed
+    }
+}
+// Fixture adaptation (C2.4): restored from f9f15bf8c8:single_owner.rs over an owned medium.
+#[test]
+fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
+    use crate::durability::medium::{
+        RelationalDurableMediumBinding as B, RelationalDurableMediumTransfer as T,
+        RelationalDurablePublicationRefusal as R, RelationalDurableStepStop as S,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let source = crate::tests::support::runtime_with_test_schema();
+    let committed = crate::tests::support::create_entity_outcome(execution, &source, "positioned");
+    crate::tests::support::release_test_commit_snapshot(&source, &committed);
+    let positioned = source.history.positioned_canonical_commits_snapshot()[0].clone();
+    let offered = Arc::new(AtomicUsize::new(0));
+    let binding = B::new(T::fresh(Box::new(DetachedTestMedium(offered.clone(), Arc::new(LegacyOnly)))));
+    assert!(binding.detach().is_some() && binding.detach().is_none());
+    let artifact = source.history.commit_artifact(positioned.commit.commit_id).unwrap();
+    assert!(matches!(binding.publish(positioned, artifact.roots(), execution), Err(S::Refused(R::MediumMoved))));
+    assert_eq!(offered.load(Ordering::SeqCst), 0);
 }

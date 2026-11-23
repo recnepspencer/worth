@@ -59,14 +59,24 @@ impl WorldCheckpointImage {
                 location(out, value.position, &value.digest)?;
             }
         }
-        number(out, self.branches.len() as u64)?;
-        for branch in self.branches.keys() {
+        number(
+            out,
+            (self.branches.len() + self.retired_branches.len()) as u64,
+        )?;
+        for branch in self.branches.values() {
             location(out, branch.position, &branch.digest)?;
             semantic_row(out, &branch.record().record, request, stop)?;
         }
+        for retired in self.retired_branches.values() {
+            location(out, retired.position(), retired.digest())?;
+            semantic_row(out, &retired.record().record, request, stop)?;
+        }
         number(
             out,
-            (self.opens.len() + self.creations.len() + self.planned_legs.len()) as u64,
+            (self.opens.len()
+                + self.creations.len()
+                + self.planned_legs.len()
+                + self.history_retirements.len()) as u64,
         )?;
         for open in self.opens.values() {
             location(out, open.position(), open.digest())?;
@@ -80,6 +90,10 @@ impl WorldCheckpointImage {
         for planned in self.planned_legs.values() {
             location(out, planned.position(), planned.digest())?;
             semantic_row(out, &planned.record().record, request, stop)?;
+        }
+        for retired in self.history_retirements.values() {
+            location(out, retired.position(), retired.digest())?;
+            semantic_row(out, &retired.record().record, request, stop)?;
         }
         number(
             out,

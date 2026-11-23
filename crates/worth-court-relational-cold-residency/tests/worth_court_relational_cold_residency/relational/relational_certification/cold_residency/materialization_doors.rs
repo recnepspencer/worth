@@ -114,6 +114,15 @@ fn retained_kind_after_public_suspension_preserves_kind_and_storage_refusal() {
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
+        let main_branch = worth_relational::facade::history::BranchId("main".into());
+        assert_eq!(
+            runtime
+                .observe_branch_region_residency(&main_branch, retained.partition_id)
+                .unwrap()
+                .head,
+            worth_relational::facade::durability::RelationalRegionProbeStatus::Cold,
+            "the unrelated retained identity must still be cold at this public door"
+        );
         if damaged {
             for locator in source.members.keys() {
                 source
@@ -127,6 +136,14 @@ fn retained_kind_after_public_suspension_preserves_kind_and_storage_refusal() {
             Ok(kind) => {
                 assert!(!damaged);
                 assert_eq!(kind, KindId(1));
+                assert_eq!(
+                    runtime
+                        .observe_branch_region_residency(&main_branch, retained.partition_id)
+                        .unwrap()
+                        .full,
+                    worth_relational::facade::durability::RelationalRegionProbeStatus::Cold,
+                    "a value-free kind read must not demand Full history"
+                );
             }
             Err(RelationalMaterializationError::Read(
                 RelationalExecutionDenialCause::StorageUnavailable(failure),

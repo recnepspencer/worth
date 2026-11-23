@@ -97,7 +97,8 @@ impl WorldDurableCreationCustody {
             ) => Err(Denial::OwnerUnavailable),
             Err(
                 WorldDurablePublicationStop::Unresolved
-                | WorldDurablePublicationStop::EvidenceRequired,
+                | WorldDurablePublicationStop::EvidenceRequired
+                | WorldDurablePublicationStop::BlockedByPriorBarrier { .. },
             ) => {
                 self.phase = CreationPhase::ReopenRequired;
                 Err(Denial::OwnerUnavailable)

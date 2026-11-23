@@ -2454,8 +2454,9 @@ For installed contract inspection, call
 [joined authoring/setup/export walkthrough](#share-reads-then-use-installed-contracts)
 for typed failures, fresh bootstrap custody and separate record readmission.
 
-The following branch, output and managed-resource capabilities use MemoryOnly.
-Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,
+The following branch, output and managed-resource examples use MemoryOnly
+(durable branch creation, retirement, and history disposal are also supported on
+Directory Homes). For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
@@ -3149,11 +3150,13 @@ transition: the bootstrap runs on that lease, as if borrowed through
 `with_bootstrap_advancement_from_request`, so the lease carries the transition's
 work as well as the captured frame.
 
-### Durable branch creation
+### Durable branch creation, retirement, and history disposal
 
-On a Directory Home, creating a branch that must fork Signal state refuses with
-`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
-branch publication and retirement belong to Milestone 3's cleanup track (C2).
+On a Directory Home, durable branch creation (including Native and Signal forks),
+durable branch retirement, and durable history disposal publish through World's
+authoritative journals. Created branches, forks, and retired-branch states
+survive graceful close/reopen and quiescent kill/reopen, while disposed history
+is released once and is not resurrected on reopen.
 
 ### 4.5 Declaration failures
 
@@ -8668,6 +8671,14 @@ binding refuses even if its descriptive names match. The next attempted batch
 consumes selection; an empty attempt returns `EmptyBootstrap` and poisons that
 bootstrap. A nonempty unrelated batch also consumes unused selection. A recovered
 bootstrap rejects initialization; an installed runtime has no initialization method.
+
+Each seed batch, and the final bootstrap publication, is one canonical commit
+whose artifact encodes exactly the rows that batch installs: its size grows with
+the batch, never with rows already committed. A single frame is capped at
+256 MiB, and an oversized batch refuses `RelationalCommitRejected` naming
+`CanonicalArtifactEncoding(SizeLimit)` with nothing installed. Install a large
+population in bounded `commit_seed_batch` calls; a relation seed must join
+endpoints seeded in its own batch.
 
 Once that attempt ends, ordinary new/cold scopes still refuse under `Refuse`.
 A fresh public `rebuild_index` can refill an existing cold association after its

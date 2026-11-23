@@ -1,4 +1,4 @@
-//! Original kind and record identities survive real checkpoint and tail recovery.
+//! Original funding follows actual admitted bases, never a copied counter.
 use super::{
     checkpoint,
     fixture::{snapshot, World},
@@ -72,7 +72,13 @@ fn original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen() {
         // Runtime destruction leaves the genuine successor basis as sole owner.
         (checkpoint, source, tail, basis)
     };
+    let held = original.memory().unwrap().charged_memory_bytes();
+    assert!(
+        held > 0,
+        "the reconstructed basis must retain its original funding"
+    );
     let reopened = checkpoint::reopen(&seed_execution, &checkpoint, tail, source);
+    assert_eq!(original.memory().unwrap().charged_memory_bytes(), held);
     let read_snapshot = snapshot(&reopened);
     let read = reopened
         .read_truth()
@@ -121,5 +127,15 @@ fn original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen() {
         .snapshots()
         .release_snapshot(&read_snapshot)
         .unwrap();
+    // A live checkpoint keeps its component holds and canonical publication,
+    // whose original-funded roots and envelopes stay charged until it drops.
+    drop(checkpoint);
+    assert!(
+        original.memory().unwrap().charged_memory_bytes() > 0,
+        "the successor basis alone still retains its original funding"
+    );
     drop(retained_basis);
+    // The reopened runtime shares the original-funded roots it readmitted.
+    drop(reopened);
+    assert_eq!(original.memory().unwrap().charged_memory_bytes(), 0);
 }

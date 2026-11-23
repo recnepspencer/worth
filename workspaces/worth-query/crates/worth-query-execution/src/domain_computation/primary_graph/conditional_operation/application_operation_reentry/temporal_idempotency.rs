@@ -43,13 +43,15 @@ fn derive_temporal_idempotency_parts(
     revision: u64,
     input_identity: &str,
 ) -> Result<WorthQueryPreparedTemporalIdempotency, CanonicalDigestDerivationDenial> {
+    let mut definition_work = WorthQueryCanonicalWorkEvidence::zero();
     let mut key = CanonicalIdentityMaterial::new(
         "worth-query.temporal-operation-idempotency-key",
-        "worth-query-temporal-operation-idempotency-key-v2",
+        "worth-query-temporal-operation-idempotency-key-v3",
     );
+    // The two scopes bind disjoint named loci, so their keys never coincide
+    // without a separate scope entry.
     match scope {
         TemporalIdempotencyScope::ProcessLocal => {
-            key.text("scope", "process-local");
             key.digest("runtime-binding", runtime_binding.digest());
         }
         TemporalIdempotencyScope::Home {
@@ -57,7 +59,6 @@ fn derive_temporal_idempotency_parts(
             branch,
             incarnation,
         } => {
-            key.text("scope", "home");
             let bytes = owner.home().bytes();
             key.unsigned_u64(
                 "home-low",
@@ -70,7 +71,9 @@ fn derive_temporal_idempotency_parts(
             key.unsigned_u64("world-slot", owner.slot().get());
             key.text("branch", branch);
             key.unsigned_u64("branch-incarnation", incarnation);
-            key.digest("definition", runtime_binding.definition());
+            let (definition, work) = runtime_binding.definition().derive()?;
+            definition_work = work;
+            key.digest("definition", definition);
         }
     }
     key.text("host-idempotency", host_idempotency);
@@ -87,7 +90,7 @@ fn derive_temporal_idempotency_parts(
 
     Ok(WorthQueryPreparedTemporalIdempotency {
         binding: <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(*key.bytes(), *intent.bytes()),
-        canonical_work: key_work.combine(intent_work),
+        canonical_work: key_work.combine(intent_work).combine(definition_work),
     })
 }
 

@@ -41,6 +41,16 @@ impl WorldCheckpointImage {
                 return Err(Denial::FutureIncarnation);
             }
         }
+        for retired in image.retired_branches.values() {
+            if retired.retiring_incarnation() > capture_incarnation {
+                return Err(Denial::FutureIncarnation);
+            }
+        }
+        for retired in image.history_retirements.values() {
+            if retired.retiring_incarnation() > capture_incarnation {
+                return Err(Denial::FutureIncarnation);
+            }
+        }
         image.resolve_collected_history(request)?;
         image.validate_open_identities(request)?;
         image.validate_image_coordinates(&coverage, request)?;
@@ -142,10 +152,13 @@ fn read_rows(
         let record =
             decoded::admit(row, image.binding.owner().home(), request).map_err(Denial::Medium)?;
         let allowed = match &record.record {
-            WorldRecord::Branch { .. } | WorldRecord::BranchCreated(_) => branch,
+            WorldRecord::Branch { .. }
+            | WorldRecord::BranchCreated(_)
+            | WorldRecord::BranchRetired { .. } => branch,
             WorldRecord::OpenAttempt(_)
             | WorldRecord::CreationIntent(_)
-            | WorldRecord::PlannedSignalLeg(_) => !branch,
+            | WorldRecord::PlannedSignalLeg(_)
+            | WorldRecord::HistoryRetired { .. } => !branch,
             WorldRecord::Owner { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }

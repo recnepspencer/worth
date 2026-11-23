@@ -99,6 +99,9 @@ pub(super) fn reopened(request: &ExecutionRequest<'_, '_>) -> NodeFixture {
         .recover(request, plan)
         .unwrap();
     assert_eq!(source.reads.load(Ordering::Relaxed), 0);
+    let residency = runtime.observe_lineage_residency();
+    assert_eq!(residency.resident_node_count, 0);
+    assert_eq!(residency.resident_event_count, 0);
     NodeFixture {
         runtime,
         medium: receiver_medium,

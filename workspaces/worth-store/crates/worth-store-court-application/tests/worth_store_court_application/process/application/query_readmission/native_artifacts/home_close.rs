@@ -146,7 +146,6 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     let limits = limits.with_maintenance_allowance(
         limits.maintenance_work(),
         control_bytes,
-        limits.maintenance_timeout(),
     );
     let request = fixture::request(
         path.path().to_path_buf(),
@@ -160,14 +159,12 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     })
     .unwrap()
     .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"));
-    // A real acknowledged journal tail requires payload memory during capture.
-    // No checkpoint or handler result is fabricated.
-    for ordinal in 0..64 {
-        assert!(matches!(
-            operations::set_key(home.runtime(), 0xd110 + ordinal, 8),
-            WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
-        ));
-    }
+    // One real acknowledged journal tail requires payload memory during capture,
+    // and the allowance leaves none. No checkpoint or handler result is fabricated.
+    assert!(matches!(
+        operations::set_key(home.runtime(), 0xd110, 8),
+        WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
+    ));
     assert_eq!(balance(home.runtime()), 8);
     // Automatic close capture uses the Home's own installed maintenance ledger.
     // Its exact worker bill is admitted, leaving no payload memory. The caller

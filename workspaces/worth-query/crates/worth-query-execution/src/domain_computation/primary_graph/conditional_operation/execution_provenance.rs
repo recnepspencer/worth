@@ -247,7 +247,6 @@ fn provider_commit_cause(kind: graph::WorthQueryApplicationCommitDeferredKind) -
         }
         Kind::SourceCurrentnessRaced(stop) => Some(Cause::SourceCurrentnessRaced(stop)),
         Kind::RequiredPrerequisitePending(kind) => Some(Cause::RequiredPrerequisitePending(kind)),
-        Kind::CandidateLifetimeExpired { .. } => None,
     }
 }
 

@@ -3,6 +3,7 @@ use super::*;
 use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal as Refusal, RelationalDurableReadProtection,
 };
+use crate::tests::support::retained_byte_owner_bill;
 use sha2::{Digest, Sha256};
 use worth_execution::{
     CancellationSource, ExecutionImmutableBytes, ExecutionRequest, SerialMemoryBudget,
@@ -116,23 +117,4 @@ fn inline_member_read_funds_output_and_keeps_grant_until_last_clone() {
     assert_eq!(requested, independent_bill);
 
     assert_eq!(small.memory().unwrap().charged_memory_bytes(), 0);
-}
-
-// Measure the public byte owner after its original controller scope is gone.
-fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
-    let budget =
-        SerialMemoryBudget::new(Some((bytes.len() as u64).checked_add(64 * 1024).unwrap()));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let mut building =
-        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
-            .unwrap();
-    building.extend_from_slice(bytes).unwrap();
-    let owned = building.seal_immutable_bytes().unwrap();
-    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
-    let total = budget.charged_memory_bytes();
-    assert!(total > bytes.len() as u64);
-    drop(owned);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    total
 }

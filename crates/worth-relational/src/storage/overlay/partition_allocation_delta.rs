@@ -3,14 +3,36 @@ use super::{PartitionState, RelationalPartitionAllocationInventory};
 use crate::storage::substrate::{StorageAllocationObservation, StorageAllocationVisitor};
 
 impl PartitionState {
+    #[cfg(test)]
     pub(crate) fn allocation_inventory_since(
         &self,
         previous: &Self,
         prior: RelationalPartitionAllocationInventory,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        let introduced = self.new_allocation_inventory_since(previous)?;
-        let removed = previous.new_allocation_inventory_since(self)?;
-        Ok(RelationalPartitionAllocationInventory {
+        self.allocation_inventory_and_introduced_since(
+            previous,
+            prior,
+            crate::storage::substrate::SealedAllocationWatermarks::default(),
+        )
+        .map(|(inventory, _)| inventory)
+    }
+
+    /// Update `prior` to `self`'s exact inventory in one forward + reverse pass,
+    /// returning both the updated inventory and the forward introduced
+    /// authoritative bytes so publication never computes the forward delta twice.
+    pub(crate) fn allocation_inventory_and_introduced_since(
+        &self,
+        previous: &Self,
+        prior: RelationalPartitionAllocationInventory,
+        previous_watermarks: crate::storage::substrate::SealedAllocationWatermarks,
+    ) -> Result<(RelationalPartitionAllocationInventory, u64), super::PartitionContentDigestError>
+    {
+        let introduced = self.new_allocation_inventory_since(previous, previous_watermarks)?;
+        let removed = previous.new_allocation_inventory_since(
+            self,
+            crate::storage::substrate::SealedAllocationWatermarks::default(),
+        )?;
+        let inventory = RelationalPartitionAllocationInventory {
             authoritative_bytes: update(
                 prior.authoritative_bytes,
                 removed.authoritative_bytes,
@@ -29,27 +51,37 @@ impl PartitionState {
             // Both operands are immutable regions with cleared live-owner pins.
             retention_metadata_bytes: 0,
             allocator_bookkeeping_bytes: 0,
-        })
+        };
+        Ok((inventory, introduced.authoritative_bytes))
     }
 
     fn new_allocation_inventory_since(
         &self,
         previous: &Self,
+        previous_watermarks: crate::storage::substrate::SealedAllocationWatermarks,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        let mut diagnostic = Bytes::default();
+        let mut diagnostic = CheckedBytes::new();
         self.entity_arena
             .visit_new_diagnostic_allocations(&previous.entity_arena, &mut diagnostic);
         self.relation_arena
             .visit_new_diagnostic_allocations(&previous.relation_arena, &mut diagnostic);
-        let mut cache = Bytes::default();
+        let mut cache = CheckedBytes::new();
         self.adjacency
             .visit_new_cache_allocations(&previous.adjacency, &mut cache);
         self.reverse_adjacency
             .visit_new_cache_allocations(&previous.reverse_adjacency, &mut cache);
         Ok(RelationalPartitionAllocationInventory {
-            authoritative_bytes: self.new_authoritative_allocation_bytes_since(previous)?,
-            diagnostic_bytes: diagnostic.0,
-            optional_cache_bytes: cache.0,
+            authoritative_bytes: self
+                .new_authoritative_allocation_bytes_since_with_watermarks(
+                    previous,
+                    previous_watermarks,
+                )?,
+            diagnostic_bytes: diagnostic
+                .finish()
+                .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)?,
+            optional_cache_bytes: cache
+                .finish()
+                .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)?,
             ..Default::default()
         })
     }
@@ -66,12 +98,24 @@ fn update(
         .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)
 }
 
-#[derive(Default)]
-struct Bytes(u64);
-impl StorageAllocationVisitor for Bytes {
+struct CheckedBytes(Option<u64>);
+impl CheckedBytes {
+    const fn new() -> Self {
+        Self(Some(0))
+    }
+    const fn finish(self) -> Option<u64> {
+        self.0
+    }
+}
+impl StorageAllocationVisitor for CheckedBytes {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
-        self.0 = self.0.saturating_add(allocation.bytes);
-        true
+        self.0 = match allocation.extent {
+            crate::storage::substrate::StorageAllocationExtent::Checked => {
+                self.0.and_then(|bytes| bytes.checked_add(allocation.bytes))
+            }
+            crate::storage::substrate::StorageAllocationExtent::Overflow => None,
+        };
+        self.0.is_some()
     }
 }
 

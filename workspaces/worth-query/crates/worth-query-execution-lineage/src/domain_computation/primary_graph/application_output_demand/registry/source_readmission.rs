@@ -46,8 +46,32 @@ pub struct RequiredOutputReadmission {
     /// The typed demand validates its family and identity after downcasting.
     pub producer: std::sync::OnceLock<Arc<dyn Any + Send + Sync>>,
     pub limits: WorthQueryOutputDemandLimits,
-    pub retained_program_basis:
+    retained_program_basis: std::sync::Mutex<
         Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
+    >,
+}
+
+impl RequiredOutputReadmission {
+    pub fn retained_program_basis(
+        &self,
+    ) -> Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>
+    {
+        self.retained_program_basis
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Release an older parent read observation once the row reaches Ready cache.
+    pub fn release_retained_program_basis(
+        &self,
+    ) -> Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>
+    {
+        self.retained_program_basis
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
 }
 
 pub struct PreparedOutputReadmissionSource<Query> {
@@ -90,7 +114,7 @@ impl WorthQueryOutputDemandRegistry {
                 source: erased,
                 producer: std::sync::OnceLock::new(),
                 limits,
-                retained_program_basis,
+                retained_program_basis: std::sync::Mutex::new(retained_program_basis),
             }),
         })
     }
@@ -145,15 +169,20 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
         }
         // Readmission retains frozen source meaning. Each read selects the
         // current Product; a semantic join does not need to replace this Arc.
+        let mut released_basis = None;
         if record.readmission_source.is_none() {
             self.readmission
                 .producer
                 .set(producer)
                 .unwrap_or_else(|_| unreachable!("prepared readmission is installed once"));
+            if record.has_cached_ready() {
+                released_basis = self.readmission.release_retained_program_basis();
+            }
             record.readmission_source = Some(self.readmission);
         }
         record.finish();
         drop(state);
+        drop(released_basis);
         Ok(self.source)
     }
 }

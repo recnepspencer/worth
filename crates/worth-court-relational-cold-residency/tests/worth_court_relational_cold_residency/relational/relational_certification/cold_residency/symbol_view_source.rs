@@ -102,6 +102,13 @@ impl SymbolViewRecipe {
             .is_some());
         drop(basis);
         drop(warmed);
+        assert!(
+            runtime
+                .observe_resident_symbol_dictionary()
+                .resolve(self.historical)
+                .is_none(),
+            "warming a fork must not populate the receiver's dictionary with historical text"
+        );
         SymbolViewFixture {
             runtime,
             medium,

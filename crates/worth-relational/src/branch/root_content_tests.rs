@@ -11,8 +11,8 @@ impl super::RelationalBranchRoot {
                 .expect("resident root fixture has Full custody");
             let partition = lease.full_view().partition();
             assert_eq!(
-                region.allocation_inventory(),
-                partition.allocation_inventory(),
+                region.allocation_inventory().unwrap(),
+                partition.allocation_inventory().unwrap(),
                 "partition {:?}: incremental allocation inventory",
                 region.partition_id
             );

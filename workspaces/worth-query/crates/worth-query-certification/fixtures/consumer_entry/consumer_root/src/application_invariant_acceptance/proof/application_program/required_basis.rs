@@ -138,6 +138,32 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     );
     assert!(children[0].1.observation().selected_commit().ordinal() >= second_commit);
 
+    verify_recovered_root_join(
+        &world.application,
+        &request,
+        controls,
+        first_settled
+            .root_receipt()
+            .expect("the first root retains its commit")
+            .committed_product_publication(),
+    );
+}
+
+#[inline(never)]
+fn verify_recovered_root_join(
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        ConsumerSchema,
+        ConsumerProgram,
+    >,
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        ConsumerSchema,
+    >,
+    controls: WorthQueryOutputDemandControls,
+    first_root_publication: &worth_query_host::facade::primary_graph::WorthQueryCommittedProductPublication,
+) {
     let latest = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),
@@ -155,7 +181,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .expect_source(latest)
         .idempotency(&10_051)
         .execute_performed::<ConsumerProgram, ConsumerRequiredSharedRoot>(
-            &world.application,
+            application,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the recovery source publication succeeds");
@@ -171,7 +197,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     let first_recovery = request
         .advanced()
         .recover_required_outputs::<ConsumerProgram, ConsumerRequiredSharedRoot>(
-            &world.application,
+            application,
             &receipt,
             PlanarOutputDemand::new("remote-b"),
             controls,
@@ -180,7 +206,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     let mut recovered = request
         .advanced()
         .recover_required_outputs::<ConsumerProgram, ConsumerRequiredSharedRoot>(
-            &world.application,
+            application,
             &receipt,
             PlanarOutputDemand::new("remote-b"),
             controls,
@@ -189,7 +215,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     drop(first_recovery);
     let third_settled = settle(|| {
         match recovered
-            .advance(&world.application, &request)
+            .advance(application, request)
             .expect("recovered program advances")
         {
             WorthQueryApplicationProgramOutputProgress::Pending
@@ -198,11 +224,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         }
     });
     assert_eq!(
-        first_settled
-            .root_receipt()
-            .expect("the first root retains its commit")
-            .committed_product_publication()
-            .composite_commit(),
+        first_root_publication.composite_commit(),
         third_settled
             .root_receipt()
             .expect("the recovered root retains its commit")

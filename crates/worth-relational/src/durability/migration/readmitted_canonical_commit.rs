@@ -79,6 +79,15 @@ impl ReadmittedCanonicalCommit {
     pub fn envelope(&self) -> &CanonicalCommitEnvelope {
         self.positioned.envelope()
     }
+    /// Whether this readmitted commit's symbol dictionary carries `text`.
+    pub fn contains_symbol_text(&self, text: &str) -> bool {
+        self.positioned
+            .envelope()
+            .symbol_texts
+            .entries
+            .iter()
+            .any(|(_, entry)| entry.as_str() == text)
+    }
     pub(crate) fn positioned(&self) -> &PositionedCanonicalCommit {
         &self.positioned
     }

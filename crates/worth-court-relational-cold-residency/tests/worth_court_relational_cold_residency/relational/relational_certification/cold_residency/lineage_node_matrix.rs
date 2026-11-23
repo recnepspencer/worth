@@ -50,6 +50,7 @@ fn residency_failure_matrix_lineage_doors_preserve_every_failure_class() {
             let failed_before = failed_reads();
             if sticky {
                 assert_eq!(door.read(&fixture, execution), Err(expected));
+                assert!(!fixture.runtime.has_resident_lineage_node(fixture.expected.lineage_id()));
                 if matches!(
                     door,
                     NodeDoor::MemoryCheckpoint | NodeDoor::EmbeddedCheckpoint
@@ -80,6 +81,12 @@ fn residency_failure_matrix_lineage_doors_preserve_every_failure_class() {
                         Some(&fixture.expected)
                     );
                 }
+                assert!(
+                    fixture
+                        .runtime
+                        .has_resident_lineage_node(fixture.expected.lineage_id()),
+                    "retry must admit the requested node"
+                );
             }
             assert_eq!(
                 fixture.runtime.history().latest_patch_stream_position(),

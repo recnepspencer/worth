@@ -56,6 +56,8 @@ mod invoking_scope;
 pub(crate) use invoking_scope::{run_invoking_preparation, run_invoking_scope};
 mod nested;
 mod nested_stop;
+mod single_stage;
+pub(crate) use single_stage::joined_stage;
 mod prepared_context;
 mod run_context;
 mod structural_span;

@@ -113,9 +113,10 @@ pub(super) fn seal(
     let staging_generation = pending.staging_generation;
     drop(pending);
     allowance.release(discarded_pending_bytes);
+    let mut publication_inner = allowance.reserve::<RecoveryPublicationPlanBody>(1)?;
     let expectation_backing = ExpectationBacking::prepare(allowance)?;
     let backing = ExecutionBasisBacking::prepare(allowance)?;
-    let publication = RecoveryPublicationPlan {
+    publication_inner.push(RecoveryPublicationPlanBody {
         expectation_backing,
         store,
         checkpoint,
@@ -135,6 +136,9 @@ pub(super) fn seal(
         candidates: candidate.artifacts,
         created_artifacts,
         release_topology: candidate.release_topology,
+    });
+    let publication = RecoveryPublicationPlan {
+        inner: publication_inner,
     };
     let quiescence = RecoveryQuiescencePlan {
         staging_commands,

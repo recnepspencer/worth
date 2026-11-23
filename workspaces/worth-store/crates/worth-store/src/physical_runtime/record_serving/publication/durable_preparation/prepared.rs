@@ -45,7 +45,8 @@ pub(in crate::physical_runtime) enum PreparedRewriteAnchor {
 
 pub struct PreparedPhysicalMutation {
     admission: AdmittedPhysicalMutation,
-    data: PreparedPhysicalMutationData,
+    data: Box<PreparedPhysicalMutationData>,
+    data_planned: bool,
     placement: AdmittedRecordPlacementPolicy,
     manifest_capacity_transition: super::PhysicalManifestCapacityTransition,
     deadline: PhysicalMutationDeadline,
@@ -120,11 +121,12 @@ impl PreparedPhysicalMutation {
     ) -> Self {
         Self {
             admission,
-            data: PreparedPhysicalMutationData::Unplanned {
+            data: Box::new(PreparedPhysicalMutationData::Unplanned {
                 batch,
                 materialization,
                 copy: None,
-            },
+            }),
+            data_planned: false,
             placement: context.placement,
             manifest_capacity_transition: context.manifest_capacity_transition,
             deadline: context.deadline,
@@ -279,11 +281,11 @@ impl PreparedPhysicalMutation {
     }
 
     pub(in crate::physical_runtime) const fn data_is_planned(&self) -> bool {
-        matches!(self.data, PreparedPhysicalMutationData::Planned { .. })
+        self.data_planned
     }
 
     pub(in crate::physical_runtime) fn duplicate_prepared_batch(&self) -> RecordAppendBatch {
-        match &self.data {
+        match self.data.as_ref() {
             PreparedPhysicalMutationData::Unplanned { batch, .. }
             | PreparedPhysicalMutationData::Planned { batch, .. } => batch.duplicate_prepared(),
         }
@@ -292,10 +294,10 @@ impl PreparedPhysicalMutation {
     pub(in crate::physical_runtime::record_serving) fn materialization_observation(
         &self,
     ) -> CanonicalPayloadMaterializationObservation {
-        match self.data {
+        match self.data.as_ref() {
             PreparedPhysicalMutationData::Unplanned {
                 materialization, ..
-            } => materialization,
+            } => *materialization,
             PreparedPhysicalMutationData::Planned { .. } => {
                 unreachable!("materialization observation is consumed during data planning")
             }
@@ -307,13 +309,14 @@ impl PreparedPhysicalMutation {
         data: PreparedPhysicalDataPlan,
         root: PreparedPhysicalRootProjection,
     ) -> Self {
-        let batch = match self.data {
+        let batch = match *self.data {
             PreparedPhysicalMutationData::Unplanned { batch, .. } => batch,
             PreparedPhysicalMutationData::Planned { .. } => {
                 unreachable!("a prepared mutation receives one immutable data plan")
             }
         };
-        self.data = PreparedPhysicalMutationData::Planned { batch, data, root };
+        self.data = Box::new(PreparedPhysicalMutationData::Planned { batch, data, root });
+        self.data_planned = true;
         self
     }
 
@@ -322,7 +325,7 @@ impl PreparedPhysicalMutation {
             self.released_control_placement.is_none(),
             "a planned root owns its released-control arena claim"
         );
-        let PreparedPhysicalMutationData::Planned { batch, data, root } = self.data else {
+        let PreparedPhysicalMutationData::Planned { batch, data, root } = *self.data else {
             unreachable!("fresh WAL reservation requires the director-attached data plan")
         };
         PlannedPhysicalMutationParts {
@@ -357,11 +360,12 @@ impl PreparedPhysicalMutation {
     ) -> Self {
         Self {
             admission: parts.admission,
-            data: PreparedPhysicalMutationData::Planned {
+            data: Box::new(PreparedPhysicalMutationData::Planned {
                 batch: parts.batch,
                 data: parts.data,
                 root: parts.root,
-            },
+            }),
+            data_planned: true,
             placement: parts.context.placement,
             manifest_capacity_transition: parts.context.manifest_capacity_transition,
             deadline: parts.context.deadline,

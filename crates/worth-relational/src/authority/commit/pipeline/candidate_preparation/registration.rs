@@ -122,11 +122,6 @@ impl CandidateRegistration {
             candidate_retention,
             published_snapshot_slot,
             control,
-            runtime
-                .config
-                .publication
-                .policy
-                .candidate_max_lifetime_millis,
             runtime.config.publication.policy.max_prepared_candidates,
         )
         .map_err(|stop| match stop {

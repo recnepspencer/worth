@@ -1,40 +1,73 @@
 //! Only actual entity/relation payload owners carry retained memory.
 use super::{funding, ExtraPayloadDenial, RelationEndpoints};
 use crate::identity::data::{LineageId, StructuralFingerprint};
+use std::sync::atomic::{AtomicU64, Ordering};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{
     AuthoritativeRecordAspectPatch as Patch, AuthoritativeRecordAspectState as State,
 };
-#[derive(Default, serde::Serialize)]
+
+static NEXT_EXTRA_BIRTH_SEQ: AtomicU64 = AtomicU64::new(1);
+
+fn next_extra_birth_seq() -> Option<u64> {
+    let mut current = NEXT_EXTRA_BIRTH_SEQ.load(Ordering::Relaxed);
+    loop {
+        let next = current.checked_add(1)?;
+        match NEXT_EXTRA_BIRTH_SEQ.compare_exchange_weak(
+            current,
+            next,
+            Ordering::AcqRel,
+            Ordering::Relaxed,
+        ) {
+            Ok(seq) => return Some(seq),
+            Err(observed) => current = observed,
+        }
+    }
+}
+
+/// Exclusive upper bound on the `birth_seq` of every `EntityExtra`/`RelationExtra`
+/// already constructed before this call. Returns `None` if exhausted so callers
+/// fall back to exact refcount/membership resolution without rollover hazard.
+pub(crate) fn current_extra_birth_watermark() -> Option<u64> {
+    let next = NEXT_EXTRA_BIRTH_SEQ.load(Ordering::Acquire);
+    (next < u64::MAX).then_some(next)
+}
+
+#[derive(serde::Serialize)]
 pub(crate) struct EntityExtra {
     pub(crate) structural_fingerprint: Option<StructuralFingerprint>,
     pub(crate) lineage_id: Option<LineageId>,
     authoritative_aspect_state: Option<State>,
+    #[serde(skip)]
+    birth_seq: Option<u64>,
     // Last; moving the whole extra conservatively retains its fixed backing bill.
     #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
 }
-#[derive(Default, serde::Serialize)]
+#[derive(serde::Serialize)]
 pub(crate) struct RelationExtra {
     pub(crate) endpoints: Option<RelationEndpoints>,
     authoritative_aspect_state: Option<State>,
     #[serde(skip)]
+    birth_seq: Option<u64>,
+    #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
 }
-/// Checked declared upper bound of the persistent aspect backing reachable
-/// from one extra carrier, excluding the carrier's own layout. Backing shared
-/// with another extra is included in full for each holder: a deliberate
-/// overbound, never an exact deduplicated inventory. `None` is unrepresentable.
-fn reachable_state_bound_bytes(state: Option<&State>) -> Option<u64> {
-    match state {
-        None => Some(0),
-        Some(state) => u64::try_from(state.aspects().retained_storage_bytes()?).ok(),
+impl Default for EntityExtra {
+    fn default() -> Self {
+        Self::from_unbudgeted_parts(None, None, None)
+    }
+}
+impl Default for RelationExtra {
+    fn default() -> Self {
+        Self::from_unbudgeted_parts(None, None)
     }
 }
 impl EntityExtra {
-    pub(crate) fn reachable_bound_bytes(&self) -> Option<u64> {
-        reachable_state_bound_bytes(self.authoritative_aspect_state())
+    pub(crate) const fn birth_seq(&self) -> Option<u64> {
+        self.birth_seq
     }
+
     pub(crate) fn from_funded_parts(
         structural_fingerprint: Option<StructuralFingerprint>,
         lineage_id: Option<LineageId>,
@@ -45,6 +78,7 @@ impl EntityExtra {
             structural_fingerprint,
             lineage_id,
             authoritative_aspect_state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         }
     }
@@ -56,6 +90,7 @@ impl EntityExtra {
             structural_fingerprint: None,
             lineage_id: None,
             authoritative_aspect_state: state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         })
     }
@@ -69,6 +104,7 @@ impl EntityExtra {
             structural_fingerprint,
             lineage_id,
             authoritative_aspect_state,
+            birth_seq: next_extra_birth_seq(),
             _funding: None,
         }
     }
@@ -84,6 +120,7 @@ impl EntityExtra {
             structural_fingerprint: None,
             lineage_id: None,
             authoritative_aspect_state: state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         })
     }
@@ -98,15 +135,17 @@ impl EntityExtra {
                 structural_fingerprint: self.structural_fingerprint,
                 lineage_id: self.lineage_id,
                 authoritative_aspect_state: state,
+                birth_seq: next_extra_birth_seq(),
                 _funding: memory,
             },
         )
     }
 }
 impl RelationExtra {
-    pub(crate) fn reachable_bound_bytes(&self) -> Option<u64> {
-        reachable_state_bound_bytes(self.authoritative_aspect_state())
+    pub(crate) const fn birth_seq(&self) -> Option<u64> {
+        self.birth_seq
     }
+
     pub(crate) fn from_funded_parts(
         endpoints: Option<RelationEndpoints>,
         authoritative_aspect_state: Option<State>,
@@ -115,6 +154,7 @@ impl RelationExtra {
         Self {
             endpoints,
             authoritative_aspect_state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         }
     }
@@ -125,6 +165,7 @@ impl RelationExtra {
         funding::copy(execution, None, |state, memory| Self {
             endpoints: None,
             authoritative_aspect_state: state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         })
     }
@@ -135,6 +176,7 @@ impl RelationExtra {
         Self {
             endpoints,
             authoritative_aspect_state,
+            birth_seq: next_extra_birth_seq(),
             _funding: None,
         }
     }
@@ -149,6 +191,7 @@ impl RelationExtra {
         funding::apply(execution, current, patch, |state, memory| Self {
             endpoints: None,
             authoritative_aspect_state: state,
+            birth_seq: next_extra_birth_seq(),
             _funding: memory,
         })
     }
@@ -162,6 +205,7 @@ impl RelationExtra {
             |state, memory| Self {
                 endpoints: self.endpoints.clone(),
                 authoritative_aspect_state: state,
+                birth_seq: next_extra_birth_seq(),
                 _funding: memory,
             },
         )

@@ -96,16 +96,33 @@ impl WorldSelectionReplay {
         for source in self.admitted.source().heads() {
             self.select(request, runtime, plan, roots, source, true)?;
         }
-        // Every original product predecessor is needed by later full World
-        // reconciliation, even when it stopped being a Native branch head.
-        for source in self
-            .admitted
-            .source()
-            .originals()
-            .iter()
-            .map(|row| row.source())
-            .chain(self.admitted.source().heads())
-        {
+        // Every non-disposed original product predecessor is needed by later
+        // full World reconciliation, even when it stopped being a Native head.
+        // Predecessors explicitly marked disposed in World's authoritative
+        // `HistoryRetired` journal may already have been pruned from Native's
+        // checkpoint while Track H released originals or horizon commits remain.
+        for row in self.admitted.source().originals() {
+            let recorded = if row.source_disposed() {
+                let Some(recorded) =
+                    self.recorded_source_optional(row.source(), runtime, plan, roots, request)?
+                else {
+                    continue;
+                };
+                recorded
+            } else {
+                self.recorded_source(row.source(), runtime, plan, roots, request)?
+            };
+            let Some((root, _)) = roots.exact_image(request, runtime, &recorded)? else {
+                if row.source_disposed() {
+                    self.require_present_recorded_entry(&recorded, runtime, plan, request)?;
+                    continue;
+                }
+                return Err(corrupt("World handoff source image is unavailable"));
+            };
+            self.require_source(&recorded, &root, runtime, plan, request)?;
+            roots.retain_world_selection_root(root.commit_id(), root, request)?;
+        }
+        for source in self.admitted.source().heads() {
             let recorded = self.recorded_source(source, runtime, plan, roots, request)?;
             let (root, _) = roots
                 .exact_image(request, runtime, &recorded)?

@@ -1,6 +1,9 @@
 // Concrete retained metadata and fixed im chunks deepen auto-trait obligations.
 #![recursion_limit = "256"]
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
+#[global_allocator]
+static TEST_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> =
+    &stats_alloc::INSTRUMENTED_SYSTEM;
 #[path = "worth_court_relational_certification/support/canonical_commit_frame.rs"]
 pub(crate) mod canonical_commit_frame;
 #[path = "worth_court_relational_certification/content/mod.rs"]

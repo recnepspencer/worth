@@ -78,6 +78,17 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         operation.observe_clock(phase, bridge, runtime, truth)
     }
 
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn reenter_retained_wakes_continuation_for_test(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        bridge: &BridgeConditionalExecutionView<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        truth: &WorthQueryConditionalTruthBasis,
+    ) -> ErasedClockObservationOutcome {
+        self.lock_operation()
+            .reenter_retained_wakes_continuation_for_test(phase, bridge, runtime, truth)
+    }
+
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_product_binding(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

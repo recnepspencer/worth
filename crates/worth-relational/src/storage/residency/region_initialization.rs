@@ -76,7 +76,11 @@ impl PreparedResidentRegion {
             })
             .map_err(|error| error.into_content_failure(partition.partition_id))?;
         let live_counts = super::LiveRecordCounts::from_partition(&partition);
-        let inventory = partition.allocation_inventory();
+        let inventory = partition.allocation_inventory().map_err(|_| {
+            RegionContentFailure::Content(
+                crate::storage::overlay::PartitionContentDigestError::AllocationAccountingOverflow,
+            )
+        })?;
         let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
             + partition.relation_arena.lifecycle_counts().unavailable;
         let entity_slots = partition.entity_arena.slot_count();

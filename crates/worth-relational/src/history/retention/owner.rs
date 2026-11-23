@@ -35,9 +35,18 @@ pub(crate) struct RelationalBranchRetentionOwner {
 pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) runtime_instance_id: u64,
     pub(super) external_cut: Mutex<()>,
+    /// Serializes retired-root reclamation measurement through actual root drop
+    /// so a concurrent pass never observes an already-removed-but-not-dropped
+    /// root as an outside holder of shared regions or backing.
+    pub(super) reclamation_gate: Mutex<()>,
     #[cfg(test)]
     pub(super) component_capture_pause:
         Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    #[cfg(test)]
+    pub(super) reclamation_drop_pause:
+        Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    #[cfg(test)]
+    pub(super) reclamation_gate_contended: Mutex<Option<std::sync::mpsc::SyncSender<()>>>,
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
@@ -123,6 +132,15 @@ impl RelationalBranchRetentionOwner {
             != self.inner.live_head_count.load(Ordering::Acquire)
     }
 
+    #[cfg(test)]
+    pub(crate) fn retired_branch_binding_count(&self) -> usize {
+        self.inner
+            .read_retired_roots()
+            .values()
+            .map(|entry| entry.branch_bindings.len())
+            .sum()
+    }
+
     pub(crate) fn new(runtime_instance_id: u64) -> Self {
         Self::new_with_limits(
             runtime_instance_id,
@@ -140,8 +158,13 @@ impl RelationalBranchRetentionOwner {
             inner: Arc::new(RelationalBranchRetentionOwnerInner {
                 runtime_instance_id,
                 external_cut: Mutex::new(()),
+                reclamation_gate: Mutex::new(()),
                 #[cfg(test)]
                 component_capture_pause: Mutex::new(None),
+                #[cfg(test)]
+                reclamation_drop_pause: Mutex::new(None),
+                #[cfg(test)]
+                reclamation_gate_contended: Mutex::new(None),
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),

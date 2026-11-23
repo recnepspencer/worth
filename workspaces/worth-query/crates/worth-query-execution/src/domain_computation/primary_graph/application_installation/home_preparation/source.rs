@@ -22,7 +22,7 @@ use worth_runtime_bridge::facade::{
 };
 
 pub struct PreparedHomeQueryRuntime<Schema: ApplicationSchemaComposition, Program> {
-    pub(super) prepared: assembly::HomeQueryPreparation<Schema, Program>,
+    pub(super) prepared: Box<assembly::HomeQueryPreparation<Schema, Program>>,
     pub(super) publication: Option<super::super::super::WorthQueryPrimaryGraphPublication>,
 }
 

@@ -50,6 +50,20 @@ fn candidate(
         .prepare_branch_transaction(execution, transaction)
         .unwrap()
 }
+/// C2 snapshot-handle census restored from
+/// e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs.
+/// Fixture adaptation: the private visibility and preparation counters are read
+/// through the owner's public counted storage census.
+fn published_snapshots(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> (usize, usize) {
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
+    (
+        stats.published_snapshot_handle_count,
+        stats.published_snapshot_slot_count,
+    )
+}
 fn main_basis(runtime: &RelationalRuntime) -> AdmittedRelationalBranchBasis {
     runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -74,7 +88,7 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
         assert_eq!(transition.commit(), &expected_receipt);
         let (receipt, successor_authority) = transition.into_parts();
         assert_eq!(runtime.history().immutable_commit_count(), count + 1);
-
+        assert_eq!(published_snapshots(execution, &runtime), (0, 0));
         assert_eq!(
             medium
                 .committed_artifacts()
@@ -135,7 +149,8 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
         assert_eq!(main_basis(&foreign).descriptor(), &before_foreign);
         assert_eq!(runtime.history().immutable_commit_count(), count);
         assert_eq!(foreign.history().immutable_commit_count(), foreign_count);
-
+        assert_eq!(published_snapshots(execution, &runtime).0, 0);
+        assert_eq!(published_snapshots(execution, &foreign).0, 0);
         if foreign_recovery {
             assert!(matches!(
                 refusal.denial(),
@@ -194,7 +209,7 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
         }
         assert_eq!(main_basis(&runtime).descriptor(), &before);
         assert_eq!(runtime.history().immutable_commit_count(), count);
-
+        assert_eq!(published_snapshots(execution, &runtime).0, 0);
         assert!(refusal.into_authority().admit_basis(predecessor).is_ok());
     }
 }

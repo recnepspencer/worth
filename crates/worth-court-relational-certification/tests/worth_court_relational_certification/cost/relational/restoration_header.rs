@@ -1,0 +1,78 @@
+//! Header validation is envelope work, independent of origin lookup multiplicity.
+mod fixtures;
+mod journey;
+mod republication;
+use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+
+#[test]
+fn restoration_header_is_validated_once_and_work_grows_linearly() {
+    let request = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let execution = &ExecutionRequest::serial(&request);
+    for axis in 0..3 {
+        let mut work = Vec::new();
+        for scale in [2, 4, 8] {
+            let (publications, members, edges) = match axis {
+                0 => (scale, 2, 4),
+                1 => (2, scale, 4),
+                _ => (2, 4, scale),
+            };
+            let journey = journey::run(execution, publications, members, edges);
+            let once = journey
+                .restored
+                .publication()
+                .envelope
+                .output_origin_header_work_for_test(execution, 1)
+                .unwrap();
+            let repeated = journey
+                .restored
+                .publication()
+                .envelope
+                .output_origin_header_work_for_test(execution, scale)
+                .unwrap();
+            assert_eq!(once.0, 1, "one envelope has one restoration header");
+            assert_eq!(repeated, once, "incident lookups must carry validation");
+            eprintln!(
+                "axis={axis} scale={scale} validations={} header_work={}",
+                once.0, once.1
+            );
+            work.push(once.1);
+        }
+        assert!(
+            work[0] < work[1] && work[1] < work[2],
+            "each axis must perform observable header work: {work:?}"
+        );
+        assert!(
+            work[2] - work[1] <= 2 * (work[1] - work[0]),
+            "doubling one axis must have linear growth: {work:?}"
+        );
+    }
+}
+
+#[test]
+fn public_create_grow_retire_restore_relation_scale_report() {
+    let request = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let execution = &ExecutionRequest::serial(&request);
+    let journey = journey::run(execution, 10, 8, 36);
+    assert_eq!(journey.restored_relations, 720);
+    for (phase, work) in ["create", "grow", "retire", "undo_retirement"]
+        .into_iter()
+        .zip(journey.phase_work)
+    {
+        assert!(
+            work > 0,
+            "restoration_scale phase={phase} must charge counted work"
+        );
+        eprintln!(
+            "restoration_scale phase={phase} publications=10 restored_relations={} charged_work={work}",
+            journey.restored_relations
+        );
+    }
+}

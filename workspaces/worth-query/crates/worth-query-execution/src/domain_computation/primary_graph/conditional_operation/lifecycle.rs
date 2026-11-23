@@ -22,6 +22,7 @@ pub(super) use super::clock_observation::{
 pub(super) use super::installation::ConditionalClockLease;
 pub(super) use super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use clock_source_observation::isolate_clock_source;
+pub(in crate::domain_computation::primary_graph::conditional_operation) use due_wake_retention::prime_global_plateaus_for_test;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use commit_watch::source_entity;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use pending_invalidations::WorthQueryPendingGranularInvalidations;
 pub(in crate::domain_computation::primary_graph) use installed_operation::{

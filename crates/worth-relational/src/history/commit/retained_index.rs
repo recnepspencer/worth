@@ -14,6 +14,10 @@ impl RetainedCanonicalIndex {
     pub(crate) fn same_owner(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
+    /// Weak identity of this exact retained index owner, for custody census.
+    pub(crate) fn allocation_witness(&self) -> crate::durability::RelationalAllocationWitness {
+        crate::durability::RelationalAllocationWitness::of(&self.0)
+    }
     fn reserve(
         receipt: &RelationalCommitReceipt,
         request: &ExecutionRequest<'_, '_>,

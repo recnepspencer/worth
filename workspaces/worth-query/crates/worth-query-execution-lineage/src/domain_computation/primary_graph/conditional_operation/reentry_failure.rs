@@ -20,9 +20,6 @@ pub enum WorthQueryConditionalReentryFailure {
     ManagedWake(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
     WakeRevisionExhausted,
     WakeDidNotRetire(worth_runtime_bridge::facade::BridgeManagedTemporalIntentReconciliation),
-    CandidateLifetimeExpired {
-        maximum_lifetime_millis: u64,
-    },
     AbortedBeforeEffect,
     UnresolvedCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationUnresolvedCommitEvidence,

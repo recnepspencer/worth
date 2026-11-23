@@ -1,13 +1,14 @@
 error[E0308]: mismatched types
-  --> tests/ui/recovery_construction_requires_cleanup_close.rs:11:78
+  --> tests/ui/recovery_construction_requires_cleanup_close.rs:17:9
    |
-11 |     let _ = PhysicalRecoveryConstructionPort::construct(coordination, media, reopened);
-   |             -------------------------------------------                      ^^^^^^^^ expected `ClosedPhysicalRecoveryCleanup`, found `CompletedPhysicalRecoveryFreshReopen`
-   |             |
-   |             arguments to this function are incorrect
+13 |     let _ = PhysicalRecoveryConstructionPort::construct_with_backing(
+   |             -------------------------------------------------------- arguments to this function are incorrect
+...
+17 |         reopened,
+   |         ^^^^^^^^ expected `ClosedPhysicalRecoveryCleanup`, found `CompletedPhysicalRecoveryFreshReopen`
    |
 note: associated function defined here
-  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_construction/port.rs
+  --> $WORKSPACE/crates/worth-store/src/physical_runtime/recovery_construction/port/funded.rs
    |
-   |     pub fn construct(
-   |            ^^^^^^^^^
+   |     pub fn construct_with_backing(
+   |            ^^^^^^^^^^^^^^^^^^^^^^

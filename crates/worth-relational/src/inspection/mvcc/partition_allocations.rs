@@ -1,9 +1,9 @@
 //! Read-only traversal of native payload allocations at their owner granularity.
 //!
-//! Native nodes and payload carriers are identified by their real allocation.
-//! Persistent aspect backing nested in a carrier arrives as that carrier's
-//! checked declared upper bound, so backing shared by distinct carriers is
-//! counted once per carrier. An unrepresentable bound refuses the walk.
+//! Native nodes, payload carriers, and nested persistent aspect nodes and
+//! admitted values are identified by their real physical allocation so shared
+//! backing across distinct carriers is counted once. An unrepresentable extent
+//! refuses the walk.
 use super::allocation_ledger::RelationalExcludedAllocationLane;
 use super::sharing::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,

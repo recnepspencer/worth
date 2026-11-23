@@ -308,7 +308,6 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration");

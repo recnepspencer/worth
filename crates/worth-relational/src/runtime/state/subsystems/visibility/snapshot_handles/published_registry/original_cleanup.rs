@@ -39,3 +39,6 @@ impl PublishedSnapshotHandleRegistry {
         Ok(Some(true))
     }
 }
+
+#[cfg(test)]
+mod tests;

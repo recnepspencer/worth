@@ -4,10 +4,7 @@ use crate::{
     ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointMaintenanceDenial as Maintenance,
     ApplicationHomeCheckpointOperation,
 };
-use std::{
-    sync::atomic::{AtomicBool, Ordering},
-    time::Instant,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 use worth_execution::{
     CancellationSource, ExecutionMemoryReservation, ExecutionRequest, ExecutionResourceLease,
     LeaseDenial, LeaseRequest, WorkCeilingDenial,
@@ -24,7 +21,6 @@ const WORKER_STACK_ROUNDING_BYTES: usize = 64 << 10;
 pub(super) struct MaintenanceWorker {
     root: ExecutionResourceLease<'static>,
     cancellation: CancellationSource,
-    timeout: std::time::Duration,
     active: AtomicBool,
     // Last: all payload fields retire before the allocation/stack bill.
     _worker_backing: ExecutionMemoryReservation,
@@ -84,7 +80,6 @@ impl MaintenanceWorker {
             _worker_backing: memory,
             root,
             cancellation,
-            timeout: limits.maintenance_timeout(),
             active: AtomicBool::new(false),
         })
     }
@@ -157,14 +152,9 @@ impl MaintenanceWorker {
     ) -> Result<(), WorkCeilingDenial> {
         ExecutionRequest::leased(&self.root)
             .run_native(|_| {
-                let Some(deadline) = Instant::now().checked_add(self.timeout) else {
-                    *outcome = Some(Err(Denial::Maintenance(Maintenance::DeadlineOverflow)));
-                    return;
-                };
-                let child = self.root.controlled_child(
-                    self.cancellation.token(),
-                    Some(worth_execution::MonotonicClock::system().deadline_at(deadline)),
-                );
+                // Counted work and memory bound upkeep; Home retirement cancels
+                // it. A wall-clock deadline would make close depend on load.
+                let child = self.root.controlled_child(self.cancellation.token(), None);
                 let request = ExecutionRequest::leased(&child);
                 *outcome = Some(match purpose {
                     Purpose::Advancement => operation.after_advancement(&request),

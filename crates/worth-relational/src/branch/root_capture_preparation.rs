@@ -80,7 +80,7 @@ pub(super) fn prepare(
                 &prepared_schema.authority,
                 &change,
             )?;
-            let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
+            let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost)?;
             let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
             let evidence = super::RelationalRootCommitEvidence::original_for_request(
                 execution,
@@ -294,7 +294,7 @@ impl PreparedRootSchema {
     fn apply_cost(
         &self,
         mut cost: RelationalBranchRootPublicationCost,
-    ) -> RelationalBranchRootPublicationCost {
+    ) -> Result<RelationalBranchRootPublicationCost, RelationalBranchRootCaptureDenial> {
         match self.allocation {
             PreparedSchemaAllocation::Reused => cost.reused_schema_authorities = 1,
             PreparedSchemaAllocation::New {
@@ -303,10 +303,13 @@ impl PreparedRootSchema {
                 cost.new_schema_authorities = 1;
                 cost.new_authoritative_bytes = cost
                     .new_authoritative_bytes
-                    .saturating_add(authoritative_bytes);
+                    .checked_add(authoritative_bytes)
+                    .ok_or(RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
+                        crate::identity::data::PartitionId::main(),
+                    ))?;
             }
         }
-        cost
+        Ok(cost)
     }
 }
 

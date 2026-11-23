@@ -14,68 +14,74 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
     let mut subsystem_ranges = Vec::with_capacity(ROCKETSHIP_SUBSYSTEM_LAYOUTS.len());
 
     let entity_commit_started_at = Instant::now();
-    let entity_outcome = {
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-        let mut batch = WorkerIntentBatch::new("rocketship-pseudorealistic-entities");
-        let mut entity_specs = Vec::with_capacity(node_count);
-        for (layout_index, layout) in ROCKETSHIP_SUBSYSTEM_LAYOUTS.iter().enumerate() {
-            let remaining_layouts = ROCKETSHIP_SUBSYSTEM_LAYOUTS.len() - layout_index;
-            let remaining_nodes = node_count.saturating_sub(assigned);
-            let subsystem_count = if remaining_layouts == 1 {
-                remaining_nodes
-            } else {
-                ((node_count * layout.weight) / total_weight).max(512)
-            }
-            .min(remaining_nodes.saturating_sub(remaining_layouts - 1));
-            let start = assigned;
-            let end = start + subsystem_count;
-            assigned = end;
-            subsystem_ranges.push((start, end, *layout));
-
-            for local_index in 0..subsystem_count {
-                let aspect = match local_index % 4 {
-                    0 => "structure",
-                    1 => "thermal",
-                    2 => "fluid",
-                    _ => "control",
-                };
-                let partition_id = PartitionId(
-                    layout.partition_base
-                        + (local_index % ROCKETSHIP_SUBSYSTEM_ENTITY_PARTITION_FANOUT) as u32,
-                );
-                entity_specs.push(crate::transactions::data::EntitySpec {
-                    partition_id,
-                    kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw(format!(
-                        "rocket.{}.{}.{}",
-                        layout.section, layout.subsystem, local_index
-                    )),
-                    fields: crate::tests::support::aspect_field_patch_from_values([
-                        (
-                            crate::tests::support::aspect_key("section"),
-                            crate::tests::support::field_key("section"),
-                            crate::tests::support::string_aspect_value(layout.section),
-                        ),
-                        (
-                            crate::tests::support::aspect_key("subsystem"),
-                            crate::tests::support::field_key("subsystem"),
-                            crate::tests::support::string_aspect_value(layout.subsystem),
-                        ),
-                        (
-                            crate::tests::support::aspect_key("aspect"),
-                            crate::tests::support::field_key("aspect"),
-                            crate::tests::support::string_aspect_value(aspect),
-                        ),
-                        (
-                            crate::tests::support::aspect_key("ordinal"),
-                            crate::tests::support::field_key("ordinal"),
-                            crate::tests::support::usize_aspect_value(local_index),
-                        ),
-                    ]),
-                });
-            }
+    let mut entity_specs = Vec::with_capacity(node_count);
+    for (layout_index, layout) in ROCKETSHIP_SUBSYSTEM_LAYOUTS.iter().enumerate() {
+        let remaining_layouts = ROCKETSHIP_SUBSYSTEM_LAYOUTS.len() - layout_index;
+        let remaining_nodes = node_count.saturating_sub(assigned);
+        let subsystem_count = if remaining_layouts == 1 {
+            remaining_nodes
+        } else {
+            ((node_count * layout.weight) / total_weight).max(512)
         }
-        for intent in bulk_entity_create_intents(&entity_specs) {
+        .min(remaining_nodes.saturating_sub(remaining_layouts - 1));
+        let start = assigned;
+        let end = start + subsystem_count;
+        assigned = end;
+        subsystem_ranges.push((start, end, *layout));
+
+        for local_index in 0..subsystem_count {
+            let aspect = match local_index % 4 {
+                0 => "structure",
+                1 => "thermal",
+                2 => "fluid",
+                _ => "control",
+            };
+            let partition_id = PartitionId(
+                layout.partition_base
+                    + (local_index % ROCKETSHIP_SUBSYSTEM_ENTITY_PARTITION_FANOUT) as u32,
+            );
+            entity_specs.push(crate::transactions::data::EntitySpec {
+                partition_id,
+                kind_id: KindId(1),
+                client_key: crate::symbols::data::ClientKey::raw(format!(
+                    "rocket.{}.{}.{}",
+                    layout.section, layout.subsystem, local_index
+                )),
+                fields: crate::tests::support::aspect_field_patch_from_values([
+                    (
+                        crate::tests::support::aspect_key("section"),
+                        crate::tests::support::field_key("section"),
+                        crate::tests::support::string_aspect_value(layout.section),
+                    ),
+                    (
+                        crate::tests::support::aspect_key("subsystem"),
+                        crate::tests::support::field_key("subsystem"),
+                        crate::tests::support::string_aspect_value(layout.subsystem),
+                    ),
+                    (
+                        crate::tests::support::aspect_key("aspect"),
+                        crate::tests::support::field_key("aspect"),
+                        crate::tests::support::string_aspect_value(aspect),
+                    ),
+                    (
+                        crate::tests::support::aspect_key("ordinal"),
+                        crate::tests::support::field_key("ordinal"),
+                        crate::tests::support::usize_aspect_value(local_index),
+                    ),
+                ]),
+            });
+        }
+    }
+    let mut created_entity_count = 0usize;
+    for (chunk_index, entity_chunk) in entity_specs
+        .chunks(ROCKETSHIP_RELATION_SEED_BATCH_SIZE)
+        .enumerate()
+    {
+        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+        let mut batch = WorkerIntentBatch::new(format!(
+            "rocketship-pseudorealistic-entities-{chunk_index}"
+        ));
+        for intent in bulk_entity_create_intents(entity_chunk) {
             batch = batch.push(intent);
         }
         txn.push_batch(
@@ -83,12 +89,15 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(execution, runtime)
-            .expect("pseudorealistic rocketship entity seed commit")
-    };
+        let outcome = txn
+            .commit(execution, runtime)
+            .expect("pseudorealistic rocketship entity seed commit");
+        created_entity_count += changed_entities(&outcome).len();
+        crate::tests::support::release_test_commit_snapshot(runtime, &outcome);
+    }
     let entity_commit_micros = entity_commit_started_at.elapsed().as_micros();
     assert_eq!(
-        changed_entities(&entity_outcome).len(),
+        created_entity_count,
         node_count,
         "pseudorealistic rocketship should seed all entities"
     );

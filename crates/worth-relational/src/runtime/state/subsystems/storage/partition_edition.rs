@@ -99,6 +99,43 @@ impl PartitionEdition {
         )
     }
 
+    /// Pure read-only peek of an already-accepted Full mirror partition (no lease install).
+    pub(crate) fn peek_accepted_full_partition(&self, id: PartitionId) -> Option<&PartitionState> {
+        self.partitions.get(&id)?.accepted_full_partition()
+    }
+
+    /// Pure read-only peek of a mirror partition's Head residency (no lease install).
+    pub(crate) fn peek_head_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::PartitionHeadProbe as Probe;
+        match self.partitions.get(&id) {
+            None => Probe::Absent,
+            Some(region) => match region.peek_head_view_with_symbols(symbols) {
+                Some(view) => Probe::Resident(view),
+                None => Probe::Cold,
+            },
+        }
+    }
+
+    /// Pure read-only peek of a mirror partition's Full residency (no lease install).
+    pub(crate) fn peek_full_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        use crate::storage::residency::PartitionProbe as Probe;
+        match self.partitions.get(&id) {
+            None => Probe::Absent,
+            Some(region) => match region.peek_full_partition_with_symbols(symbols) {
+                Some(partition) => Probe::Resident(partition),
+                None => Probe::Cold,
+            },
+        }
+    }
+
     pub(crate) fn resident_full(
         &self,
     ) -> Result<ResidentPartitionEdition, crate::storage::data::RelationalStorageUnavailable> {

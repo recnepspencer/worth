@@ -23,6 +23,7 @@ impl ActiveAttemptCustody {
         observed: Option<ProductBranchReferenceSnapshot>,
         disposition: RetainedCommitDisposition,
     ) -> ProductUnpublishedOwnerEffects {
+        self.discard_admitted_memory_original();
         {
             let mut state = self.record.state();
             state.cause = cause;

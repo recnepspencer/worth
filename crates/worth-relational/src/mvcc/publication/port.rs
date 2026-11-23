@@ -44,8 +44,6 @@ struct PreparedBranchPublicationPreflight {
     head_retirement: Option<crate::history::retention::RelationalHeadRetirementCapacity>,
     candidate_retention: Option<crate::history::retention::RelationalCandidateRetentionObligation>,
     control: crate::mvcc::RelationalOperationControl,
-    expires_at: std::time::Instant,
-    maximum_lifetime_millis: u64,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
 }

@@ -7,6 +7,8 @@ mod fresh_source;
 mod native_effects;
 mod occurrence_owners;
 mod reconcile;
+#[cfg(test)]
+pub(crate) use reconcile::require_retained_native_predecessor;
 mod signal_effects;
 
 mod authored;

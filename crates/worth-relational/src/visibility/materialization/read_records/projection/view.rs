@@ -31,7 +31,7 @@ impl VisibilityProjectionView {
         self.basis.root()
     }
 
-    pub(crate) fn is_exact_basis(&self) -> bool {
+    pub fn is_exact_basis(&self) -> bool {
         matches!(
             self.basis,
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(_)

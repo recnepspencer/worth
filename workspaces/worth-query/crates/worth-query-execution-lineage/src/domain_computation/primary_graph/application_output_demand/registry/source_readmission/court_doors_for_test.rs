@@ -18,7 +18,7 @@ impl RequiredOutputReadmission {
             source,
             producer,
             limits,
-            retained_program_basis,
+            retained_program_basis: std::sync::Mutex::new(retained_program_basis),
         }
     }
 }

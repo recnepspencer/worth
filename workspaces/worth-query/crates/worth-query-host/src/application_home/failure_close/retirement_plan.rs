@@ -3,28 +3,149 @@ use super::*;
 
 pub(super) enum OpeningClosePlan<Schema: ApplicationSchemaComposition, Program> {
     NoHome,
-    RelationalAttachment(RelationalAttachmentRefused),
-    Unrecovered(UnrecoveredApplicationHome),
-    Unshared(UnsharedReadmittedApplicationHome),
-    NativeReadmitted(ReadmittedApplicationHome),
-    WorldReadmission(WorldHomeReadmissionRefused),
+    RelationalAttachment(Box<RelationalAttachmentRefused>),
+    Unrecovered(Box<UnrecoveredApplicationHome>),
+    Unshared(Box<UnsharedReadmittedApplicationHome>),
+    NativeReadmitted(Box<ReadmittedApplicationHome>),
+    WorldReadmission(Box<WorldHomeReadmissionRefused>),
     World {
-        query: WorldQueryPreparation<Schema, Program>,
-        home: DirectoryHome,
+        query: Box<WorldQueryPreparation<Schema, Program>>,
+        home: Box<DirectoryHome>,
     },
 }
 
 #[inline(never)]
 pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
-    source: WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
 ) -> OpeningClosePlan<Schema, Program> {
+    let source = match prepare_pre_world(source) {
+        Ok(plan) => return plan,
+        Err(source) => source,
+    };
+    let source = match prepare_existing_and_transition_world(source) {
+        Ok(plan) => return plan,
+        Err(source) => source,
+    };
+    prepare_fresh_world(source)
+}
+
+#[inline(never)]
+fn prepare_pre_world<Schema: ApplicationSchemaComposition, Program: 'static>(
+    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+) -> Result<
+    OpeningClosePlan<Schema, Program>,
+    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+> {
     use WorthQueryApplicationHomeOpenRefused::*;
-    match source {
+    Ok(match *source {
         Preparation(_) => OpeningClosePlan::NoHome,
+        Binding { query, cause: _ } | Physical { query, cause: _ } => {
+            drop(query);
+            OpeningClosePlan::NoHome
+        }
         SignalProgramPreparation { home, query } => {
             drop(query);
-            OpeningClosePlan::NativeReadmitted(home.into_home())
+            OpeningClosePlan::NativeReadmitted(Box::new(home.into_home()))
         }
+        WorldSourcePreparation { query, home } => {
+            drop(query);
+            OpeningClosePlan::WorldReadmission(Box::new(home))
+        }
+        ExistingWorldSourcePreparation { query, home } => {
+            drop(query);
+            OpeningClosePlan::WorldReadmission(Box::new(home))
+        }
+        RelationalAttachment { query, home } => {
+            drop(query);
+            OpeningClosePlan::RelationalAttachment(Box::new(home))
+        }
+        NativePreparation {
+            query,
+            home,
+            cause: _,
+        } => {
+            drop(query);
+            OpeningClosePlan::Unrecovered(Box::new(home))
+        }
+        NativeInstallation { query, home } => {
+            // These unshared meanings contain no Native/source handle.
+            // Explicit disposal releases them before the real raw close.
+            drop(query);
+            OpeningClosePlan::Unrecovered(Box::new(home))
+        }
+        NativeReadmission { query, home } => {
+            drop(query);
+            OpeningClosePlan::Unrecovered(Box::new(home.into_home()))
+        }
+        QueryPublicationReadmissionRequired { query, home } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home.into_home()))
+        }
+        NativeFinalizationInput {
+            query,
+            home,
+            cause: _,
+        } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home))
+        }
+        ExistingNativeFinalization { query, home } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home))
+        }
+        ExistingBridgeDefinition {
+            query,
+            home,
+            cause: _,
+        } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home))
+        }
+        ExistingWorldReadmission {
+            query,
+            home,
+            _bindings,
+        } => {
+            drop(_bindings);
+            drop(query);
+            OpeningClosePlan::WorldReadmission(Box::new(home))
+        }
+        NativeFinalization { query, home } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home))
+        }
+        BridgeDefinition {
+            query,
+            home,
+            cause: _,
+        } => {
+            drop(query);
+            OpeningClosePlan::Unshared(Box::new(home))
+        }
+        WorldReadmission {
+            query,
+            home,
+            _bindings,
+        } => {
+            drop(_bindings);
+            drop(query);
+            // Store's owner method releases its failed, unshared World
+            // composition before returning the actual Native Home.
+            OpeningClosePlan::WorldReadmission(Box::new(home))
+        }
+        other => return Err(Box::new(other)),
+    })
+}
+
+#[inline(never)]
+fn prepare_existing_and_transition_world<Schema: ApplicationSchemaComposition, Program: 'static>(
+    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+) -> Result<
+    OpeningClosePlan<Schema, Program>,
+    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+> {
+    use WorthQueryApplicationHomeOpenRefused::*;
+    Ok(match *source {
         TransitionComposition { query, home, cause } => world(
             WorldQueryPreparation::TransitionComposition {
                 _query: query,
@@ -49,73 +170,6 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
             },
             home,
         ),
-        WorldSourcePreparation { query, home } => {
-            drop(query);
-            OpeningClosePlan::WorldReadmission(home)
-        }
-        ExistingWorldSourcePreparation { query, home } => {
-            drop(query);
-            OpeningClosePlan::WorldReadmission(home)
-        }
-        Binding { query, cause: _ } | Physical { query, cause: _ } => {
-            drop(query);
-            OpeningClosePlan::NoHome
-        }
-        RelationalAttachment { query, home } => {
-            drop(query);
-            OpeningClosePlan::RelationalAttachment(home)
-        }
-        NativePreparation {
-            query,
-            home,
-            cause: _,
-        } => {
-            drop(query);
-            OpeningClosePlan::Unrecovered(home)
-        }
-        NativeInstallation { query, home } => {
-            // These unshared meanings contain no Native/source handle.
-            // Explicit disposal releases them before the real raw close.
-            drop(query);
-            OpeningClosePlan::Unrecovered(home)
-        }
-        NativeReadmission { query, home } => {
-            drop(query);
-            OpeningClosePlan::Unrecovered(home.into_home())
-        }
-        QueryPublicationReadmissionRequired { query, home } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home.into_home())
-        }
-        NativeFinalizationInput {
-            query,
-            home,
-            cause: _,
-        } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home)
-        }
-        ExistingNativeFinalization { query, home } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home)
-        }
-        ExistingBridgeDefinition {
-            query,
-            home,
-            cause: _,
-        } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home)
-        }
-        ExistingWorldReadmission {
-            query,
-            home,
-            _bindings,
-        } => {
-            drop(_bindings);
-            drop(query);
-            OpeningClosePlan::WorldReadmission(home)
-        }
         ExistingComposition { query, home, cause } => world(
             WorldQueryPreparation::ExistingComposition {
                 _query: query,
@@ -143,29 +197,16 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
         ExistingQueryAttachment { query, home } => {
             world(WorldQueryPreparation::ExistingAttachment(query), home)
         }
-        NativeFinalization { query, home } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home)
-        }
-        BridgeDefinition {
-            query,
-            home,
-            cause: _,
-        } => {
-            drop(query);
-            OpeningClosePlan::Unshared(home)
-        }
-        WorldReadmission {
-            query,
-            home,
-            _bindings,
-        } => {
-            drop(_bindings);
-            drop(query);
-            // Store's owner method releases its failed, unshared World
-            // composition before returning the actual Native Home.
-            OpeningClosePlan::WorldReadmission(home)
-        }
+        other => return Err(Box::new(other)),
+    })
+}
+
+#[inline(never)]
+fn prepare_fresh_world<Schema: ApplicationSchemaComposition, Program: 'static>(
+    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+) -> OpeningClosePlan<Schema, Program> {
+    use WorthQueryApplicationHomeOpenRefused::*;
+    match *source {
         Composition { query, home, cause } => world(
             WorldQueryPreparation::Composition {
                 _query: query,
@@ -220,14 +261,19 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
                 home,
             )
         }
+        _ => unreachable!("pre-world, transition, and existing variants are handled earlier"),
     }
 }
 
+#[inline(never)]
 fn world<Schema: ApplicationSchemaComposition, Program>(
     query: WorldQueryPreparation<Schema, Program>,
     home: DirectoryHome,
 ) -> OpeningClosePlan<Schema, Program> {
-    OpeningClosePlan::World { query, home }
+    OpeningClosePlan::World {
+        query: Box::new(query),
+        home: Box::new(home),
+    }
 }
 
 impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Schema, Program> {
@@ -245,7 +291,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Sc
                 retired_query: None,
             }),
             Self::RelationalAttachment(home) => {
-                let outcome = match home {
+                let outcome = match *home {
                     RelationalAttachmentRefused::BeforeConstruction { home, cause: _ } => {
                         home.consume(|home| home.close(request))
                     }
@@ -253,11 +299,11 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Sc
                 };
                 classify_released(outcome)
             }
-            Self::Unrecovered(home) => close_unrecovered(home, request),
-            Self::Unshared(home) => close_unshared(home, request),
-            Self::NativeReadmitted(home) => classify_released(home.close(request)),
-            Self::WorldReadmission(home) => classify_released(home.into_home().close(request)),
-            Self::World { query, home } => close_world_preparation(query, home, request),
+            Self::Unrecovered(home) => close_unrecovered(*home, request),
+            Self::Unshared(home) => close_unshared(*home, request),
+            Self::NativeReadmitted(home) => classify_released((*home).close(request)),
+            Self::WorldReadmission(home) => classify_released((*home).into_home().close(request)),
+            Self::World { query, home } => close_world_preparation(query, *home, request),
         }
     }
 }

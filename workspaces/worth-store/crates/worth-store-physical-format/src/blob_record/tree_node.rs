@@ -148,49 +148,41 @@ impl BlobTreeNodeV1 {
         Self::decode_payload(frame.payload, frame.flags)
     }
 
-    pub(super) fn decode_payload(payload: &[u8], flags: u16) -> Result<Self, BlobRecordDenial> {
-        if flags != 1 || payload.len() < OCCURRENCE_BYTES + CONTENT_PREFIX_BYTES {
-            return Err(BlobRecordDenial::MissingOccurrenceClaim);
-        }
-        let content = &payload[OCCURRENCE_BYTES..];
-        let kind = match content[0] {
-            1 => BlobTreeNodeKind::Leaf,
-            2 => BlobTreeNodeKind::Interior,
-            _ => return Err(BlobRecordDenial::InvalidTreeShape),
-        };
-        let occurrence = BlobTreeOccurrenceV1::new(
-            payload[0..16].try_into().expect("fixed field"),
-            payload[16..32].try_into().expect("fixed field"),
-            kind,
-            content[1],
-            u64::from_le_bytes(payload[32..40].try_into().expect("fixed field")),
-        )?;
-        if content[2..4] != [0; 2] {
-            return Err(BlobRecordDenial::InvalidTreeShape);
-        }
-        let count = u32::from_le_bytes(content[4..8].try_into().expect("fixed field")) as usize;
-        if count == 0
-            || count > MAX_ENTRIES
-            || content.len() != CONTENT_PREFIX_BYTES + count * ENTRY_BYTES
+    /// Validates the full canonical v1 tree-node payload without allocating,
+    /// returning its authenticated occurrence claim.
+    pub(super) fn validate_payload(
+        payload: &[u8],
+        flags: u16,
+    ) -> Result<BlobTreeOccurrenceV1, BlobRecordDenial> {
+        let (occurrence, content, _) = parse_header(payload, flags)?;
+        let mut covered_bytes = Some(0_u64);
+        for entry in content[CONTENT_PREFIX_BYTES..]
+            .as_chunks::<ENTRY_BYTES>()
+            .0
+            .iter()
         {
-            return Err(BlobRecordDenial::InvalidTreeShape);
+            let entry = parse_entry(entry)?;
+            covered_bytes = covered_bytes.and_then(|total| total.checked_add(entry.covered_bytes));
         }
+        let covered_bytes = covered_bytes.ok_or(BlobRecordDenial::InvalidTreeShape)?;
+        let canonical_digest = digest(&[content]);
+        if u64::from_le_bytes(payload[40..48].try_into().expect("fixed field")) != covered_bytes
+            || payload[48..80] != canonical_digest
+        {
+            return Err(BlobRecordDenial::IntegrityMismatch);
+        }
+        Ok(occurrence)
+    }
+
+    pub(super) fn decode_payload(payload: &[u8], flags: u16) -> Result<Self, BlobRecordDenial> {
+        let (occurrence, content, count) = parse_header(payload, flags)?;
         let mut entries = Vec::with_capacity(count);
         for entry in content[CONTENT_PREFIX_BYTES..]
             .as_chunks::<ENTRY_BYTES>()
             .0
             .iter()
         {
-            let record = PersistedRecordIdentity::new(
-                entry[32..48].try_into().expect("fixed field"),
-                u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),
-            )
-            .ok_or(BlobRecordDenial::InvalidIdentity)?;
-            entries.push(BlobTreeEntryV1::new(
-                entry[0..32].try_into().expect("fixed field"),
-                record,
-                u64::from_le_bytes(entry[56..64].try_into().expect("fixed field")),
-            )?);
+            entries.push(parse_entry(entry)?);
         }
         let node = Self::new(occurrence, entries)?;
         if u64::from_le_bytes(payload[40..48].try_into().expect("fixed field"))
@@ -221,6 +213,52 @@ impl BlobTreeNodeV1 {
     pub fn entries(&self) -> &[BlobTreeEntryV1] {
         &self.entries
     }
+}
+
+fn parse_entry(entry: &[u8; ENTRY_BYTES]) -> Result<BlobTreeEntryV1, BlobRecordDenial> {
+    let record = PersistedRecordIdentity::new(
+        entry[32..48].try_into().expect("fixed field"),
+        u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),
+    )
+    .ok_or(BlobRecordDenial::InvalidIdentity)?;
+    BlobTreeEntryV1::new(
+        entry[0..32].try_into().expect("fixed field"),
+        record,
+        u64::from_le_bytes(entry[56..64].try_into().expect("fixed field")),
+    )
+}
+
+fn parse_header(
+    payload: &[u8],
+    flags: u16,
+) -> Result<(BlobTreeOccurrenceV1, &[u8], usize), BlobRecordDenial> {
+    if flags != 1 || payload.len() < OCCURRENCE_BYTES + CONTENT_PREFIX_BYTES {
+        return Err(BlobRecordDenial::MissingOccurrenceClaim);
+    }
+    let content = &payload[OCCURRENCE_BYTES..];
+    let kind = match content[0] {
+        1 => BlobTreeNodeKind::Leaf,
+        2 => BlobTreeNodeKind::Interior,
+        _ => return Err(BlobRecordDenial::InvalidTreeShape),
+    };
+    let occurrence = BlobTreeOccurrenceV1::new(
+        payload[0..16].try_into().expect("fixed field"),
+        payload[16..32].try_into().expect("fixed field"),
+        kind,
+        content[1],
+        u64::from_le_bytes(payload[32..40].try_into().expect("fixed field")),
+    )?;
+    if content[2..4] != [0; 2] {
+        return Err(BlobRecordDenial::InvalidTreeShape);
+    }
+    let count = u32::from_le_bytes(content[4..8].try_into().expect("fixed field")) as usize;
+    if count == 0
+        || count > MAX_ENTRIES
+        || content.len() != CONTENT_PREFIX_BYTES + count * ENTRY_BYTES
+    {
+        return Err(BlobRecordDenial::InvalidTreeShape);
+    }
+    Ok((occurrence, content, count))
 }
 
 fn validated_content(

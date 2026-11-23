@@ -111,6 +111,7 @@ fn a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_page
         .node()
         .clone();
     drop(basis);
+    let expected_symbols = runtime.observe_resident_symbol_dictionary();
     let second = publish_checkpoint(execution, &runtime, &medium, &current);
     let source = medium.recovery_source();
     assert_eq!(
@@ -131,6 +132,32 @@ fn a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_page
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
+    let (_, reopen_basis) = reopened
+        .observe_branch(&reopened.main_branch_identity())
+        .unwrap();
+    for (symbol, text) in expected_symbols.entries {
+        let input = worth_execution::ExecutionImmutableBytes::from_external_bytes(
+            std::sync::Arc::new(text.as_bytes().into()),
+        );
+        let admitted = reopened
+            .admit_field_text(execution, &reopen_basis, &input)
+            .unwrap();
+        assert_eq!(
+            admitted.field_value_for(&reopen_basis).unwrap(),
+            worth_foundational::facade::AspectValue::String(
+                worth_foundational::facade::InternedString::Symbol(
+                    worth_foundational::facade::Symbol(symbol.0)
+                )
+            )
+        );
+        assert_eq!(
+            reopened
+                .observe_resident_symbol_dictionary()
+                .resolve(symbol),
+            Some(text.as_str())
+        );
+    }
+    drop(reopen_basis);
     let mut reader = begin_main_transaction(&reopened);
     assert!(
         reader

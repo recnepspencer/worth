@@ -60,8 +60,8 @@ impl RelationalBranchRootIdentityIssuer {
             Ordering::Relaxed,
         );
         let next_region_id = root
-            .storage_regions()
-            .map(|region| region.region_id.saturating_add(1))
+            .region_ids()
+            .map(|region_id| region_id.saturating_add(1))
             .max()
             .unwrap_or_else(|| self.counters.next_region_id.load(Ordering::Relaxed));
         self.counters

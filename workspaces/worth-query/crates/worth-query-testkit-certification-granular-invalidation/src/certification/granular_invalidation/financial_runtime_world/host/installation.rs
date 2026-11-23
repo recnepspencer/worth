@@ -103,106 +103,114 @@ impl FinancialCourtroomWorld {
         let (sibling_portfolio_predicate, sibling_portfolio_gate) = FinancialPredicate::blocked();
         let quote_output = FinancialQuoteOutputState::new(quote_mid);
 
-        let curve = installed_runtime
-            .installed_packages()
-            .bind_conditional_application_operation(
-                schema
-                    .installed_operation(ExecuteFinancial::reference())
-                    .unwrap(),
-                &conditional_binding,
-            )
-            .unwrap()
-            .bind_node(CurveRiskNode::reference())
-            .unwrap()
-            .bind_host_predicate_provider(curve_predicate)
-            .unwrap()
-            .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
-                clock_source,
-            )
-            .unwrap()
-            .bind_temporal_intent_projection(
-                curve_query,
-                ApplicationQueryParameterSet::new(),
-                FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-            )
-            .unwrap();
-        let quote = installed_runtime
-            .installed_packages()
-            .bind_conditional_application_operation(
-                schema
-                    .installed_operation(ExecuteFinancial::reference())
-                    .unwrap(),
-                &conditional_binding,
-            )
-            .unwrap()
-            .bind_node(QuoteRiskNode::reference())
-            .unwrap()
-            .bind_host_predicate_provider(quote_predicate)
-            .unwrap()
-            .bind_host_output_comparator_provider(QuoteToleranceComparator)
-            .unwrap()
-            .bind_host_output_version_provider(QuoteOutputVersionProvider(quote_output.clone()))
-            .unwrap()
-            .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
-                quote_clock_source,
-            )
-            .unwrap()
-            .bind_temporal_intent_projection(
-                quote_query,
-                ApplicationQueryParameterSet::new(),
-                FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-            )
-            .unwrap();
-        let portfolio = installed_runtime
-            .installed_packages()
-            .bind_conditional_application_operation(
-                schema
-                    .installed_operation(ExecuteFinancial::reference())
-                    .unwrap(),
-                &conditional_binding,
-            )
-            .unwrap()
-            .bind_node(PortfolioRiskNode::reference())
-            .unwrap()
-            .bind_host_predicate_provider(portfolio_predicate)
-            .unwrap()
-            .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
-                portfolio_clock_source,
-            )
-            .unwrap()
-            .bind_temporal_intent_projection(
-                portfolio_query,
-                ApplicationQueryParameterSet::new(),
-                FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-            )
-            .unwrap();
-        let sibling_portfolio = installed_runtime
-            .installed_packages()
-            .bind_conditional_application_operation(
-                schema
-                    .installed_operation(ExecuteFinancial::reference())
-                    .unwrap(),
-                &conditional_binding,
-            )
-            .unwrap()
-            .bind_node(PortfolioSiblingRiskNode::reference())
-            .unwrap()
-            .bind_host_predicate_provider(sibling_portfolio_predicate)
-            .unwrap()
-            .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
-                sibling_portfolio_clock_source,
-            )
-            .unwrap()
-            .bind_temporal_intent_projection(
-                sibling_portfolio_query,
-                ApplicationQueryParameterSet::new(),
-                FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-            )
-            .unwrap();
+        let curve = prepare_temporal_binding(|| {
+            installed_runtime
+                .installed_packages()
+                .bind_conditional_application_operation(
+                    schema
+                        .installed_operation(ExecuteFinancial::reference())
+                        .unwrap(),
+                    &conditional_binding,
+                )
+                .unwrap()
+                .bind_node(CurveRiskNode::reference())
+                .unwrap()
+                .bind_host_predicate_provider(curve_predicate)
+                .unwrap()
+                .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
+                    clock_source,
+                )
+                .unwrap()
+                .bind_temporal_intent_projection(
+                    curve_query,
+                    ApplicationQueryParameterSet::new(),
+                    FinancialIntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                )
+                .unwrap()
+        });
+        let quote = prepare_temporal_binding(|| {
+            installed_runtime
+                .installed_packages()
+                .bind_conditional_application_operation(
+                    schema
+                        .installed_operation(ExecuteFinancial::reference())
+                        .unwrap(),
+                    &conditional_binding,
+                )
+                .unwrap()
+                .bind_node(QuoteRiskNode::reference())
+                .unwrap()
+                .bind_host_predicate_provider(quote_predicate)
+                .unwrap()
+                .bind_host_output_comparator_provider(QuoteToleranceComparator)
+                .unwrap()
+                .bind_host_output_version_provider(QuoteOutputVersionProvider(quote_output.clone()))
+                .unwrap()
+                .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
+                    quote_clock_source,
+                )
+                .unwrap()
+                .bind_temporal_intent_projection(
+                    quote_query,
+                    ApplicationQueryParameterSet::new(),
+                    FinancialIntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                )
+                .unwrap()
+        });
+        let portfolio = prepare_temporal_binding(|| {
+            installed_runtime
+                .installed_packages()
+                .bind_conditional_application_operation(
+                    schema
+                        .installed_operation(ExecuteFinancial::reference())
+                        .unwrap(),
+                    &conditional_binding,
+                )
+                .unwrap()
+                .bind_node(PortfolioRiskNode::reference())
+                .unwrap()
+                .bind_host_predicate_provider(portfolio_predicate)
+                .unwrap()
+                .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
+                    portfolio_clock_source,
+                )
+                .unwrap()
+                .bind_temporal_intent_projection(
+                    portfolio_query,
+                    ApplicationQueryParameterSet::new(),
+                    FinancialIntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                )
+                .unwrap()
+        });
+        let sibling_portfolio = prepare_temporal_binding(|| {
+            installed_runtime
+                .installed_packages()
+                .bind_conditional_application_operation(
+                    schema
+                        .installed_operation(ExecuteFinancial::reference())
+                        .unwrap(),
+                    &conditional_binding,
+                )
+                .unwrap()
+                .bind_node(PortfolioSiblingRiskNode::reference())
+                .unwrap()
+                .bind_host_predicate_provider(sibling_portfolio_predicate)
+                .unwrap()
+                .bind_named_clock::<worth_query_testkit_host::facade::host::adapters::CourtroomClock, _>(
+                    sibling_portfolio_clock_source,
+                )
+                .unwrap()
+                .bind_temporal_intent_projection(
+                    sibling_portfolio_query,
+                    ApplicationQueryParameterSet::new(),
+                    FinancialIntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                )
+                .unwrap()
+        });
 
         let curve_reconstruction_binding = schema
             .principal_binding(FinancialPrincipalBinding::reference())
@@ -229,50 +237,58 @@ impl FinancialCourtroomWorld {
                 primary_graph::SignalConditionalEvaluationBudget::development(),
             )
             .unwrap();
-        let curve_clock = conditional_installation
-            .bind_temporal_operation(
-                curve,
-                execution(Arc::clone(&invariant)),
-                reconstruction(
-                    curve_reconstruction_binding,
-                    curve_authentication,
-                    record_identity,
-                ),
-            )
-            .unwrap();
-        let quote_clock = conditional_installation
-            .bind_temporal_operation(
-                quote,
-                execution(Arc::clone(&invariant)),
-                reconstruction(
-                    quote_reconstruction_binding,
-                    quote_authentication,
-                    record_identity,
-                ),
-            )
-            .unwrap();
-        let portfolio_clock = conditional_installation
-            .bind_temporal_operation(
-                portfolio,
-                execution(Arc::clone(&invariant)),
-                reconstruction(
-                    portfolio_reconstruction_binding,
-                    portfolio_authentication,
-                    record_identity,
-                ),
-            )
-            .unwrap();
-        let sibling_portfolio_clock = conditional_installation
-            .bind_temporal_operation(
-                sibling_portfolio,
-                execution(Arc::clone(&invariant)),
-                reconstruction(
-                    sibling_portfolio_reconstruction_binding,
-                    sibling_portfolio_authentication,
-                    "curve-usd-rates-10y",
-                ),
-            )
-            .unwrap();
+        let curve_clock = register_temporal_binding(|| {
+            conditional_installation
+                .bind_temporal_operation(
+                    *curve,
+                    execution(Arc::clone(&invariant)),
+                    reconstruction(
+                        curve_reconstruction_binding,
+                        curve_authentication,
+                        record_identity,
+                    ),
+                )
+                .unwrap()
+        });
+        let quote_clock = register_temporal_binding(|| {
+            conditional_installation
+                .bind_temporal_operation(
+                    *quote,
+                    execution(Arc::clone(&invariant)),
+                    reconstruction(
+                        quote_reconstruction_binding,
+                        quote_authentication,
+                        record_identity,
+                    ),
+                )
+                .unwrap()
+        });
+        let portfolio_clock = register_temporal_binding(|| {
+            conditional_installation
+                .bind_temporal_operation(
+                    *portfolio,
+                    execution(Arc::clone(&invariant)),
+                    reconstruction(
+                        portfolio_reconstruction_binding,
+                        portfolio_authentication,
+                        record_identity,
+                    ),
+                )
+                .unwrap()
+        });
+        let sibling_portfolio_clock = register_temporal_binding(|| {
+            conditional_installation
+                .bind_temporal_operation(
+                    *sibling_portfolio,
+                    execution(Arc::clone(&invariant)),
+                    reconstruction(
+                        sibling_portfolio_reconstruction_binding,
+                        sibling_portfolio_authentication,
+                        "curve-usd-rates-10y",
+                    ),
+                )
+                .unwrap()
+        });
         let application = conditional_installation.publish(phase).unwrap();
         Self {
             application,
@@ -294,4 +310,14 @@ impl FinancialCourtroomWorld {
             amendment_ordinal: 0,
         }
     }
+}
+
+#[inline(never)]
+fn prepare_temporal_binding<T>(build: impl FnOnce() -> T) -> Box<T> {
+    Box::new(build())
+}
+
+#[inline(never)]
+fn register_temporal_binding<T>(register: impl FnOnce() -> T) -> T {
+    register()
 }

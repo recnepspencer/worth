@@ -4,9 +4,13 @@ use crate::physical_runtime::{
     PhysicalDurabilityGroupBasis, PhysicalEffectIdentity, RetainedPhysicalRoot,
 };
 
-pub struct PhysicalRecoveryRootBasis {
+struct PhysicalRecoveryRootBasisBody {
     current: DurablePhysicalRootManifest,
     previous: Option<RetainedPhysicalRoot>,
+}
+
+pub struct PhysicalRecoveryRootBasis {
+    roots: Vec<PhysicalRecoveryRootBasisBody>,
     namespace: PhysicalRootNamespaceDurabilityEvidence,
 }
 
@@ -48,24 +52,23 @@ pub enum PhysicalRootNamespaceDurabilityEvidence {
 }
 
 impl PhysicalRecoveryRootBasis {
-    pub(in crate::physical_runtime) const fn new(
+    pub(in crate::physical_runtime) fn new(
         current: DurablePhysicalRootManifest,
         previous: Option<RetainedPhysicalRoot>,
         namespace: PhysicalRootNamespaceDurabilityEvidence,
     ) -> Self {
         Self {
-            current,
-            previous,
+            roots: vec![PhysicalRecoveryRootBasisBody { current, previous }],
             namespace,
         }
     }
 
     pub const fn current(&self) -> &DurablePhysicalRootManifest {
-        &self.current
+        &self.roots.as_slice()[0].current
     }
 
     pub const fn previous(&self) -> Option<&RetainedPhysicalRoot> {
-        self.previous.as_ref()
+        self.roots.as_slice()[0].previous.as_ref()
     }
 
     pub const fn namespace_evidence(&self) -> PhysicalRootNamespaceDurabilityEvidence {

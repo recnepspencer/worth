@@ -284,6 +284,12 @@ impl ReservedCompositePublicationAttempt {
         self.cancellation = CompositeAttemptCancellationPosture::CancellationObserved;
     }
 
+    pub(crate) fn original_publication_envelope(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::history::CanonicalPublicationEnvelope>> {
+        self.custody.original_publication_envelope()
+    }
+
     pub(crate) fn begin_owner_execution(&mut self) {
         self.custody.begin_owner_execution();
     }

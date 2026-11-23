@@ -230,10 +230,18 @@ where
                 Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                     return Outcome::Pending
                 }
-                Err(WorldDurablePublicationStop::EvidenceRequired) => {
-                    return Outcome::EvidenceRequired
-                }
-                Err(WorldDurablePublicationStop::Unresolved) => return Outcome::Indeterminate,
+                Err(
+                    WorldDurablePublicationStop::EvidenceRequired
+                    | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                        evidence_required: true,
+                    },
+                ) => return Outcome::EvidenceRequired,
+                Err(
+                    WorldDurablePublicationStop::Unresolved
+                    | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                        evidence_required: false,
+                    },
+                ) => return Outcome::Indeterminate,
                 Err(WorldDurablePublicationStop::Refused(cause)) => {
                     let retired = std::mem::replace(
                         &mut *self

@@ -15,7 +15,7 @@ use crate::physical_runtime::{
 
 pub struct WalRangeReservedPhysicalMutation {
     basis: WalRangeReservedPhysicalMutationBasis,
-    root: PreparedPhysicalRootProjection,
+    root: Vec<PreparedPhysicalRootProjection>,
 }
 
 pub(in crate::physical_runtime) struct WalRangeReservedPhysicalMutationBasis {
@@ -82,7 +82,7 @@ impl WalRangeReservedPhysicalMutation {
                 inline_only,
                 derived_directory_basis,
             },
-            root,
+            root: vec![root],
         }
     }
 
@@ -141,7 +141,7 @@ impl WalRangeReservedPhysicalMutation {
     pub(in crate::physical_runtime) const fn root_projection(
         &self,
     ) -> &PreparedPhysicalRootProjection {
-        &self.root
+        &self.root.as_slice()[0]
     }
 
     pub fn artifact(&self) -> &ArtifactTreeFile {
@@ -189,9 +189,10 @@ impl WalRangeReservedPhysicalMutation {
     }
 
     pub(in crate::physical_runtime) fn into_prepared_after_no_effect(
-        self,
+        mut self,
     ) -> PreparedPhysicalMutation {
-        let manifest_capacity_transition = self.root.manifest_capacity_transition();
+        let root = self.root.pop().expect("reserved mutation holds one root");
+        let manifest_capacity_transition = root.manifest_capacity_transition();
         let binding = self.basis.binding.release_wal_allocation();
         let batch = RecordAppendBatch::from_prepared_record_bytes(
             self.basis.redo.into_prepared_record_bytes(),
@@ -200,7 +201,7 @@ impl WalRangeReservedPhysicalMutation {
             admission: AdmittedPhysicalMutation::Fresh(binding),
             batch,
             data: self.basis.data.into_prepared(),
-            root: self.root,
+            root,
             context: PreparedPhysicalMutationContext {
                 placement: self.basis.placement,
                 manifest_capacity_transition,
@@ -224,12 +225,15 @@ impl WalRangeReservedPhysicalMutation {
     }
 
     pub(in crate::physical_runtime) fn into_root_publication_parts(
-        self,
+        mut self,
     ) -> (
         WalRangeReservedPhysicalMutationBasis,
         PreparedPhysicalRootProjection,
     ) {
-        (self.basis, self.root)
+        (
+            self.basis,
+            self.root.pop().expect("reserved mutation holds one root"),
+        )
     }
 }
 

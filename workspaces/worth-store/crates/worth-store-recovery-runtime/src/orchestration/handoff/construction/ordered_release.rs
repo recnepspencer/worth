@@ -3,8 +3,9 @@ use super::*;
 impl RejoinConstruction {
     pub(super) fn ordered_release(
         self,
-        historical: VerifiedOrderedHistoricalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
+        historical: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective: Box<VerifiedEffectiveReleaseHeadRosterV14>,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
@@ -16,14 +17,15 @@ impl RejoinConstruction {
 
         let allocation = recovery_allocation.expect("historical recovery allocation was checked");
 
-        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_ordered_historical_release(
-                coordination,
-                media,
-                closed_cleanup,
-                allocation,
-                historical,
-                effective,
-                tier,
-            )
+        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_ordered_historical_release_and_backing(
+            core_body,
+            coordination,
+            media,
+            closed_cleanup,
+            allocation,
+            historical,
+            effective,
+            tier,
+        )
     }
 }

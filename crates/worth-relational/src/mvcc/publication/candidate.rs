@@ -29,8 +29,6 @@ pub struct PreparedRelationalCommitCandidate {
     branch_id: BranchId,
     candidate_id: u64,
     _payload: std::sync::Arc<std::sync::Mutex<Option<CandidatePayload>>>,
-    expires_at: std::time::Instant,
-    pub(crate) maximum_lifetime_millis: u64,
     reservation_count: usize,
     consumed: bool,
     _not_sync: PhantomData<Cell<()>>,
@@ -65,8 +63,6 @@ pub(super) struct PreparedRelationalPublicationParts {
     pub(super) candidate_retention:
         crate::history::retention::RelationalCandidateRetentionObligation,
     pub(super) control: crate::mvcc::RelationalOperationControl,
-    pub(super) expires_at: std::time::Instant,
-    pub(super) maximum_lifetime_millis: u64,
 }
 
 pub(crate) enum PreparedRelationalCandidateAdmissionStop {
@@ -89,12 +85,8 @@ impl PreparedRelationalCommitCandidate {
         retention: crate::history::retention::RelationalCandidateRetentionObligation,
         published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
         control: crate::mvcc::RelationalOperationControl,
-        maximum_lifetime_millis: u64,
         maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
-        let expires_at = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(maximum_lifetime_millis))
-            .unwrap_or_else(std::time::Instant::now);
         let reservation_count = execution.reservation_count();
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
             coupled_read: None,
@@ -110,7 +102,7 @@ impl PreparedRelationalCommitCandidate {
             control,
         })));
         let candidate_id = publication_binding
-            .register_candidate(expires_at, maximum_candidates, &payload)
+            .register_candidate(maximum_candidates, &payload)
             .map_err(|denial| match denial {
                 crate::runtime::RelationalCandidateRegistrationDenial::CapacityExhausted {
                     maximum_candidates,
@@ -137,8 +129,6 @@ impl PreparedRelationalCommitCandidate {
             branch_id,
             candidate_id,
             _payload: payload,
-            expires_at,
-            maximum_lifetime_millis,
             reservation_count,
             consumed: false,
             _not_sync: PhantomData,
@@ -174,6 +164,24 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .as_ref()
             .map(|payload| payload.expected_basis.clone())
+    }
+
+    /// Basis, successor parent count, and fixed-size root/commit identities.
+    pub(crate) fn with_successor_shape<R>(
+        &self,
+        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize, u64, crate::history::data::CommitId) -> R,
+    ) -> Option<R> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some(read(
+            &payload.expected_basis,
+            payload.execution.successor_parent_count(),
+            payload.execution.prepared_root().id(),
+            payload.execution.canonical_envelope().commit.commit_id,
+        ))
     }
 
     pub(crate) fn belongs_to_publication_owner(
@@ -296,10 +304,6 @@ impl PreparedRelationalCommitCandidate {
             .as_mut()
             .ok_or(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateUnavailable)?;
         payload.execution.attach_prepared_indexes(prepared)
-    }
-
-    pub(crate) fn lifetime_expired(&self) -> bool {
-        std::time::Instant::now() >= self.expires_at
     }
 
     #[cfg(test)]

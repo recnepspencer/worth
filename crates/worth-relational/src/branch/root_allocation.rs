@@ -33,7 +33,10 @@ pub(crate) trait RelationalRootAllocationVisitor {
     fn allocation(&mut self, allocation: RelationalRootAuthoritativeAllocationObservation) -> bool;
     fn region(
         &mut self,
-        region: super::RelationalRootRegionObservation,
+        region: Result<
+            super::RelationalRootRegionObservation,
+            crate::storage::substrate::StorageAllocationOverflow,
+        >,
         partition: Result<
             &crate::storage::overlay::PartitionState,
             crate::storage::data::RelationalStorageUnavailable,

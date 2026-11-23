@@ -63,4 +63,47 @@ impl RelationalExecutionDenialCause {
             _ => None,
         }
     }
+
+    /// The request refusal this cause was mapped from, for an owner that
+    /// reports request stops in execution terms. Storage, content and
+    /// allocation refusals have none.
+    pub fn as_request_denial(self) -> Option<worth_execution::WorkCeilingDenial> {
+        use worth_execution::{
+            LeaseDenial as Lease, MemoryLimitDenial, MemoryLimitLevel as Level,
+            WorkCeilingDenial as Denial,
+        };
+        let capacity = |requested, admitted, level| {
+            Denial::Admission(Lease::MemoryExhausted(MemoryLimitDenial::Capacity {
+                requested,
+                admitted,
+                level,
+            }))
+        };
+        Some(match self {
+            Self::WorkerLimitExceedsParent => Denial::Admission(Lease::WorkerLimitExceedsParent),
+            Self::MemoryLimitExceedsParent => Denial::Admission(Lease::MemoryLimitExceedsParent),
+            Self::WorkLimitExceedsParent => Denial::Admission(Lease::WorkLimitExceedsParent),
+            Self::PolicyMemoryExhausted {
+                requested,
+                admitted,
+                ancestor,
+            } => capacity(requested, admitted, Level::Policy { ancestor }),
+            Self::ProcessMemoryExhausted {
+                requested,
+                admitted,
+            } => capacity(requested, admitted, Level::Process),
+            Self::DeclaredMemoryExhausted {
+                requested,
+                admitted,
+            } => capacity(requested, admitted, Level::Declared),
+            Self::ChargedBytesOverflow => Denial::Admission(Lease::ChargedBytesOverflow),
+            Self::UnrelatedNestedLease => Denial::Admission(Lease::UnrelatedNestedLease),
+            Self::NoActiveExecutionScope => Denial::Admission(Lease::NoActiveExecutionScope),
+            Self::EquivalenceContractUnavailable => {
+                Denial::Admission(Lease::EquivalenceContractUnavailable)
+            }
+            Self::WorkerFailed => Denial::Panicked,
+            stop => Denial::Stopped(stop.as_kernel_stop()?),
+        })
+    }
 }

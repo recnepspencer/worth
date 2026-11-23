@@ -34,8 +34,6 @@ impl PreparedCanonicalBranchMovement {
             mut completion,
             candidate_retention,
             control,
-            expires_at,
-            maximum_lifetime_millis,
         } = parts;
         match control.observe(crate::mvcc::RelationalInterruptionBoundary::PublicationPreflight) {
             Some(event)
@@ -256,7 +254,7 @@ impl PreparedCanonicalBranchMovement {
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
                 &next_basis.observation(),
             );
-        completion.admit_prepared_indexes(execution, expires_at, maximum_lifetime_millis)?;
+        completion.admit_prepared_indexes(execution)?;
         let settlement_reservation = match publication_binding.reserve_pending_settlement(
             movement.canonical_publication_route.commit_id(),
             runtime_instance_id,
@@ -297,8 +295,6 @@ impl PreparedCanonicalBranchMovement {
             head_retirement: Some(head_retirement),
             candidate_retention: Some(candidate_retention),
             control,
-            expires_at,
-            maximum_lifetime_millis,
             branch_head_versions,
             medium,
         })

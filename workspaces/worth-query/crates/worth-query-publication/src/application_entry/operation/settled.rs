@@ -44,9 +44,9 @@ where
     >,
     pub(super) result:
         Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
-    pub(super) cleanup: WorthQueryOperationCleanup,
+    pub(super) cleanup: Box<WorthQueryOperationCleanup>,
     // All native values above are destroyed before the SAME authentic runtime.
-    pub(super) delivery: FixedDeliveryCore<Schema, Intent, Program, Root, Action>,
+    pub(super) delivery: Box<FixedDeliveryCore<Schema, Intent, Program, Root, Action>>,
 }
 
 #[derive(Debug)]

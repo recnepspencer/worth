@@ -42,36 +42,34 @@ pub(super) fn redo_inputs(
     sample: &StoreRecoveryBindingFreshnessSample,
     fates: &ReconciledOperationFates,
 ) -> Result<Vec<PhysicalRedoMemberInput>, OperationReconciliationDenial> {
-    let fate_by_operation = fates
-        .operations()
-        .iter()
-        .map(|fate| (fate.identity().idempotency(), fate.fate()))
-        .collect::<BTreeMap<_, _>>();
-    sample
-        .wal_members()
-        .iter()
-        .map(|member| {
-            let fate = fate_by_operation
-                .get(&member.operation_identity())
-                .copied()
-                .ok_or(OperationReconciliationDenial::DuplicateIdentity)?;
-            let group = PhysicalRedoGroupBinding::new(
-                member.group_identity(),
-                member.group_member_identity(),
-                member.group_member_ordinal(),
-                member.group_member_count(),
-                member.group_membership_digest(),
-            )
-            .ok_or(OperationReconciliationDenial::DuplicateIdentity)?;
-            Ok(PhysicalRedoMemberInput::new_grouped(
-                member.lsn_range(),
-                member.operation_identity(),
-                group,
-                fate,
-                member.canonical_redo(),
-            ))
-        })
-        .collect()
+    let mut fate_by_operation = Vec::with_capacity(fates.operations().len());
+    for fate in fates.operations() {
+        fate_by_operation.push((fate.identity().idempotency(), fate.fate()));
+    }
+    fate_by_operation.sort_unstable_by_key(|(idempotency, _)| *idempotency);
+    let mut inputs = Vec::with_capacity(sample.wal_members().len());
+    for member in sample.wal_members() {
+        let index = fate_by_operation
+            .binary_search_by_key(&member.operation_identity(), |(idempotency, _)| *idempotency)
+            .map_err(|_| OperationReconciliationDenial::DuplicateIdentity)?;
+        let fate = fate_by_operation[index].1;
+        let group = PhysicalRedoGroupBinding::new(
+            member.group_identity(),
+            member.group_member_identity(),
+            member.group_member_ordinal(),
+            member.group_member_count(),
+            member.group_membership_digest(),
+        )
+        .ok_or(OperationReconciliationDenial::DuplicateIdentity)?;
+        inputs.push(PhysicalRedoMemberInput::new_grouped(
+            member.lsn_range(),
+            member.operation_identity(),
+            group,
+            fate,
+            member.canonical_redo(),
+        ));
+    }
+    Ok(inputs)
 }
 
 const fn map_freshness(value: StoreRecoveryBindingFreshness) -> RecoveryBindingFreshness {
@@ -95,4 +93,3 @@ const fn map_fate(value: StoreRecoveryOperationFate) -> RecoveryOperationFate {
         StoreRecoveryOperationFate::Indeterminate => RecoveryOperationFate::Indeterminate,
     }
 }
-use std::collections::BTreeMap;

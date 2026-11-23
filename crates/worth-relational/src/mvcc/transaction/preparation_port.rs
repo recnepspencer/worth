@@ -38,9 +38,6 @@ impl RelationalPreparationPort {
         {
             return Err(Denial::ForeignCandidate);
         }
-        if candidate.lifetime_expired() {
-            return Err(Denial::CandidateLifetimeExpired);
-        }
         super::prepared_change_summary::summarize(candidate, budget)
     }
 

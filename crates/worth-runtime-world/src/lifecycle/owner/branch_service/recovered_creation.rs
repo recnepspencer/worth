@@ -204,6 +204,8 @@ fn publish_decision(
         .publish(decision, execution)
         .map_err(|stop| match stop {
             Stop::Pending | Stop::Busy | Stop::Refused(_) => Denial::Busy,
-            Stop::Unresolved | Stop::EvidenceRequired => Denial::ReopenRequired,
+            Stop::Unresolved | Stop::EvidenceRequired | Stop::BlockedByPriorBarrier { .. } => {
+                Denial::ReopenRequired
+            }
         })
 }

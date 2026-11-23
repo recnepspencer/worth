@@ -1,28 +1,51 @@
 //! Actual live recovery backing at planning admission boundaries.
 //! Owned buffers are counted once; immutable shared history uses pointer identity.
 
+use super::super::{RecoveryCoordination, ResidentSourceSelection};
 use super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
+use crate::entry::PhysicalRecoverySourceDenial;
+use crate::progression::RecoveryIntegrityEvidence;
 use std::sync::Arc;
 
-pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningState) -> Option<u64> {
-    let mut bytes = u64::try_from(std::mem::size_of::<PlanningContext>())
+pub(super) fn selected_live_bytes(
+    coordination: &RecoveryCoordination,
+    selection: &ResidentSourceSelection,
+    integrity: &RecoveryIntegrityEvidence,
+    root_protocol_denials: &Vec<PhysicalRecoverySourceDenial>,
+    integrity_trace: &crate::integrity_ingress::RecoveryIntegrityIngressTrace,
+) -> Option<u64> {
+    u64::try_from(std::mem::size_of::<PlanningContext>())
         .ok()?
-        .checked_add(u64::try_from(std::mem::size_of::<ResolvedPlanningState>()).ok()?)?
-        .checked_add(basis.unused_backing_bytes())?
-        .checked_add(std::mem::size_of::<super::resolved_basis::ResolvedPlanningBasis>() as u64)?
-        .checked_add(context.selection.owned_heap_bytes()?)?
-        .checked_add(context.integrity.owned_heap_bytes()?)?
-        .checked_add(context.integrity_trace.owned_heap_bytes()?)?
-        .checked_add(context.coordination.owner().owned_recovery_heap_bytes()?)?
-        .checked_add(vector_bytes(&context.root_protocol_denials)?)?
+        .checked_add(selection.owned_heap_bytes()?)?
+        .checked_add(integrity.owned_heap_bytes()?)?
+        .checked_add(integrity_trace.owned_heap_bytes()?)?
+        .checked_add(coordination.owner().owned_recovery_heap_bytes()?)?
+        .checked_add(vector_bytes(root_protocol_denials)?)?
         .checked_add(
-            context
-                .root_protocol_denials
+            root_protocol_denials
                 .iter()
                 .try_fold(0_u64, |total, denial| {
                     total.checked_add(denial.owned_heap_bytes()?)
                 })?,
-        )?
+        )
+}
+
+pub(super) fn context_live_bytes(context: &PlanningContext) -> Option<u64> {
+    selected_live_bytes(
+        &context.coordination,
+        &context.selection,
+        &context.integrity,
+        &context.root_protocol_denials,
+        &context.integrity_trace,
+    )?
+    .checked_add(u64::try_from(std::mem::size_of_val(&**context)).ok()?)
+}
+
+pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningState) -> Option<u64> {
+    let mut bytes = context_live_bytes(context)?
+        .checked_add(u64::try_from(std::mem::size_of::<ResolvedPlanningState>()).ok()?)?
+        .checked_add(basis.unused_backing_bytes())?
+        .checked_add(std::mem::size_of::<super::resolved_basis::ResolvedPlanningBasis>() as u64)?
         .checked_add(basis.sample.owned_heap_bytes()?)?
         .checked_add(basis.fates.owned_heap_bytes()?)?
         .checked_add(basis.redo.owned_heap_bytes()?)?
@@ -36,11 +59,31 @@ pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningStat
     if let Some(consumed) = &basis.historical_consumed {
         bytes = bytes.checked_add(consumed.owned_heap_bytes()?)?;
     }
-    if let crate::progression::PlanningCustody::SourceHeads(heads) = &basis.custody {
-        bytes = bytes.checked_add(heads.owned_heap_bytes()?)?;
-    }
-    if let crate::progression::PlanningCustody::PendingPrepared { replay, .. } = &basis.custody {
-        bytes = bytes.checked_add(replay.owned_heap_bytes()?)?;
+    match &basis.custody {
+        crate::progression::PlanningCustody::Unresolved
+        | crate::progression::PlanningCustody::NoCheckpoint => {}
+        crate::progression::PlanningCustody::NoRelease(no_release) => {
+            bytes = bytes.checked_add(u64::try_from(std::mem::size_of_val(&**no_release)).ok()?)?;
+        }
+        crate::progression::PlanningCustody::SourceHeads(heads) => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**heads)).ok()?)?
+                .checked_add(heads.owned_heap_bytes()?)?;
+        }
+        crate::progression::PlanningCustody::PendingPrepared { claim, replay } => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**replay)).ok()?)?
+                .checked_add(replay.owned_heap_bytes()?)?;
+        }
+        crate::progression::PlanningCustody::OrderedCompleted {
+            claim,
+            effective_heads,
+        } => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**effective_heads)).ok()?)?;
+        }
     }
     for (index, drop) in basis.observed_pages.historical_drops.iter().enumerate() {
         bytes = bytes

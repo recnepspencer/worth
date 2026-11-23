@@ -11,13 +11,20 @@ use fixture::*;
 use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]
-fn legal_dag_validation_reports_all_required_stages_without_publication() {
-    let fixture = DagFixture::new(8);
+fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
+    let fixture = DagFixture::new(512);
     let before = fixture.head();
-    let host = crate::test_execution_policy::serial_request();
+    // Deliberate ordinary finite policy, independent of an observed operation
+    // total. Validation retains original-request funding that grows linearly
+    // with the graph (the proposal and its relation-source witness, about
+    // 8 KiB per node: 4 MiB here). The old per-visit allocation accumulator
+    // grows with the square of the node count: past 1 MiB at 128 nodes, so
+    // past 16 MiB here. 8 MiB funds the linear law and refuses the quadratic.
+    // Work is fixture funding here, not the claim.
+    let lease = request(8 * 1024 * 1024, 400_000_000, CancellationToken::new(), None);
     let candidate = fixture
-        .validate(&ExecutionRequest::serial(&host), fixture.chain_batch(2))
-        .expect("a legal DAG validates under its ordinary caller request");
+        .validate(&ExecutionRequest::leased(&lease), fixture.chain_batch(2))
+        .expect("a DAG needs live scratch, not the sum of every freed successor buffer");
     let summary = candidate.validation_summary();
     assert!(
         summary.commit_boundary_seen
@@ -36,6 +43,7 @@ fn legal_dag_validation_reports_all_required_stages_without_publication() {
         )));
     assert_eq!(fixture.head(), before, "validation grants no publication");
     drop(candidate);
+    assert_eq!(lease.charged_memory_bytes(), 0);
 }
 
 #[test]

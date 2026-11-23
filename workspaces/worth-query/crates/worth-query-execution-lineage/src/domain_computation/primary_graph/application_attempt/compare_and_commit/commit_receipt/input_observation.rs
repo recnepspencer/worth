@@ -4,9 +4,9 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 impl WorthQueryApplicationCommitReceipt {
     pub(crate) fn performed_output_fields(&self)
     -> Option<&Result<FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
-        self.performed_output_fields.as_ref()
+        self.inner.performed_output_fields.as_ref()
     }
     pub(crate) fn performed_input_facts(&self) -> Option<&FactPayload> {
-        self.performed_input_facts.as_ref()
+        self.inner.performed_input_facts.as_ref()
     }
 }

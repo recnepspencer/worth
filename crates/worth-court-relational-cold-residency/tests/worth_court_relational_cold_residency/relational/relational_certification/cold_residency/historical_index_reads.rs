@@ -49,6 +49,25 @@ pub(super) fn build(
     Ok(())
 }
 pub(super) fn assert_initial_no_reads(fixture: &IndexFixture) {
+    let symbol = fixture.history_symbol.unwrap();
+    assert!(
+        fixture
+            .runtime
+            .observe_resident_symbol_dictionary()
+            .resolve(symbol)
+            .is_none(),
+        "the historical-only meaning is cold at reopen"
+    );
+    assert!(
+        !fixture
+            .runtime
+            .observe_commit_envelope_custody()
+            .into_iter()
+            .find(|cell| cell.commit_id == fixture.generation.source_commit_id)
+            .unwrap()
+            .resident,
+        "the selected nonhead envelope body is cold"
+    );
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0);
 }
 #[test]
@@ -60,6 +79,13 @@ fn historical_index_reconstruction_uses_the_old_value_and_full_cold_history() {
     let journal = fixture.runtime.history().latest_patch_stream_position();
     let offered = fixture.medium.offered().len();
     build(&fixture, execution).unwrap();
+    assert_eq!(
+        fixture
+            .runtime
+            .observe_resident_symbol_dictionary()
+            .resolve(fixture.history_symbol.unwrap()),
+        Some("paged-view-value-0300")
+    );
     assert_eq!(
         fixture.runtime.history().latest_patch_stream_position(),
         journal

@@ -146,6 +146,11 @@ impl Serialize for CanonicalCommitEnvelope {
 }
 
 impl CanonicalCommitEnvelope {
+    /// Index definitions this commit's canonical catalog delta adds.
+    pub fn index_definition_additions(&self) -> &[crate::indexes::data::DerivedIndexDefinition] {
+        self.index_definition_delta.definitions()
+    }
+
     pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
         &self.semantic_result
     }

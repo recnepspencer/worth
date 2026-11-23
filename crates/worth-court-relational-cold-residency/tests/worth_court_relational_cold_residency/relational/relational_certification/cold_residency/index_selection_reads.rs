@@ -64,6 +64,11 @@ fn cold_checkpoint_preserves_carried_index_selection_and_reads_postings_without_
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let fixture = IndexRecipe::carried(execution).reopen(execution);
+    assert_eq!(
+        fixture.runtime.observe_carried_index_checkpoint_image(),
+        Some(fixture.member),
+        "reopened carried index image starts undemanded"
+    );
     let carried = fixture.carried.as_ref().unwrap();
     assert_selected(
         execution,
@@ -154,7 +159,44 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
     let current = latest(changed);
     assert_eq!(latest(stable), carried);
     assert!(carried.applicability.version_id < current.applicability.version_id);
-    let receiver = restored(execution, &producer);
+    let (_, head_basis) = producer
+        .observe_branch(&producer.main_branch_identity())
+        .unwrap();
+    let head_commit = head_basis.observation().commit_id().unwrap();
+    drop(head_basis);
+    let image = producer
+        .durability_authority()
+        .native_checkpoint(execution, execution.allocation_policy())
+        .unwrap();
+    let inspected = image
+        .inspect_carried_index_selections(execution)
+        .unwrap()
+        .expect("the checkpoint emits the selection-carrying payload");
+    assert_eq!(inspected.format_version, inspected.expected_format_version);
+    assert_eq!(inspected.legacy_artifact_count, 0);
+    assert!(
+        inspected.all_bases_beside_roots,
+        "a saved selection always sits beside its emitted root image"
+    );
+    let saved_basis = inspected
+        .bases
+        .iter()
+        .find(|basis| basis.branch == branch && basis.commit == head_commit)
+        .expect("the current root keeps its selection");
+    assert_eq!(saved_basis.version, current.applicability.version_id);
+    assert_eq!(
+        saved_basis.bindings,
+        vec![
+            (changed, current.generation_id),
+            (stable, carried.generation_id)
+        ]
+    );
+    let medium = TestDurableMedium::new();
+    let mut receiver = durable_runtime(&medium);
+    receiver
+        .durability_recovery()
+        .restore_native_checkpoint(execution, &image)
+        .unwrap();
     assert_selected(execution, &receiver, &[&*current, &*carried]);
 }
 
@@ -164,7 +206,14 @@ fn reclose_before_any_image_demand_keeps_the_selections_the_image_carried() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     // An actual reopened owner whose index image is installed and never demanded.
     let fixture = IndexRecipe::carried(execution).reopen(execution);
+    let pending = fixture.runtime.observe_carried_index_checkpoint_image();
+    assert_eq!(pending, Some(fixture.member));
     let carried = fixture.carried.as_ref().unwrap();
     let receiver = restored(execution, &fixture.runtime);
+    assert_eq!(
+        fixture.runtime.observe_carried_index_checkpoint_image(),
+        pending,
+        "capture reads the original image without admitting it"
+    );
     assert_selected(execution, &receiver, &[&*fixture.generation, &**carried]);
 }

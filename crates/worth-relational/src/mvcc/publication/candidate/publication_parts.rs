@@ -4,19 +4,18 @@ use super::*;
 impl PreparedRelationalCommitCandidate {
     pub(in crate::mvcc::publication) fn into_publication_parts(
         mut self,
-    ) -> Result<PreparedRelationalPublicationParts, super::super::RelationalPublicationDeferred>
-    {
+    ) -> PreparedRelationalPublicationParts {
+        self.publication_binding
+            .release_candidate_registration(self.candidate_id);
         let payload = self
-            .publication_binding
-            .take_candidate(self.candidate_id)
-            .ok_or(
-                super::super::RelationalPublicationDeferred::CandidateLifetimeExpired {
-                    maximum_lifetime_millis: self.maximum_lifetime_millis,
-                },
-            )?;
+            ._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+            .expect(/* Proof: only this consuming receiver, Drop of an unconsumed candidate and the abandoned-registration reaper empty the payload. This candidate is alive and unconsumed, and it holds the payload's only strong reference, so the reaper cannot see it as abandoned. */ "a live candidate retains its payload until consumed");
         self.consumed = true;
         let (movement, completion) = payload.execution.split(payload.published_snapshot_slot);
-        Ok(PreparedRelationalPublicationParts {
+        PreparedRelationalPublicationParts {
             companion_read: payload.companion_read,
             managed_source_reads: payload.managed_source_reads,
             current_read: payload.current_read,
@@ -30,8 +29,6 @@ impl PreparedRelationalCommitCandidate {
             completion,
             candidate_retention: payload.retention,
             control: payload.control,
-            expires_at: self.expires_at,
-            maximum_lifetime_millis: self.maximum_lifetime_millis,
-        })
+        }
     }
 }

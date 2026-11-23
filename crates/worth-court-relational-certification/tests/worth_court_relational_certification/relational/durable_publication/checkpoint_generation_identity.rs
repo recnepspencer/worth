@@ -117,6 +117,7 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
             after.generations[0].generation_id,
         ),
     ] {
+        let before = recovered.index_access().generation_selection_counters();
         let observed = recovered
             .index_access()
             .execute_bounded_entity_field_lookup(
@@ -135,5 +136,14 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
             .unwrap();
         assert_eq!(observed.generation_id(), expected);
         assert_eq!(observed.candidate_entity_ids(), &[entity]);
+        let counters = recovered.index_access().generation_selection_counters();
+        assert_eq!(
+            counters.generation_payload_reads - before.generation_payload_reads,
+            1
+        );
+        assert_eq!(
+            counters.history_inventory_entries - before.history_inventory_entries,
+            0
+        );
     }
 }

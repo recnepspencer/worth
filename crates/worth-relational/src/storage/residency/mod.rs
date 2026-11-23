@@ -65,7 +65,8 @@ mod checkpoint_capture;
 mod checkpoint_kind_images;
 pub(crate) use checkpoint_capture::{
     RecordedRegionCheckpoint, RegionCheckpointAcknowledgementDenial,
-    RelationalCheckpointRegionPublication, RetiredRegionCheckpointBindings,
+    RelationalCapturedRegionCheckpoint, RelationalCheckpointRegionPublication,
+    RetiredRegionCheckpointBindings,
 };
 pub(crate) use checkpoint_kind_images::CheckpointRegionKindImages;
 

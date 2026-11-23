@@ -18,7 +18,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         self.runtime.history().branch_head(branch_id)
     }
 
-    pub(crate) fn resolve_lineage_record_history(
+    pub fn resolve_lineage_record_history(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,

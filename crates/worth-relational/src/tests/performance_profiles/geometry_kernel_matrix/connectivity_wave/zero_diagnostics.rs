@@ -1,0 +1,122 @@
+use super::*;
+
+pub(super) fn certify(execution: &worth_execution::ExecutionRequest<'_, '_>) {
+    let topology_bridge_zero_diag_samples = capture_counted_samples(|| {
+        let mut runtime =
+            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+        runtime.configure_diagnostics_for_test(|profile| {
+            profile.detailed_traces_enabled = false;
+            profile.max_entries_per_artifact = 0;
+        });
+        let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
+        let mut cluster_a = Vec::new();
+        let mut cluster_b = Vec::new();
+        for index in 0..6 {
+            cluster_a.push(create_entity_in_partition(
+                execution,
+                &runtime,
+                &format!("zero-cluster-a-{index}"),
+                PartitionId((index % 3) as u32 + 1),
+            ));
+            cluster_b.push(create_entity_in_partition(
+                execution,
+                &runtime,
+                &format!("zero-cluster-b-{index}"),
+                PartitionId((index % 3) as u32 + 5),
+            ));
+        }
+        for index in 0..(cluster_a.len() - 1) {
+            create_relation_in_partition(
+                execution,
+                &runtime,
+                cluster_a[index],
+                cluster_a[index + 1],
+                &format!("zero-a-link-{index}"),
+                PartitionId(11),
+            );
+            create_relation_in_partition(
+                execution,
+                &runtime,
+                cluster_b[index],
+                cluster_b[index + 1],
+                &format!("zero-b-link-{index}"),
+                PartitionId(12),
+            );
+        }
+
+        runtime.performance_access().reset_counters();
+        let (bridge_outcome, bridge_commit_work) = measure_counted_work(execution, || {
+            create_relation_outcome(
+                execution,
+                &runtime,
+                cluster_a[2],
+                cluster_b[2],
+                "bridge-topology-wave-zero",
+            )
+        });
+
+        let (summary, connectivity_summary_work) = measure_counted_work(execution, || {
+            runtime
+                .inspect_what_happened()
+                .connectivity_summary(
+                    execution,
+                    &ConnectivityInspectionRequest {
+                        scope: InspectionScope::Current,
+                        partition_scope: None,
+                        relation_kind_scope: Some(vec![KindId(2)]),
+                        include_members: false,
+                        budget: ConnectivityInspectionBudget {
+                            max_entities: 64,
+                            max_relations: 64,
+                            max_frontier: 64,
+                            max_components: 8,
+                            max_work_units: 256,
+                        },
+                    },
+                )
+                .expect("read request remains live")
+        });
+        let counters = runtime.performance_access().counters();
+        let (diagnostic_artifact_count, detailed_trace_entries) =
+            fresh_diagnostics_metrics(&runtime, diagnostics_start);
+
+        CountedPerfSample {
+            charged_work: bridge_commit_work + connectivity_summary_work,
+            metrics: perf_metrics!({
+                "bridge_commit_work": bridge_commit_work,
+                "connectivity_summary_work": connectivity_summary_work,
+                "bridge_changed_records": bridge_outcome.changed_records.len(),
+                "component_count": summary.component_count,
+                "largest_component_size": summary.largest_component_size,
+                "enumerated_entity_count": summary.enumerated_entity_count,
+                "diagnostic_artifact_count": diagnostic_artifact_count,
+                "detailed_trace_entries": detailed_trace_entries,
+                "availability": format!("{:?}", summary.availability),
+                "degradation_count": summary.degradations.len(),
+                "counters": counters,
+            }),
+        }
+    });
+    assert!(topology_bridge_zero_diag_samples
+        .iter()
+        .all(|sample| sample.charged_work > 0));
+    assert_counted_budget(
+        &topology_bridge_zero_diag_samples,
+        "geometry zero-diagnostics topology bridge should preserve connectivity truth while eliminating trace entries",
+        |metrics| {
+            metrics["bridge_changed_records"].as_u64() == Some(1)
+                && metrics["component_count"].as_u64() == Some(1)
+                && metrics["largest_component_size"].as_u64() == Some(12)
+                && metrics["enumerated_entity_count"].as_u64() == Some(12)
+                && metrics["availability"].as_str() == Some("Direct")
+                && metrics["degradation_count"].as_u64() == Some(1)
+                && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 1
+                && metrics["detailed_trace_entries"].as_u64() == Some(0)
+                && counter_u64(metrics, "full_state_clones") == 0
+                && counter_u64(metrics, "relation_slots_touched_by_commit") == 1
+                && counter_u64(metrics, "inspection_connectivity_summary_requests") == 1
+                && counter_u64(metrics, "inspection_connectivity_entity_scans") == 12
+                && counter_u64(metrics, "inspection_connectivity_relation_scans") == 11
+        },
+    );
+}

@@ -22,8 +22,9 @@ pub struct PhysicalRootNamespaceDurabilityNotStarted {
 
 pub struct IndeterminatePhysicalRootNamespaceDurability {
     core: super::super::mutation::RootPublicationPreparedCore,
-    replacement: SettledPhysicalWork,
-    namespace_synchronization: SettledPhysicalWork,
+    replacement: Box<SettledPhysicalWork>,
+    namespace_synchronization: Box<SettledPhysicalWork>,
+    recovery: PhysicalWorkRecoveryDisposition,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,7 +46,7 @@ pub(in crate::physical_runtime) fn synchronize_root_namespace(
     )
     .expect("parent namespace synchronization is a valid root-publication action");
     let settlement = match work.execute(scope) {
-        Ok(settlement) => settlement,
+        Ok(settlement) => Box::new(settlement),
         Err(failure) => return namespace_not_started(replaced, failure),
     };
     match settlement.evidence() {
@@ -71,11 +72,13 @@ pub(in crate::physical_runtime) fn synchronize_root_namespace(
             let (mut core, replacement) = replaced.into_parts();
             core.require_inspection();
             health.revoke();
+            let recovery = settlement.recovery_disposition();
             PhysicalRootNamespaceDurabilityOutcome::InspectionRequired(
                 IndeterminatePhysicalRootNamespaceDurability {
                     core,
                     replacement,
                     namespace_synchronization: settlement,
+                    recovery,
                 },
             )
         }
@@ -139,7 +142,7 @@ impl IndeterminatePhysicalRootNamespaceDurability {
     }
 
     pub const fn recovery_disposition(&self) -> PhysicalWorkRecoveryDisposition {
-        self.namespace_synchronization.recovery_disposition()
+        self.recovery
     }
 }
 #[cfg(test)]

@@ -1,4 +1,5 @@
 mod scope_observation;
+mod single_stage;
 #[allow(unused_imports)]
 pub(crate) use {
     crate::work_ceiling::ordinary_context::authority,

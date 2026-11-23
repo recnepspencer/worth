@@ -11,94 +11,145 @@ pub(super) fn journey(
     location: Location,
     reopen: bool,
 ) -> (WorthQueryWorkflowObservedState, Vec<String>) {
-    let (mut home, mut auth) = open(&location);
-    let (definition, target) = publish(&home);
-    let (mut instance, original) = start(&home, definition, 1002);
+    let (home, mut auth) = open_boxed(&location);
+    let mut home = Some(home);
+    let original = start_and_run_assessments(&mut home, &mut auth, &location, reopen);
+    advance_and_approve(&mut home, &mut auth, &location, &original, reopen);
+    complete_and_observe(home, auth, &location, &original, reopen)
+}
+
+#[inline(never)]
+fn open_boxed(location: &Location) -> (Box<Home>, CertificationAuthenticationOwner) {
+    let (home, auth) = open(location);
+    (Box::new(home), auth)
+}
+
+#[inline(never)]
+fn reopen_after_close(
+    home: &mut Option<Box<Home>>,
+    auth: &mut CertificationAuthenticationOwner,
+    location: &Location,
+    reopen: bool,
+) {
+    if reopen {
+        close(*home.take().expect("open home before reopen"));
+        let (next_home, next_auth) = open_boxed(location);
+        *home = Some(next_home);
+        *auth = next_auth;
+    }
+}
+
+#[inline(never)]
+fn start_and_run_assessments(
+    home: &mut Option<Box<Home>>,
+    auth: &mut CertificationAuthenticationOwner,
+    location: &Location,
+    reopen: bool,
+) -> WorthQueryWorkflowInstanceDiscoveryIntent<document::schema::DocumentRetentionSchema> {
+    let current = home.as_ref().expect("home present");
+    let (definition, target) = publish(current);
+    let (mut instance, original) = start(current, definition, 1002);
     let original_entity = instance.entity_id();
     assert!(matches!(
-        propose(&home, instance.clone(), 1003, &target),
+        propose(current, instance.clone(), 1003, &target),
         WorkflowProposalOutcome::Published(_)
     ));
     for (settlement, acceptance) in [(1004, 1005), (1006, 1007)] {
-        if reopen {
-            close(home);
-            (home, auth) = open(&location);
-        }
-        instance = observation::instance(&home, &original);
+        reopen_after_close(home, auth, location, reopen);
+        let current = home.as_ref().expect("home present");
+        instance = observation::instance(current, &original);
         assert_eq!(instance.entity_id(), original_entity);
         if reopen && settlement == 1004 {
             assert!(
                 matches!(
-                    propose(&home, instance.clone(), 1003, &target),
+                    propose(current, instance.clone(), 1003, &target),
                     WorkflowProposalOutcome::RecoveredCommitted(_)
                 ),
                 "the original proposal key recovers rather than publishing twice"
             );
         }
-        let evidence = assessment::settle(&home, instance.clone(), settlement);
-        let outcome = assessment::accept(&home, instance.clone(), &evidence, acceptance);
+        let evidence = assessment::settle(current, instance.clone(), settlement);
+        let outcome = assessment::accept(current, instance.clone(), &evidence, acceptance);
         assert!(
             matches!(outcome, WorkflowProgressOutcome::Completed(_)),
             "assessment {settlement} must complete: {outcome:?}"
         );
     }
+    let current = home.as_ref().expect("home present");
     assert!(matches!(
-        advance(&home, instance.clone(), 1008),
+        advance(current, instance, 1008),
         WorkflowProgressOutcome::Completed(_)
     ));
-    if reopen {
-        close(home);
-        (home, auth) = open(&location);
-    }
-    instance = observation::instance(&home, &original);
+    original
+}
+
+#[inline(never)]
+fn advance_and_approve(
+    home: &mut Option<Box<Home>>,
+    auth: &mut CertificationAuthenticationOwner,
+    location: &Location,
+    original: &WorthQueryWorkflowInstanceDiscoveryIntent<document::schema::DocumentRetentionSchema>,
+    reopen: bool,
+) {
+    reopen_after_close(home, auth, location, reopen);
+    let current = home.as_ref().expect("home present");
+    let instance = observation::instance(current, original);
     if reopen {
         assert!(
             matches!(
-                advance(&home, instance.clone(), 1008),
+                advance(current, instance.clone(), 1008),
                 WorkflowProgressOutcome::RecoveredCommitted(_)
             ),
             "the original evidence-join key survives reopen"
         );
     }
-    let required = match advance(&home, instance.clone(), 1009) {
+    let required = match advance(current, instance.clone(), 1009) {
         WorkflowProgressOutcome::AwaitingApproval(required) => required,
         other => panic!("reconstructed workflow still requires its approval: {other:?}"),
     };
-    let proposal = observation::proposal(&home, &original);
+    let proposal = observation::proposal(current, original);
     assert!(matches!(
-        approve(&home, &auth, instance.clone(), &required, &proposal, 1010),
+        approve(current, auth, instance, &required, &proposal, 1010),
         WorkflowProgressOutcome::Completed(_)
     ));
-    if reopen {
-        close(home);
-        (home, auth) = open(&location);
+}
+
+#[inline(never)]
+fn complete_and_observe(
+    mut home: Option<Box<Home>>,
+    mut auth: CertificationAuthenticationOwner,
+    location: &Location,
+    original: &WorthQueryWorkflowInstanceDiscoveryIntent<document::schema::DocumentRetentionSchema>,
+    reopen: bool,
+) -> (WorthQueryWorkflowObservedState, Vec<String>) {
+    reopen_after_close(&mut home, &mut auth, location, reopen);
+    {
+        let current = home.as_ref().expect("home present");
+        let instance = observation::instance(current, original);
+        let required = match advance(current, instance.clone(), 1011) {
+            WorkflowProgressOutcome::AwaitingOperation(required) => required,
+            other => panic!("approval survived close: {other:?}"),
+        };
+        assert!(required
+            .workflow_execution_requirements()
+            .approval()
+            .is_some());
+        assert_eq!(
+            perform(current, &instance, &required),
+            GuardedOperation::Committed
+        );
     }
-    instance = observation::instance(&home, &original);
-    let required = match advance(&home, instance.clone(), 1011) {
-        WorkflowProgressOutcome::AwaitingOperation(required) => required,
-        other => panic!("approval survived close: {other:?}"),
-    };
-    assert!(required
-        .workflow_execution_requirements()
-        .approval()
-        .is_some());
-    assert_eq!(
-        perform(&home, &instance, &required),
-        GuardedOperation::Committed
-    );
-    if reopen {
-        close(home);
-        (home, auth) = open(&location);
+    reopen_after_close(&mut home, &mut auth, location, reopen);
+    {
+        let current = home.as_ref().expect("home present");
+        let instance = observation::instance(current, original);
+        assert!(
+            matches!(advance(current, instance, 1013), WorkflowProgressOutcome::Completed(done) if done.node_path() == "approved")
+        );
     }
-    instance = observation::instance(&home, &original);
-    assert!(
-        matches!(advance(&home, instance, 1013), WorkflowProgressOutcome::Completed(done) if done.node_path() == "approved")
-    );
-    if reopen {
-        close(home);
-        (home, auth) = open(&location);
-    }
-    let result = match observation::read(&home, &original) {
+    reopen_after_close(&mut home, &mut auth, location, reopen);
+    let current = home.as_ref().expect("home present");
+    let result = match observation::read(current, original) {
         WorthQueryWorkflowInstanceRead::Historical { observation, .. } => {
             (observation.state(), observation.recorded_paths().to_vec())
         }
@@ -108,7 +159,7 @@ pub(super) fn journey(
     assert!(result.1.iter().any(|path| path == "apply"));
     drop(auth);
     if reopen {
-        close(home);
+        close(*home.take().expect("open home before final close"));
     }
     result
 }

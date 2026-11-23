@@ -270,7 +270,6 @@ impl HistorySubsystem {
         self.canonical_publication_routes.reservation_counters()
     }
 
-    #[cfg(test)]
     pub(crate) fn pending_canonical_publication_route_count(&self) -> usize {
         self.canonical_publication_routes.pending_count()
     }

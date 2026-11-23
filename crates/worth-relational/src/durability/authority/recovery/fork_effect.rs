@@ -85,6 +85,77 @@ impl RecoveredRelationalRuntimeAuthority {
             cause,
             source: None,
         };
+        let original = self.validate_recorded_fork(
+            execution,
+            runtime,
+            sequence,
+            association,
+            digest,
+            source,
+            target,
+        )?;
+        let source = self
+            .admit_recorded_component(execution, runtime, source)
+            .map_err(|cause| refused(Cause::Component(Box::new(cause))))?;
+        match self.admit_recorded_component(execution, runtime, target) {
+            Ok(target) => Ok(ReadmittedRelationalAssociatedFork {
+                source,
+                target,
+                original,
+            }),
+            Err(cause) => Err(RefusedRelationalForkReadmission {
+                cause: Cause::Component(Box::new(cause)),
+                source: Some(source),
+            }),
+        }
+    }
+
+    /// Validate the exact recorded fork transition when the source commit was
+    /// durably disposed before reopen, and admit only the surviving target basis.
+    pub fn admit_recorded_horizon_fork(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        sequence: RelationalBranchTransitionSequence,
+        association: &RelationalCallerAssociation,
+        digest: &[u8; 32],
+        source: &RecordedRelationalComponentReference,
+        target: &RecordedRelationalComponentReference,
+    ) -> Result<RecoveredRelationalBranchBasis, RefusedRelationalForkReadmission> {
+        use RelationalForkReadmissionCause as Cause;
+        let refused = |cause| RefusedRelationalForkReadmission {
+            cause,
+            source: None,
+        };
+        let _original = self.validate_recorded_fork(
+            execution,
+            runtime,
+            sequence,
+            association,
+            digest,
+            source,
+            target,
+        )?;
+        self.admit_recorded_component(execution, runtime, target)
+            .map_err(|cause| refused(Cause::Component(Box::new(cause))))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn validate_recorded_fork(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        sequence: RelationalBranchTransitionSequence,
+        association: &RelationalCallerAssociation,
+        digest: &[u8; 32],
+        source: &RecordedRelationalComponentReference,
+        target: &RecordedRelationalComponentReference,
+    ) -> Result<Arc<PositionedBranchTransition>, RefusedRelationalForkReadmission> {
+        use RelationalForkReadmissionCause as Cause;
+        let refused = |cause| RefusedRelationalForkReadmission {
+            cause,
+            source: None,
+        };
         crate::execution::check_request(execution)
             .map_err(|cause| refused(Cause::Request(cause)))?;
         if self.runtime_instance_id != runtime.runtime_instance_id() {
@@ -135,19 +206,6 @@ impl RecoveredRelationalRuntimeAuthority {
             | RelationalBranchTransition::DeletionRequested { .. }
             | RelationalBranchTransition::Delete { .. } => return Err(refused(Cause::NotFork)),
         }
-        let source = self
-            .admit_recorded_component(execution, runtime, source)
-            .map_err(|cause| refused(Cause::Component(Box::new(cause))))?;
-        match self.admit_recorded_component(execution, runtime, target) {
-            Ok(target) => Ok(ReadmittedRelationalAssociatedFork {
-                source,
-                target,
-                original,
-            }),
-            Err(cause) => Err(RefusedRelationalForkReadmission {
-                cause: Cause::Component(Box::new(cause)),
-                source: Some(source),
-            }),
-        }
+        Ok(original)
     }
 }

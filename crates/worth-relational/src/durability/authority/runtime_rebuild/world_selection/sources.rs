@@ -73,9 +73,36 @@ impl WorldSelectionReplay {
         roots: &RecoveredRootInventory,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Recorded, Stop> {
+        self.recorded_source_inner(source, runtime, plan, roots, request, false)?
+            .ok_or_else(|| corrupt("World occurrence has no matching actual Native source"))
+    }
+    pub(super) fn recorded_source_optional(
+        &self,
+        source: &Source,
+        runtime: &RelationalRuntime,
+        plan: &RecoveryPlan,
+        roots: &RecoveredRootInventory,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<Recorded>, Stop> {
+        self.recorded_source_inner(source, runtime, plan, roots, request, true)
+    }
+    fn recorded_source_inner(
+        &self,
+        source: &Source,
+        runtime: &RelationalRuntime,
+        plan: &RecoveryPlan,
+        roots: &RecoveredRootInventory,
+        request: &ExecutionRequest<'_, '_>,
+        allow_absent: bool,
+    ) -> Result<Option<Recorded>, Stop> {
         match source {
-            Source::Recorded(recorded) => Ok(recorded.clone()),
+            Source::Recorded(recorded) => Ok(Some(recorded.clone())),
             Source::Published(coordinates) => {
+                if allow_absent
+                    && runtime.history.commit_artifact(coordinates.commit()).is_none()
+                {
+                    return Ok(None);
+                }
                 let entry = self.entry(coordinates.commit(), runtime, plan, request)?;
                 if coordinates.position() != entry.position
                     || coordinates.digest().bytes() != &entry.payload_digest
@@ -84,9 +111,12 @@ impl WorldSelectionReplay {
                         "World occurrence Native source coordinates mismatch",
                     ));
                 }
-                let observations = roots
-                    .publication_observations(coordinates.commit())
-                    .ok_or_else(|| corrupt("World occurrence Native source has no observation"))?;
+                let Some(observations) = roots.publication_observations(coordinates.commit()) else {
+                    if allow_absent {
+                        return Ok(None);
+                    }
+                    return Err(corrupt("World occurrence Native source has no observation"));
+                };
                 let mut selected = None;
                 for descriptor in observations {
                     if descriptor.branch_id() != &entry.commit.branch_id
@@ -120,10 +150,43 @@ impl WorldSelectionReplay {
                     }
                     selected = Some(candidate);
                 }
-                selected
-                    .ok_or_else(|| corrupt("World occurrence has no matching actual Native source"))
+                if selected.is_none() && !allow_absent {
+                    return Err(corrupt(
+                        "World occurrence has no matching actual Native source",
+                    ));
+                }
+                Ok(selected)
             }
         }
+    }
+    pub(super) fn require_present_recorded_entry(
+        &self,
+        recorded: &Recorded,
+        runtime: &RelationalRuntime,
+        plan: &RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Stop> {
+        let Target::Canonical(target) = recorded.target() else {
+            return Ok(());
+        };
+        if runtime
+            .history
+            .commit_artifact(target.receipt().commit_id)
+            .is_none()
+        {
+            return Ok(());
+        }
+        let entry = self.entry(target.receipt().commit_id, runtime, plan, request)?;
+        if &entry.commit != target.receipt()
+            || entry.position != target.position()
+            || &entry.payload_digest != target.artifact_digest()
+            || &entry.root != target.roots()
+        {
+            return Err(corrupt(
+                "World source does not match its actual Native receipt and image",
+            ));
+        }
+        Ok(())
     }
     pub(super) fn require_source(
         &self,

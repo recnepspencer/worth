@@ -84,13 +84,18 @@ impl ProductUnpublishedRecoveryCatalog {
     pub(crate) fn readmit_released_original(
         &self,
         request: &ExecutionRequest<'_, '_>,
+        owner: crate::identity::RuntimeWorldOwnerIdentity,
         disposition: &crate::durability::AdmittedWorldDisposition,
-        expected: &crate::branch::ProductBranchObservation,
         native: Option<worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect>,
     ) -> Result<(), Denial> {
-        use crate::identity::readmission::{readmit_attempt, readmit_commit, readmit_custody};
+        use crate::identity::readmission::{
+            readmit_attempt, readmit_commit, readmit_custody, readmit_incarnation,
+        };
         let open = disposition.open();
-        let owner = expected.owner_identity();
+        let head = &open.expected;
+        if owner.durable() != Some(head.branch.owner()) {
+            return Err(Denial::PublicationUnresolved);
+        }
         let identity = readmit_custody(owner, open.custody).ok_or(Denial::PublicationUnresolved)?;
         // Recovery may retry an already admitted prefix. Only the identical
         // authenticated source can reuse a terminal cell.
@@ -130,9 +135,13 @@ impl ProductUnpublishedRecoveryCatalog {
             }
             return Ok(());
         }
+        let branch_name = crate::branch::ProductBranchName::try_new(head.branch.name())
+            .map_err(|_| Denial::PublicationUnresolved)?;
+        let branch = crate::identity::ProductBranchIdentity::issued(owner, branch_name);
+        let incarnation =
+            readmit_incarnation(owner, head.incarnation).ok_or(Denial::PublicationUnresolved)?;
         let labels = open.expected.branch.name().len();
         let funding = backing(request, labels)?;
-        let head = &open.expected;
         let recorded = DurableProductBranchReference::from_recorded(
             head.branch.clone(),
             head.incarnation,
@@ -149,8 +158,8 @@ impl ProductUnpublishedRecoveryCatalog {
                 commit: Some(
                     readmit_commit(owner, open.commit).ok_or(Denial::PublicationUnresolved)?,
                 ),
-                branch: expected.branch_identity().clone(),
-                incarnation: expected.lifecycle_incarnation(),
+                branch,
+                incarnation,
                 expected: RecordedProductBranchReference::Home(recorded),
                 source: OnceLock::new(),
                 _funding: funding,

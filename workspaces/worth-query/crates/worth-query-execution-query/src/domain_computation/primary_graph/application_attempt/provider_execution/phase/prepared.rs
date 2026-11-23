@@ -176,6 +176,7 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
+#[inline(never)]
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     current: WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope>,

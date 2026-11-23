@@ -19,6 +19,10 @@ pub(super) use terminal::WorthQueryDirectRunTerminalAffinity;
 
 static NEXT_MANAGED_LOGICAL_RUN: AtomicU64 = AtomicU64::new(1);
 
+pub fn prime_managed_logical_run_plateau_for_test() {
+    let _ = NEXT_MANAGED_LOGICAL_RUN.fetch_max(100_000, Ordering::Relaxed);
+}
+
 /// Move-only association between one logical direct run and its current live
 /// resource attempt. The current attempt identity and provider session are
 /// always read from the owned attempt; they cannot be substituted separately.

@@ -70,7 +70,10 @@ impl CompositeHistoryCatalog {
             {
                 None
             }
-            Some(crate::history::PublicationEvidence::Readmitted(_)) => None,
+            Some(
+                crate::history::PublicationEvidence::Readmitted(_)
+                | crate::history::PublicationEvidence::ReadmittedHorizon,
+            ) => None,
             // A creation head (fork or exact reuse) carries no Native publication,
             // so it owns no Native result snapshot to clean.
             None if entry.commit().relational_publication_identity().is_none() => None,

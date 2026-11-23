@@ -65,6 +65,34 @@
 //! #         std::any::TypeId::of::<admission::resource_admission::WorthQueryExecutionResourceAdmissionDenial>(),
 //! #     );
 //! # }
+//! # const fn _receipt_const_readers(
+//! #     receipt: &primary_graph::WorthQueryApplicationCommitReceipt,
+//! #     approved: &primary_graph::WorthQueryApprovedElevation,
+//! # ) {
+//! #     let _ = (
+//! #         receipt.outcome_identity(), receipt.provider_runtime_instance_id(),
+//! #         receipt.commit_reference(), receipt.committed_product_publication(),
+//! #         receipt.basis_descriptor(), receipt.changed_record_count(),
+//! #         receipt.emitted_effect_count(), receipt.committed_changes(),
+//! #         receipt.precondition_comparison(), receipt.canonical_work(),
+//! #         receipt.terminal(), receipt.external_dispatch(),
+//! #         receipt.external_dispatch_preparation_denial(), receipt.authority_binding(),
+//! #         receipt.installed_operation(), receipt.installed_recovery_contract(),
+//! #         receipt.published_aftermath_posture(), receipt.principal_scope(),
+//! #         receipt.idempotency_binding(), receipt.has_retained_preimage(),
+//! #         receipt.aftermath_causality(), approved.approval_product_publication(),
+//! #     );
+//! # }
+//! # fn _open_refused_payloads<S: worth_query_host::facade::declaration::application_schema::ApplicationSchemaComposition, P>(
+//! #     refused: worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<S, P>,
+//! # ) {
+//! #     match refused {
+//! #         worth_query_host::facade::WorthQueryApplicationHomeOpenRefused::Binding {
+//! #             cause, ..
+//! #         } => { let _: domain::WorthQueryHomeBindingDenial = cause; }
+//! #         other => { let _: Option<&worth_query_host::facade::ApplicationHomePhysicalRefusal> = other.physical_refusal(); }
+//! #     }
+//! # }
 //! ```
 //!
 //! Raw primary-graph integration is not an audience capability:

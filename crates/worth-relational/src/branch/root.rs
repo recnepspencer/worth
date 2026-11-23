@@ -286,8 +286,17 @@ impl RelationalBranchRoot {
 
     pub(crate) fn storage_regions(
         &self,
-    ) -> impl Iterator<Item = RelationalRootRegionObservation> + '_ {
+    ) -> impl Iterator<
+        Item = Result<
+            RelationalRootRegionObservation,
+            crate::storage::substrate::StorageAllocationOverflow,
+        >,
+    > + '_ {
         self.regions.values().map(|region| region.observation())
+    }
+
+    pub(crate) fn region_ids(&self) -> impl Iterator<Item = u64> + '_ {
+        self.regions.values().map(|region| region.id)
     }
 
     pub(crate) fn region_count(&self) -> usize {
@@ -299,13 +308,15 @@ impl RelationalBranchRoot {
     }
 
     /// Logical authoritative partition payload bytes reachable from this root.
-    /// A recorded descriptive figure: region inventories carry per-carrier
-    /// declared bounds and may be saturated, so this total saturates as well.
-    pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
-        self.regions
-            .values()
-            .map(|region| region.allocation_inventory().authoritative_bytes)
-            .fold(0_u64, u64::saturating_add)
+    /// Checked: refuses an unrepresentable bound or total with a typed overflow.
+    pub(crate) fn logical_partition_payload_bytes(
+        &self,
+    ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
+        self.regions.values().try_fold(0_u64, |total, region| {
+            total
+                .checked_add(region.allocation_inventory()?.authoritative_bytes)
+                .ok_or(crate::storage::substrate::StorageAllocationOverflow)
+        })
     }
 
     pub(crate) fn publication_cost(&self) -> RelationalBranchRootPublicationCost {
@@ -315,15 +326,24 @@ impl RelationalBranchRoot {
             .unwrap_or_default()
     }
 
-    pub(crate) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
+    pub(crate) fn reclaimable_unique_authoritative_bytes(
+        &self,
+    ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
+        use crate::storage::substrate::StorageAllocationOverflow;
         let mut bytes = std::mem::size_of::<Self>() as u64;
-        bytes = bytes.saturating_add(
-            RelationalPersistentRegionSet::reclaimable_unique_authoritative_bytes(&self.regions),
-        );
+        bytes = bytes
+            .checked_add(
+                RelationalPersistentRegionSet::reclaimable_unique_authoritative_bytes(
+                    &self.regions,
+                )?,
+            )
+            .ok_or(StorageAllocationOverflow)?;
         if Arc::strong_count(&self.schema_authority) == 1 {
-            bytes = bytes.saturating_add(self.schema_authority.authoritative_allocation_bytes());
+            bytes = bytes
+                .checked_add(self.schema_authority.authoritative_allocation_bytes())
+                .ok_or(StorageAllocationOverflow)?;
         }
-        bytes
+        Ok(bytes)
     }
 
     pub(crate) fn links_envelope(&self, envelope: &Arc<CanonicalCommitEnvelope>) -> bool {

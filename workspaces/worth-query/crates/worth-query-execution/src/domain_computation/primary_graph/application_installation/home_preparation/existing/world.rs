@@ -48,11 +48,11 @@ where
                 Err(cause) => {
                     return Err(QueryExistingHomeWorldAttachmentRefused {
                         inner: QueryHomeWorldAttachmentRefused {
-                            custody: HomeWorldAttachmentCustody::Prepared {
+                            custody: Box::new(HomeWorldAttachmentCustody::Prepared {
                                 _prepared: self.prepared,
                                 _root: root,
                                 cause,
-                            },
+                            }),
                         },
                     })
                 }

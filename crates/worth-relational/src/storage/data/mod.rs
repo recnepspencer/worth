@@ -158,6 +158,9 @@ pub struct StorageStats {
     pub reusable_relation_slots: usize,
     pub snapshot_count: usize,
     pub published_snapshot_handle_count: usize,
+    /// Occupied published-snapshot capacity slots in the preparation runtime;
+    /// a counted custody census, independent of the visibility handle registry.
+    pub published_snapshot_slot_count: usize,
     pub cached_visibility_version_count: usize,
     pub protected_visibility_version_count: usize,
     pub recent_visibility_cache_count: usize,

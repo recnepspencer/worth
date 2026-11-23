@@ -74,12 +74,17 @@ pub(crate) fn capture(
     captured.manifest.canonical_members = CanonicalCheckpointMembers::from_reserved(rows, memory);
     super::inventory::validate(&captured.manifest, request).map_err(capture_stop)?;
     captured.canonical_payloads = Some(payloads.seal().map_err(array_capture_stop)?);
-    captured.canonical_publication =
-        Some(super::publication::CanonicalCheckpointPublication::capture(
-            &captured.manifest,
-            &captured.envelope_cells,
-            request,
-        )?);
+    // A capture without commits has no canonical placement to publish, so it
+    // retains no publication, as its empty member inventory retains nothing.
+    captured.canonical_publication = (count > 0)
+        .then(|| {
+            super::publication::CanonicalCheckpointPublication::capture(
+                &captured.manifest,
+                &captured.envelope_cells,
+                request,
+            )
+        })
+        .transpose()?;
     Ok(())
 }
 fn corrupt(detail: &str) -> DurabilityError {

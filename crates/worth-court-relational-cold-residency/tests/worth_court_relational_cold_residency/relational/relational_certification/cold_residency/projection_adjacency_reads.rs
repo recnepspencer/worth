@@ -10,11 +10,29 @@ fn cold_and_warm_projection_adjacency_reads_preserve_actual_edges() {
     for door in Door::ALL {
         for historical in [false, true] {
             let cold = recipe.reopen(execution);
+            let before = cold.runtime.observe_complexity_counters();
             door.read(&cold, execution, historical).unwrap();
+            let after_cold = cold.runtime.observe_complexity_counters();
             let reads = cold.source.reads.load(Ordering::Relaxed);
             assert!(reads > 0);
             door.read(&cold, execution, historical).unwrap();
+            let after_warm = cold.runtime.observe_complexity_counters();
             assert_eq!(cold.source.reads.load(Ordering::Relaxed), reads);
+            let cold_leases =
+                after_cold.adjacency_kind_slices_leased - before.adjacency_kind_slices_leased;
+            let warm_leases =
+                after_warm.adjacency_kind_slices_leased - after_cold.adjacency_kind_slices_leased;
+            assert!(warm_leases > 0);
+            assert_eq!(
+                cold_leases, warm_leases,
+                "{door:?} historical={historical}"
+            );
+            assert_eq!(
+                after_cold.visible_authoritative_relation_records_materialized
+                    - before.visible_authoritative_relation_records_materialized,
+                after_warm.visible_authoritative_relation_records_materialized
+                    - after_cold.visible_authoritative_relation_records_materialized,
+            );
         }
     }
 }

@@ -20,7 +20,7 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        if self.readmitted_recovery.is_some() || !matches!(&self.state, State::Initial) {
+        if self.readmitted_recovery.is_some() || !matches!(&*self.state, State::Initial) {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
@@ -50,7 +50,7 @@ where
         }
         if self.readmitted_recovery.is_some()
             || !matches!(
-                self.state,
+                &*self.state,
                 State::Initial
                     | State::Outputs(_)
                     | State::ReplayRetained(_)
@@ -207,7 +207,7 @@ where
         self.operation.branch()
     }
     pub fn native_outcome(&self) -> Option<&NativeOutcome<S, I>> {
-        match &self.operation.state {
+        match &*self.operation.state {
             State::NotPerformed(outcome) => Some(outcome),
             State::Blocked(blocked) => Some(blocked.outcome()),
             _ => None,
@@ -236,7 +236,7 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        let closable = match &self.operation.state {
+        let closable = match &*self.operation.state {
             State::Initial => true,
             State::NotPerformed(outcome) => {
                 super::super::close::terminal_outcome_can_close(outcome)
@@ -245,7 +245,7 @@ where
         };
         let runtime = request.application;
         let result = runtime.with_application_advancement(request.scope, |phase| {
-            let terminal_carrier = match &mut self.operation.state {
+            let terminal_carrier = match &mut *self.operation.state {
                 State::Unpublished(partial)
                     if partial.recovery_posture()
                         == WorthQueryRequiredOutputRecoveryPosture::Terminal =>

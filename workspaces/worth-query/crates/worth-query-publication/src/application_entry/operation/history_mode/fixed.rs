@@ -176,7 +176,7 @@ where
         mut operation: O<S, I, P, R, A>,
         constraint:worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint,
     ) -> Result<O<S, I, P, R, A>, (O<S, I, P, R, A>, NativeDenial)> {
-        if !matches!(operation.state, super::super::fixed::FixedState::Initial)
+        if !matches!(*operation.state, super::super::fixed::FixedState::Initial)
             || operation.description.history.is_some()
             || operation.description.source.is_some()
             || I::Binding::WORKFLOW_CONTROL
@@ -219,7 +219,7 @@ where
                 mut operation,
                 denial,
             } => {
-                operation.advance_denial = Some(denial);
+                operation.advance_denial = Some(Box::new(denial));
                 HistoryOperationAdvance::Terminal(operation)
             }
         }

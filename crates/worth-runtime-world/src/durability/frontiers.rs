@@ -53,6 +53,28 @@ impl WorldIdentityFrontiers {
             }
             WorldRecord::CreationIntent(intent) => self.include_creation(intent),
             WorldRecord::BranchCreated(created) => self.include_creation(&created.intent),
+            WorldRecord::BranchRetired { head, .. } => {
+                include(
+                    &mut self.branch,
+                    head.incarnation.ordinal(),
+                    Family::ProductBranchIncarnation,
+                )?;
+                include(
+                    &mut self.commit,
+                    head.commit.ordinal(),
+                    Family::CompositeCommit,
+                )
+            }
+            WorldRecord::HistoryRetired { commits, .. } => {
+                for commit in commits {
+                    include(
+                        &mut self.commit,
+                        commit.ordinal(),
+                        Family::CompositeCommit,
+                    )?;
+                }
+                Ok(())
+            }
             WorldRecord::OpenAttempt(open) | WorldRecord::Occurrence { open, .. } => {
                 self.include_open(open)
             }

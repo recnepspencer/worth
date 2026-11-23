@@ -43,6 +43,7 @@ impl RelationalRegionResidency {
             history_presence: super::super::history_presence::HistoryPresence::complete(),
             kind_indexes: Some(kind_indexes),
             partition,
+            sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment: Some(commitment),
             _history_custody: None,
             _memory: memory,
@@ -64,3 +65,5 @@ impl RelationalRegionResidency {
         Ok(RelationalResidencyLease::accepted(cell, region))
     }
 }
+#[cfg(test)]
+mod tests;

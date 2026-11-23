@@ -37,6 +37,7 @@ where
             Demand<Schema, Root>,
         >,
 {
+    #[inline(never)]
     pub(super) fn readmit_original_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -86,7 +87,7 @@ where
                     !performed.matches_original_receipt(&access, &receipt)) {
                     return Advance::Refused { operation: self, denial: Denial::RecoveryCarrierUnavailable };
                 }
-                self.state = FixedState::ReplayRecorded(receipt);
+                *self.state = FixedState::ReplayRecorded(receipt);
                 self.description.original.as_mut().expect("readmitted original").readmission = false;
                 Advance::Progress { operation: self, progress: Progress::SourceReplayObserved }
             }
@@ -104,6 +105,7 @@ where
         }
     }
 
+    #[inline(never)]
     pub(super) fn advance_replay_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -114,7 +116,7 @@ where
             WorthQueryManagedApplicationRecoveryDenial as RecoveryDenial,
         };
         use crate::application_entry::request::program_outputs::WorthQueryAdmittedRequiredOutputRecoveryDenial as Recovery;
-        let original = match &self.state {
+        let original = match &*self.state {
             FixedState::ReplayRetained(receipt) => worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt),
             FixedState::ReplayRecorded(receipt) => worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Recorded(receipt),
             _ => unreachable!("dispatch owns original replay evidence"),
@@ -155,7 +157,7 @@ where
             WorthQueryOutputDemandControls::host_policy(), &prepared.admission,
         ) {
             Ok(outputs) => {
-                self.state = FixedState::Outputs(outputs);
+                *self.state = FixedState::Outputs(outputs);
                 Advance::Progress { operation: self, progress: Progress::RegisteredOutputsRecovered }
             }
             Err(Recovery::Authorization(cause)) => Advance::Refused {
@@ -166,7 +168,7 @@ where
             },
             Err(Recovery::Outputs(cause)) => {
                 if cause.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal {
-                    self.state = FixedState::NotPerformed(match receipt {
+                    *self.state = FixedState::NotPerformed(match receipt {
                         worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt.clone()),
                         worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Recorded(receipt) => WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt.clone()),
                     });

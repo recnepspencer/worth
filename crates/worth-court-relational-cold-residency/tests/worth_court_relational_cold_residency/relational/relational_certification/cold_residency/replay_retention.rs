@@ -16,6 +16,13 @@ fn replay_pinning_preserves_sticky_mirror_refusal_without_publication() {
     let runtime = &fixture.runtime;
     let position = runtime.history().latest_patch_stream_position();
     let offered = fixture.medium.offered().len();
+    assert!(
+        runtime
+            .observe_replay_retention_residency()
+            .retained_versions
+            .is_empty(),
+        "fixture has no prior replay retention"
+    );
     // The retained historical root is already Full; corrupt every unread
     // region frame so the mirror's chosen serving carrier must refuse.
     fixture.source.damaged.store(true, Ordering::Relaxed);
@@ -28,6 +35,10 @@ fn replay_pinning_preserves_sticky_mirror_refusal_without_publication() {
         .history_authority()
         .retain_version_for_replay(execution, fixture.historical_version);
     assert_eq!(observed, Err(expected.into()));
+    assert!(runtime
+        .observe_replay_retention_residency()
+        .retained_versions
+        .is_empty());
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     assert!(reads > 0);
     fixture.source.damaged.store(false, Ordering::Relaxed);
@@ -42,6 +53,10 @@ fn replay_pinning_preserves_sticky_mirror_refusal_without_publication() {
         reads,
         "mirror damage stays sticky"
     );
+    assert!(runtime
+        .observe_replay_retention_residency()
+        .retained_versions
+        .is_empty());
     assert_eq!(runtime.history().latest_patch_stream_position(), position);
     assert_eq!(fixture.medium.offered().len(), offered);
 }
@@ -58,20 +73,28 @@ fn replay_retention_releases_original_references_without_cold_reads() {
             .retain_version_for_replay(execution, fixture.historical_version),
         Ok(true)
     );
+    assert_eq!(runtime.entity_replay_pin_count(fixture.entity), Some(1));
     assert_eq!(
         runtime
             .history_authority()
             .retain_version_for_replay(execution, fixture.historical_version),
         Ok(true)
     );
+    assert_eq!(
+        runtime.entity_replay_pin_count(fixture.entity),
+        Some(1),
+        "additional retention references share physical pins"
+    );
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     fixture.source.damaged.store(true, Ordering::Relaxed);
     assert!(runtime
         .history_authority()
         .release_version_replay_retention(fixture.historical_version));
+    assert_eq!(runtime.entity_replay_pin_count(fixture.entity), Some(1));
     assert!(runtime
         .history_authority()
         .release_version_replay_retention(fixture.historical_version));
+    assert_eq!(runtime.entity_replay_pin_count(fixture.entity), Some(0));
     assert!(!runtime
         .history_authority()
         .release_version_replay_retention(fixture.historical_version));
