@@ -361,3 +361,6 @@ mod mirror_publication;
 
 #[path = "preparation_runtime/working_state.rs"]
 mod working_state;
+
+#[path = "preparation_runtime/aggregate.rs"]
+mod aggregate;

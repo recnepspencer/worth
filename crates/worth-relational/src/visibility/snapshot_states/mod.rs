@@ -25,7 +25,8 @@ pub(crate) use resolution::{
     resolve_snapshot_state,
 };
 pub(crate) use state::{
-    SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis, VisibilitySnapshotStateKey,
+    SnapshotHeadSelection, SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis,
+    VisibilitySnapshotStateKey,
 };
 
 pub(crate) use resolution::SnapshotReadDirectory;

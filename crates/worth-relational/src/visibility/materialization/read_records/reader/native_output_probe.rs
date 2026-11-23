@@ -17,20 +17,20 @@ impl VisibilityReadContext<'_> {
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
-        let Some(root) = self
+        let Some(head) = self
             .runtime
             .visibility
-            .selected_snapshot_root(handle.snapshot_id)
+            .selected_snapshot_head(handle.snapshot_id)
         else {
             return Ok(None);
         };
-        root.demand_regions_head(
+        head.demand(
             execution,
             &self.runtime.services.symbols,
-            [entity.partition_id],
+            entity.partition_id,
         )?;
-        let kind = root
-            .accepted_head_region_view(entity.partition_id)
+        let kind = head
+            .region(entity.partition_id)
             .and_then(|partition| partition.entity_arena().get(&entity))
             .and_then(|slot| slot.is_live().then(|| slot.kind_id()).flatten());
         Ok(Some(kind))
@@ -58,19 +58,19 @@ impl VisibilityReadContext<'_> {
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
-        let Some(root) = self
+        let Some(head) = self
             .runtime
             .visibility
-            .selected_snapshot_root(handle.snapshot_id)
+            .selected_snapshot_head(handle.snapshot_id)
         else {
             return Ok(None);
         };
-        root.demand_regions_head(
+        head.demand(
             execution,
             &self.runtime.services.symbols,
-            [entity.partition_id],
+            entity.partition_id,
         )?;
-        let Some(partition) = root.accepted_head_region_view(entity.partition_id) else {
+        let Some(partition) = head.region(entity.partition_id) else {
             return Ok(None);
         };
         let Some(slot) = partition.entity_arena().get(&entity) else {

@@ -1,7 +1,8 @@
 //! A cold current route is selected from independently authenticated current facts.
-use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::current_route_presence::Posture;
 use crate::history::data::RequiredOutputRoutePosition;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
@@ -10,15 +11,12 @@ pub(crate) fn read_current(
     basis: &AdmittedRelationalBranchBasis,
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<Option<RequiredOutputRoutePosition>, TransactionCommitError> {
-    let reached = crate::publication::ownership::select_current(
-        execution,
-        basis,
-        &[RecordRef::Entity(meaning.source_scope)],
-    )?;
+    let reached =
+        super::select_current(execution, basis, &[RecordRef::Entity(meaning.source_scope)])?;
     execution
         .run_native_with_checkpoint(|context| {
             for (_, position) in &reached.positions {
-                crate::publication::ownership::read_request::checkpoint(
+                super::read_request::checkpoint(
                     context,
                     (position.meaning.family.len() + meaning.family.len() + 1) as u64,
                 )?;
@@ -35,6 +33,6 @@ pub(crate) fn read_current(
             }
             Ok(None)
         })
-        .map_err(crate::publication::ownership::read_request::request)?
+        .map_err(super::read_request::request)?
         .0
 }

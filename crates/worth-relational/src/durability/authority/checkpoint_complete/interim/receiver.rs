@@ -55,7 +55,7 @@ impl AdmittedNativeInterimReceiver {
             };
             ObservedRelationalMemoryComponent::from_interim(
                 request,
-                self.owner.clone(),
+                runtime.services.origin_identity(),
                 captured.description().clone(),
                 admitted,
             )

@@ -1,6 +1,7 @@
 //! Read owner-resident original meaning without claiming durable source custody.
 use super::{DurabilityAuthority, RelationalAssociatedEffectRefusal as Refusal};
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
+use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
 use crate::transactions::data::RecoveredRelationalSemanticResult;
 
 /// The actual resident Native owner artifact. This cannot qualify a directory
@@ -15,7 +16,7 @@ pub struct ObservedRelationalMemoryCommit {
 enum MemoryCommitOrigin {
     Live(PositionedCanonicalCommit),
     Interim {
-        owner: std::sync::Weak<crate::runtime::RelationalRuntimeState>,
+        owner: RelationalRuntimeOrigin,
         admitted: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
         data: crate::durability::canonical_commit_artifact::CheckpointEffectData,
     },
@@ -53,14 +54,14 @@ impl ObservedRelationalMemoryCommit {
 
     pub(crate) fn matches_interim(
         &self,
-        expected: &std::sync::Weak<crate::runtime::RelationalRuntimeState>,
+        expected: &RelationalRuntimeOrigin,
         row: &crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
     ) -> bool {
         match &self.origin {
             MemoryCommitOrigin::Live(_) => false,
             MemoryCommitOrigin::Interim {
                 owner, admitted, ..
-            } => std::sync::Weak::ptr_eq(owner, expected) && admitted.same_owner(row),
+            } => owner.same_origin(expected) && admitted.same_owner(row),
         }
     }
 
@@ -147,7 +148,7 @@ impl DurabilityAuthority<'_> {
                 },
                 digest: entry.payload_digest,
                 origin: MemoryCommitOrigin::Interim {
-                    owner: self.runtime.state_binding(),
+                    owner: self.runtime.services.origin_identity(),
                     admitted: row,
                     data,
                 },

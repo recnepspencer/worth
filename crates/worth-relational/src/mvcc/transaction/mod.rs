@@ -7,7 +7,7 @@ mod bound;
 mod commit;
 pub(crate) mod commit_plan;
 mod coupled_batch;
-mod footprint;
+pub(crate) mod footprint;
 mod footprint_client_keys;
 mod footprint_staging;
 mod index_row;

@@ -11,7 +11,7 @@ impl ExactProjectionReader<'_> {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::super::read_work::record_memory::partition_ids(
-                self.root.as_ref(),
+                self.basis.partition_records(),
                 memory,
             )?;
         for partition in partitions {
@@ -37,8 +37,8 @@ impl ExactProjectionReader<'_> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
     {
         self.view.reader().paid_entities_in_partition(
-            self.root.as_ref(),
-            self.root.schema_authority().registry(),
+            self.basis.partition_records(),
+            self.registry(),
             partition,
             kind,
             crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,
@@ -58,7 +58,7 @@ impl ExactProjectionReader<'_> {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::super::read_work::record_memory::partition_ids(
-                self.root.as_ref(),
+                self.basis.partition_records(),
                 memory,
             )?;
         for partition in partitions {
@@ -82,8 +82,8 @@ impl ExactProjectionReader<'_> {
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.view.reader().paid_relations_in_partition(
-            self.root.as_ref(),
-            self.root.schema_authority().registry(),
+            self.basis.partition_records(),
+            self.registry(),
             partition,
             kind,
             crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,

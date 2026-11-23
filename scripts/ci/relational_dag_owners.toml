@@ -426,6 +426,13 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/publication/outcome/refusals" = "contracts"
 "mvcc/publication/read_dependency_denial" = "contracts"
 "mvcc/owned_graph_selection/prepared.rs" = "mutation"
+"mvcc/transaction/footprint" = "mutation"
+"mvcc/transaction/footprint_client_keys.rs" = "mutation"
+"mvcc/transaction/footprint_staging.rs" = "mutation"
+"mvcc/transaction/index_row.rs" = "mutation"
+"mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/overlay_indexing.rs" = "mutation"
+"mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/normalized_plan" = "mutation"
 "mvcc/transaction/read_denial.rs" = "branch"
@@ -529,6 +536,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/publication" = "publication"
 "runtime/state/subsystems/record_identity" = "storage"
 "runtime/state/subsystems/services/instrumentation" = "branch"
+"runtime/state/subsystems/services/sequence/origin.rs" = "branch"
 "runtime/state/subsystems/services/symbol_table" = "storage"
 "runtime/state/subsystems/storage" = "storage"
 "runtime/state/subsystems/visibility" = "branch"
@@ -862,6 +870,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/indexing/catalog_coverage.rs" = "branch"
 "runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
 "runtime/state/subsystems/services/instrumentation" = "branch"
+"runtime/state/subsystems/services/sequence/origin.rs" = "branch"
 "validation/candidate_source/authored_history/admission.rs" = "mutation"
 "validation/candidate_source/authored_history/collection" = "mutation"
 "validation/candidate_source/authored_history/material_capture.rs" = "mutation"
@@ -900,6 +909,13 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "validation/preparation_invariant_authority.rs" = "runtime"
 
 # Transaction packet vocabulary is shared. Branch owns denials for selected reads.
+"mvcc/transaction/footprint" = "mutation"
+"mvcc/transaction/footprint_client_keys.rs" = "mutation"
+"mvcc/transaction/footprint_staging.rs" = "mutation"
+"mvcc/transaction/index_row.rs" = "mutation"
+"mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/overlay_indexing.rs" = "mutation"
+"mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/read_denial.rs" = "branch"
 "mvcc/transaction/staging.rs" = "contracts"
@@ -972,3 +988,9 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # The canonical patch coordinate is consumed independently of Runtime stream access.
 "publication/patch/data/stream_commit_ref.rs" = "contracts"
+
+# Aggregate consequence metrics belong to the one consumer of the exact read report.
+"authority/commit/phases/applied_mutation/aggregate_metrics.rs" = "publication"
+
+# Installed Current route selection consumes Publication's authenticated roster.
+"publication/ownership/route_selection.rs" = "publication"

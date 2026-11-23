@@ -1,5 +1,5 @@
 use super::{author::Author, iter::OrderedIter};
-use crate::mvcc::RelationalTransactionStagingDenial as Denial;
+use crate::mvcc::transaction::staging::RelationalTransactionStagingDenial as Denial;
 use std::sync::Arc;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionArray};
 

@@ -13,7 +13,9 @@
 //! recorded as authored.
 
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::{EntityMutationIntent, RelationMutationIntent};
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, RelationMutationIntent,
+};
 
 /// The one locus an entity intent claims, named together with its record.
 pub(super) enum EntityIntentLocus {

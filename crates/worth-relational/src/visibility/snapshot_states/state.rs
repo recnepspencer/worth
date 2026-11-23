@@ -93,6 +93,39 @@ pub(crate) struct VisibilitySnapshotBasis {
     pub(super) _retained_observation: Option<crate::mvcc::observation::RelationalBranchObservation>,
 }
 
+/// Exact root custody restricted to the selected snapshot's Head regions.
+pub(crate) struct SnapshotHeadSelection(Arc<RelationalBranchRoot>);
+
+impl SnapshotHeadSelection {
+    pub(crate) fn demand(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        partition: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.0.demand_regions_head(execution, symbols, [partition])
+    }
+
+    pub(crate) fn region(
+        &self,
+        partition: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.0.accepted_head_region_view(partition)
+    }
+
+    pub(crate) fn witness(
+        &self,
+        partition: PartitionId,
+    ) -> Result<
+        Option<
+            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>,
+        >,
+        PartitionId,
+    > {
+        self.0.accepted_head_region_witness(partition)
+    }
+}
+
 impl VisibilitySnapshotBasis {
     pub(crate) fn from_applied_root(
         branch_id: BranchId,
@@ -134,8 +167,40 @@ impl VisibilitySnapshotBasis {
         self.key.version_id()
     }
 
+    pub(crate) fn head_selection(&self) -> SnapshotHeadSelection {
+        SnapshotHeadSelection(self.root.clone())
+    }
+
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
         &self.root
+    }
+
+    pub(crate) fn schema_registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
+        self.root.schema_authority().registry()
+    }
+
+    pub(crate) fn entity_ids_of_kind(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+        self.root.entity_ids_of_kind(kind, partition)
+    }
+
+    pub(crate) fn relation_ids_of_kind(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+        self.root.relation_ids_of_kind(kind, partition)
+    }
+
+    #[cfg(test)]
+    pub(in crate::visibility) fn partition_records(
+        &self,
+    ) -> &(impl crate::storage::overlay::CurrentPartitionAccess + crate::storage::overlay::PartitionAccess)
+    {
+        self.root.as_ref()
     }
 
     pub(crate) fn root_id(&self) -> u64 {

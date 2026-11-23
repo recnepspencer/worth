@@ -54,7 +54,7 @@ impl RelationalRuntime {
             )?;
             return ObservedRelationalMemoryComponent::from_interim(
                 execution,
-                self.state_binding(),
+                self.services.origin_identity(),
                 description,
                 Some(row),
             )
@@ -86,7 +86,7 @@ impl RelationalRuntime {
         }
         Ok(ObservedRelationalMemoryComponent {
             original: Arc::new(MemoryComponentOrigin::Live(MemoryComponentMeaning {
-                owner: self.state_binding(),
+                owner: self.services.origin_identity(),
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
                 _funding: funding,
@@ -102,7 +102,7 @@ impl RelationalRuntime {
         let meaning = match component.original.as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning,
             MemoryComponentOrigin::Interim(meaning) => {
-                if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
+                if !meaning.owner.same_origin(&self.services.origin_identity()) {
                     return Err(Refusal::Basis(
                         crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
                     ));
@@ -123,7 +123,7 @@ impl RelationalRuntime {
                 return Ok(meaning.description.clone());
             }
         };
-        if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
+        if !meaning.owner.same_origin(&self.services.origin_identity()) {
             return Err(Refusal::Basis(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));

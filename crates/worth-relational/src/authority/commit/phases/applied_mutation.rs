@@ -13,6 +13,8 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 pub(crate) use crate::authority::mutation::pending_identities::PendingMutationIdentities;
 
 mod aggregate_consequences;
+pub(crate) mod aggregate_inputs;
+mod aggregate_metrics;
 mod coupled_return;
 pub(crate) use coupled_return::{
     AppliedCoreCustody, AppliedDraftCustody, CoupledPreparationCleanup,

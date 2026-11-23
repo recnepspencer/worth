@@ -48,7 +48,7 @@ pub(super) fn select(
         let current = if installed.source_scope_ownership.is_empty() {
             None
         } else {
-            crate::history::data::current_route_presence::read_current(execution, basis, meaning)?
+            crate::publication::ownership::route_selection::read_current(execution, basis, meaning)?
         };
         match current {
             Some(position) => Some(position),

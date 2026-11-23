@@ -32,7 +32,7 @@ impl VisibilityProjectionView {
             |context, memory| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => self.reader().entities_from_directory(
                     execution,
-                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis.root()),
+                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis),
                     kind_id,
                     None,
                     Some(maximum_work_units),
@@ -78,7 +78,7 @@ impl VisibilityProjectionView {
             |context, memory| match &self.basis {
                 SnapshotStateBasis::Exact(basis) => self.reader().relations_from_directory(
                     execution,
-                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis.root()),
+                    &super::exact_basis_reads::ExactProjectionReader::new(self, basis),
                     kind_id,
                     None,
                     Some(maximum_work_units),

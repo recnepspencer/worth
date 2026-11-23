@@ -132,11 +132,11 @@ impl VisibilitySubsystem {
         self.handles.active_binding(snapshot_id)
     }
 
-    pub(crate) fn selected_snapshot_root(
+    pub(crate) fn selected_snapshot_head(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.handles.selected_root(snapshot_id)
+    ) -> Option<crate::visibility::snapshot_states::SnapshotHeadSelection> {
+        self.handles.selected_head(snapshot_id)
     }
 
     pub(crate) fn is_known_snapshot(&self, snapshot_id: SnapshotId) -> bool {

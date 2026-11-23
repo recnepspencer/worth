@@ -91,15 +91,15 @@ impl ActiveSnapshotHandleRegistry {
             .map(|binding| binding.basis.branch_id().0.len())
     }
 
-    pub(super) fn selected_root(
+    pub(super) fn selected_head(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
+    ) -> Option<crate::visibility::snapshot_states::SnapshotHeadSelection> {
         self.key_lookups.fetch_add(1, Ordering::Relaxed);
         self.lock()
             .handles
             .get(&snapshot_id)
-            .map(|binding| std::sync::Arc::clone(binding.basis.root()))
+            .map(|binding| binding.basis.head_selection())
     }
 
     pub(super) fn retains_handle(&self, snapshot_id: SnapshotId) -> bool {

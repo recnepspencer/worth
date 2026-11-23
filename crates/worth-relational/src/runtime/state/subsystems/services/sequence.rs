@@ -1,6 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+pub(crate) mod origin;
+
 /// Ten decimal digits; changing text width requires another nine billion
 /// instances. The first ten-digit id is the canonical artifact frame, which no
 /// live runtime is issued.
@@ -51,6 +53,10 @@ impl RuntimeSequenceState {
             }
         }
         .ok()
+    }
+
+    pub(super) fn origin(&self) -> origin::RelationalRuntimeOrigin {
+        origin::RelationalRuntimeOrigin::of(&self.next_transaction_id)
     }
 
     pub(super) fn runtime_instance_id(&self) -> u64 {

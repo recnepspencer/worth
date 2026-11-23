@@ -17,7 +17,7 @@ impl RelationalRuntime {
                 return self.export_memory_component(request, component)
             }
         };
-        if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
+        if !meaning.owner.same_origin(&self.services.origin_identity()) {
             return Err(Refusal::Basis(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));

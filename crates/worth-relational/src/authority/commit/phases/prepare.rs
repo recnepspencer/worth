@@ -31,7 +31,7 @@ pub(crate) struct PreparedWorkingStateScope {
     pub(crate) structural_summary: CommitStructuralSummary,
     pub(crate) working_state: WorkingState,
     pub(crate) phase_timing: CommitPhaseTiming,
-    pub(crate) footprint: crate::mvcc::RelationalTransactionFootprint,
+    pub(crate) footprint: crate::mvcc::transaction::footprint::RelationalTransactionFootprint,
     pub(crate) schema_authority:
         std::sync::Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
 }
@@ -69,7 +69,7 @@ fn select_entity_working_set_layout(
 fn sparse_entity_slots_for_plan(
     clone_mode: PartitionCloneMode,
     merged_plan: &MergedCommitPlan,
-    footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
+    footprint: Option<&crate::mvcc::transaction::footprint::RelationalTransactionFootprint>,
 ) -> Option<BTreeMap<crate::identity::data::PartitionId, BTreeSet<usize>>> {
     if !matches!(
         clone_mode,
@@ -107,7 +107,7 @@ fn sparse_entity_slots_for_plan(
 
     if let Some(footprint) = footprint {
         for read in footprint.reads() {
-            if let crate::mvcc::RelationalTransactionReadLocus::Existing(
+            if let crate::mvcc::transaction::footprint::RelationalTransactionReadLocus::Existing(
                 crate::transactions::data::primitives::RecordRef::Entity(entity),
             ) = read
             {
@@ -128,7 +128,7 @@ fn sparse_entity_slots_for_plan(
 fn sparse_relation_overlay_partitions_for_plan(
     clone_mode: PartitionCloneMode,
     merged_plan: &MergedCommitPlan,
-    footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
+    footprint: Option<&crate::mvcc::transaction::footprint::RelationalTransactionFootprint>,
 ) -> Option<BTreeSet<crate::identity::data::PartitionId>> {
     if !matches!(clone_mode, PartitionCloneMode::GraphSparseEntities) {
         return None;
@@ -158,7 +158,7 @@ fn sparse_relation_overlay_partitions_for_plan(
 
     if let Some(footprint) = footprint {
         for read in footprint.reads() {
-            if let crate::mvcc::RelationalTransactionReadLocus::Existing(
+            if let crate::mvcc::transaction::footprint::RelationalTransactionReadLocus::Existing(
                 crate::transactions::data::primitives::RecordRef::Relation(relation),
             ) = read
             {
@@ -255,7 +255,7 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base<'a>(
     base_state: &impl CurrentPartitionAccess,
     merged_plan: &MergedCommitPlan,
     merge_parent_count: usize,
-    footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
+    footprint: Option<&crate::mvcc::transaction::footprint::RelationalTransactionFootprint>,
 ) -> (CommitStructuralSummary, WorkingState, CommitPhaseTiming) {
     let inputs = inputs.into();
     let mut phase_timing = CommitPhaseTiming::default();

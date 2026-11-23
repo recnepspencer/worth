@@ -8,7 +8,7 @@ use super::*;
 /// successor issued by that candidate can redeem it.
 #[derive(Debug)]
 pub struct AdmittedRelationalMemoryComponent {
-    pub(super) owner: Weak<RelationalRuntimeState>,
+    pub(super) owner: RelationalRuntimeOrigin,
     pub(super) expected_root_id: u64,
     pub(super) expected_commit_id: crate::history::data::CommitId,
     pub(super) bytes: usize,

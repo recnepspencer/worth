@@ -155,13 +155,13 @@ impl SnapshotHandles {
             .or_else(|| self.published.selected_branch_bytes(snapshot_id))
     }
 
-    pub(crate) fn selected_root(
+    pub(crate) fn selected_head(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<Arc<crate::branch::RelationalBranchRoot>> {
+    ) -> Option<crate::visibility::snapshot_states::SnapshotHeadSelection> {
         self.active
-            .selected_root(snapshot_id)
-            .or_else(|| self.published.selected_root(snapshot_id))
+            .selected_head(snapshot_id)
+            .or_else(|| self.published.selected_head(snapshot_id))
     }
 
     /// Whether either registry still knows this identity, answered by one

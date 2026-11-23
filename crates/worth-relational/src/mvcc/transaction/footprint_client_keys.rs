@@ -10,9 +10,11 @@
 use std::collections::BTreeSet;
 
 use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner};
-use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, EntityReference};
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, EntityReference,
+};
 
-use super::{RelationalTransactionReadLocus, RelationalTransactionWriteLocus};
+use super::footprint::{RelationalTransactionReadLocus, RelationalTransactionWriteLocus};
 
 pub(super) fn collect_created_entity_raw_key(
     created: &CreatedEntityRef,

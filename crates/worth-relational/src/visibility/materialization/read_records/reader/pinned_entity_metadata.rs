@@ -74,15 +74,15 @@ impl VisibilityReadContext<'_> {
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
-        let Some(root) = self
+        let Some(head) = self
             .runtime
             .visibility
-            .selected_snapshot_root(handle.snapshot_id)
+            .selected_snapshot_head(handle.snapshot_id)
         else {
             return Ok(None);
         };
-        let region = root
-            .accepted_head_region_witness(entity.partition_id)
+        let region = head
+            .witness(entity.partition_id)
             .map_err(RelationalEntityMetadataPinDenial::RegionNotResident)?;
         // A metadata pin needs the selected record's aspect-name closure, not
         // unrelated field texts or buckets. Check admitted meanings without I/O.

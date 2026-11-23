@@ -1,9 +1,9 @@
+use super::staging::RelationalTransactionStagingDenial as Denial;
 use super::staging_storage::OrderedStore;
-use super::RelationalTransactionStagingDenial as Denial;
 use std::collections::BTreeSet;
 
 use crate::identity::data::{KindId, PartitionId};
-use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, RecordRef};
+use crate::transactions::data::primitives::{CreatedEntityRef, CreatedRelationRef, RecordRef};
 
 mod client_keys;
 mod retained_selection;
@@ -28,14 +28,14 @@ pub enum RelationalTransactionWriteLocus {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RelationalTransactionFootprint {
-    pub(super) basis: crate::branch::RelationalBranchBasisDescriptor,
+    pub(super) basis: crate::branch::basis::RelationalBranchBasisDescriptor,
     pub(super) reads: OrderedStore<RelationalTransactionReadLocus>,
     pub(super) writes: OrderedStore<RelationalTransactionWriteLocus>,
     pub(super) write_partitions: OrderedStore<PartitionId>,
 }
 
 impl RelationalTransactionFootprint {
-    pub(crate) fn for_basis(basis: &crate::branch::AdmittedRelationalBranchBasis) -> Self {
+    pub(crate) fn for_basis(basis: &crate::branch::basis::AdmittedRelationalBranchBasis) -> Self {
         Self {
             basis: basis.descriptor().clone(),
             reads: OrderedStore::default(),
@@ -44,7 +44,7 @@ impl RelationalTransactionFootprint {
         }
     }
 
-    pub fn basis(&self) -> &crate::branch::RelationalBranchBasisDescriptor {
+    pub fn basis(&self) -> &crate::branch::basis::RelationalBranchBasisDescriptor {
         &self.basis
     }
 
@@ -52,7 +52,9 @@ impl RelationalTransactionFootprint {
         self.basis.branch_id()
     }
 
-    pub fn reference(&self) -> &crate::branch::RelationalBranchReferenceObservation {
+    pub fn reference(
+        &self,
+    ) -> &crate::branch::reference::observation::RelationalBranchReferenceObservation {
         self.basis.reference()
     }
 

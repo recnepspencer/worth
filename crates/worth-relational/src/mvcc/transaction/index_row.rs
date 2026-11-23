@@ -1,6 +1,8 @@
-use super::{RelationalTransactionReadLocus as Read, RelationalTransactionWriteLocus as Write};
+use super::footprint::{
+    RelationalTransactionReadLocus as Read, RelationalTransactionWriteLocus as Write,
+};
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef};
+use crate::transactions::data::primitives::{CreatedEntityRef, CreatedRelationRef};
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(super) enum IndexKey {
@@ -26,10 +28,10 @@ impl IndexRow {
     pub(super) fn read(&self) -> Option<Read> {
         match (&self.key, self.observes) {
             (IndexKey::Entity(id), true) => Some(Read::Existing(
-                crate::transactions::data::RecordRef::Entity(*id),
+                crate::transactions::data::primitives::RecordRef::Entity(*id),
             )),
             (IndexKey::Relation(id), true) => Some(Read::Existing(
-                crate::transactions::data::RecordRef::Relation(*id),
+                crate::transactions::data::primitives::RecordRef::Relation(*id),
             )),
             _ => None,
         }
@@ -39,12 +41,12 @@ impl IndexRow {
             return None;
         }
         Some(match &self.key {
-            IndexKey::Entity(id) => {
-                Write::Existing(crate::transactions::data::RecordRef::Entity(*id))
-            }
-            IndexKey::Relation(id) => {
-                Write::Existing(crate::transactions::data::RecordRef::Relation(*id))
-            }
+            IndexKey::Entity(id) => Write::Existing(
+                crate::transactions::data::primitives::RecordRef::Entity(*id),
+            ),
+            IndexKey::Relation(id) => Write::Existing(
+                crate::transactions::data::primitives::RecordRef::Relation(*id),
+            ),
             IndexKey::CreatedEntity(key) => Write::CreatedEntity(key.clone()),
             IndexKey::CreatedRelation(key) => Write::CreatedRelation(key.clone()),
         })

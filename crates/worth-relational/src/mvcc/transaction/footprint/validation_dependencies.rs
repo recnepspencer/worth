@@ -1,15 +1,16 @@
 //! Selected-policy typed validation dependencies publish only after complete admission.
 use super::{Denial, RelationalTransactionFootprint, RelationalTransactionReadLocus};
 use crate::identity::data::KindId;
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, EntityReference, MaterializationMutationIntent,
-    MutationIntent, RecordRef, RelationMutationIntent,
+use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent;
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::{EntityReference, RecordRef};
 
 impl RelationalTransactionFootprint {
     pub(crate) fn derive_validation_dependencies(
         &mut self,
-        plan: &crate::transactions::data::MergedCommitPlan,
+        plan: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), Denial> {
         allocation_policy.check_live()?;
