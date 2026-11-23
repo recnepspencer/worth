@@ -1759,7 +1759,7 @@
       "contracts -> runtime": 0,
       "contracts -> storage": 0,
       "durability -> publication": 4,
-      "durability -> runtime": 878,
+      "durability -> runtime": 877,
       "indexes -> durability": 0,
       "indexes -> merge": 0,
       "indexes -> mutation": 0,
