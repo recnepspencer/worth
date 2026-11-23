@@ -133,6 +133,20 @@ fn a_successor_traversing_to_its_own_created_record_commits_the_sequential_world
     own_output_relation_commits("own-output-traverse");
 }
 
+/// The same edit with Initial finding its prior output through its output
+/// role instead of a `FirstKey` selection (#277 r4 A). The successor's create
+/// of `first:a` writes the unique `FirstKey` it never selected, so only the
+/// intrinsic unique-write dependency observes it. At the current image its
+/// one holder is `first:a` itself, which the chain's round 1 created and
+/// which Native's fold rewrites in place under the same key. Through the view
+/// the value is free, and the edit commits the sequential world.
+/// Red before r4 A: untyped `UniqueValueTaken` (`ProducerUnavailable`).
+#[test]
+fn a_successor_recreating_its_unique_output_commits_the_sequential_world() {
+    family::c3b::self_relation::BLIND_PRIOR.with(|flag| flag.set(true));
+    own_output_relation_commits("own-output-unique");
+}
+
 /// The preserved-entity variant (#277 court 7): after the first edit commits
 /// `first:a` (11), a second stage (`b = 9`) re-enters `self-relation(a)` in
 /// its Preserve posture and its child sets m = 10, so `first:a` reopens again.
@@ -241,7 +255,7 @@ fn own_output_relation_commits_then(
 /// the unmerged answer and never ends untyped.
 #[test]
 fn a_successor_derived_traversal_over_its_own_link_refuses_typed() {
-    family::c3b::self_relation::DERIVED_READ.store(true, std::sync::atomic::Ordering::Relaxed);
+    family::c3b::self_relation::DERIVED_READ.with(|flag| flag.set(true));
     own_output_relation_refuses_typed("own-output-derived");
 }
 
@@ -250,9 +264,8 @@ fn a_successor_derived_traversal_over_its_own_link_refuses_typed() {
 /// so the decision cannot seal: the round still stops typed.
 #[test]
 fn a_successor_swallowing_its_derived_traversal_denial_still_refuses_typed() {
-    use std::sync::atomic::Ordering::Relaxed;
-    family::c3b::self_relation::DERIVED_READ.store(true, Relaxed);
-    family::c3b::self_relation::SWALLOW_DERIVED.store(true, Relaxed);
+    family::c3b::self_relation::DERIVED_READ.with(|flag| flag.set(true));
+    family::c3b::self_relation::SWALLOW_DERIVED.with(|flag| flag.set(true));
     own_output_relation_refuses_typed("own-output-derived-swallowed");
 }
 

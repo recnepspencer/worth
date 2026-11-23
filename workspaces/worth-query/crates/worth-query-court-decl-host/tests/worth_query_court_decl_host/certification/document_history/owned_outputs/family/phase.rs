@@ -149,6 +149,23 @@ macro_rules! publication_link {
         $writer.link($relation, $key, $output, $source)
     };
 }
+// An Initial producer finds a prior output by its key (an indexed selection);
+// self-relation can instead ask for its prior output role (#277 r4 A court).
+macro_rules! producer_initial_prior {
+    (@key $reader:ident, $key:ident, $input:ident) => {
+        $reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&$input.0))?
+    };
+    (SelfRelationInitial, $reader:ident, $key:ident, $input:ident) => {
+        if super::super::self_relation::BLIND_PRIOR.with(std::cell::Cell::get) {
+            $reader.prior_output_if_present::<Binding, Output>()?
+        } else {
+            producer_initial_prior!(@key $reader, $key, $input)
+        }
+    };
+    ($operation:ident, $reader:ident, $key:ident, $input:ident) => {
+        producer_initial_prior!(@key $reader, $key, $input)
+    };
+}
 macro_rules! phase {
     ($module:ident, $ownership:ident, $direction:ident, $source_query:ident, $operation:ident, $preserve:expr, $posture:ident, $action:ty, $writer:ident, $identity:literal,
      $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident) => {
@@ -259,7 +276,7 @@ macro_rules! phase {
                         if let Some(denial) = producer_decision_refusal!($operation, member_value) { return Ok(Err(denial)); }
                         let member_target = producer_member_target!($operation, reader, input);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
-                            else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
+                            else { producer_initial_prior!($operation, reader, $key, input) };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let input_member = capture_member_input!($operation, reader, source, prior);

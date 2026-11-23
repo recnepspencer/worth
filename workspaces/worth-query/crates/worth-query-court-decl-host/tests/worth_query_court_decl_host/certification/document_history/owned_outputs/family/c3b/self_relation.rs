@@ -20,6 +20,10 @@ thread_local! {
     /// instead of `FirstOf` (#277 court 8): Native's derived traversal reads the
     /// current image and is not overlay-aware (per court).
     pub static DERIVED_READ: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// Initial finds its prior output through its output role, never through a
+    /// key selection, so its create's unique `FirstKey` is observed only by the
+    /// intrinsic unique-write dependency (per court; #277 r4 A).
+    pub static BLIND_PRIOR: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     /// With `DERIVED_READ`, ignore the derived read's denial (per court).
     pub static SWALLOW_DERIVED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }

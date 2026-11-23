@@ -108,6 +108,22 @@ impl OwnOutputOverlay {
         crossed.is_some()
     }
 
+    /// An indexed selection as the view serves it: records the chain wrote
+    /// exclusively match as they did at the head pre-pin, every other record
+    /// as it does now (`current ∖ covered ∪ head ∩ covered`), sorted and
+    /// unique. One owner for projection selections and unique-write
+    /// dependencies (#277 r4 A).
+    pub fn serve_candidates(&self, current: Vec<EntityId>, head: Vec<EntityId>) -> Vec<EntityId> {
+        let mut candidates = current
+            .into_iter()
+            .filter(|entity| !self.covers(*entity))
+            .chain(head.into_iter().filter(|entity| self.covers(*entity)))
+            .collect::<Vec<_>>();
+        candidates.sort_unstable();
+        candidates.dedup();
+        candidates
+    }
+
     /// The chain's covered relations and the adjacency lists they touch.
     pub fn relations(&self) -> &OverlayRelations {
         &self.relations

@@ -128,6 +128,13 @@ impl WorthQueryApplicationSnapshotLease {
             .and_then(|entity| self.own_outputs.as_ref()?.head_for(entity))
             .or(self.applied_projection.as_ref())
     }
+    /// A successor round's own-output view, when the lease serves one.
+    pub fn own_outputs(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>
+    {
+        self.own_outputs.as_ref()
+    }
     pub fn applied_projection(
         &self,
     ) -> Option<
