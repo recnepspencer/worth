@@ -6,22 +6,22 @@ use crate::authority::commit::pipeline::publication_execution::{
     PublicationPhaseOwners, PublicationRootCapture,
 };
 use crate::branch::root::PreparedRelationalBranchRootCapture;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 
 impl RelationalPreparationRuntime {
-    fn root_capture(
-        &self,
-    ) -> PublicationRootCapture<'_, impl FnOnce(&PreparedRelationalBranchRootCapture) + '_> {
+    fn root_capture<'a>(
+        &'a self,
+        symbols: &'a RuntimeSymbolTable,
+    ) -> PublicationRootCapture<'a, impl FnOnce(&PreparedRelationalBranchRootCapture) + 'a> {
+        let inventory = self.execution_contracts.as_ref();
         PublicationRootCapture {
             history: &self.history,
             runtime_identity: self.runtime_instance_id(),
-            symbols: &self.services.symbols,
-            planned_schema: self
-                .execution_contracts
-                .as_ref()
-                .map(|contracts| &contracts.schema),
+            symbols,
+            planned_schema: inventory.map(|contracts| &contracts.schema),
             storage: &self.config.storage,
-            attach_execution_inventory: |root: &PreparedRelationalBranchRootCapture| {
-                if let Some(contracts) = &self.execution_contracts {
+            attach_execution_inventory: move |root: &PreparedRelationalBranchRootCapture| {
+                if let Some(contracts) = inventory {
                     root.root()
                         .execution_contracts
                         .set(Arc::clone(contracts))
@@ -31,11 +31,12 @@ impl RelationalPreparationRuntime {
         }
     }
 
-    pub(crate) fn publication_phase_owners(
-        &self,
-    ) -> PublicationPhaseOwners<'_, impl FnOnce(&PreparedRelationalBranchRootCapture) + '_> {
+    pub(crate) fn publication_phase_owners<'a>(
+        &'a self,
+        symbols: &'a RuntimeSymbolTable,
+    ) -> PublicationPhaseOwners<'a, impl FnOnce(&PreparedRelationalBranchRootCapture) + 'a> {
         PublicationPhaseOwners {
-            root: self.root_capture(),
+            root: self.root_capture(symbols),
             work: self.commit_work_budget.as_ref(),
             diagnostics: self.preparation_diagnostics(),
             lineage: self.lineage_preparation_authority(),
@@ -65,17 +66,18 @@ impl RelationalPreparationRuntime {
         crate::mvcc::publication::authority::PreparedRelationalPublication,
         crate::mvcc::publication::PublicationPreparationDenial,
     > {
-        self.root_capture().prepare_commit_publication(
-            execution,
-            commit_id,
-            commit_reference,
-            binding,
-            selected_branch_state,
-            published_partition_delta,
-            envelope,
-            schema_registry,
-            output_positions,
-        )
+        self.root_capture(&self.services.symbols)
+            .prepare_commit_publication(
+                execution,
+                commit_id,
+                commit_reference,
+                binding,
+                selected_branch_state,
+                published_partition_delta,
+                envelope,
+                schema_registry,
+                output_positions,
+            )
     }
 }
 

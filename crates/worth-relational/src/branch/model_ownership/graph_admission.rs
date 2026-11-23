@@ -6,7 +6,7 @@ impl RelationalModelOwnership {
         &self,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<u64, RelationalOwnedModelSelectionDenial> {
-        crate::execution::request_stage::checkpoint(context, self.domains.len() as u64 + 1)
+        crate::execution::request_stage::checkpoint(context, self.plan.domains.len() as u64 + 1)
             .map_err(|stop| {
                 RelationalOwnedModelSelectionDenial::Ownership(
                     RelationalModelOwnershipDenial::Request(
@@ -14,8 +14,8 @@ impl RelationalModelOwnership {
                     ),
                 )
             })?;
-        Ok(self.domains.iter().fold(
-            128u64.saturating_add((self.relations.len() as u64).saturating_mul(8)),
+        Ok(self.plan.domains.iter().fold(
+            128u64.saturating_add((self.plan.relations.len() as u64).saturating_mul(8)),
             |bytes, domain| {
                 bytes.saturating_add(64).saturating_add(
                     (domain.entities.len() as u64 + domain.relations.len() as u64)
@@ -41,9 +41,10 @@ impl RelationalOwnedModelGraphSelection {
         };
         let size = |meaning: &RelationalModelOwnership| {
             meaning
+                .plan
                 .domains
                 .iter()
-                .fold(meaning.relations.len() as u64 + 1, |count, d| {
+                .fold(meaning.plan.relations.len() as u64 + 1, |count, d| {
                     count
                         .saturating_add(d.entities.len() as u64)
                         .saturating_add(d.relations.len() as u64)
@@ -52,9 +53,9 @@ impl RelationalOwnedModelGraphSelection {
         };
         crate::execution::request_stage::checkpoint(
             context,
-            installed.domains.len() as u64
-                + self.ownership.domains.len() as u64
-                + self.installed_ownership.domains.len() as u64
+            installed.plan.domains.len() as u64
+                + self.ownership.plan.domains.len() as u64
+                + self.installed_ownership.plan.domains.len() as u64
                 + 1,
         )?;
         let work = size(installed)
@@ -62,15 +63,16 @@ impl RelationalOwnedModelGraphSelection {
             .saturating_add(size(&self.ownership));
         crate::execution::request_stage::checkpoint(
             context,
-            work.saturating_mul(self.ownership.domains.len() as u64 + 1),
+            work.saturating_mul(self.ownership.plan.domains.len() as u64 + 1),
         )?;
         if installed == &self.installed_ownership
-            && !self.ownership.domains.is_empty()
+            && !self.ownership.plan.domains.is_empty()
             && self
                 .ownership
+                .plan
                 .domains
                 .iter()
-                .all(|domain| installed.domains.binary_search(domain).is_ok())
+                .all(|domain| installed.plan.domains.binary_search(domain).is_ok())
         {
             return Ok(true);
         }

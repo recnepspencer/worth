@@ -10,8 +10,7 @@ pub(super) use emission::encode;
 use sha2::{Digest, Sha256};
 use std::ops::Range;
 use worth_execution::{
-    ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
-    ExecutionRequestArrayBuilder,
+    ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 use worth_foundational::facade::{
     BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion, CheckpointAdmissionCut,

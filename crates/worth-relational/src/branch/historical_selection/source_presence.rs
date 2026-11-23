@@ -2,6 +2,26 @@
 use super::*;
 use crate::identity::data::{EntityId, KindId};
 
+use crate::branch::model_ownership::native_read::{
+    ModelOwnershipReadPlan, RelationalModelOwnershipDenial,
+};
+
+/// Owner affinity for a progressed historical read. It is issued from the
+/// runtime's borrow and carries no live-state or mutation access.
+pub struct HistoricalSourceOwner<'owner> {
+    runtime_identity: u64,
+    owner: std::marker::PhantomData<&'owner ()>,
+}
+
+impl HistoricalSourceOwner<'_> {
+    pub(crate) fn bound(runtime_identity: u64) -> Self {
+        Self {
+            runtime_identity,
+            owner: std::marker::PhantomData,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalHistoricalSourcePresence {
     LiveInDomain,
@@ -13,7 +33,7 @@ pub enum RelationalHistoricalSourcePresence {
 #[derive(Debug)]
 pub enum RelationalHistoricalSourceReadDenial {
     Selection(RelationalHistoricalSelectionReadDenial),
-    Ownership(Box<crate::branch::RelationalModelOwnershipDenial>),
+    Ownership(Box<RelationalModelOwnershipDenial>),
 }
 
 impl RelationalHistoricalSelectionRead {
@@ -24,20 +44,18 @@ impl RelationalHistoricalSelectionRead {
     /// Membership and liveness at a progressed exact candidate. Only declared
     /// ownership and current publication custody can connect a new source to
     /// this sealed selected boundary; sharing an outside document is insufficient.
-    pub fn source_presence_at(
+    pub fn source_presence_at<'owner>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        native: &crate::runtime::RelationalRuntime,
+        native: impl Into<HistoricalSourceOwner<'owner>>,
         basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
-        ownership: &crate::branch::RelationalModelOwnership,
+        ownership: impl AsRef<ModelOwnershipReadPlan>,
         entity: EntityId,
         expected_kind: KindId,
     ) -> Result<RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial> {
-        if basis.identity().runtime_instance_id() != native.runtime_instance_id()
-            || !self
-                .latest()
-                .restored
-                .is_from_runtime(native.runtime_instance_id())
+        let runtime_identity = native.into().runtime_identity;
+        if basis.identity().runtime_instance_id() != runtime_identity
+            || !self.latest().restored.is_from_runtime(runtime_identity)
         {
             return Err(RelationalHistoricalSourceReadDenial::Selection(
                 RelationalHistoricalSelectionReadDenial::ForeignOwner,
@@ -60,11 +78,12 @@ impl RelationalHistoricalSelectionRead {
             .checked_ilog2()
             .unwrap_or(0) as u64
             + 1;
-        let observed = native
-            .observe_model_source_boundary(
+        let observed = ownership
+            .as_ref()
+            .observe_source_boundary(
+                runtime_identity,
                 execution,
                 basis,
-                ownership,
                 entity,
                 expected_kind,
                 work,

@@ -46,9 +46,9 @@ pub(crate) fn validate_candidate_ownership(
                     };
                     let Some(subject) = subject else { continue; };
                     if read.kind(subject)?.is_none() { continue; }
-                    for domain in &ownership.domains {
+                    for domain in &ownership.plan.domains {
                         for entity in traversal::walk(read, subject, true, &domain.relations)? {
-                            ownership.owner(read, entity)?;
+                            ownership.plan.owner(read, entity)?;
                         }
                     }
                 }

@@ -2,16 +2,19 @@
 use super::RelationalPreparationRuntime;
 use crate::authority::commit::pipeline::candidate_preparation::registration::CandidateRegistrationInputs;
 
-impl<'a> From<&'a RelationalPreparationRuntime> for CandidateRegistrationInputs<'a> {
-    fn from(runtime: &'a RelationalPreparationRuntime) -> Self {
-        Self {
-            snapshot_capacity: &runtime.snapshot_capacity,
-            receiver_epoch: &runtime.configuration_epoch,
-            invariant_generation: runtime.configuration_generation,
-            maximum_candidates: runtime.config.publication.policy.max_prepared_candidates,
-            symbols: &runtime.services.symbols,
-            instrumentation: &runtime.services.instrumentation,
-            history: &runtime.history,
+impl RelationalPreparationRuntime {
+    pub(crate) fn candidate_registration_inputs<'a>(
+        &'a self,
+        symbols: &'a crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> CandidateRegistrationInputs<'a> {
+        CandidateRegistrationInputs {
+            snapshot_capacity: &self.snapshot_capacity,
+            receiver_epoch: &self.configuration_epoch,
+            invariant_generation: self.configuration_generation,
+            maximum_candidates: self.config.publication.policy.max_prepared_candidates,
+            symbols,
+            instrumentation: &self.services.instrumentation,
+            history: &self.history,
         }
     }
 }

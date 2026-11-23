@@ -1,15 +1,12 @@
 //! Exact issued lease retirement keeps its payload when the real index is busy.
 use super::*;
-use crate::tests::support::runtime_with_test_schema;
+use crate::branch::basis_admission_tests::observed_empty_branch;
 
 #[test]
 fn result_snapshot_cleanup_basis_registry_contention_keeps_original_lease() {
-    let runtime = runtime_with_test_schema();
-    let identity = runtime.main_branch_identity();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let registry = runtime
-        .history
-        .branch_cell(identity.branch_id())
+    let (history, basis) = observed_empty_branch(1);
+    let registry = history
+        .branch_cell(&history.main_branch)
         .unwrap()
         .basis_registry
         .clone();
@@ -32,5 +29,4 @@ fn result_snapshot_cleanup_basis_registry_contention_keeps_original_lease() {
     assert!(lease.try_retire());
     assert_eq!(registry.metrics.snapshot(), metrics);
     drop(inner);
-    runtime.prepare_close().unwrap().finish();
 }

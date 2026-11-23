@@ -3,13 +3,13 @@ use crate::history::data::CanonicalIndexDefinitionDelta;
 use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
 use crate::runtime::state::subsystems::indexing::IndexDefinitionReadBinding;
 
-pub(in crate::authority::commit::pipeline) struct PublicationIndexCatalogInputs<'a> {
-    pub(in crate::authority::commit::pipeline) history: &'a crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,
-    pub(in crate::authority::commit::pipeline) checkpoint: &'a crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
-    pub(in crate::authority::commit::pipeline) catalog: &'a IndexDefinitionReadBinding,
-    pub(in crate::authority::commit::pipeline) home_catalog: Option<&'a CapturedIndexDefinitionCatalog>,
-    pub(in crate::authority::commit::pipeline) original_catalog: Option<&'a CanonicalIndexDefinitionDelta>,
-    pub(in crate::authority::commit::pipeline) work: Option<&'a crate::execution::RequestWorkBudget>,
+pub(crate) struct PublicationIndexCatalogInputs<'a> {
+    pub(crate) history: &'a crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,
+    pub(crate) checkpoint: &'a crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    pub(crate) catalog: &'a IndexDefinitionReadBinding,
+    pub(crate) home_catalog: Option<&'a CapturedIndexDefinitionCatalog>,
+    pub(crate) original_catalog: Option<&'a CanonicalIndexDefinitionDelta>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
 }
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};

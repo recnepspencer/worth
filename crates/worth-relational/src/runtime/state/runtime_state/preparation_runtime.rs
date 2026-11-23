@@ -36,9 +36,6 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
     pub(crate) checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
-    pub(crate) recovered_index_catalog: Option<crate::history::data::CanonicalIndexDefinitionDelta>,
-    pub(crate) recovered_authored_index_writes:
-        Option<crate::history::data::CanonicalAuthoredIndexWrites>,
     pub(crate) current_ownership:
         Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
     pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
@@ -109,8 +106,6 @@ impl RelationalPreparationOwnerBinding {
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
             checkpoint_selection: self.checkpoint_selection.clone(),
-            recovered_index_catalog: None,
-            recovered_authored_index_writes: None,
             current_ownership: None,
             authored_coupling: None,
             symbol_references: Arc::default(),

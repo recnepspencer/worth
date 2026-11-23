@@ -74,6 +74,12 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"branch/model_ownership/basis.rs" = "branch"
+"branch/model_ownership/custody_read.rs" = "branch"
+"branch/model_ownership/graph_read.rs" = "branch"
+"branch/model_ownership/native_read.rs" = "branch"
+"branch/model_ownership/traversal.rs" = "branch"
+"branch/model_ownership/custody_observation.rs" = "branch"
 "publication/ownership/observation.rs" = "branch"
 "publication/ownership/read" = "branch"
 "durability/checkpoint_admission/binary_encoding" = "contracts"
@@ -733,6 +739,12 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"branch/model_ownership/basis.rs" = "branch"
+"branch/model_ownership/custody_read.rs" = "branch"
+"branch/model_ownership/graph_read.rs" = "branch"
+"branch/model_ownership/native_read.rs" = "branch"
+"branch/model_ownership/traversal.rs" = "branch"
+"branch/model_ownership/custody_observation.rs" = "branch"
 "publication/ownership/observation.rs" = "branch"
 "publication/ownership/read" = "branch"
 "durability/checkpoint_admission/binary_encoding" = "contracts"

@@ -8,12 +8,11 @@ use crate::authority::commit::phases::publication::{
     canonical_commit_envelope, CanonicalEnvelopeInputs,
 };
 
-pub(in crate::authority::commit::pipeline) struct ArtifactAuthority<'a> {
-    pub(in crate::authority::commit::pipeline) publication:
-        crate::publication::authority::PublicationPreparationAuthority<'a>,
-    pub(in crate::authority::commit::pipeline) lineage:
+pub(crate) struct ArtifactAuthority<'a> {
+    pub(crate) publication: crate::publication::authority::PublicationPreparationAuthority<'a>,
+    pub(crate) lineage:
         crate::authority::commit::lineage_preparation::LineagePreparationAuthority<'a>,
-    pub(in crate::authority::commit::pipeline) envelope: CanonicalEnvelopeInputs<'a>,
+    pub(crate) envelope: CanonicalEnvelopeInputs<'a>,
 }
 
 pub(super) struct PublicationAuthorityInput<'a> {

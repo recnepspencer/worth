@@ -1747,7 +1747,7 @@
       "branch -> merge": 0,
       "branch -> mutation": 2,
       "branch -> publication": 2,
-      "branch -> runtime": 13,
+      "branch -> runtime": 10,
       "branch/envelope -> branch/root_custody": 0,
       "branch/projection_view -> branch/envelope": 0,
       "branch/projection_view -> branch/root_custody": 0,
@@ -1774,11 +1774,11 @@
       "merge -> publication": 0,
       "merge -> runtime": 0,
       "mutation -> merge": 0,
-      "mutation -> publication": 44,
+      "mutation -> publication": 42,
       "mutation -> runtime": 196,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 34,
-      "publication -> runtime": 165,
+      "publication -> runtime": 163,
       "storage -> branch": 3,
       "storage -> contracts": 0,
       "storage -> durability": 63,
@@ -1794,9 +1794,9 @@
       "branch -> indexes": 0,
       "branch -> lineage": 0,
       "branch -> merge": 0,
-      "branch -> mutation": 3,
+      "branch -> mutation": 1,
       "branch -> publication": 7,
-      "branch -> runtime": 3,
+      "branch -> runtime": 2,
       "branch/envelope -> branch/root_custody": 0,
       "branch/projection_view -> branch/envelope": 0,
       "branch/projection_view -> branch/root_custody": 0,
@@ -1827,7 +1827,7 @@
       "mutation -> runtime": 43,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 37,
-      "publication -> runtime": 22,
+      "publication -> runtime": 21,
       "storage -> branch": 16,
       "storage -> contracts": 0,
       "storage -> durability": 48,
@@ -1904,7 +1904,7 @@
       "storage -> runtime": 0
     },
     "cfg_test": {
-      "branch -> courts": 55,
+      "branch -> courts": 51,
       "branch -> durability": 6,
       "branch -> indexes": 0,
       "branch -> lineage": 0,
@@ -1977,9 +1977,6 @@
         ["crates/worth-relational/src/runtime/state/subsystems/history.rs", "runtime::state::subsystems::history::canonical_publication_routes::RelationalCanonicalPublicationRoutes", 1]
       ],
       "branch -> runtime": [
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::RelationalModelOwnership", 1],
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::RelationalModelOwnershipDenial", 1],
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "runtime::RelationalRuntime", 1],
         ["crates/worth-relational/src/branch/root.rs", "mvcc::ManagedSourceRootImage", 1],
         ["crates/worth-relational/src/branch/root.rs", "runtime::RelationalRootExecutionContracts", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/context.rs", "runtime::RelationalRuntime", 1],
@@ -2599,8 +2596,6 @@
       "merge -> runtime": [],
       "mutation -> merge": [],
       "mutation -> publication": [
-        ["crates/worth-relational/src/branch/model_ownership/custody_read.rs", "publication::ownership::CurrentPublicationRoster", 1],
-        ["crates/worth-relational/src/branch/model_ownership/custody_read.rs", "publication::ownership::read_candidate", 1],
         ["crates/worth-relational/src/mvcc/validation/invariant_plan.rs", "authority::commit::pipeline::CommitStage::Validation", 2],
         ["crates/worth-relational/src/mvcc/validation/invariant_plan.rs", "authority::commit::pipeline::consult_stage", 2],
         ["crates/worth-relational/src/mvcc/validation/proposal_candidate.rs", "authority::commit::phases::applied_mutation::AppliedDraftCustody", 1],
@@ -2839,8 +2834,7 @@
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::RelationalTransactionValidationInput", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::ValidatedProposalState", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::ValidatedRelationalProposal", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs", "runtime::RelationalPreparationRuntime", 3],
-        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation/stages.rs", "runtime::RelationalPreparationRuntime", 1],
+        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs", "runtime::RelationalPreparationRuntime", 2],
         ["crates/worth-relational/src/authority/commit/pipeline/draft_execution.rs", "runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution.rs", "runtime::RelationalRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution_admission.rs", "mvcc::RelationalTransactionValidationInput", 2],
@@ -3087,8 +3081,6 @@
       "branch -> lineage": [],
       "branch -> merge": [],
       "branch -> mutation": [
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::model_ownership::RelationalModelOwnership", 1],
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::model_ownership::RelationalModelOwnershipDenial", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "validation::candidate_source::image::eviction::ManagedIndexSourceCacheRetirement", 1]
       ],
       "branch -> publication": [
@@ -3101,7 +3093,6 @@
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/pinned_walk.rs", "visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead", 1]
       ],
       "branch -> runtime": [
-        ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/branch/root.rs", "runtime::home_program_transition::RelationalRootExecutionContracts", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/context.rs", "runtime::state::runtime_state::RelationalRuntime", 1]
       ],
@@ -3422,7 +3413,6 @@
       "publication -> runtime": [
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation/stages.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/draft_execution.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution_admission.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
@@ -3631,7 +3621,6 @@
     },
     "cfg_test": {
       "branch -> courts": [
-        ["crates/worth-relational/src/branch/basis_registry/retirement_tests.rs", "tests::support::runtime_with_test_schema", 1],
         ["crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs", "tests::support::OwnedTestDurableMedium", 1],
         ["crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs", "tests::support::ScriptedPublication", 1],
         ["crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs", "tests::support::create_entity", 1],
@@ -3647,7 +3636,7 @@
         ["crates/worth-relational/src/branch/root_tests.rs", "tests::support::create_entity_outcome", 1],
         ["crates/worth-relational/src/branch/root_tests.rs", "tests::support::runtime_with_test_schema", 1],
         ["crates/worth-relational/src/history/commit/artifact_tests.rs", "tests::support::create_entity_outcome", 1],
-        ["crates/worth-relational/src/history/commit/artifact_tests.rs", "tests::support::runtime_with_test_schema", 3],
+        ["crates/worth-relational/src/history/commit/artifact_tests.rs", "tests::support::runtime_with_test_schema", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs", "tests::support", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency_tests.rs", "tests::support", 1],
         ["crates/worth-relational/src/history/data/canonical_commit_envelope/payload_encoding_tests.rs", "tests::support::AspectSchemaFixture", 1],
@@ -3662,7 +3651,6 @@
         ["crates/worth-relational/src/history/data/publication_relations/creation/tests.rs", "tests::support::test_owner_begin_transaction_for_main", 1],
         ["crates/worth-relational/src/history/retention/component_cut_tests.rs", "tests::support", 1],
         ["crates/worth-relational/src/history/retention/head_cell/memory_close_tests.rs", "tests::support::runtime_with_test_schema", 1],
-        ["crates/worth-relational/src/history/retention/lane/retirement/tests.rs", "tests::support::runtime_with_test_schema", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/history_construction.rs", "tests::support::create_entity", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/history_construction.rs", "tests::support::runtime_with_test_schema", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/visibility/cache/memory_close/tests.rs", "tests::support::create_entity_outcome", 1],

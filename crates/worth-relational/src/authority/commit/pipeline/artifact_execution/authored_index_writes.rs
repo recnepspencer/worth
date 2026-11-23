@@ -10,11 +10,10 @@ use crate::history::data::{
     CanonicalAuthoredIndexWrite as Entry, CanonicalAuthoredIndexWrites as Evidence,
 };
 #[derive(Clone, Copy)]
-pub(in crate::authority::commit::pipeline) struct AuthoredIndexWriteInputs<'a> {
-    pub(in crate::authority::commit::pipeline) schema_authority_digest: [u8; 32],
-    pub(in crate::authority::commit::pipeline) original: Option<&'a Evidence>,
-    pub(in crate::authority::commit::pipeline) work:
-        Option<&'a crate::execution::RequestWorkBudget>,
+pub(crate) struct AuthoredIndexWriteInputs<'a> {
+    pub(crate) schema_authority_digest: [u8; 32],
+    pub(crate) original: Option<&'a Evidence>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
 }
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::primitives::RecordRef;

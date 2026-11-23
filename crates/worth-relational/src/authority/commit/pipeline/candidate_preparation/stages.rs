@@ -1,13 +1,14 @@
 //! Consume one candidate phase before entering its successor's call frame.
+use super::super::publication_execution::PublicationPhaseOwners;
 use super::super::{artifact_execution, publication_execution, snapshot_validation};
 use super::registration::CandidateRegistration;
+use super::registration::CandidateRegistrationInputs;
+use super::{CandidateArtifactSelection, SelectedCandidateSymbols};
 use super::{CommitPhaseBacking, HistoryPreparedCandidate};
-use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
 struct CandidateContext {
-    runtime: RelationalPreparationRuntime,
     registration: CandidateRegistration,
     diagnostic: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
@@ -30,7 +31,6 @@ pub(super) struct AssembledCandidate {
     assembled: CommitPhaseBacking<artifact_execution::AssembledCommitExecution>,
 }
 pub(super) struct PublishedCandidate {
-    runtime: RelationalPreparationRuntime,
     registration: CandidateRegistration,
     prepared: CommitPhaseBacking<super::super::PreparedCommitPublicationExecution>,
 }
@@ -38,9 +38,14 @@ pub(super) struct PublishedCandidate {
 pub(super) fn validate(
     request: &ExecutionRequest<'_, '_>,
     history: CommitPhaseBacking<HistoryPreparedCandidate<'_, '_>>,
-) -> Result<CommitPhaseBacking<ValidatedCandidate>, TransactionCommitError> {
+) -> Result<
+    (
+        SelectedCandidateSymbols,
+        CommitPhaseBacking<ValidatedCandidate>,
+    ),
+    TransactionCommitError,
+> {
     let HistoryPreparedCandidate {
-        recovered_runtime,
         scope_control: _scope_control,
         history_bound,
         runtime_instance_id,
@@ -59,14 +64,16 @@ pub(super) fn validate(
         caller_association,
         diagnostic_capture,
     } = history.into_inner();
-    let runtime =
-        recovered_runtime.with_candidate_symbols(history_bound.value().candidate_symbols());
+    let pending = history_bound.value().candidate_symbols();
+    let symbols = SelectedCandidateSymbols {
+        dictionary: pending.binding(),
+        references: pending.required_references().clone(),
+    };
     let validated = snapshot_validation::validate_snapshot_publication(request, history_bound)?;
-    CommitPhaseBacking::new(
+    let validated = CommitPhaseBacking::new(
         request,
         ValidatedCandidate {
             context: CandidateContext {
-                runtime,
                 registration: CandidateRegistration {
                     runtime_instance_id,
                     publication_binding,
@@ -89,11 +96,13 @@ pub(super) fn validate(
             },
             validated,
         },
-    )
+    )?;
+    Ok((symbols, validated))
 }
 #[inline(never)]
 pub(super) fn assemble(
     request: &ExecutionRequest<'_, '_>,
+    inputs_for_assembly: CandidateArtifactSelection<'_>,
     checked: CommitPhaseBacking<ValidatedCandidate>,
 ) -> Result<CommitPhaseBacking<AssembledCandidate>, TransactionCommitError> {
     let ValidatedCandidate {
@@ -110,41 +119,10 @@ pub(super) fn assemble(
             .registry()
             .current_publication_storage
             .is_some();
-    let runtime = &context.runtime;
-    let work = runtime.commit_work_budget.as_ref();
-    let owners = artifact_execution::preparation::PublicationArtifactOwners {
-        index_catalog: artifact_execution::index_catalog::PublicationIndexCatalogInputs {
-            history: &runtime.history,
-            checkpoint: &runtime.checkpoint_selection,
-            catalog: &runtime.index_definitions,
-            home_catalog: runtime
-                .home_target
-                .as_ref()
-                .and_then(|target| target.index_definitions.as_ref())
-                .map(|prepared| &prepared.captured),
-            original_catalog: runtime.recovered_index_catalog.as_ref(),
-            work,
-        },
-        authored_indexes: artifact_execution::authored_index_writes::AuthoredIndexWriteInputs {
-            schema_authority_digest: runtime.schema_contract_runtime.schema_authority_digest,
-            original: runtime.recovered_authored_index_writes.as_ref(),
-            work,
-        },
-        authority: artifact_execution::preparation::ArtifactAuthority {
-            publication: runtime.publication_preparation_authority(),
-            lineage: runtime.lineage_preparation_authority(),
-            envelope: runtime.into(),
-        },
-        work,
-    };
     let assembled = artifact_execution::assemble_commit_artifacts(
         request,
-        owners,
-        runtime
-            .config
-            .publication
-            .policy
-            .max_patch_records_per_commit,
+        inputs_for_assembly.owners,
+        inputs_for_assembly.max_patch_records,
         validated,
         lineage_deferred,
     )?;
@@ -158,8 +136,9 @@ pub(super) fn assemble(
     )
 }
 #[inline(never)]
-pub(super) fn publish(
+pub(super) fn publish<Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture)>(
     request: &ExecutionRequest<'_, '_>,
+    owners: PublicationPhaseOwners<'_, Attach>,
     source: CommitPhaseBacking<AssembledCandidate>,
 ) -> Result<CommitPhaseBacking<PublishedCandidate>, TransactionCommitError> {
     let AssembledCandidate {
@@ -169,7 +148,7 @@ pub(super) fn publish(
     } = source.into_inner();
     let mut prepared = publication_execution::prepare_commit_publication_execution(
         request,
-        context.runtime.publication_phase_owners(),
+        owners,
         assembled,
         inputs.publication,
         inputs.materialization,
@@ -181,7 +160,6 @@ pub(super) fn publish(
     CommitPhaseBacking::new(
         request,
         PublishedCandidate {
-            runtime: context.runtime,
             registration: context.registration,
             prepared,
         },
@@ -190,12 +168,12 @@ pub(super) fn publish(
 #[inline(never)]
 pub(super) fn register(
     request: &ExecutionRequest<'_, '_>,
+    inputs: CandidateRegistrationInputs<'_>,
     source: CommitPhaseBacking<PublishedCandidate>,
 ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let PublishedCandidate {
-        runtime,
         registration,
         prepared,
     } = source.into_inner();
-    registration.register(request, (&runtime).into(), prepared.into_inner())
+    registration.register(request, inputs, prepared.into_inner())
 }

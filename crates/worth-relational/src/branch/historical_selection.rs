@@ -14,7 +14,7 @@ pub(crate) mod antecedent;
 mod chain;
 mod output_routes;
 mod revisions;
-mod source_presence;
+pub(crate) mod source_presence;
 pub use source_presence::{
     RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
 };

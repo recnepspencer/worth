@@ -14,6 +14,7 @@ use crate::transactions::data::commit_log::CommitPublicationSummary;
 use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
+pub(crate) use authoritative_publication::ArtifactAuthority;
 use authoritative_publication::{
     prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
 };
@@ -74,16 +75,11 @@ pub(super) struct PublicationPreparationInput<'a> {
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
 }
 
-pub(in crate::authority::commit::pipeline) use authoritative_publication::ArtifactAuthority;
-
-pub(in crate::authority::commit::pipeline) struct PublicationArtifactOwners<'a> {
-    pub(in crate::authority::commit::pipeline) index_catalog:
-        super::index_catalog::PublicationIndexCatalogInputs<'a>,
-    pub(in crate::authority::commit::pipeline) authored_indexes:
-        super::authored_index_writes::AuthoredIndexWriteInputs<'a>,
-    pub(in crate::authority::commit::pipeline) authority: ArtifactAuthority<'a>,
-    pub(in crate::authority::commit::pipeline) work:
-        Option<&'a crate::execution::RequestWorkBudget>,
+pub(crate) struct PublicationArtifactOwners<'a> {
+    pub(crate) index_catalog: super::index_catalog::PublicationIndexCatalogInputs<'a>,
+    pub(crate) authored_indexes: super::authored_index_writes::AuthoredIndexWriteInputs<'a>,
+    pub(crate) authority: ArtifactAuthority<'a>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
 }
 
 pub(super) fn prepare_publication_artifacts(

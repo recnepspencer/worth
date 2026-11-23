@@ -10,12 +10,6 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         );
         owner
             .field::<crate::runtime::RelationalCheckpointManifestSelection>("checkpoint_selection");
-        owner.field::<Option<crate::history::data::CanonicalIndexDefinitionDelta>>(
-            "recovered_index_catalog",
-        );
-        owner.field::<Option<crate::history::data::CanonicalAuthoredIndexWrites>>(
-            "recovered_authored_index_writes",
-        );
         owner.field::<Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>>(
             "symbol_references",
         );

@@ -1,4 +1,4 @@
-mod artifact_execution;
+pub(crate) mod artifact_execution;
 mod authority_context;
 mod boundary_validation;
 mod bulk_mutation_telemetry;

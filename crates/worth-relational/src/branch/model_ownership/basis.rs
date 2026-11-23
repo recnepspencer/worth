@@ -1,7 +1,9 @@
 //! Structural ownership at an admitted immutable branch basis; never today's root.
-use super::{traversal::Read, *};
+use super::native_read::RelationalModelOwnershipDenial;
+use super::traversal::Read;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::structural_state::StructuralStateView;
+use crate::identity::data::{EntityId, KindId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 #[path = "custody_read.rs"]

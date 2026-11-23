@@ -40,6 +40,21 @@ fn observation_inputs<'a>(
     }
 }
 
+pub(crate) fn observed_empty_branch(
+    runtime_id: u64,
+) -> (
+    HistorySubsystem,
+    super::basis::AdmittedRelationalBranchBasis,
+) {
+    let history = installed_history(runtime_id);
+    let schema = RelationalSchemaRegistry::new();
+    let instrumentation = RuntimeInstrumentation::new();
+    let inputs = observation_inputs(&history, &schema, &instrumentation);
+    let identity = inputs.branch_identity(&history.main_branch).unwrap();
+    let (_, basis) = inputs.observe(&identity, || None).unwrap();
+    (history, basis)
+}
+
 #[test]
 fn observation_and_clones_share_one_repeatable_empty_basis() {
     let history = installed_history(1);

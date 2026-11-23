@@ -6,8 +6,18 @@ pub(crate) mod registration;
 mod stages;
 use super::phase_backing::CommitPhaseBacking;
 
+pub(crate) struct SelectedCandidateSymbols {
+    pub(crate) dictionary:
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    pub(crate) references: std::collections::BTreeSet<crate::symbols::data::Symbol>,
+}
+
+pub(crate) struct CandidateArtifactSelection<'a> {
+    pub(crate) owners: super::artifact_execution::preparation::PublicationArtifactOwners<'a>,
+    pub(crate) max_patch_records: Option<usize>,
+}
+
 struct HistoryPreparedCandidate<'scope, 'authority> {
-    recovered_runtime: crate::runtime::RelationalPreparationRuntime,
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
     history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
@@ -34,7 +44,7 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
 pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    context: AuthoritativeCommitContext,
+    mut context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     if matches!(&context.authority_input,
         super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
@@ -73,11 +83,22 @@ pub(crate) fn prepare_consulted_authoritative_commit(
             ),
         ));
     }
+    let original = context
+        .recovered_index_catalog
+        .take()
+        .map(|catalog| catalog.original_for(runtime.runtime_instance_id()))
+        .transpose()?;
     let history = prepare_history(execution, runtime, context)?;
-    let validated = stages::validate(execution, history)?;
-    let assembled = stages::assemble(execution, validated)?;
-    let published = stages::publish(execution, assembled)?;
-    stages::register(execution, published)
+    let (symbols, validated) = stages::validate(execution, history)?;
+    let artifact_owners = runtime.bind_candidate_artifacts(&symbols, original.as_ref());
+    let assembled = stages::assemble(execution, artifact_owners, validated)?;
+    let publication_owners = runtime.publication_phase_owners(&symbols.dictionary);
+    let published = stages::publish(execution, publication_owners, assembled)?;
+    stages::register(
+        execution,
+        runtime.candidate_registration_inputs(&symbols.dictionary),
+        published,
+    )
 }
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
@@ -88,13 +109,6 @@ fn prepare_history<'scope, 'authority>(
     mut context: AuthoritativeCommitContext,
 ) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
 {
-    let mut recovered_runtime = runtime.clone();
-    if let Some(catalog) = context.recovered_index_catalog.take() {
-        let (delta, authored) = catalog.original_for(runtime.runtime_instance_id())?;
-        recovered_runtime.recovered_index_catalog = Some(delta);
-        recovered_runtime.recovered_authored_index_writes = Some(authored);
-    }
-    let runtime = &recovered_runtime;
     let required_output_publication = context.required_output_publication.take();
     let caller_association = context.caller_association.take();
     let required_output_materialization = context.required_output_materialization.take();
@@ -145,7 +159,6 @@ fn prepare_history<'scope, 'authority>(
     CommitPhaseBacking::new(
         execution,
         HistoryPreparedCandidate {
-            recovered_runtime,
             scope_control,
             history_bound,
             runtime_instance_id,

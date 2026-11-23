@@ -1,5 +1,9 @@
 //! One ownership algorithm shared by candidate and exact-basis observations.
-use super::*;
+use super::native_read::{
+    ModelOwnershipReadPlan, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+};
+use crate::identity::data::{EntityId, KindId};
+use std::collections::BTreeSet;
 
 pub(super) trait Read {
     fn charge_work(&mut self, units: u64) -> Result<(), RelationalModelOwnershipDenial>;
@@ -13,7 +17,7 @@ pub(super) trait Read {
     fn retain(&mut self) -> Result<(), RelationalModelOwnershipDenial>;
 }
 
-impl RelationalModelOwnership {
+impl ModelOwnershipReadPlan {
     /// O(D * (V+A) log V) over declared ancestors, including raw adjacency A.
     /// Several paths to one root are one owner. A missing subject is not unowned.
     pub(super) fn owner(
