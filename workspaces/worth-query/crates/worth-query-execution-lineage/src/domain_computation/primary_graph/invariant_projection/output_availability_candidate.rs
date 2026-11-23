@@ -16,7 +16,15 @@ pub enum ObservedOutputPosture {
     Pending,
 }
 
-pub struct ObservedOutputCandidate {
+/// Retained assessment of one output, lent without its recursive posting storage.
+#[derive(Clone)]
+pub struct ObservedOutputCandidate(Arc<dyn ObservationBacking>);
+
+trait ObservationBacking: Send + Sync {
+    fn observation(&self) -> &OutputObservation;
+}
+
+struct OutputObservation {
     candidate: CandidateEvidence,
     expected: ObservedOutputPosture,
     dependencies: dependencies::PostingDependencies,
@@ -28,6 +36,12 @@ struct CandidateEvidence {
     verification_requirement: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason>,
     native_output_witness: Option<Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>>,
 }
+impl ObservationBacking for OutputObservation {
+    fn observation(&self) -> &OutputObservation {
+        self
+    }
+}
+
 impl ObservedOutputCandidate {
     pub fn issue(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -36,7 +50,7 @@ impl ObservedOutputCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-    ) -> Result<Arc<Self>, Stop> {
+    ) -> Result<Self, Stop> {
         let candidate = CandidateEvidence {
             observed_source_facts: candidate.observed_source_facts,
             settlement_identity: candidate.settlement_identity,
@@ -48,21 +62,21 @@ impl ObservedOutputCandidate {
 
         let dependencies = dependencies::PostingDependencies::capture(&candidate, owner)?;
 
-        Ok(Arc::new(Self {
+        Ok(Self(Arc::new(OutputObservation {
             candidate,
             expected,
             dependencies,
-        }))
+        })))
     }
     pub fn posting_facts(
         &self,
     ) -> impl Iterator<Item = &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>
     {
-        self.dependencies.facts()
+        self.0.observation().dependencies.facts()
     }
 
     pub fn expected(&self) -> ObservedOutputPosture {
-        self.expected
+        self.0.observation().expected
     }
     pub fn remains_in(
         &self,
@@ -72,14 +86,15 @@ impl ObservedOutputCandidate {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, Stop> {
+        let observation = self.0.observation();
         Ok(Self::assess(
             execution,
-            &self.candidate,
+            &observation.candidate,
             owner,
             runtime,
             snapshot,
             selected,
-        )? == self.expected)
+        )? == observation.expected)
     }
     fn assess(
         execution: &worth_execution::ExecutionRequest<'_, '_>,

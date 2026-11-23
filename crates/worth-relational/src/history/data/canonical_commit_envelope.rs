@@ -23,6 +23,7 @@ use crate::transactions::data::{
 mod authored_index_writes;
 mod index_catalog;
 mod live_managed_source_history;
+mod live_owner;
 mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;

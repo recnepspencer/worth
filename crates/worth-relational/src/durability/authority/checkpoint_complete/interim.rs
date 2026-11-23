@@ -44,7 +44,7 @@ pub struct CapturedNativeInterimAdmission {
     roots: ExecutionImmutableBytes,
     _artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
     current: crate::branch::CheckpointBranchMetadata,
-    owner: Weak<crate::runtime::RelationalRuntimeState>,
+    owner: crate::runtime::WeakRelationalRuntimeState,
     native_digest: CanonicalDigestId,
     covered: u64,
     transitions: u64,

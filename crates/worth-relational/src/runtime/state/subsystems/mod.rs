@@ -49,9 +49,9 @@ pub(crate) use history::{
 };
 pub(crate) use indexing::{
     CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
+    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionBacking, IndexingState,
     IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
-    PreparedIndexBasisSelection,
+    PreparedIndexBasisSelection, SharedIndexSelectionState,
 };
 pub use indexing::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,

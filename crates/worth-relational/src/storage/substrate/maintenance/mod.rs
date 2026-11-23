@@ -26,7 +26,7 @@ pub enum MaintenanceConsistency {
 /// Install-time dispatch selects applicable owners; an unaffected owner is not
 /// invoked and its `Arc<State>` is carried unchanged by the dispatcher.
 pub trait Maintained {
-    type State;
+    type State: ?Sized;
     type Retirement;
     type Error: From<MaintenanceRefusal>;
     fn routes(&self) -> &std::collections::BTreeSet<MaintenanceRoute>;

@@ -9,7 +9,7 @@ use worth_proof::{AuthorityMarker, FreshNativeInitialization};
 
 #[derive(Debug)]
 pub struct RelationalFreshInitialization {
-    runtime: Weak<crate::runtime::RelationalRuntimeState>,
+    runtime: crate::runtime::WeakRelationalRuntimeState,
     source: Weak<dyn RelationalDurableColdSource>,
     birth: Arc<RelationalBranchRootSchemaAuthority>,
 }

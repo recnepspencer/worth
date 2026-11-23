@@ -1,14 +1,14 @@
 //! Root-free original Native coordinates captured from an actual admitted basis.
 mod capture;
 mod successor;
-pub use successor::AdmittedRelationalMemoryComponent;
 use super::{
     copying, RecordedRelationalComponentReference, RelationalRecordedComponentRefusal as Refusal,
 };
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::runtime::{RelationalRuntime, RelationalRuntimeState};
+use crate::runtime::{RelationalRuntime, WeakRelationalRuntimeState};
 use std::sync::{Arc, Weak};
+pub use successor::AdmittedRelationalMemoryComponent;
 use worth_execution::ExecutionRequest;
 use worth_foundational::FoundationalBranchTarget;
 
@@ -25,14 +25,14 @@ enum MemoryComponentOrigin {
 }
 #[derive(Debug)]
 struct InterimComponentMeaning {
-    owner: Weak<RelationalRuntimeState>,
+    owner: WeakRelationalRuntimeState,
     description: RecordedRelationalComponentReference,
     canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 struct MemoryComponentMeaning {
-    owner: Weak<RelationalRuntimeState>,
+    owner: WeakRelationalRuntimeState,
     descriptor: RelationalBranchBasisDescriptor,
     canonical: Option<Weak<CanonicalCommitEnvelope>>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
@@ -40,7 +40,7 @@ struct MemoryComponentMeaning {
 impl ObservedRelationalMemoryComponent {
     pub(crate) fn from_interim(
         request: &ExecutionRequest<'_, '_>,
-        owner: Weak<RelationalRuntimeState>,
+        owner: WeakRelationalRuntimeState,
         description: RecordedRelationalComponentReference,
         canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
     ) -> Result<Self, crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
@@ -86,9 +86,9 @@ fn map_interim_admission_refusal(
         crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(
             stop,
         ) => Refusal::Request(stop),
-        other => Refusal::Source(
-            crate::durability::data::RelationalRecoveryStop::AdmissionImage(other),
-        ),
+        other => {
+            Refusal::Source(crate::durability::data::RelationalRecoveryStop::AdmissionImage(other))
+        }
     }
 }
 

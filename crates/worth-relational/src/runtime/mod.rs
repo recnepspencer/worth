@@ -1,8 +1,8 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -100,7 +100,6 @@ pub(crate) use crate::storage::overlay::WorkingState;
 pub use construction::RelationalRuntimeForkDenial;
 pub(crate) use construction::RuntimeExtensions;
 pub use state::RelationalRuntime;
-pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     authored_write_commit_denial, readmit_positioned_canonical_commit,
     AdmittedRelationalRuntimeOperation, AuthoredWriteGeneration, BranchHeadVersionIndexAuthority,
@@ -108,11 +107,11 @@ pub(crate) use state::{
     CanonicalPositionAdmission, CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog,
     ColdSymbolDirectoryDenial, CommitStrategiesSubsystem, DurabilitySubsystem,
     FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage, IndexDefinitionCatalog,
-    IndexSelectionState, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
-    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
-    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedIndexBasisSelection,
+    IndexSelectionBacking, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
+    LineageState, LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes,
+    PartitionEdition, PatchPositionReservationAdmission, PendingRecordAllocations,
+    PendingSymbolMeanings, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    PreparedCommitSequence, PreparedGenerationBatch, PreparedIndexBasisSelection,
     PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
@@ -127,8 +126,9 @@ pub(crate) use state::{
     RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageEventPage,
     ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
     RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SharedIndexSelectionState,
+    SnapshotHandleBinding, StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch,
+    VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
@@ -143,6 +143,7 @@ pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
+pub(crate) use state::{RelationalRuntimeState, WeakRelationalRuntimeState};
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
 

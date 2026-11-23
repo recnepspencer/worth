@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) struct ReadmittedRegionSet {
     pub(super) root_id: u64,
-    pub(super) regions: Arc<crate::branch::RelationalPersistentRegionSet>,
+    pub(super) regions: crate::branch::RetainedRelationalRegions,
     pub(super) entity_slot_count: usize,
     pub(super) relation_slot_count: usize,
     pub(super) publication_cost: crate::branch::root::RelationalBranchRootPublicationCost,

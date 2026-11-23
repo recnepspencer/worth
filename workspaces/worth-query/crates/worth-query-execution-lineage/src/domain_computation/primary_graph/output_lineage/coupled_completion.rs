@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone)]
 pub struct CoupledOutputCompletion {
     source: AppliedSourcePublication,
-    receipt: Arc<worth_execution::ExecutionArray<CoupledCompletionCells>>,
+    receipt: Arc<dyn CompletionBacking>,
 }
 struct CoupledCompletionCells {
     receipt: OnceLock<WorthQueryApplicationLandedCommit>,
@@ -18,12 +18,27 @@ struct CoupledCompletionCells {
     // This backlink is consulted only during its canonical publication join.
     lineage: OnceLock<std::sync::Weak<OnceLock<RecordedOutput>>>,
 }
+
+// Certify the funded fill-once owner here. Its lineage backlink and the
+// completed receipt both return to observations carrying this same owner.
+trait CompletionBacking: Send + Sync {
+    fn cells(&self) -> &CoupledCompletionCells;
+}
+
+impl CompletionBacking for worth_execution::ExecutionArray<CoupledCompletionCells> {
+    fn cells(&self) -> &CoupledCompletionCells {
+        &self[0]
+    }
+}
+
 impl CoupledOutputCompletion {
     pub fn same_writer(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.receipt, &other.receipt)
     }
     pub fn bind_lineage(&self, slot: &PreparedOutputLineageSlot) {
-        assert!(self.receipt[0]
+        assert!(self
+            .receipt
+            .cells()
             .lineage
             .set(Arc::downgrade(&slot.record_cell))
             .is_ok());
@@ -35,7 +50,9 @@ impl CoupledOutputCompletion {
         entity: worth_relational::facade::identity::EntityId,
     ) -> crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence
     {
-        let cell = self.receipt[0]
+        let cell = self
+            .receipt
+            .cells()
             .lineage
             .get()
             .and_then(std::sync::Weak::upgrade)
@@ -82,7 +99,8 @@ impl CoupledOutputCompletion {
         &self,
         settlement: &Arc<RecordedSettlementIdentity>,
     ) -> Option<WorthQueryApplicationCommitReceipt> {
-        let WorthQueryApplicationLandedCommit::Live { receipt } = self.receipt[0].receipt.get()?
+        let WorthQueryApplicationLandedCommit::Live { receipt } =
+            self.receipt.cells().receipt.get()?
         else {
             return None;
         };
@@ -130,7 +148,7 @@ impl CoupledOutputCompletion {
     }
     pub fn complete(&self, receipt: WorthQueryApplicationLandedCommit) {
         assert!(
-            self.receipt[0].receipt.set(receipt).is_ok(),
+            self.receipt.cells().receipt.set(receipt).is_ok(),
             "one actual managed completion for the coupled writer"
         );
     }

@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     identity::data::EntityId,
-    indexes::data::{DerivedIndexEntryMap, DerivedIndexMaintenanceDenialKind as Denial},
+    indexes::data::{DerivedIndexMaintenanceDenialKind as Denial, RetainedIndexEntryMap},
     storage::data::AuthoritativeFieldComparisonKey,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -14,7 +14,7 @@ use worth_foundational::facade::AspectFieldLocator;
 
 pub(super) fn entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    entries: &mut DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
+    entries: &mut RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
     locator: &AspectFieldLocator,
     before: &IndexRootView,
     after: &IndexRootView,
@@ -38,12 +38,30 @@ pub(super) fn entity(
             work,
         )?;
     }
+    apply(entries, edits, false, work)
+}
+
+pub(super) fn apply<R: Ord + Clone + Send + Sync + 'static>(
+    entries: &mut RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, R>,
+    edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<R>>>,
+    cold: bool,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    if edits.is_empty() {
+        return Ok(());
+    }
+    if entries.shares_header() {
+        work.prepare(
+            1,
+            RetainedIndexEntryMap::<AuthoritativeFieldComparisonKey, R>::header_bytes(),
+        )?;
+    }
     grouped(
-        entries,
+        entries.edit_map(),
         edits,
         Ord::cmp,
         |key| key.canonical_value_bytes().len() + 1,
-        false,
+        cold,
         work,
     )
 }

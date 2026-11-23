@@ -12,7 +12,7 @@ fn selected(value: u8, id: u64) -> PreparedIndexBasisSelection {
         commit: CommitId(3),
         version: VersionId(2),
         schema: SchemaVersionId(1),
-        state: Arc::default(),
+        state: Arc::new(IndexSelectionState::default()),
         globals: std::iter::once(index).collect(),
     };
     match value {
@@ -31,7 +31,7 @@ fn selected(value: u8, id: u64) -> PreparedIndexBasisSelection {
             entries: DerivedIndexEntries::EntityField(Default::default()),
         })),
         2 => {
-            let state = Arc::make_mut(&mut basis.state);
+            let state = IndexSelectionState::make_mut(&mut basis.state);
             state.empty.insert(index);
             state.global_empty.insert(index);
         }

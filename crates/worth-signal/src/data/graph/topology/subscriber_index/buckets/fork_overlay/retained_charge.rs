@@ -1,12 +1,11 @@
-use super::{BucketDelta, ReverseSubscriptionFlat, ReverseSubscriptionStorage, SetDelta};
-use crate::data::persistent_hash_map::PersistentHashMap;
-use crate::data::retained_storage::{
-    arc_allocation_charge, RetainedStorageForkCharge, RetainedStorageForkPreparation,
+use super::{
+    BucketDelta, ForkSubscriptions, ReverseSubscriptionFlat, ReverseSubscriptionStorage, SetDelta,
 };
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement,
     RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
 };
+use crate::data::retained_storage::{RetainedStorageForkCharge, RetainedStorageForkPreparation};
 
 impl RetainedStorageForkPreparation for ReverseSubscriptionStorage {
     fn prepare_fork_charge(
@@ -16,23 +15,10 @@ impl RetainedStorageForkPreparation for ReverseSubscriptionStorage {
         let source = self.retained_heap_charge(work)?;
         match self {
             Self::Exclusive(_) => {
-                let retained = source
-                    .checked_add(arc_allocation_charge::<
-                        crate::data::retained_storage::RetainedStorageBacking<
-                            ReverseSubscriptionFlat,
-                        >,
-                    >()?)?
-                    .checked_add(PersistentHashMap::<
-                        super::ProducerAspectKey,
-                        BucketDelta,
-                    >::empty_persistent_overlay_charge()?)?
-                    .checked_add(PersistentHashMap::<
-                        super::NodeId,
-                        super::ForkConsumerMembershipChange,
-                    >::empty_persistent_overlay_charge()?)?;
+                let retained = source.checked_add(ForkSubscriptions::conversion_charge()?)?;
                 RetainedStorageForkCharge::from_charges(source, retained)
             }
-            Self::ForkShared { .. } => Ok(RetainedStorageForkCharge::unchanged(source)),
+            Self::ForkShared(_) => Ok(RetainedStorageForkCharge::unchanged(source)),
         }
     }
 }
@@ -85,14 +71,7 @@ impl RetainedStorageMeasurement for ReverseSubscriptionStorage {
         work.visit()?;
         match self {
             Self::Exclusive(flat) => flat.retained_heap_charge(work),
-            Self::ForkShared {
-                base,
-                bucket_changes,
-                consumer_changes,
-            } => Ok(base
-                .retained_heap_charge(work)?
-                .checked_add(bucket_changes.retained_heap_charge(work)?)?
-                .checked_add(consumer_changes.retained_heap_charge(work)?)?),
+            Self::ForkShared(overlay) => overlay.retained_heap_charge(work),
         }
     }
 }

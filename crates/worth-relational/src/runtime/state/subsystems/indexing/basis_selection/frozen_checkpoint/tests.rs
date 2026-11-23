@@ -1,4 +1,5 @@
 //! Pure selection rows; these values claim no runtime or commit authority.
+use super::super::IndexSelectionState;
 use super::*;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
@@ -33,14 +34,14 @@ fn live(
         commit: CommitId(commit),
         version: VersionId(version),
         schema: SchemaVersionId(1),
-        state: Arc::default(),
+        state: Arc::new(IndexSelectionState::default()),
         // A global index also installs a global lookup, which is never frozen.
         globals: std::iter::once(DerivedIndexId(1)).collect(),
     };
     for generation in bound {
         basis.replace(Arc::clone(generation));
     }
-    let state = Arc::make_mut(&mut basis.state);
+    let state = IndexSelectionState::make_mut(&mut basis.state);
     for index in empty {
         state.empty.insert(DerivedIndexId(*index));
     }

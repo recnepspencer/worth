@@ -14,7 +14,7 @@ impl RelationalBranchRoot {
     }
 
     pub(crate) fn shares_authoritative_regions_with(&self, source: &Self) -> bool {
-        Arc::ptr_eq(&self.regions, &source.regions)
+        self.regions.same_allocation(&source.regions)
             && Arc::ptr_eq(&self.schema_authority, &source.schema_authority)
     }
 }

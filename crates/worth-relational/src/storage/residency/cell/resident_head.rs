@@ -43,7 +43,7 @@ impl RelationalRegionResidency {
         history_presence: super::super::history_presence::HistoryPresence,
         readmission: super::super::resident_history::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
-        let region = Arc::new(ResidentRegion {
+        let region: SharedResidentRegion = Arc::new(ResidentRegion {
             symbol_requirements: OnceLock::new(),
             history_presence,
             partition,

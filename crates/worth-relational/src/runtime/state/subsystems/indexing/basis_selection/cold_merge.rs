@@ -1,5 +1,5 @@
 //! Deferred image selection fills missing bindings without publishing old generations.
-use super::{Arc, BasisSelections};
+use super::{Arc, BasisSelections, IndexSelectionState};
 
 impl BasisSelections {
     pub(in crate::runtime::state::subsystems::indexing) fn merge(&mut self, previous: &Self) {
@@ -11,7 +11,7 @@ impl BasisSelections {
                         continue;
                     }
                     let mut combined = live.as_ref().clone();
-                    let state = Arc::make_mut(&mut combined.state);
+                    let state = IndexSelectionState::make_mut(&mut combined.state);
                     for (index, generation) in &restored.state.entries {
                         if !state.entries.contains_key(index) && !state.empty.contains(index) {
                             state.entries.insert(*index, Arc::clone(generation));

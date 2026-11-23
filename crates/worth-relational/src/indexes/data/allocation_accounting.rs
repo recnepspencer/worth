@@ -1,4 +1,4 @@
-use super::{DerivedIndexEntryMap, DerivedIndexRows};
+use super::{DerivedIndexEntryMap, DerivedIndexRows, RetainedIndexEntryMap};
 
 use crate::identity::data::EntityId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
@@ -32,7 +32,8 @@ impl DerivedIndexEntries {
         match self {
             Self::EntityField(entries) => comparison_entries_bytes(entries),
             Self::RelationField(entries) => comparison_entries_bytes(entries),
-            Self::RelatedEntityOrdering(entries) => ordering_entries_bytes(entries),
+            Self::RelatedEntityOrdering(entries) => ordering_entries_bytes(entries)
+                .saturating_add(super::RelatedEntityOrderingIndex::header_bytes()),
             Self::RelationJoin(entries) => {
                 fixed_entries_bytes(entries).saturating_add(entries.leg_bytes())
             }
@@ -41,9 +42,10 @@ impl DerivedIndexEntries {
 }
 
 fn comparison_entries_bytes<RecordId: Clone>(
-    entries: &DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RecordId>,
+    entries: &RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, RecordId>,
 ) -> u64 {
-    map_payload_bytes(entries)
+    RetainedIndexEntryMap::<AuthoritativeFieldComparisonKey, RecordId>::header_bytes()
+        .saturating_add(map_payload_bytes(entries))
         .saturating_add(
             entries
                 .keys()

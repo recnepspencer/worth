@@ -1,5 +1,5 @@
 //! Constant current-owner custody through validation and physical retirement.
-use super::{RelationalRegionResidency, ResidentRegion};
+use super::{RelationalRegionResidency, SharedResidentRegion};
 use crate::durability::medium::{
     NativeMemberRetirementHandoff, NativeMemberSlotDenial, RelationalDurableColdSource,
     RelationalDurableMemberRetirementRefusal,
@@ -71,7 +71,7 @@ pub(crate) struct NativeRegionSourceRetirement {
     pass: NativeSourcePass,
     stage: Stage,
     symbols: Option<RuntimeSymbolTable>,
-    resident: Option<Arc<ResidentRegion>>,
+    resident: Option<SharedResidentRegion>,
     resident_slot: OriginalResidentSlot,
     row: usize,
     custody: Option<Arc<RecordHistoryCustody>>,

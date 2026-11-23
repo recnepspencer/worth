@@ -49,11 +49,11 @@ impl RelationalRetainedObservationShares {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<bool, RelationalRetentionRetirementError> {
         if let Some(observation) = self.first.take() {
-            self.inner = Arc::into_inner(observation.inner);
+            self.inner = observation.inner.release_share();
             return Ok(false);
         }
         if let Some(observation) = self.second.take() {
-            self.inner = Arc::into_inner(observation.inner);
+            self.inner = observation.inner.release_share();
             return Ok(false);
         }
         let Some(inner) = self.inner.as_mut() else {

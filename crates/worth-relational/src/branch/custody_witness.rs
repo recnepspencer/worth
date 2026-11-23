@@ -5,14 +5,14 @@
 //! reclamation authority.
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
-use super::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner};
+use super::{AdmittedRelationalBranchBasis, WeakRelationalBranchBasis};
 use crate::branch::{RelationalBranchRoot, RelationalBranchRootSchemaAuthority};
 use std::sync::{Arc, Weak};
 
 /// Weak identity of one admitted basis observation and its root.
 #[derive(Debug, Clone)]
 pub struct RelationalBasisCustodyWitness {
-    basis: Weak<AdmittedRelationalBranchBasisInner>,
+    basis: WeakRelationalBranchBasis,
     root: Weak<RelationalBranchRoot>,
     schema_authority: Weak<RelationalBranchRootSchemaAuthority>,
     schema_authority_digest: [u8; 32],

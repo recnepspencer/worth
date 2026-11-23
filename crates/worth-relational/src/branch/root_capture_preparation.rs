@@ -10,10 +10,11 @@ use super::{
     RelationalBranchRootIdentityIssuer, RelationalBranchRootPublicationCost,
     RelationalBranchRootSchemaAuthority, RelationalBranchVisibilityCommitment,
     RelationalCommittedBranchRoot, RelationalPersistentRegionSet, RelationalRootCorrectnessIndex,
+    RetainedRelationalRegions,
 };
 
 struct PreparedRootRegions {
-    regions: Arc<RelationalPersistentRegionSet>,
+    regions: RetainedRelationalRegions,
     entity_slot_count: usize,
     relation_slot_count: usize,
     storage_root: [u8; 32],
@@ -304,9 +305,11 @@ impl PreparedRootSchema {
                 cost.new_authoritative_bytes = cost
                     .new_authoritative_bytes
                     .checked_add(authoritative_bytes)
-                    .ok_or(RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
-                        crate::identity::data::PartitionId::main(),
-                    ))?;
+                    .ok_or(
+                        RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
+                            crate::identity::data::PartitionId::main(),
+                        ),
+                    )?;
             }
         }
         Ok(cost)

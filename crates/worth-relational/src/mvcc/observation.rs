@@ -8,6 +8,7 @@ use crate::branch::{
     AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,
     RelationalBranchBasisDescriptor, RelationalBranchIdentity,
     RelationalBranchReferenceObservation, RelationalBranchRoot, RelationalBranchVersion,
+    SharedRelationalBranchBasis,
 };
 
 /// Immutable repeatable read view issued from one admitted branch basis.
@@ -17,7 +18,7 @@ use crate::branch::{
 /// moves.
 #[derive(Clone, Debug)]
 pub struct RelationalBranchObservation {
-    inner: Arc<AdmittedRelationalBranchBasisInner>,
+    inner: SharedRelationalBranchBasis,
 }
 
 impl AdmittedRelationalBranchBasis {

@@ -1,12 +1,10 @@
 //! Independently borrowable Relational owner settlement service.
 
-use std::sync::Weak;
-
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::{
     RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
-    RelationalRuntimeState,
+    WeakRelationalRuntimeState,
 };
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
@@ -23,7 +21,7 @@ pub struct RelationalSettlementPort {
     runtime_instance_id: u64,
     lifecycle: RelationalRuntimeOwnerBinding,
     publication_binding: RelationalRuntimePublicationBinding,
-    state: Weak<RelationalRuntimeState>,
+    state: WeakRelationalRuntimeState,
 }
 
 impl RelationalSettlementPort {
@@ -31,7 +29,7 @@ impl RelationalSettlementPort {
         runtime_instance_id: u64,
         lifecycle: RelationalRuntimeOwnerBinding,
         publication_binding: RelationalRuntimePublicationBinding,
-        state: Weak<RelationalRuntimeState>,
+        state: WeakRelationalRuntimeState,
     ) -> Self {
         Self {
             runtime_instance_id,

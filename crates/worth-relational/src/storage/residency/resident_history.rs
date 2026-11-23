@@ -2,7 +2,7 @@
 use super::history_fold::{FundedRows, HistoryFolder, HistoryRowKind};
 use super::region_image::RegionHistoryBase;
 use super::region_load::materialization_funding as funding;
-use super::{RelationalResidencyDemandFailure as Failure, ResidentRegion};
+use super::{RelationalResidencyDemandFailure as Failure, ResidentRegion, SharedResidentRegion};
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::{
@@ -55,8 +55,8 @@ impl ResidentHistoryReadmission {
         head: &ResidentRegion,
         execution: &ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<Arc<ResidentRegion>, Failure> {
-        ReconstructionLane::enter_reconstruction(|lane| {
+    ) -> Result<SharedResidentRegion, Failure> {
+        ReconstructionLane::enter_reconstruction(|lane| -> Result<SharedResidentRegion, Failure> {
             let partition_id = head.partition.partition_id;
             let refuse = |cause| {
                 Failure::StorageUnavailable(RelationalStorageUnavailable {

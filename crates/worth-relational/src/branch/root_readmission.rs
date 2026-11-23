@@ -213,7 +213,7 @@ impl RelationalBranchRoot {
             // The callers preserve this exact root, schema and content binding.
             managed_source_image: self.managed_source_image.clone(),
             id: self.id,
-            regions: Arc::clone(&self.regions),
+            regions: self.regions.clone(),
             entity_slot_count: self.entity_slot_count,
             relation_slot_count: self.relation_slot_count,
             content_accumulator: self.content_accumulator,

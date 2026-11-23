@@ -12,11 +12,10 @@ impl ReverseSubscriptionIndex {
     pub(crate) fn operational_clone(&self) -> Self {
         let flat = match &self.storage {
             ReverseSubscriptionStorage::Exclusive(flat) => flat.clone(),
-            ReverseSubscriptionStorage::ForkShared {
-                base,
-                bucket_changes,
-                consumer_changes,
-            } => materialize_flat(base, bucket_changes, consumer_changes),
+            ReverseSubscriptionStorage::ForkShared(overlay) => {
+                let maps = overlay.maps();
+                materialize_flat(&maps.base, &maps.bucket_changes, &maps.consumer_changes)
+            }
         };
         Self {
             storage: ReverseSubscriptionStorage::Exclusive(flat),

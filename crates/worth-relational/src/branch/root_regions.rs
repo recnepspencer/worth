@@ -36,6 +36,43 @@ pub(crate) struct RelationalPersistentRegionSet {
     materialization_unavailable_records: usize,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
+/// One retained share of the exact region set selected by a branch root.
+// The region owner proves the immutable backing can cross threads here.
+#[derive(Clone, Debug)]
+pub(crate) struct RetainedRelationalRegions(Arc<dyn RegionSetBacking>);
+
+trait RegionSetBacking: std::fmt::Debug + Send + Sync {
+    fn set(&self) -> &RelationalPersistentRegionSet;
+}
+
+impl RegionSetBacking for RelationalPersistentRegionSet {
+    fn set(&self) -> &RelationalPersistentRegionSet {
+        self
+    }
+}
+
+impl RetainedRelationalRegions {
+    fn new(set: RelationalPersistentRegionSet) -> Self {
+        Self(Arc::new(set))
+    }
+
+    pub(super) fn same_allocation(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    fn is_exclusive(&self) -> bool {
+        Arc::strong_count(&self.0) == 1
+    }
+}
+
+impl std::ops::Deref for RetainedRelationalRegions {
+    type Target = RelationalPersistentRegionSet;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.set()
+    }
+}
+
 #[derive(Debug)]
 struct RelationalPersistentRegionNode {
     node_id: u64,

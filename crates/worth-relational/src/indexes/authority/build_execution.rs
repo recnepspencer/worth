@@ -13,10 +13,13 @@ use crate::execution::{
     execute_read_only_packets_with_budget, PacketBudgetDenial, PacketExecutionStop,
     PacketKernelContext, ReadOnlyPacket, RequestWorkBudget,
 };
+use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexExecutionDenial, DerivedIndexId, DerivedIndexKind,
+    RelatedEntityOrderingIndex, RetainedIndexEntryMap,
 };
 use crate::runtime::RelationalRuntime;
+use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 use super::super::projected_field_values::{
     build_entity_aspect_field_index, build_entity_aspect_field_index_checked,
@@ -159,28 +162,42 @@ fn index_packet_result_checked(
 ) -> Result<IndexResultStream, worth_execution::MapKernelFailure<PacketBudgetDenial>> {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => {
-            DerivedIndexEntries::EntityField(checked_finish(
-                build_entity_aspect_field_index_checked(
-                    lane,
-                    execution,
-                    projection,
-                    field_locator,
+            context.claim_result(RetainedIndexEntryMap::<
+                AuthoritativeFieldComparisonKey,
+                EntityId,
+            >::header_bytes())?;
+            DerivedIndexEntries::EntityField(
+                checked_finish(
+                    build_entity_aspect_field_index_checked(
+                        lane,
+                        execution,
+                        projection,
+                        field_locator,
+                        context,
+                    )?,
                     context,
-                )?,
-                context,
-            )?)
+                )?
+                .into(),
+            )
         }
         DerivedIndexKind::RelationField { field_locator } => {
-            DerivedIndexEntries::RelationField(checked_finish(
-                build_relation_aspect_field_index_checked(
-                    lane,
-                    execution,
-                    projection,
-                    field_locator,
+            context.claim_result(RetainedIndexEntryMap::<
+                AuthoritativeFieldComparisonKey,
+                RelationId,
+            >::header_bytes())?;
+            DerivedIndexEntries::RelationField(
+                checked_finish(
+                    build_relation_aspect_field_index_checked(
+                        lane,
+                        execution,
+                        projection,
+                        field_locator,
+                        context,
+                    )?,
                     context,
-                )?,
-                context,
-            )?)
+                )?
+                .into(),
+            )
         }
         DerivedIndexKind::RelatedEntityOrdering {
             relation_kind,
@@ -194,12 +211,14 @@ fn index_packet_result_checked(
                 *child_kind,
                 ordering,
             );
-            DerivedIndexEntries::RelatedEntityOrdering(checked_finish(
+            context.claim_result(RelatedEntityOrderingIndex::header_bytes())?;
+            let entries = checked_finish(
                 build_related_entity_ordering_index_checked(
                     lane, execution, projection, &contract, context,
                 )?,
                 context,
-            )?)
+            )?;
+            DerivedIndexEntries::RelatedEntityOrdering(entries.into())
         }
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
             build_relation_join_index_checked(lane, execution, projection, *definition, context)?,

@@ -7,7 +7,7 @@ use crate::runtime::RelationalRuntime;
 #[derive(Clone, Debug)]
 pub struct AdmittedNativeInterimReceiver {
     pub(super) source: Arc<CaptureIdentity>,
-    pub(super) owner: Weak<crate::runtime::RelationalRuntimeState>,
+    pub(super) owner: crate::runtime::WeakRelationalRuntimeState,
     pub(super) image: RelationalCheckpointAdmissionArtifact,
 }
 impl AdmittedNativeInterimReceiver {

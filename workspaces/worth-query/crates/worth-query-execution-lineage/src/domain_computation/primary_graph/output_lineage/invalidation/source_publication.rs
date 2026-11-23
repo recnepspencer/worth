@@ -1,6 +1,7 @@
 //! Source publication maintains exact marks in the native selected branch image.
 use super::delivery;
 use super::source_alignment::HistoricalMarkState;
+use super::source_alignment::RetainedMarkState;
 use super::source_alignment::RetainedTouchDelivery;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
@@ -56,16 +57,17 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
         super::delivery_observation::record_delivery(&report);
         super::marking_observation::record(&report, affected.as_ref());
         let mut root = (**observed.payload()).clone();
-        root.past.insert(
+        root.past = root.past.appending(
             observed.position(),
             HistoricalMarkState {
                 root_id: observed.root_id(),
                 commit_id: observed.commit_id(),
-                state: Arc::clone(&observed.payload().current),
+                state: observed.payload().current.clone(),
                 next_delivery: Arc::new(RetainedTouchDelivery { keys }),
             },
-        );
-        root.current = Arc::new(state);
+            context,
+        )?;
+        root.current = RetainedMarkState::new(state);
         root.last_native_marking = Some(report);
         context.checkpoint()?;
         let mut effect = if let Some(managed) = self.managed_views.reserve_source_image(context)? {

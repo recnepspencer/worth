@@ -36,7 +36,7 @@ impl RelationalRegionResidency {
             .reserve_retained_memory(control_bytes)
             .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
         let control_memory = control_memory.map(Arc::new);
-        let region = Arc::new(ResidentRegion {
+        let region: SharedResidentRegion = Arc::new(ResidentRegion {
             symbol_requirements: requirements
                 .map(|value| OnceLock::from(Arc::new(value)))
                 .unwrap_or_default(),

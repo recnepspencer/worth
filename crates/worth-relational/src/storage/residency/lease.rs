@@ -17,7 +17,7 @@ pub(super) enum CheckpointContents {}
 #[derive(Debug)]
 pub(crate) struct RelationalResidencyLease<Level> {
     custody: RegionLeaseCustody,
-    region: Arc<ResidentRegion>,
+    region: SharedResidentRegion,
     level: PhantomData<Level>,
 }
 
@@ -31,10 +31,7 @@ impl<Level> RelationalResidencyLease<Level> {
             custody, region, ..
         } = self;
         drop(custody);
-        match Arc::try_unwrap(region) {
-            Ok(region) => region.partition,
-            Err(region) => region.partition.clone(),
-        }
+        region.into_partition()
     }
 
     pub(super) fn resident_region(&self) -> &ResidentRegion {
@@ -129,7 +126,7 @@ impl<Level> RelationalResidencyLease<Level> {
 
     pub(super) fn accepted(
         cell: Arc<RelationalRegionResidency>,
-        region: Arc<ResidentRegion>,
+        region: SharedResidentRegion,
     ) -> Self {
         Self {
             custody: RegionLeaseCustody::accepted(cell),
@@ -217,7 +214,7 @@ impl RelationalResidencyLease<Full> {
     }
 
     #[cfg(test)]
-    pub(super) fn retained_region(&self) -> Arc<ResidentRegion> {
+    pub(super) fn retained_region(&self) -> SharedResidentRegion {
         self.region.clone()
     }
     pub(crate) fn full_view(&self) -> RelationalRegionFullView<'_> {

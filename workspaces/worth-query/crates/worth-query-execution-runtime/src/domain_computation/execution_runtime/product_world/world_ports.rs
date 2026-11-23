@@ -12,9 +12,9 @@ pub struct WorthQueryProductWorldPorts {
     recovery: RuntimeWorldRecoveryPort,
     execution_authority: Option<Arc<worth_execution::ExecutionAuthority>>,
     interim_checkpoint: Option<WorldInterimCheckpointPort>,
-    // Passive memory custody is cloned with every product runtime. Directory
-    // attachment supplies None; no operation dispatches through this keepalive.
-    _memory_world_keepalive: Option<Arc<RuntimeWorldOwner<(), (), (), (), ()>>>,
+    // The original allocation keeps the memory World alive. Its operations
+    // remain on the installed ports above. Directory attachment supplies None.
+    _memory_world_keepalive: Option<Arc<dyn Send + Sync>>,
 }
 
 impl WorthQueryProductWorldPorts {

@@ -75,7 +75,7 @@ impl IndexingSubsystem {
             catalog,
         )?;
         // Only completed independent projections are bound after this empty accumulator.
-        let state = Arc::make_mut(&mut basis.state);
+        let state = IndexSelectionState::make_mut(&mut basis.state);
         state.empty = im::OrdSet::new();
         state.global_empty = im::OrdSet::new();
         Ok(basis)

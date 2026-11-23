@@ -40,6 +40,8 @@ mod generation_residency;
 mod generation_selection_counters;
 pub use generation_residency::DerivedIndexGenerationResidency;
 mod related_entity_ordering;
+mod retained_entry_map;
+pub use retained_entry_map::{RelatedEntityOrderingIndex, RetainedIndexEntryMap};
 mod relation_join;
 
 pub use generation_selection_counters::DerivedIndexSelectionCounters;
@@ -114,9 +116,9 @@ pub struct DerivedIndexDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DerivedIndexEntries {
-    EntityField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>),
-    RelationField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>),
-    RelatedEntityOrdering(DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>),
+    EntityField(RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>),
+    RelationField(RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>),
+    RelatedEntityOrdering(RelatedEntityOrderingIndex),
     RelationJoin(RelationJoinIndex),
 }
 

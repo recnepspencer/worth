@@ -7,6 +7,8 @@
 
 use std::sync::Arc;
 
+use super::source_alignment::RetainedMarkState;
+
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -112,7 +114,7 @@ impl SourceInvalidationOwner {
         cell: CompanionBranchCell<BranchMarkRoot>,
         candidates: &[Identity],
         visited: &mut Vec<Identity>,
-    ) -> Result<(Arc<MarkState>, Option<PreparedSettlementRegistration>), SettlementRegistrationStop>
+    ) -> Result<(RetainedMarkState, Option<PreparedSettlementRegistration>), SettlementRegistrationStop>
     {
         let image = cell.read_image();
 
@@ -159,14 +161,14 @@ impl SourceInvalidationOwner {
             }
         }
         if !changed {
-            return Ok((Arc::clone(&image.payload().current), None));
+            return Ok((image.payload().current.clone(), None));
         }
         let root = {
             let mut root = (**image.payload()).clone();
-            root.current = Arc::new(state);
+            root.current = RetainedMarkState::new(state);
             root
         };
-        let state = Arc::clone(&root.current);
+        let state = root.current.clone();
         let prepared = self.prepare_root_replacement(cell, image, Arc::new(root))?;
         Ok((state, Some(prepared)))
     }

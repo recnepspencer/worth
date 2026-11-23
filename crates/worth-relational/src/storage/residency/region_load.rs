@@ -2,7 +2,10 @@ mod head_validation;
 pub(super) mod materialization_funding;
 use super::region_image::*;
 use super::resident_history::projection_funding;
-use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
+use super::{
+    RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion,
+    SharedResidentRegion,
+};
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::{
     partition_from_image_for_request, partition_to_image_with_contracts,
@@ -24,8 +27,8 @@ pub(super) fn load_head(
     source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
-) -> Result<Arc<ResidentRegion>, Failure> {
-    ReconstructionLane::enter_reconstruction(|lane| {
+) -> Result<SharedResidentRegion, Failure> {
+    ReconstructionLane::enter_reconstruction(|lane| -> Result<SharedResidentRegion, Failure> {
         let (_contract_memory, contract_bound) = funding::contracts(&cold.schema, execution)?;
         check_member_limit(cold.head.length, limit).map_err(|cause| unavailable(cold, cause))?;
         let _read = funding::Funding::reserve(
@@ -182,8 +185,8 @@ pub(super) fn load_full(
     head: &ResidentRegion,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
-) -> Result<Arc<ResidentRegion>, Failure> {
-    ReconstructionLane::enter_reconstruction(|lane| {
+) -> Result<SharedResidentRegion, Failure> {
+    ReconstructionLane::enter_reconstruction(|lane| -> Result<SharedResidentRegion, Failure> {
         let (_contract_memory, _) = funding::contracts(&cold.schema, execution)?;
         let (_projection_memory, _) = projection_funding(&head.partition, execution)?;
         let retained = cold.schema.retained_aspect_contracts();

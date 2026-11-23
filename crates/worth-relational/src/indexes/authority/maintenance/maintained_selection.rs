@@ -5,7 +5,7 @@ use super::{
     work::MaintenanceWork,
 };
 use crate::indexes::data::*;
-use crate::runtime::IndexSelectionState;
+use crate::runtime::{IndexSelectionBacking, SharedIndexSelectionState};
 use crate::storage::substrate::maintenance::{
     ChangeWork, CommitChange, Maintained, MaintenanceConsistency, MaintenanceRoute,
     ReconstructionLane, ReconstructionWork,
@@ -33,7 +33,7 @@ pub(super) struct IndexSelectionMaintainer<
     pub(super) prepared: Option<CandidateIndexPreparation>,
 }
 impl IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
-    fn capture(&mut self, refresh: PreparedRefresh) -> Result<Arc<IndexSelectionState>, Denial> {
+    fn capture(&mut self, refresh: PreparedRefresh) -> Result<SharedIndexSelectionState, Denial> {
         let prepared = CandidateIndexPreparation::prepare(
             self.owner.indexes,
             self.after.root(),
@@ -48,7 +48,7 @@ impl IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
     }
     pub(super) fn finish(
         mut self,
-        state: Arc<IndexSelectionState>,
+        state: SharedIndexSelectionState,
     ) -> Result<CandidateIndexPreparation, Denial> {
         if let Some(prepared) = self.prepared.take() {
             return Ok(prepared);
@@ -77,7 +77,7 @@ impl IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
     }
 }
 impl Maintained for IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
-    type State = IndexSelectionState;
+    type State = dyn IndexSelectionBacking;
     // Generations are immutable; the indexing catalog retires whole states by actual root custody.
     type Retirement = std::convert::Infallible;
     type Error = Denial;

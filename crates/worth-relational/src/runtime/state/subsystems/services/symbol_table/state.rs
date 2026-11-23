@@ -12,12 +12,17 @@ impl RuntimeSymbolTable {
     pub(super) fn read_state<T>(&self, read: impl FnOnce(&RuntimeSymbolState) -> T) -> T {
         // Writers stage edits before replacing this state; unwinding preserves
         // the last complete dictionary even when it poisons the lock.
-        let state = self.state.read().unwrap_or_else(|error| error.into_inner());
+        let state = self
+            .state
+            .lock()
+            .read()
+            .unwrap_or_else(|error| error.into_inner());
         read(&state)
     }
     pub(super) fn update<T>(&self, write: impl FnOnce(&mut RuntimeSymbolState) -> T) -> T {
         let mut state = self
             .state
+            .lock()
             .write()
             .unwrap_or_else(|error| error.into_inner());
         // Persistent map roots clone in O(1); only edited paths allocate.

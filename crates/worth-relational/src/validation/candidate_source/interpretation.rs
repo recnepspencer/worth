@@ -83,7 +83,8 @@ impl NativeManagedSourceInterpretation {
     }
 
     pub(crate) fn identity(self: &Arc<Self>) -> NativeSourceInterpretationIdentity {
-        NativeSourceInterpretationIdentity(Arc::downgrade(self))
+        let owner = Arc::downgrade(self);
+        NativeSourceInterpretationIdentity(owner)
     }
 
     pub(crate) fn suspension_source_version(&self) -> Option<VersionId> {
@@ -158,11 +159,23 @@ impl NativeManagedSourceInterpretation {
 /// Upgrading this weak link is not Source admission; installed audience and the
 /// exact actual observation still have to be checked by the receiving owner.
 #[derive(Clone, Debug)]
-pub struct NativeSourceInterpretationIdentity(Weak<NativeManagedSourceInterpretation>);
+pub struct NativeSourceInterpretationIdentity(Weak<dyn InterpretationBacking>);
+
+trait InterpretationBacking: Send + Sync {
+    fn into_interpretation(self: Arc<Self>) -> Arc<NativeManagedSourceInterpretation>;
+}
+
+impl InterpretationBacking for NativeManagedSourceInterpretation {
+    fn into_interpretation(self: Arc<Self>) -> Arc<NativeManagedSourceInterpretation> {
+        self
+    }
+}
 
 impl NativeSourceInterpretationIdentity {
     pub(crate) fn owner(&self) -> Option<Arc<NativeManagedSourceInterpretation>> {
-        self.0.upgrade()
+        self.0
+            .upgrade()
+            .map(InterpretationBacking::into_interpretation)
     }
 }
 

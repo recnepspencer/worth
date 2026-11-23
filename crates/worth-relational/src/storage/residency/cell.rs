@@ -6,6 +6,8 @@ pub(crate) use reconstruction_head::ReconstructedRegionHead;
 mod member_export;
 #[path = "cell/observation.rs"]
 mod observation;
+mod resident_backing;
+pub(super) use resident_backing::SharedResidentRegion;
 mod resident_full;
 mod source_retirement;
 mod state;
@@ -76,8 +78,8 @@ enum ResidencyDemand {
 #[derive(Debug)]
 enum ResidencyState {
     Cold,
-    Head { region: Arc<ResidentRegion> },
-    Full(Arc<ResidentRegion>),
+    Head { region: SharedResidentRegion },
+    Full(SharedResidentRegion),
     Damaged { slot_counts: (usize, usize) },
 }
 
@@ -188,7 +190,7 @@ impl RelationalRegionResidency {
         kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
         requirements: Option<super::required_symbols::CapturedSymbolRequirements>,
     ) -> RelationalResidencyLease<Full> {
-        let region = Arc::new(ResidentRegion {
+        let region: SharedResidentRegion = Arc::new(ResidentRegion {
             symbol_requirements: requirements
                 .map(|value| OnceLock::from(Arc::new(value)))
                 .unwrap_or_default(),

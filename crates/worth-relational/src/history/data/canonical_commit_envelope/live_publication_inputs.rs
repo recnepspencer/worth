@@ -1,7 +1,9 @@
 //! Exact applied producer inputs, transferred once into live-route retention.
 //! The historical envelope keeps no strong pin after that transfer. Its deep
 //! clones cannot rebind the packet, and codecs omit it. Neither reissues custody.
-use super::{CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin};
+use super::{
+    live_owner::LiveEnvelopeOwner, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin,
+};
 use crate::{
     history::retention::PublicationBasisRoute,
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
@@ -27,7 +29,7 @@ impl AppliedPublicationInputAccess
 
 #[derive(Default)]
 pub(crate) struct LivePublicationInputs {
-    owner: OnceLock<Weak<CanonicalCommitEnvelope>>,
+    owner: OnceLock<LiveEnvelopeOwner>,
     inputs: Mutex<
         BTreeMap<
             PublicationBasisRoute,
@@ -75,15 +77,14 @@ impl LivePublicationInputs {
             );
     }
     pub(super) fn bind(&self, owner: &Weak<CanonicalCommitEnvelope>) {
-        self.owner.get_or_init(|| owner.clone());
+        self.owner.get_or_init(|| LiveEnvelopeOwner::bind(owner));
     }
     pub(crate) fn take_verified(
         envelope: &Arc<CanonicalCommitEnvelope>,
         origin: &Arc<CanonicalRequiredOutputOrigin>,
     ) -> Option<Arc<dyn AppliedPublicationInputAccess>> {
         let live = &envelope.coupled_authored_publication.as_ref()?.live_inputs;
-        let owner = live.owner.get()?.upgrade()?;
-        if !Arc::ptr_eq(&owner, envelope) {
+        if !live.owner.get()?.matches(envelope) {
             return None;
         }
         let (issued, read) = live

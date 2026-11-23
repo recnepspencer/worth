@@ -16,8 +16,8 @@ mod retirement_tests;
 use crate::history::data::BranchId;
 
 use super::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,
-    RelationalBranchBasisDescriptor, RelationalBranchVersion,
+    AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchVersion,
+    WeakRelationalBranchBasis,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -78,7 +78,7 @@ struct RelationalRetainedBasisState {
 #[derive(Debug)]
 struct RelationalRetainedBasisEntry {
     registration_id: u64,
-    basis: Weak<AdmittedRelationalBranchBasisInner>,
+    basis: WeakRelationalBranchBasis,
 }
 
 #[derive(Debug)]
@@ -178,7 +178,7 @@ impl RelationalBranchBasisRegistry {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         pay_scan: impl FnOnce(usize) -> Result<(), E>,
     ) -> Result<
-        worth_execution::ExecutionArray<Weak<AdmittedRelationalBranchBasisInner>>,
+        worth_execution::ExecutionArray<WeakRelationalBranchBasis>,
         RelationalRetainedBasisSnapshotStop<E>,
     > {
         use RelationalRetainedBasisSnapshotStop as Stop;

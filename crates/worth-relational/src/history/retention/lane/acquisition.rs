@@ -74,7 +74,7 @@ impl RelationalBranchRetentionBinding {
     fn acquire_subject(
         &self,
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+        component: Option<crate::branch::WeakRelationalBranchBasis>,
         roots: Vec<Arc<RelationalBranchRoot>>,
         operation_branch: Option<RelationalBranchIdentity>,
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {

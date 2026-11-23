@@ -3,7 +3,7 @@ use super::*;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 
 pub(crate) struct ReconstructedRegionHead {
-    region: Arc<ResidentRegion>,
+    region: SharedResidentRegion,
     _custody: Arc<RelationalRegionResidency>,
 }
 impl ReconstructedRegionHead {

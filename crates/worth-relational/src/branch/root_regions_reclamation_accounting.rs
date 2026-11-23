@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use super::{
     RelationalPersistentRegionLeaf, RelationalPersistentRegionNode, RelationalPersistentRegionSet,
+    RetainedRelationalRegions,
 };
 use crate::storage::substrate::StorageAllocationOverflow;
 
 impl RelationalPersistentRegionSet {
     pub(in crate::branch) fn reclaimable_unique_authoritative_bytes(
-        regions: &Arc<Self>,
+        regions: &RetainedRelationalRegions,
     ) -> Result<u64, StorageAllocationOverflow> {
-        if Arc::strong_count(regions) != 1 {
+        if !regions.is_exclusive() {
             return Ok(0);
         }
         let mut bytes = std::mem::size_of::<Self>() as u64;

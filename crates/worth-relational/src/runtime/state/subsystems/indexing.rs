@@ -7,7 +7,9 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectKey, FieldKey};
 
 mod selection_state;
-pub(crate) use selection_state::IndexSelectionState;
+pub(crate) use selection_state::{
+    IndexSelectionBacking, IndexSelectionState, SharedIndexSelectionState,
+};
 mod basis_selection;
 pub(crate) use basis_selection::PreparedIndexBasisSelection;
 mod admitted_definition;

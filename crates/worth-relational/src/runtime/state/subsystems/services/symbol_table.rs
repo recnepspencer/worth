@@ -8,6 +8,8 @@ mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;
 use state::RuntimeSymbolState;
 
+use crate::runtime::state::subsystems::RuntimeOwnedState;
+
 use std::sync::{Arc, RwLock};
 
 use crate::symbols::data::{
@@ -22,7 +24,7 @@ pub(crate) use reservations::{
 
 #[derive(Debug)]
 pub(crate) struct RuntimeSymbolTable {
-    state: Arc<RwLock<RuntimeSymbolState>>,
+    state: RuntimeOwnedState<RuntimeSymbolState>,
     cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
     reservations: Arc<std::sync::Mutex<reservations::SymbolReservationDirectory>>,
     _memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
@@ -31,7 +33,7 @@ pub(crate) struct RuntimeSymbolTable {
 impl Default for RuntimeSymbolTable {
     fn default() -> Self {
         Self {
-            state: Arc::default(),
+            state: RuntimeOwnedState::default(),
             cold: Arc::new(RwLock::new(None)),
             reservations: Arc::default(),
             _memory: None,
@@ -42,7 +44,7 @@ impl Default for RuntimeSymbolTable {
 impl Clone for RuntimeSymbolTable {
     fn clone(&self) -> Self {
         Self {
-            state: Arc::clone(&self.state),
+            state: self.state.share(),
             cold: self.cold.clone(),
             reservations: self.reservations.clone(),
             _memory: self._memory.clone(),
@@ -93,7 +95,7 @@ impl RuntimeSymbolTable {
             None => (None, snapshot()),
         };
         Self {
-            state: Arc::new(RwLock::new(state)),
+            state: RuntimeOwnedState::new(state),
             reservations: Arc::default(),
             cold: Arc::new(RwLock::new(cold)),
             _memory: None,

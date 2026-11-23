@@ -1,6 +1,10 @@
+mod retained_state;
+pub use retained_state::RetainedMarkState;
+mod retained_history;
+use retained_history::RetainedMarkHistory;
+
 use std::sync::Arc;
 
-use im::OrdMap;
 use worth_relational::facade::history::CommitId;
 use worth_relational::facade::mvcc::CompanionBranchImage;
 use worth_relational::facade::publication::PatchStreamPosition;
@@ -26,16 +30,16 @@ pub struct BranchMarkRoot {
     /// Shared only by replacements that retain this exact history map.
 
     /// What the oldest retained version shares with versions that have left.
-    pub current: Arc<MarkState>,
+    pub current: RetainedMarkState,
     pub last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
-    pub past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
+    pub(super) past: RetainedMarkHistory,
 }
 
 #[derive(Clone, Debug)]
 pub struct HistoricalMarkState {
     pub root_id: u64,
     pub commit_id: Option<CommitId>,
-    pub state: Arc<MarkState>,
+    pub state: RetainedMarkState,
     pub next_delivery: Arc<RetainedTouchDelivery>,
 }
 
@@ -56,7 +60,7 @@ enum ReadBasis {
 
 /// Only exact native source selection can construct this observation.
 pub struct SnapshotAlignedMarkState<'selected> {
-    state: Arc<MarkState>,
+    state: RetainedMarkState,
     retained: Arc<BranchMarkRoot>,
     current_root_id: u64,
     current_commit_id: Option<CommitId>,
@@ -68,18 +72,18 @@ pub struct SnapshotAlignedMarkState<'selected> {
 impl BranchMarkRoot {
     pub fn initial() -> Self {
         Self {
-            current: Arc::new(MarkState::initial()),
+            current: RetainedMarkState::new(MarkState::initial()),
             last_native_marking: None,
-            past: OrdMap::new(),
+            past: RetainedMarkHistory::default(),
         }
     }
 }
 
 impl<'selected> SnapshotAlignedMarkState<'selected> {
-    pub fn recovery_state(&self) -> Arc<MarkState> {
-        Arc::clone(&self.state)
+    pub fn recovery_state(&self) -> RetainedMarkState {
+        self.state.clone()
     }
-    pub fn into_full_verification_state(self) -> Arc<MarkState> {
+    pub fn into_full_verification_state(self) -> RetainedMarkState {
         self.state
     }
 
@@ -102,7 +106,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             && image.commit_id() == selected.commit_id()
         {
             return Ok(Self {
-                state: Arc::clone(&image.payload().current),
+                state: image.payload().current.clone(),
                 retained: Arc::clone(image.payload()),
                 current_root_id: image.root_id(),
                 current_commit_id: image.commit_id(),
@@ -120,7 +124,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             })
             .ok_or(FullVerificationReason::RetainedDeliveryGap)?;
         Ok(Self {
-            state: Arc::clone(&historical.state),
+            state: historical.state.clone(),
             retained: Arc::clone(image.payload()),
             current_root_id: image.root_id(),
             current_commit_id: image.commit_id(),
@@ -138,7 +142,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Self {
         Self {
-            state: Arc::clone(&image.payload().current),
+            state: image.payload().current.clone(),
             retained: Arc::clone(image.payload()),
             current_root_id: image.root_id(),
             current_commit_id: image.commit_id(),

@@ -187,7 +187,7 @@ impl PendingSymbolMeanings {
         &self.required
     }
     pub(crate) fn adopt(&mut self, prior: &Self) -> Result<(), SymbolReservationDenial> {
-        if !Arc::ptr_eq(&self.owner.state, &prior.owner.state) {
+        if !self.owner.state.shares_state_with(&prior.owner.state) {
             return Err(SymbolReservationDenial::InvalidDictionary);
         }
         for (symbol, text) in &prior.admitted {
@@ -250,6 +250,7 @@ impl PendingSymbolMeanings {
         let mut state = self
             .owner
             .state
+            .lock()
             .write()
             .unwrap_or_else(|error| error.into_inner());
         let (symbol, text, reservation) = if let Some(symbol) = state.interner.symbol(value) {

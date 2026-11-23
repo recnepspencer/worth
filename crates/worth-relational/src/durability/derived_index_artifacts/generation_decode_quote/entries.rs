@@ -14,15 +14,15 @@ pub(in super::super) fn quote(
     value.fields(request, |name, value| {
         variants += 1;
         let addition = match name {
-            "EntityField" => map::<AuthoritativeFieldComparisonKey, EntityId>(
+            "EntityField" => retained_map::<AuthoritativeFieldComparisonKey, EntityId>(
                 value, request, comparison, scalar,
             )?,
-            "RelationField" => map::<AuthoritativeFieldComparisonKey, RelationId>(
+            "RelationField" => retained_map::<AuthoritativeFieldComparisonKey, RelationId>(
                 value, request, comparison, scalar,
             )?,
-            "RelatedEntityOrdering" => {
-                map::<EntityId, RelatedEntityOrderingEntry>(value, request, scalar, ordering)?
-            }
+            "RelatedEntityOrdering" => retained_map::<EntityId, RelatedEntityOrderingEntry>(
+                value, request, scalar, ordering,
+            )?,
             "RelationJoin" => {
                 // The join index is its row map plus the leg state that maintains it.
                 let mut bytes = map::<RelationJoinKey, RelationJoinEntry>(
@@ -31,6 +31,7 @@ pub(in super::super) fn quote(
                     scalar,
                     scalar,
                 )?;
+                add(&mut bytes, RelationJoinIndex::header_bytes())?;
                 add(&mut bytes, legs(value.field("legs", request)?, request)?)?;
                 bytes
             }
@@ -43,6 +44,17 @@ pub(in super::super) fn quote(
     }
     Ok(bytes)
 }
+fn retained_map<K: Ord + Clone, R: Clone>(
+    value: BorrowedPayload<'_>,
+    request: &dyn PayloadCheckpoint,
+    key_quote: fn(BorrowedPayload<'_>, &dyn PayloadCheckpoint) -> Result<u64, Refusal>,
+    row_quote: fn(BorrowedPayload<'_>, &dyn PayloadCheckpoint) -> Result<u64, Refusal>,
+) -> Result<u64, Refusal> {
+    let mut bytes = map::<K, R>(value, request, key_quote, row_quote)?;
+    add(&mut bytes, RetainedIndexEntryMap::<K, R>::header_bytes())?;
+    Ok(bytes)
+}
+
 fn map<K: Ord + Clone, R: Clone>(
     value: BorrowedPayload<'_>,
     request: &dyn PayloadCheckpoint,
@@ -85,7 +97,7 @@ fn legs(value: BorrowedPayload<'_>, request: &dyn PayloadCheckpoint) -> Result<u
     if value.is_none() {
         return Ok(0);
     }
-    let mut bytes = shared::<JoinLegsState>()?;
+    let mut bytes = 0;
     for side in ["left", "right"] {
         let leg = value.field(side, request)?;
         let outer = leg

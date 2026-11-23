@@ -113,7 +113,7 @@ impl PreparedCandidateIndexPublication {
 }
 
 impl CandidateIndexPreparation {
-    pub(super) fn selection_state(&self) -> Option<Arc<crate::runtime::IndexSelectionState>> {
+    pub(super) fn selection_state(&self) -> Option<crate::runtime::SharedIndexSelectionState> {
         self.publication.selection_state()
     }
 

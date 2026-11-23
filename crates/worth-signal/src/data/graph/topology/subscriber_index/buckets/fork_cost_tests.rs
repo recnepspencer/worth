@@ -95,7 +95,7 @@ fn single_membership_first_write_is_bounded_by_nested_persistent_granule() {
         }
 
         let region = Region::new(&INSTRUMENTED_SYSTEM);
-        fork.remove_consumer(removed);
+        fork.replace_consumer(removed, Vec::new());
         let allocation = region.change();
         samples.push((
             consumer_count,

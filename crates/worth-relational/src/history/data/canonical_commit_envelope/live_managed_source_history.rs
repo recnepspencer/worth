@@ -1,17 +1,17 @@
 //! Disposable live metadata; never canonical serialized truth or Source authority.
-use super::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
+use super::{live_owner::LiveEnvelopeOwner, CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::validation::candidate_source::authored_history::{
     material::RetainedSourceHistoryMaterial, PreparedSourceImpactHistory,
 };
 use crate::validation::candidate_source::NativeManagedSourceInterpretation;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Default)]
 pub(crate) struct LiveManagedSourceHistory(Option<Arc<BoundHistory>>);
 struct BoundHistory {
     prepared: Arc<PreparedSourceImpactHistory>,
-    owner: Weak<CanonicalCommitEnvelope>,
+    owner: LiveEnvelopeOwner,
     material: RetainedSourceHistoryMaterial,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -49,8 +49,7 @@ impl LiveManagedSourceHistory {
     }
     fn bound(envelope: &Arc<CanonicalCommitEnvelope>) -> Option<&BoundHistory> {
         let live = envelope.live_managed_source_history.0.as_ref()?;
-        let owner = live.owner.upgrade()?;
-        Arc::ptr_eq(&owner, envelope).then_some(live)
+        live.owner.matches(envelope).then_some(live)
     }
 }
 impl CanonicalCommitEnvelope {
@@ -100,7 +99,7 @@ impl CanonicalCommitEnvelope {
                 LiveManagedSourceHistory(Some(Arc::new(BoundHistory {
                     prepared,
                     material,
-                    owner: owner.clone(),
+                    owner: LiveEnvelopeOwner::bind(owner),
                     _memory: memory,
                 })));
             self

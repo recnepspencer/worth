@@ -13,10 +13,12 @@ pub(super) fn empty_entries(
     use crate::indexes::data::{RelatedEntityOrderingEntry, RelationJoinEntry, RelationJoinKey};
     use crate::storage::data::AuthoritativeFieldComparisonKey as Key;
     match kind {
-        DerivedIndexKind::EntityField { .. } => prepare_empty_map::<Key, EntityId>(work)?,
-        DerivedIndexKind::RelationField { .. } => prepare_empty_map::<Key, RelationId>(work)?,
+        DerivedIndexKind::EntityField { .. } => prepare_empty_retained_map::<Key, EntityId>(work)?,
+        DerivedIndexKind::RelationField { .. } => {
+            prepare_empty_retained_map::<Key, RelationId>(work)?
+        }
         DerivedIndexKind::RelatedEntityOrdering { .. } => {
-            prepare_empty_map::<EntityId, RelatedEntityOrderingEntry>(work)?
+            prepare_empty_retained_map::<EntityId, RelatedEntityOrderingEntry>(work)?;
         }
         DerivedIndexKind::RelationJoin(_) => {
             prepare_empty_map::<RelationJoinKey, RelationJoinEntry>(work)?;
@@ -29,9 +31,7 @@ pub(super) fn empty_entries(
                 )?;
             work.prepare(
                 4,
-                bytes * 2
-                    + (std::mem::size_of::<crate::indexes::data::JoinLegsState>()
-                        + 2 * std::mem::size_of::<usize>()) as u64,
+                bytes * 2 + crate::indexes::data::RelationJoinIndex::header_bytes(),
             )?;
         }
     }
@@ -52,6 +52,16 @@ pub(super) fn empty_entries(
             ))
         }
     })
+}
+
+fn prepare_empty_retained_map<K: Ord + Clone, R: Clone>(
+    work: &mut MaintenanceWork,
+) -> Result<(), DerivedIndexMaintenanceDenialKind> {
+    super::persistent_allocation::prepare_empty_map::<K, R>(work)?;
+    work.prepare(
+        1,
+        crate::indexes::data::RetainedIndexEntryMap::<K, R>::header_bytes(),
+    )
 }
 
 pub(super) fn update_entries(

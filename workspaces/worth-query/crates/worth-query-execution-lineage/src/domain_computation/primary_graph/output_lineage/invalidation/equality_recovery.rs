@@ -2,13 +2,14 @@
 
 use std::sync::Arc;
 
+use super::source_alignment::RetainedMarkState;
+
 use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionBranchImage;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::output_facts::RegisteredOutputFacts;
 use super::source_alignment::BranchMarkRoot;
@@ -21,7 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 pub struct EqualityRecoveryImage {
     cell: CompanionBranchCell<BranchMarkRoot>,
     image: CompanionBranchImage<BranchMarkRoot>,
-    state: Arc<MarkState>,
+    state: RetainedMarkState,
 }
 
 pub struct EqualityRecoveryRow {

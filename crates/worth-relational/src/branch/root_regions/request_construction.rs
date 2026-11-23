@@ -76,8 +76,8 @@ impl PreparedRelationalRegionSet {
         Ok(())
     }
 
-    pub(in crate::branch) fn finish(self) -> Arc<RelationalPersistentRegionSet> {
-        Arc::new(self.set)
+    pub(in crate::branch) fn finish(self) -> RetainedRelationalRegions {
+        RetainedRelationalRegions::new(self.set)
     }
 }
 

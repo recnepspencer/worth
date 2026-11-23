@@ -9,7 +9,7 @@ struct Frame {
 pub(crate) struct RelationalRegionSourceWalk {
     stack: [Option<Frame>; 33],
     length: usize,
-    _regions: Arc<RelationalPersistentRegionSet>,
+    _regions: RetainedRelationalRegions,
 }
 pub(crate) enum RelationalRegionSourceWalkProgress {
     Advanced,
@@ -24,7 +24,7 @@ pub(crate) enum RelationalRegionSourceWalkProgress {
     Complete,
 }
 impl RelationalRegionSourceWalk {
-    pub(in crate::branch) fn new(regions: Arc<RelationalPersistentRegionSet>) -> Self {
+    pub(in crate::branch) fn new(regions: RetainedRelationalRegions) -> Self {
         let mut stack = std::array::from_fn(|_| None);
         let mut length = 0;
         if let Some(node) = &regions.index_root {

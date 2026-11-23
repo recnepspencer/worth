@@ -3,7 +3,7 @@ use super::*;
 
 #[derive(Debug)]
 pub(crate) struct RelationalObservationRetirement {
-    shared: Option<Arc<AdmittedRelationalBranchBasisInner>>,
+    shared: Option<SharedRelationalBranchBasis>,
     exclusive: Option<AdmittedRelationalBranchBasisInner>,
     retention_released: bool,
 }
@@ -41,7 +41,7 @@ impl RelationalObservationRetirement {
     /// same cache entry until explicitly unbudgeted reclamation.
     pub(crate) fn advance_retaining_allocation(&mut self) -> Result<bool, ()> {
         if let Some(shared) = self.shared.take() {
-            self.exclusive = Arc::into_inner(shared);
+            self.exclusive = shared.release_share();
             return Ok(self.exclusive.is_none());
         }
         let Some(inner) = self.exclusive.as_mut() else {

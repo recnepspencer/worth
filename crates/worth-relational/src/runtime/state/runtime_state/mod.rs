@@ -27,7 +27,10 @@ pub use publication_close_custody::{
     RelationalPublicationRegistryCustody,
 };
 mod publication_settlement_registry;
+mod state_backing;
 mod tenure;
+use state_backing::SharedRelationalRuntimeState;
+pub(crate) use state_backing::WeakRelationalRuntimeState;
 #[cfg(test)]
 mod test_support;
 
@@ -110,7 +113,7 @@ pub struct RelationalRuntime {
     /// runtime lowered from it disagree.
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<super::SchemaContractRuntimeSubsystem>,
-    state: std::sync::Arc<RelationalRuntimeState>,
+    state: SharedRelationalRuntimeState,
     tenure: RelationalRuntimeTenure,
     _outer_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -137,7 +140,7 @@ impl RelationalRuntime {
     /// The admission is carried by the handle, so the operation cannot outlive
     /// its admission and the handle cannot close the runtime it borrows.
     pub(crate) fn admitted(
-        state: std::sync::Arc<RelationalRuntimeState>,
+        state: SharedRelationalRuntimeState,
         operation: AdmittedRelationalRuntimeOperation,
     ) -> Self {
         let installed = state.configuration.snapshot();
@@ -182,7 +185,7 @@ impl RelationalRuntime {
 
     /// A weak binding to this runtime's exact state, for a service that must
     /// outlive its owner and deny once the owner is gone.
-    pub(crate) fn state_binding(&self) -> std::sync::Weak<RelationalRuntimeState> {
+    pub(crate) fn state_binding(&self) -> WeakRelationalRuntimeState {
         std::sync::Arc::downgrade(&self.state)
     }
 }
@@ -246,7 +249,7 @@ impl RelationalRuntime {
         if !self.is_owner() {
             return None;
         }
-        std::sync::Arc::get_mut(&mut self.state)
+        std::sync::Arc::get_mut(&mut self.state).map(|state| state.runtime_state_mut())
     }
 }
 
@@ -283,7 +286,7 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<std::sync::Arc<super::SchemaContractRuntimeSubsystem>>(
             "schema_contract_runtime",
         );
-        owner.field::<std::sync::Arc<RelationalRuntimeState>>("state");
+        owner.field::<SharedRelationalRuntimeState>("state");
         owner.field::<RelationalRuntimeTenure>("tenure");
         owner.field::<Option<worth_execution::ExecutionMemoryReservation>>("_outer_memory");
     }

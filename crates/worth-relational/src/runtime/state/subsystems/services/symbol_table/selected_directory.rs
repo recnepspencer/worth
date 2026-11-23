@@ -40,7 +40,7 @@ impl RuntimeSymbolTable {
                 directory, request,
             )?;
         Ok(Self {
-            state: Arc::new(RwLock::new(state)),
+            state: RuntimeOwnedState::new(state),
             cold: Arc::new(RwLock::new(Some(pages))),
             reservations: Arc::default(),
             _memory: memory,

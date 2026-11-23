@@ -3,7 +3,7 @@ type OncePublicationBases =
     std::sync::OnceLock<std::sync::Weak<dyn crate::history::retention::PublicationBasisAccess>>;
 
 use super::target::RelationalBranchRootDescriptor;
-use super::RelationalPersistentRegionSet;
+use super::{RelationalPersistentRegionSet, RetainedRelationalRegions};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
@@ -157,7 +157,7 @@ pub(crate) struct RelationalBranchRoot {
     pub(crate) publication_bases: OncePublicationBases,
     content: crate::content::ContentDirectory,
     id: u64,
-    regions: Arc<RelationalPersistentRegionSet>,
+    regions: RetainedRelationalRegions,
     entity_slot_count: usize,
     relation_slot_count: usize,
     content_accumulator: [u8; 32],

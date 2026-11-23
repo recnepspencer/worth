@@ -11,6 +11,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::source_alignment::SnapshotAlignedMarkState;
+use super::source_alignment::RetainedMarkState;
 use super::FullVerificationReason;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
@@ -54,7 +55,7 @@ impl From<CompanionPreflightStop> for FullVerificationStop {
 /// The observer retains the exact pre-verification image. It grants no edit,
 /// scheduling, equality, or publication authority.
 pub struct FullVerificationImage<'selected> {
-    state: Arc<MarkState>,
+    state: RetainedMarkState,
     native_only: bool,
     selected: &'selected PositionedRelationalSnapshot,
     runtime: &'selected RelationalRuntime,
@@ -89,7 +90,7 @@ impl SourceInvalidationOwner {
         let state = if let Some(aligned) = aligned {
             aligned.into_full_verification_state()
         } else {
-            Arc::new(MarkState::initial())
+            RetainedMarkState::new(MarkState::initial())
         };
         Ok(FullVerificationImage {
             state,

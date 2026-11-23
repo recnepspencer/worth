@@ -1,8 +1,8 @@
 //! Persistent replacement of only the regions named by publication.
 use super::*;
 impl RelationalPersistentRegionSet {
-    pub(crate) fn empty(set_id: u64) -> Arc<Self> {
-        Arc::new(Self {
+    pub(crate) fn empty(set_id: u64) -> RetainedRelationalRegions {
+        RetainedRelationalRegions::new(Self {
             set_id,
             index_root: None,
             count: 0,
@@ -17,7 +17,7 @@ impl RelationalPersistentRegionSet {
         set_id: u64,
         regions: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
         issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+    ) -> Result<RetainedRelationalRegions, RelationalBranchRootCaptureDenial> {
         let count = regions.len();
         let live_counts = regions
             .values()
@@ -46,7 +46,7 @@ impl RelationalPersistentRegionSet {
                 None,
             )?);
         }
-        Ok(Arc::new(Self {
+        Ok(RetainedRelationalRegions::new(Self {
             set_id,
             index_root,
             count,
@@ -59,11 +59,11 @@ impl RelationalPersistentRegionSet {
 
     pub(crate) fn replace(
         set_id: u64,
-        parent: &Arc<Self>,
+        parent: &RelationalPersistentRegionSet,
         replacements: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
         removed: BTreeSet<PartitionId>,
         issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+    ) -> Result<RetainedRelationalRegions, RelationalBranchRootCaptureDenial> {
         let mut index_root = parent.index_root.clone();
         let mut kinds = parent.kinds.clone();
         let mut count = parent.count;
@@ -129,7 +129,7 @@ impl RelationalPersistentRegionSet {
                 None,
             )?);
         }
-        Ok(Arc::new(Self {
+        Ok(RetainedRelationalRegions::new(Self {
             set_id,
             index_root,
             count,

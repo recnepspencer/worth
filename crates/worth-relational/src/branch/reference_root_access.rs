@@ -26,9 +26,7 @@ impl RelationalBranchReferenceCell {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         pay_scan: impl FnOnce(usize) -> Result<(), E>,
     ) -> Result<
-        worth_execution::ExecutionArray<
-            std::sync::Weak<super::super::AdmittedRelationalBranchBasisInner>,
-        >,
+        worth_execution::ExecutionArray<super::super::WeakRelationalBranchBasis>,
         super::super::RelationalRetainedBasisSnapshotStop<E>,
     > {
         self.basis_registry

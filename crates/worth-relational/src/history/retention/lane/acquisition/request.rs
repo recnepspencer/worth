@@ -46,7 +46,7 @@ impl RelationalBranchRetentionBinding {
     pub(super) fn acquire_prepared_subject(
         &self,
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+        component: Option<crate::branch::WeakRelationalBranchBasis>,
         roots: RetainedRoots,
         operation_branch: Option<RelationalBranchIdentity>,
         request: Option<&ExecutionRequest<'_, '_>>,

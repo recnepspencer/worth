@@ -4,11 +4,12 @@ mod continuation;
 mod request_scope;
 mod restore;
 mod wire;
+use super::weak_owner::WeakWorldOwner;
 use crate::branch::ProductBranchObservation;
 use crate::history::{MemoryPublicationMeaning, MemoryPublicationReceiverScope};
 use std::{
     ops::Range,
-    sync::{Arc, Weak},
+    sync::Arc,
 };
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionRequest,
@@ -39,12 +40,12 @@ type Stop = WorldInterimCheckpointRefusal;
 /// A weak installed owner port, separate from Query's passive owner custody.
 #[derive(Debug, Clone)]
 pub struct WorldInterimCheckpointPort {
-    owner: Weak<super::RuntimeWorldOwnerRoot<(), (), (), (), ()>>,
+    owner: WeakWorldOwner<super::RuntimeWorldOwnerRoot<(), (), (), (), ()>>,
 }
 impl super::RuntimeWorldOwner<(), (), (), (), ()> {
     pub fn interim_checkpoint_port(&self) -> WorldInterimCheckpointPort {
         WorldInterimCheckpointPort {
-            owner: Arc::downgrade(&self.root),
+            owner: WeakWorldOwner::from_weak(Arc::downgrade(&self.root)),
         }
     }
 }

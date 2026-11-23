@@ -45,7 +45,9 @@ pub struct ObservedSourcePublication {
     pub awaiting_first: bool,
     pub address: Arc<OutputSourceAddress>,
     pub state: Arc<SourcePublicationState>,
-    candidate: Option<Arc<crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate>>,
+    candidate: Option<
+        crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate,
+    >,
     source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
     read_closure:
         Arc<dyn crate::ports::SourceReadClosurePort>,

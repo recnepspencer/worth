@@ -12,7 +12,7 @@ impl FrozenMemoryOriginals {
     pub(in crate::durability::authority::checkpoint_complete::interim) fn project(
         artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
         current: crate::branch::CheckpointBranchMetadata,
-        owner: &Weak<crate::runtime::RelationalRuntimeState>,
+        owner: &crate::runtime::WeakRelationalRuntimeState,
         manifest: &RelationalCheckpointManifest,
         originals: ReadmittedMemoryOriginals,
         roots: &CapturedRoots,

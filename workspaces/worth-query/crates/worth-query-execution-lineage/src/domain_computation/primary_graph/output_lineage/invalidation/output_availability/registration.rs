@@ -1,5 +1,6 @@
 //! Same native image source-slot enrollment and alias extension.
 use super::*;
+use super::super::source_alignment::RetainedMarkState;
 
 impl SourceInvalidationOwner {
     /// Establish a covered source's head-independent slot on the SAME native
@@ -8,7 +9,9 @@ impl SourceInvalidationOwner {
         self: &Arc<Self>,
         source: &CoveredSourcePublication<'_>,
         selected: &PositionedRelationalSnapshot,
-        candidate: Option<Arc<crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate>>,
+        candidate: Option<
+            crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate,
+        >,
     ) -> Result<ObservedSourcePublication, SettlementRegistrationStop> {
         let address = source.source().address();
         if selected.runtime_instance_id() != self.runtime_instance_id {
@@ -106,7 +109,7 @@ impl SourceInvalidationOwner {
 
         let root = {
             let mut root = (**image.payload()).clone();
-            root.current = Arc::new(next);
+            root.current = RetainedMarkState::new(next);
             root
         };
         let prepared = self.prepare_root_replacement(cell.clone(), image, Arc::new(root))?;

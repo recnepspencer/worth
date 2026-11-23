@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use super::source_alignment::RetainedMarkState;
+
 pub mod completion_cues;
 pub mod exceptional_epoch;
 pub mod output_publication;
@@ -307,7 +309,7 @@ impl SourceInvalidationOwner {
         });
         let root = {
             let mut root = (**image.payload()).clone();
-            root.current = Arc::new(state);
+            root.current = RetainedMarkState::new(state);
             root
         };
         let mut prepared = self.prepare_root_replacement(cell, image, Arc::new(root))?;

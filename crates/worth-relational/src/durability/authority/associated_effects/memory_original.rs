@@ -15,7 +15,7 @@ pub struct ObservedRelationalMemoryCommit {
 enum MemoryCommitOrigin {
     Live(PositionedCanonicalCommit),
     Interim {
-        owner: std::sync::Weak<crate::runtime::RelationalRuntimeState>,
+        owner: crate::runtime::WeakRelationalRuntimeState,
         admitted: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
         data: crate::durability::canonical_commit_artifact::CheckpointEffectData,
     },
@@ -53,7 +53,7 @@ impl ObservedRelationalMemoryCommit {
 
     pub(crate) fn matches_interim(
         &self,
-        expected: &std::sync::Weak<crate::runtime::RelationalRuntimeState>,
+        expected: &crate::runtime::WeakRelationalRuntimeState,
         row: &crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
     ) -> bool {
         match &self.origin {

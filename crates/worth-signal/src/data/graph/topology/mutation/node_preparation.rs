@@ -90,7 +90,7 @@ impl SignalGraph {
         let pending = PendingDependencyRevalidation::structural(revision, producers);
         let current = self.pending_cause_set_id(node)?;
         self.cause_sets.admit_release_work(current, work)?;
-        let reverse = self.prepare_reverse_subscription_replacement(node, edges, work)?;
+        let reverse = self.prepare_reverse_subscription_replacement(node, edges, work, true)?;
         let maximum = self
             .installed_runtime_policy()
             .conditional_evaluation_budget();

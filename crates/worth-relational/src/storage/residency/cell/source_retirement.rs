@@ -70,7 +70,7 @@ impl RelationalRegionResidency {
     pub(in crate::storage::residency) fn source_retirement_resident(
         &self,
         slot: OriginalResidentSlot,
-    ) -> Result<Option<Arc<ResidentRegion>>, Denial> {
+    ) -> Result<Option<SharedResidentRegion>, Denial> {
         match slot {
             OriginalResidentSlot::Current => Ok(match &self.try_source_state()?.contents {
                 ResidencyState::Cold | ResidencyState::Damaged { .. } => None,

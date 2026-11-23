@@ -10,6 +10,7 @@ pub mod chunk;
 pub mod concatenation;
 pub mod copied;
 pub mod iteration;
+mod joined_backing;
 pub mod native;
 pub mod patch;
 pub mod performed_fields;
@@ -70,7 +71,7 @@ enum FactStorage {
     },
     Native(Arc<chunk::NativeFactChunk>),
     Joined {
-        children: Arc<worth_execution::ExecutionArray<FactPayload>>,
+        children: Arc<dyn joined_backing::JoinedFactBacking>,
     },
 }
 

@@ -3,6 +3,8 @@ pub use retirement::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
 };
+mod shared_backing;
+pub(crate) use shared_backing::{SharedRelationalBranchBasis, WeakRelationalBranchBasis};
 mod component_capture;
 pub(crate) use component_capture::CheckpointComponentDescriptorView;
 use std::sync::{Arc, OnceLock};
@@ -161,7 +163,7 @@ impl ResolvedRelationalBasisDescriptor {
 /// state.
 #[derive(Clone, Debug)]
 pub struct AdmittedRelationalBranchBasis {
-    pub(crate) inner: Arc<AdmittedRelationalBranchBasisInner>,
+    pub(crate) inner: SharedRelationalBranchBasis,
 }
 
 impl PartialEq for AdmittedRelationalBranchBasis {

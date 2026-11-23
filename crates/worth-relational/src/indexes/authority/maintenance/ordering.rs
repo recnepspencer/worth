@@ -5,8 +5,8 @@ use super::{
 };
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::{
-    DerivedIndexEntryMap, DerivedIndexMaintenanceDenialKind as Denial, RelatedEntityEndpoint,
-    RelatedEntityOrderingEntry, RelatedEntityOrderingField,
+    DerivedIndexMaintenanceDenialKind as Denial, RelatedEntityEndpoint, RelatedEntityOrderingEntry,
+    RelatedEntityOrderingField, RelatedEntityOrderingIndex,
 };
 use crate::indexes::projected_field_values::{
     compare_related_entries, entity_index_projection_scope,
@@ -22,7 +22,7 @@ struct OrderingContract<'a> {
 
 pub(super) fn refresh(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    entries: &mut DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>,
+    entries: &mut RelatedEntityOrderingIndex,
     contract: (
         KindId,
         RelatedEntityEndpoint,
@@ -76,6 +76,10 @@ pub(super) fn refresh(
         if old == new {
             continue;
         }
+        if entries.shares_header() {
+            work.prepare(1, RelatedEntityOrderingIndex::header_bytes())?;
+        }
+        let entries = entries.edit_map();
         let compare = |left: &RelatedEntityOrderingEntry, right: &RelatedEntityOrderingEntry| {
             compare_related_entries(left, right, contract.ordering)
         };

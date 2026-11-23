@@ -29,7 +29,7 @@ enum CatalogPublicationStage {
     Published,
 }
 impl PreparedGenerationBatch {
-    pub(crate) fn selection_state(&self) -> Option<Arc<super::IndexSelectionState>> {
+    pub(crate) fn selection_state(&self) -> Option<super::SharedIndexSelectionState> {
         self.basis
             .as_ref()
             .map(super::PreparedIndexBasisSelection::selection_state)

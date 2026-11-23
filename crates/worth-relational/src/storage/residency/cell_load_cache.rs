@@ -1,17 +1,17 @@
 //! One raw readmission serves both adjacency authority and serving admission.
 //! Retryable request stops never become a stored negative result.
-use super::{RelationalResidencyDemandFailure as Failure, ResidentRegion};
+use super::{RelationalResidencyDemandFailure as Failure, SharedResidentRegion};
 use crate::storage::data::RelationalStorageUnavailable;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 pub(super) type RegionLoadCache =
-    Mutex<Option<Result<Arc<ResidentRegion>, RelationalStorageUnavailable>>>;
+    Mutex<Option<Result<SharedResidentRegion, RelationalStorageUnavailable>>>;
 
 pub(super) fn load(
     cache: &RegionLoadCache,
     partition_id: crate::identity::data::PartitionId,
-    readmit: impl FnOnce() -> Result<Arc<ResidentRegion>, Failure>,
-) -> Result<Arc<ResidentRegion>, Failure> {
+    readmit: impl FnOnce() -> Result<SharedResidentRegion, Failure>,
+) -> Result<SharedResidentRegion, Failure> {
     let mut cached = cache
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());

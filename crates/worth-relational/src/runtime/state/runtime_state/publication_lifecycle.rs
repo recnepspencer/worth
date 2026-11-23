@@ -13,7 +13,27 @@ pub(in crate::runtime) struct RelationalRuntimePublicationOwner {
 /// Cloneable runtime binding carried by independently borrowable publication artifacts.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalRuntimePublicationBinding {
-    pub(super) lifecycle: Arc<RelationalRuntimePublicationLifecycle>,
+    pub(super) lifecycle: Arc<dyn PublicationLifecycleBacking>,
+}
+
+// A candidate can carry a binding back to its publication owner. Prove the
+// original allocation can cross threads here, before shipping its bindings.
+pub(super) trait PublicationLifecycleBacking: std::fmt::Debug + Send + Sync {
+    fn lifecycle(&self) -> &RelationalRuntimePublicationLifecycle;
+}
+
+impl PublicationLifecycleBacking for RelationalRuntimePublicationLifecycle {
+    fn lifecycle(&self) -> &Self {
+        self
+    }
+}
+
+impl std::ops::Deref for dyn PublicationLifecycleBacking {
+    type Target = RelationalRuntimePublicationLifecycle;
+
+    fn deref(&self) -> &Self::Target {
+        self.lifecycle()
+    }
 }
 
 #[derive(Debug)]

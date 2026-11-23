@@ -1,13 +1,9 @@
 use super::root_view::IndexRootView;
-use super::{
-    changes::ChangedRecords,
-    entry_edits::{grouped, PendingEdit},
-    work::MaintenanceWork,
-};
+use super::{changes::ChangedRecords, entry_edits::PendingEdit, work::MaintenanceWork};
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::{
-    DerivedIndexEntries, DerivedIndexEntryMap, DerivedIndexId,
-    DerivedIndexMaintenanceDenialKind as Denial,
+    DerivedIndexEntries, DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial,
+    RetainedIndexEntryMap,
 };
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::BTreeMap;
@@ -17,7 +13,7 @@ pub(super) enum PendingField {
     Entity {
         index_id: DerivedIndexId,
         locator: AspectFieldLocator,
-        entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
+        entries: RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
         patch: bool,
         changed: bool,
@@ -25,7 +21,7 @@ pub(super) enum PendingField {
     Relation {
         index_id: DerivedIndexId,
         locator: AspectFieldLocator,
-        entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>,
+        entries: RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<RelationId>>>,
         patch: bool,
         changed: bool,
@@ -155,14 +151,7 @@ pub(super) fn apply_changes(
                 ..
             } => {
                 *changed = !edits.is_empty();
-                grouped(
-                    entries,
-                    std::mem::take(edits),
-                    Ord::cmp,
-                    |key| key.canonical_value_bytes().len() + 1,
-                    !*patch,
-                    work,
-                )?;
+                super::field_delta::apply(entries, std::mem::take(edits), !*patch, work)?;
             }
             PendingField::Relation {
                 entries,
@@ -172,14 +161,7 @@ pub(super) fn apply_changes(
                 ..
             } => {
                 *changed = !edits.is_empty();
-                grouped(
-                    entries,
-                    std::mem::take(edits),
-                    Ord::cmp,
-                    |key| key.canonical_value_bytes().len() + 1,
-                    !*patch,
-                    work,
-                )?;
+                super::field_delta::apply(entries, std::mem::take(edits), !*patch, work)?;
             }
         }
     }

@@ -6,9 +6,9 @@ use crate::{
     execution::{request_stage::checkpoint, RelationalExecutionDenialCause as Cause},
     identity::data::{EntityId, VersionId},
     indexes::data::{
-        DerivedIndexEntryMap, DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
+        DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
         DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
-        DerivedIndexMaintenanceDenialKind as Denial,
+        DerivedIndexMaintenanceDenialKind as Denial, RetainedIndexEntryMap,
     },
     storage::data::AuthoritativeFieldComparisonKey,
     transactions::data::RecordRef,
@@ -19,7 +19,7 @@ use worth_execution::{
 };
 use worth_foundational::facade::AspectFieldLocator;
 
-type Entries = DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>;
+type Entries = RetainedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>;
 type Key = (DerivedIndexId, DerivedIndexGenerationId);
 
 #[derive(Debug)]

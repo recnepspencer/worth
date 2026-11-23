@@ -26,7 +26,7 @@ pub(super) fn refresh(
     work: &mut MaintenanceWork,
 ) -> Result<bool, Denial> {
     let previous = match index.legs() {
-        Some(legs) => legs.as_ref().clone(),
+        Some(legs) => legs.clone(),
         None => return Err(Denial::ColdReconstructionRequired),
     };
     let mut next = previous.clone();
@@ -74,6 +74,10 @@ pub(super) fn refresh(
         &mut pairs,
         work,
     )?;
+    if index.shares_backing() {
+        work.prepare(1, RelationJoinIndex::header_bytes())?;
+    }
+    let entries = index.edit_entries();
     let mut allocation = UngroupedAllocation::new();
     for (shared, left, right) in pairs {
         let old = row(&previous, shared, left, right, work)?;
@@ -84,16 +88,12 @@ pub(super) fn refresh(
         work.derive_row()?;
         let key = RelationJoinKey::new(left, right);
         if let Some(old) = old {
-            edit(index, key, old, false, Ord::cmp, &mut allocation, work)?;
+            edit(entries, key, old, false, Ord::cmp, &mut allocation, work)?;
         }
         if let Some(new) = new {
-            edit(index, key, new, true, Ord::cmp, &mut allocation, work)?;
+            edit(entries, key, new, true, Ord::cmp, &mut allocation, work)?;
         }
     }
-    work.prepare(
-        1,
-        (std::mem::size_of::<JoinLegsState>() + 2 * std::mem::size_of::<usize>()) as u64,
-    )?;
     index.install_legs(next);
     Ok(true)
 }

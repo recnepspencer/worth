@@ -28,7 +28,7 @@ pub(super) fn project(
                     push(&mut rows, key, id, width, work)?;
                 }
             }
-            seal(rows, |key| key.canonical_value_bytes().len() + 1, work)
+            seal_retained(rows, |key| key.canonical_value_bytes().len() + 1, work)
                 .map(DerivedIndexEntries::EntityField)
         }
         DerivedIndexKind::RelationField { field_locator } => {
@@ -41,7 +41,7 @@ pub(super) fn project(
                     push(&mut rows, key, id, width, work)?;
                 }
             }
-            seal(rows, |key| key.canonical_value_bytes().len() + 1, work)
+            seal_retained(rows, |key| key.canonical_value_bytes().len() + 1, work)
                 .map(DerivedIndexEntries::RelationField)
         }
         DerivedIndexKind::RelatedEntityOrdering {
@@ -89,7 +89,7 @@ pub(super) fn project(
                     )
                 });
             }
-            seal(rows, |_| 1, work).map(DerivedIndexEntries::RelatedEntityOrdering)
+            seal_retained(rows, |_| 1, work).map(DerivedIndexEntries::RelatedEntityOrdering)
         }
         DerivedIndexKind::RelationJoin(definition) => {
             collect_join(lane, execution, after, records, *definition, work)
@@ -111,6 +111,19 @@ fn push<K: Ord, R>(
     bucket.push(row);
     Ok(())
 }
+fn seal_retained<K, R>(
+    rows: BTreeMap<K, Vec<R>>,
+    width: impl Fn(&K) -> usize,
+    work: &mut MaintenanceWork,
+) -> Result<RetainedIndexEntryMap<K, R>, Denial>
+where
+    K: Ord + Clone + Send + Sync + 'static,
+    R: Clone + Send + Sync + 'static,
+{
+    work.prepare(1, RetainedIndexEntryMap::<K, R>::header_bytes())?;
+    seal(rows, width, work).map(Into::into)
+}
+
 fn seal<K: Ord + Clone, R: Clone>(
     rows: BTreeMap<K, Vec<R>>,
     width: impl Fn(&K) -> usize,
@@ -200,10 +213,7 @@ fn collect_join(
     }
     funding::legs(&left, work)?;
     funding::legs(&right, work)?;
-    work.prepare(
-        1,
-        (std::mem::size_of::<JoinLegsState>() + 2 * std::mem::size_of::<usize>()) as u64,
-    )?;
+    work.prepare(1, RelationJoinIndex::header_bytes())?;
     Ok(RelationJoinIndex::maintained(
         seal(rows, |_| 1, work)?,
         JoinLegsState::cold(lane, left, right),

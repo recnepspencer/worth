@@ -13,8 +13,10 @@ fn result_snapshot_cleanup_basis_registry_contention_keeps_original_lease() {
         .unwrap()
         .basis_registry
         .clone();
-    let mut inner =
-        Arc::into_inner(basis.inner).expect("this actual observation has no independent reader");
+    let mut inner = basis
+        .inner
+        .release_share()
+        .expect("this actual observation has no independent reader");
     let mut lease = inner.registry_lease.take().unwrap();
     let locked = registry.retained.lock().unwrap();
     let original = locked.entries.get(&lease.key).unwrap().registration_id;

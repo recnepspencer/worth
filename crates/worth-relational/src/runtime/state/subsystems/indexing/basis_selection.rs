@@ -5,7 +5,7 @@ mod cold_merge;
 mod empty_basis;
 mod frozen_checkpoint;
 mod payment;
-use super::{IndexingState, IndexingSubsystem};
+use super::{IndexSelectionState, IndexingState, IndexingSubsystem, SharedIndexSelectionState};
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
 use crate::indexes::data::{
@@ -24,7 +24,7 @@ pub(crate) struct PreparedIndexBasisSelection {
     pub(crate) commit: CommitId,
     pub(crate) version: VersionId,
     pub(crate) schema: SchemaVersionId,
-    state: Arc<super::IndexSelectionState>,
+    state: SharedIndexSelectionState,
     globals: im::OrdSet<DerivedIndexId>,
 }
 
@@ -101,7 +101,7 @@ impl BasisSelections {
             .map(|(key, basis)| (key.clone(), basis.as_ref().clone()))
             .collect();
         for (key, mut basis) in changed {
-            let state = Arc::make_mut(&mut basis.state);
+            let state = IndexSelectionState::make_mut(&mut basis.state);
             state.entries.remove(&index);
             state.empty.remove(&index);
             state.global.remove(&index);
@@ -210,10 +210,10 @@ impl BasisSelections {
     }
 }
 impl PreparedIndexBasisSelection {
-    pub(crate) fn selection_state(&self) -> Arc<super::IndexSelectionState> {
+    pub(crate) fn selection_state(&self) -> SharedIndexSelectionState {
         Arc::clone(&self.state)
     }
-    pub(crate) fn retain_state(&mut self, state: Arc<super::IndexSelectionState>) {
+    pub(crate) fn retain_state(&mut self, state: SharedIndexSelectionState) {
         self.state = state;
     }
 
@@ -253,7 +253,7 @@ impl PreparedIndexBasisSelection {
             0
         };
         prepare(units + 1, bytes + state_bytes as u64)?;
-        let state = Arc::make_mut(&mut self.state);
+        let state = IndexSelectionState::make_mut(&mut self.state);
         if state.entries.contains_key(&index) {
             state.entries.remove(&index);
         } else {
@@ -286,7 +286,7 @@ impl PreparedIndexBasisSelection {
         Ok(())
     }
     pub(crate) fn replace(&mut self, generation: Arc<DerivedIndexGeneration>) {
-        let state = Arc::make_mut(&mut self.state);
+        let state = IndexSelectionState::make_mut(&mut self.state);
         if state.empty.contains(&generation.index_id) {
             state.empty.remove(&generation.index_id);
         }

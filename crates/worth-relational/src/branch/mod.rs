@@ -52,9 +52,9 @@ pub use record_advance::{
     RelationalRecordAdvanceObservation,
 };
 pub use recorded_basis::{
-    AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
-    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
-    RelationalRecordedComponentRefusal,
+    AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent,
+    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
+    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
 };
 pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
@@ -95,7 +95,10 @@ pub use basis::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
     ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
-pub(crate) use basis::{AdmittedRelationalBranchBasisInner, CheckpointComponentDescriptorView};
+pub(crate) use basis::{
+    AdmittedRelationalBranchBasisInner, CheckpointComponentDescriptorView,
+    SharedRelationalBranchBasis, WeakRelationalBranchBasis,
+};
 pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
@@ -163,7 +166,7 @@ pub(crate) use root::{
 pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
-    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress, RetainedRelationalRegions,
 };
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;

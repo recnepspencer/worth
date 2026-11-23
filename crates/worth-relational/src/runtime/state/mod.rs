@@ -16,7 +16,6 @@ mod runtime_state;
 mod subsystems;
 
 pub use runtime_state::RelationalRuntime;
-pub(crate) use runtime_state::RelationalRuntimeState;
 pub(crate) use runtime_state::{
     AdmittedRelationalRuntimeOperation, RelationalCandidateRegistrationDenial,
     RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
@@ -40,16 +39,16 @@ pub use runtime_state::{
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
+pub(crate) use runtime_state::{RelationalRuntimeState, WeakRelationalRuntimeState};
 pub(crate) use subsystems::{
     authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
     BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
     DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
+    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionBacking, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageNamingBasisBinding, LineageState,
-    LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedGenerationBatch, PreparedIndexBasisSelection,
@@ -64,8 +63,9 @@ pub(crate) use subsystems::{
     RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
     ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
     RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SharedIndexSelectionState,
+    SnapshotHandleBinding, StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch,
+    VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

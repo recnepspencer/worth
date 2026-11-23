@@ -67,6 +67,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
     }
     let legs = JoinLegsState::cold(lane, left, right);
     context.checkpoint(legs.relation_count() as u64)?;
+    context.claim_result(RelationJoinIndex::header_bytes())?;
     context.check_result_peak(legs.owned_bytes())?;
     Ok(RelationJoinIndex::maintained(
         super::checked_finish(entries, context)?,
