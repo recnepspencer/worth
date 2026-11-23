@@ -36,3 +36,5 @@ fn owner_branch_identity_is_runtime_affine_without_a_public_target_constructor()
     let identity = runtime.main_branch_identity();
     assert_eq!(identity.branch_id(), &BranchId("main".to_owned()));
 }
+
+mod facade_observations;

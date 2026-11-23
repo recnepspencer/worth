@@ -166,6 +166,7 @@ where
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),
+            persistent_names: Default::default(),
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],

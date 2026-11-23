@@ -4,6 +4,7 @@ pub mod durable_medium;
 pub mod durable_publication;
 pub mod initial_input_source;
 pub mod maintenance;
+pub mod ordinary_records;
 #[allow(dead_code, unused_imports)]
 #[path = "relational_certification/mod.rs"]
 pub mod relational_certification;

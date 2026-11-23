@@ -76,6 +76,14 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.batch()
     }
 
+    /// The naming plan the candidate transaction attaches; `Err` when the
+    /// attempt's declared output names were never lowered.
+    pub fn naming_plan(
+        &self,
+    ) -> Result<Option<&worth_relational::facade::lineage::CommitNamingPlan>, ()> {
+        self.attempt.naming_plan()
+    }
+
     pub fn branch(&self) -> &worth_relational::facade::history::BranchId {
         self.attempt.affinity().branch()
     }

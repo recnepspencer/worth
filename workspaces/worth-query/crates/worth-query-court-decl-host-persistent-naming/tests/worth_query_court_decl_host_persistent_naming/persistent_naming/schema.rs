@@ -49,20 +49,32 @@ impl Contribution {
 pub struct Registrations;
 /// The declared persistent-name scheme every `Member` birth is minted under.
 pub const MEMBER_SCHEME: &str = "worth.tests.persistent-naming.member.v1";
+/// The declared persistent-name scheme every `Seam` birth is minted under.
+pub const SEAM_SCHEME: &str = "worth.tests.persistent-naming.seam.v1";
 impl Registration<Schema> for Registrations {
     fn register(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
-        let scheme = worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder::<
-            Schema,
-            Member,
-        >::new(MEMBER_SCHEME)
-        .role_order(&["authored"])
+        use worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder;
+        let scheme = ApplicationNameSchemeBuilder::<Schema, Member>::new(MEMBER_SCHEME)
+            .role_order(&["authored", "piece", "merged"])
+            .split_discriminator::<outputs::MemberCut>()
+            .require_authored_occurrence()
+            .build()
+            .expect("the member scheme is well-formed");
+        let seam = ApplicationNameSchemeBuilder::<Schema, Seam>::for_relation(
+            SEAM_SCHEME,
+            Seam::reference(),
+        )
+        .role_order(&["seam", "seam_piece"])
+        .split_discriminator::<outputs::SeamSide>()
         .require_authored_occurrence()
         .build()
-        .expect("the member scheme is well-formed");
-        declare(schema).application_name_scheme::<Member>(scheme)
+        .expect("the seam scheme is well-formed");
+        declare(schema)
+            .application_name_scheme::<Member>(scheme)?
+            .application_name_scheme::<Seam>(seam)
     }
 }
 #[derive(Clone, Copy)]
@@ -106,9 +118,9 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    refusals::declare(probe::declare(delete::declare(query::member::declare(
+    outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(query::member::declare(
         query::model::declare(edit::declare(navigation::declare(schema))),
-    ))))
+    )))))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -120,6 +132,7 @@ fn declare(
         .operation::<edit::model::Binding>("Edit model")
         .operation::<delete::Binding>("Delete member")
         .operation::<probe::Binding>("Probe names")
+        .operation::<outputs::sculpt::Binding>("Sculpt members")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )
 }

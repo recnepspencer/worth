@@ -8,7 +8,10 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 use super::*;
-use worth_query_decl::facade::application_naming::{NameSelection, ResolvedName, WorthQueryName};
+use worth_query_decl::facade::application_naming::{
+    NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+};
+use worth_query_host::facade::application_naming::ExecutionNameResolveDenial;
 
 /// What one probe run observed.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,11 +33,18 @@ pub enum Observation {
     Retired { label: String },
     /// Resolution refused with the stated typed denial.
     ResolveRefused { label: String, refusal: String },
+    /// A held name resolved to two or more live members (by probe key).
+    Plural { label: String, keys: Vec<String> },
+    /// `Exact` refused with every live candidate name.
+    Ambiguous {
+        label: String,
+        candidates: Vec<WorthQueryName<Member>>,
+    },
 }
 
 #[derive(Default)]
 struct Probe {
-    held: Vec<(String, WorthQueryName<Member>)>,
+    held: Vec<(String, WorthQueryName<Member>, NameSelection)>,
     observed: Vec<Observation>,
 }
 
@@ -42,6 +52,16 @@ static PROBES: Mutex<BTreeMap<String, Probe>> = Mutex::new(BTreeMap::new());
 
 /// Holds `name` under `label` for every later probe run carrying `token`.
 pub fn hold(token: &str, label: &str, name: WorthQueryName<Member>) {
+    hold_selecting(token, label, name, NameSelection::Exact);
+}
+
+/// Holds `name` under `label`, resolved with `selection` by later probes.
+pub fn hold_selecting(
+    token: &str,
+    label: &str,
+    name: WorthQueryName<Member>,
+    selection: NameSelection,
+) {
     let mut probes = PROBES
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -49,7 +69,7 @@ pub fn hold(token: &str, label: &str, name: WorthQueryName<Member>) {
         .entry(token.to_owned())
         .or_default()
         .held
-        .push((label.to_owned(), name));
+        .push((label.to_owned(), name, selection));
 }
 
 /// Takes what probe runs carrying `token` observed since the last take.
@@ -121,10 +141,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .get(&input.token)
                 .map(|probe| probe.held.clone())
                 .unwrap_or_default();
-            for (label, name) in held {
+            for (label, name, selection) in held {
                 let resolved = reader
                     .reader()
-                    .resolve(&name, &NameSelection::Exact)
+                    .resolve(&name, &selection)
                     .map_err(HandlerExecutionDenial::new)?;
                 observed.push(match resolved {
                     Ok(ResolvedName::Exact(identity)) => {
@@ -139,10 +159,20 @@ impl OperationHandler<Schema, Binding> for Handler {
                         )
                     }
                     Ok(ResolvedName::Retired { .. }) => Observation::Retired { label },
-                    Ok(other) => Observation::ResolveRefused {
+                    Ok(ResolvedName::Plural(identities)) => Observation::Plural {
                         label,
-                        refusal: format!("{other:?}"),
+                        keys: identities
+                            .iter()
+                            .map(|identity| {
+                                live.iter()
+                                    .find(|(_, member)| member == identity)
+                                    .map_or_else(|| "?".to_owned(), |(key, _)| key.clone())
+                            })
+                            .collect(),
                     },
+                    Err(ExecutionNameResolveDenial::Resolution(
+                        NameResolutionDenial::Ambiguous { candidates },
+                    )) => Observation::Ambiguous { label, candidates },
                     Err(refusal) => Observation::ResolveRefused {
                         label,
                         refusal: format!("{refusal:?}"),
