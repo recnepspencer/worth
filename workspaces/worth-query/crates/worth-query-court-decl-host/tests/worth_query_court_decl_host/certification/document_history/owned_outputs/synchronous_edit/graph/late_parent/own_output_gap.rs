@@ -162,7 +162,7 @@ fn a_successor_reaching_its_own_created_record_by_relation_refuses_typed() {
 /// would also catch after preparation.
 #[test]
 fn a_successor_traversing_to_its_own_created_record_refuses_typed() {
-    family::c3b::self_relation::TRAVERSE_ONLY.store(true, std::sync::atomic::Ordering::Relaxed);
+    family::c3b::self_relation::TRAVERSE_ONLY.with(|flag| flag.set(true));
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<Program>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),

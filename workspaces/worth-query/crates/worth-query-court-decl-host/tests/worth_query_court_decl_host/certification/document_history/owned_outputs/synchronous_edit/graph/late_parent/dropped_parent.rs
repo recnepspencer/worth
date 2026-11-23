@@ -7,7 +7,6 @@ use super::reopen_closed::{
 };
 use super::*;
 use super::super::super::interleaved::valued_members;
-use std::sync::atomic::Ordering;
 
 /// `first(a)` to `first(c)`, whose own incoming prerequisites are model
 /// `a`'s members valued 8: `m` selects `first(b)`, any other `first(d)`.
@@ -97,7 +96,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
 /// sets m = 8 and `decision-write-n(a)` sets n = 3. Returns the outcome, the
 /// wave events, and which outputs the candidate holds afterwards.
 fn run(n: u64, key: &str) -> (String, Vec<String>, [bool; 3]) {
-    SECOND_WRITER_A.store(true, Ordering::Relaxed);
+    SECOND_WRITER_A.with(|flag| flag.set(true));
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),

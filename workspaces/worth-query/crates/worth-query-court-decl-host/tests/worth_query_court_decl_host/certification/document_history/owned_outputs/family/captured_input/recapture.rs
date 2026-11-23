@@ -24,7 +24,7 @@ fn recapture_keeps_a_parent_still_required_by_another_input() {
 /// the fix: clearing forgot `late`, and the edit committed it as an orphan.
 #[test]
 fn a_recapture_that_drops_a_derived_parent_refuses() {
-    super::program::CHOICE_FIRST.store(true, std::sync::atomic::Ordering::SeqCst);
+    super::program::CHOICE_FIRST.with(|flag| flag.set(true));
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,

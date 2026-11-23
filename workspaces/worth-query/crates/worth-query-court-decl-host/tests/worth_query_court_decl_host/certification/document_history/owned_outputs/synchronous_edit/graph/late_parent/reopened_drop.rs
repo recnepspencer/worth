@@ -10,7 +10,6 @@ use super::reopen_closed::{SecondEdgeConnection, SECOND_WRITER_A};
 use super::*;
 use super::super::super::interleaved::valued_members;
 use family::{decision_input, decision_write, ordinary_input};
-use std::sync::atomic::Ordering;
 
 /// `decision-input(a)` to `ordinary-input(b)`, whose incoming prerequisites
 /// are model `a`'s members valued 8: `n` selects `decision-input(c)` (which
@@ -158,7 +157,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
 /// `SupersededSelectionDropped`, and nothing commits.
 #[test]
 fn a_pure_parent_its_selector_drops_after_it_derived_refuses() {
-    SECOND_WRITER_A.store(true, Ordering::Relaxed);
+    SECOND_WRITER_A.with(|flag| flag.set(true));
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
