@@ -101,6 +101,83 @@ impl OwnOutputOverlay {
         }))
     }
 
+    /// Whether the part of `fact`'s list that Native's record of the chain
+    /// does not speak for reads the same at the head pre-pin as at `applied`
+    /// (#277). A chain delete changes its record and that record's relations.
+    /// The relations it retires are covered and served from the head; what is
+    /// left is the residue: the raw list at each pin, minus covered
+    /// relations, kept where the anchor or an endpoint is a record the chain
+    /// wrote. Two raw reads at two pins, never the served merge, so a
+    /// difference is a change at a chain record that nothing certifies. A
+    /// bounded read past its limit on either side proves nothing.
+    pub fn uncovered_residue_equal(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        applied: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        fact: &Fact,
+    ) -> Result<bool, Denial> {
+        use crate::domain_computation::primary_graph::application_attempt::fact::image::FactReadImage;
+        let image = |applied| FactReadImage {
+            runtime,
+            before: snapshot,
+            applied: Some(applied),
+        };
+        let (current, head) = (image(applied), image(self.head()));
+        let relations = self.relations();
+        Ok(match fact {
+            Fact::Relation {
+                relation_kind,
+                from,
+                to,
+                ..
+            } if self.covers(*from) || self.covers(*to) => {
+                let residue = |image: &FactReadImage<'_>| -> Result<Vec<_>, Denial> {
+                    let mut list = image.relations(execution, *relation_kind, *from, *to)?;
+                    list.retain(|id| !relations.covers(*id));
+                    Ok(list)
+                };
+                residue(&current)? == residue(&head)?
+            }
+            Fact::Adjacency {
+                relation_kind,
+                anchor,
+                direction,
+                maximum_work_units,
+                ..
+            } => {
+                let anchored = self.covers(*anchor);
+                let residue = |image: &FactReadImage<'_>| -> Result<Option<Vec<_>>, Denial> {
+                    let list = image.adjacency(
+                        execution,
+                        *relation_kind,
+                        *anchor,
+                        *direction,
+                        *maximum_work_units,
+                    )?;
+                    Ok(list.map(|mut list| {
+                        list.retain(|relation| {
+                            !relations.covers(relation.relation_id)
+                                && (anchored
+                                    || self.covers(relation.from)
+                                    || self.covers(relation.to))
+                        });
+                        list
+                    }))
+                };
+                match (residue(&current)?, residue(&head)?) {
+                    (Some(current), Some(head)) => current == head,
+                    _ => false,
+                }
+            }
+            // No chain record on the list: nothing a chain delete could reach.
+            _ => true,
+        })
+    }
+
     fn merge_fact(&self, current: Fact, head: Fact) -> Fact {
         let relations = self.relations();
         match (current, head) {

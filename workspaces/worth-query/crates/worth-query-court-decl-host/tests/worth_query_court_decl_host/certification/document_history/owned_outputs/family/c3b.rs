@@ -17,6 +17,7 @@ pub mod guarded_first;
 pub mod decision_write_n;
 pub mod self_relation;
 pub mod child_drop;
+pub mod kid_linker;
 pub mod aspect_probe;
 pub mod saturated_consumer;
 pub mod saturated_input;
@@ -43,6 +44,7 @@ pub fn contracts(
     decision_write_n::contracts(contracts)?;
     self_relation::contracts(contracts)?;
     child_drop::contracts(contracts)?;
+    kid_linker::contracts(contracts)?;
     aspect_probe::contracts(contracts)
 }
 pub fn install(
@@ -66,5 +68,6 @@ pub fn install(
     decision_write_n::install(setup)?;
     self_relation::install(setup)?;
     child_drop::install(setup)?;
+    kid_linker::install(setup)?;
     aspect_probe::install(setup)
 }

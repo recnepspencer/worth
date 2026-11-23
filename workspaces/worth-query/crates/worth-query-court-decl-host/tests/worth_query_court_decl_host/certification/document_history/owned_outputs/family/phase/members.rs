@@ -46,6 +46,8 @@ macro_rules! producer_member_target {
         Some($reader.mutation_target(&member)?)
     }};
     (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
+    (KidLinkerInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (KidLinkerPreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (@write $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, MemberValue::at("MemberValue"))?;
@@ -74,6 +76,8 @@ macro_rules! producer_member_effect {
     (DecisionWriteNInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteNPreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (KidLinkerInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (KidLinkerPreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (@write $writer:ident, $decision:ident, $input:ident) => {{
         let member = $writer.projected_entity($decision.member_target.as_ref().expect("actual completed member decision"))?;
         $writer.write_field(&member, MemberValue::at("MemberValue"), $input.0.value + 1)?;

@@ -1,105 +1,145 @@
 //! A successor round that reaches a record its own chain deleted, through a
-//! link served at the chain head (#277 step 1). The record is covered, so the
-//! round reads its presence where it reads its fields: at the chain head,
-//! where it exists.
+//! link served at the chain head (#277 steps 1 and 2). The record is covered,
+//! so the round reads its presence where it reads its fields: at the chain
+//! head, where it exists. The chain's delete does not by itself make the
+//! served list a prior-effect read; a link the chain did not make, at a record
+//! the chain wrote, does.
+use super::super::super::super::program;
+use super::super::hierarchy;
 use super::*;
 use family::c3b::child_drop;
-use family::decision_write;
-pub struct Start;
-impl ApplicationConnectionIdentity for Start {
-    const IDENTITY: &'static str = "owned-outputs.late-parent.own-drop-start";
+/// `child-drop(a)` under the edit, and `$child(a)` discovered from `first:a`.
+macro_rules! drop_program {
+    ($($child:ident)::+, $slug:literal) => {
+        use super::*;
+        use family::$($child)::+ as child;
+        pub struct Start;
+        impl ApplicationConnectionIdentity for Start {
+            const IDENTITY: &'static str = concat!("owned-outputs.late-parent.", $slug, "-start");
+        }
+        impl ApplicationOccurrenceConnectionBinding<Schema, program::Entry, child_drop::Feature> for Start {}
+        pub type Connection = ApplicationConnectionRef<
+            Schema,
+            program::Entry,
+            program::EntryOutput,
+            child_drop::Feature,
+            child_drop::InputPort,
+            Start,
+        >;
+        impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
+            type Source = edit::Binding;
+            type Demand = child_drop::Demand;
+            const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+            fn demand_from_source(
+                _: &edit::Intent,
+            ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+                Ok(child_drop::Demand("a".into()))
+            }
+        }
+        impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for edit::Binding {
+            fn demand_from_source(
+                input: &edit::Intent,
+            ) -> Result<child_drop::Demand, WorthQueryRequiredOutputConnectionDenial> {
+                <Start as WorthQueryApplicationRequiredOutputConnection<Schema>>::demand_from_source(input)
+            }
+        }
+        pub struct Discover;
+        impl ApplicationConnectionIdentity for Discover {
+            const IDENTITY: &'static str = concat!("owned-outputs.late-parent.", $slug, "-discover");
+        }
+        impl ApplicationOccurrenceConnectionBinding<Schema, child_drop::Feature, child::Feature> for Discover {}
+        pub type ChildConnection = ApplicationConnectionRef<
+            Schema,
+            child_drop::Feature,
+            child_drop::OutputPort,
+            child::Feature,
+            child::InputPort,
+            Discover,
+        >;
+        impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
+            type RootDemand = child_drop::Demand;
+            type Discovery = query::first_output::Read;
+            type Demand = child::Demand;
+            const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+            fn discovery_from_root(
+                _: &Self::RootDemand,
+            ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial> {
+                Ok(query::first_output::Read("first:a".into()))
+            }
+            fn demands_from_discovery(
+                row: &query::Row,
+            ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
+                assert_eq!(row.key.as_str(), "first:a");
+                Ok(vec![child::Demand("a".into())])
+            }
+        }
+        pub type Tree = ApplicationOutputGraph<
+            Connection,
+            ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>,
+        >;
+        pub struct Delivery;
+        impl ApplicationActionDelivery<Schema, edit::Binding> for Delivery {
+            type Mode = ApplicationFixedDeliveryMode<Tree, ApplicationNoProjection>;
+            const IDENTITY: &'static str = concat!("owned-outputs.late-parent.", $slug, "-delivery");
+        }
+        impl ApplicationFixedActionDelivery<Schema, edit::Binding> for Delivery {
+            type Root = Tree;
+            type Projection = ApplicationNoProjection;
+        }
+        pub struct Program;
+        impl ApplicationProgramDefinition<Schema> for Program {
+            type Contributions = (Contribution,);
+            type Outputs = ApplicationProgramOutputs<Tree>;
+            type Rules = ApplicationRuleLeaf;
+            const IDENTITY: ApplicationProgramIdentity =
+                ApplicationProgramIdentity::new(concat!("owned-outputs.late-parent.", $slug, "-program"));
+            fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+                let mut specs = hierarchy::Program::feature_specs();
+                specs[0] = program::entry_spec::<Delivery>();
+                specs
+            }
+        }
+    };
 }
-impl
-    ApplicationOccurrenceConnectionBinding<
-        Schema,
-        super::super::super::super::program::Entry,
-        child_drop::Feature,
-    > for Start
-{
+/// The child only writes member `m`.
+mod writer {
+    drop_program!(decision_write, "own-drop");
 }
-pub type Connection = ApplicationConnectionRef<
-    Schema,
-    super::super::super::super::program::Entry,
-    super::super::super::super::program::EntryOutput,
-    child_drop::Feature,
-    child_drop::InputPort,
-    Start,
->;
-impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
-    type Source = edit::Binding;
-    type Demand = child_drop::Demand;
-    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
-    fn demand_from_source(
-        _: &edit::Intent,
-    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(child_drop::Demand("a".into()))
-    }
+/// The child writes member `m` and links a child of its own under `first:a`.
+mod linker {
+    drop_program!(c3b::kid_linker, "own-drop-linker");
 }
-impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for edit::Binding {
-    fn demand_from_source(
-        input: &edit::Intent,
-    ) -> Result<child_drop::Demand, WorthQueryRequiredOutputConnectionDenial> {
-        <Start as WorthQueryApplicationRequiredOutputConnection<Schema>>::demand_from_source(input)
-    }
-}
-pub struct Discover;
-impl ApplicationConnectionIdentity for Discover {
-    const IDENTITY: &'static str = "owned-outputs.late-parent.own-drop-discover";
-}
-impl ApplicationOccurrenceConnectionBinding<Schema, child_drop::Feature, decision_write::Feature>
-    for Discover
-{
-}
-pub type ChildConnection = ApplicationConnectionRef<
-    Schema,
-    child_drop::Feature,
-    child_drop::OutputPort,
-    decision_write::Feature,
-    decision_write::InputPort,
-    Discover,
->;
-impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
-    type RootDemand = child_drop::Demand;
-    type Discovery = query::first_output::Read;
-    type Demand = decision_write::Demand;
-    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
-    fn discovery_from_root(
-        _: &Self::RootDemand,
-    ) -> Result<Self::Discovery, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(query::first_output::Read("first:a".into()))
-    }
-    fn demands_from_discovery(
-        row: &query::Row,
-    ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        assert_eq!(row.key.as_str(), "first:a");
-        Ok(vec![decision_write::Demand("a".into())])
-    }
-}
-pub type Tree = ApplicationOutputGraph<
-    Connection,
-    ApplicationOutputEdge<ChildConnection, ApplicationOutputLeaf>,
->;
-pub struct Delivery;
-impl ApplicationActionDelivery<Schema, edit::Binding> for Delivery {
-    type Mode = ApplicationFixedDeliveryMode<Tree, ApplicationNoProjection>;
-    const IDENTITY: &'static str = "owned-outputs.late-parent.own-drop-delivery";
-}
-impl ApplicationFixedActionDelivery<Schema, edit::Binding> for Delivery {
-    type Root = Tree;
-    type Projection = ApplicationNoProjection;
-}
-pub struct Program;
-impl ApplicationProgramDefinition<Schema> for Program {
-    type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<Tree>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("owned-outputs.late-parent.own-drop-program");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut specs = super::super::hierarchy::Program::feature_specs();
-        specs[0] = super::super::super::super::program::entry_spec::<Delivery>();
-        specs
-    }
+/// One host on `$program`, and `$edit`: an edit of model `a` to a value, with
+/// the wave events it produced.
+macro_rules! drop_world {
+    ($program:ident, $execution:ident, $host:ident, $request:ident, $edit:ident) => {
+        let $execution = WorthQueryExecutionObservation::install_on_this_thread();
+        let $host = world::install_program_with_other_model::<$program::Program>(
+            host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            2,
+            Some(7),
+        );
+        let scope = request_scope();
+        let principal = authenticate_operator($host.installed_schema(), &scope);
+        let $request = $host.request(&principal, &scope);
+        let $edit = |idempotency: &str, value| {
+            let mut edit = $request
+                .edit_envelope()
+                .idempotency(idempotency.to_owned())
+                .runtime_stages(&$host)
+                .ordered_authored()
+                .unwrap();
+            edit.push_stage::<$program::Tree, _>(edit::Intent {
+                key: "a".into(),
+                value,
+            })
+            .unwrap();
+            let outcome = edit
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap();
+            (outcome, $execution.wave_events_for_test())
+        };
+    };
 }
 
 /// The first edit (`a = 8`) derives `first:a` with its child `kid:a`, and
@@ -109,49 +149,66 @@ impl ApplicationProgramDefinition<Schema> for Program {
 /// round of its own chain. That round reads `first:a`'s children through the
 /// link served at the chain head, reaches `kid:a`, and reads its presence.
 /// `kid:a` is a record the chain wrote, so its presence is served where its
-/// fields are, at the chain head: it exists there. The round goes on to drop
-/// the child again, a write Native cannot yet fold onto the chain's own
-/// delete, so the edit stops typed and nothing publishes.
+/// fields are, at the chain head: it exists there. The chain's unlink and
+/// delete are recorded and served, and nothing else is at `first:a`, so the
+/// round did not read its chain's effect. It goes on to drop the child again,
+/// a write Native cannot yet fold onto the chain's own delete, so the edit
+/// stops typed and nothing publishes.
 /// Red before step 1: untyped `MissingAuthoritativeFact`, the presence read at
 /// the current image, where the chain's delete had already removed `kid:a`.
+/// Before step 2: `PriorEffectRead`, the chain's delete counted against the
+/// list it was served.
 #[test]
 fn a_successor_reading_the_presence_of_the_record_its_chain_deleted_refuses_typed() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
-    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::install_program_with_other_model::<Program>(
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        2,
-        Some(7),
-    );
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-    let edit = |idempotency: &str, value| {
-        let mut edit = request
-            .edit_envelope()
-            .idempotency(idempotency.to_owned())
-            .runtime_stages(&host)
-            .ordered_authored()
-            .unwrap();
-        edit.push_stage::<Tree, _>(edit::Intent {
-            key: "a".into(),
-            value,
-        })
-        .unwrap();
-        let outcome = edit
-            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
-        (outcome, _execution.wave_events_for_test())
-    };
+    drop_world!(writer, execution, host, request, edit);
     let (outcome, events) = edit("own-output-drop-first", 8);
     assert!(
         matches!(outcome, Outcome::Committed(_)),
         "the first edit commits first:a and kid:a: {outcome:?}; {events:#?}"
     );
     assert_eq!(first(&request), Some(8 + 9));
-    assert_eq!(kid(&request), Some(0));
+    assert_eq!(kid(&request, "kid:a"), Some(0));
     let head = courts::native_head(&host);
     let (outcome, events) = edit("own-output-drop", 9);
+    let detail = format!("{outcome:?}");
+    assert!(
+        detail.contains(
+            "CoupledContinuationProvenancePostponed { issue: 119, reason: StructuralEffect }"
+        ),
+        "{detail}; {events:#?}"
+    );
+    assert!(
+        events.iter().any(|event| event == "reopen task=0 owed=0"),
+        "the refused round is the chain's successor: {events:#?}"
+    );
+    assert_eq!(courts::native_head(&host), head);
+    assert_eq!(first(&request), Some(8 + 9));
+    assert_eq!(kid(&request, "kid:a"), Some(0));
+}
+
+/// The same two edits, with `kid-linker(a)` as the child. In the second edit
+/// it sets m = 10 and links a child of its own, `linked-kid:a`, under
+/// `first:a`, behind the head round that deleted `kid:a`. The successor's list
+/// of `first:a`'s children then holds the chain's own link, served at the
+/// chain head, and a link the chain did not make. Native's record of the
+/// chain does not speak for that link: it was not there at the chain head, it
+/// is there now, and it is at a record the chain wrote. The round read past
+/// its chain's delete, so the edit stops typed and nothing publishes.
+#[test]
+fn a_successor_whose_chain_deleted_refuses_typed_on_a_link_the_chain_did_not_make() {
+    use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
+    drop_world!(linker, execution, host, request, edit);
+    let (outcome, events) = edit("own-output-drop-linker-first", 8);
+    assert!(
+        matches!(outcome, Outcome::Committed(_)),
+        "the first edit commits first:a and kid:a: {outcome:?}; {events:#?}"
+    );
+    assert_eq!(first(&request), Some(8 + 9));
+    assert_eq!(kid(&request, "kid:a"), Some(0));
+    assert_eq!(kid(&request, family::c3b::kid_linker::LINKED_KID), None);
+    let head = courts::native_head(&host);
+    let (outcome, events) = edit("own-output-drop-linker", 9);
     let detail = format!("{outcome:?}");
     assert!(
         detail.contains(
@@ -165,7 +222,8 @@ fn a_successor_reading_the_presence_of_the_record_its_chain_deleted_refuses_type
     );
     assert_eq!(courts::native_head(&host), head);
     assert_eq!(first(&request), Some(8 + 9));
-    assert_eq!(kid(&request), Some(0));
+    assert_eq!(kid(&request, "kid:a"), Some(0));
+    assert_eq!(kid(&request, family::c3b::kid_linker::LINKED_KID), None);
 }
 
 /// The value of `first:a` as a public read sees it.
@@ -177,10 +235,10 @@ fn first(request: &family::Request<'_, '_, '_>) -> Option<u64> {
     result.rows().first().map(|row| row.value)
 }
 
-/// The value of `kid:a` as a public read sees it, if the record exists.
-fn kid(request: &family::Request<'_, '_, '_>) -> Option<u64> {
+/// The value of child `key` as a public read sees it, if the record exists.
+fn kid(request: &family::Request<'_, '_, '_>, key: &str) -> Option<u64> {
     let result = request
-        .query(query::child_output::Read("kid:a".into()))
+        .query(query::child_output::Read(key.into()))
         .execute()
         .ok()?;
     result.rows().first().map(|row| row.value)

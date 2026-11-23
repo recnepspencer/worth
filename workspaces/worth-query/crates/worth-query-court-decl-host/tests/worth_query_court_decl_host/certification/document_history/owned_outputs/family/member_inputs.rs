@@ -17,6 +17,12 @@ macro_rules! member_input_type {
     (ChildDropPreserve) => {
         Vec<WorthQueryInvariantMutationTarget<Schema, ChildOutput>>
     };
+    (KidLinkerInitial) => {
+        Option<WorthQueryInvariantMutationTarget<Schema, FirstOutput>>
+    };
+    (KidLinkerPreserve) => {
+        Option<WorthQueryInvariantMutationTarget<Schema, FirstOutput>>
+    };
     ($operation:ident) => {
         ()
     };
@@ -37,6 +43,8 @@ macro_rules! capture_member_input {
     (FirstPreserve, $reader:ident, $source:ident, $prior:ident) => { capture_member_input!(@capture $reader, $source, $prior) };
     (ChildDropInitial, $reader:ident, $source:ident, $prior:ident) => { child_drop_capture!($reader, $prior) };
     (ChildDropPreserve, $reader:ident, $source:ident, $prior:ident) => { child_drop_capture!($reader, $prior) };
+    (KidLinkerInitial, $reader:ident, $source:ident, $prior:ident) => { kid_linker_capture!($reader, $prior) };
+    (KidLinkerPreserve, $reader:ident, $source:ident, $prior:ident) => { kid_linker_capture!($reader, $prior) };
     (@capture $reader:ident, $source:ident, $prior:ident) => {{
         let links = $reader.relations_to(member_retarget::records::InputOwner::reference(), &$source).map_err(HandlerExecutionDenial::new)?;
         assert!(links.len() <= 1, "this fixture admits one selected input");
@@ -63,6 +71,8 @@ macro_rules! publish_member_input {
     (FirstPreserve, $writer:ident, $decision:ident, $output:ident, $input:ident) => { publish_member_input!(@publish $writer, $decision, $output, $input) };
     (ChildDropInitial, $writer:ident, $decision:ident, $output:ident, $input:ident) => { child_drop_publish!($writer, $decision, $output, $input) };
     (ChildDropPreserve, $writer:ident, $decision:ident, $output:ident, $input:ident) => { child_drop_publish!($writer, $decision, $output, $input) };
+    (KidLinkerInitial, $writer:ident, $decision:ident, $output:ident, $input:ident) => { kid_linker_publish!($writer, $decision, $input) };
+    (KidLinkerPreserve, $writer:ident, $decision:ident, $output:ident, $input:ident) => { kid_linker_publish!($writer, $decision, $input) };
     (@publish $writer:ident, $decision:ident, $output:ident, $input:ident) => {
         for target in &$decision.input_member.previous {
             let member = $writer.projected_entity(target)?;

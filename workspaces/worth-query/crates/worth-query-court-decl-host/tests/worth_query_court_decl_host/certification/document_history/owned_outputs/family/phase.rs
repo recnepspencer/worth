@@ -47,6 +47,16 @@ macro_rules! producer_operation {
             creates: [$entity, ChildOutput]; deletes: [ChildOutput]; links: [$of, ChildOfFirst]; unlinks: [ChildOfFirst];
         });
     };
+    (KidLinkerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@kid_linker KidLinkerInitial, $entity, $key, $value, $of); };
+    (KidLinkerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@kid_linker KidLinkerPreserve, $entity, $key, $value, $of); };
+    // The member write, plus one child created and linked under output `first:a`.
+    (@kid_linker $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, FirstOutput, ChildOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), FirstKey::at("FirstKey"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            creates: [$entity, ChildOutput]; links: [$of, ChildOfFirst];
+        });
+    };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
