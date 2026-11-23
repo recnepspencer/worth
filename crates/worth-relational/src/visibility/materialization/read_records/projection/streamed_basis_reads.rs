@@ -42,10 +42,9 @@ pub(crate) trait ProjectionRecordSource {
     }
     fn is_exact_basis(&self) -> bool;
     fn version_id(&self) -> crate::identity::data::VersionId;
-    fn selected_schema_authority(
-        &self,
-    ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {
-        self.selected_root().map(|root| root.schema_authority())
+    fn selected_schema_registry(&self) -> Option<&crate::schema::data::RelationalSchemaRegistry> {
+        self.selected_root()
+            .map(|root| root.schema_authority().registry())
     }
 
     fn with_entity_record<E, T>(

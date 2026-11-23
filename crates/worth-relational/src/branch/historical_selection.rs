@@ -10,7 +10,7 @@ use crate::visibility::materialization::read_records::projection::{
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-mod antecedent;
+pub(crate) mod antecedent;
 mod chain;
 mod output_routes;
 mod revisions;

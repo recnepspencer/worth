@@ -85,12 +85,12 @@ impl HistoricalSelectionStage {
         }
         if current.version_id() < self.restored.version_id()
             || current
-                .selected_schema_authority()
-                .map(|s| s.authority_digest())
+                .selected_schema()
+                .map(|schema| schema.authority_digest)
                 != self
                     .restored
-                    .selected_schema_authority()
-                    .map(|s| s.authority_digest())
+                    .selected_schema()
+                    .map(|schema| schema.authority_digest)
         {
             return Ok(false);
         }

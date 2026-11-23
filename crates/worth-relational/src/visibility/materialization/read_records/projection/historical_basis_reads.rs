@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use crate::branch::RelationalBranchRoot;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::{PartitionAccess, PartitionState};
@@ -14,12 +11,12 @@ pub(super) struct HistoricalProjectionReader<'view> {
     basis: &'view HistoricalVisibilityBasis,
 }
 
-pub(super) enum HistoricalProjectionStorage<'view> {
-    Retained(&'view Arc<RelationalBranchRoot>),
+pub(super) enum HistoricalProjectionStorage<'view, Storage: PartitionAccess> {
+    Retained(&'view Storage),
     EmptyGenesis,
 }
 
-impl PartitionAccess for HistoricalProjectionStorage<'_> {
+impl<Storage: PartitionAccess> PartitionAccess for HistoricalProjectionStorage<'_, Storage> {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         match self {
             Self::Retained(root) => root.get_partition(partition_id),
@@ -28,7 +25,9 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
     }
 }
 
-impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionStorage<'_> {
+impl<Storage: PartitionAccess> crate::storage::overlay::CurrentPartitionAccess
+    for HistoricalProjectionStorage<'_, Storage>
+{
     fn get_current_partition(
         &self,
         id: PartitionId,
@@ -70,14 +69,14 @@ impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionSto
         memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
         match self {
-            Self::Retained(root) => root.as_ref().partition_ids_with_memory(memory),
+            Self::Retained(root) => root.partition_ids_with_memory(memory),
             Self::EmptyGenesis => Ok(Vec::new()),
         }
     }
 
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         match self {
-            Self::Retained(root) => Box::new(root.partition_ids_iter()),
+            Self::Retained(root) => root.partition_ids_iter(),
             Self::EmptyGenesis => Box::new(std::iter::empty()),
         }
     }
@@ -269,9 +268,9 @@ impl<'view> HistoricalProjectionReader<'view> {
             )
     }
 
-    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {
+    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_, impl PartitionAccess> {
         match self.basis.root() {
-            Some(root) => HistoricalProjectionStorage::Retained(root),
+            Some(root) => HistoricalProjectionStorage::Retained(root.as_ref()),
             None => HistoricalProjectionStorage::EmptyGenesis,
         }
     }

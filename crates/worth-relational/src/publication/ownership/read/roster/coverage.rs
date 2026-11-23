@@ -1,5 +1,6 @@
 //! Retained selector coverage includes both record claims and requested scopes.
-use super::{EntityId, RecordRef, RelationId};
+use crate::identity::data::{EntityId, RelationId};
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 
 pub(super) fn covers(

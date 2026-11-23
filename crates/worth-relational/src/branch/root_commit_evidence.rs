@@ -3,6 +3,7 @@ use super::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
 pub(crate) use crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence;
 use crate::history::data::{CanonicalCommitEnvelope, RelationalCommitReceipt};
+use crate::query::data::QueryPlanEvidenceBasis;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -71,5 +72,34 @@ impl RelationalRootCommitEvidence {
                 false
             }
         }
+    }
+}
+
+impl super::RelationalBranchRoot {
+    pub(crate) fn query_schema_context(
+        &self,
+    ) -> (
+        crate::schema::data::SchemaVersionId,
+        crate::schema::data::DescriptorSemanticsVersion,
+        QueryPlanEvidenceBasis,
+    ) {
+        let evidence_basis = match self.commit_evidence() {
+            None => QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
+            Some(RelationalRootCommitEvidence::Original(envelope)) => {
+                QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
+                    commit_id: envelope.envelope().commit.commit_id,
+                }
+            }
+            Some(RelationalRootCommitEvidence::Checkpoint(commit)) => {
+                QueryPlanEvidenceBasis::CheckpointAdmissionImage {
+                    commit_id: commit.index().commit.commit_id,
+                }
+            }
+        };
+        (
+            self.schema_authority().schema_version(),
+            self.schema_authority().descriptor_semantics_version(),
+            evidence_basis,
+        )
     }
 }

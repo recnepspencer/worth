@@ -6,7 +6,7 @@ use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 #[derive(Clone)]
 pub(crate) struct SelectedOutputPublication {
-    pub(crate) evidence: crate::publication::ownership::PublicationEvidence,
+    pub(crate) evidence: crate::publication::ownership::evidence::PublicationEvidence,
     pub(crate) origin: std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) ordinal: usize,
 }
@@ -159,7 +159,7 @@ pub(crate) fn validate_codec_output_correspondence(
                     if std::sync::Arc::ptr_eq(candidate, &origin) { ordinal = Some(index); break; }
                 }
                 let ordinal = ordinal.ok_or("selected publication lost its canonical route coordinate")?;
-                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::PublicationEvidence::Canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
+                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::evidence::PublicationEvidence::Canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
             },
         )
     });

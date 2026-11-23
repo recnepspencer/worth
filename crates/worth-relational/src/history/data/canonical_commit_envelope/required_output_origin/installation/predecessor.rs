@@ -73,7 +73,7 @@ pub(super) fn validate<'a>(
                 )
             })?;
         compare_retained_origin(origin, canonical, context)?;
-        if let crate::publication::ownership::PublicationEvidence::Current(retained) =
+        if let crate::publication::ownership::evidence::PublicationEvidence::Current(retained) =
             &predecessor.evidence
             && retained.basis.as_ref() != Some(basis.descriptor())
         {
@@ -86,7 +86,7 @@ pub(super) fn validate<'a>(
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
     crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
-    let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
+    let crate::publication::ownership::evidence::PublicationEvidence::Canonical(envelope) =
         &predecessor.evidence
     else {
         return Err(

@@ -1,24 +1,32 @@
 //! A historical verifier admits only source commits on the selected basis's ancestry.
 use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::collections::BTreeSet;
+/// The exact canonical history and identity of an installed read owner.
+#[doc(hidden)]
+pub struct HistoricalSelectionAncestry<'a> {
+    pub(crate) runtime_instance_id: u64,
+    pub(crate) history: &'a HistorySubsystem,
+}
+
 impl RelationalHistoricalSelectionRead {
     /// Branch names are not ancestry. Read actual canonical parents, including
     /// across forks; a cold or missing artifact never becomes a positive answer.
-    pub fn includes_source(
+    pub fn includes_source<'history>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        owner: impl Into<HistoricalSelectionAncestry<'history>>,
         source: &PositionedRelationalSnapshot,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
         crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
+        let owner = owner.into();
         if !self
             .latest()
             .restored
-            .is_from_runtime(runtime.runtime_instance_id())
+            .is_from_runtime(owner.runtime_instance_id)
             || !self
                 .latest()
                 .restored
@@ -32,7 +40,7 @@ impl RelationalHistoricalSelectionRead {
         let Some(requested) = source.commit_id() else {
             return Ok(false);
         };
-        let bound = runtime.history.catalog_len();
+        let bound = owner.history.catalog_len();
         let mut visited = BTreeSet::new();
         let initial = execution
             .reserve_retained_memory(
@@ -80,8 +88,8 @@ impl RelationalHistoricalSelectionRead {
                     .map_err(Denial::Request)?,
             );
             visited.insert(commit);
-            let Some(envelope) = runtime
-                .history()
+            let Some(envelope) = owner
+                .history
                 .demand_commit_envelope(execution, commit)
                 .map_err(Denial::Execution)?
             else {

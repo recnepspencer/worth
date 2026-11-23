@@ -1,4 +1,5 @@
 use crate::runtime::RelationalRuntime;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::read_work::record_memory;
@@ -34,12 +35,25 @@ pub(crate) fn read_view_from_snapshot_state(
                     None => state.handle.version_id.is_zero(),
                 }
             );
-            materialize_exact(runtime, state, basis.root().as_ref(), charge, memory)?
+            let root = basis.root();
+            materialize_exact(
+                runtime,
+                state,
+                root.as_ref(),
+                root.schema_authority().registry(),
+                charge,
+                memory,
+            )?
         }
         SnapshotStateBasis::Historical(basis) => materialize_historical(
             runtime,
             state,
-            basis.root(),
+            basis.root().map(|root| {
+                (
+                    root.as_ref() as &dyn PartitionAccess,
+                    root.schema_authority().registry(),
+                )
+            }),
             state.handle.version_id,
             charge,
             memory,
@@ -60,7 +74,8 @@ pub(crate) fn read_view_from_snapshot_state(
 fn materialize_exact(
     runtime: &RelationalRuntime,
     state: &SnapshotState,
-    root: &crate::branch::RelationalBranchRoot,
+    storage: &impl PartitionAccess,
+    registry: &RelationalSchemaRegistry,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<
@@ -68,26 +83,25 @@ fn materialize_exact(
     crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let reader = runtime.read_truth();
-    let registry = root.schema_authority().registry();
     materialize_pins(
         state,
         |partition_id, slot| {
             reader.authoritative_entity_record_for_id_from_exact_state(
-                root,
+                storage,
                 registry,
                 crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
             )
         },
         |partition_id, slot| {
             reader.authoritative_relation_record_for_id_from_exact_state(
-                root,
+                storage,
                 registry,
                 crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
             )
         },
         |partition_id, slot| {
             record_quote::entity_for_id(
-                root,
+                storage,
                 registry,
                 crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
                 KindScanVisibility::Live,
@@ -95,7 +109,7 @@ fn materialize_exact(
         },
         |partition_id, slot| {
             record_quote::relation_for_id(
-                root,
+                storage,
                 registry,
                 crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
                 KindScanVisibility::Live,
@@ -109,7 +123,7 @@ fn materialize_exact(
 fn materialize_historical(
     runtime: &RelationalRuntime,
     state: &SnapshotState,
-    root: Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>,
+    selected: Option<(&dyn PartitionAccess, &RelationalSchemaRegistry)>,
     version_id: crate::identity::data::VersionId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
@@ -118,10 +132,7 @@ fn materialize_historical(
     crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let empty = std::collections::BTreeMap::new();
-    let access: &dyn PartitionAccess = root.map_or(&empty, |root| root.as_ref());
-    let registry = root.map_or(&runtime.config.schema.registry, |root| {
-        root.schema_authority().registry()
-    });
+    let (access, registry) = selected.unwrap_or((&empty, &runtime.config.schema.registry));
     let reader = runtime.read_truth();
     materialize_pins(
         state,

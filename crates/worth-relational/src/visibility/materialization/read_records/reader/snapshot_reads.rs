@@ -127,7 +127,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
         let root = basis.root();
         let (schema_version, descriptor_semantics_version, evidence_basis) =
-            query_schema_context_for_root(root);
+            root.query_schema_context();
         Some(QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             snapshot_id: snapshot.snapshot_id,
@@ -235,33 +235,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
         Ok(())
     }
-}
-
-pub(super) fn query_schema_context_for_root(
-    root: &crate::branch::RelationalBranchRoot,
-) -> (
-    crate::schema::data::SchemaVersionId,
-    crate::schema::data::DescriptorSemanticsVersion,
-    QueryPlanEvidenceBasis,
-) {
-    let evidence_basis = match root.commit_evidence() {
-        None => QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
-        Some(crate::branch::RelationalRootCommitEvidence::Original(envelope)) => {
-            QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
-                commit_id: envelope.envelope().commit.commit_id,
-            }
-        }
-        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
-            QueryPlanEvidenceBasis::CheckpointAdmissionImage {
-                commit_id: commit.index().commit.commit_id,
-            }
-        }
-    };
-    (
-        root.schema_authority().schema_version(),
-        root.schema_authority().descriptor_semantics_version(),
-        evidence_basis,
-    )
 }
 
 fn read_view_bytes(view: &RelationalReadView) -> u64 {

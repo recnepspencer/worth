@@ -45,10 +45,10 @@ pub(crate) fn read_projected_source(
             let result = (|| {
                 read.checkpoint(0)?;
                 let schema = projection
-                    .selected_schema_authority()
+                    .selected_schema()
                     .filter(|_| projection.is_exact_basis())
                     .ok_or(DefinitionDenial::RecordUnavailable)?
-                    .registry();
+                    .registry;
                 super::super::evaluation::admit_definition(schema, scope.definition, &mut read)?;
                 let result = super::super::source::acquire(
                     schema,

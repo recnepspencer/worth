@@ -60,9 +60,10 @@ pub(crate) fn historical_positions(
                     return Err("source-scope catalog bound exceeded".into());
                 }
                 latest.push(SelectedOutputPublication {
-                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
-                        Arc::clone(&envelope),
-                    ),
+                    evidence:
+                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                            Arc::clone(&envelope),
+                        ),
                     origin: Arc::clone(origin),
                     ordinal,
                 });
@@ -151,7 +152,7 @@ pub(crate) fn current(
 }
 
 pub(crate) fn from_current(
-    roster: Arc<crate::publication::ownership::CurrentPublicationRoster>,
+    roster: Arc<crate::publication::ownership::read::roster::CurrentPublicationRoster>,
     ownership: Option<&InstalledSourceScopeOwnership>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<
@@ -173,9 +174,9 @@ pub(crate) fn from_current(
             );
         }
         selected.push(SelectedOutputPublication {
-            evidence: crate::publication::ownership::PublicationEvidence::Current(Arc::clone(
-                &roster,
-            )),
+            evidence: crate::publication::ownership::evidence::PublicationEvidence::Current(
+                Arc::clone(&roster),
+            ),
             origin: Arc::clone(origin),
             ordinal,
         });

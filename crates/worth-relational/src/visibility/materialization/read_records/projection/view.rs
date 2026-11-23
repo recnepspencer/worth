@@ -7,6 +7,13 @@ use super::contracts::{
 };
 use super::projection_records::{EntityRecordProjection, RelationRecordProjection};
 
+pub(crate) struct SelectedProjectionSchema<'a> {
+    pub(crate) registry: &'a crate::schema::data::RelationalSchemaRegistry,
+    pub(crate) plans: &'a crate::schema::data::AspectContractPlanCatalog,
+    pub(crate) version: crate::schema::data::SchemaVersionId,
+    pub(crate) authority_digest: [u8; 32],
+}
+
 #[derive(Debug, Clone)]
 pub struct VisibilityProjectionView {
     pub(super) runtime_identity: u64,
@@ -53,10 +60,14 @@ impl VisibilityProjectionView {
         self.runtime_identity == runtime_instance_id
     }
 
-    pub(crate) fn selected_schema_authority(
-        &self,
-    ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {
-        self.basis.root().map(|root| root.schema_authority())
+    pub(crate) fn selected_schema(&self) -> Option<SelectedProjectionSchema<'_>> {
+        let authority = self.basis.root()?.schema_authority();
+        Some(SelectedProjectionSchema {
+            registry: authority.registry(),
+            plans: authority.aspect_plans(),
+            version: authority.schema_version(),
+            authority_digest: authority.authority_digest(),
+        })
     }
 
     pub(super) fn reader(&self) -> crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader<'_>{

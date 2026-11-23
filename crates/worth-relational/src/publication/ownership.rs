@@ -8,7 +8,7 @@ mod locality_court;
 pub use locality_court::CurrentOwnershipLocalityForTest;
 mod completion;
 pub(crate) mod corruption;
-mod evidence;
+pub(crate) mod evidence;
 mod merge_custody;
 mod metadata_guard_court;
 pub(crate) mod read;

@@ -455,6 +455,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Native publication records and bounded decode retain canonical Branch meaning.
 "publication/ownership/record.rs" = "branch"
 "publication/ownership/read/payload.rs" = "branch"
+"publication/ownership/evidence.rs" = "branch"
+"publication/ownership/read/roster" = "branch"
 "publication/ownership/read_request.rs" = "contracts"
 "publication/patch" = "branch"
 "publication/patch/data" = "contracts"
@@ -616,7 +618,7 @@ owner = "branch"
 allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["envelope", "projection_view"]]
 [boundaries.paths]
 root_custody = ["branch"]
-envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/read/payload.rs"]
+envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/read/payload.rs", "publication/ownership/evidence.rs", "publication/ownership/read/roster"]
 projection_view = ["branch/projection_view", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
@@ -823,6 +825,8 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "mvcc/publication/application_publication/output_meaning.rs" = "contracts"
 "mvcc/publication/application_publication/producing_implementation.rs" = "contracts"
 "publication/ownership/read/payload.rs" = "branch"
+"publication/ownership/evidence.rs" = "branch"
+"publication/ownership/read/roster" = "branch"
 "publication/ownership/read_request.rs" = "contracts"
 "publication/ownership/record.rs" = "branch"
 "runtime/fork_denial.rs" = "contracts"
@@ -948,3 +952,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # The ordinary mirror publisher owns partition installation and copy counters.
 "storage/mirror_publication.rs" = "storage"
+
+# Runtime lends the installed canonical history to historical selection.
+"runtime/historical_ancestry.rs" = "runtime"

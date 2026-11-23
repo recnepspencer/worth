@@ -107,9 +107,10 @@ fn select(
                 }
                 return Ok(Some(SelectedOutputPublication {
                     origin: Arc::clone(origin),
-                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
-                        Arc::clone(&envelope),
-                    ),
+                    evidence:
+                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                            Arc::clone(&envelope),
+                        ),
                     ordinal,
                 }));
             }
