@@ -1,11 +1,13 @@
 //! C4b.1: Real OS kills at every durable `SynchronizeFileState` I/O barrier of
 //! a mixed Native + Signal + Bridge + World publication, verifying fresh-process
 //! reopen, custody continuation, admitted-key retry, and MemoryOnly parity.
+mod fixture;
+pub(super) use fixture::*;
+
 use super::super::opening;
 use super::{
-    assert_all_reopen_phases_killed, build_id, classify_barrier_kill, run_parallel_barriers,
-    sync_barrier_placement, BarrierKill, ReopenPhase, RestorableHome, BUILD_PRIMARY,
-    TAIL_VARIANCE_BOUND,
+    assert_all_reopen_phases_killed, assert_barrier_killed, run_parallel_calibrated_barriers,
+    sync_barrier_placement, ReopenPhase, RestorableHome, BUILD_PRIMARY,
 };
 use std::path::{Path, PathBuf};
 use std::sync::{
@@ -14,41 +16,12 @@ use std::sync::{
 };
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::{
-    application_contribution::with_bootstrap_advancement_from_request,
-    application_installation::WorthQueryApplicationProgramRoster,
-    primary_graph::{
-        WorthQueryApplicationCommitOutcome as CommitOutcome,
-        WorthQueryConditionalDefinitionPublicationOutcome,
-    },
-    product::WorthQueryProductBranch,
-    runtime::RuntimeWorldCancellationSource,
-    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation as Location,
-    WorthQueryApplicationHomeRequest,
+    primary_graph::WorthQueryApplicationCommitOutcome as CommitOutcome,
+    product::WorthQueryProductBranch, WorthQueryApplicationHomeLocation as Location,
 };
-use worth_query_testkit_host::facade::host::temporal_conditional_operation::{
-    contribution_installation::*, world::program_amendment::commit_definition_on_program_lane,
-};
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::ContactCounters;
 use worth_runtime_world::facade::WorldRecoveredContinuationOutcome;
 use worth_store::physical_runtime::certification::MediaOperationRole;
-use worth_store_testkit_application_oracle::facade::{
-    host_interruption::opening::AdversarialPlacement, host_observation,
-};
-
-type SignalHome = WorthQueryApplicationHome<TemporalHostSchema, TemporalInstallationProgram>;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct StableNativeBasis {
-    branch_id: worth_relational::facade::history::BranchId,
-    truth_version: worth_relational::facade::branch::RelationalBranchVersion,
-    schema_commitment: [u8; 32],
-    posture: worth_relational::facade::branch::RelationalBranchBasisPosture,
-}
-#[derive(Debug, PartialEq, Eq)]
-struct SignalSnapshot {
-    intent: (String, u64, String, String),
-    world_commit_ordinal: u64,
-    native_basis: StableNativeBasis,
-}
 
 const CHILD: &str =
     "process::application::host_oracle::adversarial::signal_bridge_io_kills::signal_bridge_io_kill_child";
@@ -56,196 +29,72 @@ const ENV_HOME: &str = "WORTH_ADV_SIGNAL_HOME";
 const ENV_MARKERS: &str = "WORTH_ADV_SIGNAL_MARKERS";
 const ENV_ORDINAL: &str = "WORTH_ADV_SIGNAL_ORDINAL";
 
-struct SignalOpen {
-    location: Location,
-    initialized: Arc<AtomicUsize>,
-    contacts: ContactCounters,
-    placement: Option<AdversarialPlacement>,
-}
-
-fn open_signal_home(cfg: SignalOpen, execution: &ExecutionRequest<'_, '_>) -> SignalHome {
-    let declaration = TemporalHostSchema::declaration().unwrap();
-    let (installation_predicate, _) = Predicate::controlled(cfg.contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(cfg.contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    let configuration = TemporalContributionConfiguration {
-        installation_predicate,
-        definition_predicate: Arc::new(definition_predicate),
-        clock_source,
-        clock_control,
-        contacts: cfg.contacts,
-        install_route: true,
-        definition_only: true,
-        multi_intent_targets: false,
-    };
-    let init = cfg.initialized;
-    let request = WorthQueryApplicationHomeRequest::new(
-        cfg.location,
-        ApplicationProgramAuthoring::<TemporalHostSchema, TemporalInstallationProgram>::begin()
-            .with_schema(&declaration)
-            .validated_program()
-            .unwrap(),
-        WorthQueryApplicationProgramRoster::new(),
-        declaration,
-        (configuration,),
-        build_id(BUILD_PRIMARY),
-        publication_limit::limits(),
-        move |_, graph, installed| {
-            init.fetch_add(1, Ordering::SeqCst);
-            let principal = installed
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .unwrap();
-            seed_graph(graph, &principal, "blocked", 0, 1, true);
-            Ok(())
-        },
+fn prepare_signal_home_dir(loc: &Path, execution: &ExecutionRequest<'_, '_>) {
+    let home = open_signal_home(
+        SignalOpen { location: Location::Directory(loc.to_path_buf()), build: BUILD_PRIMARY, initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: None },
+        execution,
     );
-    let request = match cfg.placement {
-        Some(p) => host_observation::opening::attach_placement(request, p).0,
-        None => request,
-    };
-    (*with_bootstrap_advancement_from_request(*execution, |phase| {
-        Box::new(request.open_in_advancement(&phase))
-    })
-    .unwrap())
-    .unwrap_or_else(|e| panic!("Signal Home open: {e:?}"))
-}
-
-fn commit_mixed(home: &SignalHome, branch: WorthQueryProductBranch, ordinal: u8) -> CommitOutcome {
-    let app = home.runtime();
-    let cond = app.conditional::<TemporalConditional>().unwrap();
-    let installed = cond.as_ref().as_ref().unwrap();
-    let selected = app.with_host_advancement(|phase| app.on_branch(branch).select(&phase)).unwrap().unwrap();
-    let (provider, _) = Predicate::controlled(installed.contacts.clone());
-    commit_definition_on_program_lane(
-        app, &installed.clock, &installed.invariant, selected,
-        &format!("adv-mixed-{ordinal}"), Arc::new(provider), ordinal,
-    )
-}
-
-fn publish_definition_outcome(
-    home: &SignalHome,
-    branch: WorthQueryProductBranch,
-) -> WorthQueryConditionalDefinitionPublicationOutcome {
-    let app = home.runtime();
-    let cond = app.conditional::<TemporalConditional>().unwrap();
-    let installed = cond.as_ref().as_ref().unwrap();
-    let selected = app.with_host_advancement(|phase| app.on_branch(branch).select(&phase)).unwrap().unwrap();
-    let (provider, _) = Predicate::controlled(installed.contacts.clone());
-    selected
-        .publish_conditional_definition(&installed.clock, Arc::new(provider), &RuntimeWorldCancellationSource::new().token())
-        .unwrap()
-}
-
-fn publish_definition(home: &SignalHome, branch: WorthQueryProductBranch) {
-    assert!(matches!(
-        publish_definition_outcome(home, branch),
-        WorthQueryConditionalDefinitionPublicationOutcome::Performed(_)
-    ));
-}
-
-fn observe_signal(home: &SignalHome) -> SignalSnapshot {
-    let app = home.runtime();
-    let branch = app.current_world();
-    let row = publication_limit::read_intent_on_branch(app, branch);
-    let (world_commit_ordinal, native_basis) = app
-        .with_host_advancement(|phase| {
-            let selected = app.on_branch(branch).select(&phase).unwrap();
-            let prod = selected.product();
-            let desc = prod.relational_basis_descriptor();
-            (
-                prod.selected_commit().ordinal(),
-                StableNativeBasis {
-                    branch_id: desc.branch_id().clone(),
-                    truth_version: desc.truth_version(),
-                    schema_commitment: desc.schema_commitment(),
-                    posture: desc.posture(),
-                },
-            )
-        })
-        .unwrap();
-    SignalSnapshot { intent: (row.identity, row.revision, row.lifecycle, row.input), world_commit_ordinal, native_basis }
-}
-
-fn assert_bridge_publication_healthy(home: &SignalHome, branch: WorthQueryProductBranch, before_ord: u64) {
-    use WorthQueryConditionalDefinitionPublicationOutcome::Performed;
-    let Performed(p1) = publish_definition_outcome(home, branch) else { panic!("Bridge def must publish") };
-    assert_eq!(p1.product_commit().ordinal(), before_ord + 1, "Bridge publication advances World +1");
-    let Performed(p2) = publish_definition_outcome(home, branch) else { panic!("repeat Bridge def must publish") };
-    assert_eq!(p2.definition_generation(), p1.definition_generation() + 1, "Bridge def gen advances +1");
-    assert_eq!(p2.product_commit().ordinal(), p1.product_commit().ordinal() + 1, "repeat Bridge advances +1");
+    let main = home.runtime().current_world();
+    publish_definition(&home, main);
+    home.close(execution).unwrap().reclaim();
 }
 
 #[test]
 fn signal_bridge_mixed_publication_io_boundary_kill_sweep() {
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
-    let (expected_before, expected_after) = build_signal_reference(&execution);
-    let saved = RestorableHome::prepare(|loc| {
-        let home = open_signal_home(
-            SignalOpen { location: Location::Directory(loc.to_path_buf()), initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: None },
-            &execution,
-        );
-        let main = home.runtime().current_world();
-        assert!(commit_mixed(&home, main, 1).require_committed().is_ok());
-        publish_definition(&home, main);
-        home.close(&execution).unwrap().reclaim();
-    });
-    let m1 = measure_signal_syncs(&saved);
-    let m2 = measure_signal_syncs(&saved);
-    assert!(m1.abs_diff(m2) <= TAIL_VARIANCE_BOUND, "Signal/Bridge calibration spread {m1} vs {m2}");
-    let total_syncs = m1.max(m2);
-    let outcomes = run_parallel_barriers(
+    let (expected_before, expected_after, expected_key, expected_def_id) =
+        build_signal_reference(&execution);
+    let outcomes = run_parallel_calibrated_barriers(
         "Signal/Bridge",
-        total_syncs,
         || {
             let w_req = opening::serial();
-            let w_exec = ExecutionRequest::serial(&w_req);
-            RestorableHome::prepare(|loc| {
-                let home = open_signal_home(
-                    SignalOpen { location: Location::Directory(loc.to_path_buf()), initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: None },
-                    &w_exec,
-                );
-                let main = home.runtime().current_world();
-                assert!(commit_mixed(&home, main, 1).require_committed().is_ok());
-                publish_definition(&home, main);
-                home.close(&w_exec).unwrap().reclaim();
-            })
+            let home = RestorableHome::prepare(|loc| prepare_signal_home_dir(loc, &ExecutionRequest::serial(&w_req)));
+            let (m1, m2) = (measure_signal_syncs(&home), measure_signal_syncs(&home));
+            assert_eq!(m1, m2, "stabilized Signal/Bridge layout must calibrate identically");
+            (home, m1)
         },
-        |worker_home, ordinal| {
+        |worker_home, ordinal, worker_total| {
             let w_req = opening::serial();
-            let w_exec = ExecutionRequest::serial(&w_req);
             worker_home.restore();
-            let kill = kill_signal_at(worker_home.location(), ordinal, total_syncs);
-            let phase = verify_signal_reopen(worker_home.location(), (&expected_before, &expected_after), ordinal, &w_exec);
-            if matches!(kill, BarrierKill::CompletedAtTail { .. }) {
-                assert_eq!(phase, ReopenPhase::Committed, "Signal/Bridge sync#{ordinal}: completed tail run must reopen committed without custody");
-            }
-            (kill, phase)
+            kill_signal_exact(worker_home.location(), ordinal, worker_total);
+            verify_signal_reopen(
+                worker_home.location(),
+                (&expected_before, &expected_after, expected_key, expected_def_id),
+                ordinal,
+                &ExecutionRequest::serial(&w_req),
+            )
         },
     );
     assert_all_reopen_phases_killed("Signal/Bridge", &outcomes);
 }
 
-fn build_signal_reference(execution: &ExecutionRequest<'_, '_>) -> (SignalSnapshot, SignalSnapshot) {
+pub(super) fn build_signal_reference(execution: &ExecutionRequest<'_, '_>) -> (SignalSnapshot, SignalSnapshot, [u8; 32], [u8; 32]) {
+    let target_key = admitted_signal_key_identity(2);
     let ref_home = open_signal_home(
-        SignalOpen { location: Location::MemoryOnly, initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: None },
+        SignalOpen { location: Location::MemoryOnly, build: BUILD_PRIMARY, initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: None },
         execution,
     );
     let ref_main = ref_home.runtime().current_world();
-    assert!(commit_mixed(&ref_home, ref_main, 1).require_committed().is_ok());
     publish_definition(&ref_home, ref_main);
     let expected_before = observe_signal(&ref_home);
-    assert!(commit_mixed(&ref_home, ref_main, 2).require_committed().is_ok());
+    let target_receipt = commit_mixed(&ref_home, ref_main, 2).require_committed().unwrap();
     let expected_after = observe_signal(&ref_home);
+    assert_live_receipt_bound(&target_receipt, &expected_after, &expected_after, target_key, "MemoryOnly");
+    drop(target_receipt);
     assert_ne!(expected_before.intent, expected_after.intent);
     assert_ne!(expected_before.native_basis, expected_after.native_basis);
+    assert_eq!(expected_after.details.signal_generation, expected_before.details.signal_generation + 1);
+    assert_eq!(expected_after.details.world_reference_generation, expected_before.details.world_reference_generation + 1);
     assert_eq!(expected_after.world_commit_ordinal, expected_before.world_commit_ordinal + 1);
-    assert_bridge_publication_healthy(&ref_home, ref_main, expected_after.world_commit_ordinal);
+    let def_id = verify_recovered_bridge_definition(&ref_home, ref_main);
+    assert_eq!(observe_signal(&ref_home), expected_after, "MemoryOnly: Bridge def check must not mutate snapshot");
+    assert_bridge_publication_healthy(&ref_home, ref_main, expected_after.world_commit_ordinal, expected_after.details.signal_generation);
     drop(ref_home.close(execution).err().unwrap().resume().unwrap());
-    (expected_before, expected_after)
+    (expected_before, expected_after, target_key, def_id)
 }
 
-fn measure_signal_syncs(saved: &RestorableHome) -> u64 {
+pub(super) fn measure_signal_syncs(saved: &RestorableHome) -> u64 {
     saved.restore();
     let markers = tempfile::tempdir().unwrap();
     let env = [(ENV_HOME, saved.location()), (ENV_MARKERS, markers.path()), (ENV_ORDINAL, Path::new("count"))];
@@ -254,26 +103,26 @@ fn measure_signal_syncs(saved: &RestorableHome) -> u64 {
     std::fs::read_to_string(markers.path().join("finished")).unwrap().trim().parse().unwrap()
 }
 
-fn kill_signal_at(location: &Path, ordinal: u64, total_syncs: u64) -> BarrierKill {
+pub(super) fn kill_signal_exact(location: &Path, ordinal: u64, total_syncs: u64) {
     let markers = tempfile::tempdir().unwrap();
     let ord_path = PathBuf::from(ordinal.to_string());
     let ready = markers.path().join("ready");
     let env = [(ENV_HOME, location), (ENV_MARKERS, markers.path()), (ENV_ORDINAL, &ord_path)];
     let end = crate::killed_child::run_and_kill(CHILD, &env, &ready, &markers.path().join("finished"));
-    classify_barrier_kill(end, &ready, MediaOperationRole::SynchronizeFileState, ordinal, total_syncs, &format!("Signal/Bridge sync#{ordinal}/{total_syncs}"))
+    assert_barrier_killed(end, &ready, MediaOperationRole::SynchronizeFileState, ordinal, &format!("Signal/Bridge sync#{ordinal}/{total_syncs}"));
 }
 
 fn verify_signal_reopen(
     location: &Path,
-    expected: (&SignalSnapshot, &SignalSnapshot),
+    expected: (&SignalSnapshot, &SignalSnapshot, [u8; 32], [u8; 32]),
     ordinal: u64,
     execution: &ExecutionRequest<'_, '_>,
 ) -> ReopenPhase {
-    let (expected_before, expected_after) = expected;
+    let (expected_before, expected_after, expected_key, expected_def_id) = expected;
     let init = Arc::new(AtomicUsize::new(0));
     let contacts = ContactCounters::default();
     let home = open_signal_home(
-        SignalOpen { location: Location::Directory(location.to_path_buf()), initialized: init.clone(), contacts: contacts.clone(), placement: None },
+        SignalOpen { location: Location::Directory(location.to_path_buf()), build: BUILD_PRIMARY, initialized: init.clone(), contacts: contacts.clone(), placement: None },
         execution,
     );
     assert_eq!(init.load(Ordering::SeqCst), 0, "sync#{ordinal}: no re-init");
@@ -281,22 +130,36 @@ fn verify_signal_reopen(
     let main = home.runtime().current_world();
     let handles: Vec<_> = home
         .runtime().product_publication_recovery_page(None, std::num::NonZeroUsize::new(16).unwrap()).unwrap()
-        .rows().iter().map(|row| row.handle().clone()).collect();
+        .rows().iter().map(|r| r.handle().clone()).collect();
     let state = observe_signal(&home);
+    assert_eq!(
+        (state.details.installed_conditional_definition_count, state.details.installed_conditional_target_ref_count),
+        (1, 1),
+        "sync#{ordinal}: cold reopen reconstitutes exact 1 active Bridge definition"
+    );
     let phase = if !handles.is_empty() {
-        verify_signal_custody((&home, main), &handles, (&state, expected_before, expected_after), (ordinal, &contacts, execution));
+        verify_signal_custody((&home, main), &handles, (&state, expected_before, expected_after), (ordinal, expected_key, &contacts, execution));
         ReopenPhase::Custody
     } else if state.intent == expected_before.intent {
-        assert_eq!(state, *expected_before, "sync#{ordinal}: pre-op snapshot must match MemoryOnly");
-        assert!(commit_mixed(&home, main, 2).require_committed().is_ok());
+        assert_signal_predecessor(&state, expected_before, ordinal);
+        let live = commit_mixed(&home, main, 2).require_committed().expect("PreOp commit");
         let after = observe_signal(&home);
         assert_signal_advanced(&after, expected_before, expected_after, (ordinal, true));
-        assert!(matches!(commit_mixed(&home, main, 2), CommitOutcome::Committed(_) | CommitOutcome::RecoveredCommitted(_)));
+        assert_live_receipt_bound(&live, &after, expected_after, expected_key, &format!("sync#{ordinal}/preop"));
+        drop(live);
+        match commit_mixed(&home, main, 2) {
+            CommitOutcome::Committed(rec) => assert_live_receipt_bound(&rec, &after, expected_after, expected_key, &format!("sync#{ordinal}/dup-live")),
+            CommitOutcome::RecoveredCommitted(rec) => assert_recovered_receipt_bound(&rec, &after, expected_after, expected_key, &format!("sync#{ordinal}/dup-rec")),
+            other => panic!("sync#{ordinal}: duplicate retry unexpected: {other:?}"),
+        }
         assert_eq!(observe_signal(&home), after, "sync#{ordinal}: duplicate retry must not advance");
         ReopenPhase::PreOp
     } else {
         assert_signal_advanced(&state, expected_before, expected_after, (ordinal, false));
-        assert!(matches!(commit_mixed(&home, main, 2), CommitOutcome::RecoveredCommitted(_)));
+        let CommitOutcome::RecoveredCommitted(rec) = commit_mixed(&home, main, 2) else {
+            panic!("sync#{ordinal}: committed retry must return RecoveredCommitted");
+        };
+        assert_recovered_receipt_bound(&rec, &state, expected_after, expected_key, &format!("sync#{ordinal}/committed"));
         assert_eq!(observe_signal(&home), state, "sync#{ordinal}: retry must not advance");
         assert_eq!(contacts.snapshot(), (0, 0, 0, 0), "sync#{ordinal}: zero replay on committed");
         ReopenPhase::Committed
@@ -304,34 +167,43 @@ fn verify_signal_reopen(
     let settled = observe_signal(&home);
     assert_eq!(settled.intent, expected_after.intent, "sync#{ordinal}: settled intent parity");
     assert_eq!(settled.native_basis, expected_after.native_basis, "sync#{ordinal}: settled native basis parity");
-    assert_bridge_publication_healthy(&home, main, settled.world_commit_ordinal);
+    assert_eq!(settled.details.signal_generation, expected_after.details.signal_generation, "sync#{ordinal}: signal_generation parity");
+    assert_eq!(settled.details.world_reference_generation, expected_after.details.world_reference_generation, "sync#{ordinal}: world_reference_generation parity");
+    assert_eq!(verify_recovered_bridge_definition(&home, main), expected_def_id, "sync#{ordinal}: recovered Bridge definition identity parity");
+    assert_eq!(observe_signal(&home), settled, "sync#{ordinal}: verifying recovered Bridge def must not mutate snapshot");
+    assert_bridge_publication_healthy(&home, main, settled.world_commit_ordinal, settled.details.signal_generation);
     home.close(execution).unwrap_or_else(|e| panic!("sync#{ordinal}: Signal close: {e:?}")).reclaim();
     phase
 }
 
-fn assert_signal_advanced(
-    actual: &SignalSnapshot,
-    before: &SignalSnapshot,
-    after: &SignalSnapshot,
-    opts: (u64, bool),
-) {
+fn assert_signal_predecessor(actual: &SignalSnapshot, before: &SignalSnapshot, ordinal: u64) {
+    assert_eq!(actual.intent, before.intent, "sync#{ordinal}: pre-op intent parity");
+    assert_eq!(actual.world_commit_ordinal, before.world_commit_ordinal, "sync#{ordinal}: pre-op ordinal parity");
+    assert_eq!(actual.native_basis, before.native_basis, "sync#{ordinal}: pre-op Native basis parity");
+    assert_eq!(actual.details.signal_generation, before.details.signal_generation);
+    assert_eq!(actual.details.world_reference_generation, before.details.world_reference_generation);
+    assert_eq!(actual.details.owned_signal_active_node_count, before.details.owned_signal_active_node_count);
+    assert_eq!(actual.details.head_signal_movement, before.details.head_signal_movement);
+}
+
+fn assert_signal_advanced(actual: &SignalSnapshot, before: &SignalSnapshot, after: &SignalSnapshot, opts: (u64, bool)) {
     let (ordinal, allow_released_gap) = opts;
     assert_eq!(actual.intent, after.intent, "sync#{ordinal}: intent parity");
     assert_eq!(actual.native_basis, after.native_basis, "sync#{ordinal}: stable Native basis parity");
+    assert_eq!(actual.details.signal_generation, after.details.signal_generation, "sync#{ordinal}: signal_generation parity");
+    assert_eq!(actual.details.world_reference_generation, after.details.world_reference_generation, "sync#{ordinal}: world_reference_generation parity");
+    assert!(actual.details.installed_conditional_definition_count >= 1);
+    assert_eq!(actual.details.installed_conditional_definition_count, actual.details.installed_conditional_target_ref_count);
+    assert_eq!(actual.details.owned_signal_active_node_count, after.details.owned_signal_active_node_count);
+    assert_eq!(actual.details.head_signal_movement, after.details.head_signal_movement);
     let expected_next = before.world_commit_ordinal + 1;
     if allow_released_gap {
         assert!(
-            actual.world_commit_ordinal == expected_next
-                || actual.world_commit_ordinal == expected_next + 1,
-            "sync#{ordinal}: post-retry ordinal {} must be {expected_next} or {}",
-            actual.world_commit_ordinal,
-            expected_next + 1
+            actual.world_commit_ordinal == expected_next || actual.world_commit_ordinal == expected_next + 1,
+            "sync#{ordinal}: post-retry ordinal {} must be {expected_next} or {}", actual.world_commit_ordinal, expected_next + 1
         );
     } else {
-        assert_eq!(
-            actual.world_commit_ordinal, expected_next,
-            "sync#{ordinal}: committed/continued ordinal must be exact predecessor + 1"
-        );
+        assert_eq!(actual.world_commit_ordinal, expected_next, "sync#{ordinal}: committed/continued ordinal must be exact predecessor + 1");
     }
 }
 
@@ -339,15 +211,20 @@ fn verify_signal_custody(
     target: (&SignalHome, WorthQueryProductBranch),
     handles: &[worth_runtime_world::facade::ProductUnpublishedRecoveryHandle],
     states: (&SignalSnapshot, &SignalSnapshot, &SignalSnapshot),
-    run: (u64, &ContactCounters, &ExecutionRequest<'_, '_>),
+    run: (u64, [u8; 32], &ContactCounters, &ExecutionRequest<'_, '_>),
 ) {
     let (home, main) = target;
-    let (ordinal, contacts, execution) = run;
+    let (ordinal, expected_key, contacts, execution) = run;
     let (state, expected_before, expected_after) = states;
     assert_eq!(handles.len(), 1, "sync#{ordinal}: at most one unpublished custody");
-    assert_eq!(state, expected_before, "sync#{ordinal}: head and Native basis stayed at predecessor");
+    assert_signal_predecessor(state, expected_before, ordinal);
     assert!(matches!(commit_mixed(home, main, 2), CommitOutcome::ProductUnpublished(_)));
     let recovery = home.runtime().readmit_product_publication_recovery(&handles[0]).unwrap();
+    let effect = recovery.inspect().unwrap();
+    let custody_attempt = effect.attempt_identity().ordinal();
+    let native = effect.native_semantic_result().map(|n| n.receipt());
+    let (custody_commit, custody_ver) = (native.map(|r| r.commit_id.0), native.map(|r| r.version_id.as_u64()));
+    drop(effect);
     loop {
         match recovery.continue_original_in_request(execution).unwrap() {
             WorldRecoveredContinuationOutcome::Pending(c) => drop(c),
@@ -358,7 +235,13 @@ fn verify_signal_custody(
     let continued = observe_signal(home);
     assert_signal_advanced(&continued, expected_before, expected_after, (ordinal, false));
     assert_eq!(contacts.snapshot(), (0, 0, 0, 0), "sync#{ordinal}: zero replay on continuation");
-    assert!(matches!(commit_mixed(home, main, 2), CommitOutcome::RecoveredCommitted(_)));
+    let CommitOutcome::RecoveredCommitted(rec) = commit_mixed(home, main, 2) else {
+        panic!("sync#{ordinal}: post-continuation retry must return RecoveredCommitted");
+    };
+    assert_eq!(rec.attempt_identity().ordinal(), custody_attempt);
+    assert_eq!(Some(rec.commit_reference().commit_id.0), custody_commit);
+    assert_eq!(Some(rec.commit_reference().version_id.as_u64()), custody_ver);
+    assert_recovered_receipt_bound(&rec, &continued, expected_after, expected_key, &format!("sync#{ordinal}/custody"));
     assert_eq!(observe_signal(home), continued, "sync#{ordinal}: retry must not advance");
 }
 
@@ -376,7 +259,7 @@ fn signal_bridge_io_kill_child() {
         sync_barrier_placement(ord_str.parse().unwrap(), Some(markers.join("ready")), Some(done.clone()))
     };
     let home = open_signal_home(
-        SignalOpen { location: Location::Directory(location), initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: Some(placement) },
+        SignalOpen { location: Location::Directory(location), build: BUILD_PRIMARY, initialized: Arc::new(AtomicUsize::new(0)), contacts: ContactCounters::default(), placement: Some(placement) },
         &execution,
     );
     activation.arm().unwrap();

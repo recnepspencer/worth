@@ -20,7 +20,7 @@ const ENV_HOME: &str = "WORTH_ADV_HOST_HOME";
 const ENV_MARKERS: &str = "WORTH_ADV_HOST_MARKERS";
 const ENV_SPEC: &str = "WORTH_ADV_HOST_SPEC";
 
-const ALL_SEAMS: [(&str, Seam); 5] = [
+pub(super) const ALL_SEAMS: [(&str, Seam); 5] = [
     ("before_wal", Seam::BeforeWalAppend),
     ("after_wal", Seam::AfterWalDurability),
     ("after_data", Seam::AfterDataSettlement),
@@ -96,7 +96,7 @@ fn host_mutation_and_checkpoint_killed_at_every_store_seam_recovers_to_memory_or
     }
 }
 
-fn measure_appends(saved: &RestorableHome, spec: &str) -> usize {
+pub(super) fn measure_appends(saved: &RestorableHome, spec: &str) -> usize {
     saved.restore();
     let markers = tempfile::tempdir().unwrap();
     let end = crate::killed_child::run_and_kill(

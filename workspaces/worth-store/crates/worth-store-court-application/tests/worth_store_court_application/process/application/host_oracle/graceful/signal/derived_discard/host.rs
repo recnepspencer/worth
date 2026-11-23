@@ -177,6 +177,16 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
     drop(refused.resume().unwrap());
 }
 
+pub(in super::super::super::super) fn checkpoint_and_discard_signal(
+    home: &opening::Home,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (u64, u64) {
+    let cp = home.checkpoint(execution).unwrap().generation();
+    let discard = home.discard_derived_for_test(execution).unwrap();
+    assert_eq!(discard, cp + 1);
+    (cp, discard)
+}
+
 fn inspect_cadence(
     home: &opening::Home,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

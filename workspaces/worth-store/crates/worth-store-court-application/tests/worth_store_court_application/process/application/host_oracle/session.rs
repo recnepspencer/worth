@@ -22,6 +22,15 @@ impl Session {
         seed: u64,
         build: Option<&str>,
     ) -> (Self, Response) {
+        Self::start_with_build_and_wal(path, channel, seed, build, None)
+    }
+    pub fn start_with_build_and_wal(
+        path: &Path,
+        channel: &Path,
+        seed: u64,
+        build: Option<&str>,
+        wal_bytes: Option<u64>,
+    ) -> (Self, Response) {
         std::fs::create_dir_all(channel).unwrap();
         let mut command = Command::new(std::env::current_exe().unwrap());
         command
@@ -37,6 +46,9 @@ impl Session {
             ));
         if let Some(build) = build {
             command.env("WORTH_HOST_ORACLE_BUILD", build);
+        }
+        if let Some(bytes) = wal_bytes {
+            command.env("WORTH_HOST_ORACLE_WAL_BYTES", bytes.to_string());
         }
         let child = command.spawn().unwrap();
         let mut session = Self {
@@ -66,6 +78,9 @@ impl Session {
                 return serde_json::from_slice(&bytes).unwrap();
             }
             let ended = self.child.try_wait().unwrap();
+            if ended.is_some() && file.is_file() {
+                continue;
+            }
             assert!(
                 ended.is_none() && Instant::now() < deadline,
                 "Host child stopped or did not respond: {ended:?}\n{}\n{}",
@@ -81,6 +96,22 @@ impl Session {
         }
         self.child.wait().unwrap();
     }
+    /// Explicitly terminate a STILL-LIVE child process with a real OS kill.
+    pub fn kill_live(&mut self) {
+        let exited = self.child.try_wait().expect("poll Host child before OS kill");
+        assert!(
+            exited.is_none(),
+            "Host child exited before parent-induced OS kill: {exited:?}"
+        );
+        self.child
+            .kill()
+            .expect("parent OS kill of live Host child must succeed");
+        let status = self.child.wait().expect("reap OS-killed Host child");
+        assert!(
+            !status.success(),
+            "OS-killed Host child must not report clean exit: {status:?}"
+        );
+    }
     pub fn finish(&mut self) {
         assert!(self.child.wait().unwrap().success(), "graceful child exit");
     }
@@ -95,6 +126,22 @@ fn host_oracle_service_child() {
     let Some(channel) = std::env::var_os("WORTH_HOST_ORACLE_CHANNEL").map(PathBuf::from) else {
         return;
     };
+    let wal_profile = std::env::var_os("WORTH_HOST_ORACLE_WAL_BYTES").map(|raw| {
+        let bytes = raw
+            .to_str()
+            .unwrap()
+            .parse::<std::num::NonZeroU64>()
+            .unwrap();
+        worth_store_application::ApplicationHomeCertificationProfile::with_wal_segment_bytes(bytes)
+    });
+    let run = || run_host_oracle_service_child(channel);
+    match wal_profile {
+        Some(profile) => profile.run(run),
+        None => run(),
+    }
+}
+
+fn run_host_oracle_service_child(channel: PathBuf) {
     let path = PathBuf::from(std::env::var_os("WORTH_HOST_ORACLE_HOME").unwrap());
     let seed = std::env::var("WORTH_HOST_ORACLE_SEED")
         .unwrap()

@@ -4,16 +4,21 @@
 mod adoption_io_kills;
 mod correction_fixture;
 mod correction_io_kills;
+mod dimensions_matrix;
+mod dimensions_signal;
 mod dispatch_io_kills;
 mod media_fault_ops;
 mod media_fault_sweep;
 mod oracle_verifier;
+mod parallel;
 mod recovery_fixtures;
 mod recovery_interruption_oracle;
 mod seam_kill_sweep;
 mod signal_bridge_io_kills;
 mod workflow_correction_fixture;
 mod workflow_correction_io_kills;
+
+use self::parallel::{run_parallel_barriers, run_parallel_calibrated_barriers, run_parallel_items};
 
 use std::path::Path;
 use std::sync::{
@@ -31,6 +36,8 @@ use worth_store::physical_runtime::{
 use worth_store_testkit_application_oracle::facade::host_interruption::opening::AdversarialPlacement;
 
 pub(super) const BUILD_PRIMARY: &str = "11111111-1111-4111-8111-111111111111";
+pub(super) const BUILD_SECONDARY: &str = "22222222-2222-4222-8222-222222222222";
+pub(super) const BUILD_TERTIARY: &str = "33333333-3333-4333-8333-333333333333";
 
 pub(super) fn build_id(raw: &str) -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse(raw).unwrap()
@@ -240,77 +247,4 @@ pub(super) fn classify_barrier_kill(
 pub(super) fn all_barriers(total: u64) -> std::ops::RangeInclusive<u64> {
     assert!(total > 0, "target operation must execute durable syncs");
     1..=total
-}
-
-/// Run every measured barrier ordinal `1..=total` in parallel across isolated
-/// per-worker fixtures, failing fast on the first unexpected panic and asserting
-/// every ordinal up to the shortest observed completion genuinely parked.
-pub(super) fn run_parallel_barriers<W, T>(
-    label: &str,
-    total: u64,
-    prepare_worker: impl Fn() -> W + Sync,
-    run_case: impl Fn(&W, u64) -> (BarrierKill, T) + Sync,
-) -> Vec<(u64, BarrierKill, T)>
-where
-    T: Send,
-{
-    assert!(total > 0, "{label}: target operation must execute durable syncs");
-    let workers = std::thread::available_parallelism()
-        .map(usize::from)
-        .unwrap_or(4)
-        .clamp(1, 8)
-        .min(total as usize);
-    let next = std::sync::atomic::AtomicU64::new(1);
-    let aborted = AtomicBool::new(false);
-    let results: std::sync::Mutex<Vec<Option<Result<(BarrierKill, T), String>>>> =
-        std::sync::Mutex::new((0..total as usize).map(|_| None).collect());
-    let (next_ref, abort_ref, results_ref) = (&next, &aborted, &results);
-    let (prep_ref, run_ref) = (&prepare_worker, &run_case);
-    std::thread::scope(|scope| {
-        for _ in 0..workers {
-            scope.spawn(move || {
-                let worker_state = prep_ref();
-                loop {
-                    if abort_ref.load(Ordering::Acquire) {
-                        break;
-                    }
-                    let ordinal = next_ref.fetch_add(1, Ordering::Relaxed);
-                    if ordinal > total {
-                        break;
-                    }
-                    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        run_ref(&worker_state, ordinal)
-                    }))
-                    .map_err(|payload| media_fault_sweep::panic_message(&*payload));
-                    if outcome.is_err() {
-                        abort_ref.store(true, Ordering::Release);
-                    }
-                    results_ref.lock().unwrap()[(ordinal - 1) as usize] = Some(outcome);
-                }
-            });
-        }
-    });
-    let mut out = Vec::with_capacity(total as usize);
-    let mut killed = 0u64;
-    let mut min_tail = total;
-    for (idx, slot) in results.into_inner().unwrap().into_iter().enumerate() {
-        let ordinal = (idx as u64) + 1;
-        match slot {
-            Some(Ok((kill, val))) => {
-                match kill {
-                    BarrierKill::Killed => killed += 1,
-                    BarrierKill::CompletedAtTail { actual } => min_tail = min_tail.min(actual),
-                }
-                out.push((ordinal, kill, val));
-            }
-            Some(Err(msg)) => panic!("{label} sync#{ordinal} of {total} failed: {msg}"),
-            None => panic!("{label} sync#{ordinal} of {total} skipped after earlier failure"),
-        }
-    }
-    assert!(
-        killed >= min_tail && killed >= total.saturating_sub(TAIL_VARIANCE_BOUND),
-        "{label}: expected at least {} killed barriers (min_tail={min_tail}, total={total}), got {killed}",
-        min_tail.max(total.saturating_sub(TAIL_VARIANCE_BOUND))
-    );
-    out
 }

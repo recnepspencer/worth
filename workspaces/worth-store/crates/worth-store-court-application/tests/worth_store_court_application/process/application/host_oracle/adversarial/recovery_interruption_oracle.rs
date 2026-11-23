@@ -37,8 +37,9 @@ const ENV_HOME: &str = "WORTH_ADV_RECKILL_HOME";
 const ENV_MARKERS: &str = "WORTH_ADV_RECKILL_MARKERS";
 const ENV_SPEC: &str = "WORTH_ADV_RECKILL_SPEC";
 const ENV_WAL_BYTES: &str = "WORTH_ADV_RECKILL_WAL_BYTES";
+const ENV_BUILD: &str = "WORTH_ADV_RECKILL_BUILD";
 
-const PHYSICAL_STAGES: [PhysStage; 13] = [
+pub(super) const PHYSICAL_STAGES: [PhysStage; 13] = [
     PhysStage::StagingMaterialization, PhysStage::StagingSynchronization,
     PhysStage::CandidateMaterialization, PhysStage::CandidateSynchronization,
     PhysStage::RootProtocolReplacement, PhysStage::RecordNamespaceSynchronization,
@@ -61,7 +62,7 @@ const fn physical_stage_index(stage: PhysStage) -> usize {
 }
 
 // No wildcard: any new ApplicationHomeOpeningStage must extend this roster.
-const fn opening_stage_index(stage: OpenStage) -> usize {
+pub(super) const fn opening_stage_index(stage: OpenStage) -> usize {
     match stage {
         OpenStage::DescriptorIncarnation => 0, OpenStage::NativeReadmission => 1,
         OpenStage::WorldReconciliation => 2, OpenStage::QueryReadmission => 3,
@@ -211,12 +212,9 @@ fn host_recovery_killed_at_every_recovery_sync_barrier_and_chained_kills() {
     let totals = sync_totals.into_inner().unwrap();
     assert!(
         totals["committed_split"] > totals["committed_short"],
-        "guaranteed-split layout ({}) must execute strictly more syncs than non-splitting layout ({})",
-        totals["committed_split"],
-        totals["committed_short"]
+        "split layout ({}) must exceed non-split ({})",
+        totals["committed_split"], totals["committed_short"]
     );
-
-    // Part B: 3-deep chained consecutive recovery kills across all 3 postures.
     let chain = [
         format!("phys:{}", PhysStage::CandidateSynchronization.label()),
         format!("open:{}:after", opening_stage_index(OpenStage::WorldReconciliation)),
@@ -224,10 +222,7 @@ fn host_recovery_killed_at_every_recovery_sync_barrier_and_chained_kills() {
     ];
     for (posture, fixture) in [("committed", &committed), ("custody", &custody), ("preop", &pre_op)] {
         fixture.restore();
-        for (step, spec) in chain.iter().enumerate() {
-            kill_recovery(fixture.location(), spec, None);
-            eprintln!("chained recovery kill {posture} step#{step}: {spec}");
-        }
+        for spec in &chain { kill_recovery(fixture.location(), spec, None); }
         let label = format!("chained/{posture}");
         let v = verify_reopen_and_continue(fixture.location(), &reference, &execution, &label);
         assert_expected_posture(posture, &v, &label);
@@ -243,12 +238,12 @@ fn assert_expected_posture(posture: &str, verdict: &RecoveredPrefix, label: &str
     }
 }
 
-fn kill_recovery(location: &Path, spec: &str, wal_bytes: Option<u64>) {
+pub(super) fn kill_recovery_with_build(location: &Path, spec: &str, wal_bytes: Option<u64>, build: Option<&str>) {
     let markers = tempfile::tempdir().unwrap();
-    let spec_path = PathBuf::from(spec);
-    let wal_path = wal_bytes.map(|b| PathBuf::from(b.to_string()));
+    let (spec_path, wal_path, build_path) = (PathBuf::from(spec), wal_bytes.map(|b| PathBuf::from(b.to_string())), build.map(PathBuf::from));
     let mut env: Vec<(&str, &Path)> = vec![(ENV_HOME, location), (ENV_MARKERS, markers.path()), (ENV_SPEC, &spec_path)];
     if let Some(ref w) = wal_path { env.push((ENV_WAL_BYTES, w)); }
+    if let Some(ref b) = build_path { env.push((ENV_BUILD, b)); }
     let (ready, expected) = match spec.strip_prefix("phys:") {
         Some(stage_label) => (markers.path().join("reached"), stage_label.to_owned()),
         None => (markers.path().join("ready"), spec.to_owned()),
@@ -256,10 +251,12 @@ fn kill_recovery(location: &Path, spec: &str, wal_bytes: Option<u64>) {
     let ready_check = ready.clone();
     let end = crate::killed_child::run_and_kill_observing(
         RECOVERY_CHILD, &env, &ready, &markers.path().join("finished"),
-        move || assert_eq!(std::fs::read_to_string(&ready_check).unwrap_or_default(), expected, "recovery stage marker mismatch before kill"),
+        move || assert_eq!(std::fs::read_to_string(&ready_check).unwrap_or_default(), expected, "stage marker mismatch"),
     );
-    assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark, "recovery kill spec {spec} must park at target stage");
+    assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark, "recovery kill {spec} must park");
 }
+
+fn kill_recovery(location: &Path, spec: &str, wal_bytes: Option<u64>) { kill_recovery_with_build(location, spec, wal_bytes, None); }
 
 fn measure_recovery_role(fixture: &RestorableHome, role_tag: &str) -> (u64, u64) {
     fixture.restore();
@@ -273,48 +270,44 @@ fn measure_recovery_role(fixture: &RestorableHome, role_tag: &str) -> (u64, u64)
     (parts.next().unwrap().parse().unwrap(), parts.next().unwrap().parse().unwrap())
 }
 
-fn kill_recovery_role(
-    fixture: &RestorableHome,
-    kind: (&str, MediaOperationRole),
-    bounds: (u64, u64),
-    tag: &str,
-) {
-    let (role_tag, role) = kind;
-    let (ordinal, total) = bounds;
+fn kill_recovery_role(fixture: &RestorableHome, kind: (&str, MediaOperationRole), bounds: (u64, u64), tag: &str) {
+    let ((role_tag, role), (ordinal, total)) = (kind, bounds);
     fixture.restore();
     let markers = tempfile::tempdir().unwrap();
-    let spec = PathBuf::from(format!("role:{role_tag}:{ordinal}"));
-    let ready = markers.path().join("ready");
+    let (spec, ready) = (PathBuf::from(format!("role:{role_tag}:{ordinal}")), markers.path().join("ready"));
     let end = crate::killed_child::run_and_kill(
         RECOVERY_CHILD,
         &[(ENV_HOME, fixture.location()), (ENV_MARKERS, markers.path()), (ENV_SPEC, &spec)],
-        &ready,
-        &markers.path().join("finished"),
+        &ready, &markers.path().join("finished"),
     );
-    assert_barrier_killed(end, &ready, role, ordinal, &format!("{tag} recovery {role_tag}#{ordinal} of {total}"));
+    assert_barrier_killed(end, &ready, role, ordinal, &format!("{tag} recovery {role_tag}#{ordinal}/{total}"));
 }
 
 #[test]
 fn host_recovery_kill_child() {
-    let Some(location) = std::env::var_os(ENV_HOME).map(PathBuf::from) else {
-        return;
-    };
-    let markers = PathBuf::from(std::env::var_os(ENV_MARKERS).unwrap());
-    let spec = std::env::var(ENV_SPEC).unwrap();
-    let wal_profile = std::env::var_os(ENV_WAL_BYTES).map(|raw| {
-        let bytes = raw.to_str().unwrap().parse::<NonZeroU64>().unwrap();
-        ApplicationHomeCertificationProfile::with_wal_segment_bytes(bytes)
-    });
+    let Some(location) = std::env::var_os(ENV_HOME).map(PathBuf::from) else { return; };
+    let (markers, spec) = (PathBuf::from(std::env::var_os(ENV_MARKERS).unwrap()), std::env::var(ENV_SPEC).unwrap());
+    let wal_profile = std::env::var_os(ENV_WAL_BYTES)
+        .map(|raw| ApplicationHomeCertificationProfile::with_wal_segment_bytes(raw.to_str().unwrap().parse().unwrap()));
     let run = || run_recovery_child(&location, &markers, &spec);
-    match wal_profile {
-        Some(profile) => profile.run(run),
-        None => run(),
-    }
+    match wal_profile { Some(p) => p.run(run), None => run() }
 }
 
 fn run_recovery_child(location: &Path, markers: &Path, spec: &str) {
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
+    let build = std::env::var(ENV_BUILD).unwrap_or_else(|_| super::BUILD_PRIMARY.to_owned());
+    let open_with = |placement: AdversarialPlacement| {
+        super::oracle_verifier::open_dir_configured(
+            super::oracle_verifier::DirOpen {
+                location,
+                build: &build,
+                placement: Some(placement),
+                contacts: Arc::new(AtomicUsize::new(0)),
+            },
+            &execution,
+        )
+    };
     if let Some(stage_label) = spec.strip_prefix("phys:") {
         let stage = PhysStage::from_label(stage_label).expect("valid physical recovery stage");
         let yieldpoint = PhysicalRecoveryProcessYieldpoint::new(
@@ -323,12 +316,7 @@ fn run_recovery_child(location: &Path, markers: &Path, spec: &str) {
             markers.join("release"),
             markers.join("cancel"),
         );
-        let (home, _) = open_dir(
-            location,
-            Some(AdversarialPlacement::new().with_recovery_yieldpoint(yieldpoint)),
-            Arc::new(AtomicUsize::new(0)),
-            &execution,
-        );
+        let (home, _) = open_with(AdversarialPlacement::new().with_recovery_yieldpoint(yieldpoint));
         home.close(&execution).unwrap().reclaim();
         crate::killed_child::announce(&markers.join("finished"), b"missed_phys");
         return;
@@ -349,7 +337,7 @@ fn run_recovery_child(location: &Path, markers: &Path, spec: &str) {
                 crate::killed_child::park();
             }
         });
-        let (home, _) = open_dir(location, Some(placement), Arc::new(AtomicUsize::new(0)), &execution);
+        let (home, _) = open_with(placement);
         home.close(&execution).unwrap().reclaim();
         crate::killed_child::announce(&markers.join("finished"), b"missed_open");
         return;

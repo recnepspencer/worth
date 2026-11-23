@@ -1,5 +1,5 @@
 //! D14 derived-cache discard across graceful close and real process kill.
-mod host;
+pub(in super::super::super) mod host;
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::process::{Command, Stdio};
