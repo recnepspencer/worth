@@ -14,16 +14,16 @@ pub(crate) fn custody_stop(
     crate::transactions::data::TransactionCommitError::execution(cause.into().into())
 }
 pub use application_publication::{
-    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
-    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
-    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
-    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
-    RelationalCoupledChainOverlay, RelationalCoupledContribution,
-    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
-    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
-    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
-    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    AuthoredOwnedMemberKind, ManagedIndexParentReadFootprint, RecordedRequiredOutputRole,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
+    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
     RelationalRequiredOutputInput, RelationalRequiredOutputPublication,
@@ -51,15 +51,16 @@ pub use candidate::{
     RelationalCurrentOutputAdoption,
 };
 pub(crate) use companion::{
-    CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    install_readmitted_source_image, CandidateCompanionBinding, CompanionRegistrationEpoch,
+    CompanionRegistry, ManagedSourceHistoryOwner, ManagedSourceRootImages,
+    PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
+    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceCellPlacement,
     ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PendingCompanionRegistration,
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PublicationCompanionPreflight, PublicationCompanionRegistration,

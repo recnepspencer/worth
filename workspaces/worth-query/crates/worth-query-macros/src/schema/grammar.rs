@@ -2,7 +2,7 @@
 use super::DERIVE;
 use crate::grammar::{flag, type_list, unknown_key, value, visit_keys, Once};
 use syn::meta::ParseNestedMeta;
-use syn::{DeriveInput, LitStr, Path, Token, Type};
+use syn::{DeriveInput, Expr, LitBool, LitStr, Path, Token, Type};
 
 const KEYS: &[&str] = &[
     "schema",
@@ -18,6 +18,10 @@ const KEYS: &[&str] = &[
     "to",
     "from",
     "reference",
+    "cardinality",
+    "acyclic",
+    "self_edges",
+    "unique",
 ];
 
 pub(super) struct SchemaMarker {
@@ -44,7 +48,15 @@ pub(super) enum Role {
     Relation {
         to: Type,
         reference: Option<(Path, Reference)>,
+        laws: RelationLaws,
     },
+}
+
+pub(super) struct RelationLaws {
+    pub(super) cardinality: Option<Expr>,
+    pub(super) acyclic: bool,
+    pub(super) self_edges: Option<LitBool>,
+    pub(super) unique: Option<Expr>,
 }
 
 /// `reference(Schema, Fragment)`: where the generated `reference()` points.
@@ -83,6 +95,10 @@ struct Keys {
     to: Once<Type>,
     from: Once<Path>,
     reference: Once<Reference>,
+    cardinality: Once<Expr>,
+    acyclic: Once<()>,
+    self_edges: Once<LitBool>,
+    unique: Once<Expr>,
 }
 
 impl SchemaMarker {
@@ -119,6 +135,10 @@ impl Keys {
             to: Once::new("to"),
             from: Once::new("from"),
             reference: Once::new("reference"),
+            cardinality: Once::new("cardinality"),
+            acyclic: Once::new("acyclic"),
+            self_edges: Once::new("self_edges"),
+            unique: Once::new("unique"),
         }
     }
 
@@ -137,6 +157,13 @@ impl Keys {
             "to" => self.to.set(meta, value(meta)?),
             "from" => self.from.set(meta, value(meta)?),
             "reference" => self.reference.set(meta, reference(meta)?),
+            "cardinality" => self.cardinality.set(meta, value(meta)?),
+            "acyclic" => {
+                flag(meta)?;
+                self.acyclic.set(meta, ())
+            }
+            "self_edges" => self.self_edges.set(meta, value(meta)?),
+            "unique" => self.unique.set(meta, value(meta)?),
             _ => Err(unknown_key(meta, DERIVE, KEYS)),
         }
     }
@@ -161,6 +188,14 @@ impl Keys {
             .refuse_unless(role == RoleKey::Entity, label)?;
         self.to.refuse_unless(role == RoleKey::Relation, label)?;
         self.from.refuse_unless(role == RoleKey::Relation, label)?;
+        self.cardinality
+            .refuse_unless(role == RoleKey::Relation, label)?;
+        self.acyclic
+            .refuse_unless(role == RoleKey::Relation, label)?;
+        self.self_edges
+            .refuse_unless(role == RoleKey::Relation, label)?;
+        self.unique
+            .refuse_unless(role == RoleKey::Relation, label)?;
         let referenced = matches!(role, RoleKey::Entity | RoleKey::Relation);
         self.reference.refuse_unless(referenced, label)?;
         Ok(match role {
@@ -191,7 +226,16 @@ impl Keys {
                     }
                     (_, None) => None,
                 };
-                Role::Relation { to, reference }
+                Role::Relation {
+                    to,
+                    reference,
+                    laws: RelationLaws {
+                        cardinality: self.cardinality.optional(),
+                        acyclic: self.acyclic.is_set(),
+                        self_edges: self.self_edges.optional(),
+                        unique: self.unique.optional(),
+                    },
+                }
             }
         })
     }

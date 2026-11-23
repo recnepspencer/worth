@@ -8,8 +8,8 @@
 //!   `reference(Schema, Fragment)`.
 //!
 //! `name = ".."` keeps an existing persisted name; it defaults to the type name.
-//! A relation with non-default integrity constants implements `Relation` by
-//! hand.
+//! The relation role also accepts `cardinality = ..`, `acyclic`,
+//! `self_edges = false`, and `unique = ..` as native integrity declarations.
 use proc_macro2::TokenStream;
 use syn::DeriveInput;
 

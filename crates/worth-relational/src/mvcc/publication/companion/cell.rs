@@ -50,7 +50,7 @@ pub(in crate::mvcc) struct CompanionBranchCellCore {
     pub(super) topology_generation: AtomicU64,
     pub(super) source_affinity:
         std::sync::OnceLock<Arc<managed_source::affinity::ManagedSourceCellAffinity>>,
-    pub(super) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+    pub(super) _placement_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 struct DerivedCellEdit<'a>(&'a CompanionBranchCellCore);
@@ -194,7 +194,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
                 reservation_live: AtomicBool::new(false),
                 topology_generation: AtomicU64::new(1),
                 source_affinity: std::sync::OnceLock::new(),
-                _fork_memory: None,
+                _placement_memory: None,
             }),
             _payload: PhantomData,
         }

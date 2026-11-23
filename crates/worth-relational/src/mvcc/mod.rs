@@ -34,6 +34,12 @@ pub(crate) use observation::RelationalRetainedObservationShares;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use publication::{
+    install_readmitted_source_image, ManagedSourceHistoryOwner, ManagedSourceRootImages,
+    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
+    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+    PublicationPreparationDenial,
+};
+pub(crate) use publication::{
     origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
 };
 pub use publication::{
@@ -42,7 +48,7 @@ pub use publication::{
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
-    ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
+    ManagedIndexSourceCellPlacement, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
     PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
     PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
@@ -55,21 +61,17 @@ pub use publication::{
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };
-pub(crate) use publication::{
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
-    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
-};
 pub use publication::{
-    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
-    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
-    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
-    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
-    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
+    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
+    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledChainOverlay, RelationalCoupledContribution,
+    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
+    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputInput,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,

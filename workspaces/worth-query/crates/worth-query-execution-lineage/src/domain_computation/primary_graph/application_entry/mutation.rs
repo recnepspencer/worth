@@ -1,3 +1,4 @@
+use super::super::application_attempt::WorthQueryApplicationAttemptDenial;
 pub use super::super::handler::HandlerInterruption;
 pub mod decision_plan;
 pub mod durable_capability;
@@ -61,6 +62,12 @@ impl std::fmt::Display for HandlerExecutionDenial {
 impl std::error::Error for HandlerExecutionDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(self.source.as_ref())
+    }
+}
+
+impl From<WorthQueryApplicationAttemptDenial> for HandlerExecutionDenial {
+    fn from(source: WorthQueryApplicationAttemptDenial) -> Self {
+        Self::new(source)
     }
 }
 

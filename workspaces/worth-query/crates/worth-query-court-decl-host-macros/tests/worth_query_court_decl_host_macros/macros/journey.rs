@@ -18,7 +18,8 @@ use worth_query_host::facade::{
         application_schema::ApplicationValueEncodeDenial,
     },
     domain::ApplicationSchema,
-    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
+    WorthQueryAnySourceCustodyStep, WorthQuerySourceCustody, WorthQuerySourceCustodyPending,
+    WorthQuerySourceCustodyStep,
 };
 
 type Key<S, I> =
@@ -168,7 +169,27 @@ fn derived_and_written_actions_commit_through_source_custody_across_frames() {
     // A fresh frame resumes the same custody, then commits further commands.
     let fresh = scope(&clock);
     let request = host.runtime().request(&principal, &fresh);
-    committed(custody.resume(&host, &request));
+    let complete =
+        WorthQuerySourceCustody::<_, _, Program, Action<CompleteBinding, Completed>>::Described(
+            capture(
+                &request,
+                Complete {
+                    task: 3,
+                    done: true,
+                },
+                4,
+            ),
+        );
+    for owner in [custody.erase(), complete.erase()] {
+        let WorthQueryAnySourceCustodyStep::Committed { evidence, .. } =
+            owner.resume(&host, &request)
+        else {
+            panic!("the original typed commands commit through erased custody");
+        };
+        assert!(evidence.live_receipt().is_some());
+        assert!(evidence.evidence::<()>().is_some());
+        assert!(evidence.evidence::<String>().is_none());
+    }
     let later = Reschedule {
         task: 2,
         due: Some(day(80)),
@@ -176,11 +197,6 @@ fn derived_and_written_actions_commit_through_source_custody_across_frames() {
     committed::<_, Action<RescheduleBinding, Rescheduled>>(submit(&host, &request, later, 2));
     let cleared = Reschedule { task: 1, due: None };
     committed::<_, Action<RescheduleBinding, Rescheduled>>(submit(&host, &request, cleared, 3));
-    let done = Complete {
-        task: 3,
-        done: true,
-    };
-    committed::<_, Action<CompleteBinding, Completed>>(submit(&host, &request, done, 4));
 
     assert_eq!(keys(read(&request, search("bore"))), [2]);
     let due = read(

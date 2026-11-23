@@ -16,7 +16,8 @@ pub struct Search {
 #[derive(Clone, Debug, WorthValue)]
 pub struct DueBy {
     pub project: u64,
-    pub max_due_days: i64,
+    pub max_due_days: Option<i64>,
+    pub text: Option<String>,
 }
 #[derive(Clone, Debug, WorthValue)]
 pub struct Fit {
@@ -51,13 +52,21 @@ pub fn search_parameters(input: &Search) -> ApplicationQueryParameterSet<SearchQ
         )
         .expect("search text encodes")
 }
+pub fn max_due(
+) -> ApplicationQueryParameterRef<DueQuery, MaxDue, CanonicalDateApplicationValueBinding, true> {
+    ApplicationQueryParameterRef::optional("max_due")
+}
+
+pub fn due_text(
+) -> ApplicationQueryParameterRef<DueQuery, SearchText, StringApplicationValueBinding, true> {
+    ApplicationQueryParameterRef::optional("text")
+}
+
 fn due_parameters(input: &DueBy) -> ApplicationQueryParameterSet<DueQuery> {
     ApplicationQueryParameterSet::new()
-        .bind(
-            parameter::<DueQuery, MaxDue, CanonicalDateApplicationValueBinding>("max_due"),
-            date(input.max_due_days),
-        )
-        .expect("the date encodes")
+        .bind_optional(max_due(), input.max_due_days.map(date))
+        .and_then(|set| set.bind_optional(due_text(), input.text.clone()))
+        .expect("the date and text encode")
 }
 fn fit_parameters(input: &Fit) -> ApplicationQueryParameterSet<FitQuery> {
     ApplicationQueryParameterSet::new()

@@ -20,10 +20,11 @@ pub use crate::indexes::data::{
     DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork, DerivedIndexPublicationStatus,
     DerivedIndexRegistrationDenial, DerivedIndexRows, DerivedIndexSelectionCounters,
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingDirection,
-    RelatedEntityOrderingEntry, RelatedEntityOrderingField, RelatedEntityOrderingValue,
-    RelationJoinDefinition, RelationJoinEntry, RelationJoinIndex, RelationJoinKey, RelationJoinLeg,
-    RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, SelectedIndexReadWork,
-    MAX_BOUNDED_INDEX_CANDIDATES, MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
+    RelatedEntityOrderingEntry, RelatedEntityOrderingField, RelatedEntityOrderingIndex,
+    RelatedEntityOrderingValue, RelationJoinDefinition, RelationJoinEntry, RelationJoinIndex,
+    RelationJoinKey, RelationJoinLeg, RelationJoinSharedEndpoint,
+    SelectedIndexGenerationAdmissionStop, SelectedIndexReadWork, MAX_BOUNDED_INDEX_CANDIDATES,
+    MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };
 pub use crate::indexes::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,

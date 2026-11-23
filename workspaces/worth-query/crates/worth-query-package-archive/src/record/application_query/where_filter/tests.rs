@@ -136,3 +136,26 @@ fn malformed_filter_extensions_refuse_with_typed_archive_denials() {
     variant[name_end] = 7;
     assert_eq!(kind(&variant), Kind::UnsupportedRecordVariant);
 }
+
+#[test]
+fn optional_parameter_preserves_its_presence_and_filter_identity_through_the_archive() {
+    let mut parts = unfiltered().into_parts();
+    parts.parameters[0] = parts.parameters[0].clone().with_optional_presence();
+    let draft = expressions().parse("!is_some(max_due)").unwrap().encode();
+    parts.where_filter = Some(
+        ApplicationQueryWhereFilterProgram::from_untrusted(
+            vec![ApplicationQueryWhereFilterOperand::from_untrusted(
+                "max_due".to_owned(),
+                ApplicationQueryWhereFilterSource::OptionalParameter {
+                    parameter: "max_due".to_owned(),
+                    scalar_family: ScalarAspectType::Date,
+                },
+            )],
+            &draft,
+        )
+        .unwrap(),
+    );
+    let optional = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    assert_ne!(optional.canonical_basis(), filtered().canonical_basis());
+    assert_eq!(decode_bytes(&encode(&optional)).unwrap(), (optional, true));
+}

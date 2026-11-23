@@ -30,7 +30,9 @@ mod query;
 
 use consumer_payload::{ForkConsumerMembershipChange, ForkConsumerMemberships};
 use flat_mutation::{insert_flat_membership, remove_flat_consumer};
-use fork_overlay::{ReverseSubscriptionFlat, ReverseSubscriptionStorage};
+use fork_overlay::{
+    ForkSubscriptionMaps, ForkSubscriptions, ReverseSubscriptionFlat, ReverseSubscriptionStorage,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum IndexedSubscriptionScope {
@@ -165,11 +167,29 @@ impl ReverseSubscriptionIndex {
         self.valid = false;
     }
 
-    pub(super) fn replace_consumer(
+    pub(super) fn fork_edit_charge(
+        &self,
+    ) -> Result<
+        Option<crate::data::retained_storage::RetainedStorageCharge>,
+        crate::data::retained_storage::RetainedStoragePreparationDenial,
+    > {
+        match self.storage {
+            ReverseSubscriptionStorage::Exclusive(_) => Ok(None),
+            ReverseSubscriptionStorage::ForkShared(_) => {
+                ForkSubscriptions::detached_payload_charge().map(Some)
+            }
+        }
+    }
+
+    pub(super) fn publish_replacement(
         &mut self,
         consumer: NodeId,
         memberships: Vec<IndexedSubscriptionMembership>,
+        custody: Option<crate::data::retained_storage::SignalConditionalRetentionReservation>,
     ) {
+        if let ReverseSubscriptionStorage::ForkShared(overlay) = &mut self.storage {
+            overlay.detach(custody);
+        }
         self.remove_consumer(consumer);
         for membership in &memberships {
             self.insert_membership(consumer, membership);
@@ -179,10 +199,8 @@ impl ReverseSubscriptionIndex {
                 ReverseSubscriptionStorage::Exclusive(flat) => {
                     flat.by_consumer.insert(consumer, memberships);
                 }
-                ReverseSubscriptionStorage::ForkShared {
-                    consumer_changes, ..
-                } => {
-                    consumer_changes.insert(
+                ReverseSubscriptionStorage::ForkShared(overlay) => {
+                    overlay.maps_mut().consumer_changes.insert(
                         consumer,
                         ForkConsumerMembershipChange::Replaced(
                             ForkConsumerMemberships::from_owned(memberships),
@@ -194,6 +212,15 @@ impl ReverseSubscriptionIndex {
     }
 
     #[cfg(test)]
+    pub(super) fn replace_consumer(
+        &mut self,
+        consumer: NodeId,
+        memberships: Vec<IndexedSubscriptionMembership>,
+    ) {
+        self.publish_replacement(consumer, memberships, None);
+    }
+
+    #[cfg(test)]
     pub(super) fn inject_candidate_drift_for_test(
         &mut self,
         producer: NodeId,
@@ -202,6 +229,9 @@ impl ReverseSubscriptionIndex {
     ) {
         let membership = IndexedSubscriptionMembership::from_edge(producer, aspect, None)
             .expect("unscoped test membership must be indexable");
+        if let ReverseSubscriptionStorage::ForkShared(overlay) = &mut self.storage {
+            overlay.detach(None);
+        }
         self.insert_membership(consumer, &membership);
     }
 
@@ -210,11 +240,12 @@ impl ReverseSubscriptionIndex {
             ReverseSubscriptionStorage::Exclusive(flat) => {
                 insert_flat_membership(flat, consumer, membership);
             }
-            ReverseSubscriptionStorage::ForkShared {
-                base,
-                bucket_changes,
-                ..
-            } => {
+            ReverseSubscriptionStorage::ForkShared(overlay) => {
+                let ForkSubscriptionMaps {
+                    base,
+                    bucket_changes,
+                    ..
+                } = overlay.maps_mut();
                 let base_bucket = base.buckets.get(&membership.key);
                 let mut delta = bucket_changes
                     .get(&membership.key)
@@ -233,11 +264,12 @@ impl ReverseSubscriptionIndex {
     fn remove_consumer(&mut self, consumer: NodeId) {
         match &mut self.storage {
             ReverseSubscriptionStorage::Exclusive(flat) => remove_flat_consumer(flat, consumer),
-            ReverseSubscriptionStorage::ForkShared {
-                base,
-                bucket_changes,
-                consumer_changes,
-            } => {
+            ReverseSubscriptionStorage::ForkShared(overlay) => {
+                let ForkSubscriptionMaps {
+                    base,
+                    bucket_changes,
+                    consumer_changes,
+                } = overlay.maps_mut();
                 let memberships = match consumer_changes.get(&consumer) {
                     Some(ForkConsumerMembershipChange::Replaced(memberships)) => {
                         Some(memberships.as_slice().to_vec())

@@ -16,7 +16,11 @@ pub(super) fn empty_entries(
         DerivedIndexKind::EntityField { .. } => prepare_empty_map::<Key, EntityId>(work)?,
         DerivedIndexKind::RelationField { .. } => prepare_empty_map::<Key, RelationId>(work)?,
         DerivedIndexKind::RelatedEntityOrdering { .. } => {
-            prepare_empty_map::<EntityId, RelatedEntityOrderingEntry>(work)?
+            prepare_empty_map::<EntityId, RelatedEntityOrderingEntry>(work)?;
+            work.prepare(
+                1,
+                crate::indexes::data::RelatedEntityOrderingIndex::header_bytes(),
+            )?;
         }
         DerivedIndexKind::RelationJoin(_) => {
             prepare_empty_map::<RelationJoinKey, RelationJoinEntry>(work)?;

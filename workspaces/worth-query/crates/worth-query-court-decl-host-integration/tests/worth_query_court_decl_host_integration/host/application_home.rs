@@ -1,4 +1,5 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod branch_preview;
 mod changed_build;
 mod correction_material;
 pub(crate) mod managed_cleanup;
@@ -94,7 +95,7 @@ fn fresh_directory_home_journey() {
             receipt.commit_reference().version_id.as_u64()
         );
     }
-    fresh_close::verify(home, &execution);
+    fresh_close::verify(home, &execution, *lease.policy());
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 }
 

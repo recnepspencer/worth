@@ -38,7 +38,7 @@ impl PreparedPublicationCompanionEffect {
                             .expect("compound sealing prepared source affinity"),
                     ),
                     image: std::sync::Arc::clone(&managed.next),
-                    _fork_memory: None,
+                    _placement_memory: None,
                 })
                 .map_err(|_| CompanionPreflightStop::SelectedSourceMismatch)?;
         }

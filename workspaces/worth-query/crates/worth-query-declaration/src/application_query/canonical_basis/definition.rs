@@ -174,6 +174,9 @@ fn append_parameters(
                 |frame| text(format!("{path}.frame"), frame),
             ),
         ]);
+        if parameter.is_optional() {
+            entries.push(text(format!("{path}.presence"), "optional"));
+        }
     }
 }
 

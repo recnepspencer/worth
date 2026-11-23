@@ -24,14 +24,14 @@ impl std::fmt::Debug for Companion {
     }
 }
 impl RelationalPublicationCompanion for Companion {
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, Stop> {
-        let lookup = self.registry.prepare_source_fork(execution, target)?;
+        let lookup = self.registry.prepare_source_placement(execution, target)?;
         let state = self.registry.state.lock().unwrap();
-        assert!(state.source_branches[target.target_branch()]
+        assert!(state.source_branches[target.branch()]
             .slot
             .admitted()
             .is_none());

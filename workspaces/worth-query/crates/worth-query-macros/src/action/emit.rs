@@ -43,10 +43,15 @@ fn operation(input: &DeriveInput, action: &ActionDeclaration) -> TokenStream {
     let decl = declaration();
     let (vis, operation, schema, input_binding) =
         (&input.vis, &action.operation, &action.schema, &action.input);
-    let access = action
-        .access
-        .as_ref()
-        .map(|access| quote!(; access { #access }));
+    let access = action.access.as_ref().map_or_else(
+        || {
+            action.body.then(|| {
+                let (selection, column) = action.scope.selected_column();
+                quote!(; access { read_fields: [<#selection>::at(#column)]; })
+            })
+        },
+        |access| Some(quote!(; access { #access })),
+    );
     let capabilities = action
         .capabilities
         .iter()
@@ -87,6 +92,13 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
         },
         Scope::Principal { selection, column } => quote! {
             scope #selection, principal_field <#selection>::at(#column),
+        },
+        Scope::Value {
+            selection,
+            column,
+            function,
+        } => quote! {
+            scope #selection, field <#selection>::at(#column), value #function,
         },
     };
     quote! {

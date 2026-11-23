@@ -21,7 +21,10 @@ pub(in super::super) fn quote(
                 value, request, comparison, scalar,
             )?,
             "RelatedEntityOrdering" => {
-                map::<EntityId, RelatedEntityOrderingEntry>(value, request, scalar, ordering)?
+                let mut bytes =
+                    map::<EntityId, RelatedEntityOrderingEntry>(value, request, scalar, ordering)?;
+                add(&mut bytes, RelatedEntityOrderingIndex::header_bytes())?;
+                bytes
             }
             "RelationJoin" => {
                 // The join index is its row map plus the leg state that maintains it.

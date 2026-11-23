@@ -15,6 +15,7 @@ use crate::execution::{
 };
 use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexExecutionDenial, DerivedIndexId, DerivedIndexKind,
+    RelatedEntityOrderingIndex,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -194,12 +195,14 @@ fn index_packet_result_checked(
                 *child_kind,
                 ordering,
             );
-            DerivedIndexEntries::RelatedEntityOrdering(checked_finish(
+            context.claim_result(RelatedEntityOrderingIndex::header_bytes())?;
+            let entries = checked_finish(
                 build_related_entity_ordering_index_checked(
                     lane, execution, projection, &contract, context,
                 )?,
                 context,
-            )?)
+            )?;
+            DerivedIndexEntries::RelatedEntityOrdering(entries.into())
         }
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
             build_relation_join_index_checked(lane, execution, projection, *definition, context)?,

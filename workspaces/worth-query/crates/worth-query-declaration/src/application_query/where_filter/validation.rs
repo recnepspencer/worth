@@ -31,6 +31,10 @@ pub(in crate::application_query) fn validate(
             Source::Parameter {
                 parameter,
                 scalar_family,
+            }
+            | Source::OptionalParameter {
+                parameter,
+                scalar_family,
             } => {
                 let Some(declared) = definition
                     .parameters()
@@ -39,7 +43,11 @@ pub(in crate::application_query) fn validate(
                 else {
                     return Err(Denial::WhereFilterUnknownParameter);
                 };
-                if declared.scalar_family() != *scalar_family || declared.unit().is_some() {
+                if declared.scalar_family() != *scalar_family
+                    || declared.unit().is_some()
+                    || declared.is_optional()
+                        != matches!(operand.source(), Source::OptionalParameter { .. })
+                {
                     return Err(Denial::WhereFilterParameterMismatch);
                 }
             }

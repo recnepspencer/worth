@@ -38,7 +38,7 @@ worth_query_structured_value_binding!(pub ParametersBinding for () {
 worth_query_application_query!(pub SearchQuery for Schema, identity worth_query_identity!(SEARCH, query),
     parameters ParametersBinding, result RowBinding, scope Project => "Project", name "task_search");
 worth_query_application_query!(pub DueQuery for Schema, identity worth_query_identity!(DUE, query),
-    parameters ParametersBinding, result RowBinding, scope Project => "Project", name "task_due");
+    result RowBinding, scope Project => "Project", name "task_due");
 
 pub struct SearchText;
 pub struct MaxDue;
@@ -136,6 +136,6 @@ worth_query_query_binding!(pub SearchBinding for Search, schema Schema, context 
 );
 worth_query_query_binding!(pub DueBinding for DueBy, schema Schema, context BoardContext,
     identity worth_query_identity!(DUE, binding), input DueInput, query DueQuery,
-    parameters ParametersBinding => due_parameters, result RowBinding,
+    parameters => due_parameters,
     scope ProjectKey, field ProjectKey::at("ProjectKey"), value due_project, limits results 32
 );

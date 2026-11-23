@@ -5,6 +5,7 @@ pub mod basis {
 }
 
 pub mod ports {
+    pub use crate::basis::product_branch::ProductBranchCreationRecoveryInternalPort;
     pub use crate::advancement_phase_internal_port::AdvancementPhaseInternalPort;
     pub use crate::basis::product_branch::observation::internal_port::{
         ProductBranchLeaseInternalPort, ProductObservationLeaseInternalPort,

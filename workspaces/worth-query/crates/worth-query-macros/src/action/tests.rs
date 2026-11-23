@@ -19,6 +19,14 @@ fn an_action_without_exactly_one_scope_or_with_a_malformed_key_is_refused() {
             "missing action scope",
         ),
         (
+            format!("#[worth_query(scope_value = rules::workspace)] {HEADER} struct Rename {{ task: u64 }}"),
+            "requires `#[worth_query(scope = ..)]`",
+        ),
+        (
+            format!("#[worth_query(scope = TaskKey, scope_value = rules::workspace)] {HEADER} struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"),
+            "exactly one scope",
+        ),
+        (
             format!(
                 "{HEADER} struct Rename {{ #[worth_query(scope = TaskKey)] task: u64, \
                  #[worth_query(scope = Title)] title: String }}"
@@ -82,6 +90,20 @@ fn an_action_without_exactly_one_scope_or_with_a_malformed_key_is_refused() {
         let message = refusal(&source);
         assert!(message.contains(expected), "{source}: {message}");
     }
+}
+
+#[test]
+fn a_scope_value_function_is_forwarded_to_the_typed_binding() {
+    let input = syn::parse_str(&format!(
+        "#[worth_query(scope = TaskKey, scope_value = rules::workspace)] {HEADER} \
+         struct Rename {{ task: u64 }}"
+    ))
+    .unwrap();
+    let expansion = expand(&input).unwrap().to_string();
+    assert!(expansion.contains(
+        "scope TaskKey , field < TaskKey > :: at (\"TaskKey\") , value rules :: workspace"
+    ));
+    assert!(!expansion.contains("worth_query_scope"));
 }
 
 /// The validator reaches the input binding as the hand-written `validate:`

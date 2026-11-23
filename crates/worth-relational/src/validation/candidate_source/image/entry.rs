@@ -54,7 +54,7 @@ fn header_memory<T>(
         .reserve_retained_memory(bytes)
         .map_err(|cause| Stop::Execution(cause.into()))
 }
-pub(super) fn ordered_denial(cause: worth_execution::ExecutionOrderedMapDenial) -> Stop {
+pub(crate) fn ordered_denial(cause: worth_execution::ExecutionOrderedMapDenial) -> Stop {
     use crate::execution::RelationalExecutionDenialCause as Cause;
     use worth_execution::{
         ExecutionAllocationDenialClass as Class, ExecutionOrderedMapDenial as Denial,

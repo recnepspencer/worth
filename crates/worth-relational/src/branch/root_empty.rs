@@ -17,7 +17,7 @@ impl RelationalBranchRoot {
             schema_authority: RelationalBranchRootSchemaAuthority::empty(),
             committed: None,
             _memory: None,
-            managed_source_image: std::sync::OnceLock::new(),
+            managed_source_image: Default::default(),
         })
     }
 
@@ -52,7 +52,7 @@ impl RelationalBranchRoot {
             schema_authority: schema,
             committed: None,
             _memory: None,
-            managed_source_image: std::sync::OnceLock::new(),
+            managed_source_image: Default::default(),
         })
     }
 }

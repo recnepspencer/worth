@@ -20,13 +20,16 @@ pub const RETITLE: ApplicationIdentityNamespace = worth_query_identity_namespace
 #[derive(Clone, Debug, WorthValue, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RETITLE,
     input = RetitleInput, operation = RetitleTask, binding = RetitleBinding, delivery = Retitled,
-    result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    result = BodyResultBinding, body, program, scope = TaskKey, scope_value = task_scope,
+    reads(Task),
     validate = titled)]
 pub struct Retitle {
-    #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+
+fn task_scope(input: &Retitle) -> u64 {
+    input.task
 }
 
 fn titled(retitle: &Retitle) -> Result<(), &'static str> {

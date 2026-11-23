@@ -2,6 +2,7 @@
 use super::delivery;
 use super::source_alignment::HistoricalMarkState;
 use super::source_alignment::RetainedTouchDelivery;
+use super::source_alignment::RetainedMarkState;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 use std::sync::Arc;
@@ -10,15 +11,15 @@ use worth_relational::facade::mvcc::PreparedPublicationCompanionEffect;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
 impl RelationalPublicationCompanion for SourceInvalidationOwner {
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+        target: &worth_relational::facade::mvcc::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
         if target.runtime_instance_id() != self.runtime_instance_id {
             return Err(CompanionPreflightStop::ForeignCell);
         }
-        std::sync::Arc::clone(&self.managed_views).prepare_source_fork(execution, target)
+        std::sync::Arc::clone(&self.managed_views).prepare_source_placement(execution, target)
     }
     fn prepare_managed_source(
         &self,
@@ -61,11 +62,11 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
             HistoricalMarkState {
                 root_id: observed.root_id(),
                 commit_id: observed.commit_id(),
-                state: Arc::clone(&observed.payload().current),
+                state: observed.payload().current.clone(),
                 next_delivery: Arc::new(RetainedTouchDelivery { keys }),
             },
         );
-        root.current = Arc::new(state);
+        root.current = RetainedMarkState::new(state);
         root.last_native_marking = Some(report);
         context.checkpoint()?;
         let mut effect = if let Some(managed) = self.managed_views.reserve_source_image(context)? {

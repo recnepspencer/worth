@@ -16,6 +16,14 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let (recovery, occupied_branch, relational) = crate::domain_computation::primary_graph::tests::product_branch_creation_recovery::fork_failure::create(&world, request_execution);
+    let continued = world.application.with_host_advancement(|phase| {
+        world.application.branches().continue_expected(recovery, &phase)
+    }).expect("host admits the continuation request");
+    let Err(refusal) = continued else {
+        panic!("ordinary recovery cannot manufacture an expected-source candidate");
+    };
+    assert_eq!(refusal.denial(), worth_query_execution::facade::product::WorthQueryProductBranchRecoveryDenial::OriginalSourceUnavailable);
+    let recovery = refusal.into_recovery();
     let inspection = recovery
         .inspect()
         .expect("the retained owner effects remain inspectable");

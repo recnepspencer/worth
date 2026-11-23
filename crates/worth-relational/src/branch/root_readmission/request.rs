@@ -77,7 +77,7 @@ fn bind_original(
         publication_bases: Default::default(),
         content: Default::default(),
         id: prepared.root_id,
-        managed_source_image: Default::default(),
+        managed_source_image: crate::mvcc::ManagedSourceRootImages::readmitted(),
         regions: prepared.regions,
         entity_slot_count: prepared.entity_slot_count,
         relation_slot_count: prepared.relation_slot_count,

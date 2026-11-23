@@ -1,5 +1,5 @@
 //! Each role lowers to the public schema traits a hand-written marker implements.
-use super::grammar::{Reference, Role, SchemaMarker};
+use super::grammar::{Reference, RelationLaws, Role, SchemaMarker};
 use crate::facade_paths::{declaration, fragment};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -24,7 +24,11 @@ pub(super) fn marker(input: &DeriveInput, marker: &SchemaMarker) -> TokenStream 
             relations,
             reference,
         } => entity(input, &name, aspects, relations, reference.as_ref()),
-        Role::Relation { to, reference } => relation(input, &name, to, reference.as_ref()),
+        Role::Relation {
+            to,
+            reference,
+            laws,
+        } => relation(input, &name, to, reference.as_ref(), laws),
     }
 }
 
@@ -49,6 +53,12 @@ fn root(
                 #schema::ApplicationSchemaDeclarationDenial,
             > {
                 #frag::declare(Self)
+            }
+            fn visit_correction<Visitor: #decl::application_aftermath::ApplicationCorrectionVisitor<Self>>(
+                source_binding: ::core::any::TypeId,
+                visitor: Visitor,
+            ) -> Visitor::Output {
+                #frag::visit_correction(Self, source_binding, visitor)
             }
         }
         impl #schema::ApplicationSchemaComposition for #ident {
@@ -106,8 +116,26 @@ fn relation(
     name: &LitStr,
     to: &Type,
     reference: Option<&(syn::Path, Reference)>,
+    laws: &RelationLaws,
 ) -> TokenStream {
     let (decl, frag, ident, vis) = (declaration(), fragment(), &input.ident, &input.vis);
+    let schema = quote!(#decl::application_schema);
+    let cardinality = laws
+        .cardinality
+        .as_ref()
+        .map(|value| quote!(const CARDINALITY: #schema::ApplicationRelationCardinality = #value;));
+    let acyclic = laws.acyclic.then(|| {
+        quote!(
+            const ACYCLIC: bool = true;
+        )
+    });
+    let self_edges = laws
+        .self_edges
+        .as_ref()
+        .map(|value| quote!(const SELF_EDGES: bool = #value;));
+    let unique = laws.unique.as_ref().map(|value| {
+        quote!(const UNIQUE: ::core::option::Option<#schema::ApplicationRelationUniquenessScope> = ::core::option::Option::Some(#value);)
+    });
     let reference = reference.map(|(from, Reference { schema, fragment })| {
         quote! {
             impl #ident {
@@ -122,6 +150,10 @@ fn relation(
         impl #frag::Relation for #ident {
             const NAME: &'static str = #name;
             type To = #to;
+            #cardinality
+            #acyclic
+            #self_edges
+            #unique
         }
         #reference
     }

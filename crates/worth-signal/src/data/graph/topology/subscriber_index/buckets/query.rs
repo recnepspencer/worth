@@ -167,11 +167,10 @@ impl ReverseSubscriptionIndex {
                 work.reserve(Some(4 * ordered_lookup_steps(flat.buckets.len())))?;
                 (flat.buckets.get(key), None)
             }
-            ReverseSubscriptionStorage::ForkShared {
-                base,
-                bucket_changes,
-                ..
-            } => {
+            ReverseSubscriptionStorage::ForkShared(overlay) => {
+                let maps = overlay.maps();
+                let base = &maps.base;
+                let bucket_changes = &maps.bucket_changes;
                 admit_scope_lookup(base.buckets.len(), bucket_changes.len(), work)?;
                 (base.buckets.get(key), bucket_changes.get(key))
             }

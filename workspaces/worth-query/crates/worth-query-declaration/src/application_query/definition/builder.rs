@@ -66,9 +66,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         }
     }
 
-    pub fn parameter<Parameter, Binding>(
+    pub fn parameter<Parameter, Binding, const OPTIONAL: bool>(
         mut self,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
     ) -> Self
     where
         Binding: crate::application_schema::ApplicationScalarValueBinding,

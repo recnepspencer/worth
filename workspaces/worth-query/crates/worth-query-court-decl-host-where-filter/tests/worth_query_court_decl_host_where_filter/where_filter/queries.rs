@@ -123,14 +123,25 @@ pub fn search(
 }
 
 pub fn due() -> ApplicationQueryDefinitionBuilder<Schema, DueQuery, Parameters, TaskRow, Project> {
-    let max_due = parameter::<DueQuery, MaxDue, CanonicalDateApplicationValueBinding>("max_due");
+    let max_due = max_due();
+    let text = due_text();
     let filter = ApplicationQueryWhereFilterOperands::new()
         .field("due", Due::at("Due"))
+        .and_then(|operands| operands.field("title", Title::at("Title")))
+        .and_then(|operands| operands.field("notes", Notes::at("Notes")))
         .and_then(|operands| operands.parameter("max_due", max_due))
-        .and_then(|operands| operands.parse("is_some(due) && unwrap(due) <= max_due"))
-        .expect("the date range admits statically");
+        .and_then(|operands| operands.parameter("text", text))
+        .and_then(|operands| {
+            operands.parse(
+                "(!is_some(max_due) || (is_some(due) && unwrap(due) <= unwrap(max_due))) && \
+                 (!is_some(text) || contains_ignore_ascii_case(title, unwrap(text)) || \
+                 (is_some(notes) && contains_ignore_ascii_case(unwrap(notes), unwrap(text))))",
+            )
+        })
+        .expect("the optional date and text filters admit statically");
     tasks(DueQuery::reference())
         .parameter(max_due)
+        .parameter(text)
         .where_filter(filter)
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
 }
@@ -182,13 +193,9 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Schema
             None => builder,
         };
         Ok(builder
-            .application_query(search())
-            .application_query_binding::<SearchBinding>()
-            .application_query(due())
-            .application_query_binding::<DueBinding>()
-            .application_query(fit())
-            .application_query_binding::<FitBinding>()
-            .application_query(status())
-            .application_query_binding::<StatusBinding>())
+            .bound_application_query::<SearchBinding>(search())
+            .bound_application_query::<DueBinding>(due())
+            .bound_application_query::<FitBinding>(fit())
+            .bound_application_query::<StatusBinding>(status()))
     }
 }

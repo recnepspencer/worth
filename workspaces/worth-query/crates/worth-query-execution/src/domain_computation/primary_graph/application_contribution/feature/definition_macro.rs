@@ -16,6 +16,8 @@ mod members;
 /// binding, derives its delivery root and installs the schema-owned
 /// operation body through the contribution's existing body owner; it takes
 /// no handler value.
+/// Use `body_action_ref` if an earlier member of the same contribution owns
+/// the body and its mutation binding, for example a typed correction member.
 /// A complete definition cannot substitute an operation-only roster for typed members.
 /// ```compile_fail
 /// use worth_query_execution::facade::declaration::{application_program::*, application_schema::*};

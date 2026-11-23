@@ -28,7 +28,7 @@ pub(crate) struct ManagedSourceRootImage {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,
     pub(in crate::mvcc::publication::companion) affinity: Arc<affinity::ManagedSourceCellAffinity>,
     pub(in crate::mvcc) image: Arc<CompanionRootImage>,
-    pub(in crate::mvcc) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+    pub(in crate::mvcc) _placement_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl std::fmt::Debug for ManagedSourceRootImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -63,35 +63,37 @@ impl ManagedSourceRootImage {
         Ok(retired)
     }
 
-    pub(crate) fn observe(
+    pub(crate) fn observe_if_ready(
         &self,
         selected: PositionedRelationalSnapshot,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         registration_generation: u64,
-    ) -> Result<ManagedIndexSourceObservation, Denial> {
+    ) -> Result<Option<ManagedIndexSourceObservation>, Denial> {
         self.admit_selected(&selected, registration_generation)?;
         let image = self
             .image
             .payload
             .downcast_ref::<ManagedIndexBranchImage>()
             .ok_or(Denial::ForeignSource)?;
-        let record = image
-            .retained(program, scope)?
-            .ok_or(Denial::RootUnavailable)?;
+        let Some(record) = image.retained(program, scope)? else {
+            return Ok(None);
+        };
         if record.physical_availability() != ManagedIndexSourceAvailability::Available {
             return Err(Denial::RootUnavailable);
         }
-        let payload = record.payload().cloned().ok_or(Denial::RootUnavailable)?;
-        Ok(ManagedIndexSourceObservation {
+        let Some(payload) = record.payload().cloned() else {
+            return Ok(None);
+        };
+        Ok(Some(ManagedIndexSourceObservation {
             core: self.core.clone(),
             affinity: Arc::clone(&self.affinity),
             record: Arc::clone(&record.association),
             payload,
             selected,
             _metadata_memory: memory,
-        })
+        }))
     }
 }
 impl ManagedIndexSourceObservation {

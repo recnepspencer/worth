@@ -22,14 +22,19 @@ pub enum ApplicationQueryWhereFilterSource {
         parameter: String,
         scalar_family: ScalarAspectType,
     },
+    /// A request parameter whose value or absence is supplied explicitly.
+    OptionalParameter {
+        parameter: String,
+        scalar_family: ScalarAspectType,
+    },
 }
 
 impl ApplicationQueryWhereFilterSource {
     pub const fn scalar_family(&self) -> ScalarAspectType {
         match self {
-            Self::Field { scalar_family, .. } | Self::Parameter { scalar_family, .. } => {
-                *scalar_family
-            }
+            Self::Field { scalar_family, .. }
+            | Self::Parameter { scalar_family, .. }
+            | Self::OptionalParameter { scalar_family, .. } => *scalar_family,
         }
     }
 
@@ -42,7 +47,8 @@ impl ApplicationQueryWhereFilterSource {
             Self::Field {
                 presence: ApplicationFieldPresence::Optional,
                 ..
-            } => ExpressionType::option(scalar),
+            }
+            | Self::OptionalParameter { .. } => ExpressionType::option(scalar),
             Self::Field { .. } | Self::Parameter { .. } => scalar,
         })
     }
@@ -51,6 +57,7 @@ impl ApplicationQueryWhereFilterSource {
         match self {
             Self::Field { .. } => "field",
             Self::Parameter { .. } => "parameter",
+            Self::OptionalParameter { .. } => "optional-parameter",
         }
     }
 }
@@ -84,14 +91,18 @@ impl ApplicationQueryWhereFilterOperand {
                 field,
                 ..
             } => Some((entity, aspect, field)),
-            ApplicationQueryWhereFilterSource::Parameter { .. } => None,
+            ApplicationQueryWhereFilterSource::Parameter { .. }
+            | ApplicationQueryWhereFilterSource::OptionalParameter { .. } => None,
         }
     }
 
     /// The parameter name when this operand reads a query parameter.
     pub fn parameter(&self) -> Option<&str> {
         match &self.source {
-            ApplicationQueryWhereFilterSource::Parameter { parameter, .. } => Some(parameter),
+            ApplicationQueryWhereFilterSource::Parameter { parameter, .. }
+            | ApplicationQueryWhereFilterSource::OptionalParameter { parameter, .. } => {
+                Some(parameter)
+            }
             ApplicationQueryWhereFilterSource::Field { .. } => None,
         }
     }
@@ -114,6 +125,10 @@ impl ApplicationQueryWhereFilterOperand {
                 ("presence", presence.canonical_name()),
             ]),
             ApplicationQueryWhereFilterSource::Parameter {
+                parameter,
+                scalar_family,
+            }
+            | ApplicationQueryWhereFilterSource::OptionalParameter {
                 parameter,
                 scalar_family,
             } => parts.extend([

@@ -125,3 +125,26 @@ fn a_derived_relation_projection_declares_the_written_nested_shape() {
         written::tasks().slot_key()
     );
 }
+
+#[test]
+fn the_derived_relation_installs_its_declared_integrity() {
+    let declaration = board().build().unwrap();
+    let law = declaration
+        .erased()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            ApplicationSchemaMember::Relation {
+                relation,
+                integrity,
+                ..
+            } if relation == "Contains" => Some(integrity),
+            _ => None,
+        })
+        .expect("the derived relation is declared");
+    assert!(law.acyclic);
+    assert_eq!(
+        law.unique,
+        Some(ApplicationRelationUniquenessScope::DirectedSemanticEdge)
+    );
+}

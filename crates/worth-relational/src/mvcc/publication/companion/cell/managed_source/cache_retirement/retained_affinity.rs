@@ -2,7 +2,7 @@
 use super::*;
 use crate::branch::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
-use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::ManagedIndexSourceCellPlacement;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);
@@ -13,10 +13,10 @@ impl RelationalPublicationCompanion for ForkOwner {
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         self.0.prepare(context)
     }
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, CompanionPreflightStop> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
@@ -76,7 +76,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     let snapshot = snapshot_for_owner_identity(&runtime, &identity);
     let cell = owner.0.slots.lock().unwrap()[1].admitted().unwrap();
     let weak = Arc::downgrade(&cell.core);
-    let fork_grant = Arc::downgrade(cell.core._fork_memory.as_ref().unwrap());
+    let fork_grant = Arc::downgrade(cell.core._placement_memory.as_ref().unwrap());
     let generation = cell.core.registration_generation;
     let old = runtime
         .read_truth()
@@ -126,9 +126,9 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .unwrap()
         .root()
         .managed_source_image
-        .get()
+        .for_branch(&target)
         .unwrap()
-        .clone();
+        .into_owned();
     assert!(matches!(
         image.admit_selected(&selected, generation + 1),
         Err(Denial::Publication(

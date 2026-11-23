@@ -4,6 +4,8 @@
 /// schema supplies it from one `ApplicationBindingContext`; see
 /// `__worth_query_contextual_query_binding`. The binding identity accepts any
 /// `&'static str` constant expression, including `worth_query_identity!`.
+/// With a context, `parameters => bind` and an omitted `result` inherit both
+/// value bindings from the named query.
 #[macro_export]
 macro_rules! worth_query_query_binding {
     ($vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $($rest:tt)*) => {
@@ -96,7 +98,7 @@ macro_rules! worth_query_query_binding {
     (@binding
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
         identity $identity:expr, input $InputBinding:path, query $Query:path,
-        parameters $ParameterBinding:path, result $ResultBinding:path,
+        parameters $ParameterBinding:ty, result $ResultBinding:ty,
         principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope_binding $ScopeBinding:ty,

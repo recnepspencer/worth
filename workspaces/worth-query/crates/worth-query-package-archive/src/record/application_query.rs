@@ -143,11 +143,18 @@ fn decode_with_shape_depth(
     ))
 }
 
+// This prefix occupies a tag outside the scalar vocabulary. Required parameter
+// records keep their original byte sequence.
+const OPTIONAL_PARAMETER_TAG: u16 = 0;
+
 fn write_parameter(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationQueryParameterDefinition,
 ) -> Result<(), Denial> {
     output.text(value.name())?;
+    if value.is_optional() {
+        output.u16(OPTIONAL_PARAMETER_TAG)?;
+    }
     foundational_aspect::write_scalar_type(output, value.scalar_family())?;
     output.text(value.value_type())?;
     write_optional(output, value.unit(), |output, unit| output.text(unit))?;
@@ -156,13 +163,26 @@ fn write_parameter(
 fn decode_parameter(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryParameterDefinition, Denial> {
-    Ok(ApplicationQueryParameterDefinition::from_untrusted_fields(
-        input.text()?.to_owned(),
-        foundational_aspect::decode_scalar_type(input)?,
+    let name = input.text()?.to_owned();
+    let tag = input.u16()?;
+    let optional = tag == OPTIONAL_PARAMETER_TAG;
+    let scalar = if optional {
+        foundational_aspect::decode_scalar_type(input)?
+    } else {
+        foundational_aspect::decode_scalar_type_tag(tag)?
+    };
+    let parameter = ApplicationQueryParameterDefinition::from_untrusted_fields(
+        name,
+        scalar,
         decode_type_identity(input)?,
         decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
         decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-    ))
+    );
+    Ok(if optional {
+        parameter.with_optional_presence()
+    } else {
+        parameter
+    })
 }
 
 fn write_predicate(

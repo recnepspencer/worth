@@ -136,7 +136,7 @@ impl NativeFragmentRead<'_, '_> {
             self.native
                 .observe_field(identity, &locator, &mut |observed| {
                     raw = observed
-                        .map(|raw| {
+                        .map(|raw| -> Result<_, HandlerExecutionDenial> {
                             let bytes = raw
                                 .owned_allocation_capacity_bytes()
                                 .checked_add(path.len())

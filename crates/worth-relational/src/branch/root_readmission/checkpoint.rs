@@ -63,7 +63,7 @@ impl RelationalBranchRoot {
             publication_bases: Default::default(),
             content: Default::default(),
             id: root_id,
-            managed_source_image: Default::default(),
+            managed_source_image: crate::mvcc::ManagedSourceRootImages::readmitted(),
             regions,
             entity_slot_count: entity_slots,
             relation_slot_count: relation_slots,

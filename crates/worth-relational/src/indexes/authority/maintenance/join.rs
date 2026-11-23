@@ -26,7 +26,7 @@ pub(super) fn refresh(
     work: &mut MaintenanceWork,
 ) -> Result<bool, Denial> {
     let previous = match index.legs() {
-        Some(legs) => legs.as_ref().clone(),
+        Some(legs) => legs.clone(),
         None => return Err(Denial::ColdReconstructionRequired),
     };
     let mut next = previous.clone();

@@ -125,6 +125,11 @@ fn full_and_delta_index_tuples_preserve_all_entry_families() {
 fn funded_decode_admits_every_entry_family_in_both_tuples() {
     // One generation per index, so the delta tuple carries full rows only.
     let expected = generations();
+    let DerivedIndexEntries::RelatedEntityOrdering(ordered) = &expected[2].entries else {
+        unreachable!("fixture carries the related ordering family");
+    };
+    let legacy_ordered = rmp_serde::to_vec_named(&**ordered).unwrap();
+    assert_eq!(rmp_serde::to_vec_named(ordered).unwrap(), legacy_ordered);
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
     let delta = DerivedIndexCheckpointArtifacts::capture(
         &lane,

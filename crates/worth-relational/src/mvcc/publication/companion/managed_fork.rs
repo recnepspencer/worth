@@ -1,5 +1,5 @@
 //! A genuine fork's target association is prepared before its durable transition.
-use super::cell::publication_admission::PreparedManagedForkCell;
+use super::cell::publication_admission::PreparedManagedSourceCell;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{CompanionBranchCell, CompanionBranchCellSlot, CompanionPreflightStop as Stop};
 use crate::branch::{
@@ -9,14 +9,14 @@ use crate::history::data::BranchId;
 use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;
 
-/// Lookup-only custody for one actual prepared target. It grants no Source READ.
-pub struct ManagedIndexSourceForkPreparation<'a> {
-    cell: &'a PreparedManagedForkCell,
-    branch: &'a BranchId,
-    runtime: u64,
+/// Lookup-only custody for a Source cell awaiting Native placement.
+pub struct ManagedIndexSourceCellPlacement<'a> {
+    pub(super) cell: &'a PreparedManagedSourceCell,
+    pub(super) branch: &'a BranchId,
+    pub(super) runtime: u64,
 }
-impl ManagedIndexSourceForkPreparation<'_> {
-    pub fn target_branch(&self) -> &BranchId {
+impl ManagedIndexSourceCellPlacement<'_> {
+    pub fn branch(&self) -> &BranchId {
         self.branch
     }
     pub const fn runtime_instance_id(&self) -> u64 {
@@ -28,7 +28,7 @@ impl ManagedIndexSourceForkPreparation<'_> {
 }
 
 pub(crate) struct PreparedManagedIndexSourceFork {
-    cell: PreparedManagedForkCell,
+    cell: PreparedManagedSourceCell,
 }
 impl PreparedManagedIndexSourceFork {
     pub(crate) fn prepare(
@@ -50,7 +50,7 @@ impl PreparedManagedIndexSourceFork {
         .map_err(|cause| denied(Stop::Execution(cause.into())))?;
         let original = source
             .managed_source_image
-            .get()
+            .for_branch(source_branch)
             .ok_or_else(|| denied(Stop::ManagedSourceNotPrepared))?;
         let owner = original
             .core
@@ -95,7 +95,7 @@ impl PreparedManagedIndexSourceFork {
         );
         Arc::get_mut(&mut cell.core)
             .expect("fresh unshared fork core")
-            ._fork_memory = memory.clone();
+            ._placement_memory = memory.clone();
         let image = cell.read_image();
         let affinity = cell
             .core
@@ -107,11 +107,11 @@ impl PreparedManagedIndexSourceFork {
                 core: Arc::downgrade(&cell.core),
                 affinity,
                 image: Arc::clone(&image.image),
-                _fork_memory: memory,
+                _placement_memory: memory,
             })
             .map_err(|_| denied(Stop::SelectedSourceMismatch))?;
-        let cell = PreparedManagedForkCell::new(cell);
-        let context = ManagedIndexSourceForkPreparation {
+        let cell = PreparedManagedSourceCell::new(cell);
+        let context = ManagedIndexSourceCellPlacement {
             cell: &cell,
             branch: target_branch,
             runtime,
@@ -120,7 +120,7 @@ impl PreparedManagedIndexSourceFork {
         // stopped preparation must not run a participant's Drop under them.
         *lookup_cleanup = Some(
             participant
-                .prepare_managed_source_fork(execution, &context)
+                .prepare_managed_source_placement(execution, &context)
                 .map_err(denied)?,
         );
         crate::authority::commit::pipeline::consult_stage(
@@ -142,7 +142,7 @@ fn metadata_bytes(branch: &BranchId) -> Option<u64> {
         std::mem::size_of::<RelationalBranchRoot>(),
         std::mem::size_of::<CompanionBranchCellCore>(),
         std::mem::size_of::<CompanionRootImage>(),
-        PreparedManagedForkCell::metadata_bytes(),
+        PreparedManagedSourceCell::metadata_bytes(),
         std::mem::size_of::<worth_execution::ExecutionMemoryReservation>(),
     ]
     .into_iter()

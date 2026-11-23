@@ -3,10 +3,27 @@ use super::*;
 use crate::mvcc::CompanionPreflightStop as Stop;
 use worth_execution::ExecutionRequest;
 impl ManagedIndexBranchImage {
+    pub(crate) fn plan_cold_source(
+        execution: &ExecutionRequest<'_, '_>,
+        program: &Program,
+        scope: EntityId,
+        revision: crate::history::data::CommitId,
+    ) -> Result<Arc<ManagedIndexPublishedSourceRoot>, Stop> {
+        let association = ManagedIndexSourceAssociation::new(
+            execution,
+            program,
+            scope,
+            Availability::Available,
+            revision,
+        )?;
+        ManagedIndexPublishedSourceRoot::new(execution, association, None)
+    }
+
     pub(crate) fn refill_source(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         expected: &Arc<ManagedIndexPublishedSourceRoot>,
+        expected_placed: bool,
         payload: &Payload,
     ) -> Result<ManagedIndexSourceCacheRetirement, Stop> {
         let key = SourceKey::new(&expected.association.program, expected.association.scope);
@@ -18,10 +35,12 @@ impl ManagedIndexBranchImage {
             Some(Arc::clone(payload)),
         )?;
         let mut roots = self.directory();
-        if !roots
-            .get(&key)
-            .is_some_and(|entry| Arc::ptr_eq(entry, expected))
-        {
+        let current = roots.get(&key);
+        let matches = match current {
+            Some(entry) => expected_placed && Arc::ptr_eq(entry, expected),
+            None => !expected_placed,
+        };
+        if !matches {
             return Err(Stop::ManagedSourceChanged);
         }
         let mut next = roots.clone();

@@ -89,7 +89,9 @@ pub(super) fn project(
                     )
                 });
             }
-            seal(rows, |_| 1, work).map(DerivedIndexEntries::RelatedEntityOrdering)
+            work.prepare(1, RelatedEntityOrderingIndex::header_bytes())?;
+            let entries = seal(rows, |_| 1, work)?;
+            Ok(DerivedIndexEntries::RelatedEntityOrdering(entries.into()))
         }
         DerivedIndexKind::RelationJoin(definition) => {
             collect_join(lane, execution, after, records, *definition, work)

@@ -41,9 +41,7 @@ pub fn titled(rename: &Rename) -> Result<(), &'static str> {
 #[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RESCHEDULE,
     input = RescheduleInput, operation = RescheduleTask, binding = RescheduleBinding,
-    delivery = Rescheduled, result = BodyResultBinding,
-    decision = WorthQueryOperationBodyDecision<Schema, Task>, body, program,
-    access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    delivery = Rescheduled, body, program, reads(Task))]
 pub struct Reschedule {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
@@ -51,7 +49,7 @@ pub struct Reschedule {
 }
 
 /// The same declaration written out with the declaration macros.
-#[derive(Clone, Debug, WorthValue)]
+#[derive(Clone, Debug, WorthValue, serde::Deserialize)]
 pub struct Complete {
     pub task: u64,
     pub done: bool,
@@ -101,7 +99,7 @@ pub fn reschedule_definition() -> ApplicationOperationDefinition<Schema, Resched
 {
     let body = RescheduleTask::reference()
         .body()
-        .assign_optional_input(Due::at("Due"), "due")
+        .assign_optional_input(TaskFactsValue::select_due(), "due")
         .expect("the column is writable")
         .finish()
         .expect("the reschedule body is complete");
@@ -114,18 +112,11 @@ pub fn reschedule_definition() -> ApplicationOperationDefinition<Schema, Resched
         .expect("the body belongs to its operation")
 }
 
-pub fn complete_definition() -> ApplicationOperationDefinition<Schema, CompleteTask, Complete> {
-    let body = CompleteTask::reference()
+pub fn complete_body() -> ApplicationOperationBody<Schema, CompleteTask, Complete> {
+    CompleteTask::reference()
         .body()
         .assign_input(Done::at("Done"), "done")
         .expect("the column is writable")
         .finish()
-        .expect("the complete body is complete");
-    CompleteTask::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .expect("the body belongs to its operation")
+        .expect("the complete body is complete")
 }

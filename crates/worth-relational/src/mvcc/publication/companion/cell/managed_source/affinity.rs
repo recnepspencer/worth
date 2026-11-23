@@ -8,7 +8,7 @@ pub(in crate::mvcc::publication::companion) struct ManagedSourceCellAffinity {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
     // Weak<Core> still owns its Arc allocation after Core value destruction.
     // Share the existing fork quote through the last retained affinity owner.
-    _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+    _placement_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl CompanionBranchCellCore {
     pub(in crate::mvcc::publication::companion) fn retain_source_affinity(
@@ -31,7 +31,7 @@ impl CompanionBranchCellCore {
             branch: self.branch_id.clone(),
             generation: self.registration_generation,
             _memory: memory,
-            _fork_memory: self._fork_memory.clone(),
+            _placement_memory: self._placement_memory.clone(),
         });
         // All competitors derive the same immutable metadata from this exact
         // cell. Only the installed Arc is shared as its retained identity.

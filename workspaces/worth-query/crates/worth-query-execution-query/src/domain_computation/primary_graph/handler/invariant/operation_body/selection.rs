@@ -54,7 +54,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         })?;
         self.context_use.set(self.context_use.get().scope());
         let targets = execution
-            .decision_stage(|context| {
+            .decision_stage(|context| -> Result<_, HandlerExecutionDenial> {
                 let mut targets = Vec::with_capacity(selections.len());
                 for selection in selections {
                     let target = self

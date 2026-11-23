@@ -1161,18 +1161,20 @@ Four derives, re-exported by `worth_query_decl::facade` and
 Each expands only into the public traits and macros above, so derived and
 hand-written members mix in one schema, and a derived declaration with the
 same names and identities installs a byte-identical canonical schema.
-Expansions name `::worth_query_decl`, and `WorthQueryProjection` also names
-`::worth_query_host`: a crate deriving `WorthQuerySchema`, `WorthQueryRecord`
-or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
-`WorthQueryProjection` depends on both.
+Expansions name `::worth_query_decl`. `WorthQueryProjection` and a
+`WorthQueryAction` using the default authored-body decision also use
+`::worth_query_host`.
 
 - `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
   `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
   `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
-  usual `reference()`; `name = ".."` keeps a persisted name.
+  usual `reference()` and `name = ".."` keeps a persisted name. The relation
+  role accepts `cardinality`, `acyclic`, `self_edges`, and `unique`. The schema
+  role dispatches typed correction members through the declared membership.
 - `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
   for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
-  `FieldSelection` alias per column, named after the column. Columns default
+  `FieldSelection` alias per column, named after the column, and a zero-argument
+  `Row::select_field_name()` method for each Rust field. Columns default
   to the field name in PascalCase; `column = ".."`, `equality`, `read_only`
   and `unique` are per field, and `Option<T>` is an optional column.
 - `WorthQueryProjection` on a result row declares a `<row>_slots` module of
@@ -1195,7 +1197,12 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  the struct declares `principal_scope = Alias` or
+  `scope = Alias, scope_value = path::to::scope`. The value function takes
+  `&Input` and returns the selection's native value type. With `body`, the
+  defaults are a unit result, the body's decision type for the selected scope
+  entity, and read access to the selected scope field. Existing wire identities
+  can be retained with an explicit `result` binding. `validate = path::to::check`
   forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
   `validate:`: an invalid input is refused at capture
   (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its

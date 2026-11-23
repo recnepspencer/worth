@@ -53,13 +53,19 @@ where
                     released.expect("actual release receipt"),
                 ))
             }
+            (CreationPhase::ReopenRequired, _) => Ok(
+                RuntimeWorldBranchCreationOutcome::ProductUnpublished(custody.retain(
+                    ProductUnpublishedCause::WorldOccurrenceReadmissionRequired,
+                    None,
+                    RetainedCommitDisposition::KeepOriginal,
+                )),
+            ),
             (
                 CreationPhase::Intent
                 | CreationPhase::Owners
                 | CreationPhase::Releasing
                 | CreationPhase::Prepared
-                | CreationPhase::Selected
-                | CreationPhase::ReopenRequired,
+                | CreationPhase::Selected,
                 Ok(()) | Err(_),
             ) => Ok(RuntimeWorldBranchCreationOutcome::ProductUnpublished(
                 custody.retain(

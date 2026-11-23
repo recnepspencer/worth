@@ -58,10 +58,10 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
     }
 
     /// Reads one typed query parameter. The definition must declare it.
-    pub fn parameter<Parameter, Binding>(
+    pub fn parameter<Parameter, Binding, const OPTIONAL: bool>(
         self,
         name: &str,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
     ) -> Result<Self, Denial>
     where
         Binding: ApplicationScalarValueBinding,
@@ -69,13 +69,18 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
         if Binding::UNIT.is_some() {
             return Err(Denial::UnitBearingOperand);
         }
-        self.push(
-            name,
+        let source = if OPTIONAL {
+            Source::OptionalParameter {
+                parameter: parameter.name().to_owned(),
+                scalar_family: Binding::SCALAR_FAMILY,
+            }
+        } else {
             Source::Parameter {
                 parameter: parameter.name().to_owned(),
                 scalar_family: Binding::SCALAR_FAMILY,
-            },
-        )
+            }
+        };
+        self.push(name, source)
     }
 
     /// Parses source text under the filter profile and admits it, so

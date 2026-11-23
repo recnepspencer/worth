@@ -20,6 +20,25 @@ pub enum WorthQueryExpectedProductBranchAdoptionDenial {
     HeadMoved,
 }
 
+impl WorthQueryExpectedProductBranchAdoptionDenial {
+    /// A head required by adoption has moved or been replaced.
+    /// The denial still carries any specific component failure.
+    pub fn is_stale_head(&self) -> bool {
+        use RelationalBranchBasisDenial as Basis;
+        matches!(
+            self,
+            Self::HeadReplaced
+                | Self::HeadMoved
+                | Self::SourceBasis(
+                    Basis::StaleReferenceGeneration
+                        | Basis::WrongBranchLocalTruthVersion
+                        | Basis::EmptyCommittedTargetMismatch
+                        | Basis::UnavailableRetainedTarget
+                )
+        )
+    }
+}
+
 #[derive(Debug)]
 pub enum WorthQueryHistoryPageDenial {
     ForeignCursor,

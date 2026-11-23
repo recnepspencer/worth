@@ -9,7 +9,7 @@ impl RelationalBranchRoot {
         let id = issuer.issue_root_id()?;
         let mut header = self.clone();
         header.id = id;
-        header.managed_source_image = std::sync::OnceLock::new();
+        header.managed_source_image = Default::default();
         Ok(Arc::new(header))
     }
 

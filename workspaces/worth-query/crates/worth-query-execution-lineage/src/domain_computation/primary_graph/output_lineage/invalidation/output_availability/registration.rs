@@ -1,5 +1,6 @@
 //! Same native image source-slot enrollment and alias extension.
 use super::*;
+use super::super::source_alignment::RetainedMarkState;
 
 impl SourceInvalidationOwner {
     /// Establish a covered source's head-independent slot on the SAME native
@@ -106,7 +107,7 @@ impl SourceInvalidationOwner {
 
         let root = {
             let mut root = (**image.payload()).clone();
-            root.current = Arc::new(next);
+            root.current = RetainedMarkState::new(next);
             root
         };
         let prepared = self.prepare_root_replacement(cell.clone(), image, Arc::new(root))?;

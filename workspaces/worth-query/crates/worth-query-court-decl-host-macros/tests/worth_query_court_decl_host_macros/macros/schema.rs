@@ -53,7 +53,8 @@ pub struct Task;
 #[worth_query(relation, to = Principal, from = ExternalMapping, reference(Schema, Board))]
 pub struct MappingTarget;
 #[derive(WorthQuerySchema)]
-#[worth_query(relation, to = Task, from = Project, reference(Schema, Board))]
+#[worth_query(relation, to = Task, from = Project, reference(Schema, Board), acyclic,
+    self_edges = false, unique = ApplicationRelationUniquenessScope::DirectedSemanticEdge)]
 pub struct Contains;
 
 #[derive(WorthQueryRecord)]

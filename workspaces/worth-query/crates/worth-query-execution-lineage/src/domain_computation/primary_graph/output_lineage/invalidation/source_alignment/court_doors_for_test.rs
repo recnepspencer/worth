@@ -23,7 +23,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
 
 impl BranchMarkRoot {
     #[doc(hidden)]
-    pub fn current_for_test(&self) -> &Arc<MarkState> {
+    pub fn current_for_test(&self) -> &RetainedMarkState {
         &self.current
     }
 }

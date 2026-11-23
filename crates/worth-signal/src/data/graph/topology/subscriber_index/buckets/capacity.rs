@@ -150,11 +150,10 @@ impl ReverseSubscriptionIndex {
                     .map_err(SignalError::execution_checkpoint_stopped)?;
                 flat.buckets.get(&key).map_or(0, |bucket| bucket.all.len())
             }
-            ReverseSubscriptionStorage::ForkShared {
-                base,
-                bucket_changes,
-                ..
-            } => {
+            ReverseSubscriptionStorage::ForkShared(overlay) => {
+                let maps = overlay.maps();
+                let base = &maps.base;
+                let bucket_changes = &maps.bucket_changes;
                 work.checkpoint(
                     ordered_lookup_steps(base.buckets.len())
                         .saturating_add(ordered_lookup_steps(bucket_changes.len()))

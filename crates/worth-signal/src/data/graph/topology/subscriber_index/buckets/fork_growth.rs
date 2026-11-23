@@ -1,13 +1,9 @@
-use super::fork_overlay::{BucketDelta, ReverseSubscriptionStorage};
-use super::{
-    ForkConsumerMembershipChange, NodeId, ProducerAspectKey, ReverseSubscriptionFlat,
-    ReverseSubscriptionIndex,
-};
-use crate::data::persistent_hash_map::PersistentHashMap;
+use super::fork_overlay::{ForkSubscriptions, ReverseSubscriptionStorage};
+use super::ReverseSubscriptionIndex;
 use crate::data::retained_storage::{
-    arc_allocation_charge, RetainedStorageBacking, RetainedStorageCharge as Charge,
-    RetainedStorageForkGrowth, RetainedStorageForkGrowthDenial as Denial,
-    RetainedStoragePreparation as Work, RetainedStoragePreparationDenial,
+    RetainedStorageCharge as Charge, RetainedStorageForkGrowth,
+    RetainedStorageForkGrowthDenial as Denial, RetainedStoragePreparation as Work,
+    RetainedStoragePreparationDenial,
 };
 
 impl RetainedStorageForkGrowth for ReverseSubscriptionIndex {
@@ -15,18 +11,8 @@ impl RetainedStorageForkGrowth for ReverseSubscriptionIndex {
         work.reserve_visits(std::mem::size_of::<Self>())?;
         let Self { storage, valid: _ } = self;
         let growth = match storage {
-            ReverseSubscriptionStorage::Exclusive(_) => {
-                arc_allocation_charge::<RetainedStorageBacking<ReverseSubscriptionFlat>>()?
-                    .checked_add(PersistentHashMap::<
-                        ProducerAspectKey,
-                        BucketDelta,
-                    >::empty_persistent_overlay_charge()?)?
-                    .checked_add(PersistentHashMap::<
-                        NodeId,
-                        ForkConsumerMembershipChange,
-                    >::empty_persistent_overlay_charge()?)?
-            }
-            ReverseSubscriptionStorage::ForkShared { .. } => Charge::ZERO,
+            ReverseSubscriptionStorage::Exclusive(_) => ForkSubscriptions::conversion_charge()?,
+            ReverseSubscriptionStorage::ForkShared(_) => Charge::ZERO,
         };
         work.reserve_visits(
             usize::try_from(growth.bytes())

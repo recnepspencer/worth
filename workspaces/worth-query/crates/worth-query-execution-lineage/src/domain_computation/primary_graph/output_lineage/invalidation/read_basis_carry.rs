@@ -4,6 +4,8 @@
 
 use std::sync::Arc;
 
+use super::source_alignment::RetainedMarkState;
+
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionBranchImage;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -114,7 +116,7 @@ impl SourceInvalidationOwner {
     ) -> Result<(), SettlementVerificationStop> {
         let root = {
             let mut root = (**image.payload()).clone();
-            root.current = Arc::new(next);
+            root.current = RetainedMarkState::new(next);
             root
         };
         let prepared = self

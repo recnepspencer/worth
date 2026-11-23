@@ -4,6 +4,7 @@ use crate::validation::candidate_source::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
 use crate::{identity::data::EntityId, snapshots::data::SnapshotHandle};
+mod cold_source;
 
 impl VisibilityReadContext<'_> {
     /// Observe exact physical Source material at this genuine selected snapshot.
@@ -15,6 +16,19 @@ impl VisibilityReadContext<'_> {
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
     ) -> Result<crate::mvcc::ManagedIndexSourceObservation, Denial> {
+        self.observe_managed_index_source_if_ready(execution, handle, program, scope)?
+            .ok_or(Denial::RootUnavailable)
+    }
+
+    /// Observe installed Source material or report an empty cache at the exact
+    /// selected snapshot. Snapshot and registration refusals remain errors.
+    pub fn observe_managed_index_source_if_ready(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &SnapshotHandle,
+        program: &ManagedIndexSourceProgram,
+        scope: EntityId,
+    ) -> Result<Option<crate::mvcc::ManagedIndexSourceObservation>, Denial> {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
@@ -27,12 +41,14 @@ impl VisibilityReadContext<'_> {
             .active()
             .map_err(Denial::Registration)?
             .ok_or(Denial::MissingParticipant)?;
-        basis
+        match basis
             .root()
             .managed_source_image
-            .get()
-            .ok_or(Denial::RootUnavailable)?
-            .observe(selected, program, scope, memory, generation)
+            .for_branch(selected.branch_id())
+        {
+            Some(image) => image.observe_if_ready(selected, program, scope, memory, generation),
+            None => Ok(None),
+        }
     }
 
     /// Evict only the selected current image's derived material. Retained
@@ -62,7 +78,7 @@ impl VisibilityReadContext<'_> {
         let retired = basis
             .root()
             .managed_source_image
-            .get()
+            .for_branch(selected.branch_id())
             .ok_or(Denial::RootUnavailable)?
             .evict_selected(execution, &selected, program, scope, generation)?;
         drop(epoch);
@@ -89,6 +105,34 @@ impl VisibilityReadContext<'_> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
                 .ok_or(Denial::RootUnavailable)?;
+        let root = basis.root();
+        let configuration = self.runtime.configuration_binding().snapshot();
+        let admit_cold_scope = |projection: &_| {
+            let contracts = root
+                .execution_contracts
+                .get()
+                .map_or(&configuration.schema_contract_runtime, |binding| {
+                    &binding.contracts
+                });
+            cold_source::admit(contracts, execution, root, projection, program, scope)
+        };
+        let (image, scope_checked) =
+            match root.managed_source_image.for_branch(selected.branch_id()) {
+                Some(placed) => (placed, false),
+                None if root.managed_source_image.is_readmitted() => {
+                    admit_cold_scope(&projection)?;
+                    (
+                        std::borrow::Cow::Owned(crate::mvcc::install_readmitted_source_image(
+                            execution,
+                            self.runtime,
+                            root,
+                            &selected,
+                        )?),
+                        true,
+                    )
+                }
+                None => return Err(Denial::RootUnavailable),
+            };
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()
@@ -97,12 +141,22 @@ impl VisibilityReadContext<'_> {
             .active()
             .map_err(Denial::Registration)?
             .ok_or(Denial::MissingParticipant)?;
-        basis
-            .root()
-            .managed_source_image
-            .get()
-            .ok_or(Denial::RootUnavailable)?
-            .prepare_rebuild(projection, selected, program, scope, memory, generation)
+        image.prepare_rebuild(
+            execution,
+            projection,
+            selected,
+            program,
+            scope,
+            memory,
+            generation,
+            |projection| {
+                if scope_checked {
+                    Ok(())
+                } else {
+                    admit_cold_scope(projection)
+                }
+            },
+        )
     }
 
     /// Install only into the same selected entry under the current registration.

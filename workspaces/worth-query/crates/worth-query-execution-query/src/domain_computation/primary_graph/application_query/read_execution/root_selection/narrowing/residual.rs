@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
     WorthQueryApplicationReadExecutionDenialKind,
 };
 use worth_foundational::expression_api::{ExpressionInputs, ExpressionValue};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_query_installation::facade::WorthQueryInstalledWhereFilter;
 use worth_relational::facade::identity::EntityId;
@@ -87,8 +88,17 @@ fn bind_parameters<ReadIdentity>(
                 .find(|(name, _)| name.as_ref() == parameter.parameter())
                 .map(|(_, value)| value)
                 .ok_or_else(projection_unavailable)?;
-            let value =
-                ExpressionValue::from_aspect_value(value).map_err(|_| projection_unavailable())?;
+            let value = if parameter.is_optional() && matches!(value, AspectValue::Null) {
+                ExpressionValue::none()
+            } else {
+                let scalar = ExpressionValue::from_aspect_value(value)
+                    .map_err(|_| projection_unavailable())?;
+                if parameter.is_optional() {
+                    ExpressionValue::some(scalar)
+                } else {
+                    scalar
+                }
+            };
             Ok((parameter.operand().to_owned(), value))
         })
         .collect()

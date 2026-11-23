@@ -10,6 +10,8 @@ use super::RelationalPublicationCompanion;
 #[cfg(test)]
 mod guard_fault;
 mod head_cell;
+mod readmitted_source;
+pub(crate) use readmitted_source::install_readmitted_source_image;
 #[cfg(test)]
 mod poison_recovery;
 mod registry_guard;
@@ -81,6 +83,24 @@ impl CompanionRegistry {
             state,
             _client: client,
         })
+    }
+
+    fn with_head_exclusion<R>(
+        &self,
+        inspect: impl FnOnce(&CompanionRegistrationState) -> R,
+    ) -> Result<R, PublicationCompanionRegistrationStop> {
+        let exclusion = registry_guard::acquire(
+            self.state.try_write(),
+            PublicationCompanionRegistrationStop::HeadCellPublicationContended,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Head);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| inspect(&exclusion)));
+        drop(exclusion);
+        match result {
+            Ok(value) => Ok(value),
+            Err(payload) => std::panic::resume_unwind(payload),
+        }
     }
 }
 

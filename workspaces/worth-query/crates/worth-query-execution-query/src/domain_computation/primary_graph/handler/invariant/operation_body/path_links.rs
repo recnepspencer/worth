@@ -41,7 +41,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
         self.context_use.set(self.context_use.get().scope());
         let targets = self
             .execution
-            .decision_stage(|context| {
+            .decision_stage(|context| -> Result<_, HandlerExecutionDenial> {
                 let mut targets = Vec::with_capacity(count);
                 for path in paths() {
                     let selected = self

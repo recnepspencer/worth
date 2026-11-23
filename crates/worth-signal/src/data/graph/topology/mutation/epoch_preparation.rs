@@ -153,6 +153,7 @@ impl SignalGraph {
         let mut desired = Vec::with_capacity(canonical.len());
         let mut reverse = Vec::with_capacity(canonical.len());
         for (node, edges) in canonical {
+            let first = reverse.is_empty();
             checkpoint(work.as_deref_mut(), edges.as_slice().len())?;
             let interned = edges
                 .as_slice()
@@ -182,12 +183,14 @@ impl SignalGraph {
                     node,
                     &interned,
                     &mut crate::logic::evaluation::EvaluationWork::RequestCheckpoint(&mut admit),
+                    first,
                 )?
             } else {
                 self.prepare_reverse_subscription_replacement(
                     node,
                     &interned,
                     &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+                    first,
                 )?
             };
             reverse.push(replacement);

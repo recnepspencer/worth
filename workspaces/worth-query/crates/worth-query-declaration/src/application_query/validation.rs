@@ -25,6 +25,7 @@ pub enum ApplicationQueryDefinitionDenial {
     ResultQueryMismatch,
     DuplicateResultSlot,
     DuplicateParameter,
+    InvalidOptionalParameter,
     InvalidCanonicalOrdering,
     InvalidDisclosureContract,
     DisclosureSelectorMismatch,
@@ -75,10 +76,9 @@ pub(crate) fn validate_portable_application_query_freshly(
             || !definition.root_paths().is_empty()
             || definition.continuation().is_some()
             || definition.live_cause().is_some()
-            || !definition
-                .parameters()
-                .iter()
-                .any(|parameter| parameter.name() == index.parts().probe_parameter))
+            || !definition.parameters().iter().any(|parameter| {
+                parameter.name() == index.parts().probe_parameter && !parameter.is_optional()
+            }))
     {
         return Err(ApplicationQueryDefinitionDenial::InvalidManagedIndexShape);
     }
@@ -192,6 +192,12 @@ fn validate_parameter_names(
     {
         return Err(ApplicationQueryDefinitionDenial::DuplicateParameter);
     }
+    if definition.parameters().iter().any(|parameter| {
+        parameter.is_optional()
+            && parameter.scalar_family() == worth_foundational::facade::ScalarAspectType::Null
+    }) {
+        return Err(ApplicationQueryDefinitionDenial::InvalidOptionalParameter);
+    }
     Ok(())
 }
 
@@ -219,7 +225,7 @@ fn validate_predicates(
         else {
             return Err(ApplicationQueryDefinitionDenial::UnknownPredicateParameter);
         };
-        if parameter.scalar_family() != scalar_family {
+        if parameter.scalar_family() != scalar_family || parameter.is_optional() {
             return Err(ApplicationQueryDefinitionDenial::PredicateParameterMismatch);
         }
     }

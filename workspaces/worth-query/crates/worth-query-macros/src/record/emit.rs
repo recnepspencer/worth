@@ -3,7 +3,8 @@
 use super::grammar::{Column, RecordDeclaration};
 use crate::facade_paths::fragment;
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::DeriveInput;
 
@@ -76,16 +77,32 @@ fn selections(input: &DeriveInput, record: &RecordDeclaration) -> TokenStream {
     let Some((fragment_type, entity)) = &record.selections else {
         return TokenStream::new();
     };
-    let (frag, vis, aspect) = (fragment(), &input.vis, &record.aspect);
-    record
-        .columns
-        .iter()
-        .filter_map(|column| {
-            let (alias, stored) = (column.alias.as_ref()?, &column.stored);
-            Some(quote_spanned! {column.stored.span()=>
-                #[allow(dead_code)]
-                #vis type #alias = #frag::FieldSelection<#fragment_type, #entity, #aspect, #stored>;
-            })
-        })
-        .collect()
+    let (frag, row, vis, aspect) = (fragment(), &input.ident, &input.vis, &record.aspect);
+    let columns = record.columns.iter().filter_map(|column| {
+        let alias = column.alias.as_ref()?;
+        let stored = &column.stored;
+        let name = &column.column;
+        let selector = format_ident!("select_{}", column.member.unraw());
+        Some((alias, stored, name, selector))
+    });
+    let aliases = columns.clone().map(|(alias, stored, _, _)| {
+        quote_spanned! {stored.span()=>
+            #[allow(dead_code)]
+            #vis type #alias = #frag::FieldSelection<#fragment_type, #entity, #aspect, #stored>;
+        }
+    });
+    let selectors = columns.map(|(alias, _, name, selector)| {
+        quote! {
+            #[allow(dead_code)]
+            #vis const fn #selector() -> #alias {
+                <#alias>::at(#name)
+            }
+        }
+    });
+    quote! {
+        #(#aliases)*
+        impl #row {
+            #(#selectors)*
+        }
+    }
 }

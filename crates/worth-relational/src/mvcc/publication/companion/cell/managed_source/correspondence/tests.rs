@@ -83,7 +83,12 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
-    let image = basis.inner.root.managed_source_image.get().unwrap();
+    let image = basis
+        .inner
+        .root
+        .managed_source_image
+        .for_branch(runtime.main_branch_identity().branch_id())
+        .unwrap();
     let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
     let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
     let generation = image.core.upgrade().unwrap().registration_generation;
@@ -97,7 +102,7 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     );
     assert!(
         matches!(
-            image.observe(selected.clone(), &program, scope, None, generation),
+            image.observe_if_ready(selected.clone(), &program, scope, None, generation),
             Err(Denial::RootUnavailable)
         ),
         "logical backing is never a committed physical read"
@@ -142,7 +147,12 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     let resumed = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
-    let resumed_image = resumed.inner.root.managed_source_image.get().unwrap();
+    let resumed_image = resumed
+        .inner
+        .root
+        .managed_source_image
+        .for_branch(runtime.main_branch_identity().branch_id())
+        .unwrap();
     let resumed_snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
     let resumed_selected = runtime
         .read_truth()

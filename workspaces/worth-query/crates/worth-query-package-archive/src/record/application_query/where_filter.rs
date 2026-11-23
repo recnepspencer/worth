@@ -76,8 +76,18 @@ fn write_operand(output: &mut dyn BinaryEncodingSink, operand: &Operand) -> Resu
         Source::Parameter {
             parameter,
             scalar_family,
+        }
+        | Source::OptionalParameter {
+            parameter,
+            scalar_family,
         } => {
-            output.u8(1)?;
+            output.u8(
+                if matches!(operand.source(), Source::OptionalParameter { .. }) {
+                    2
+                } else {
+                    1
+                },
+            )?;
             output.text(parameter)?;
             foundational_aspect::write_scalar_type(output, *scalar_family)
         }
@@ -99,6 +109,10 @@ fn decode_operand(input: &mut BinaryInput<'_>) -> Result<Operand, Denial> {
             },
         },
         1 => Source::Parameter {
+            parameter: input.text()?.to_owned(),
+            scalar_family: foundational_aspect::decode_scalar_type(input)?,
+        },
+        2 => Source::OptionalParameter {
             parameter: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
         },

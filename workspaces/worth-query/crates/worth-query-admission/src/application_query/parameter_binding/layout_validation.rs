@@ -29,7 +29,9 @@ pub(super) fn validate_parameter_layout<
                 declared.name(),
             ));
         };
-        if value.value_family() != declared.scalar_family() {
+        if value.value_family() != declared.scalar_family()
+            && !(declared.is_optional() && matches!(value, AspectValue::Null))
+        {
             return Err(WorthQueryApplicationQueryParameterDenial::new(
                 WorthQueryApplicationQueryParameterDenialKind::ParameterTypeMismatch,
                 declared.name(),

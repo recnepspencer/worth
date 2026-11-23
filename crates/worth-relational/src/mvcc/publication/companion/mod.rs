@@ -5,8 +5,10 @@ mod cell;
 mod managed_fork;
 mod preflight;
 mod registration;
-pub use managed_fork::ManagedIndexSourceForkPreparation;
+mod source_images;
+pub use managed_fork::ManagedIndexSourceCellPlacement;
 pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
+pub(crate) use source_images::ManagedSourceRootImages;
 
 pub use cell::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
@@ -21,7 +23,9 @@ pub use preflight::{
     PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion,
 };
-pub(crate) use registration::{CompanionRegistrationEpoch, CompanionRegistry};
+pub(crate) use registration::{
+    install_readmitted_source_image, CompanionRegistrationEpoch, CompanionRegistry,
+};
 pub use registration::{
     PendingCompanionRegistration, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,

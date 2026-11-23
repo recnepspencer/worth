@@ -24,6 +24,12 @@ use worth_query_publication::facade::application_entry::{
 type Result<S, I> =
     <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::Result;
 
+mod erasure;
+pub use erasure::{
+    WorthQueryAnySourceCompletion, WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
+    WorthQueryAnyTerminalSourceEvidence,
+};
+
 /// The native owner of one source-completion command, in its current phase.
 /// Every variant holds a genuine Publication owner; matching on it lends that
 /// owner, and moving it out hands its exact custody back to direct Host calls.

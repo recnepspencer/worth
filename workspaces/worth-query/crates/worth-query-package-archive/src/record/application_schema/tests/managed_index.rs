@@ -119,6 +119,13 @@ fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_pay
     );
     let mut parts = definition().parts().clone();
     parts.probe = ApplicationManagedIndexProbeMeaning::of::<StringApplicationValueBinding>();
+    let native = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+    };
+    assert_eq!(decode_member(&encode_member(&native)), native);
+    let mut unfunded = parts.probe.parts().clone();
+    unfunded.supports_admitted_decode = false;
+    parts.probe = ApplicationManagedIndexProbeMeaning::from_untrusted_parts(unfunded);
     assert_eq!(
         ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts).validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedProbeProfile)

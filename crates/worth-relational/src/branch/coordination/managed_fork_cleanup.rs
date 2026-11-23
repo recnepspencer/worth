@@ -1,7 +1,7 @@
 //! Native fork protocol evidence; public geometry and Query guard have separate courts.
 use super::*;
 use crate::mvcc::{
-    CompanionBranchCellSlot, CompanionPreflightStop, ManagedIndexSourceForkPreparation,
+    CompanionBranchCellSlot, CompanionPreflightStop, ManagedIndexSourceCellPlacement,
     PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion,
 };
@@ -51,10 +51,10 @@ impl Drop for Lookup {
     }
 }
 impl RelationalPublicationCompanion for Owner {
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
         let memory = execution
             .reserve_retained_memory(4096)
@@ -64,11 +64,11 @@ impl RelationalPublicationCompanion for Owner {
         self.targets
             .lock()
             .unwrap()
-            .insert(target.target_branch().clone(), slot.clone());
+            .insert(target.branch().clone(), slot.clone());
         Ok(Box::new(Lookup {
             coordination: Arc::clone(&self.coordination),
             targets: Arc::clone(&self.targets),
-            branch: target.target_branch().clone(),
+            branch: target.branch().clone(),
             slot,
             drops: Arc::clone(&self.drops),
             _memory: memory,

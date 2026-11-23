@@ -1,8 +1,6 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use crate::data::handle::NodeId;
-use crate::data::persistent_hash_map::PersistentHashMap;
 
 use super::{
     ForkConsumerMembershipChange, IndexedSubscriptionMembership, ProducerAspectKey,
@@ -18,12 +16,11 @@ pub(super) struct ReverseSubscriptionFlat {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum ReverseSubscriptionStorage {
     Exclusive(ReverseSubscriptionFlat),
-    ForkShared {
-        base: Arc<crate::data::retained_storage::RetainedStorageBacking<ReverseSubscriptionFlat>>,
-        bucket_changes: PersistentHashMap<ProducerAspectKey, BucketDelta>,
-        consumer_changes: PersistentHashMap<NodeId, ForkConsumerMembershipChange>,
-    },
+    ForkShared(ForkSubscriptions),
 }
+
+mod backing;
+pub(super) use backing::{ForkSubscriptionMaps, ForkSubscriptions};
 
 mod bucket_delta;
 pub(super) use bucket_delta::BucketDelta;

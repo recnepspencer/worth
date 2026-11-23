@@ -17,10 +17,12 @@ use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPo
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 mod adoption;
+mod continuation;
 pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;
 pub use adoption::{
     WorthQueryExpectedProductBranchAdoptionDenial, WorthQueryExpectedProductBranchAdoptionFailure,
 };
+pub use continuation::WorthQueryExpectedProductBranchCreationContinuation;
 
 #[must_use = "configure and create the expected-source fork, or drop its admission"]
 pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {

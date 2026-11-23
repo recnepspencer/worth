@@ -41,14 +41,14 @@ impl RetainedSourceHistoryMaterial {
             .inner
             .root
             .managed_source_image
-            .get();
+            .for_branch(interpretation.physical_basis().identity().branch_id());
         let mut result = Self {
             owner: None,
             scopes: ExecutionOrderedMap::default(),
         };
         super::super::applied::stage::prepare(execution, |budget| {
             admission::work(budget, 1)?;
-            result.owner = image.and_then(|image| image.history_owner());
+            result.owner = image.as_deref().and_then(|image| image.history_owner());
             // Unsupported/cold native cell custody cannot prove irrelevance.
             if result.owner.is_none() {
                 return Ok(());
@@ -86,6 +86,7 @@ impl RetainedSourceHistoryMaterial {
                             // Eligibility of BOTH actual prepared sides was
                             // established before consulting the selected cache.
                             let before = match image
+                                .as_deref()
                                 .ok_or(Denial::ForeignSource)?
                                 .history_payload_receipt(
                                     &execution,
@@ -125,6 +126,7 @@ impl RetainedSourceHistoryMaterial {
                     .program(key.program)
                     .ok_or(Denial::ForeignSource)?;
                 let payload = image
+                    .as_deref()
                     .ok_or(Denial::ForeignSource)?
                     .history_payload_receipt(&execution, program, key.scope, budget)?;
                 let pair = match payload {

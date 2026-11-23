@@ -16,6 +16,7 @@ pub(crate) mod public_cache;
 mod publication;
 pub(crate) use public_cache::PublicCacheEntry;
 mod refill;
+pub(crate) use entry::ordered_denial as managed_source_ordered_denial;
 pub(crate) use entry::ManagedIndexSourceAssociation;
 use key::SourceKey;
 type Payload = Arc<dyn Any + Send + Sync>;

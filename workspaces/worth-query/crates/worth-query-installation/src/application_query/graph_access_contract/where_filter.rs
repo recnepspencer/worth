@@ -45,6 +45,7 @@ impl WorthQueryInstalledWhereFilterField {
 pub struct WorthQueryInstalledWhereFilterParameter {
     operand: String,
     parameter: String,
+    optional: bool,
 }
 
 impl WorthQueryInstalledWhereFilterParameter {
@@ -53,6 +54,9 @@ impl WorthQueryInstalledWhereFilterParameter {
     }
     pub fn parameter(&self) -> &str {
         &self.parameter
+    }
+    pub const fn is_optional(&self) -> bool {
+        self.optional
     }
 }
 
@@ -85,10 +89,12 @@ impl WorthQueryInstalledWhereFilter {
                     scalar_family: *scalar_family,
                     presence: *presence,
                 }),
-                Source::Parameter { parameter, .. } => {
+                Source::Parameter { parameter, .. }
+                | Source::OptionalParameter { parameter, .. } => {
                     parameters.push(WorthQueryInstalledWhereFilterParameter {
                         operand: operand.name().to_owned(),
                         parameter: parameter.clone(),
+                        optional: matches!(operand.source(), Source::OptionalParameter { .. }),
                     })
                 }
             }
@@ -146,6 +152,9 @@ impl WorthQueryInstalledWhereFilter {
                 text(format!("{path}.operand"), parameter.operand()),
                 text(format!("{path}.parameter"), parameter.parameter()),
             ]);
+            if parameter.is_optional() {
+                entries.push(text(format!("{path}.presence"), "optional"));
+            }
         }
         entries.push(text(
             "where-filter.program".to_owned(),

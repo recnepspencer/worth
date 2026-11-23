@@ -13,11 +13,13 @@
 //! (`fn(&Self) -> Result<(), &'static str>`).
 //!
 //! Exactly one scope: a field marked `#[worth_query(scope = Selection)]`
-//! (`column = ".."` when the column is named otherwise) or the struct key
-//! `principal_scope = Selection`.
+//! (`column = ".."` for an override), `principal_scope = Selection`, or
+//! `scope = Selection, scope_value = path::to::value` on the input struct.
 //!
 //! With `body`, the input binding retains its canonical input
-//! (`capture_input`), which authored-body input selectors require. It expands to
+//! (`capture_input`), which authored-body input selectors require. The derive
+//! defaults its result to the unit binding, its decision to the body's scoped
+//! decision, and its access to a read of the selected scope field. It expands to
 //! `worth_query_structured_value_binding!`,
 //! `worth_query_operation!`, the contextual `worth_query_mutation_binding!`
 //! and, with `delivery`, an `ApplicationActionDelivery` impl. Each identity is

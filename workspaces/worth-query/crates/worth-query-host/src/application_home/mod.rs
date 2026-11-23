@@ -1,6 +1,7 @@
 //! The Host owns concrete Home custody and its installed Query service together.
 mod checkpoint;
 mod close;
+mod close_policy;
 mod discard;
 mod dispatch_journal;
 mod failure_close;
@@ -13,6 +14,7 @@ mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
 pub use close::{WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed};
+pub use close_policy::WorthQueryHomeClosePolicyRefused;
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
