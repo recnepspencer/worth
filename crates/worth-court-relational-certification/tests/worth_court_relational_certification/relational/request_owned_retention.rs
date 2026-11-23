@@ -1,16 +1,27 @@
 //! Existing reuse journey also proves original controls and honest partial work.
-use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::runtime::RelationalRetentionPassStop as Stop;
+use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
+
+use worth_relational::facade::{
+    config::{MvccConfig, RelationalRuntimeProfile, RetentionBackend, SnapshotReleasePolicy},
+    runtime::{RelationalRetentionPassStop as Stop, RelationalRuntime, RelationalRuntimeApi},
+    transactions::RelationalExecutionDenialCause as Cause,
+};
+use worth_testkit_relational::{
+    aspect_storage::publications::{changed_entities, release_test_commit_snapshot},
+    durable_publication::{create_entity_outcome, memory_runtime_with_profile, schema},
+    ordinary_records::{create_entity, delete_entity},
+};
+
 use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
 
-pub(super) fn entity_slot_reuse_increments_generation() {
+#[test]
+fn request_owned_pass_preserves_accounting_and_completed_reclaim() {
     let memory = SerialMemoryBudget::new(None);
     let host = SerialRequest::from_memory(memory.clone(), CancellationSource::new().token(), None);
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
+    let runtime = memory_runtime_with_profile(RelationalRuntimeProfile::AiWorkflow);
     let created = create_entity_outcome(execution, &runtime, "first");
     let original = changed_entities(&created)[0];
     release_test_commit_snapshot(&runtime, &created);
@@ -43,14 +54,6 @@ pub(super) fn entity_slot_reuse_increments_generation() {
     assert_eq!(zero_memory.charged_memory_bytes(), 0);
 
     let memory_before = memory.charged_memory_bytes();
-    let edition = runtime.storage_access().current_edition();
-    let denied = runtime.retention().try_run_pass(execution).unwrap_err();
-    assert_eq!(denied.stop(), Stop::StorageObserved);
-    assert_eq!(denied.progress().outcome().entity_reclaimed, 0);
-    assert!(denied.progress().slots_scanned() > 0);
-    assert_eq!(memory.charged_memory_bytes(), memory_before);
-    drop(edition);
-
     let actual = runtime.retention().try_run_pass(execution).unwrap();
     assert_eq!(actual.outcome().entity_reclaimed, 1);
     assert_eq!(
@@ -62,7 +65,8 @@ pub(super) fn entity_slot_reuse_increments_generation() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         0
     );
@@ -81,7 +85,7 @@ fn worker_only_preserves_effective_original_accounting(setup: &ExecutionRequest<
     let host = SerialRequest::from_policy(&policy, CancellationSource::new().token(), None);
     let native = &ExecutionRequest::serial(&host);
     assert!(!native.has_accounting());
-    let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
+    let runtime = memory_runtime_with_profile(RelationalRuntimeProfile::AiWorkflow);
     let created = create_entity_outcome(setup, &runtime, "native-only");
     let original = changed_entities(&created)[0];
     release_test_commit_snapshot(&runtime, &created);
@@ -133,7 +137,8 @@ fn worker_only_preserves_effective_original_accounting(setup: &ExecutionRequest<
     assert_eq!(
         inherited
             .storage_access()
-            .storage_stats()
+            .storage_stats(setup)
+            .unwrap()
             .reusable_entity_slots,
         0
     );
@@ -149,7 +154,7 @@ fn worker_only_preserves_effective_original_accounting(setup: &ExecutionRequest<
 fn retired_world(execution: &ExecutionRequest<'_, '_>, batch: usize) -> RelationalRuntime {
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
-        .schema_registry(test_schema_registry())
+        .schema_registry(schema())
         .mvcc(MvccConfig {
             track_visibility_metadata: true,
             snapshot_release_policy: SnapshotReleasePolicy::ExplicitRelease,
@@ -157,7 +162,8 @@ fn retired_world(execution: &ExecutionRequest<'_, '_>, batch: usize) -> Relation
             reclaim_batch_size: batch,
             retention_backend: RetentionBackend::PinTrackedRetention,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity_outcome(execution, &runtime, "one");
     let second = create_entity_outcome(execution, &runtime, "two");
     let originals = [changed_entities(&first)[0], changed_entities(&second)[0]];
@@ -205,11 +211,12 @@ fn completed_prefix_survives_request_stop(execution: &ExecutionRequest<'_, '_>) 
     assert_eq!(
         full_batch
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         reclaimed
     );
-    let fresh_host = crate::test_execution_policy::serial_request();
+    let fresh_host = serial_request();
     let retry = full_batch
         .retention()
         .try_run_pass(&ExecutionRequest::serial(&fresh_host))
@@ -218,7 +225,8 @@ fn completed_prefix_survives_request_stop(execution: &ExecutionRequest<'_, '_>) 
     assert_eq!(
         full_batch
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         2
     );

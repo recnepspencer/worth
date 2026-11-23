@@ -1,6 +1,9 @@
-use crate::facade;
 use std::sync::OnceLock;
 use worth_foundational::facade::{AspectKey, AspectValue};
+use worth_relational::facade;
+use worth_testkit_relational::aspect_storage::publications::begin_main_transaction;
+use worth_testkit_relational::durable_publication::{create_entity_outcome, memory_runtime};
+use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
 fn public_api_projection_aspects() -> Vec<AspectKey> {
     static ASPECTS: OnceLock<Vec<AspectKey>> = OnceLock::new();
@@ -36,8 +39,7 @@ fn facade_namespaces_expose_domain_groupings() {
         .schema_registry(facade::schema::RelationalSchemaRegistry::new())
         .build()
         .expect("valid native runtime configuration");
-    let _txn_options =
-        crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
+    let _txn_options = begin_main_transaction(&runtime);
     let _diagnostics_scope = facade::diagnostics::DiagnosticsScope::Transaction;
     let _patch_mode = facade::publication::PatchPublicationMode::CommitNative;
     let _snapshot_policy = facade::snapshots::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation;
@@ -48,11 +50,11 @@ fn facade_namespaces_expose_domain_groupings() {
 
 #[test]
 fn admitted_observation_opens_its_selected_root_after_branch_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = public_api_runtime();
-    let first = crate::tests::support::create_entity_outcome(execution, &runtime, "observed");
+    let runtime = memory_runtime();
+    let first = create_entity_outcome(execution, &runtime, "observed");
     let first_version = first.version_id;
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -62,14 +64,14 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
         .release_snapshot(&first.snapshot)
         .is_ok());
 
-    let second = crate::tests::support::create_entity_outcome(execution, &runtime, "later");
+    let second = create_entity_outcome(execution, &runtime, "later");
     let observed = runtime
         .snapshots()
         .snapshot_for_observation(&observation)
         .expect("admitted observation keeps its exact immutable root");
 
-    assert_eq!(observed.version_id, first_version);
-    assert_eq!(observed.branch_id, *identity.branch_id());
+    assert_eq!(observed.version_id(), first_version);
+    assert_eq!(observed.branch_id(), identity.branch_id());
     assert!(runtime
         .read_truth()
         .read_snapshot(&observed, execution)
@@ -84,8 +86,8 @@ fn admitted_observation_opens_its_selected_root_after_branch_movement() {
 
 #[test]
 fn foreign_runtime_identity_cannot_admit_a_branch_observation() {
-    let runtime = public_api_runtime();
-    let foreign = public_api_runtime();
+    let runtime = memory_runtime();
+    let foreign = memory_runtime();
     let foreign_identity = foreign.main_branch_identity();
 
     assert!(matches!(
@@ -96,12 +98,11 @@ fn foreign_runtime_identity_cannot_admit_a_branch_observation() {
 
 #[test]
 fn admitted_basis_clones_share_one_descriptor_and_observation_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = public_api_runtime();
-    let committed =
-        crate::tests::support::create_entity_outcome(execution, &runtime, "shared-basis");
+    let runtime = memory_runtime();
+    let committed = create_entity_outcome(execution, &runtime, "shared-basis");
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     let cloned = basis.clone();
@@ -117,13 +118,12 @@ fn admitted_basis_clones_share_one_descriptor_and_observation_root() {
 
 #[test]
 fn main_movement_does_not_change_an_inherited_child_observation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = public_api_runtime();
-    let baseline =
-        crate::tests::support::create_entity_outcome(execution, &runtime, "child-baseline");
-    let baseline_version = baseline.snapshot.version_id;
+    let runtime = memory_runtime();
+    let baseline = create_entity_outcome(execution, &runtime, "child-baseline");
+    let baseline_version = baseline.snapshot.version_id();
     let main = runtime.main_branch_identity();
     let (_, source_basis) = runtime
         .observe_fork_source(main.branch_id())
@@ -132,14 +132,10 @@ fn main_movement_does_not_change_an_inherited_child_observation() {
     runtime
         .fork_branch(execution, child_id.clone(), source_basis)
         .expect("child retains the inherited immutable root");
-    crate::tests::support::create_entity_outcome(execution, &runtime, "main-advances");
+    create_entity_outcome(execution, &runtime, "main-advances");
     let child = runtime.branch_identity(&child_id).unwrap();
     let (_, child_basis) = runtime.observe_branch(&child).unwrap();
 
     assert_eq!(child_basis.observation().version_id(), baseline_version);
     assert_eq!(child_basis.identity().branch_id(), &child_id);
-}
-
-fn public_api_runtime() -> facade::runtime::RelationalRuntime {
-    crate::tests::support::runtime_with_test_schema()
 }

@@ -143,8 +143,8 @@ crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/single_stage.rs
 crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs
+crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/request_owned_retention.rs
 crates/worth-execution/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/recovery/released_source.rs
-crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth/work_attribution.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/reuse_opt_out/every_consult.rs
