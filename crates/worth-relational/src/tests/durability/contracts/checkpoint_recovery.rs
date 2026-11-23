@@ -379,3 +379,6 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
         "selected-view probe must only demand the targeted partition"
     );
 }
+
+#[path = "checkpoint_recovery/checkpoint_fallback.rs"]
+mod checkpoint_fallback;

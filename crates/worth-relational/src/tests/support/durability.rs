@@ -31,10 +31,17 @@ use crate::durability::source_initial_inputs::{
 };
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 
+#[path = "durability/canonical_commit_frame.rs"]
+mod canonical_commit_frame;
 #[path = "durability/owned_medium.rs"]
 mod owned_medium;
+#[path = "durability/owned_medium_tamper.rs"]
+mod owned_medium_tamper;
+pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
-pub(crate) use owned_medium::OwnedTestDurableMedium;
+pub(crate) use owned_medium::{
+    OwnedTestDurableMedium, ScriptedPublication, TestRecoverySourceRefusal,
+};
 
 pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,
@@ -153,32 +160,10 @@ impl DurableMedium for OwnedMediumAttachment {
         TransArt::from_untrusted_bytes(bytes).map_err(TransReadErr::Frame)
     }
     fn publish(&self, artifact: &CommitArt) -> Fate<String> {
-        if self
-            .0
-            .lock()
-            .commits
-            .publish(artifact.position().0, artifact.as_bytes())
-        {
-            Fate::Committed
-        } else {
-            Fate::ProvenNoEffect {
-                detail: "not next or identical original position".into(),
-            }
-        }
+        self.0.publish_commit(artifact)
     }
     fn publish_transition(&self, artifact: &TransArt) -> Fate<String> {
-        if self
-            .0
-            .lock()
-            .transitions
-            .publish(artifact.sequence().0, artifact.as_bytes())
-        {
-            Fate::Committed
-        } else {
-            Fate::ProvenNoEffect {
-                detail: "not next or identical original transition".into(),
-            }
-        }
+        self.0.publish_transition(artifact)
     }
 }
 
@@ -190,6 +175,8 @@ impl ColdSource for OwnedTestDurableMedium {
         member: MemberLoc,
         length: usize,
     ) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_member_read(member.sha256)
+            .map_err(ReadRefusal::Storage)?;
         downcast_snapshot(original)?
             .member_prefix(request, member.sha256, member.length, length)
             .map_err(map_owned_denial)
@@ -200,9 +187,7 @@ impl ColdSource for OwnedTestDurableMedium {
         original: &(dyn Any + Send + Sync),
         limit: u64,
     ) -> Result<Option<ImmBytes>, ReadRefusal> {
-        downcast_snapshot(original)?
-            .initial_inputs(request, limit)
-            .map_err(map_owned_denial)
+        downcast_snapshot(original)?.initial_inputs(request, limit).map_err(map_owned_denial)
     }
     fn checkpoint_read_protection(
         &self,
@@ -212,11 +197,7 @@ impl ColdSource for OwnedTestDurableMedium {
         let snapshot = OwnedNativeReadSnapshot::capture(
             request,
             contents.commits.entries.iter().map(|(id, b)| (*id, b.as_ref())),
-            contents
-                .transitions
-                .entries
-                .iter()
-                .map(|(id, b)| (*id, b.as_ref())),
+            contents.transitions.entries.iter().map(|(id, b)| (*id, b.as_ref())),
             &contents.members,
             contents.initial_inputs.as_ref().map(|a| a.as_bytes()),
         )
@@ -231,10 +212,7 @@ impl ColdSource for OwnedTestDurableMedium {
             snapshot,
         ))
     }
-    fn checkpoint_selected_read_protection(
-        &self,
-        request: &Req<'_, '_>,
-    ) -> Result<ReadPayload, ReadRefusal> {
+    fn checkpoint_selected_read_protection(&self, request: &Req<'_, '_>) -> Result<ReadPayload, ReadRefusal> {
         let contents = self.lock();
         OwnedNativeReadSnapshot::capture(
             request,
@@ -246,78 +224,37 @@ impl ColdSource for OwnedTestDurableMedium {
         .map(|original| original as ReadPayload)
         .map_err(map_owned_denial)
     }
-    fn read_commit_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        position: PatchStreamPosition,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .canonical(request, position.0, limit)
-            .map_err(map_owned_denial)
+    fn read_commit_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), position: PatchStreamPosition, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_commit_read(position).map_err(ReadRefusal::Storage)?;
+        downcast_snapshot(original)?.canonical(request, position.0, limit).map_err(map_owned_denial)
     }
-    fn read_transition_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        sequence: Seq,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .transition(request, sequence.0, limit)
-            .map_err(map_owned_denial)
+    fn read_transition_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), sequence: Seq, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        downcast_snapshot(original)?.transition(request, sequence.0, limit).map_err(map_owned_denial)
     }
-    fn read_member_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        locator: MemberLoc,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .member(request, locator.sha256, locator.length, limit)
-            .map_err(map_owned_denial)
+    fn read_member_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), locator: MemberLoc, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_member_read(locator.sha256).map_err(ReadRefusal::Storage)?;
+        downcast_snapshot(original)?.member(request, locator.sha256, locator.length, limit).map_err(map_owned_denial)
     }
-    fn validate_member_custody_retirement(
-        &self,
-        original: &(dyn Any + Send + Sync),
-    ) -> Result<(), RetireRefusal> {
-        if original.is::<()>() || original.is::<OwnedNativeReadSnapshot>() {
-            Ok(())
-        } else {
-            Err(RetireRefusal::ForeignCustody)
-        }
+    fn validate_member_custody_retirement(&self, original: &(dyn Any + Send + Sync)) -> Result<(), RetireRefusal> {
+        if original.is::<()>() || original.is::<OwnedNativeReadSnapshot>() { Ok(()) } else { Err(RetireRefusal::ForeignCustody) }
     }
-    fn advance_member_custody_retirement(
-        &self,
-        _: &Req<'_, '_>,
-        original: &mut (dyn Any + Send + Sync),
-    ) -> RetireObs {
+    fn advance_member_custody_retirement(&self, _: &Req<'_, '_>, original: &mut (dyn Any + Send + Sync)) -> RetireObs {
         match self.validate_member_custody_retirement(original) {
             Ok(()) => RetireObs::Complete,
             Err(cause) => RetireObs::Refused(cause),
         }
     }
-    fn retain_members_for_request(
-        &self,
-        request: &Req<'_, '_>,
-        _: &[MemberLoc],
-        issuer: Weak<dyn ColdSource>,
-    ) -> Result<MemberCustody, ReadRefusal> {
+    fn retain_members_for_request(&self, request: &Req<'_, '_>, _: &[MemberLoc], issuer: Weak<dyn ColdSource>) -> Result<MemberCustody, ReadRefusal> {
         MemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
     }
-    fn retain_members(&self, _: &[MemberLoc]) -> Result<MemberCustody, StorageCause> {
-        Ok(MemberCustody::new(()))
-    }
+    fn retain_members(&self, _: &[MemberLoc]) -> Result<MemberCustody, StorageCause> { Ok(MemberCustody::new(())) }
     fn read_member(&self, locator: MemberLoc, limit: u64) -> Result<Vec<u8>, StorageCause> {
+        self.check_and_record_member_read(locator.sha256)?;
         bounded_bytes(self.lock().members.get(locator.sha256, locator.length), limit)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, StorageCause> {
-        bounded_bytes(
-            self.lock().commits.entries.get(&position.0).map(AsRef::as_ref),
-            limit,
-        )
+        self.check_and_record_commit_read(position)?;
+        bounded_bytes(self.lock().commits.entries.get(&position.0).map(AsRef::as_ref), limit)
     }
 }
 
@@ -351,10 +288,7 @@ pub(crate) fn capture_and_file_checkpoint(
         .native_checkpoint_with_policy(
             execution,
             execution.allocation_policy(),
-            CheckpointPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
+            CheckpointPolicy::ExternalMembers { current_members: &[], source: None },
         )
         .expect("native checkpoint capture");
     medium.file_checkpoint(checkpoint.clone());
@@ -365,16 +299,67 @@ pub(crate) fn recover_runtime_from_medium(
     recovered: &mut RelationalRuntime,
     medium: &Arc<OwnedTestDurableMedium>,
 ) -> RecoveryOutcome {
-    let plan = recovered
-        .durability()
-        .recovery_plan_from_source(
-            execution,
-            medium.recovery_source(),
-            RecoveryMode::NormalRecoveryVerification,
-        )
+    let plan = medium
+        .recovery_plan(execution, recovered, RecoveryMode::NormalRecoveryVerification)
         .expect("medium-sourced recovery plan");
-    recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .expect("medium-sourced recovery")
+    recovered.durability_recovery().recover(execution, plan).expect("medium-sourced recovery")
+}
+impl OwnedTestDurableMedium {
+    pub(crate) fn file_embedded_checkpoint(
+        &self,
+        execution: &Req<'_, '_>,
+        runtime: &RelationalRuntime,
+    ) -> NativeCheckpoint {
+        let checkpoint = runtime
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .expect("embedded native checkpoint capture");
+        self.file_checkpoint(checkpoint.clone());
+        checkpoint
+    }
+    pub(crate) fn recovery_plan(
+        self: &Arc<Self>,
+        execution: &Req<'_, '_>,
+        target: &RelationalRuntime,
+        mode: RecoveryMode,
+    ) -> Result<crate::durability::data::RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
+        target.durability().recovery_plan_from_source(execution, self.recovery_source(), mode)
+    }
+    pub(crate) fn rewrite_artifact_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        position: PatchStreamPosition,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let bytes = self
+            .commit_bytes_at(position)
+            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
+        let readmitted = CommitArt::readmit(&bytes, execution)
+            .expect("the medium's own artifact readmits before it is rewritten");
+        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+        edit(envelope.body_mut_for_test());
+        let rewritten = CommitArt::from_positioned(
+            &crate::history::data::PositionedCanonicalCommit::for_test(position, Arc::new(envelope)),
+            execution.allocation_policy(),
+        )
+        .expect("a rewritten envelope still encodes");
+        self.replace_commit_bytes(position, Box::from(rewritten.as_bytes()));
+    }
+    pub(crate) fn rewrite_commit_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        commit_id: crate::history::data::CommitId,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let position = self
+            .positions()
+            .into_iter()
+            .find(|p| {
+                self.artifact_bytes(*p)
+                    .and_then(|b| CommitArt::from_untrusted_bytes(b).ok())
+                    .is_some_and(|a| a.commit_id() == commit_id)
+            })
+            .unwrap_or_else(|| panic!("medium holds no artifact for {commit_id:?}"));
+        self.rewrite_artifact_envelope(execution, position, edit);
+    }
 }

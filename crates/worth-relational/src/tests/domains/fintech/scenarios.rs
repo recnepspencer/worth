@@ -5,6 +5,7 @@ use super::scales::FintechScale;
 pub(super) enum FintechScenario {
     SmokeBook,
     CheckpointRecoverySmokeBook,
+    PersistedSmokeBook,
     HistoricalVisibility,
     IntradayRisk,
     LateTradeCorrection,
@@ -40,6 +41,7 @@ pub(super) fn setup_world_for(
     match scenario {
         FintechScenario::SmokeBook => FintechWorld::setup_world(execution),
         FintechScenario::CheckpointRecoverySmokeBook => FintechWorld::setup_world(execution),
+        FintechScenario::PersistedSmokeBook => FintechWorld::setup_persisted_world(execution),
         FintechScenario::HistoricalVisibility => FintechWorld::setup_world(execution),
         FintechScenario::IntradayRisk => FintechWorld::setup_world(execution),
         FintechScenario::LateTradeCorrection => FintechWorld::setup_world(execution),
@@ -59,24 +61,26 @@ pub(super) fn selection_for(scenario: FintechScenario) -> FintechScenarioSelecti
             probe_prefix: "portfolio",
             checkpoint_recovery: false,
         },
-        FintechScenario::CheckpointRecoverySmokeBook => FintechScenarioSelection {
-            scenario,
-            scenario_key: "checkpoint-recovery-smoke-book",
-            canonical_case: FintechCaseRole::BaselinePortfolio,
-            expected_invariants: &[
-                "fixture_shape_smoke",
-                "truth_world_named",
-                "recovery_queryable",
-            ],
-            expected_artifacts: &[
-                "snapshot-visible-truth",
-                "branch-head-state",
-                "replay-recovery-truth",
-            ],
-            expected_read_alias: "portfolio.read.recovery",
-            probe_prefix: "portfolio",
-            checkpoint_recovery: true,
-        },
+        FintechScenario::CheckpointRecoverySmokeBook | FintechScenario::PersistedSmokeBook => {
+            FintechScenarioSelection {
+                scenario,
+                scenario_key: "checkpoint-recovery-smoke-book",
+                canonical_case: FintechCaseRole::BaselinePortfolio,
+                expected_invariants: &[
+                    "fixture_shape_smoke",
+                    "truth_world_named",
+                    "recovery_queryable",
+                ],
+                expected_artifacts: &[
+                    "snapshot-visible-truth",
+                    "branch-head-state",
+                    "replay-recovery-truth",
+                ],
+                expected_read_alias: "portfolio.read.recovery",
+                probe_prefix: "portfolio",
+                checkpoint_recovery: true,
+            }
+        }
         FintechScenario::HistoricalVisibility => FintechScenarioSelection {
             scenario,
             scenario_key: "historical-visibility",

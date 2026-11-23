@@ -18,6 +18,7 @@ use stage_schema::*;
 mod co_courts;
 mod co_refusals;
 mod co_roles;
+mod cold_pairing;
 mod content;
 mod correction;
 mod correction_courts;

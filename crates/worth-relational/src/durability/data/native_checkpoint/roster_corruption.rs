@@ -23,6 +23,22 @@ impl RelationalNativeCheckpoint {
             &RelationalCheckpointArtifactPolicy::Embedded,
         )
     }
+    pub(crate) fn corrupt_current_publication_roster_external_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        publication: CommitId,
+        change: u8,
+    ) -> Result<Self, RelationalRecoveryStop> {
+        self.corrupt_with_placement(
+            execution,
+            publication,
+            change,
+            &RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
+    }
     fn corrupt_with_placement(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -120,11 +136,26 @@ impl RelationalNativeCheckpoint {
             };
             answer = Some((|| {
                 let policy = execution.allocation_policy();
-                let captured = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| codec::CapturedManifest::capture_expanded(
-                    lane, execution, &checkpoint, policy, &mut control,
-                ))?;
-                let (bytes, sections, members, _) =
-                    codec::encode_captured(captured.seal_ordinary(), execution, policy, placement, &mut control)?;
+                let mut captured =
+                    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                        |lane| {
+                            codec::CapturedManifest::capture_expanded(
+                                lane,
+                                execution,
+                                &checkpoint,
+                                policy,
+                                &mut control,
+                            )
+                        },
+                    )?;
+                codec::populate_expanded_canonical_members(&mut captured, &checkpoint, execution)?;
+                let (bytes, sections, members, _) = codec::encode_captured(
+                    captured.seal_ordinary(),
+                    execution,
+                    policy,
+                    placement,
+                    &mut control,
+                )?;
                 Ok::<_, RelationalNativeCheckpointCaptureDenial>((bytes, sections, members))
             })());
         });

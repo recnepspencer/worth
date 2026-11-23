@@ -1,6 +1,13 @@
 //! Real owner semantics are captured before sealing and recovered as data.
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::tests::support::*;
+use crate::transactions::data::{
+    CreatedEntityRef, EntityReference, RelationalCreatedEndpoint as Endpoint,
+};
 use worth_execution::ExecutionRequest;
+
+mod bulk;
+mod custom_versions;
 
 #[test]
 fn semantic_result_discovery_must_be_present_in_each_actual_index_entry() {

@@ -2,6 +2,7 @@
 mod aspect_merge_policy_denials;
 mod merge_descriptive_touches;
 mod monotonic_counter_resolution;
+mod prepared_merge_denials;
 mod topology_local_rewire;
 mod topology_region;
 

@@ -178,6 +178,34 @@ fn fintech_failure_injection_keeps_savepoint_and_replay_refusals() {
 }
 
 #[test]
+fn fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corruption() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut world = setup_smoke_world(execution);
+    let analysis = open_analysis_branch(execution, &mut world);
+    let rollback = rollback_seeded_trade_correction_after_savepoint(&mut world, analysis.clone());
+    let invalid_code = invalid_savepoint_rollback_code(&mut world, analysis.clone());
+
+    assert!(rollback.has_effects());
+    assert!(rollback.summary().has_restored_entity());
+    assert_eq!(invalid_code, DiagnosticCode::InvalidSavepoint);
+
+    let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis);
+    let removed = drop_latest_parent_envelope_for_replay(&world.runtime);
+    assert!(removed.is_some());
+    let wrong_branch = replay_latest_commit_on_wrong_branch(execution, &world.runtime).unwrap();
+    assert_eq!(
+        wrong_branch.failure,
+        Some(ReplayFailureClass::BranchMismatch)
+    );
+
+    let mut persisted = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
+    checkpoint_world(execution, &mut persisted).unwrap();
+    assert!(damage_filed_checkpoint(&persisted));
+}
+
+#[test]
 fn fintech_complexity_hooks_measure_seeded_workflows() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -339,3 +367,6 @@ fn fintech_observability_surfaces_agree_for_hostile_correction_workflow() {
 
     assert_observability_surfaces_agree(&world);
 }
+
+#[path = "persistence/checkpoint_fallback.rs"]
+mod checkpoint_fallback;

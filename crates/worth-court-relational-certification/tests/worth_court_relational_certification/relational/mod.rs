@@ -23,3 +23,4 @@ mod bulk_work_account;
 mod checkpoint_versions;
 
 mod coupled_producers;
+mod restoration_header;

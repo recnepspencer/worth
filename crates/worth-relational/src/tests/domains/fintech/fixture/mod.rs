@@ -4,6 +4,8 @@ mod relation_seeding;
 mod schema_declarations;
 mod seed_catalog;
 
+use std::sync::Arc;
+
 use crate::facade::config::RelationalRuntimeProfile;
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, PartitionId, RelationId};
@@ -11,6 +13,7 @@ use crate::facade::runtime::{RelationalReadView, RelationalRuntime, RelationalRu
 use crate::facade::snapshots::SnapshotHandle;
 use crate::facade::transactions::RecordRef;
 use crate::query::data::PlannedQueryPacket;
+use crate::tests::support::OwnedTestDurableMedium;
 
 use self::casebook::{build_casebook, build_workflow_cases};
 use self::entity_seeding::seed_entities;
@@ -85,6 +88,7 @@ pub(super) struct FintechCasebook {
 #[derive(Debug)]
 pub(crate) struct FintechWorld {
     pub(crate) runtime: RelationalRuntime,
+    pub(crate) medium: Option<Arc<OwnedTestDurableMedium>>,
     pub(super) ledger: LedgerWorld,
     pub(super) market: MarketWorld,
     pub(super) risk: RiskWorld,
@@ -95,6 +99,18 @@ pub(crate) struct FintechWorld {
 impl FintechWorld {
     pub(super) fn setup_world(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
         Self::setup_world_with(execution, FintechScale::smoke())
+    }
+
+    pub(super) fn setup_persisted_world(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Self {
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = RelationalRuntimeApi::builder()
+            .profile(RelationalRuntimeProfile::AiWorkflow)
+            .schema_registry(fintech_schema_registry())
+            .build_durable(medium.attachment())
+            .expect("valid durable native runtime configuration");
+        Self::seed(execution, runtime, Some(medium), FintechScale::smoke())
     }
 
     pub(super) fn setup_world_with(
@@ -278,6 +294,15 @@ impl FintechWorld {
             .schema_registry(fintech_schema_registry())
             .build()
             .expect("valid native runtime configuration");
+        Self::seed(execution, runtime, None, scale)
+    }
+
+    fn seed(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: RelationalRuntime,
+        medium: Option<Arc<OwnedTestDurableMedium>>,
+        scale: FintechScale,
+    ) -> Self {
         let case_seeds = seeded_trade_cases(scale);
         let seeded = seed_entities(execution, &runtime, &case_seeds);
         let workflow_cases = build_workflow_cases(&case_seeds, &seeded);
@@ -286,6 +311,7 @@ impl FintechWorld {
 
         Self {
             runtime,
+            medium,
             ledger: LedgerWorld {
                 desks: seeded.desks,
                 books: seeded.books,

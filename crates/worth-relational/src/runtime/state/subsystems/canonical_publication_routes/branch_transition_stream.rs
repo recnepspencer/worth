@@ -105,6 +105,8 @@ impl RelationalCanonicalPublicationRoutes {
         self.lifecycle.try_write().map_err(|_| ())
     }
     pub(crate) fn begin_branch_transition(&self) -> BranchTransitionPublication<'_> {
+        #[cfg(test)]
+        self.lifecycle_order.transition_contact();
         BranchTransitionPublication {
             routes: self,
             _lifecycle: self

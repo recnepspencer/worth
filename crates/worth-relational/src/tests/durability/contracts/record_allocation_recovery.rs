@@ -203,3 +203,175 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
 }
+
+#[test]
+fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let original = create_entity(execution, &runtime, "allocation-live");
+    medium.file_embedded_checkpoint(execution, &runtime);
+    create_entity(execution, &runtime, "allocation-tail");
+    let mut plan = medium
+        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let tail = plan
+        .tail_log
+        .last_mut()
+        .expect("tail commit is selected")
+        .envelope_mut_for_test(execution);
+    let forged = crate::identity::data::EntityId::new(
+        original.partition_id,
+        original.local_slot.0,
+        original.generation.0.saturating_add(1),
+    );
+    tail.install_record_allocations(vec![
+        crate::history::data::CanonicalRecordAllocation::with_origin(
+            0,
+            crate::transactions::data::RecordRef::Entity(forged),
+            crate::history::data::RecordAllocationOrigin::Reclaimed {
+                prior_generation: original.generation.0,
+            },
+        ),
+    ]);
+
+    let mut recovered = durable_runtime_for_medium(&medium);
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .expect_err("replay must not overwrite a live checkpoint slot");
+    let error = crate::tests::support::expect_durability_failure(error);
+
+    assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
+    assert!(error.detail.contains("selects unavailable Entity"));
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}
+
+#[test]
+fn tail_replay_rejects_missing_canonical_allocation_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    create_entity(execution, &runtime, "allocation-checkpoint");
+    medium.file_embedded_checkpoint(execution, &runtime);
+    create_entity(execution, &runtime, "allocation-tail");
+    let mut plan = medium
+        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    plan.tail_log
+        .last_mut()
+        .expect("tail commit is selected")
+        .envelope_mut_for_test(execution)
+        .install_record_allocations(Vec::new());
+
+    let mut recovered = durable_runtime_for_medium(&medium);
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .expect_err("replay must require canonical allocation evidence");
+    let error = crate::tests::support::expect_durability_failure(error);
+
+    assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
+    assert!(error.detail.contains("missing ordinal 0"));
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}
+
+#[test]
+fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let checkpoint_entity = create_entity(execution, &runtime, "allocation-gap-checkpoint");
+    medium.file_embedded_checkpoint(execution, &runtime);
+    let tail_entity = create_entity(execution, &runtime, "allocation-gap-tail");
+    let mut plan = medium
+        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let forged_entity = crate::identity::data::EntityId::new(
+        tail_entity.partition_id,
+        checkpoint_entity.local_slot.0 + 4,
+        tail_entity.generation.0,
+    );
+    plan.tail_log
+        .last_mut()
+        .expect("tail commit")
+        .envelope_mut_for_test(execution)
+        .install_record_allocations(vec![
+            crate::history::data::CanonicalRecordAllocation::with_origin(
+                0,
+                crate::transactions::data::RecordRef::Entity(forged_entity),
+                crate::history::data::RecordAllocationOrigin::AppendFrontier,
+            ),
+        ]);
+
+    let mut recovered = durable_runtime_for_medium(&medium);
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .expect_err("gap admission cannot authorize a different replayed effect");
+    let error = crate::tests::support::expect_durability_failure(error);
+
+    assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
+    assert!(error.detail.contains("canonical effect"));
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}
+
+#[test]
+fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
+    use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let entity = create_entity(execution, &runtime, "allocation-shared");
+    create_branch_from_main(&runtime, "allocation-feature");
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        BranchId("allocation-feature".to_owned()),
+    );
+    medium.file_embedded_checkpoint(execution, &runtime);
+    let prepared = runtime
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_owned()),
+                source_branch: BranchId("allocation-feature".to_owned()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
+        .unwrap();
+    runtime.execute_prepared_merge(execution, prepared).unwrap();
+    let mut plan = medium
+        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let tail = plan
+        .tail_log
+        .last_mut()
+        .expect("merge tail is selected")
+        .envelope_mut_for_test(execution);
+    tail.install_record_allocations(vec![crate::history::data::CanonicalRecordAllocation::new(
+        0,
+        crate::transactions::data::RecordRef::Entity(entity),
+    )]);
+
+    let mut recovered = durable_runtime_for_medium(&medium);
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .expect_err("a metadata-only merge cannot carry allocation evidence");
+    let error = crate::tests::support::expect_durability_failure(error);
+
+    assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
+    assert!(error.detail.contains("without a mutation replay path"));
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}
