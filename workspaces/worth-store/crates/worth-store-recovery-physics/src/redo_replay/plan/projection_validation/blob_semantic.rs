@@ -1,21 +1,35 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    validate_blob_record_header, BlobRecordKind, DerivedFamilyRootDirectoryV1,
-    PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
-    PersistedRecordIdentity,
+    BlobRecordKind, DerivedFamilyRootDirectoryV1, PersistedPhysicalRecoveryOperation,
+    PersistedPhysicalRecoveryProjection, PersistedRecordIdentity, ValidatedBlobRecordHeader,
 };
 
 use super::PhysicalRedoPlanningDenial;
 
+#[cfg(test)]
 pub(super) fn validate_blob_semantic(
     bytes: &[u8],
     identity: PersistedRecordIdentity,
     store: [u8; 16],
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let payload_kind = validate_blob_record_header(bytes)
-        .ok()
-        .map(|header| (header.kind(), header.store()));
+    validate_blob_semantic_with_header(
+        bytes,
+        identity,
+        store,
+        projection,
+        worth_store_physical_format::validate_blob_record_header(bytes).ok(),
+    )
+}
+
+pub(super) fn validate_blob_semantic_with_header(
+    bytes: &[u8],
+    identity: PersistedRecordIdentity,
+    store: [u8; 16],
+    projection: &PersistedPhysicalRecoveryProjection,
+    blob_header: Option<ValidatedBlobRecordHeader>,
+) -> Result<(), PhysicalRedoPlanningDenial> {
+    let payload_kind = blob_header.map(|header| (header.kind(), header.store()));
     if payload_kind.is_some_and(|(_, embedded_store)| embedded_store != store) {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }

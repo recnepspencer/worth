@@ -4,7 +4,9 @@ use super::*;
 use worth_store_physical_format::RecordArtifactFile;
 mod blob_semantic;
 mod head_effect;
+#[cfg(test)]
 use blob_semantic::validate_blob_semantic;
+use blob_semantic::validate_blob_semantic_with_header;
 use head_effect::validate_release_head_effect;
 
 pub(super) fn validate_projection_semantics(
@@ -33,12 +35,19 @@ pub(super) fn validate_projection_semantics(
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
-        if worth_store_physical_format::validate_blob_record_header(record.bytes()).is_ok()
+        let blob_header = worth_store_physical_format::validate_blob_record_header(record.bytes()).ok();
+        if blob_header.is_some()
             && !matches!(*placement, CurrentPhysicalRecordPlacement::Extent(_))
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
-        validate_blob_semantic(record.bytes(), *identity, store.bytes(), projection)?;
+        validate_blob_semantic_with_header(
+            record.bytes(),
+            *identity,
+            store.bytes(),
+            projection,
+            blob_header,
+        )?;
     }
     for (frame_index, frame) in projection
         .frames()
@@ -279,11 +288,16 @@ fn validate_resulting_lsns(
                 .iter()
                 .find(|value| value.frame_index == index)
                 .map(|value| value.page_lsn),
-            PersistedPhysicalDataFrameSubject::ExtentChunk(_) => admitted
-                .extent_chunks()
-                .iter()
-                .find(|value| value.frame_index == index)
-                .map(|value| value.page_lsn),
+            PersistedPhysicalDataFrameSubject::ExtentChunk(coord) => {
+                let chunks = admitted.extent_chunks_for(coord.record(), coord.extent_cell());
+                chunks
+                    .binary_search_by_key(&coord.ordinal(), |value| value.coordinate.ordinal())
+                    .ok()
+                    .and_then(|pos| {
+                        let chunk = &chunks[pos];
+                        (chunk.frame_index == index).then_some(chunk.page_lsn)
+                    })
+            }
         };
         if found
             .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?

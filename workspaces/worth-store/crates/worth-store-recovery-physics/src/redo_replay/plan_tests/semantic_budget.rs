@@ -29,14 +29,11 @@ fn extent_target_bytes(
     artifact_offset: u64,
     artifact_length: u32,
 ) -> Vec<u8> {
-    let mut target = Vec::new();
-    target.push(2);
+    let mut target = vec![2];
     target.extend_from_slice(&record.allocation_epoch());
-    target.extend_from_slice(&record.ordinal().to_le_bytes());
-    target.extend_from_slice(&extent.to_le_bytes());
-    target.extend_from_slice(&generation.to_le_bytes());
-    target.extend_from_slice(&logical_bytes.to_le_bytes());
-    target.extend_from_slice(&logical_offset.to_le_bytes());
+    for word in [record.ordinal(), extent, generation, logical_bytes, logical_offset] {
+        target.extend_from_slice(&word.to_le_bytes());
+    }
     target.extend_from_slice(&chunk.to_le_bytes());
     target.push(16);
     target.extend_from_slice(&arena.to_le_bytes());
@@ -45,7 +42,7 @@ fn extent_target_bytes(
     target
 }
 
-fn encode_extent_member(
+pub(super) fn encode_extent_member(
     record: PersistedRecordIdentity,
     payload: &[u8],
     operation: PersistedPhysicalRecoveryOperation,
@@ -183,28 +180,16 @@ fn encode_extent_member(
     )
 }
 
-fn find_exact_budget(member: &PhysicalRedoMemberInput, limits: PhysicalRedoAdmissionLimits) -> u64 {
-    let mut lo = 0_u64;
-    let mut hi = 4 * 1024 * 1024_u64;
-    admit_physical_redo_members_with_memory_budget(
-        vec![member.clone()],
-        test_store(),
-        test_format(),
-        limits,
-        hi,
-    )
-    .expect("generous budget must admit valid member");
+pub(super) fn find_exact_budget(
+    member: &PhysicalRedoMemberInput,
+    limits: PhysicalRedoAdmissionLimits,
+) -> u64 {
+    let (mut lo, mut hi) = (0_u64, 4 * 1024 * 1024_u64);
+    admit_physical_redo_members_with_memory_budget(vec![member.clone()], test_store(), test_format(), limits, hi)
+        .expect("generous budget must admit valid member");
     while lo < hi {
         let mid = lo + (hi - lo) / 2;
-        if admit_physical_redo_members_with_memory_budget(
-            vec![member.clone()],
-            test_store(),
-            test_format(),
-            limits,
-            mid,
-        )
-        .is_ok()
-        {
+        if admit_physical_redo_members_with_memory_budget(vec![member.clone()], test_store(), test_format(), limits, mid).is_ok() {
             hi = mid;
         } else {
             lo = mid + 1;
@@ -213,7 +198,7 @@ fn find_exact_budget(member: &PhysicalRedoMemberInput, limits: PhysicalRedoAdmis
     lo
 }
 
-fn generous_limits() -> PhysicalRedoAdmissionLimits {
+pub(super) fn generous_limits() -> PhysicalRedoAdmissionLimits {
     PhysicalRedoAdmissionLimits {
         recovery_memory_bytes: 4 * 1024 * 1024,
         targets: 16,
@@ -257,10 +242,13 @@ fn nonempty_blob_tree_node_semantic_record_admits_at_exact_budget_and_handles_un
     assert_eq!(header.store(), store_bytes);
     assert_eq!(decode_blob_record(&payload).unwrap().kind(), header.kind());
 
-    // Tampered tree-node byte fails both borrowed and owned validation identically.
+    // Tampered canonical digest with re-authenticated outer envelope fails inner validation.
     let mut corrupted = payload.clone();
-    let last = corrupted.len() - 1;
-    corrupted[last] ^= 1;
+    corrupted[48 + 48] ^= 1;
+    let mut env_hash = Sha256::new();
+    env_hash.update(&corrupted[..16]);
+    env_hash.update(&corrupted[48..]);
+    corrupted[16..48].copy_from_slice(&env_hash.finalize());
     assert_eq!(
         validate_blob_record_header(&corrupted).err(),
         decode_blob_record(&corrupted).err()

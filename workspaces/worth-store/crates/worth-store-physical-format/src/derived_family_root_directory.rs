@@ -153,19 +153,18 @@ impl DerivedFamilyRootDirectoryV1 {
         bytes: &[u8],
     ) -> Result<ValidatedDerivedFamilyRootDirectoryHeader, DerivedFamilyDirectoryDenial> {
         let (publication, quarantine, count) = decode_prefix(bytes)?;
-        let mut previous = 0;
+        let mut previous = 0_u16;
+        let mut non_canonical = false;
         for frame in bytes[PREFIX_V2_BYTES..].as_chunks::<ENTRY_BYTES>().0.iter() {
-            let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
-            let _ = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
-            let _ = PersistedRecordIdentity::new(
-                frame[2..18].try_into().unwrap(),
-                u64::from_le_bytes(frame[18..26].try_into().unwrap()),
-            )
-            .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?;
+            let entry = parse_entry(frame)?;
+            let tag = family_tag(entry.family).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
             if tag <= previous {
-                return Err(DerivedFamilyDirectoryDenial::NonCanonicalOrder);
+                non_canonical = true;
             }
             previous = tag;
+        }
+        if non_canonical {
+            return Err(DerivedFamilyDirectoryDenial::NonCanonicalOrder);
         }
         Ok(ValidatedDerivedFamilyRootDirectoryHeader {
             indexed_through_blob_publication: publication,
@@ -178,23 +177,29 @@ impl DerivedFamilyRootDirectoryV1 {
         let (publication, quarantine, count) = decode_prefix(bytes)?;
         let mut entries = Vec::with_capacity(count);
         for frame in bytes[PREFIX_V2_BYTES..].as_chunks::<ENTRY_BYTES>().0.iter() {
-            let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
-            let family = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
-            let record = PersistedRecordIdentity::new(
-                frame[2..18].try_into().unwrap(),
-                u64::from_le_bytes(frame[18..26].try_into().unwrap()),
-            )
-            .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?;
-            entries.push(DerivedFamilyRootEntry {
-                family,
-                root_record: record,
-            });
+            entries.push(parse_entry(frame)?);
         }
         let mut directory = Self::new(entries)?;
         directory.indexed_through_blob_publication = publication;
         directory.indexed_through_quarantine = quarantine;
         Ok(directory)
     }
+}
+
+fn parse_entry(
+    frame: &[u8; ENTRY_BYTES],
+) -> Result<DerivedFamilyRootEntry, DerivedFamilyDirectoryDenial> {
+    let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
+    let family = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
+    let root_record = PersistedRecordIdentity::new(
+        frame[2..18].try_into().unwrap(),
+        u64::from_le_bytes(frame[18..26].try_into().unwrap()),
+    )
+    .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?;
+    Ok(DerivedFamilyRootEntry {
+        family,
+        root_record,
+    })
 }
 
 fn decode_prefix(

@@ -31,6 +31,8 @@ mod semantic_budget;
 mod supersession;
 #[path = "plan_tests/terminal_head_retirement.rs"]
 mod terminal_head_retirement;
+#[path = "plan_tests/v2_reuse_budget.rs"]
+mod v2_reuse_budget;
 
 use fixtures::*;
 

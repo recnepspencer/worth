@@ -318,3 +318,68 @@ fn tree_root_uses_full_frame_sha_while_interior_edge_uses_canonical_digest() {
         Ok(publication)
     );
 }
+
+#[test]
+fn borrowed_header_validation_matches_owned_decode_on_compound_tree_corruption() {
+    let rehash_envelope = |bytes: &mut [u8]| {
+        let mut hash = Sha256::new();
+        hash.update(&bytes[..16]);
+        hash.update(&bytes[48..]);
+        bytes[16..48].copy_from_slice(&hash.finalize());
+    };
+    let occ = BlobTreeOccurrenceV1::new([1; 16], [2; 16], BlobTreeNodeKind::Leaf, 0, 0).unwrap();
+    let entry = |ord: u64, covered: u64| {
+        BlobTreeEntryV1::new([9; 32], PersistedRecordIdentity::new([7; 16], ord).unwrap(), covered)
+            .unwrap()
+    };
+
+    // 3-entry tree: coverage u64::MAX + 1 overflows, then entry 2 has ordinal 0.
+    // Owned decode validates all entry identities before summing; borrowed must match.
+    let mut three = BlobTreeNodeV1::new(occ, vec![entry(1, 1), entry(2, 1), entry(3, 1)])
+        .unwrap()
+        .encode();
+    let e0 = BLOB_RECORD_HEADER_BYTES + 80 + 8;
+    three[e0 + 56..e0 + 64].copy_from_slice(&u64::MAX.to_le_bytes());
+    three[e0 + 64 + 56..e0 + 64 + 64].copy_from_slice(&1_u64.to_le_bytes());
+    three[e0 + 128 + 48..e0 + 128 + 56].copy_from_slice(&0_u64.to_le_bytes());
+    rehash_envelope(&mut three);
+    assert_eq!(
+        validate_blob_record_header(&three),
+        Err(BlobRecordDenial::InvalidIdentity)
+    );
+    assert_eq!(
+        decode_blob_record(&three),
+        Err(BlobRecordDenial::InvalidIdentity)
+    );
+
+    // 2-entry tree with valid identities whose coverage overflows: both return InvalidTreeShape.
+    let mut overflow = BlobTreeNodeV1::new(occ, vec![entry(1, 1), entry(2, 1)])
+        .unwrap()
+        .encode();
+    overflow[e0 + 56..e0 + 64].copy_from_slice(&u64::MAX.to_le_bytes());
+    overflow[e0 + 64 + 56..e0 + 64 + 64].copy_from_slice(&1_u64.to_le_bytes());
+    rehash_envelope(&mut overflow);
+    assert_eq!(
+        validate_blob_record_header(&overflow),
+        Err(BlobRecordDenial::InvalidTreeShape)
+    );
+    assert_eq!(
+        decode_blob_record(&overflow),
+        Err(BlobRecordDenial::InvalidTreeShape)
+    );
+
+    // Re-authenticated outer envelope with tampered canonical content digest -> IntegrityMismatch.
+    let mut bad_inner = BlobTreeNodeV1::new(occ, vec![entry(1, 64), entry(2, 64)])
+        .unwrap()
+        .encode();
+    bad_inner[BLOB_RECORD_HEADER_BYTES + 48] ^= 1;
+    rehash_envelope(&mut bad_inner);
+    assert_eq!(
+        validate_blob_record_header(&bad_inner),
+        Err(BlobRecordDenial::IntegrityMismatch)
+    );
+    assert_eq!(
+        decode_blob_record(&bad_inner),
+        Err(BlobRecordDenial::IntegrityMismatch)
+    );
+}

@@ -154,28 +154,17 @@ impl BlobTreeNodeV1 {
         payload: &[u8],
         flags: u16,
     ) -> Result<BlobTreeOccurrenceV1, BlobRecordDenial> {
-        let (occurrence, content, count) = parse_header(payload, flags)?;
-        let mut covered_bytes = 0_u64;
+        let (occurrence, content, _) = parse_header(payload, flags)?;
+        let mut covered_bytes = Some(0_u64);
         for entry in content[CONTENT_PREFIX_BYTES..]
             .as_chunks::<ENTRY_BYTES>()
             .0
             .iter()
-            .take(count)
         {
-            let record = PersistedRecordIdentity::new(
-                entry[32..48].try_into().expect("fixed field"),
-                u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),
-            )
-            .ok_or(BlobRecordDenial::InvalidIdentity)?;
-            let entry = BlobTreeEntryV1::new(
-                entry[0..32].try_into().expect("fixed field"),
-                record,
-                u64::from_le_bytes(entry[56..64].try_into().expect("fixed field")),
-            )?;
-            covered_bytes = covered_bytes
-                .checked_add(entry.covered_bytes)
-                .ok_or(BlobRecordDenial::InvalidTreeShape)?;
+            let entry = parse_entry(entry)?;
+            covered_bytes = covered_bytes.and_then(|total| total.checked_add(entry.covered_bytes));
         }
+        let covered_bytes = covered_bytes.ok_or(BlobRecordDenial::InvalidTreeShape)?;
         let canonical_digest = digest(&[content]);
         if u64::from_le_bytes(payload[40..48].try_into().expect("fixed field")) != covered_bytes
             || payload[48..80] != canonical_digest
@@ -193,16 +182,7 @@ impl BlobTreeNodeV1 {
             .0
             .iter()
         {
-            let record = PersistedRecordIdentity::new(
-                entry[32..48].try_into().expect("fixed field"),
-                u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),
-            )
-            .ok_or(BlobRecordDenial::InvalidIdentity)?;
-            entries.push(BlobTreeEntryV1::new(
-                entry[0..32].try_into().expect("fixed field"),
-                record,
-                u64::from_le_bytes(entry[56..64].try_into().expect("fixed field")),
-            )?);
+            entries.push(parse_entry(entry)?);
         }
         let node = Self::new(occurrence, entries)?;
         if u64::from_le_bytes(payload[40..48].try_into().expect("fixed field"))
@@ -233,6 +213,19 @@ impl BlobTreeNodeV1 {
     pub fn entries(&self) -> &[BlobTreeEntryV1] {
         &self.entries
     }
+}
+
+fn parse_entry(entry: &[u8; ENTRY_BYTES]) -> Result<BlobTreeEntryV1, BlobRecordDenial> {
+    let record = PersistedRecordIdentity::new(
+        entry[32..48].try_into().expect("fixed field"),
+        u64::from_le_bytes(entry[48..56].try_into().expect("fixed field")),
+    )
+    .ok_or(BlobRecordDenial::InvalidIdentity)?;
+    BlobTreeEntryV1::new(
+        entry[0..32].try_into().expect("fixed field"),
+        record,
+        u64::from_le_bytes(entry[56..64].try_into().expect("fixed field")),
+    )
 }
 
 fn parse_header(

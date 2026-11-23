@@ -242,6 +242,7 @@ impl IntegrityAdmittedRecoveryProjection<'_> {
     pub fn inline_frames(&self) -> &[AdmittedInlineFrame] {
         &self.inline_frames
     }
+    #[cfg(test)]
     pub fn extent_chunks(&self) -> &[AdmittedExtentChunk] {
         &self.extent_chunks
     }
