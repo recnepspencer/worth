@@ -64,6 +64,9 @@ pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
             let next = index_catalogs.len();
             let catalog = *index_catalogs.entry(id).or_insert(next);
             normalized.push(format!("{indent}incarnation: <index catalog {catalog}>,"));
+        } else if field.ends_with("SealedAllocationWatermarks {") {
+            normalized.push(line.to_owned());
+            normalize_sealed_watermarks(indent.len(), &mut lines, &mut normalized);
         } else if previous.trim() == "Allocation {" {
             let id = field
                 .strip_prefix("id: ")
@@ -79,6 +82,48 @@ pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
         previous = line;
     }
     normalized.join("\n")
+}
+
+// `SealedAllocationWatermarks` captures process-global monotonic birth-sequence
+// counters (`extra` and `foundational`) shared across concurrent test threads.
+// Normalize only the numeric values inside `Some(...)`, preserving `Some` vs
+// `None` and passing any other field through verbatim.
+fn normalize_sealed_watermarks<'a>(
+    open_indent: usize,
+    lines: &mut std::str::Lines<'a>,
+    normalized: &mut Vec<String>,
+) {
+    while let Some(part) = lines.next() {
+        let part_indent = part.len() - part.trim_start().len();
+        let trimmed = part.trim();
+        normalized.push(part.to_owned());
+        if part_indent == open_indent && (trimmed == "}," || trimmed == "}") {
+            break;
+        }
+        if part_indent == open_indent + 4
+            && matches!(trimmed, "extra: Some(" | "foundational: Some(")
+        {
+            let value_line = lines
+                .next()
+                .expect("sealed watermark Some(...) carries its counter line");
+            let value_indent = &value_line[..value_line.len() - value_line.trim_start().len()];
+            value_line
+                .trim()
+                .strip_suffix(',')
+                .and_then(|value| value.parse::<u64>().ok())
+                .expect("sealed watermark counter formats as u64");
+            normalized.push(format!("{value_indent}<process watermark>,"));
+            let close_line = lines
+                .next()
+                .expect("sealed watermark Some(...) closes cleanly");
+            assert_eq!(
+                close_line.trim(),
+                "),",
+                "sealed watermark Some(...) has a single counter line"
+            );
+            normalized.push(close_line.to_owned());
+        }
+    }
 }
 
 // Retention keys its retired roots by native Arc address. Their values carry
