@@ -94,13 +94,50 @@ impl LineageState {
     /// Ingests the events installed at positions `from..` (one commit) into
     /// their branch indexes.
     ///
-    /// Complexity: O(installed events).
+    /// A branch forked at or after that commit while its settlement was in
+    /// flight copied its parent's index without it, so every such fork
+    /// descendant is rebuilt from canonical events; forks taken before the
+    /// commit never see it and stay as they are.
+    ///
+    /// Complexity: O(installed events + forks * ancestry depth); a rebuild,
+    /// O(installed events), happens only for a fork taken mid-settlement.
     pub(super) fn ingest_installed_name_events(&mut self, from: usize) {
         let mut name_indexes = std::mem::take(&mut self.name_indexes);
-        for (branch_id, batch) in self.name_batches(&self.published_events[from..]) {
-            name_indexes.ingest(&branch_id, &batch);
+        let batches = self.name_batches(&self.published_events[from..]);
+        for (branch_id, batch) in &batches {
+            name_indexes.ingest(branch_id, batch);
+        }
+        for fork in self.forks_inheriting(&batches) {
+            let rebuilt = self.rebuild_branch_name_index(&fork, CommitId(u64::MAX));
+            name_indexes.by_branch.insert(fork, rebuilt);
         }
         self.name_indexes = name_indexes;
+    }
+
+    /// Forked branches whose inherited history reaches one of `batches`: a
+    /// fork of the batch's branch, directly or through ancestors, whose
+    /// inherited cutoff for that branch is at or after the batch's commit.
+    fn forks_inheriting(
+        &self,
+        batches: &[(BranchId, PersistentNameCommittedBatch)],
+    ) -> Vec<BranchId> {
+        if self.branch_forks.is_empty() || batches.is_empty() {
+            return Vec::new();
+        }
+        self.branch_forks
+            .keys()
+            .filter(|fork| {
+                self.ancestry(fork, CommitId(u64::MAX))
+                    .iter()
+                    .skip(1)
+                    .any(|(ancestor, bound)| {
+                        batches
+                            .iter()
+                            .any(|(branch, batch)| ancestor == branch && *bound >= batch.commit())
+                    })
+            })
+            .cloned()
+            .collect()
     }
 
     /// Ingests readmitted events that arrived in canonical order.
@@ -169,18 +206,7 @@ impl LineageState {
     /// its child inherited. A cycle in fork metadata stops at the first
     /// revisited branch, as the naming basis ancestry does.
     fn rebuild_branch_name_index(&self, branch: &BranchId, cutoff: CommitId) -> BranchNameIndex {
-        let mut ancestry = vec![(branch.clone(), cutoff)];
-        let mut visited = BTreeSet::from([branch.clone()]);
-        while let Some((parent, fork_commit)) = ancestry
-            .last()
-            .and_then(|(child, _)| self.branch_forks.get(child))
-        {
-            if !visited.insert(parent.clone()) {
-                break;
-            }
-            let inherited = ancestry.last().map_or(cutoff, |(_, bound)| *bound);
-            ancestry.push((parent.clone(), inherited.min(*fork_commit)));
-        }
+        let ancestry = self.ancestry(branch, cutoff);
         let mut index: Option<PersistentNameBranchIndex> = None;
         for (ancestor, bound) in ancestry.iter().rev() {
             let mut current = match index.take() {
@@ -201,6 +227,24 @@ impl LineageState {
             index = Some(current);
         }
         BranchNameIndex::Current(index.expect("the ancestry always holds the branch itself"))
+    }
+
+    /// `branch` and its fork ancestors, nearest first, each with the commit
+    /// through which its history reaches `branch`.
+    fn ancestry(&self, branch: &BranchId, cutoff: CommitId) -> Vec<(BranchId, CommitId)> {
+        let mut ancestry = vec![(branch.clone(), cutoff)];
+        let mut visited = BTreeSet::from([branch.clone()]);
+        while let Some((parent, fork_commit)) = ancestry
+            .last()
+            .and_then(|(child, _)| self.branch_forks.get(child))
+        {
+            if !visited.insert(parent.clone()) {
+                break;
+            }
+            let inherited = ancestry.last().map_or(cutoff, |(_, bound)| *bound);
+            ancestry.push((parent.clone(), inherited.min(*fork_commit)));
+        }
+        ancestry
     }
 
     /// Groups consecutive events by branch and publication commit into

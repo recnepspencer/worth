@@ -23,6 +23,7 @@ mod naming_resolution_agreement;
 mod naming_schema_authority_reopen;
 mod naming_tracked_cold_directory;
 mod naming_tracked_cost;
+mod naming_tracked_fork_settlement;
 mod naming_tracked_invalidation;
 mod naming_tracked_rebuild;
 mod naming_tracked_resolution;

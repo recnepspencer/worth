@@ -49,6 +49,36 @@ pub enum PersistentNameReadVeto {
     UntrackedDependency,
 }
 
+impl PersistentNameReadVeto {
+    /// The veto a decision's `name_of` outcome needs: only an answer or the
+    /// stable `RecordNotNamed` rests on the record's entity fact alone.
+    pub fn for_name_of<K>(
+        named: &Result<WorthQueryName<K>, ExecutionNameReadDenial>,
+    ) -> Option<Self> {
+        match named {
+            Ok(_) | Err(ExecutionNameReadDenial::RecordNotNamed { .. }) => None,
+            Err(_) => Some(Self::ReadFailed),
+        }
+    }
+
+    /// The veto a decision's `resolve` outcome needs: every read refusal
+    /// and a pruned basis are failed reads; otherwise an answer resting on
+    /// what no fact key tracks (`untracked`) is an untracked dependency.
+    pub fn for_resolve<H, K>(
+        resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K>>,
+        untracked: bool,
+    ) -> Option<Self> {
+        match resolved {
+            Err(ExecutionNameResolveDenial::Read(_))
+            | Err(ExecutionNameResolveDenial::Resolution(NameResolutionDenial::BasisPruned)) => {
+                Some(Self::ReadFailed)
+            }
+            _ if untracked => Some(Self::UntrackedDependency),
+            _ => None,
+        }
+    }
+}
+
 /// Why a decision reader refused a persistent-name read before reading.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryDecisionNameDenial {
@@ -111,13 +141,12 @@ impl<Schema: ApplicationSchema, Operation>
                 &mut NameReadDependencies::new(),
             )
         };
-        // A record's name changes only when its lineage ends, which ends the
-        // record: the entity fact tracks every answer, refusals included.
-        self.live_identity::<Entity>(identity.entity_id)?;
-        if matches!(named, Err(ExecutionNameReadDenial::Relational(_))) {
-            self.decision_facts
-                .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+        if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
+            self.decision_facts.veto_persistent_name(veto);
         }
+        // A record's name changes only when its lineage ends, which ends the
+        // record: the entity fact tracks the answer and `RecordNotNamed`.
+        self.live_identity::<Entity>(identity.entity_id)?;
         named.map_err(WorthQueryDecisionNameDenial::Read)
     }
 
@@ -141,15 +170,6 @@ impl<Schema: ApplicationSchema, Operation>
                 reader.resolve_entity::<Schema, Entity>(held, selection, &mut dependencies);
             (resolved, reader.branch().clone())
         };
-        if matches!(
-            resolved,
-            Err(ExecutionNameResolveDenial::Read(
-                ExecutionNameReadDenial::Relational(_)
-            ))
-        ) {
-            self.decision_facts
-                .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
-        }
         let untracked = !dependencies.ended_lineages_on(&branch).is_empty()
             || dependencies.awaits_births_on(&branch)
             || matches!(
@@ -158,6 +178,9 @@ impl<Schema: ApplicationSchema, Operation>
                     NameResolutionDenial::UnknownName
                 ))
             );
+        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
+            self.decision_facts.veto_persistent_name(veto);
+        }
         let mut identities = BTreeMap::new();
         for record in dependencies.live_records_on(&branch) {
             match record {
@@ -169,10 +192,6 @@ impl<Schema: ApplicationSchema, Operation>
                         .veto_persistent_name(PersistentNameReadVeto::UntrackedDependency);
                 }
             }
-        }
-        if untracked {
-            self.decision_facts
-                .veto_persistent_name(PersistentNameReadVeto::UntrackedDependency);
         }
         Ok(resolved.map(|resolved| local_identities(resolved, &identities)))
     }
@@ -208,7 +227,11 @@ impl<Schema: ApplicationSchema, Operation>
     {
         let execution = *self.reader.execution;
         self.live_current_identity(&execution, Entity::IDENTIFIER, entity_id)
-            .map_err(WorthQueryDecisionNameDenial::Identity)
+            .map_err(|denial| {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+                WorthQueryDecisionNameDenial::Identity(denial)
+            })
     }
 }
 

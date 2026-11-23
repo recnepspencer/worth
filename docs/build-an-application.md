@@ -342,12 +342,15 @@ replay:
   declared decision read (`Entity: OperationReads<Operation>`). Every live
   record the answer rested on is admitted into the read scope, returned as a
   local identity, and keyed as that entity's decision fact, so a split,
-  merge, replacement or retirement ending it invalidates the decision. A
-  read that failed, or whose answer also rested on ended names (which a
-  later `Restore` revives), on a held name not yet born, or on a relation
-  record, has no decision fact key and refuses to seal with
+  merge, replacement or retirement ending it invalidates the decision. Any
+  name-read refusal other than the stable `RecordNotNamed` (including a
+  pruned basis and a resolved record that cannot be admitted as a local
+  identity), and any answer that also rested on ended names (which a later
+  `Restore` revives), on a held name not yet born, or on a relation record,
+  has no decision fact key: the projection refuses to seal with
   `FailedDecisionRead::PersistentName` instead, even when the handler
-  swallowed the error. Installed Query runtimes do not bind persistent-name
+  swallowed the result (`PersistentNameReadVeto::for_name_of` and
+  `for_resolve` state the classification). Installed Query runtimes do not bind persistent-name
   schemes into Relational yet, so their records carry no names. Group names
   do not resolve at runtime yet: group transitions are not part of the
   commit envelope.
