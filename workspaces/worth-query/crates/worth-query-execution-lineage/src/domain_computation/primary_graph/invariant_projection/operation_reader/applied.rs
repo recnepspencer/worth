@@ -37,6 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
                 '_,
@@ -65,6 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             candidate,
             own_outputs,
             predecessor_access,
+            source_context_use,
             projection,
             allocation,
         )
@@ -79,6 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
             &WorthQueryInvariantEntityIdentity<Schema, Scope>,
@@ -123,10 +126,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                         projection,
                         super::admitted::SourceAccess {
                             source_query: predecessor_access,
-                            // Nested query/managed-index reads need a genuine
-                            // applied query posture. This loan admits only the
-                            // sealed predecessor reader, which checks C itself.
-                            source_context_use: None,
+                            // Only the coupled producer posture lends its context:
+                            // the sealed predecessor reader checks C itself, and a
+                            // managed index read admits its applied basis only with
+                            // the live assembly's proof of an unchanged Source.
+                            // Readers needing a committed runtime still refuse.
+                            source_context_use,
                         },
                     )
                 },

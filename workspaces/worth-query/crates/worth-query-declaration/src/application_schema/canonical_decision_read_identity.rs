@@ -13,6 +13,20 @@ pub(super) fn append_decision_read_target(
                 basis.text(format!("{prefix}.parent.{field}"), value);
             }
         }
+        ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+            parent,
+            relation,
+            owner,
+            member,
+        } => {
+            basis.text(format!("{prefix}.kind"), "shared-owner-managed-index");
+            for (field, value) in parent.canonical_fields() {
+                basis.text(format!("{prefix}.parent.{field}"), value);
+            }
+            basis.text(format!("{prefix}.relation"), relation);
+            basis.text(format!("{prefix}.owner"), owner);
+            basis.text(format!("{prefix}.member"), member);
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             basis.text(format!("{prefix}.kind"), "entity");
             basis.text(format!("{prefix}.entity"), entity);

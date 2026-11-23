@@ -36,6 +36,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             observation_refused: Default::default(),
             applied_participants: None,
             applied_source_publication: None,
+            applied_managed_sources: None,
             read_authorization: None,
             refused: Default::default(),
         }

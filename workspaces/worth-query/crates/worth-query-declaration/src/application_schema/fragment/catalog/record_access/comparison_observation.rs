@@ -79,6 +79,12 @@ impl Drop for Workload {
 #[derive(PartialEq)]
 enum ReadView<'a> {
     ManagedIndex(&'a crate::application_query::ApplicationQueryBindingReference),
+    SharedOwnerManagedIndex(
+        &'a crate::application_query::ApplicationQueryBindingReference,
+        &'a str,
+        &'a str,
+        &'a str,
+    ),
     Entity(&'a str),
     Field(&'a str, &'a str, &'a str),
     Relation(&'a str, &'a str, &'a str),
@@ -86,6 +92,12 @@ enum ReadView<'a> {
 fn view(target: &ReadTarget) -> ReadView<'_> {
     match target {
         ReadTarget::ManagedIndex { parent } => ReadView::ManagedIndex(parent),
+        ReadTarget::SharedOwnerManagedIndex {
+            parent,
+            relation,
+            owner,
+            member,
+        } => ReadView::SharedOwnerManagedIndex(parent, relation, owner, member),
         ReadTarget::Entity { entity } => ReadView::Entity(entity),
         ReadTarget::Field {
             entity,

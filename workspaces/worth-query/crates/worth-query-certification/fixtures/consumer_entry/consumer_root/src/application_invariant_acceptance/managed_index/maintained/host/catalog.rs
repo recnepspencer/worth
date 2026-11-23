@@ -147,6 +147,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
                 .finish_action()
                 .derived_artifact::<super::super::probe::Artifact>()
                 .managed_computation::<super::super::probe::Computation>()
+                .derived_artifact::<generated::operation::computation::Artifact>()
+                .managed_computation::<generated::operation::computation::Computation>()
                 .native_action::<mutation::Binding>()
                 .finish_action()
                 .native_action::<super::super::refinement::mutation::Binding>()
@@ -191,6 +193,17 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
                 super::super::schema::declare(schema),
             )))
             .operation_managed_index_read::<query::PrefixBinding, _, _>(
+                mutation::RenameItem::reference(),
+            )
+            .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+                mutation::RenameItem::reference(),
+                protected::access::grants::GrantResource::reference(),
+            )
+            .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+                mutation::RenameItem::reference(),
+                Shelves::reference(),
+            )
+            .operation_managed_index_read::<super::super::refinement::ExactBinding, _, _>(
                 mutation::RenameItem::reference(),
             )
             .operation_read_field(

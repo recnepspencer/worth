@@ -41,6 +41,8 @@ pub use managed_index::{
     WorthQueryComputationManagedIndexDenialKind,
 };
 pub mod output_availability;
+pub mod shared_owner_scope;
+pub use shared_owner_scope::SharedOwnerRelation;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,

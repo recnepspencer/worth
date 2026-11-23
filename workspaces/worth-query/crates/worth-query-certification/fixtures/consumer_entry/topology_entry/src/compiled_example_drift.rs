@@ -124,6 +124,7 @@ mod serial {
                 "managed_box_index.rs".to_owned(),
                 "candidate_source_changes.rs".to_owned(),
                 "managed_prefix_decision.rs".to_owned(),
+                "managed_peer_decision.rs".to_owned(),
                 "managed_prefix_invariant.rs".to_owned(),
                 "managed_geometry_source.rs".to_owned(),
                 "relation_law_declaration.rs".to_owned(),

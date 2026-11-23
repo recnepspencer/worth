@@ -270,6 +270,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     candidate,
                     own_outputs,
                     source_query_port,
+                    source_query_port.map(|_| &context_use),
                     projection,
                     allocation_control.policy(),
                 )

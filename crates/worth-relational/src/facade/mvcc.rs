@@ -46,7 +46,7 @@ pub use crate::mvcc::{
     ValidatedRelationalProposal,
 };
 pub use crate::mvcc::{
-    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
     RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,

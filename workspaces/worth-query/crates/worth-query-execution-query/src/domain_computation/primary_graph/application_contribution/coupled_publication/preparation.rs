@@ -287,6 +287,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &pin,
             chain.as_ref().map(|chain| &chain.own),
             self,
+            &*candidate,
             source,
             producer.edition,
             captured,
