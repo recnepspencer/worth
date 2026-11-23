@@ -1204,6 +1204,10 @@ match document.maintain_history(&request)? {
 Each call closes at most one kept candidate. Closing the document also
 releases it.
 
+Maintenance does not have to come first. The next `edit`, `gesture` or
+`edit_envelope` on the document records, or is discarded, as usual. The kept
+candidate still waits for maintenance or for close.
+
 ## Keep a document beside its runtime
 
 `attach_history` returns a document that borrows the runtime, so the two cannot

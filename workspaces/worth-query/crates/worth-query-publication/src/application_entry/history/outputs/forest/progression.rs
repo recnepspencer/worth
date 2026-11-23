@@ -18,9 +18,10 @@ impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>> OutputDriv
     fn with_recording<T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
+        candidate: WorthQueryProductBranch,
         consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
     ) -> Result<T, WorthQueryHistoryOutputDenial> {
-        self.with_recording_owner(phase, consume)
+        self.with_recording_owner(phase, candidate, consume)
     }
     fn discard_recording(
         &self,

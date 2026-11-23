@@ -6,6 +6,8 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryCancellationSource,
 };
 
+mod next_writer;
+
 /// Stop points spread evenly over one envelope's execution, last consult first.
 /// Every recorded step keeps its previous head alive, and the installed world
 /// admits 32 live branches.

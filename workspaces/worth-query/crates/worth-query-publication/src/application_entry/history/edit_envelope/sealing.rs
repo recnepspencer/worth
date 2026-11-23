@@ -111,15 +111,9 @@ where
         let branch = candidate.branch();
         self.document
             .outputs
-            .with_recording(phase, |mut recording| {
+            .with_recording(phase, branch, |mut recording| {
                 let sealed: Result<(Option<WorthQueryHistoryStep>, bool), Denial> = (|| {
                     if let Some(forest) = recording.as_deref_mut() {
-                        if first && !forest.needs_origin() {
-                            // An earlier envelope's request ended before it
-                            // could release these trees. Start from a new forest.
-                            release(forest, phase, branch).map_err(Denial::Outputs)?;
-                            return Ok((None, true));
-                        }
                         let (reservation, candidate) =
                             owners.as_ref().expect("an unsealed envelope keeps its owners");
                         if !self.record_outputs(phase, reservation, candidate, forest)? {
