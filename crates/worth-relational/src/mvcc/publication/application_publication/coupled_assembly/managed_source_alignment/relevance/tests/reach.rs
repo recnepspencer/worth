@@ -152,7 +152,7 @@ fn routed() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
         vec![],
     );
     let registry = registry.register_relation_kind(tagged).unwrap();
-    let (_, template) = crate::tests::support::managed_cache_schema();
+    let (_, template) = super::managed_cache_schema();
     let mut source = template.0.path.parts().clone();
     source.identity.name = "routed-source".into();
     source.to = ROW.into();
