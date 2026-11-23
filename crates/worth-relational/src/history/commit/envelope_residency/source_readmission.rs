@@ -35,7 +35,7 @@ impl RelationalCommitEnvelopeResidency {
         let bytes = source
             .read_commit(entry.position, read_limit)
             .map_err(failure)?;
-        let artifact = RelationalCanonicalCommitArtifact::copy_frame_original(&bytes, execution)
+        let artifact = VerifiedCanonicalCommitFrame::copy_frame_original(&bytes, execution)
             .map_err(|cause| match cause {
                 crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Request(cause) => RelationalRecoveryStop::Request(cause),
                 crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Allocation(cause) => RelationalRecoveryStop::Allocation(cause),
@@ -47,21 +47,21 @@ impl RelationalCommitEnvelopeResidency {
     }
     pub(crate) fn readmit_owned_artifact(
         entry: &RelationalCommitIndexEntry,
-        artifact: RelationalCanonicalCommitArtifact,
+        artifact: VerifiedCanonicalCommitFrame,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
         Self::check_frame(entry, &artifact)?;
-        let admitted=artifact.readmit_framed(execution).map_err(|error| match error {
+        let admitted=artifact.readmitted_body(execution).map_err(|error| match error {
             crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Request(cause)=>RelationalRecoveryStop::Request(cause),
             crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
                 crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::FieldText(cause)=>crate::symbols::data::field_text_recovery_stop(cause),
             _=>RelationalStorageUnavailable{subject:RelationalStorageSubject::Envelope(entry.position),cause:Cause::Damaged}.into(),
-        })?.into_positioned();
+        })?;
         Self::check_positioned(entry, admitted, execution)
     }
     pub(super) fn check_frame(
         entry: &RelationalCommitIndexEntry,
-        artifact: &RelationalCanonicalCommitArtifact,
+        artifact: &VerifiedCanonicalCommitFrame,
     ) -> Result<(), RelationalRecoveryStop> {
         let failure = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Envelope(entry.position),

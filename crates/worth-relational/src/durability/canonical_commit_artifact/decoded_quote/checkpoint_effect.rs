@@ -1,7 +1,7 @@
 //! Image effect DATA uses the original semantic and creation allocation owners.
 use super::*;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
-use crate::transactions::data::RelationalCommitSemanticResult;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
 
@@ -35,7 +35,7 @@ pub(crate) fn decode_checkpoint_effect(
         request,
     )?;
     let memory = reserve(creations_quote.retained, request)?;
-    crate::durability::artifact_payload_emission::request::account_work(
+    crate::durability::data::recovery_stop::account_work(
         request,
         semantic
             .0
@@ -44,11 +44,17 @@ pub(crate) fn decode_checkpoint_effect(
             .ok_or_else(malformed)? as u64,
     )
     .map_err(|cause| match cause {
-        crate::durability::data::RelationalRecoveryStop::Content(cause) => Refusal::Content(cause),
-        crate::durability::data::RelationalRecoveryStop::Request(cause) => Refusal::Request(cause),
-        crate::durability::data::RelationalRecoveryStop::AdmissionImage(_)
-        | crate::durability::data::RelationalRecoveryStop::Allocation(_)
-        | crate::durability::data::RelationalRecoveryStop::Durability(_) => malformed(),
+        crate::durability::data::recovery_stop::RelationalRecoveryStop::Content(cause) => {
+            Refusal::Content(cause)
+        }
+        crate::durability::data::recovery_stop::RelationalRecoveryStop::Request(cause) => {
+            Refusal::Request(cause)
+        }
+        crate::durability::data::recovery_stop::RelationalRecoveryStop::AdmissionImage(_)
+        | crate::durability::data::recovery_stop::RelationalRecoveryStop::Allocation(_)
+        | crate::durability::data::recovery_stop::RelationalRecoveryStop::Durability(_) => {
+            malformed()
+        }
     })?;
     let mut semantic: RelationalCommitSemanticResult =
         rmp_serde::from_slice(semantic.0).map_err(|_| malformed())?;

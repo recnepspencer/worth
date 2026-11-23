@@ -23,8 +23,8 @@ impl FrozenMemoryOriginals {
             let original = cell
                 .require_original_artifact(request, None)
                 .map_err(stop)?;
-            let positioned = original.readmit_framed(request)
-                .map_err(crate::durability::authority::checkpoint_complete::source::canonical_readmission_stop)?.into_positioned();
+            let positioned = original.readmitted_body(request)
+                .map_err(crate::durability::authority::checkpoint_complete::source::canonical_readmission_stop)?;
             let envelope = positioned.canonical_arc();
             if positioned.position().0 != offset as u64 + 1
                 || envelope.commit.commit_id != artifact.commit_id()

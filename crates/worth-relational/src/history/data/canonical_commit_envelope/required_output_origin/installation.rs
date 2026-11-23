@@ -1,6 +1,5 @@
 //! Pre-effect native membership installation and exact predecessor write fences.
 use super::*;
-use crate::mvcc::RequiredOutputPublication as Publication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;

@@ -363,7 +363,7 @@ pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
-mod tests;
+pub(in crate::history) mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};

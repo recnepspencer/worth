@@ -1,10 +1,10 @@
 //! Strategy and packet rows retain declared policy/value owners, never authority.
 use super::*;
-use crate::merge::data::{
-    AspectPolicyResolutionRecord, RelationalMergeAdmittedSurfaceRow,
-    RelationalMergeAspectPolicyWitnessRow, RelationalMergeDeletionStrategyWitnessRow,
-    RelationalMergeTopologyStrategyWitnessRow, ResolvedAspectMergePolicy,
+use crate::merge::data::artifacts::{
+    RelationalMergeAdmittedSurfaceRow, RelationalMergeAspectPolicyWitnessRow,
+    RelationalMergeDeletionStrategyWitnessRow, RelationalMergeTopologyStrategyWitnessRow,
 };
+use crate::merge::data::policy::{AspectPolicyResolutionRecord, ResolvedAspectMergePolicy};
 
 pub(super) fn strategy(
     value: BorrowedPayload<'_>,

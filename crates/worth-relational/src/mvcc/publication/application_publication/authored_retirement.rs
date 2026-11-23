@@ -3,7 +3,6 @@ use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -11,11 +10,11 @@ mod current_retirement;
 mod owned_members;
 pub use owned_members::AuthoredOwnedMemberKind;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Reconstruct the selected complete publication behind real ordinary Retire
     /// targets. No matching canonical ownership leaves genuine ordinary deletion
     /// ordinary; any matched ownership requires its complete exact roster.
-    pub fn readmit_authored_output_retirement(
+    pub(crate) fn readmit_authored_output_retirement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -29,9 +28,14 @@ impl RelationalRuntime {
         }
         let current = self.current_retirement_custody(execution, installed, basis, roles)?;
         self.refuse_live_owned_retirement(execution, roles, current.as_deref())?;
-        let selected =
-            crate::history::data::select_authored_retirement(execution, self, basis, roles, false)
-                .map_err(custody::cold_stop)?;
+        let selected = crate::history::data::select_authored_retirement(
+            execution,
+            self.history,
+            basis,
+            roles,
+            false,
+        )
+        .map_err(custody::cold_stop)?;
         if let Some(envelope) = &selected
             && envelope.origin.source_scope_owned
         {
@@ -53,7 +57,7 @@ impl RelationalRuntime {
 
     /// Mixed ordinary candidates retain legacy behavior for independent outputs,
     /// but cannot hide an owned member or its live source beside Create/Preserve roles.
-    pub fn refuse_owned_output_retirement(
+    pub(crate) fn refuse_owned_output_retirement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -70,9 +74,14 @@ impl RelationalRuntime {
         }
         let current = self.current_retirement_custody(execution, installed, basis, roles)?;
         self.refuse_live_owned_retirement(execution, roles, current.as_deref())?;
-        if let Some(selected) =
-            crate::history::data::select_authored_retirement(execution, self, basis, roles, true)
-                .map_err(custody::cold_stop)?
+        if let Some(selected) = crate::history::data::select_authored_retirement(
+            execution,
+            self.history,
+            basis,
+            roles,
+            true,
+        )
+        .map_err(custody::cold_stop)?
         {
             let origin = selected.origin;
             return Err(TransactionCommitError::publication(

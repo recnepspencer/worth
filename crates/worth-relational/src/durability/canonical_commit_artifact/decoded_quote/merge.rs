@@ -32,7 +32,8 @@ fn shared_rows<T>(
     let mut bytes = shared_vector::<T>(value, request, nested)?;
     add(
         &mut bytes,
-        crate::merge::data::MergeWitnessRows::<T>::control_bytes().ok_or_else(malformed)?,
+        crate::merge::data::artifacts::MergeWitnessRows::<T>::control_bytes()
+            .ok_or_else(malformed)?,
     )?;
     Ok(bytes)
 }

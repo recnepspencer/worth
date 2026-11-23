@@ -1,7 +1,9 @@
 //! Before-growth admission for the existing full schema-image grammar.
 use super::*;
-use crate::durability::data::{DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory};
 use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
+use crate::history::data::canonical_commit_envelope::schema_carrier::{
+    DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory,
+};
 use worth_foundational::facade::PortableAspectContract;
 mod integrity;
 
@@ -122,13 +124,11 @@ fn quote(
             "retained_aspect_contracts" => vector::<PortableAspectContract>(raw, request, |row| {
                 super::contracts::contract(row, request)
             })?,
-            "derived_relations" => {
-                vector::<crate::derived_relation::DerivedRelationDefinitionParts>(
-                    raw,
-                    request,
-                    |row| super::schema::derived(row, request),
-                )?
-            }
+            "derived_relations" => vector::<
+                crate::derived_relation::definition::DerivedRelationDefinitionParts,
+            >(raw, request, |row| {
+                super::schema::derived(row, request)
+            })?,
             "projected_member_domains" => vector::<
                 crate::projected_member_domain::ProjectedMemberDomainParts,
             >(raw, request, |row| {

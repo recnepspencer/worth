@@ -3,11 +3,11 @@ use super::*;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
 use crate::transactions::data::primitives::CreatedEntityRef;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Retain correspondence for the actual corrective prefix. The caller has
     /// already authenticated its original correction meaning. This data grants
     /// no retirement/publication authority and selects no arbitrary draft subset.
-    pub fn bind_authored_coupled_corrective_root(
+    pub(crate) fn bind_authored_coupled_corrective_root(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -38,7 +38,9 @@ impl RelationalRuntime {
             return Err(refuse());
         }
         let original = self
-            .history_access()
+            .history
+            .projection
+            .history
             .demand_commit_envelope(execution, original_commit)
             .map_err(custody::execution_stop)?
             .ok_or_else(refuse)?;

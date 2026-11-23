@@ -1,7 +1,7 @@
 //! Export journal frames through the same cell and sticky damage state as body reads.
 use super::{EnvelopeBacking, RelationalCommitEnvelopeResidency};
 use crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
+use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame as Artifact;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
@@ -113,7 +113,7 @@ impl RelationalCommitEnvelopeResidency {
                 .as_ref()
                 .and_then(|position| position.resident())
         {
-            return Artifact::from_positioned_request(&commit, execution);
+            return crate::durability::canonical_commit_artifact::frame_encoding::encode_canonical_frame_for_request(&commit, execution);
         }
         let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
             return Err(Denial::PayloadEncoding {

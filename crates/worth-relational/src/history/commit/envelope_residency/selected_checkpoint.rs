@@ -145,7 +145,7 @@ impl RelationalCommitEnvelopeResidency {
         directory: &RelationalCheckpointDirectory,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalCanonicalCommitArtifact, RelationalRecoveryStop> {
+    ) -> Result<VerifiedCanonicalCommitFrame, RelationalRecoveryStop> {
         let member = directory
             .manifest
             .canonical_members
@@ -175,7 +175,7 @@ impl RelationalCommitEnvelopeResidency {
             }
             .into());
         }
-        let artifact = RelationalCanonicalCommitArtifact::from_owned_original(bytes, execution)
+        let artifact = VerifiedCanonicalCommitFrame::from_owned_original(bytes, execution)
             .map_err(super::artifact_export::original_frame_stop)?;
         Self::check_frame(entry, &artifact)?;
         Ok(artifact)

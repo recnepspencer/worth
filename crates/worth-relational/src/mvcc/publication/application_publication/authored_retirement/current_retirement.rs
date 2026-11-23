@@ -1,6 +1,6 @@
 //! Live opted-in retirement custody comes from current facts before legacy history.
 use super::*;
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     pub(super) fn current_retirement_custody(
         &self,
         execution: &ExecutionRequest<'_, '_>,

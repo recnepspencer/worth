@@ -5,9 +5,10 @@ mod optional_fields;
 use crate::graph_member::{NativeMemberKey, ProjectedMemberCoordinate, ProjectedMemberStorage};
 use crate::identity::data::{EntityId, PartitionId, RelationId};
 use crate::schema::data::{SchemaChangeText, SchemaId, SchemaVersionId};
-use crate::validation::data::{
-    CustomInvariantRuleId, InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds,
+use crate::validation::data::custom_rule::touched_scope::{
+    InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds,
 };
+use crate::validation::data::rule_id::CustomInvariantRuleId;
 use std::sync::Arc;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 

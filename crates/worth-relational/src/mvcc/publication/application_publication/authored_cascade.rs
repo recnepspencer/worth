@@ -2,7 +2,6 @@
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug)]
@@ -26,10 +25,10 @@ impl RelationalAuthoredRetirement {
     }
 }
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Native computes the complete opted-in source-scope closure before judging
     /// the submitted roster. The anchor is a distinguished authored source.
-    pub fn readmit_authored_source_retirement(
+    pub(crate) fn readmit_authored_source_retirement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -48,7 +47,7 @@ impl RelationalRuntime {
     }
 
     /// Each explicitly declared co-anchor is an independently authenticated authored source.
-    pub fn readmit_authored_source_retirement_with_co_anchors(
+    pub(crate) fn readmit_authored_source_retirement_with_co_anchors(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -69,7 +68,7 @@ impl RelationalRuntime {
 
     /// The declared member kinds opt only this anchor into roster-only history.
     /// Native certifies the exact owner adjacency before minting that event.
-    pub fn readmit_authored_owned_member_retirement(
+    pub(crate) fn readmit_authored_owned_member_retirement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -112,7 +111,7 @@ impl RelationalRuntime {
                     ..
                 } = crate::publication::ownership::authored_retirement::select_authored_source_retirement(
                     execution,
-                    self,
+                    self.history,
                     installed,
                     basis,
                     anchor,

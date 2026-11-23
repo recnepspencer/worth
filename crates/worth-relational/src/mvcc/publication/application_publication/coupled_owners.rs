@@ -8,7 +8,6 @@ use crate::identity::data::RelationId;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
 use crate::publication::ownership::authored_retirement::SelectedAuthoredRetirement;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
@@ -199,10 +198,10 @@ impl RelationalAuthoredCoupledOwners {
     }
 }
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// The closure owner authenticates all anchors and current publications once.
     /// Surviving edge consumers are readmitted through the existing custody owner.
-    pub fn readmit_authored_coupled_owners(
+    pub(crate) fn readmit_authored_coupled_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -221,7 +220,7 @@ impl RelationalRuntime {
                     current,
                 } = crate::publication::ownership::authored_retirement::select_authored_source_retirement(
                     execution,
-                    self,
+                    self.history,
                     installed,
                     basis,
                     anchor,

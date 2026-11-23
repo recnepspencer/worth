@@ -33,7 +33,7 @@ use crate::transactions::data::primitives::RecordRef;
 use crate::transactions::data::primitives::TransactionId;
 use std::sync::Arc;
 
-fn envelope_with_patch_and_update(
+pub(crate) fn envelope_with_patch_and_update(
     patch_target: RecordRef,
     update_target: EntityId,
 ) -> CanonicalCommitEnvelope {

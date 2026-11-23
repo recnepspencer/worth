@@ -8,6 +8,8 @@ pub(crate) mod historical_selection;
 pub(crate) use historical_selection::require_graph_coverage;
 pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;
+mod authored_publication_reads;
+pub(crate) use authored_publication_reads::AuthoredPublicationReads;
 mod authored_restoration;
 mod authored_retirement;
 pub use authored_retirement::AuthoredOwnedMemberKind;

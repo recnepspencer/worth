@@ -235,9 +235,9 @@ impl FrozenOriginalInputs {
                 .into());
             }
             let readmitted = frame
-                .readmit_framed(execution)
+                .readmitted_body(execution)
                 .map_err(canonical_readmission_stop)?;
-            let positioned = readmitted.into_positioned();
+            let positioned = readmitted;
             let envelope = positioned.canonical_arc().clone();
             if positioned.position().0 != offset as u64 + 1
                 || envelope.commit.commit_id != artifact.commit_id()

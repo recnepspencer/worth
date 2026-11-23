@@ -1,11 +1,12 @@
 //! Original policy-row admissions precede the decoder's shared leaf growth.
 use super::super::policies as quote;
 use super::*;
-use crate::merge::data::{
-    AspectPolicyResolutionRecord, MergePolicyRowMemory, MergeStrategyMemory,
+use crate::merge::data::artifacts::{
     RelationalMergeAspectPolicyWitnessRow, RelationalMergeDeletionStrategyWitnessRow,
-    RelationalMergeTopologyStrategyWitnessRow, ResolvedAspectMergePolicy,
+    RelationalMergeTopologyStrategyWitnessRow,
 };
+use crate::merge::data::policy::{AspectPolicyResolutionRecord, ResolvedAspectMergePolicy};
+use crate::merge::data::readmission_memory::{MergePolicyRowMemory, MergeStrategyMemory};
 
 pub(super) fn tree_storage(
     value: BorrowedPayload<'_>,

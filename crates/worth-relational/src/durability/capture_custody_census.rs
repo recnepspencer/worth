@@ -109,6 +109,7 @@ impl RelationalRuntime {
                 artifact
                     .envelope_residency()
                     .require_original_artifact(execution, None)
+                    .map(crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_verified)
             })
             .transpose()
     }

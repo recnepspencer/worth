@@ -1,6 +1,6 @@
 //! Durable declarations quote their private owner layouts without recreating them.
 use super::*;
-use crate::durability::data::DurableEntitySchemaRegistration;
+use crate::history::data::canonical_commit_envelope::schema_carrier::DurableEntitySchemaRegistration;
 use worth_foundational::facade::PortableAspectContract;
 
 pub(super) fn entity(

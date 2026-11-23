@@ -1,6 +1,6 @@
 //! Pre-admit the finite validation leaf families, without decoding the body.
 use super::*;
-use crate::transactions::data::{
+use crate::transactions::data::outcomes::commit_semantic_result::validation::{
     ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
 };
 mod visit;
@@ -115,7 +115,8 @@ fn rule_bytes(
     let mut bytes = shared_text(value, request)?;
     add(
         &mut bytes,
-        crate::validation::data::CustomInvariantRuleId::control_bytes().ok_or_else(malformed)?,
+        crate::validation::data::rule_id::CustomInvariantRuleId::control_bytes()
+            .ok_or_else(malformed)?,
     )?;
     Ok(bytes)
 }

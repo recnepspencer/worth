@@ -2,6 +2,7 @@
 use super::super::history_request::{OutputPreparationInputs, OutputPreparationRequest};
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::mvcc::publication::application_publication::RequiredOutputPublication as Publication;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_required_output_origin<'r>(

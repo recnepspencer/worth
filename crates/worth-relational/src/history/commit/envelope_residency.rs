@@ -10,7 +10,7 @@ mod recovered_position;
 mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};

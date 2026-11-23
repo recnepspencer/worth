@@ -20,9 +20,10 @@
 //! the composite commitment also binds the header position and commit. See
 //! `payload_digest` for its exact domain-separated grammar.
 
+mod body_read;
 pub(crate) mod borrowed_payload;
 #[cfg(test)]
-mod checkpoint_body;
+pub(crate) mod checkpoint_body;
 mod decoded_quote;
 pub(crate) use decoded_quote::schema_image::{
     prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
@@ -40,12 +41,16 @@ mod memory_publication;
 pub(crate) use memory_publication::MemoryFramePreparationDenial;
 mod prepared_payload;
 pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
+pub(crate) mod frame_encoding;
+#[cfg(test)]
+mod frame_reference_encoding;
 pub(crate) mod payload_digest;
 mod payload_wire;
 mod readmission;
 pub(crate) mod readmission_refusal;
 mod request_agreement;
 mod request_encoding;
+pub(crate) mod verified_frame;
 
 mod retained_export;
 
@@ -60,7 +65,7 @@ use worth_execution::ExecutionImmutableBytes;
 
 use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
-use frame::CanonicalCommitArtifactHeader;
+use verified_frame::VerifiedCanonicalCommitFrame;
 
 /// One positioned canonical commit as frame-verified bytes.
 ///
@@ -69,8 +74,7 @@ use frame::CanonicalCommitArtifactHeader;
 /// obtain a commit only through [`RelationalCanonicalCommitArtifact::readmit`].
 /// Clones share the immutable byte backing.
 pub struct RelationalCanonicalCommitArtifact {
-    bytes: ExecutionImmutableBytes,
-    header: CanonicalCommitArtifactHeader,
+    frame: VerifiedCanonicalCommitFrame,
 }
 
 impl RelationalCanonicalCommitArtifact {
@@ -106,37 +110,37 @@ impl RelationalCanonicalCommitArtifact {
     pub(crate) fn from_owned_bytes(
         bytes: ExecutionImmutableBytes,
     ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
-        let (header, _) = CanonicalCommitArtifactHeader::verify(bytes.bytes())?;
-        Ok(Self { bytes, header })
+        VerifiedCanonicalCommitFrame::from_owned_bytes(bytes).map(Self::from_verified)
+    }
+
+    pub(crate) fn from_verified(frame: VerifiedCanonicalCommitFrame) -> Self {
+        Self { frame }
     }
 
     pub fn position(&self) -> PatchStreamPosition {
-        self.header.position
+        self.frame.position()
     }
 
     pub fn commit_id(&self) -> CommitId {
-        self.header.commit_id
+        self.frame.commit_id()
     }
 
     pub fn payload_digest(&self) -> RelationalCanonicalCommitArtifactDigest {
-        self.header.digest
+        self.frame.payload_digest()
     }
 
     pub fn as_bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        self.frame.as_bytes()
     }
 
     pub fn into_bytes(self) -> ExecutionImmutableBytes {
-        self.bytes
+        self.frame.into_bytes()
     }
 }
 
 impl Clone for RelationalCanonicalCommitArtifact {
     fn clone(&self) -> Self {
-        Self {
-            bytes: self.bytes.clone(),
-            header: self.header,
-        }
+        Self::from_verified(self.frame.clone())
     }
 }
 
@@ -144,9 +148,9 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifact {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("RelationalCanonicalCommitArtifact")
-            .field("position", &self.header.position)
-            .field("commit_id", &self.header.commit_id)
-            .field("payload_digest", &self.header.digest)
+            .field("position", &self.frame.position())
+            .field("commit_id", &self.frame.commit_id())
+            .field("payload_digest", &self.frame.payload_digest())
             .field("byte_len", &self.as_bytes().len())
             .finish()
     }
