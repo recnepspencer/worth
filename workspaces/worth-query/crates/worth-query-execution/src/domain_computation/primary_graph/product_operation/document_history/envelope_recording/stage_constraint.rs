@@ -3,6 +3,7 @@ use super::super::{
     confirm_document_head, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryReservation,
 };
+use super::stage_ownership::EnvelopeStageEnrollment;
 use crate::{
     basis::{WorthQueryProductBranch, WorthQueryProductObservationLease},
     domain_computation::primary_graph::{
@@ -13,7 +14,9 @@ use crate::{
 };
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
+    application_history::ApplicationHistoryBinding,
+    application_operation::{ApplicationMutationBinding, ApplicationMutationScopeBinding},
+    application_schema::ApplicationSchema,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
@@ -29,6 +32,7 @@ use worth_query_execution_runtime::facade::ports::{
 pub struct WorthQueryDocumentHistoryEnvelopeConstraint {
     source: WorthQueryProductObservationLease,
     candidate: WorthQueryProductBranch,
+    enrollment: EnvelopeStageEnrollment,
     refusal: Mutex<Option<(usize, Denial)>>,
 }
 
@@ -51,6 +55,10 @@ impl WorthQueryDocumentHistoryEnvelopeConstraint {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
+    }
+
+    pub(super) fn enrollment(&self) -> &EnvelopeStageEnrollment {
+        &self.enrollment
     }
 
     fn original_source(&self) -> WorthQueryProductBranch {
@@ -77,6 +85,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(Arc::new(WorthQueryDocumentHistoryEnvelopeConstraint {
             source: candidate.retained_expected_source(),
             candidate: candidate.branch(),
+            enrollment: EnvelopeStageEnrollment::of(self)?,
             refusal: Mutex::new(None),
         }))
     }
@@ -84,14 +93,24 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// A stage must be admitted on the envelope's candidate while the document
-    /// head is still the source that candidate was forked from.
-    pub fn validate_history_envelope_stage<SOp, Input, Model>(
+    /// head is still the source that candidate was forked from, and it must be
+    /// an enrolled operation scoped inside the document's model at that head.
+    pub fn validate_history_envelope_stage<M>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
         restriction: &WorthQueryDocumentHistoryEnvelopeConstraint,
-        admitted: &WorthQueryAdmittedApplicationOperation<S, SOp, Input, Model>,
-    ) -> Result<(), Denial> {
+        ordinal: usize,
+        admitted: &WorthQueryAdmittedApplicationOperation<
+            S,
+            M::Operation,
+            M::Input,
+            <M::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
+        >,
+    ) -> Result<(), Denial>
+    where
+        M: ApplicationMutationBinding<S>,
+    {
         if !admitted.belongs_to(
             self.inner.runtime.authority_identity(),
             &self.inner.installed_schema.binding_identity(),
@@ -123,6 +142,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
         drop(current);
         confirm_document_head(self.inner(), phase, &restriction.source, ())
-            .map_err(|(_, denial)| denial)
+            .map_err(|(_, denial)| denial)?;
+        self.require_history_envelope_stage_enrollment::<M>(
+            phase,
+            &restriction.enrollment,
+            restriction.source.relational_basis(),
+            ordinal,
+            admitted,
+        )
     }
 }

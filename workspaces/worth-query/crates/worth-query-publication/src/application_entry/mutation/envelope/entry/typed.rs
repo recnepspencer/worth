@@ -126,12 +126,16 @@ where
             if let Some(restriction) = &history {
                 let access =
                     worth_query_execution::publication_boundary::program_publication_access();
-                if let Err(denial) = context.application().validate_history_envelope_stage(
-                    context.phase(),
-                    &access,
-                    restriction,
-                    &prepared.admission,
-                ) {
+                if let Err(denial) = context
+                    .application()
+                    .validate_history_envelope_stage::<I::Binding>(
+                        context.phase(),
+                        &access,
+                        restriction,
+                        ordinal,
+                        &prepared.admission,
+                    )
+                {
                     // Stage admission reports text; the typed reason stays with the history owner.
                     restriction.record_refusal(ordinal, denial);
                     return Err(stage_admission_refusal::<S, I::Binding>(

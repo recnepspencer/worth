@@ -3,6 +3,7 @@ mod admission;
 mod adoption;
 mod rollback;
 mod stage_constraint;
+mod stage_ownership;
 
 pub use admission::WorthQueryDocumentHistoryEnvelopeIntent;
 pub use stage_constraint::WorthQueryDocumentHistoryEnvelopeConstraint;

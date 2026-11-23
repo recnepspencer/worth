@@ -127,18 +127,33 @@ where
             .application()
             .with_application_advancement(scope, |phase| {
                 let (reservation, candidate) = owners.take().expect("the phase runs once");
+                let abandon = |reservation, candidate| {
+                    document.owner.abandon_history_envelope(
+                        Some(&phase),
+                        &access,
+                        reservation,
+                        Some(candidate),
+                    );
+                };
+                if let Err((stage, denial)) = document.owner.confirm_history_envelope_scopes(
+                    &phase,
+                    &access,
+                    &candidate,
+                    &constraint,
+                ) {
+                    abandon(reservation, candidate);
+                    return Err(match stage {
+                        Some(ordinal) => Denial::Stage { ordinal, denial },
+                        None => Denial::Adoption(denial),
+                    });
+                }
                 document
                     .owner
                     .adopt_history_envelope(&phase, &access, reservation, candidate, receipt.receipt())
                     .map_err(|failure| {
                         let (reservation, candidate, denial) = failure.into_parts();
-                        document.owner.abandon_history_envelope(
-                            Some(&phase),
-                            &access,
-                            reservation,
-                            Some(candidate),
-                        );
-                        denial
+                        abandon(reservation, candidate);
+                        Denial::Adoption(denial)
                     })
             });
         if let Some((reservation, candidate)) = owners {
@@ -153,7 +168,7 @@ where
                 step,
                 receipt,
             }),
-            Ok(Err(denial)) => refuse(document, Denial::Adoption(denial)),
+            Ok(Err(denial)) => refuse(document, denial),
             Err(cause) => refuse(
                 document,
                 Denial::History(WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)),
