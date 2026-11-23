@@ -5,6 +5,7 @@ use super::{
     RelationalTransactionIntent,
 };
 mod replay_staging;
+mod selection_preparation;
 
 /// Move-only detached transaction bound to one owner-admitted exact basis.
 /// It contains no reference to `RelationalRuntime`.

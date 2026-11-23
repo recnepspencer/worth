@@ -13,7 +13,10 @@ use diagnostics::{
     emit_schema_continuity_failure_diagnostic, schema_continuity_conflict_from_issue,
     FailureTransitionView,
 };
+pub(crate) mod inputs;
 mod prior;
+mod schema_transition_metrics;
+use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use prior::SchemaContinuityPrior;
 
 #[derive(Debug, Clone)]
@@ -55,7 +58,7 @@ mod resolution;
 pub(crate) use resolution::resolve_schema_continuity;
 
 fn materialize_declared_transition(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics: PreparationDiagnostics<'_>,
     proposed_transition: crate::schema::data::ProposedSchemaTransition,
     policy: Option<crate::schema::data::SchemaReconciliationPolicy>,
     descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -78,7 +81,7 @@ fn materialize_declared_transition(
             .flatten();
         let Some((previous_schema_id, previous_schema_version_id)) = previous_schema_basis else {
             return Err(schema_continuity_conflict(
-                runtime,
+                diagnostics,
                 branch_id,
                 Some(&proposed_transition),
                 Some(previous_envelope),
@@ -91,7 +94,7 @@ fn materialize_declared_transition(
             || proposed_transition.source_schema_version_id != previous_schema_version_id
         {
             return Err(schema_continuity_conflict(
-                runtime,
+                diagnostics,
                 branch_id,
                 Some(&proposed_transition),
                 Some(previous_envelope),
@@ -107,7 +110,7 @@ fn materialize_declared_transition(
 
     let Some((current_schema_id, current_schema_version_id)) = current_schema_basis else {
         return Err(schema_continuity_conflict(
-            runtime,
+            diagnostics,
             branch_id,
             Some(&proposed_transition),
             previous_envelope,
@@ -121,7 +124,7 @@ fn materialize_declared_transition(
         || proposed_transition.target_schema_version_id != current_schema_version
     {
         return Err(schema_continuity_conflict(
-            runtime,
+            diagnostics,
             branch_id,
             Some(&proposed_transition),
             previous_envelope,
@@ -137,7 +140,7 @@ fn materialize_declared_transition(
     let validated =
         validate_schema_transition(proposed_transition.clone(), policy).map_err(|error| {
             schema_continuity_conflict(
-                runtime,
+                diagnostics,
                 branch_id,
                 Some(&proposed_transition),
                 previous_envelope,
@@ -149,7 +152,7 @@ fn materialize_declared_transition(
     match validated.reconciliation {
         crate::schema::data::SchemaReconciliationClassification::TypeContinuityDenied => {
             return Err(schema_continuity_conflict(
-                runtime,
+                diagnostics,
                 branch_id,
                 Some(&proposed_transition),
                 previous_envelope,
@@ -161,7 +164,7 @@ fn materialize_declared_transition(
         }
         crate::schema::data::SchemaReconciliationClassification::StructuralContinuityDenied => {
             return Err(schema_continuity_conflict(
-                runtime,
+                diagnostics,
                 branch_id,
                 Some(&proposed_transition),
                 previous_envelope,
@@ -184,14 +187,14 @@ fn materialize_declared_transition(
     // diff atom is currently both the inspected atom and the inspected change unit.
     let changed_subtrees_inspected = proposed_transition.diff_atoms.len();
     let unchanged_subtrees_reused_by_fingerprint = 0;
-    runtime
-        .performance_access()
-        .count_schema_transition_classification(
-            atoms_inspected,
-            changed_subtrees_inspected,
-            unchanged_subtrees_reused_by_fingerprint,
-        );
-    runtime.performance_access().count_schema_bridge_descriptor(
+    schema_transition_metrics::count_schema_transition_classification(
+        diagnostics.instrumentation,
+        atoms_inspected,
+        changed_subtrees_inspected,
+        unchanged_subtrees_reused_by_fingerprint,
+    );
+    schema_transition_metrics::count_schema_bridge_descriptor(
+        diagnostics.instrumentation,
         lowered.continuation_descriptor.bridge.continuation,
         lowered
             .continuation_descriptor
@@ -240,7 +243,7 @@ fn schema_continuity_plan_from_lowered(
 }
 
 fn schema_continuity_conflict(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics: PreparationDiagnostics<'_>,
     branch_id: &crate::history::data::BranchId,
     proposed_transition: Option<&crate::schema::data::ProposedSchemaTransition>,
     previous_envelope: Option<&SchemaContinuityPrior<'_>>,
@@ -248,7 +251,7 @@ fn schema_continuity_conflict(
 ) -> TransactionCommitError {
     let conflict = CommitConflict::new(class);
     emit_schema_continuity_failure_diagnostic(
-        runtime,
+        diagnostics,
         branch_id,
         proposed_transition.map(FailureTransitionView::Proposed),
         previous_envelope,
@@ -258,14 +261,14 @@ fn schema_continuity_conflict(
 }
 
 pub(crate) fn validate_schema_continuity_publication(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics: PreparationDiagnostics<'_>,
     branch_id: &crate::history::data::BranchId,
     _plan: &SchemaContinuityPlan,
     envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
 ) -> Result<(), TransactionCommitError> {
     crate::schema::validate_schema_continuity_body(envelope).map_err(|issue| {
         schema_continuity_conflict_from_issue(
-            runtime,
+            diagnostics,
             branch_id,
             envelope.schema_transition.as_ref(),
             issue,

@@ -25,17 +25,6 @@ impl PerformanceAccess<'_> {
         });
     }
 
-    pub(crate) fn count_lineage_publication_artifact(
-        &self,
-        event_width: usize,
-        decision_width: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.lineage_publication_event_width += event_width;
-            counters.lineage_publication_decision_width += decision_width;
-        });
-    }
-
     #[cfg(test)]
     pub(crate) fn count_lineage_graph_snapshot_visibility_cache(&self, hit: bool) {
         self.counters.count(|counters| {

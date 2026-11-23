@@ -41,7 +41,7 @@ impl DurabilityRecoveryAuthority<'_> {
         }
         let result = crate::history::data::validate_codec_output_correspondence(
             execution,
-            self.runtime,
+            &*self.runtime,
             basis,
             producer,
             dependency,

@@ -11,7 +11,6 @@ use crate::mvcc::publication::application_publication::output_meaning::RequiredO
 use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
-use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::EntityReference;
@@ -52,9 +51,13 @@ pub(crate) enum AuthoredRetirementSelection {
 
 /// O(H² + P²M + R² + PMR), bounded by the actual catalog H, latest publications P,
 /// their members M and submitted roles R. Every traversal/comparison is charged.
-pub(crate) fn select_authored_source_retirement(
+pub(crate) fn select_authored_source_retirement<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     installed: &RelationalInstalledApplicationPublicationAuthority,
     basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
@@ -68,9 +71,9 @@ pub(crate) fn select_authored_source_retirement(
             lease,
             None,
             |context| {
-                if installed.runtime_instance_id != runtime.runtime.runtime_instance_id()
+                if installed.runtime_instance_id != runtime.input.projection.runtime_identity
                     || basis.descriptor().runtime_instance_id()
-                        != runtime.runtime.runtime_instance_id()
+                        != runtime.input.projection.runtime_identity
                     || !basis.is_current()
                 {
                     return Err(reject(Cause::InvalidAuthoredAnchor, anchor));

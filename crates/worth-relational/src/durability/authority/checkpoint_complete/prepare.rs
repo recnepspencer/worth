@@ -30,7 +30,7 @@ pub(super) fn prepare(
     let main = &frozen.branches.branch_cells[frozen.main_cell].branch_id;
     let branches = BranchImages::capture(&frozen.branches, execution)?;
     let schemas = CompleteSchemas::capture(&frozen.original, &commits, execution)?;
-    super::covered_prefix::require(&frozen.original, &schemas, execution)?;
+    super::covered_prefix::require(&frozen.original, execution)?;
     let initial = crate::durability::source_initial_inputs::capture::capture_complete(
         main,
         &frozen.original.branches,
@@ -90,7 +90,7 @@ pub(super) fn prepare(
                 .then(|| original_root.retained_schema_authority())
         })
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
-    let (schema_images, carriers) = schemas.into_parts();
+    let schema_images = schemas.into_images();
     let (mut draft, member_map) = super::draft::assemble(
         &super::draft::CheckpointDraftMetadata {
             branches: &frozen.branches,
@@ -204,7 +204,6 @@ pub(super) fn prepare(
             commits,
             roots,
             original: frozen.original,
-            carriers,
         },
         execution,
     )?;

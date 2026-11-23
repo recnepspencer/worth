@@ -1,7 +1,7 @@
 //! Freeze original producer DATA under the actual configuration/publication epoch.
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+use crate::history::commit::{CapturedOriginalCanonicalInputs, RelationalCommitArtifact};
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::{OriginalCanonicalInputs, RelationalCommitArtifact};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::{
     OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, RelationalRuntime,
@@ -25,7 +25,7 @@ pub(super) struct OriginalCanonicalCommit {
     pub(super) position: PatchStreamPosition,
     pub(super) artifact: Arc<RelationalCommitArtifact>,
     pub(super) envelope: Arc<CanonicalCommitEnvelope>,
-    pub(super) inputs: OriginalCanonicalInputs,
+    pub(super) inputs: CapturedOriginalCanonicalInputs,
     pub(super) original_frame: worth_execution::ExecutionImmutableBytes,
     pub(super) original_payload_digest: [u8; 32],
 }

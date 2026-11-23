@@ -90,7 +90,7 @@ fn capture_inner(
         &mut metadata.members,
         request,
     )?;
-    let (images, _) = schemas.into_parts();
+    let images = schemas.into_images();
     let (mut draft, member_map) = super::super::draft::assemble(
         &super::super::draft::CheckpointDraftMetadata {
             branches: &frozen.current.branches,

@@ -14,7 +14,7 @@ pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssoci
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,
 };
-mod codec_retirement_closure;
+pub(crate) mod codec_retirement_closure;
 pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
 pub(crate) use canonical_commit_envelope::{

@@ -67,6 +67,8 @@ impl FrozenMemoryOriginals {
                             .ok_or(Denial::OriginalAuthorityUnavailable)?,
                         mutation: recorded.mutation.clone(),
                     }
+                    .try_into()
+                    .map_err(Denial::Request)?
                 }
             };
             frames

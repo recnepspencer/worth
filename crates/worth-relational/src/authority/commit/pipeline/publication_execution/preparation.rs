@@ -168,7 +168,12 @@ pub(super) fn prepare_publication_phase(
             )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
-            runtime,
+            runtime
+                .config
+                .publication
+                .policy
+                .max_patch_records_per_commit,
+            runtime.preparation_diagnostics(),
             &canonical_commit_envelope.patch,
         )?;
         semantic_summary::complete(

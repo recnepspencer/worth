@@ -21,6 +21,10 @@ pub(crate) fn snapshot_complexity(
 }
 
 impl RuntimeInstrumentation {
+    pub(crate) fn count_descriptor_version_mismatch(&self) {
+        self.count(RuntimeComplexityCounters::count_descriptor_version_mismatch);
+    }
+
     pub(crate) fn preparation_round(&self) -> Self {
         Self {
             complexity_counters: Arc::default(),

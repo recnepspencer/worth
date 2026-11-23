@@ -232,7 +232,8 @@ fn validate_group(
             .find(|kind| kind.kind_id == relation.kind)
             .ok_or("codec relation target contract absent")?;
         let plan = runtime
-            .runtime
+            .input
+            .plans
             .relation_aspect_plan(relation.kind)
             .ok_or("codec relation native contract absent")?;
         if before != after || plan.plan_revision != before.aspect_plan_revision {

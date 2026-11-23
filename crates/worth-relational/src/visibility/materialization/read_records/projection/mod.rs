@@ -15,6 +15,7 @@ mod checkpoint_context;
 pub(crate) mod contracts;
 mod creation;
 pub(crate) use checkpoint_context::{CheckpointProjectionContext, RequestOwnedCheckpointBasis};
+pub(crate) use creation::ProjectionInputs;
 mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;

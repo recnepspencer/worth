@@ -1,11 +1,11 @@
 //! Bind publication services to the installed runtime or its preparation snapshot.
 use super::RelationalRuntime;
 use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
-    RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
+    DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticArtifact,
+    RelationalDiagnosticsEntry,
 };
 use crate::mvcc::publication::authority::RelationalPublicationAuthority;
-use crate::publication::authority::diagnostic_emission::emit_filtered_artifact;
+use crate::publication::authority::diagnostic_emission::emit_bounded_artifact;
 use crate::publication::{PublicationAuthority, PublicationPreparationAuthority};
 
 impl RelationalRuntime {
@@ -55,15 +55,12 @@ impl RelationalRuntime {
         kind: DiagnosticsArtifactKind,
         entries: Vec<RelationalDiagnosticsEntry>,
     ) -> RelationalDiagnosticArtifact {
-        emit_filtered_artifact(
+        emit_bounded_artifact(
             &self.config.diagnostics.profile,
             &self.publication.diagnostics,
-            RelationalDiagnosticArtifact::new(
-                scope,
-                kind,
-                DeterminismExpectation::Required,
-                entries,
-            ),
+            scope,
+            kind,
+            entries,
         )
     }
 }

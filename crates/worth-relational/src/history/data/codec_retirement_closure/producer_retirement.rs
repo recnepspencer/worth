@@ -61,7 +61,7 @@ pub(super) fn validate(
     }
     let latest = source_scope_closure::historical_positions(
         envelope.commit.parents.first().copied(),
-        runtime.runtime.history.catalog_len(),
+        runtime.input.projection.history.catalog_len(),
         &mut |commit| runtime.commit(commit),
         &mut |event, context| {
             if event.required_output_materialization.is_some() {

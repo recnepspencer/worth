@@ -7,7 +7,9 @@ pub(crate) mod payload_commitment;
 
 pub(crate) use artifact::RelationalCommitAuthoritativeAllocationKind;
 pub use artifact::RelationalRetainedSelectionArtifactDenial;
-pub(crate) use artifact::{OriginalCanonicalInputs, RelationalCommitArtifact};
+pub(crate) use artifact::{
+    CapturedOriginalCanonicalInputs, OriginalCanonicalInputs, RelationalCommitArtifact,
+};
 pub use artifact::{RelationalCommitArtifactDenial, RelationalCommitRootDescriptor};
 pub(crate) use catalog::{RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial};
 pub use catalog::{RelationalCommitCatalogAppendDenial, RelationalCommitCatalogEntry};

@@ -147,35 +147,27 @@ pub(crate) fn assemble_versioned_publication(
             prestate_schema: inputs.prestate_schema,
             mutation: inputs.mutation,
         };
-        let recorded =
-            crate::durability::source_initial_inputs::recorded::capture_canonical_inputs(
-                &original, execution,
-            )
-            .map_err(|cause| match cause {
-                crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                    PublicationPreparationDenial::Execution(cause)
-                }
-                crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
-                    PublicationPreparationDenial::Execution(
-                        crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-                    )
-                }
-                crate::durability::data::RelationalRecoveryStop::Content(cause) => {
-                    PublicationPreparationDenial::Execution(cause.into_execution_cause())
-                }
-                crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
-                    PublicationPreparationDenial::Invalid(format!(
-                        "original input capture: {cause:?}"
-                    ))
-                }
-                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
-                    PublicationPreparationDenial::Invalid(format!(
-                        "original input capture: {cause:?}"
-                    ))
-                }
-            })?;
+        let original = original.capture(execution).map_err(|cause| match cause {
+            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+                PublicationPreparationDenial::Execution(cause)
+            }
+            crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
+                PublicationPreparationDenial::Execution(
+                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                )
+            }
+            crate::durability::data::RelationalRecoveryStop::Content(cause) => {
+                PublicationPreparationDenial::Execution(cause.into_execution_cause())
+            }
+            crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
+                PublicationPreparationDenial::Invalid(format!("original input capture: {cause:?}"))
+            }
+            crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
+                PublicationPreparationDenial::Invalid(format!("original input capture: {cause:?}"))
+            }
+        })?;
         envelope
-            .retain_recorded_original_inputs(recorded)
+            .retain_recorded_original_inputs(original.recorded())
             .map_err(|cause| PublicationPreparationDenial::Invalid(cause.into()))?;
         Some(original)
     } else {

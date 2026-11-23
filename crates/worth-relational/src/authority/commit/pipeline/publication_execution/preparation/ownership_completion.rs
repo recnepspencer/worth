@@ -126,7 +126,12 @@ pub(super) fn complete(
                 lease,
             )?;
             crate::authority::commit::phases::publication::enforce_patch_budget(
-                runtime,
+                runtime
+                    .config
+                    .publication
+                    .policy
+                    .max_patch_records_per_commit,
+                runtime.preparation_diagnostics(),
                 &canonical.patch,
             )
         })

@@ -1,7 +1,7 @@
 mod original_inputs;
 mod readmission;
 mod reconstructed_inputs;
-pub(crate) use original_inputs::OriginalCanonicalInputs;
+pub(crate) use original_inputs::{CapturedOriginalCanonicalInputs, OriginalCanonicalInputs};
 mod retained_entity_selection;
 #[path = "../../branch/root_artifact_linkage.rs"]
 mod root_linkage;
@@ -28,7 +28,7 @@ pub(crate) struct RelationalCommitArtifact {
     roots: RelationalCommitRootDescriptor,
     schema_version: crate::schema::data::SchemaVersionId,
     envelope: Arc<super::RelationalCommitEnvelopeResidency>,
-    original_inputs: Option<OriginalCanonicalInputs>,
+    original_inputs: Option<CapturedOriginalCanonicalInputs>,
     allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 

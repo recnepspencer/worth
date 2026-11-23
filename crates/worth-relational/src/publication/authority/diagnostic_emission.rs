@@ -1,10 +1,41 @@
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
+    DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticFields, RelationalDiagnosticsEntry,
 };
 use crate::publication::authority::PublicationAuthority;
 use crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore;
+
+#[derive(Clone, Copy)]
+pub(crate) struct PreparationDiagnostics<'a> {
+    pub(crate) profile: &'a RelationalDiagnosticsProfile,
+    pub(crate) store: &'a RelationalDiagnosticArtifactStore,
+    pub(crate) instrumentation:
+        &'a crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+}
+
+impl PreparationDiagnostics<'_> {
+    pub(crate) fn emit(
+        self,
+        scope: DiagnosticsScope,
+        kind: DiagnosticsArtifactKind,
+        entries: Vec<RelationalDiagnosticsEntry>,
+    ) -> RelationalDiagnosticArtifact {
+        emit_bounded_artifact(self.profile, self.store, scope, kind, entries)
+    }
+
+    pub(crate) fn emit_failure_diagnostic(
+        self,
+        scope: DiagnosticsScope,
+        code: DiagnosticCode,
+        message: impl Into<String>,
+        fields: impl Into<RelationalDiagnosticFields>,
+    ) {
+        DiagnosticArtifactBuilder::new(self.profile, self.store, scope)
+            .failure()
+            .emit_entry(code, message, fields);
+    }
+}
 
 pub(crate) struct DiagnosticArtifactBuilder<'runtime> {
     profile: &'runtime RelationalDiagnosticsProfile,
@@ -33,6 +64,20 @@ pub(crate) fn emit_filtered_artifact(
         store.push(filtered.clone());
     }
     filtered
+}
+
+pub(crate) fn emit_bounded_artifact(
+    profile: &RelationalDiagnosticsProfile,
+    store: &RelationalDiagnosticArtifactStore,
+    scope: DiagnosticsScope,
+    kind: DiagnosticsArtifactKind,
+    entries: Vec<RelationalDiagnosticsEntry>,
+) -> RelationalDiagnosticArtifact {
+    emit_filtered_artifact(
+        profile,
+        store,
+        RelationalDiagnosticArtifact::new(scope, kind, DeterminismExpectation::Required, entries),
+    )
 }
 
 impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
@@ -99,15 +144,12 @@ impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
     }
 
     pub(crate) fn emit(self) -> RelationalDiagnosticArtifact {
-        emit_filtered_artifact(
+        emit_bounded_artifact(
             self.profile,
             self.store,
-            RelationalDiagnosticArtifact::new(
-                self.scope,
-                self.kind,
-                DeterminismExpectation::Required,
-                self.entries,
-            ),
+            self.scope,
+            self.kind,
+            self.entries,
         )
     }
 }
@@ -127,15 +169,12 @@ impl<'runtime> PublicationAuthority<'runtime> {
         kind: DiagnosticsArtifactKind,
         entries: Vec<RelationalDiagnosticsEntry>,
     ) -> RelationalDiagnosticArtifact {
-        emit_filtered_artifact(
+        emit_bounded_artifact(
             self.diagnostics_profile,
             &self.publication.diagnostics,
-            RelationalDiagnosticArtifact::new(
-                scope,
-                kind,
-                DeterminismExpectation::Required,
-                entries,
-            ),
+            scope,
+            kind,
+            entries,
         )
     }
 

@@ -276,17 +276,7 @@ impl RelationalPreparationRuntime {
         kind: crate::diagnostics::data::DiagnosticsArtifactKind,
         entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
     ) -> crate::diagnostics::data::RelationalDiagnosticArtifact {
-        let artifact = crate::diagnostics::data::RelationalDiagnosticArtifact::new(
-            scope,
-            kind,
-            crate::diagnostics::data::DeterminismExpectation::Required,
-            entries,
-        );
-        crate::publication::authority::diagnostic_emission::emit_filtered_artifact(
-            &self.config.diagnostics.profile,
-            &self.diagnostics,
-            artifact,
-        )
+        self.preparation_diagnostics().emit(scope, kind, entries)
     }
 }
 
@@ -310,12 +300,6 @@ impl crate::capabilities::DiagnosticArtifactSink for RelationalPreparationRuntim
         entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
     ) {
         self.push_bounded_preparation_diagnostic(scope, kind, entries);
-    }
-}
-
-impl crate::capabilities::PublicationPolicySource for RelationalPreparationRuntime {
-    fn max_patch_records_per_commit(&self) -> Option<usize> {
-        self.config.publication.policy.max_patch_records_per_commit
     }
 }
 
@@ -364,3 +348,6 @@ mod working_state;
 
 #[path = "preparation_runtime/aggregate.rs"]
 mod aggregate;
+
+#[path = "preparation_runtime/schema_publication.rs"]
+mod schema_publication;

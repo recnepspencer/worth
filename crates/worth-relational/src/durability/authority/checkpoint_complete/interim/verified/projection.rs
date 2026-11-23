@@ -43,12 +43,8 @@ impl FrozenMemoryOriginals {
             {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
-            let carrier = frame
-                .inputs
-                .result_schema
-                .descriptive_image_for_request(request)
-                .map_err(stop)?
-                .carrier_digest();
+            crate::execution::check_request(request).map_err(Denial::Request)?;
+            let carrier = frame.inputs.result_schema.carrier_digest();
             rows.push(admission_projection::row::encode_original(
                 &frame.envelope,
                 entry.position,

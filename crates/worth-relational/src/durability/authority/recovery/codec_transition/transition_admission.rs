@@ -131,7 +131,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .map_err(|detail| deny(Kind::UnsupportedCodecConsequence, detail))?;
         let retirement = crate::history::data::derive_codec_retirement_closure(
             execution,
-            self.runtime,
+            &*self.runtime,
             basis,
             &changes,
         )

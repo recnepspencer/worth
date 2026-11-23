@@ -5,6 +5,7 @@ use crate::durability::data::{
     CheckpointSchemaImages, DurableBranchRootSchemaImage,
     RelationalNativeCheckpointCaptureDenial as Denial,
 };
+use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use std::{marker::PhantomData, sync::Arc};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::CanonicalDigestId;
@@ -30,18 +31,8 @@ impl<'a> CompleteSchemas<'a> {
         let mut identities = ExecutionOrderedMap::default();
         let mut images = ExecutionOrderedMap::default();
         for frame in frames {
-            record(
-                &frame.inputs.prestate_schema,
-                &mut identities,
-                &mut images,
-                request,
-            )?;
-            record(
-                &frame.inputs.result_schema,
-                &mut identities,
-                &mut images,
-                request,
-            )?;
+            record_image(&frame.inputs.prestate_schema, &mut images, request)?;
+            record_image(&frame.inputs.result_schema, &mut images, request)?;
         }
         for (_, root) in components {
             record(
@@ -92,13 +83,8 @@ impl<'a> CompleteSchemas<'a> {
             let inputs = artifact
                 .original_inputs()
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
-            record(
-                &inputs.prestate_schema,
-                &mut identities,
-                &mut images,
-                request,
-            )?;
-            record(&inputs.result_schema, &mut identities, &mut images, request)?;
+            record_image(&inputs.prestate_schema, &mut images, request)?;
+            record_image(&inputs.result_schema, &mut images, request)?;
         }
         let images =
             CheckpointSchemaImages::copy_for_request(&images, request).map_err(Denial::Request)?;
@@ -115,14 +101,21 @@ impl<'a> CompleteSchemas<'a> {
         self.original
             .get(&(authority as *const RelationalBranchRootSchemaAuthority as usize))
             .copied()
+            .or_else(|| {
+                // Commit roles retain the originally admitted image. The
+                // actual root borrows that same authenticated declaration;
+                // require its full image in the captured original union.
+                let image = authority.retained_recorded_image()?;
+                let digest = image.carrier_digest();
+                let ordinal = self
+                    .images
+                    .binary_search_by_key(&digest, |row| row.carrier_digest())
+                    .ok()?;
+                (&*self.images[ordinal] == image).then_some(CanonicalDigestId::new(digest))
+            })
     }
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        CheckpointSchemaImages,
-        ExecutionOrderedMap<usize, CanonicalDigestId>,
-    ) {
-        (self.images, self.original)
+    pub(super) fn into_images(self) -> CheckpointSchemaImages {
+        self.images
     }
 }
 fn record(
@@ -140,11 +133,23 @@ fn record(
     if identities.get(&identity).is_some() {
         return Ok(());
     }
-    let image: DurableBranchRootSchemaImage = authority
+    let image = authority
         .descriptive_image_for_request(request)
-        .map_err(crate::durability::checkpoint_history::capture::capture_stop)?
-        .into();
+        .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
+    let carrier = record_image(&image, images, request)?;
+    identities
+        .insert_cloned_native_for_request(&identity, &carrier, *request)
+        .map_err(map_stop)
+}
+
+fn record_image(
+    image: &RecordedBranchSchemaImage,
+    images: &mut ExecutionOrderedMap<CanonicalDigestId, DurableBranchRootSchemaImage>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<CanonicalDigestId, Denial> {
+    crate::execution::check_request(request).map_err(Denial::Request)?;
     let carrier = CanonicalDigestId::new(image.carrier_digest());
+    let image = DurableBranchRootSchemaImage::from(image.clone());
     if let Some(previous) = images.get(&carrier) {
         if previous != &image {
             return Err(Denial::OriginalAuthorityUnavailable);
@@ -154,9 +159,7 @@ fn record(
             .insert_cloned_native_for_request(&carrier, &image, *request)
             .map_err(map_stop)?;
     }
-    identities
-        .insert_cloned_native_for_request(&identity, &carrier, *request)
-        .map_err(map_stop)
+    Ok(carrier)
 }
 fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {
     crate::durability::checkpoint_history::capture::capture_stop(

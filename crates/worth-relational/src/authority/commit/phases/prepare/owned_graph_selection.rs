@@ -1,17 +1,24 @@
 //! Prepare only the full-generation records in the two owned closures.
 use super::*;
 use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
-use crate::mvcc::BranchBoundRelationalTransaction;
 use crate::transactions::data::primitives::RecordRef;
-use std::sync::Arc;
 
-pub(crate) fn prepare(
+pub(crate) struct SelectionInputs<'a>(
+    pub(crate) super::working_state_inputs::SelectionTransaction<'a>,
+);
+
+pub(crate) fn prepare<'a, Transaction>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
-    transaction: &mut BranchBoundRelationalTransaction,
+    inputs: impl Into<super::working_state_inputs::WorkingStatePreparation<'a>>,
+    transaction: &mut Transaction,
     selected: SelectedRelationalBranchRead<'_>,
     retained: &PreparedOwnedGraphSelection,
-) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
+) -> Result<PreparedWorkingStateScope, TransactionCommitError>
+where
+    for<'t> &'t mut Transaction: Into<SelectionInputs<'t>>,
+{
+    let inputs = inputs.into();
+    let transaction = transaction.into().0;
     transaction
         .footprint
         .record_owned_graph_selection(
@@ -59,7 +66,7 @@ pub(crate) fn prepare(
     let working_state = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
         &selected,
         partitions.iter().copied(),
-        runtime.config.storage.adjacency_policy.clone(),
+        inputs.adjacency_policy.clone(),
         PartitionCloneMode::GraphSparseEntities,
         EntityWorkingSetLayout::CanonicalSoA,
         Some(&slots),
@@ -73,7 +80,7 @@ pub(crate) fn prepare(
     };
     Ok(PreparedWorkingStateScope {
         selected_branch_state: selected.selected().clone(),
-        schema_authority: Arc::clone(transaction.mutation_schema_authority()),
+        schema_authority: transaction.schema,
         structural_summary: CommitStructuralSummary {
             invariant_contract: plan.view().invariant_contract(),
             commit_topology: CommitTopology::GraphMutation,

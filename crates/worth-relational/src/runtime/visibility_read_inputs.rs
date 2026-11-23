@@ -28,3 +28,17 @@ impl<'a> From<&'a mut RelationalRuntime> for SnapshotReadDirectory<'a> {
         (&*runtime).into()
     }
 }
+
+impl<'a> From<&'a RelationalRuntime>
+    for crate::visibility::materialization::read_records::projection::ProjectionInputs<'a>
+{
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            runtime_identity: runtime.runtime_instance_id(),
+            history: &runtime.history,
+            instrumentation: &runtime.services.instrumentation,
+            symbols: &runtime.services.symbols,
+            empty_history_schema: &runtime.config.schema.registry,
+        }
+    }
+}

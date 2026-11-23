@@ -71,8 +71,16 @@ pub(super) fn assemble_authoritative_publication_phase(
             .max_patch_records_per_commit,
     };
     commit_log.record_patch_budget(&patch_budget_summary);
-    enforce_patch_budget(runtime, &patch)
-        .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
+    enforce_patch_budget(
+        runtime
+            .config
+            .publication
+            .policy
+            .max_patch_records_per_commit,
+        runtime.preparation_diagnostics(),
+        &patch,
+    )
+    .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
     let publication = prepare_publication_artifacts(
         runtime,
         PublicationPreparationInput {

@@ -1,12 +1,52 @@
 //! A schema's immutable descriptive carrier shares its original admitted backing.
 use super::RelationalBranchRootSchemaAuthority;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop;
+use crate::history::commit::{CapturedOriginalCanonicalInputs, OriginalCanonicalInputs};
 use crate::history::data::canonical_commit_envelope::schema_carrier::{
     RecordedBranchSchemaImage, SchemaImageSource,
 };
 use worth_execution::ExecutionRequest;
 
+impl OriginalCanonicalInputs<RelationalBranchRootSchemaAuthority> {
+    pub(crate) fn capture(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<CapturedOriginalCanonicalInputs, RelationalRecoveryStop> {
+        Ok(CapturedOriginalCanonicalInputs {
+            prestate_schema: self.prestate_schema.recorded_image(request)?,
+            result_schema: self.result_schema.recorded_image(request)?,
+            mutation: self.mutation,
+        })
+    }
+}
+
+impl TryFrom<OriginalCanonicalInputs<RelationalBranchRootSchemaAuthority>>
+    for CapturedOriginalCanonicalInputs
+{
+    type Error = crate::execution::denial_cause::RelationalExecutionDenialCause;
+
+    fn try_from(
+        inputs: OriginalCanonicalInputs<RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Self, Self::Error> {
+        let carrier = |schema: &RelationalBranchRootSchemaAuthority| {
+            schema
+                .retained_recorded_image()
+                .cloned()
+                .ok_or(Self::Error::ContentInconsistency)
+        };
+        Ok(Self {
+            prestate_schema: carrier(&inputs.prestate_schema)?,
+            result_schema: carrier(&inputs.result_schema)?,
+            mutation: inputs.mutation,
+        })
+    }
+}
+
 impl RelationalBranchRootSchemaAuthority {
+    pub(crate) fn retained_recorded_image(&self) -> Option<&RecordedBranchSchemaImage> {
+        self.recorded_image.get()
+    }
+
     pub(crate) fn schema_image_source(&self) -> SchemaImageSource<'_> {
         SchemaImageSource {
             registry: self.registry(),
@@ -24,7 +64,7 @@ impl RelationalBranchRootSchemaAuthority {
     ) -> Result<RecordedBranchSchemaImage, RelationalRecoveryStop> {
         crate::execution::request_custody::check_request(request)
             .map_err(RelationalRecoveryStop::Request)?;
-        match self.recorded_image.get() {
+        match self.retained_recorded_image() {
             Some(image) => Ok(image.clone()),
             None => {
                 RecordedBranchSchemaImage::capture_for_request(self.schema_image_source(), request)
@@ -50,7 +90,7 @@ impl RelationalBranchRootSchemaAuthority {
     ) -> Result<RecordedBranchSchemaImage, RelationalRecoveryStop> {
         crate::execution::request_custody::check_request(request)
             .map_err(RelationalRecoveryStop::Request)?;
-        if let Some(image) = self.recorded_image.get() {
+        if let Some(image) = self.retained_recorded_image() {
             return Ok(image.clone());
         }
         let image =

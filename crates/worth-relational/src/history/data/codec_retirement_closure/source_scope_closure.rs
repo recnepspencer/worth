@@ -272,7 +272,7 @@ pub(super) fn validate_historical_prefix(
         .in_scope(|lease| {
             historical_positions(
                 Some(envelope.commit.commit_id),
-                runtime.runtime.history.catalog_len(),
+                runtime.input.projection.history.catalog_len(),
                 &mut |commit| runtime.commit(commit),
                 &mut |envelope, context| {
                     if envelope.required_output_materialization.is_some() {

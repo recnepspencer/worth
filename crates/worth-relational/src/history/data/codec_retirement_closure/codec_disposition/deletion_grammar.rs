@@ -42,7 +42,8 @@ pub(super) fn relation(
 ) -> Result<(), Stop> {
     let actual = metadata::require_delete(envelope, RecordRef::Relation(relation.id), context)?;
     let plan = runtime
-        .runtime
+        .input
+        .plans
         .relation_aspect_plan(relation.kind)
         .ok_or("codec relation plan absent")?;
     let _scratch = reserve(plan, state, actual, context, lease)?;
@@ -52,7 +53,7 @@ pub(super) fn relation(
         relation.source,
         relation.target,
         state,
-        runtime.runtime,
+        runtime.input.plans,
         actual.detail.clone(),
     )
     .map_err(|_| Stop::from("codec relation deletion reconstruction refused"))?;

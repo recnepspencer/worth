@@ -174,3 +174,5 @@ pub use cold_symbol_placement::RelationalColdSymbolPlacementForTest;
 pub(crate) mod inline_type_budget;
 
 mod visibility_read_inputs;
+
+mod retirement_history_inputs;

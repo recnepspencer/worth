@@ -22,10 +22,19 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         observation: &crate::mvcc::observation::RelationalBranchObservation,
     ) -> Result<VisibilityProjectionView, crate::branch::basis_denial::RelationalBranchBasisDenial>
     {
-        if observation.identity().runtime_instance_id() != self.runtime().runtime_instance_id() {
+        VisibilityProjectionView::from_observation(self.runtime().into(), observation)
+    }
+}
+
+impl VisibilityProjectionView {
+    pub(crate) fn from_observation(
+        inputs: super::ProjectionInputs<'_>,
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial> {
+        if observation.identity().runtime_instance_id() != inputs.runtime_identity {
             return Err(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
-                    expected_runtime_instance_id: self.runtime().runtime_instance_id(),
+                    expected_runtime_instance_id: inputs.runtime_identity,
                     actual_runtime_instance_id: observation.identity().runtime_instance_id(),
                 },
             );
@@ -40,7 +49,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             observation,
         );
         Ok(VisibilityProjectionView::new(
-            self.runtime(),
+            inputs,
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),
         ))
     }

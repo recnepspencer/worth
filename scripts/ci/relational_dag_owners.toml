@@ -994,3 +994,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Installed Current route selection consumes Publication's authenticated roster.
 "publication/ownership/route_selection.rs" = "publication"
+
+# Count schema transition classifications where continuity is materialized.
+"authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"

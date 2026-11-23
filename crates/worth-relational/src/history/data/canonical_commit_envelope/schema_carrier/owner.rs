@@ -64,6 +64,9 @@ impl RecordedBranchSchemaImage {
 
 impl PartialEq for RecordedBranchSchemaImage {
     fn eq(&self, other: &Self) -> bool {
+        if std::sync::Arc::ptr_eq(&self.0, &other.0) {
+            return true;
+        }
         let (left, right) = (&self.0, &other.0);
         left.format_version == right.format_version
             && left.carrier_digest == right.carrier_digest

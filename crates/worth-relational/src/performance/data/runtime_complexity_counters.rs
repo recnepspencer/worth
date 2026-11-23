@@ -261,6 +261,10 @@ pub struct RuntimeComplexityCounters {
 }
 
 impl RuntimeComplexityCounters {
+    pub(crate) fn count_descriptor_version_mismatch(&mut self) {
+        self.descriptor_version_mismatches_encountered += 1;
+    }
+
     pub(crate) fn count_query_serial_strategy(&mut self) {
         self.query_serial_strategy_count += 1;
     }
