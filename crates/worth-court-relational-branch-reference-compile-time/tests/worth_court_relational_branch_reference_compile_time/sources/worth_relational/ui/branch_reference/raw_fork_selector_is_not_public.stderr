@@ -5,12 +5,12 @@ error[E0599]: no method named `fork_branch_from` found for struct `RelationalRun
    |                     ^^^^^^^^^^^^^^^^
    |
 help: there is a method `fork_branch` with a similar name, but with different arguments
-  --> src/branch/fork_runtime_adapters.rs:58:5
+  --> src/branch/fork_runtime_adapters.rs:59:5
    |
-58 | /     pub fn fork_branch(
-59 | |         &self,
-60 | |         execution: &worth_execution::ExecutionRequest<'_, '_>,
-61 | |         target_branch: BranchId,
-62 | |         source: AdmittedRelationalForkSourceBasis,
-63 | |     ) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {
+59 | /     pub fn fork_branch(
+60 | |         &self,
+61 | |         execution: &worth_execution::ExecutionRequest<'_, '_>,
+62 | |         target_branch: BranchId,
+63 | |         source: AdmittedRelationalForkSourceBasis,
+64 | |     ) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {
    | |____________________________________________________________________________________________^

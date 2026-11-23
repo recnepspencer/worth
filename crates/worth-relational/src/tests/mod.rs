@@ -11,7 +11,6 @@ mod performance_metrics;
 mod performance_profiles;
 mod performance_support;
 mod profiles;
-mod public_api;
 mod publication;
 mod query;
 mod schema;

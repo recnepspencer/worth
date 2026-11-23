@@ -24,3 +24,11 @@ mod checkpoint_versions;
 
 mod coupled_producers;
 mod restoration_header;
+
+mod transaction_staging;
+
+mod request_owned_retention;
+
+mod snapshot_retention;
+
+mod same_commit_relation_endpoints;

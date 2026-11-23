@@ -52,7 +52,6 @@ mod relation_updates;
 mod retention_backpressure;
 mod revalidation_demand;
 mod runtime_contracts;
-mod same_commit_relation_endpoints;
 mod semantic_noop_field_revisions;
 mod snapshot_and_retention;
 mod snapshot_capacity;
