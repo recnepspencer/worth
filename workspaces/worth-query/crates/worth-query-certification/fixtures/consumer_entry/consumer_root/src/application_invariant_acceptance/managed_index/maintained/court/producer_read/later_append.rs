@@ -5,18 +5,30 @@
 use super::*;
 use worth_query_decl::facade::application_program::ApplicationNoOutputGraph;
 
-struct Later {
-    observed: Vec<super::super::super::peer_scope::Observed>,
-    committed: bool,
-    detail: String,
-    rows: Vec<String>,
+pub(super) struct Later {
+    pub(super) observed: Vec<super::super::super::peer_scope::Observed>,
+    pub(super) committed: bool,
+    pub(super) detail: String,
+    pub(super) rows: Vec<String>,
 }
 
 /// The source action in `catalog` (its producer probes), then one `later`
 /// authored stage; `rows` reads `directory` back.
-fn later_stage(
+pub(super) fn later_stage(
     probe: ProducerProbe,
     computation: bool,
+    later: Edit,
+    directory: &'static str,
+    key: u64,
+) -> Later {
+    staged(probe, computation, None, later, directory, key)
+}
+
+/// As `later_stage`, after an optional `earlier` authored stage.
+pub(super) fn staged(
+    probe: ProducerProbe,
+    computation: bool,
+    earlier: Option<Edit>,
     later: Edit,
     directory: &'static str,
     key: u64,
@@ -36,6 +48,11 @@ fn later_stage(
         .runtime_stages(&world)
         .ordered_authored()
         .unwrap();
+    if let Some(earlier) = earlier {
+        envelope
+            .push_stage::<ApplicationNoOutputGraph, _>(earlier)
+            .unwrap();
+    }
     envelope
         .push_stage::<program::Root, _>(source::operation::RequestItem {
             directory: "catalog".into(),
@@ -77,7 +94,7 @@ fn later_stage(
     }
 }
 
-fn item(directory: &str) -> Edit {
+pub(super) fn item(directory: &str) -> Edit {
     Edit::Item {
         directory: directory.into(),
         identity: "late".into(),

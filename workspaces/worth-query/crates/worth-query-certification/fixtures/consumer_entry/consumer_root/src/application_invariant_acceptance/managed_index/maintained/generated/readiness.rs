@@ -98,6 +98,12 @@ impl WorthQueryApplicationConditionalBinding<Catalog> for Readiness {
                 ItemName::at("ItemName"),
             )
             .unwrap();
+        if super::producer::SOURCE_OWNED.get() {
+            return installation
+                .bind_output_readiness::<super::producer::OwnedProducer, _, _, _, _, _, _>(
+                    node, ordinal,
+                );
+        }
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
     }
 }

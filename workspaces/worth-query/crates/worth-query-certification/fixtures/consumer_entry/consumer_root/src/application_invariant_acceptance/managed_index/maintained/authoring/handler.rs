@@ -17,7 +17,9 @@ impl OperationHandler<Catalog, Binding> for Handler {
             super::super::peer_scope::stage_probe(reader)?;
             let scope = match edit {
                 Edit::Directory { .. } | Edit::GrantedDirectory { .. } => "catalog",
-                Edit::RetireDirectory { directory } | Edit::UngrantDirectory { directory } => {
+                Edit::RetireDirectory { directory }
+                | Edit::UngrantDirectory { directory }
+                | Edit::Note { directory, .. } => {
                     directory
                 }
                 Edit::Item { directory, .. }
@@ -32,6 +34,9 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
+            if matches!(edit, Edit::Note { .. }) {
+                reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
+            }
             if matches!(edit, Edit::UngrantDirectory { .. }) {
                 reader
                     .relations_to(GrantResource::reference(), &directory)
@@ -101,6 +106,11 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
                         .write_field(&item, ItemEnabled::at("ItemEnabled"), *enabled)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::Note { note, .. } => {
+                    writer
+                        .write_field(&directory, DirectoryNote::at("DirectoryNote"), note.clone())
                         .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::UngrantDirectory { .. } => {

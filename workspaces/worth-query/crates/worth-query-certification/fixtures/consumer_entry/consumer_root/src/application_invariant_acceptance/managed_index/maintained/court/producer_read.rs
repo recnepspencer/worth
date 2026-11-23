@@ -12,6 +12,7 @@ mod authored_stage;
 mod later_append;
 mod overlay;
 mod scope_resolution;
+mod successor;
 
 struct Run {
     performed: bool,

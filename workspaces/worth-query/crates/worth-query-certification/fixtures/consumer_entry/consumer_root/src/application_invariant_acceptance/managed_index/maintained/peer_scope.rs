@@ -40,6 +40,9 @@ std::thread_local! {
     /// Seeds the `peer` Directory under the watch grant beside `catalog`.
     pub static SEED_PEERS: Cell<bool> = const { Cell::new(false) };
     pub static PRODUCER_PROBE: Cell<Option<ProducerProbe>> = const { Cell::new(None) };
+    /// The generated producer's decision also reads this Directory's note:
+    /// a later member that rewrites it changes what the producer read.
+    pub static PRODUCER_TRIGGER: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// An authoring stage's own decision probes this Directory.
     pub static STAGE_PROBE: Cell<Option<&'static str>> = const { Cell::new(None) };
     pub static OBSERVED: RefCell<Vec<Observed>> = const { RefCell::new(Vec::new()) };
@@ -117,6 +120,22 @@ where
         prefix: String::new(),
     });
     observe(rows).map(|_| ())
+}
+
+/// The armed trigger read: an ordinary field read of another Directory.
+pub fn trigger<B>(
+    reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
+) -> Result<(), HandlerExecutionDenial>
+where
+    B: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>,
+{
+    let Some(directory) = PRODUCER_TRIGGER.get() else {
+        return Ok(());
+    };
+    let directory =
+        reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), directory.to_owned())?;
+    reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
+    Ok(())
 }
 
 /// The armed authoring-stage probe through that stage's own `index_query`.

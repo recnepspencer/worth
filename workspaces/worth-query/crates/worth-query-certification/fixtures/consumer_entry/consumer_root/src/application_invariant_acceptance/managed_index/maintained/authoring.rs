@@ -14,6 +14,10 @@ pub enum Edit {
     Directory {
         identity: String,
     },
+    Note {
+        directory: String,
+        note: String,
+    },
     /// A new Directory under the watch grant: a peer of `catalog`.
     GrantedDirectory {
         identity: String,
@@ -101,6 +105,7 @@ pub(super) fn declare(
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Directory::reference())
         .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
         .operation_read_entity(op, Item::reference())
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
         .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
