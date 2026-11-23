@@ -83,6 +83,7 @@ pub use outstanding_dispatch::OutstandingDispatchInFlightLease;
 pub use outstanding_dispatch::WorthQueryOutstandingInFlightDenial;
 pub use outstanding_dispatch::WorthQueryTerminalDispatchReleaseDenial;
 pub mod pending_application_publication;
+pub mod persistent_name_lowering;
 pub use outstanding_dispatch::OutstandingDispatchReservation;
 pub use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 pub mod product_retirement;

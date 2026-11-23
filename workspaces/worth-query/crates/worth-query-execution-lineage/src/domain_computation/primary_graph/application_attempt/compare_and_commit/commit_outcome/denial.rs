@@ -14,6 +14,7 @@ pub mod execution;
 pub mod invariant_execution;
 pub mod invariant_refusal;
 pub mod lane;
+pub mod persistent_name;
 pub mod preimage_retention;
 pub mod program_binding;
 pub mod recorded_idempotency;

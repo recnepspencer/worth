@@ -215,6 +215,7 @@ impl WorthQueryPrimaryGraphProvider {
         let (candidate, predicate) = self.validate_relational_candidate(
             execution,
             material.batch.clone(),
+            material.naming_plan.clone(),
             appendix,
             &material.content_attachments,
             &material.branch,

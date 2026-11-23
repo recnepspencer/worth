@@ -28,6 +28,18 @@ pub use crate::birth_plan::{
 pub use crate::commit_wiring::{CommittedNamedTransaction, ExecutionNamingCommitAuthority};
 pub use crate::denial::ExecutionNamingDenial;
 pub use crate::lowering::{LoweredExecutionGroupScheme, LoweredExecutionNameSchemeCatalog};
+pub use crate::operation_outputs::{
+    admit_output_birth, AuthoredOperationNaming, BoundOperationNaming, OperationMergeKeeper,
+    OperationNamedOutput, OperationNamingEntry, OperationNamingProgram, OperationOutputKey,
+    OutputBirthPosture,
+    WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+};
+/// Relational's commit-time refusals of an operation's declared output names,
+/// as a commit denial carries them.
+pub use worth_relational::facade::lineage::{
+    DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
+    PersistentNameHolder,
+};
 pub use crate::tracked_resolution::{
     ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
     NameReadDependencies, NameReadStaleness,

@@ -11,6 +11,9 @@ pub enum DenialCause {
     ),
     SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
     InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
+    /// The operation's declared output names were refused against the
+    /// commit basis before the transaction was staged.
+    PersistentNameOutput(worth_query_execution_naming::facade::WorthQueryOutputNameDenial),
     ProviderSession(crate::domain_computation::WorthQueryProviderSessionFailure),
     DecisionReadSet(crate::domain_computation::WorthQueryDecisionReadSetFailure),
     /// The request's own authorization stopped the commit: its security

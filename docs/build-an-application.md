@@ -324,11 +324,74 @@ schema using `worth_query_decl::facade::application_naming`:
   application key is its authored occurrence. Relation seeds also offer
   `persistent_name_with_discriminator`. A schemed seed without a name, or a
   named seed of an unschemed kind, refuses installation.
-- **Installed operations do not mint names yet.** An installed operation that
-  creates a record of a schemed kind refuses `MissingBirth` with zero effects:
-  the declaration language does not yet say which authored occurrence an
-  operation output is born from. Deleting a named record through an
-  operation retires its name.
+- **Installed operations name their outputs.** See
+  [operation output names](#operation-output-names). A schemed record an
+  operation creates without a declared birth still refuses `MissingBirth`
+  with zero effects, and a plain deletion of a named record retires its name.
+
+#### Operation output names
+
+An installed operation's handler declares what each output means through its
+`CandidateWriter` (`worth_query_host::facade::application_naming` holds the
+vocabulary). Nothing here mints, reads or forges a name: the declarations ride
+the effect program to its commit, are lowered against the attempt's own
+commit basis into one Relational naming plan, and Relational's commit
+finalization validates every one against the performed effects and mints.
+An unnamed program carries no naming plan at all.
+
+- **Birth.** `writer.name_created_entity(&created, WorthQueryOutputBirth::new(occurrence, role))`
+  names an entity the candidate created; `name_created_relation` names a
+  relation linked with `link_for_initialization`. The occurrence key comes
+  from the application's authored identity family (a feature's own identity,
+  never the operation's name), so two independently authored occurrences with
+  identical payloads keep distinct names. `.with_discriminator(&d)` tells
+  siblings of one occurrence and role apart, and may embed `WorthQueryName`s
+  born at the basis. A relation's name never includes its endpoints: two
+  same-role relations of one occurrence collide (`DuplicateBirth`) unless
+  their discriminators differ.
+- **Regeneration (`Preserve`).** `writer.retire_entity_name(held)` (or
+  `retire_relation_name`) beside the deletion of the holder, plus a birth of
+  the same occurrence and role, keeps the exact name on the regenerated
+  record. Re-minting a name whose holder stays live refuses `DuplicateBirth`.
+- **Split.** `writer.split_entity_name(parent, vec![(&piece, birth), ...])`
+  (or `split_relation_name`) splits the held `parent`, whose record the
+  candidate deletes, into created pieces; every piece carries a
+  discriminator. Afterwards `NameSelection::Exact` on the parent refuses
+  `Ambiguous { candidates }` with every piece and `AllDescendants` returns
+  them all.
+- **Merge.** `writer.merge_entity_names(&parents, keeper)` (or
+  `merge_relation_names`) with `WorthQueryOutputMergeKeeper::KeepParentInPlace(name)`,
+  `KeepParentOnto { keeper, target }` or `MintNew { target, birth }` (a
+  split-capable scheme requires the new birth's discriminator). Every held
+  parent name then resolves to the survivor.
+- **Kind safety.** A split parent, merge parent or keeper of another kind
+  than the output handle does not compile.
+- **Refusals, all with zero effects.** Naming an output whose kind has no
+  scheme, or a record the candidate did not create, refuses while authoring
+  (`WorthQueryApplicationAttemptDenial::persistent_name_denial()` returns the
+  typed `WorthQueryOutputNameDenial`). A held name that no longer designates
+  one live record at the commit basis refuses before staging
+  (`WorthQueryApplicationCommitDenial::persistent_name_output_denial()`).
+  Relational's own laws arrive as `persistent_name_refusal()` on the commit
+  denial: a split whose parent survives or a merge with an unretired
+  non-keeper (`LineagePostureMismatch`), a keeper outside its parents
+  (`InvalidMergeKeeper`), colliding sibling discriminators or a live re-mint
+  (`DuplicateBirth`), and a schemed output without a birth (`MissingBirth`).
+- **Invalidation.** A decision that resolved a name keys the live record it
+  rested on, so a later operation splitting, merging or retiring it makes the
+  earlier attempt's commit stale.
+- **History.** `HistoryDocument`-recorded operations name their outputs the
+  same way; undo, redo and checkout then keep held names on each navigated
+  node ([names across undo, redo and checkout](#names-across-undo-redo-checkout-and-rebuild)).
+
+Limits: coupled synchronous producers and authored-edit stages cannot yet
+declare output names; a part that does refuses (`ProviderUnsupported`) rather
+than commit its names unnamed. Decision readers do not read relation names,
+so an installed operation holds no relation name to split, merge or retire
+by name (it can still name relations it creates, and unlinking a named
+relation retires its name). Courts:
+[installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs)
+and [relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs).
 
 #### Holding and resolving names
 
@@ -416,7 +479,13 @@ record the node does not hold stays refused. Unnamed records emit exactly the
 events they did before. Names are derived from the committed events alone, so
 an in-process rebuild of the lineage indexes reproduces them; durable journal
 replay of an owned-graph selection remains refused
-(`UnsupportedOwnedGraphSelectionReplay`). Courts:
+(`UnsupportedOwnedGraphSelectionReplay`). A selection derives only `Retire`,
+`Restore` and in-place continuity, never a split or merge edge: navigating
+forward again across a recorded split or merge after navigating back across
+it (undo a merge, then redo it) retires the revived source names, so their
+held names resolve `Retired` there rather than following to the pieces or
+the survivor; held names resolve as recorded wherever the original lineage
+stands (the recording node, undo back to it, and checkout). Courts:
 [installed history continuity](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/history.rs),
 [Native selection naming](../crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/named_selection/mod.rs), and
 [pinned restore epochs](../crates/worth-relational/src/tests/lineage/name_epoch_restore.rs).

@@ -21,6 +21,7 @@ pub mod commit_projections;
 #[cfg(test)]
 mod compound_patch_tests;
 pub mod expected_steps;
+pub mod persistent_names;
 #[cfg(test)]
 mod ordering_tests;
 pub mod registration_intents;
@@ -48,6 +49,7 @@ pub struct WorthQueryRegisteredProviderEffects {
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
+    persistent_names: persistent_names::OperationNameEffects,
 }
 
 impl<'facts, 'layout, Facts: FactSequence + ?Sized>
@@ -135,6 +137,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             output_correspondence: output_correspondence
                 .remap_created_partition(self.mutation_partition),
             mutation_partition: self.mutation_partition,
+            persistent_names: Default::default(),
         })
     }
 }

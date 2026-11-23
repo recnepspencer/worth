@@ -174,7 +174,9 @@ pub(super) fn resolution<'o>(observed: &'o [Observation], label: &str) -> &'o Ob
             Observation::ResolvedTo { label: l, .. }
             | Observation::ResolvedElsewhere { label: l }
             | Observation::Retired { label: l }
-            | Observation::ResolveRefused { label: l, .. } => l == label,
+            | Observation::ResolveRefused { label: l, .. }
+            | Observation::Plural { label: l, .. }
+            | Observation::Ambiguous { label: l, .. } => l == label,
             _ => false,
         })
         .unwrap_or_else(|| panic!("`{label}` must be resolved: {observed:?}"))

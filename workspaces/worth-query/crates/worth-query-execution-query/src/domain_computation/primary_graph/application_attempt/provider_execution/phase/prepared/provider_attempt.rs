@@ -29,6 +29,7 @@ pub fn prepare_application_provider_attempt(
         preparation.producer_required_invariants,
         preparation.output_currentness_facts,
     )
+    .and_then(|prepared| prepared.with_persistent_names(preparation.persistent_names))
     .map(|prepared| {
         prepared
             .with_content_attachments(preparation.content_attachments)

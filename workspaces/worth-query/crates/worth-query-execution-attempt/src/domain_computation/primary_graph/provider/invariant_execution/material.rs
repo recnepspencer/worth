@@ -17,6 +17,8 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) restoration_plan: Option<worth_relational::facade::mvcc::RelationalAuthoredRestoration>,
     pub(super) restoration_publication: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
+    /// Declared output names lowered at the attempt's basis; `None` unnamed.
+    pub(super) naming_plan: Option<worth_relational::facade::lineage::CommitNamingPlan>,
     pub(super) branch: worth_relational::facade::history::BranchId,
     pub(super) product:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
@@ -66,6 +68,10 @@ impl ApplicationInvariantCandidateMaterial {
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),
             batch: staged.batch().clone(),
+            naming_plan: staged
+                .naming_plan()
+                .map_err(|()| super::closure_failure("declared output names were never lowered"))?
+                .cloned(),
             restoration_plan: None,
             content_attachments: staged.content_attachments().clone(),
             restoration_publication: None,
