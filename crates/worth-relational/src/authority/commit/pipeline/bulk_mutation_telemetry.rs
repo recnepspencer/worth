@@ -1,4 +1,4 @@
-use crate::runtime::RelationalPreparationRuntime;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
@@ -43,10 +43,10 @@ pub(super) fn telemetry_from_strategy_batch(
 }
 
 pub(super) fn record_bulk_mutation_telemetry(
-    runtime: &RelationalPreparationRuntime,
+    instrumentation: &RuntimeInstrumentation,
     telemetry: &BulkMutationPlanTelemetry,
 ) {
-    runtime.performance_access().count_bulk_mutation_plan(
+    instrumentation.count_bulk_mutation_plan(
         &telemetry.locality,
         telemetry.normalized_client_key_count,
         telemetry.lineage_transition_count,

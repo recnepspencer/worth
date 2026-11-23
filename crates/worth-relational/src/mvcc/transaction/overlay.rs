@@ -1,12 +1,13 @@
 use super::{
+    footprint::RelationalTransactionFootprint,
     index_row::{IndexKey, IndexRow, IntentLocation},
+    staging::RelationalTransactionStagingDenial as Denial,
     staging_storage::{Author, OrderedStore},
-    RelationalTransactionFootprint, RelationalTransactionStagingDenial as Denial,
 };
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityReference, MutationIntent,
-    WorkerIntentBatch,
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, EntityReference, WorkerIntentBatch,
 };
 use worth_execution::ExecutionAllocationPolicy;
 mod copy;

@@ -2,6 +2,7 @@ mod digest_index;
 pub mod maintenance;
 pub(crate) use digest_index::{DigestIndex, DigestIndexError};
 mod allocation_visitor;
+pub(crate) mod allocation_witness;
 mod node_memory;
 mod record_arena;
 mod shared_column;

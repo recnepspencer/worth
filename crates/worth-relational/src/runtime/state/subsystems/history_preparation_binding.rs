@@ -1,3 +1,5 @@
+#[path = "history_preparation_binding/admitted_version.rs"]
+mod admitted_version;
 #[path = "history_preparation_binding/candidate_root.rs"]
 mod candidate_root;
 #[path = "history_preparation_binding/merge_inspection.rs"]

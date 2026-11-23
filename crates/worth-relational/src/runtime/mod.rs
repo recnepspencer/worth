@@ -33,7 +33,7 @@ pub(crate) use home_program_transition::{
     RelationalRootExecutionContracts,
 };
 pub(crate) mod commit_strategy_validation;
-mod interruption_counters;
+pub(crate) mod interruption_counters;
 mod lineage_commit;
 pub(crate) mod operation_control;
 mod ownership_certification;

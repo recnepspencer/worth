@@ -4,10 +4,10 @@ use crate::execution::request_stage::checkpoint;
 mod changes;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -53,6 +53,14 @@ impl RelationalAppliedCandidateReadIdentity {
     }
 }
 
+/// The applied image is captured by the installed history owner using the
+/// candidate's inherited, exact instrumentation and runtime coordinates.
+pub(crate) struct AppliedCandidateCapture<'a> {
+    pub(crate) history: &'a RelationalPreparationHistory,
+    pub(crate) instrumentation: &'a RuntimeInstrumentation,
+    pub(crate) runtime_instance_id: u64,
+}
+
 impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
     pub(crate) fn applied_before_root(&self) -> u64 {
         self.applied_changes
@@ -71,9 +79,9 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         self.project_read()
     }
 
-    pub(crate) fn capture_applied(
+    pub(crate) fn capture_applied<'a>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        inputs: impl Into<AppliedCandidateCapture<'a>>,
         basis: &AdmittedRelationalBranchBasis,
         identity: &RelationalMutationProposalIdentity,
         revision: u64,
@@ -84,6 +92,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
         previous: Option<&Self>,
     ) -> Result<Self, TransactionCommitError> {
+        let inputs = inputs.into();
         let previous_root = if let Some(previous) = previous {
             let CandidateReadPhase::AssemblyRevision(prior_revision) = previous.snapshot.phase
             else {
@@ -143,7 +152,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                         .binding_from_applied_predecessor(previous.resident_basis().symbols())
                         .map_err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial)?;
                 }
-                let root = runtime
+                let root = inputs
                     .history
                     .capture_applied_candidate_root(
                         execution,
@@ -160,8 +169,8 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 Self::capture_root(
                     execution,
                     &dictionary,
-                    &runtime.services.instrumentation,
-                    runtime.runtime_instance_id(),
+                    inputs.instrumentation,
+                    inputs.runtime_instance_id,
                     basis,
                     RelationalAppliedCandidateReadIdentity {
                         proposal: identity.clone(),

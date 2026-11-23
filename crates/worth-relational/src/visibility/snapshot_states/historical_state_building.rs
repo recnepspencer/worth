@@ -32,20 +32,33 @@ pub(crate) fn build_historical_visibility_state(
         version_id: basis.version_id(),
         read_policy,
     };
-    if let Some(root) = basis.root().cloned() {
-        return build_from_retained_state(inputs, basis, handle, root.as_ref(), charge, memory);
-    }
-    build_from_retained_state(inputs, basis, handle, &BTreeMap::new(), charge, memory)
+    let (entities, relations) = if let Some(root) = basis.root() {
+        selected_slots(inputs, &basis, &root, charge, memory)?
+    } else {
+        selected_slots(inputs, &basis, &BTreeMap::new(), charge, memory)?
+    };
+    assemble_snapshot_state_with_memory(
+        handle,
+        SnapshotStateBasis::Historical(basis),
+        entities,
+        relations,
+        memory,
+    )
 }
 
-fn build_from_retained_state(
+fn selected_slots(
     inputs: SnapshotRecordReadInputs<'_>,
-    basis: HistoricalVisibilityBasis,
-    handle: SnapshotHandle,
+    basis: &HistoricalVisibilityBasis,
     state: &impl PartitionAccess,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+) -> Result<
+    (
+        Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
+        Vec<SelectedRelationSlots>,
+    ),
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
+> {
     let version_id = basis.version_id();
     let registry = basis.root().map_or(inputs.fallback_schema(), |root| {
         root.schema_authority().registry()
@@ -81,13 +94,7 @@ fn build_from_retained_state(
         });
     }
     record_memory::release(memory, visible_bytes)?;
-    assemble_snapshot_state_with_memory(
-        handle,
-        SnapshotStateBasis::Historical(basis),
-        entities,
-        relations,
-        memory,
-    )
+    Ok((entities, relations))
 }
 
 fn retained_historical_relations(

@@ -41,7 +41,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     > {
         if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
             basis
-                .root()
+                .projection_root()
                 .demand_all_full(execution, &self.runtime.services.symbols)
                 .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         }
@@ -122,10 +122,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn query_plan_context(&self, handle: &SnapshotHandle) -> Option<QueryPlanContextId> {
         let snapshot = self.resolved_snapshot_handle(handle)?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)?;
-        if basis.root().has_materialization_unavailable() {
+        if basis.projection_root().has_materialization_unavailable() {
             return None;
         }
-        let root = basis.root();
+        let root = basis.projection_root();
         let (schema_version, descriptor_semantics_version, evidence_basis) =
             root.query_schema_context();
         Some(QueryPlanContextId {
@@ -211,7 +211,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
     ) -> Option<crate::schema::data::SchemaVersionId> {
         let basis = resolve_snapshot_basis(self.runtime, handle)?;
-        Some(basis.root().schema_authority().schema_version())
+        Some(basis.projection_root().schema_authority().schema_version())
     }
 
     pub(super) fn resolved_snapshot_handle(

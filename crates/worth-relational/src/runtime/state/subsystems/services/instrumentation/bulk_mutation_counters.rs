@@ -1,7 +1,7 @@
-use super::PerformanceAccess;
-use crate::transactions::data::BulkMutationLocalityFootprint;
+use super::RuntimeInstrumentation;
+use crate::transactions::data::primitives::BulkMutationLocalityFootprint;
 
-impl PerformanceAccess<'_> {
+impl RuntimeInstrumentation {
     pub(crate) fn count_bulk_mutation_plan(
         &self,
         locality: &BulkMutationLocalityFootprint,
@@ -9,7 +9,7 @@ impl PerformanceAccess<'_> {
         lineage_transition_count: usize,
         provenance_record_count: usize,
     ) {
-        self.counters.count(|counters| {
+        self.count(|counters| {
             counters.bulk_mutation_batch_count += 1;
             counters.bulk_mutation_entity_target_count += locality.entity_target_count;
             counters.bulk_mutation_relation_target_count += locality.relation_target_count;

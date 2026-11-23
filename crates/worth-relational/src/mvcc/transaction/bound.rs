@@ -71,9 +71,18 @@ impl BranchBoundRelationalTransaction {
     pub(crate) fn mutation_schema_authority(
         &self,
     ) -> &std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority> {
-        self.home_target
+        Self::select_mutation_schema(&self.home_target, &self.schema_authority)
+    }
+
+    pub(crate) fn select_mutation_schema<'a>(
+        home_target: &'a Option<
+            std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>,
+        >,
+        schema_authority: &'a std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    ) -> &'a std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority> {
+        home_target
             .as_ref()
-            .map_or(&self.schema_authority, |target| &target.meaning.schema)
+            .map_or(schema_authority, |target| &target.meaning.schema)
     }
 
     pub fn transaction_id(&self) -> TransactionId {

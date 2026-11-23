@@ -79,3 +79,45 @@ impl<'a> From<&'a RelationalRuntime> for SnapshotResolutionInputs<'a> {
         }
     }
 }
+
+use crate::branch::basis::retirement::BranchBasisRetirementOwner;
+
+impl From<&RelationalRuntime> for BranchBasisRetirementOwner {
+    fn from(runtime: &RelationalRuntime) -> Self {
+        Self::installed(runtime.runtime_instance_id())
+    }
+}
+
+use crate::branch::basis_observation_inputs::BranchObservationInputs;
+use crate::branch::head_visibility_inputs::BranchHeadVisibilityInputs;
+use crate::branch::reference::world_selection::WorldSourceSelection;
+
+impl<'a> From<&'a RelationalRuntime> for BranchObservationInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            runtime_instance_id: runtime.runtime_instance_id(),
+            empty_schema: &runtime.config.schema.registry,
+            instrumentation: &runtime.services.instrumentation,
+        }
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime> for BranchHeadVisibilityInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            observations: runtime.into(),
+            directory: &runtime.visibility,
+            cache: runtime.into(),
+        }
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime> for WorldSourceSelection<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            visibility: runtime.into(),
+        }
+    }
+}

@@ -3,7 +3,7 @@ use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
 use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
-use crate::runtime::RelationalPreparationRuntime;
+use crate::mvcc::transaction::staged_plan::StagedPlanValidation;
 use crate::storage::overlay::summarize_entity_chunk_plan;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::EntityWorkingSetLayout;
@@ -18,6 +18,7 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
+use working_state_inputs::{WorkingStateDraft, WorkingStateDraftRuntime, WorkingStateScope};
 #[path = "prepare/owned_graph_selection.rs"]
 pub(crate) mod owned_graph_selection;
 #[path = "prepare/retained_entity_selection.rs"]
@@ -170,73 +171,89 @@ fn sparse_relation_overlay_partitions_for_plan(
     saw_relation_create.then_some(partitions)
 }
 
-pub(crate) fn prepare_working_state_scope(
-    runtime: &RelationalPreparationRuntime,
-    transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
+pub(crate) fn prepare_working_state_scope<'a, Runtime, Transaction>(
+    runtime: &'a Runtime,
+    transaction: &mut Transaction,
     selected: SelectedRelationalBranchRead<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
-    let execution = request;
-    let allocation_policy = request.allocation_policy();
-    let mut phase_timing = CommitPhaseTiming::default();
+) -> Result<PreparedWorkingStateScope, TransactionCommitError>
+where
+    &'a Runtime: Into<WorkingStateDraftRuntime<'a>>,
+    for<'t> &'t mut Transaction: Into<WorkingStateDraft<'t>>,
+{
+    let inputs = runtime.into();
+    let draft = transaction.into();
     let normalization_started = Instant::now();
-    let intents = transaction.normalized_intents_for_merge(runtime, request)?;
+    let intents = inputs.normalization.normalized(
+        draft.transaction,
+        draft.overlay,
+        draft.footprint,
+        request,
+    )?;
     crate::aggregate_identity::guard::current_relation_creations(
-        execution,
-        runtime.commit_work_budget.as_ref(),
-        transaction.schema_authority.registry(),
+        request,
+        inputs.commit_work,
+        draft.basis_schema,
         &intents.plan().merged_intents,
     )?;
-    phase_timing.draft_intent_normalization_micros =
-        normalization_started.elapsed().as_micros() as u64;
+    let normalization_micros = normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();
-    let (merged_plan, merged_plan_timing) = transaction
-        .build_merged_plan_for_state_with_timing(runtime, &selected, intents, request)?;
-    phase_timing.draft_merge_plan_micros = merge_plan_started.elapsed().as_micros() as u64;
-    phase_timing.draft_intent_validation_micros = merged_plan_timing.validation_micros;
-    phase_timing.draft_intent_sort_micros = merged_plan_timing.sort_micros;
-    phase_timing.draft_conflict_detection_micros = merged_plan_timing.conflict_detection_micros;
-    transaction
+    let (merged_plan, merged_plan_timing) = StagedPlanValidation {
+        schema: draft.mutation_schema.registry(),
+        cross_context: inputs.cross_context,
+        instrumentation: inputs.working_state.instrumentation,
+        coupled_commands: draft.coupled_commands,
+    }
+    .validate(&selected, intents, request)?;
+    let merge_plan_micros = merge_plan_started.elapsed().as_micros() as u64;
+    draft
         .footprint
-        .derive_validation_dependencies(merged_plan.plan(), allocation_policy)
+        .derive_validation_dependencies(merged_plan.plan(), request.allocation_policy())
         .map_err(|denial| TransactionCommitError::conflict(denial.into_conflict()))?;
-    let (structural_summary, working_state, prepare_phase_timing) =
-        prepare_authoritative_working_state_scope_for_base(
-            runtime,
-            &selected,
-            merged_plan.plan(),
-            transaction.merge_parent_bases.len(),
-            Some(&transaction.footprint),
-        );
-    phase_timing.draft_structural_summary_micros =
-        prepare_phase_timing.draft_structural_summary_micros;
-    phase_timing.draft_working_state_clone_micros =
-        prepare_phase_timing.draft_working_state_clone_micros;
-
-    Ok(PreparedWorkingStateScope {
-        selected_branch_state: selected.selected().clone(),
-        plan: PreparedRelationalCommitPlan::Mutation(merged_plan),
-        structural_summary,
-        working_state,
-        phase_timing,
-        footprint: transaction.footprint.clone(),
-        schema_authority: std::sync::Arc::clone(transaction.mutation_schema_authority()),
-    })
+    let mut prepared = prepare_lowered_with_scope(
+        inputs.working_state,
+        WorkingStateScope {
+            footprint: draft.footprint,
+            schema: draft.mutation_schema,
+            merge_parent_count: draft.merge_parent_count,
+        },
+        selected,
+        merged_plan,
+    );
+    let timing = &mut prepared.phase_timing;
+    timing.draft_intent_normalization_micros = normalization_micros;
+    timing.draft_merge_plan_micros = merge_plan_micros;
+    timing.draft_intent_validation_micros = merged_plan_timing.validation_micros;
+    timing.draft_intent_sort_micros = merged_plan_timing.sort_micros;
+    timing.draft_conflict_detection_micros = merged_plan_timing.conflict_detection_micros;
+    Ok(prepared)
 }
 
-pub(crate) fn prepare_lowered_working_state_scope(
-    runtime: &RelationalPreparationRuntime,
-    transaction: &crate::mvcc::BranchBoundRelationalTransaction,
+pub(crate) fn prepare_lowered_working_state_scope<'a, 't, Transaction>(
+    inputs: impl Into<working_state_inputs::WorkingStatePreparation<'a>>,
+    transaction: &'t Transaction,
+    selected: SelectedRelationalBranchRead<'_>,
+    merged_plan: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
+) -> PreparedWorkingStateScope
+where
+    &'t Transaction: Into<WorkingStateScope<'t>>,
+{
+    prepare_lowered_with_scope(inputs.into(), transaction.into(), selected, merged_plan)
+}
+
+fn prepare_lowered_with_scope(
+    inputs: working_state_inputs::WorkingStatePreparation<'_>,
+    transaction: WorkingStateScope<'_>,
     selected: SelectedRelationalBranchRead<'_>,
     merged_plan: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
 ) -> PreparedWorkingStateScope {
     let (structural_summary, working_state, phase_timing) =
         prepare_authoritative_working_state_scope_for_base(
-            runtime,
+            inputs,
             &selected,
             merged_plan.plan(),
-            transaction.merge_parent_bases.len(),
-            Some(&transaction.footprint),
+            transaction.merge_parent_count,
+            Some(transaction.footprint),
         );
 
     PreparedWorkingStateScope {
@@ -246,7 +263,7 @@ pub(crate) fn prepare_lowered_working_state_scope(
         working_state,
         phase_timing,
         footprint: transaction.footprint.clone(),
-        schema_authority: std::sync::Arc::clone(transaction.mutation_schema_authority()),
+        schema_authority: std::sync::Arc::clone(transaction.schema),
     }
 }
 

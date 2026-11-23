@@ -1,23 +1,36 @@
-use super::*;
-use crate::diagnostics::data::{RelationalDiagnosticFields, RelationalDiagnosticValue};
-use crate::snapshots::data::SnapshotId;
+use super::context::VisibilityReadContext;
+use crate::diagnostics::data::{
+    DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
+    RelationalDiagnosticArtifact, RelationalDiagnosticFields, RelationalDiagnosticValue,
+    RelationalDiagnosticsEntry,
+};
+use crate::runtime::state::subsystems::visibility::cache::VisibilityResidency;
+use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
+use crate::visibility::{
+    cache_state::{
+        cached_historical_state_for_version, cached_state, residency, residency_for_version,
+        VisibilityCacheInputs,
+    },
+    snapshot_states::{resolve_snapshot_basis, resolve_snapshot_handle, SnapshotReadDirectory},
+};
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_version_read_path(
         &self,
         version_id: crate::identity::data::VersionId,
     ) -> Option<RelationalDiagnosticArtifact> {
-        if version_id.is_zero() || version_id.as_u64() > self.runtime.current_version_id().as_u64()
+        let inputs = VisibilityCacheInputs::from(self.runtime);
+        if version_id.is_zero()
+            || version_id.as_u64() > inputs.history.history.current_version_id().as_u64()
         {
             return None;
         }
 
-        let residency = residency_for_version(self.runtime, version_id);
-        let cached = cached_historical_state_for_version(self.runtime, version_id).is_some();
-        let recent_window = self.runtime.recent_visibility_window();
-        let protected = is_protected_for_runtime(self.runtime, &residency);
-        let recent_candidate =
-            self.runtime.visibility_cache_enabled() && recent_window > 0 && !protected;
+        let residency = residency_for_version(inputs, version_id);
+        let cached = cached_historical_state_for_version(inputs, version_id).is_some();
+        let recent_window = inputs.policy.recent_version_window;
+        let protected = inputs.protects(&residency);
+        let recent_candidate = inputs.policy.enabled && recent_window > 0 && !protected;
 
         let mut entries = Vec::new();
         if !cached {
@@ -43,20 +56,18 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         handle: &SnapshotHandle,
     ) -> Option<RelationalDiagnosticArtifact> {
-        let snapshot = resolve_snapshot_handle(self.runtime, handle)?;
-        let basis = resolve_snapshot_basis(self.runtime, handle)?;
+        let directory = SnapshotReadDirectory::from(self.runtime);
+        let inputs = VisibilityCacheInputs::from(self.runtime);
+        let snapshot = resolve_snapshot_handle(directory, handle)?;
+        let basis = resolve_snapshot_basis(directory, handle)?;
         let version_id = snapshot.version_id;
-        let residency = residency(self.runtime, &basis);
-        let cached = cached_state(self.runtime, &basis).is_some();
-        let recent_window = self.runtime.recent_visibility_window();
-        let published_handle = self
-            .runtime
-            .visibility
-            .active_handle_binding(handle.snapshot_id)
-            .is_none();
-        let protected = is_protected_for_basis(self.runtime, &basis, &residency);
-        let recent_candidate = (!self.runtime.protect_active_snapshots() || published_handle)
-            && self.runtime.visibility_cache_enabled()
+        let residency = residency(inputs, &basis);
+        let cached = cached_state(inputs, &basis).is_some();
+        let recent_window = inputs.policy.recent_version_window;
+        let published_handle = !directory.is_active(handle.snapshot_id);
+        let protected = inputs.protects(&residency);
+        let recent_candidate = (!inputs.policy.protect_active_snapshots || published_handle)
+            && inputs.policy.enabled
             && recent_window > 0
             && !protected;
         let mut entries = Vec::new();
@@ -160,24 +171,6 @@ fn snapshot_miss_entry(published_handle: bool) -> RelationalDiagnosticsEntry {
         "read will reconstruct visibility state from committed history",
         visibility_cache_miss_fields(published_handle),
     )
-}
-
-fn is_protected(residency: &VisibilityResidency) -> bool {
-    residency.branch_head_refs > 0 || residency.replay_refs > 0
-}
-
-fn is_protected_for_runtime(runtime: &RelationalRuntime, residency: &VisibilityResidency) -> bool {
-    is_protected(residency)
-        || (runtime.protect_active_snapshots() && residency.active_snapshot_refs > 0)
-}
-
-fn is_protected_for_basis(
-    runtime: &RelationalRuntime,
-    basis: &crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    residency: &VisibilityResidency,
-) -> bool {
-    let _ = basis;
-    is_protected_for_runtime(runtime, residency)
 }
 
 fn published_snapshot_handle_read_entry(

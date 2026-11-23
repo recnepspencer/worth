@@ -1,7 +1,7 @@
 //! Copy custody of the actual overlay, with no independent input container.
 use super::*;
-use crate::mvcc::plan_copy_admission::{intent_bytes, reserve_copy, slots};
-use crate::transactions::data::TransactionCommitError;
+use crate::mvcc::transaction::normalized_plan::{intent_bytes, reserve_copy, slots};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
 impl DetachedRelationalTransactionOverlay {
@@ -26,7 +26,7 @@ impl DetachedRelationalTransactionOverlay {
     ) -> Result<Self, TransactionCommitError> {
         request
             .consult()
-            .map_err(crate::mvcc::plan_copy_admission::request_denial)?;
+            .map_err(crate::mvcc::transaction::normalized_plan::request_denial)?;
         let copied_input_memory = reserve_copy(request, self.input_copy_bytes())?;
         Ok(Self {
             effective_records: self.effective_records.clone(),
@@ -56,17 +56,17 @@ impl DetachedRelationalTransactionOverlay {
     ) -> Result<(), TransactionCommitError> {
         request
             .consult()
-            .map_err(crate::mvcc::plan_copy_admission::request_denial)?;
+            .map_err(crate::mvcc::transaction::normalized_plan::request_denial)?;
         let bytes = self
             .input_copy_bytes()
             .and_then(|bytes| {
                 bytes.checked_add(self.normalized_client_keys.replacement_bytes(keys)?)
             })
             .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(crate::mvcc::plan_copy_admission::copy_overflow)?;
+            .ok_or_else(crate::mvcc::transaction::normalized_plan::copy_overflow)?;
         if let Some(memory) = &mut self.copied_input_memory {
             memory.resize(bytes).map_err(|denial| {
-                crate::mvcc::plan_copy_admission::request_denial(
+                crate::mvcc::transaction::normalized_plan::request_denial(
                     worth_execution::WorkCeilingDenial::Admission(
                         worth_execution::LeaseDenial::MemoryExhausted(denial),
                     ),

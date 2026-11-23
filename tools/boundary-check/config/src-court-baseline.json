@@ -84,7 +84,6 @@
 {"source":"crates/worth-relational/src/authorization/tests/scale.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/authorization/tests/strictly_greater.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/authorization/tests/witnesses.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
-{"source":"crates/worth-relational/src/branch/basis_admission_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/branch/basis_registry/retirement/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/branch/basis_registry_scale_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},

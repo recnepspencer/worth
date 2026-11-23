@@ -22,6 +22,9 @@ impl<'a> SnapshotReadDirectory<'a> {
             runtime_identity,
         }
     }
+    pub(crate) fn is_active(self, id: crate::snapshots::data::SnapshotId) -> bool {
+        self.visibility.active_handle_binding(id).is_some()
+    }
 }
 
 pub(crate) fn resolve_snapshot_handle<'a>(
@@ -153,11 +156,11 @@ pub(crate) fn resolve_snapshot_inspection<'a>(
     let directory = directory.into();
     let handle = resolve_snapshot_handle(directory, handle)?;
     let basis = resolve_snapshot_basis(directory, &handle)?;
-    let counts = basis.root().live_counts();
+    let counts = basis.projection_root().live_counts();
     Some(SnapshotInspectionSummary {
         branch_id: handle.branch_id,
         version_id: handle.version_id,
-        root_id: Some(basis.root().id()),
+        root_id: Some(basis.projection_root().id()),
         entity_count: counts.entities,
         relation_count: counts.relations,
         pinned_entity_count: 0,

@@ -1,3 +1,4 @@
+use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::{PartitionAccess, PartitionState};
@@ -11,12 +12,12 @@ pub(super) struct HistoricalProjectionReader<'view> {
     basis: &'view HistoricalVisibilityBasis,
 }
 
-pub(super) enum HistoricalProjectionStorage<'view, Storage: PartitionAccess> {
-    Retained(&'view Storage),
+pub(super) enum HistoricalProjectionStorage<'view> {
+    Retained(SnapshotProjectionRoot<'view>),
     EmptyGenesis,
 }
 
-impl<Storage: PartitionAccess> PartitionAccess for HistoricalProjectionStorage<'_, Storage> {
+impl PartitionAccess for HistoricalProjectionStorage<'_> {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         match self {
             Self::Retained(root) => root.get_partition(partition_id),
@@ -25,9 +26,7 @@ impl<Storage: PartitionAccess> PartitionAccess for HistoricalProjectionStorage<'
     }
 }
 
-impl<Storage: PartitionAccess> crate::storage::overlay::CurrentPartitionAccess
-    for HistoricalProjectionStorage<'_, Storage>
-{
+impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionStorage<'_> {
     fn get_current_partition(
         &self,
         id: PartitionId,
@@ -268,9 +267,9 @@ impl<'view> HistoricalProjectionReader<'view> {
             )
     }
 
-    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_, impl PartitionAccess> {
+    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {
         match self.basis.root() {
-            Some(root) => HistoricalProjectionStorage::Retained(root.as_ref()),
+            Some(root) => HistoricalProjectionStorage::Retained(root),
             None => HistoricalProjectionStorage::EmptyGenesis,
         }
     }

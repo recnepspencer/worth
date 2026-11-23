@@ -37,7 +37,7 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         visit: impl FnMut(crate::identity::data::PartitionId) -> Result<(), E>,
     ) -> Result<(), E> {
-        match self.selected_root() {
+        match self.basis.root() {
             Some(root) => root.try_for_each_partition_id(visit),
             None => Ok(()),
         }
@@ -48,7 +48,8 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
     ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
-        self.selected_root()
+        self.basis
+            .root()
             .into_iter()
             .flat_map(move |root| root.entity_ids_of_kind(kind, partition))
     }
@@ -58,7 +59,8 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
     ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
-        self.selected_root()
+        self.basis
+            .root()
             .into_iter()
             .flat_map(move |root| root.relation_ids_of_kind(kind, partition))
     }
@@ -67,14 +69,13 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         partition: crate::identity::data::PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.selected_root()?.accepted_head_region_view(partition)
+        self.basis.root()?.accepted_head_region_view(partition)
     }
     fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
         if let Some(resident) = &self.resident {
             Some(resident)
         } else {
-            self.selected_root()
-                .map(|root| root.as_ref() as &dyn crate::storage::overlay::PartitionAccess)
+            self.basis.root().map(|root| root.partition_access())
         }
     }
     fn is_exact_basis(&self) -> bool {

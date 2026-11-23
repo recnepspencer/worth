@@ -21,6 +21,14 @@ pub(crate) struct VisibilityCacheInputs<'a> {
     pub(crate) records: SnapshotRecordReadInputs<'a>,
     pub(crate) instrumentation: &'a RuntimeInstrumentation,
 }
+impl VisibilityCacheInputs<'_> {
+    pub(crate) fn protects(self, residency: &VisibilityResidency) -> bool {
+        residency.branch_head_refs > 0
+            || residency.replay_refs > 0
+            || (self.policy.protect_active_snapshots && residency.active_snapshot_refs > 0)
+    }
+}
+
 use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
 use crate::visibility::snapshot_states::{
     HistoricalVisibilityBasis, HistoricalVisibilityDenial, SnapshotState, VisibilitySnapshotBasis,
@@ -203,9 +211,7 @@ pub(crate) fn is_protected<'a>(
 ) -> bool {
     let inputs = inputs.into();
     let residency = residency(inputs, basis);
-    residency.branch_head_refs > 0
-        || residency.replay_refs > 0
-        || (inputs.policy.protect_active_snapshots && residency.active_snapshot_refs > 0)
+    inputs.protects(&residency)
 }
 
 pub(crate) fn mark_recent_state<'a>(
@@ -232,9 +238,7 @@ fn basis_key(basis: &HistoricalVisibilityBasis) -> VisibilitySnapshotStateKey {
 
 fn is_key_protected(inputs: VisibilityCacheInputs<'_>, key: &VisibilitySnapshotStateKey) -> bool {
     let residency = inputs.cache.residency(key);
-    residency.branch_head_refs > 0
-        || residency.replay_refs > 0
-        || (inputs.policy.protect_active_snapshots && residency.active_snapshot_refs > 0)
+    inputs.protects(&residency)
 }
 
 pub(crate) fn evict_cache_if_needed<'a>(inputs: impl Into<VisibilityCacheInputs<'a>>) {
@@ -257,11 +261,7 @@ pub(crate) fn evict_cache_if_needed<'a>(inputs: impl Into<VisibilityCacheInputs<
                 break;
             };
             let candidate_residency = inputs.cache.residency(&candidate);
-            if candidate_residency.branch_head_refs > 0
-                || candidate_residency.replay_refs > 0
-                || (inputs.policy.protect_active_snapshots
-                    && candidate_residency.active_snapshot_refs > 0)
-            {
+            if inputs.protects(&candidate_residency) {
                 inputs.cache.enqueue_recent_candidate(candidate);
                 continue;
             }

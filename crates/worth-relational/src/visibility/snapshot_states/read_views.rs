@@ -35,11 +35,11 @@ pub(crate) fn read_view_from_snapshot_state(
                     None => state.handle.version_id.is_zero(),
                 }
             );
-            let root = basis.root();
+            let root = basis.projection_root();
             materialize_exact(
                 inputs,
                 state,
-                root.as_ref(),
+                &root,
                 root.schema_authority().registry(),
                 charge,
                 memory,
@@ -48,12 +48,9 @@ pub(crate) fn read_view_from_snapshot_state(
         SnapshotStateBasis::Historical(basis) => materialize_historical(
             inputs,
             state,
-            basis.root().map(|root| {
-                (
-                    root.as_ref() as &dyn PartitionAccess,
-                    root.schema_authority().registry(),
-                )
-            }),
+            basis
+                .root()
+                .map(|root| (root.partition_access(), root.schema_authority().registry())),
             state.handle.version_id,
             charge,
             memory,

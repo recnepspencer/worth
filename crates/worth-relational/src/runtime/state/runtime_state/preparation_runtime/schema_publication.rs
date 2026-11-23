@@ -63,3 +63,27 @@ impl<'a> From<&'a RelationalPreparationRuntime> for OutputPreparationInputs<'a> 
         }
     }
 }
+
+use crate::visibility::materialization::read_records::reader::pinned_read::candidate::AppliedCandidateCapture;
+
+impl<'a> From<&'a RelationalPreparationRuntime> for AppliedCandidateCapture<'a> {
+    fn from(runtime: &'a RelationalPreparationRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            instrumentation: &runtime.services.instrumentation,
+            runtime_instance_id: runtime.runtime_instance_id(),
+        }
+    }
+}
+
+use crate::authority::commit::pipeline::execution_admission::CommitExecutionAdmission;
+
+impl<'a> From<&'a RelationalPreparationRuntime> for CommitExecutionAdmission<'a> {
+    fn from(runtime: &'a RelationalPreparationRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+            instrumentation: &runtime.services.instrumentation,
+            runtime_identity: runtime.runtime_instance_id(),
+        }
+    }
+}

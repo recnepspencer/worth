@@ -1,4 +1,4 @@
-mod retirement;
+pub(crate) mod retirement;
 pub use retirement::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,

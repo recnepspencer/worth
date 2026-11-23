@@ -22,7 +22,7 @@ impl VisibilityProjectionView {
         demand: AdjacencyDemand,
     ) -> Result<(), Cause> {
         crate::execution::request_custody::check_request(execution)?;
-        let Some(root) = self.selected_root() else {
+        let Some(root) = self.basis.root() else {
             return Ok(());
         };
         let root_source = root.symbol_admitted_projection(&self.symbols);

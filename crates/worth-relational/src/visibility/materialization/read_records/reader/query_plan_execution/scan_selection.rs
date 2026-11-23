@@ -49,7 +49,7 @@ pub(super) fn leased_scan_partitions(
     ),
     worth_execution::MapKernelFailure<()>,
 > {
-    let root = basis.root();
+    let root = basis.projection_root();
     let region_count = root.region_count();
     budget.claim_items::<crate::identity::data::PartitionId>(region_count.saturating_mul(2))?;
     let mut entities = Vec::with_capacity(region_count);
@@ -94,7 +94,7 @@ pub(super) fn kind_regions(
     entity: bool,
     kind: crate::identity::data::KindId,
 ) -> Box<dyn Iterator<Item = crate::identity::data::PartitionId> + '_> {
-    let root = basis.root();
+    let root = basis.projection_root();
     if entity {
         Box::new(root.entity_regions_of_kind(kind))
     } else {

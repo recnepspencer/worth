@@ -13,17 +13,8 @@ impl RelationalRuntime {
         Option<VisibilitySnapshotBasis>,
         crate::branch::basis_denial::RelationalBranchBasisDenial,
     > {
-        let identity = self
-            .branch_identity(branch_id)
-            .map_err(branch_identity_denial)?;
-        let (_, basis) = self.observe_branch(&identity)?;
-        let observation = basis.observation();
-        if observation.version_id() != version_id {
-            return Ok(None);
-        }
-        Ok(Some(VisibilitySnapshotBasis::from_observation(
-            &observation,
-        )))
+        crate::branch::basis_observation_inputs::BranchObservationInputs::from(self)
+            .capture_current_visibility_basis(branch_id, version_id)
     }
 
     /// Best-effort selection for optional derived-state maintenance. The
@@ -37,27 +28,5 @@ impl RelationalRuntime {
         self.capture_current_visibility_basis(branch_id, version_id)
             .ok()
             .flatten()
-    }
-}
-
-fn branch_identity_denial(
-    denial: crate::branch::identity::RelationalBranchIdentityDenial,
-) -> crate::branch::basis_denial::RelationalBranchBasisDenial {
-    match denial {
-        crate::branch::identity::RelationalBranchIdentityDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        } => crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        },
-        crate::branch::identity::RelationalBranchIdentityDenial::UnknownBranch(branch_id) => {
-            crate::branch::basis_denial::RelationalBranchBasisDenial::UnknownBranch(branch_id)
-        }
-        crate::branch::identity::RelationalBranchIdentityDenial::IdentityMismatch => {
-            crate::branch::basis_denial::RelationalBranchBasisDenial::MixedAxis(
-                crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Branch,
-            )
-        }
     }
 }

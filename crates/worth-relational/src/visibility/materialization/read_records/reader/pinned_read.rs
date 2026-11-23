@@ -11,7 +11,7 @@ use crate::visibility::snapshot_states::{
 use std::{collections::BTreeMap, sync::Arc};
 
 mod aggregate_reads;
-mod candidate;
+pub(crate) mod candidate;
 mod derived_source;
 mod frontier_reads;
 mod index_lookups;

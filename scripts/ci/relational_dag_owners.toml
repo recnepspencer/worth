@@ -118,7 +118,10 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/basis_denial" = "contracts"
 "branch/basis_currentness_runtime.rs" = "runtime"
 "branch/basis_observation" = "runtime"
+"branch/basis_observation_inputs.rs" = "branch"
+"branch/head_visibility_inputs.rs" = "branch"
 "branch/basis_readmission" = "runtime"
+"branch/basis_readmission_inputs.rs" = "branch"
 "branch/basis_retention_runtime.rs" = "runtime"
 # The installed-runtime driver is mounted by the Branch source court.
 "branch/basis_registry_scale_tests.rs" = "courts"
@@ -432,6 +435,14 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/transaction/footprint_staging.rs" = "mutation"
 "mvcc/transaction/index_row.rs" = "mutation"
 "mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/staged_plan.rs" = "publication"
+"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
+"mvcc/transaction/staged_mutations.rs" = "mutation"
+"mvcc/transaction/normalized_key_cache" = "mutation"
+"mvcc/transaction/effective_records.rs" = "mutation"
+"mvcc/transaction/relation_value.rs" = "mutation"
+"mvcc/transaction/overlay_normalization.rs" = "mutation"
+"mvcc/transaction/overlay" = "mutation"
 "mvcc/transaction/overlay_indexing.rs" = "mutation"
 "mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
@@ -485,6 +496,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/predecessor_publication.rs" = "runtime"
 "runtime/publication_authority.rs" = "runtime"
 "runtime/publication_body.rs" = "runtime"
+"runtime/interruption_counters.rs" = "contracts"
 "runtime/operation_control/interruption_event" = "contracts"
 # Native contract comparison is pure schema meaning. Runtime translates installation refusal.
 "runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis" = "contracts"
@@ -918,6 +930,14 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "mvcc/transaction/footprint_staging.rs" = "mutation"
 "mvcc/transaction/index_row.rs" = "mutation"
 "mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/staged_plan.rs" = "publication"
+"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
+"mvcc/transaction/staged_mutations.rs" = "mutation"
+"mvcc/transaction/normalized_key_cache" = "mutation"
+"mvcc/transaction/effective_records.rs" = "mutation"
+"mvcc/transaction/relation_value.rs" = "mutation"
+"mvcc/transaction/overlay_normalization.rs" = "mutation"
+"mvcc/transaction/overlay" = "mutation"
 "mvcc/transaction/overlay_indexing.rs" = "mutation"
 "mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
@@ -1011,3 +1031,26 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Paid merge mutation plan reconstruction uses the normalized-intent owner.
 "mvcc/transaction/reconstructed_merge_plan" = "mutation"
+
+# Weak allocation identity does not require checkpoint custody or recovery.
+"storage/substrate/allocation_witness.rs" = "storage"
+
+# Retained snapshots lend native projection reads while raw custody stays with roots.
+"branch/root_snapshot_custody.rs" = "branch"
+"history/retention/snapshot_projection_root.rs" = "branch"
+
+# Interruption counter values are shared observation data.
+"runtime/interruption_counters.rs" = "contracts"
+
+"branch/basis_observation_inputs.rs" = "branch"
+"branch/head_visibility_inputs.rs" = "branch"
+
+# Plan counters belong to the instrumentation owner.
+"runtime/state/subsystems/services/instrumentation/bulk_mutation_counters.rs" = "branch"
+
+# Branch owns exact transported-basis matching and readmission.
+"branch/basis_readmission_inputs.rs" = "branch"
+
+# The selected root and retired raw shares remain with retention custody.
+"history/retention/selected_snapshot.rs" = "branch"
+"history/retention/snapshot_basis_retirement.rs" = "branch"

@@ -107,6 +107,12 @@ impl RelationalRetainedHistoricalRoot {
             })
     }
 
+    pub(crate) fn projection_root(
+        &self,
+    ) -> super::snapshot_projection_root::SnapshotProjectionRoot<'_> {
+        super::snapshot_projection_root::SnapshotProjectionRoot::borrowed(&self.root)
+    }
+
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
         &self.root
     }

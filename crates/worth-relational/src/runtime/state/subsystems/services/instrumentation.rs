@@ -159,3 +159,5 @@ impl RuntimeInstrumentation {
         Arc::clone(&self.external_retention_terminals)
     }
 }
+
+mod bulk_mutation_counters;

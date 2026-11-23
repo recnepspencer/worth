@@ -10,7 +10,6 @@ mod schema_continuity_counters;
 #[cfg(test)]
 mod test_complexity_observability;
 mod validation_counters;
-mod working_state_counters;
 
 use crate::runtime::{RelationalRuntime, RuntimeInstrumentation};
 use counter_sink::ComplexityCounterSink;

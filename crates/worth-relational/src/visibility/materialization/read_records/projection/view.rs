@@ -35,10 +35,8 @@ impl VisibilityProjectionView {
         self.basis.version_id()
     }
 
-    pub(crate) fn selected_root(
-        &self,
-    ) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.basis.root()
+    pub(crate) fn snapshot_basis(&self) -> &crate::visibility::snapshot_states::SnapshotStateBasis {
+        &self.basis
     }
 
     pub fn is_exact_basis(&self) -> bool {
@@ -144,9 +142,10 @@ impl VisibilityProjectionView {
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {
         match &self.basis {
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                basis.root().schema_authority().entity_aspect_plan(kind_id)
-            }
+            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => basis
+                .projection_root()
+                .schema_authority()
+                .entity_aspect_plan(kind_id),
             crate::visibility::snapshot_states::SnapshotStateBasis::Historical(_) => self
                 .basis
                 .root()
@@ -234,7 +233,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_snapshot(&self, handle: &SnapshotHandle) -> Option<VisibilityProjectionView> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
-        if basis.root().has_materialization_unavailable() {
+        if basis.projection_root().has_materialization_unavailable() {
             return None;
         }
         Some(VisibilityProjectionView::new(

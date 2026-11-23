@@ -19,13 +19,17 @@ pub(crate) mod basis_descriptor;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
 mod basis_observation;
+pub(crate) mod basis_observation_inputs;
 mod basis_readmission;
+mod basis_readmission_inputs;
 pub(crate) mod basis_registry;
+pub(crate) mod head_visibility_inputs;
 pub(crate) mod historical_selection;
 pub(crate) mod home_program_step;
 #[path = "envelope/retained_allocation.rs"]
 pub(crate) mod retained_allocation;
 pub(crate) mod root_capture_denial;
+mod root_snapshot_custody;
 #[cfg(test)]
 pub(crate) use basis_registry::{
     assert_original_registry_busy, assert_pruned_original_registration,
@@ -193,7 +197,7 @@ pub use version::RelationalBranchVersion;
 
 #[cfg(test)]
 #[path = "basis_admission_tests.rs"]
-mod basis_admission_tests;
+pub(crate) mod basis_admission_tests;
 
 pub(crate) mod symbol_publication;
 pub(crate) mod symbol_read;

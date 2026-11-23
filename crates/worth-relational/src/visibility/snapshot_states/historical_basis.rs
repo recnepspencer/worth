@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::branch::RelationalBranchRoot;
 use crate::history::data::BranchId;
+use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::visibility::branch_scope::HistoricalBasisInputs;
@@ -143,8 +143,10 @@ impl HistoricalVisibilityBasis {
         self.version_id
     }
 
-    pub(crate) fn root(&self) -> Option<&Arc<RelationalBranchRoot>> {
-        self.root.as_ref().map(|retained| retained.root())
+    pub(crate) fn root(&self) -> Option<SnapshotProjectionRoot<'_>> {
+        self.root
+            .as_deref()
+            .map(crate::history::retention::RelationalRetainedHistoricalRoot::projection_root)
     }
 
     pub(crate) fn source_root_id(&self) -> Option<u64> {

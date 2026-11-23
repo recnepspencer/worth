@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
-use crate::branch::RelationalBranchRoot;
 use crate::history::data::BranchId;
+use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
 use crate::storage::overlay::SnapshotPartitionPins;
 
-use super::HistoricalVisibilityBasis;
+use super::{HistoricalVisibilityBasis, VisibilitySnapshotBasis};
 
 /// Exact equivalence identity for one derived visibility state.
 ///
@@ -40,23 +39,20 @@ enum VisibilitySnapshotStateKeyKind {
 }
 
 impl VisibilitySnapshotStateKey {
-    fn exact(branch_id: BranchId, version_id: VersionId, root: &RelationalBranchRoot) -> Self {
+    pub(crate) fn for_selection(
+        branch_id: BranchId,
+        version_id: VersionId,
+        root_id: u64,
+        schema_commitment: [u8; 32],
+    ) -> Self {
         Self(VisibilitySnapshotStateKeyKind::Exact(
             ExactVisibilitySnapshotStateKey {
                 branch_id,
                 version_id,
-                root_id: root.id(),
-                schema_commitment: root.schema_authority().authority_digest(),
+                root_id,
+                schema_commitment,
             },
         ))
-    }
-
-    pub(crate) fn for_root(
-        branch_id: BranchId,
-        version_id: VersionId,
-        root: &RelationalBranchRoot,
-    ) -> Self {
-        Self::exact(branch_id, version_id, root)
     }
 
     pub(crate) fn historical(basis: &HistoricalVisibilityBasis) -> Self {
@@ -82,129 +78,6 @@ impl VisibilitySnapshotStateKey {
             VisibilitySnapshotStateKeyKind::Exact(key) => key.version_id,
             VisibilitySnapshotStateKeyKind::Historical(key) => key.version_id,
         }
-    }
-}
-
-/// Owner-selected immutable root retained by a snapshot handle binding.
-#[derive(Clone, Debug)]
-pub(crate) struct VisibilitySnapshotBasis {
-    key: VisibilitySnapshotStateKey,
-    pub(super) root: Arc<RelationalBranchRoot>,
-    pub(super) _retained_observation: Option<crate::mvcc::observation::RelationalBranchObservation>,
-}
-
-/// Exact root custody restricted to the selected snapshot's Head regions.
-pub(crate) struct SnapshotHeadSelection(Arc<RelationalBranchRoot>);
-
-impl SnapshotHeadSelection {
-    pub(crate) fn demand(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        partition: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.0.demand_regions_head(execution, symbols, [partition])
-    }
-
-    pub(crate) fn region(
-        &self,
-        partition: PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.0.accepted_head_region_view(partition)
-    }
-
-    pub(crate) fn witness(
-        &self,
-        partition: PartitionId,
-    ) -> Result<
-        Option<
-            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>,
-        >,
-        PartitionId,
-    > {
-        self.0.accepted_head_region_witness(partition)
-    }
-}
-
-impl VisibilitySnapshotBasis {
-    pub(crate) fn from_applied_root(
-        branch_id: BranchId,
-        version_id: VersionId,
-        root: Arc<RelationalBranchRoot>,
-    ) -> Self {
-        Self {
-            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, &root),
-            root,
-            _retained_observation: None,
-        }
-    }
-
-    pub(crate) fn from_observation(
-        observation: &crate::mvcc::observation::RelationalBranchObservation,
-    ) -> Self {
-        let version_id = observation.version_id();
-        let root = Arc::clone(observation.selected_root());
-        Self {
-            key: VisibilitySnapshotStateKey::exact(
-                observation.identity().branch_id().clone(),
-                version_id,
-                root.as_ref(),
-            ),
-            root,
-            _retained_observation: Some(observation.clone()),
-        }
-    }
-
-    pub(crate) fn key(&self) -> &VisibilitySnapshotStateKey {
-        &self.key
-    }
-
-    pub(crate) fn branch_id(&self) -> &BranchId {
-        self.key.branch_id()
-    }
-
-    pub(crate) const fn version_id(&self) -> VersionId {
-        self.key.version_id()
-    }
-
-    pub(crate) fn head_selection(&self) -> SnapshotHeadSelection {
-        SnapshotHeadSelection(self.root.clone())
-    }
-
-    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
-        &self.root
-    }
-
-    pub(crate) fn schema_registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
-        self.root.schema_authority().registry()
-    }
-
-    pub(crate) fn entity_ids_of_kind(
-        &self,
-        kind: crate::identity::data::KindId,
-        partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
-        self.root.entity_ids_of_kind(kind, partition)
-    }
-
-    pub(crate) fn relation_ids_of_kind(
-        &self,
-        kind: crate::identity::data::KindId,
-        partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
-        self.root.relation_ids_of_kind(kind, partition)
-    }
-
-    #[cfg(test)]
-    pub(in crate::visibility) fn partition_records(
-        &self,
-    ) -> &(impl crate::storage::overlay::CurrentPartitionAccess + crate::storage::overlay::PartitionAccess)
-    {
-        self.root.as_ref()
-    }
-
-    pub(crate) fn root_id(&self) -> u64 {
-        self.root.id()
     }
 }
 
@@ -236,17 +109,16 @@ impl SnapshotStateBasis {
         }
     }
 
-    pub(crate) fn root(&self) -> Option<&Arc<RelationalBranchRoot>> {
+    pub(crate) fn root(&self) -> Option<SnapshotProjectionRoot<'_>> {
         match self {
-            Self::Exact(basis) => Some(basis.root()),
+            Self::Exact(basis) => Some(basis.projection_root()),
             Self::Historical(basis) => basis.root(),
         }
     }
 
     pub(crate) fn root_version(&self) -> Option<VersionId> {
         self.root()
-            .and_then(|root| root.axes())
-            .map(|axes| VersionId(axes.storage_version))
+            .and_then(SnapshotProjectionRoot::storage_version)
     }
 }
 
