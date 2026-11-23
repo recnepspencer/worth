@@ -8608,7 +8608,13 @@ the probed scope unchanged: no created or removed row or path entity, no
 projected field write, no change to a physical Source relation, and no
 creation or removal of the probed scope itself. When the Source's scope kind
 is only its root anchor, a new or removed sibling scope (a feature created in
-the same envelope) does not touch an already-committed peer's Source.
+the same envelope) does not touch an already-committed peer's Source. For an
+ordered-events Source (inline or behind one `forward_derived` relation) a scope
+created in the envelope may also gain a predecessor edge: only its own chain
+can follow it. Everything else the Parent reads is covered too: its projected,
+filtered and ordered fields, its nested result relations, and the scope-key
+field that resolved the probed scope, which is checked on every scope entity
+(field by field where Native kept old and new values).
 Otherwise the read refuses with
 `WorthQueryManagedIndexRefusal::UnpublishedSourceChange` before any provider
 call; the unpublished change is never hidden behind the committed image. The
@@ -8619,13 +8625,16 @@ Input capture readers have no managed index read.
 To read the Parent at a peer scope, declare the governing relation:
 `schema.operation_shared_owner_managed_index_read::<PrefixBinding, _, _, _, _, _>(op, ModelFeature::reference())`.
 A peer is any scope that shares an owner with the operation's own scope through
-that relation (`owner -relation-> own scope` and `owner -relation-> peer`); the
+that relation (`owner -relation-> own scope` and `owner -relation-> peer`);
+declare several governing relations and any of them may admit a peer; the
 relation's `to` endpoint must be the Parent's input-named scope entity, and the
 operation's own scope still needs `operation_managed_index_read`. Both owner
 sets are read as recorded decision facts, and each probed scope records its own
 managed Source fact, so an edit to the relation or to any probed peer's Source
 invalidates the decision. Any other scope, a foreign principal, or a peer with
 no such declaration refuses as `ForeignAssociation` before any provider call.
+A work, cancellation or deadline stop while reaching an owner keeps its own
+typed cause (`WorthQueryComputationManagedIndexDenialKind::ScopeTraversal`).
 A shared decision-read scope cannot lend a peer read: its declaration and its
 archive record are refused.
 

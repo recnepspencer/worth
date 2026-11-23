@@ -67,7 +67,8 @@ fn shared_owner_read_refuses_a_principal_named_peer_and_an_undeclared_relation()
         declared
             .operation()
             .contracts()
-            .shared_owner_managed_index_read(&parent)
+            .shared_owner_managed_index_reads(&parent)
+            .next()
             .is_none(),
         "no peer read is installed unless declared"
     );

@@ -199,6 +199,10 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
                 mutation::RenameItem::reference(),
                 protected::access::grants::GrantResource::reference(),
             )
+            .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+                mutation::RenameItem::reference(),
+                Shelves::reference(),
+            )
             .operation_managed_index_read::<super::super::refinement::ExactBinding, _, _>(
                 mutation::RenameItem::reference(),
             )

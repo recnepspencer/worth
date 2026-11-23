@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
         managed_index::WorthQueryManagedIndexDenial, WorthQueryApplicationQueryAdmissionDenial,
     },
     HandlerExecutionDenial, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantProjectionTraversalDenial,
 };
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial;
@@ -19,6 +20,9 @@ pub enum IndexDecisionFailure {
     NativeAccess(WorthQueryApplicationQueryAdmissionDenial),
     ManagedIndex(WorthQueryManagedIndexDenial),
     Native(CompanionPreflightStop),
+    /// Reaching a declared peer's shared owner stopped (work, cancellation,
+    /// deadline); it is not a foreign scope.
+    ScopeTraversal(WorthQueryInvariantProjectionTraversalDenial),
 }
 
 impl IndexDecisionFailure {
@@ -35,6 +39,7 @@ impl IndexDecisionFailure {
             Self::NativeAccess(cause) => HandlerExecutionDenial::new(cause),
             Self::ManagedIndex(cause) => HandlerExecutionDenial::new(cause),
             Self::Native(cause) => HandlerExecutionDenial::new(IndexDecisionStop::Native(cause)),
+            Self::ScopeTraversal(cause) => HandlerExecutionDenial::new(cause),
         }
     }
 
@@ -50,6 +55,7 @@ impl IndexDecisionFailure {
             // charging a stopped request would replace the original cause.
             Self::ManagedIndex(cause) => Cause::ManagedIndex(Arc::new(cause)),
             Self::Native(cause) => Cause::Native(cause),
+            Self::ScopeTraversal(cause) => Cause::ScopeTraversal(cause),
         };
         WorthQueryComputationManagedIndexDenial {
             cause: Box::new(cause),
@@ -80,6 +86,7 @@ enum Cause {
     NativeAccess(WorthQueryApplicationQueryAdmissionDenial),
     ManagedIndex(Arc<WorthQueryManagedIndexDenial>),
     Native(CompanionPreflightStop),
+    ScopeTraversal(WorthQueryInvariantProjectionTraversalDenial),
 }
 
 /// The phase that refused a computation's managed index read.
@@ -100,6 +107,9 @@ pub enum WorthQueryComputationManagedIndexDenialKind {
     ManagedIndex,
     /// Retaining the read's Source fact refused; see `native_decision_refusal`.
     NativeDecision,
+    /// Reaching a declared peer's shared owner stopped; see
+    /// `scope_traversal_denial`.
+    ScopeTraversal,
 }
 
 impl WorthQueryComputationManagedIndexDenial {
@@ -113,6 +123,7 @@ impl WorthQueryComputationManagedIndexDenial {
             Cause::NativeAccess(_) => Kind::NativeAccess,
             Cause::ManagedIndex(_) => Kind::ManagedIndex,
             Cause::Native(_) => Kind::NativeDecision,
+            Cause::ScopeTraversal(_) => Kind::ScopeTraversal,
         }
     }
     /// The undeclared Parent or projected-field refusal.
@@ -131,6 +142,13 @@ impl WorthQueryComputationManagedIndexDenial {
         }
     }
     /// The exact Native stop retaining the read's Source fact.
+    /// The stop that interrupted reaching a declared peer's shared owner.
+    pub fn scope_traversal_denial(&self) -> Option<&WorthQueryInvariantProjectionTraversalDenial> {
+        match self.cause.as_ref() {
+            Cause::ScopeTraversal(cause) => Some(cause),
+            _ => None,
+        }
+    }
     pub fn native_decision_refusal(&self) -> Option<&CompanionPreflightStop> {
         match self.cause.as_ref() {
             Cause::Native(cause) => Some(cause),
@@ -183,6 +201,7 @@ impl worth_execution::ChargedBytes for WorthQueryComputationManagedIndexDenial {
             | Cause::ContextUnavailable
             | Cause::SourceMismatch
             | Cause::Native(_) => 0,
+            Cause::ScopeTraversal(cause) => cause.relation().len() as u64,
         })
     }
 }

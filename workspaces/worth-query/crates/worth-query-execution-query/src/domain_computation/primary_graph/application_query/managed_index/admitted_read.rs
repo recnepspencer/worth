@@ -45,7 +45,14 @@ where
     // An applied candidate's own unpublished Source change refuses before
     // the provider sees the admitted before basis.
     if let Some(applied) = applied {
-        applied.require_aligned(execution, application, &association, plan.scope.entity_id())?;
+        applied.require_aligned(
+            execution,
+            application,
+            &association,
+            plan.scope.entity_id(),
+            plan.query.read_graph(),
+            &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<S, B>(),
+        )?;
     }
     let selector = retain_scope(execution, plan.scope, plan.query.name()).map_err(|cause| {
         SourceQueryObservationStop::Read(super::super::WorthQueryAdmittedOneShotStop::Execution(

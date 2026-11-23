@@ -260,6 +260,7 @@ pub mod facade {
         WorthQueryInstalledBoundQuery, WorthQueryInstalledGraphOrdering,
         WorthQueryInstalledGraphPredicate, WorthQueryInstalledGraphProjection,
         WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
+        WorthQueryInstalledGraphRelationPredicate,
         WorthQueryInstalledManagedIndex, WorthQueryInstalledManagedIndexAccessContract,
         WorthQueryInstalledManagedIndexParent, WorthQueryInstalledManagedIndexReadMeaning,
         WorthQueryInstalledOutputDependencyContract, WorthQueryInstalledQueryBindingAdmissionStop,

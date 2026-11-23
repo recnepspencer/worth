@@ -14,7 +14,7 @@ pub(crate) fn custody_stop(
     crate::transactions::data::TransactionCommitError::execution(cause.into().into())
 }
 pub use application_publication::{
-    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
+    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
     RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,

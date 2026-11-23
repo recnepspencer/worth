@@ -172,3 +172,20 @@ fn operation_peer_read_then_committed_peer_edit_cannot_publish_the_stale_decisio
         }
     });
 }
+
+#[test]
+fn operation_peer_read_admits_a_peer_through_any_declared_governing_relation() {
+    lifecycle::run(|| {
+        // `shelved` shares no watch grant with `catalog`, only the shelf: the
+        // second declared relation for the same Parent reaches it.
+        let (world, _) = peer_world(DecisionRead::Peer("shelved"));
+        author(&world, "shelved", "s", 0x2830_0040);
+        observed();
+        let outcome = rename_in_catalog(&world, 0x2830_0041, None).unwrap();
+        assert_eq!(observed(), vec![Ok(vec!["s".to_owned()])]);
+        assert!(
+            matches!(outcome, WorthQueryApplicationMutationOutcome::Committed { .. }),
+            "{outcome:?}"
+        );
+    });
+}

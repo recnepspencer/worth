@@ -69,6 +69,25 @@ pub(super) fn seed(
         WorthQueryApplicationEntityKey::new("watch-access").unwrap(),
         WorthQueryApplicationEntityKey::new("peer").unwrap(),
     ))?;
+    // `shelf` groups `catalog` and `shelved`, which shares no watch grant.
+    for directory in ["shelf", "shelved"] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Directory::reference(),
+                WorthQueryApplicationEntityKey::new(directory).unwrap(),
+            )
+            .field(DirectoryIdentity::at("DirectoryIdentity"), directory.to_owned())
+            .field(DirectoryNote::at("DirectoryNote"), String::new()),
+        )?;
+    }
+    for member in ["catalog", "shelved"] {
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            Shelves::reference(),
+            &format!("shelf-{member}"),
+            WorthQueryApplicationEntityKey::new("shelf").unwrap(),
+            WorthQueryApplicationEntityKey::new(member).unwrap(),
+        ))?;
+    }
     Ok(())
 }
 

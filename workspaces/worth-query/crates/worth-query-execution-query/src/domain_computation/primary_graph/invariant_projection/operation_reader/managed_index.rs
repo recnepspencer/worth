@@ -139,7 +139,10 @@ where
             &mut native,
             basis.applied(),
         )
-        .map_err(Failure::ManagedIndex)?;
+        .map_err(|cause| match authority.take_stop() {
+            Some(stop) => Failure::ScopeTraversal(stop),
+            None => Failure::ManagedIndex(cause),
+        })?;
         let snapshot = reader_self.reader().snapshot();
         reader_self
             .decision_facts_mut()

@@ -58,15 +58,15 @@ impl WorthQueryCompiledApplicationOperationContracts {
             self.graph_reads.roles(),
         )
     }
-    /// The declared peer-scope read of `parent`, when this operation declared
-    /// one. Absent, a read outside the operation's own scope stays refused.
-    pub fn shared_owner_managed_index_read(
-        &self,
-        parent: &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference,
-    ) -> Option<&super::WorthQuerySharedOwnerManagedIndexRead> {
+    /// Every declared peer-scope read of `parent`, one per governing relation.
+    /// None declared, a read outside the operation's own scope stays refused.
+    pub fn shared_owner_managed_index_reads<'a>(
+        &'a self,
+        parent: &'a worth_query_declaration::facade::application_query::ApplicationQueryBindingReference,
+    ) -> impl Iterator<Item = &'a super::WorthQuerySharedOwnerManagedIndexRead> + 'a {
         self.shared_owner_managed_index_reads
             .iter()
-            .find(|read| read.parent() == parent)
+            .filter(move |read| read.parent() == parent)
     }
     /// Native publication closure; it does not enlarge a product handler's writer contract.
     pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {
