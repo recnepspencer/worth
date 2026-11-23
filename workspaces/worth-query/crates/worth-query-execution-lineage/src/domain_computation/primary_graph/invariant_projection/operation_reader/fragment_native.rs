@@ -94,7 +94,14 @@ impl NativeFragmentRead<'_, '_> {
             return Err(FragmentDenial::Read(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted))));
         }
         self.native.scope.record(identity.entity_id);
-        let present = match self.native.native.projection(self.native.snapshot) {
+        // A record the successor's own chain wrote is read as it was at the
+        // chain head's pre-pin (#277), as the recorded fact and its
+        // recomparison read it.
+        let present = match self
+            .native
+            .native
+            .projection_of(self.native.snapshot, identity.entity_id)
+        {
             Some(view) => observe_aspect_presence_in_view(
                 &view,
                 self.native.execution,
@@ -107,6 +114,11 @@ impl NativeFragmentRead<'_, '_> {
         let present = match present {
             Ok(Some(present)) => present,
             Ok(None) => {
+                // No such record where it was read: for a covered record that
+                // is the head pre-pin, so the chain created it (#277).
+                if let Some(own) = self.native.native.own_outputs() {
+                    own.mark_incoherent(identity.entity_id);
+                }
                 self.decision
                     .record_outcome(key, DecisionReadOutcome::Failed);
                 return Err(missing(aspect.path()));

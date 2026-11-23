@@ -107,14 +107,25 @@ pub fn fact_record(
 }
 
 /// Whether a successor round's own-output view serves `fact` (§1.5): a field
-/// read of one record, which it reads at the chain head's pre-pin when the
-/// chain wrote that record. Every other single-record fact (presence,
-/// entity, source revisions) is read at the current image.
+/// or aspect-presence read of one record, which it reads at the chain head's
+/// pre-pin when the chain wrote that record (#277). Every other single-record
+/// fact (entity, source revisions) is read at the current image.
 pub fn overlay_served(fact: &Fact) -> bool {
     matches!(
         fact,
-        Fact::Field { .. } | Fact::AbsentField { .. } | Fact::OptionalAspectAbsent { .. }
+        Fact::Field { .. }
+            | Fact::AbsentField { .. }
+            | Fact::OptionalAspectAbsent { .. }
+            | Fact::AspectPresence { .. }
     )
+}
+
+/// Whether the own-output view serves `fact` as a relation list (#277): the
+/// current list minus the chain's own links plus the links it removed. Every
+/// relation or adjacency fact a successor records is served or untouched by
+/// the chain, so its links and unlinks cannot have changed what it read.
+pub fn relation_served(fact: &Fact) -> bool {
+    matches!(fact, Fact::Relation { .. } | Fact::Adjacency { .. })
 }
 
 /// Whether a certified touch could change what `fact` read. Field reads and

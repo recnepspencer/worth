@@ -3,7 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
-    runtime::BoundedAdjacencyTruthRead,
+    runtime::RelationReadRecord,
 };
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         member: EntityId,
         kind: KindId,
         direction: RelationDirection,
-    ) -> Result<BoundedAdjacencyTruthRead, WorthQueryInvariantProjectionTraversalDenial> {
+    ) -> Result<Vec<RelationReadRecord>, WorthQueryInvariantProjectionTraversalDenial> {
         self.native_read()
             .read_adjacency(subject, member, kind, direction)
     }

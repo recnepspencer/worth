@@ -83,8 +83,15 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     // is judged by the touch and the head/current comparison.
                     let overlaid = (record.is_some() && !covered)
                         || matches!(observed, ObservedFact::IndexedEntitySelection { .. });
+                    // A served relation list (#277) excludes exactly the
+                    // chain's own links and unlinks; every other touch still
+                    // counts (deletion and unrepresentable mutation stay
+                    // conservative).
+                    let relation_served = touch_key::relation_served(observed);
                     let touched = prior.iter().any(|touch| {
-                        !(overlaid && entity_local(touch)) && touch_key::touch_changes(touch, observed)
+                        !(overlaid && entity_local(touch))
+                            && !(relation_served && relation_link(touch))
+                            && touch_key::touch_changes(touch, observed)
                     });
                     // A read that is the same before the chain as now cannot
                     // have observed the chain's effect.
@@ -133,6 +140,15 @@ fn charge(
                 subject,
             )
         })
+}
+
+/// A touch that links or unlinks a relation: the served relation list
+/// already excludes the chain's own.
+fn relation_link(touch: &Touch) -> bool {
+    matches!(
+        touch,
+        Touch::LinkRelation { .. } | Touch::UnlinkRelation { .. }
+    )
 }
 
 /// A touch that writes only the entity it creates or changes.

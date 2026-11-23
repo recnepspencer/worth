@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
-    ApplicationOperationBodyRequirementSource as Source,
+    ApplicationOperationBodyRequirementSource as Source, RelationDirection,
 };
 use worth_relational::facade::identity::EntityId;
 
@@ -74,43 +74,19 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         )
         .map_err(HandlerExecutionDenial::new)?;
         self.realized_scope.record(identity.entity_id);
-        self.admit_adjacency_list(relation)
-            .map_err(HandlerExecutionDenial::new)?;
-        let view = self
-            .branch_view(relation)
-            .map_err(HandlerExecutionDenial::new)?;
-        let read = match direction {
-            Direction::Outgoing => view.bounded_outgoing_relations_of_kind_admitted(
-                self.execution,
+        // The one adjacency owner: admitted, charged, and served through a
+        // successor's own-output view (#277).
+        let records = self
+            .read_adjacency(
+                relation,
                 identity.entity_id,
                 layout.kind,
-                self.work_budget.remaining(),
-                |_| Ok(()),
-            ),
-            Direction::Incoming => view.bounded_incoming_relations_of_kind_admitted(
-                self.execution,
-                identity.entity_id,
-                layout.kind,
-                self.work_budget.remaining(),
-                |_| Ok(()),
-            ),
-        }
-        .map_err(|cause| {
-            HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(cause))
-        })?
-        .map_err(|limit| {
-            HandlerExecutionDenial::new(self.adjacency_limit_denial(limit, relation))
-        })?;
-        if !self.work_budget.consume(read.work_units()) {
-            return Err(HandlerExecutionDenial::new(
-                WorthQueryAdvancementDenial::Resource(
-                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                ),
-            ));
-        }
-        self.work
-            .record_adjacencies(1, read.relation_records_examined());
-        let records = read.into_records();
+                match direction {
+                    Direction::Outgoing => RelationDirection::Forward,
+                    Direction::Incoming => RelationDirection::Reverse,
+                },
+            )
+            .map_err(HandlerExecutionDenial::new)?;
         let bytes = records
             .len()
             .checked_mul(size_of::<EntityId>())
