@@ -124,18 +124,13 @@ enum Refusal {
     /// The envelope's own rule (pinned by the positioned conflicting-intent
     /// court): two authored stages that write one target, `(earlier, later)`.
     Conflict(usize, usize),
-    /// The authored stage (its ordinal) that changed the input of a producer
-    /// prepared earlier in the envelope; held until in-envelope producer
-    /// supersession (#229).
-    Supersession(usize),
     /// Any other refusal, as it was reported.
     Other(String),
 }
 
 fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
     use worth_query_host::facade::primary_graph::{
-        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryCoupledSupportHold as Hold,
-        WorthQueryInvariantExecutionDenialKind as Kind2, WorthQueryOutputDemandDenialKind as Kind,
+        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryOutputDemandDenialKind as Kind,
     };
     let Ok(Outcome::Uncommitted(Uncommitted::Denied(cause))) = outcome else {
         return Refusal::Other(format!("{outcome:?}"));
@@ -145,34 +140,11 @@ fn refusal<E: std::fmt::Debug>(outcome: &Result<Outcome, E>) -> Refusal {
     {
         return Refusal::Conflict(earlier, later);
     }
-    let Some(failure) = cause.invariant_execution_failure() else {
-        return Refusal::Other(format!("{cause:?}"));
-    };
-    match failure.coupled_support_hold() {
-        Some(Hold::ProducerSupersession) => {
-            assert_eq!(
-                failure.kind(),
-                Kind2::CoupledReadSupportChanged,
-                "{failure:?}"
-            );
-            let writer = (failure.detail().split_once("later writer authored stage "))
-                .and_then(|(_, rest)| rest.split(' ').next()?.parse().ok())
-                .unwrap_or_else(|| {
-                    panic!("a hold not attributed to an authored stage: {failure:?}")
-                });
-            Refusal::Supersession(writer)
-        }
-        // Holds for other open issues (#238, #239) are not this property's.
-        Some(
-            Hold::DiscoverySupportChanged
-            | Hold::ReaderProducerSupersession
-            | Hold::ConsumerSupersession,
-        )
-        | None => Refusal::Other(format!("{cause:?}")),
-    }
+    Refusal::Other(format!("{cause:?}"))
 }
 
-/// The held shape (#229), established from the stages alone. A root is only
+/// The formerly held shape (#229), established from the stages alone, kept
+/// as the named courts' shape witness: every such edit now commits. A root is only
 /// derived inside the envelope at a pre-write barrier: a later stage that
 /// reads an output (`After` or `Consume`) while a demand is already pending
 /// from an earlier stage. `After` queues its own root only after its stage
@@ -271,17 +243,9 @@ proptest! {
                 "{:?}: a conflict between stages that write different targets",
                 stages
             );
-        } else if let Err(Refusal::Supersession(writer)) = outcome {
-            // Held on #229, only for its shape, attributed to its exact stage.
-            prop_assert_eq!(
-                Some(writer),
-                superseding_stage(&stages),
-                "{:?}: a supersession hold without its evidence",
-                stages
-            );
         } else {
-            // Liveness and safety (#224): otherwise the positioned edit commits
-            // the world one commit per stage commits.
+            // Liveness and safety (#224, PR C): otherwise the positioned edit
+            // commits the world one commit per stage commits. No hold remains.
             prop_assert_eq!(outcome, Ok(expected), "{:?}: a positioned edit differs from one commit per stage", stages);
         }
     }
@@ -319,12 +283,12 @@ fn a_leading_after_read_before_a_model_write_commits() {
     assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }
 
-/// The held shape (#229): `first:a` is prepared for the consumer, then a later
-/// stage changes its model. One commit per stage commits first 30; the
-/// positioned edit refuses atomically with the supersession hold and nothing
-/// else, attributed to the later authored stage.
+/// The formerly held shape (#229): `first:a` is retained for the consumer,
+/// then a later stage changes its model. Qualified use reopens it and its
+/// discovered child, so the positioned edit commits exactly the world one
+/// commit per stage commits: first 30, child 3000, results [21, 2000, 3].
 #[test]
-fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
+fn a_later_stage_changing_a_retained_producers_input_commits_the_sequential_world() {
     let stages = [
         (0, Stage::After(1)),
         (1, Stage::Consume),
@@ -332,5 +296,5 @@ fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
     ];
     assert_eq!(sequential(&stages).first, Some(30));
     assert_eq!(superseding_stage(&stages), Some(2));
-    assert_eq!(positioned(&stages), Err(Refusal::Supersession(2)));
+    assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }

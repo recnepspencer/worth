@@ -16,6 +16,7 @@ pub mod movement;
 pub mod retirement_equality;
 pub mod source_currentness;
 pub mod source_read_authorization;
+pub mod touch_key;
 
 pub mod source_merge;
 pub mod source_publication_read;

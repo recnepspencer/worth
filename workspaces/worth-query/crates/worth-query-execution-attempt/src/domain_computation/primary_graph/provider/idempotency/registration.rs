@@ -14,6 +14,13 @@ use worth_relational::facade::transactions::{
 // the creation correspondence for the original application operation.
 pub const ORIGINAL_CLIENT_KEY_PREFIX: &str = "worth-query-idempotency:";
 
+/// The local create coordinate of `binding`'s original idempotency record.
+pub(in crate::domain_computation::primary_graph) fn original_client_key(
+    binding: WorthQueryApplicationIdempotencyBinding,
+) -> String {
+    format!("{ORIGINAL_CLIENT_KEY_PREFIX}{}", binding.key_text())
+}
+
 pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,
     binding: WorthQueryApplicationIdempotencyBinding,
@@ -57,9 +64,7 @@ pub fn idempotency_create_intent(
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
         partition_id: mutation_partition,
         kind_id: layout.entity_kind,
-        client_key: worth_relational::facade::symbols::ClientKey::raw(format!(
-            "{ORIGINAL_CLIENT_KEY_PREFIX}{key}"
-        )),
+        client_key: worth_relational::facade::symbols::ClientKey::raw(original_client_key(binding)),
         fields: AspectFieldPatch::from(fields),
     }))
 }

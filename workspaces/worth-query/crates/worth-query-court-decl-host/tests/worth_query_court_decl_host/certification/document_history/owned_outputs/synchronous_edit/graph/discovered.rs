@@ -4,6 +4,7 @@ mod failure;
 mod permission;
 mod program;
 mod read_only_delivery;
+mod root_window;
 mod support;
 mod typed_refusal;
 fn exercise(worker: bool, cold: bool) {

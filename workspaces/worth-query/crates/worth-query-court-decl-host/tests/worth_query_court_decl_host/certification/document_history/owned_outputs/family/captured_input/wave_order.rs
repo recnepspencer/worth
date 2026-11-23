@@ -3,7 +3,7 @@
 //!
 //! Base order is a recorded golden: every scenario's wave events (each ranked
 //! batch with id, each prepare with occurrence identity and outcome, each break
-//! and quiescent reclosure), the edit outcome (with typed hold), and the outputs
+//! and quiescent reclosure), the edit outcome, and the outputs
 //! it reads. Goldens are recorded at base with `WORTH_RECORD_WAVE_ORDER=1`.
 use super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::*;
@@ -42,8 +42,10 @@ macro_rules! edit_stage {
     }};
 }
 
+mod pr_c_cost;
 mod proptest_diff;
 mod r3_shapes;
+mod sibling_reopen;
 mod work_bounds;
 
 const GOLDEN: &str = "tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/captured_input/wave_order.golden";
@@ -75,11 +77,7 @@ pub(super) fn summarize_outcome(
         Outcome::Committed(_) => "committed".to_owned(),
         Outcome::Uncommitted(Uncommitted::Denied(cause)) => {
             if let Some(failure) = cause.invariant_execution_failure() {
-                format!(
-                    "refused {:?} hold={:?}",
-                    failure.kind(),
-                    failure.coupled_support_hold()
-                )
+                format!("refused {:?}", failure.kind())
             } else if let Some(denial) = cause.coupled_producer_denial() {
                 format!("refused {:?}", denial.kind())
             } else {
@@ -126,6 +124,14 @@ pub(super) fn summarize_denial(
 }
 pub(super) fn wave_units(observation: &WorthQueryExecutionObservation) -> u64 {
     observation.wave_charged_units_for_test()
+}
+/// The wave units and the retained reads qualification visited since the
+/// last call, read before the observation is released.
+pub(super) fn scheduling_measures(observation: &WorthQueryExecutionObservation) -> (u64, u64) {
+    (
+        observation.wave_charged_units_for_test(),
+        observation.retained_reads_visited_for_test(),
+    )
 }
 pub(super) fn producer_contacts<P: ApplicationProgramDefinition<Schema>>(
     host: &WorthQueryProgramApplicationRuntime<Schema, P>,

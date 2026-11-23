@@ -34,6 +34,7 @@ impl WorthQueryOutputDemandDenial {
                 value: super::super::super::WorthQueryProducerDenialValue::Recorded(Box::new(
                     value,
                 )),
+                proofs: None,
             }));
         }
         Ok(denial)

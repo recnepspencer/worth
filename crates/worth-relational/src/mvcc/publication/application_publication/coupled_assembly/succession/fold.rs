@@ -44,6 +44,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                                 crate::mvcc::origin_denial("a re-create has no chain allocation")
                             })?
                         }
+                        // A proved relation re-create keeps the head's relation.
+                        MutationIntent::Create(CreateIntent::Relation(_)) => continue,
                         _ => entity_write(intent).ok_or_else(|| {
                             crate::mvcc::origin_denial("a proved round wrote no entity")
                         })?,

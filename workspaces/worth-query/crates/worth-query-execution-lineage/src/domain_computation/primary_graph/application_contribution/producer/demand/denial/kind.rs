@@ -108,6 +108,9 @@ pub enum WorthQueryOutputDemandDenialKind {
     ForeignDemand,
     /// The complete admitted occurrence frontier has no parent-ready node.
     CyclicRequiredOutputOccurrences { source: worth_relational::facade::identity::EntityId },
+    /// A derivation reopened in this edit no longer selects a child or parent
+    /// it selected and derived before; its earlier selection cannot stand.
+    SupersededSelectionDropped { source: worth_relational::facade::identity::EntityId },
     /// An actual prerequisite has no surviving Prepared or Verified parent.
     RequiredOutputParentUnavailable { source: worth_relational::facade::identity::EntityId },
     /// An internal required successor lost its admitted demand or execution provenance.

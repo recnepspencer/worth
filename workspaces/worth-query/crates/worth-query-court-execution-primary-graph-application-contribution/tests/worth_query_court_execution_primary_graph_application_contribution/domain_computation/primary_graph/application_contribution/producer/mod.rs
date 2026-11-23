@@ -6,3 +6,7 @@ pub mod denial_value;
 pub mod execution;
 #[path = "registry/mod.rs"]
 pub mod registry;
+#[path = "orphan_backstop/mod.rs"]
+pub mod orphan_backstop;
+#[path = "prior_effect_conversion/mod.rs"]
+pub mod prior_effect_conversion;

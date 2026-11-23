@@ -157,6 +157,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ConflictingIntent { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CyclicRequiredOutputOccurrences { .. }
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequiredOutputParentUnavailable { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)

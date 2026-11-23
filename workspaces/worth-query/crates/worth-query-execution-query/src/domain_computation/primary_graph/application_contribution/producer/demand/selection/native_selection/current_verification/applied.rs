@@ -66,6 +66,10 @@ impl VerifiedAppliedParent {
     pub fn pin(&self) -> &Pin {
         &self.pin
     }
+    /// The verification's retained proofs.
+    pub fn facts(&self) -> impl Iterator<Item = &Fact> {
+        self.facts.iter()
+    }
     pub fn changed_fact(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

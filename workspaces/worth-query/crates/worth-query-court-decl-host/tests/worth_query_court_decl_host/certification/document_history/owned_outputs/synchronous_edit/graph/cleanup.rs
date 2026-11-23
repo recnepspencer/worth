@@ -58,16 +58,11 @@ fn exercise(worker: bool) {
     else {
         panic!("cleanup must preserve the original whole-edit refusal: {native:?}")
     };
-    let failure = cause
-        .invariant_execution_failure()
-        .expect("original discovery-support refusal");
-    assert_eq!(failure.kind(),worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
-    assert!(
-        failure
-            .detail()
-            .contains("owned-outputs.unstable-discovery-binding.v1"),
-        "{failure:?}"
-    );
+    // The parent selects again and drops the child it derived (#238).
+    let denial = cause
+        .coupled_producer_denial()
+        .expect("original dropped-selection refusal");
+    assert!(matches!(denial.kind(), WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { .. }), "{denial:?}");
     worth_query_testkit_certification_operation::facade::certification::source_only::managed_cleanup::assert_native_failure(cleanup.failure());
     assert!(!cleanup.failure().run_identity().is_empty());
     assert_eq!(

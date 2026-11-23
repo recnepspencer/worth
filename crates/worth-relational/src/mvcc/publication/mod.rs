@@ -8,16 +8,22 @@ pub use application_publication::RelationalInstalledApplicationPublicationAuthor
 pub(crate) use application_publication::{
     origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
 };
+pub(crate) fn custody_stop(
+    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+) -> crate::transactions::data::TransactionCommitError {
+    crate::transactions::data::TransactionCommitError::execution(cause.into().into())
+}
 pub use application_publication::{
     AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
-    RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
-    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    RelationalCoupledChainOverlay, RelationalCoupledContribution,
+    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
+    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
     RelationalRequiredOutputInput, RelationalRequiredOutputPublication,

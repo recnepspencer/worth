@@ -15,6 +15,7 @@ pub fn inspect_registered<'run, S, M>(
     candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 ) -> Result<InspectedRegistration<'run>, WorthQueryApplicationCommitOutcome>
 where
     S: ApplicationSchema,
@@ -40,6 +41,7 @@ where
         &application.runtime.primary_provider,
         &request,
         candidate,
+        own_outputs,
         execution.allocation_policy(),
     );
     let (inspection, dispatch_outbox) = match inspected {
@@ -78,6 +80,7 @@ where
             request,
             original_completion,
             completion_storage,
+            own_outputs: None,
         },
     })
 }

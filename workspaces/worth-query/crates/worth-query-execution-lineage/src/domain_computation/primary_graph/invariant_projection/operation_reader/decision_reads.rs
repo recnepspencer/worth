@@ -29,6 +29,9 @@ use crate::domain_computation::primary_graph::application_contribution::{
 #[derive(Default)]
 pub struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
+    /// A read whose outcome no fact key names (a current output's lineage
+    /// lookup, which can find nothing): a refusal over it is conservative.
+    unkeyed_reads: bool,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
     failed_managed_source: bool,
@@ -52,6 +55,52 @@ pub struct DecisionReads {
     failed_walk: bool,
     components: components::IssuedComponentValues,
     failed_component: bool,
+}
+
+/// What a refused decision read, as proofs a pending refusal waits on (PR C
+/// §1.7): the handler's keyed reads, and whether any read had no key (a walk,
+/// aggregate, component, managed source or publication) or failed, which
+/// makes every append a possible change.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RefusalProofs {
+    pub keys: Vec<WorthQueryApplicationFactKey>,
+    /// The touch keys of the decision's source facts (indexed selections,
+    /// optional resolutions, source revisions), which carry no fact key.
+    pub touches: Vec<crate::domain_computation::primary_graph::application_attempt::fact::touch_key::FactTouchKey>,
+    pub conservative: bool,
+}
+
+impl DecisionReads {
+    /// Record a read no fact key names (PR C §1.7): a refusal over it
+    /// retries at every append.
+    pub fn record_unkeyed_read(&mut self) {
+        self.unkeyed_reads = true;
+    }
+    /// The proofs of a decision that refused (PR C §1.7).
+    /// A partitioned computation's reads are its keys too; a computation
+    /// run's carried or native reads have none, so any run is conservative.
+    pub fn refusal_proofs(&self) -> RefusalProofs {
+        RefusalProofs {
+            keys: self
+                .handler
+                .iter()
+                .chain(self.computation.keys())
+                .cloned()
+                .collect(),
+            touches: Vec::new(),
+            conservative: !matches!(self.runs, ComputationRuns::None)
+                || self.unkeyed_reads
+                || self.failed.is_some()
+                || self.failed_walk
+                || self.failed_component
+                || self.failed_managed_source
+                || self.source_publications.is_some()
+                || !self.managed_sources.is_empty()
+                || !self.walks.is_empty()
+                || !self.aggregates.is_empty()
+                || !self.components.is_empty(),
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]

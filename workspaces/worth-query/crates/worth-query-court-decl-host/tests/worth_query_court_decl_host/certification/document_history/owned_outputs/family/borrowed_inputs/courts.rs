@@ -330,3 +330,41 @@ fn a_removed_live_input_has_no_surviving_consumer_when_it_is_later_retired() {
     );
     assert_eq!(child(&request, "downstream:n"), n);
 }
+
+/// A source retirement (stage 0 retires member `m`) followed by a later
+/// authored stage editing model `a` (1 to 2) in one envelope. Both stages
+/// append before any producer round, so the borrowed collector derives once
+/// over the retired roster and the new model value (2 + 100 * n(7) = 702)
+/// and its consumer from it (70200): the sequential world. Nothing reopens
+/// on this non-edit candidate, where Native continues no route.
+#[test]
+fn a_retirement_followed_by_a_later_stage_commits_the_sequential_world() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = install();
+    initialize(&host);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let unaffected = child(&request, "downstream:n");
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("borrowed-retire-then-edit".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<program::Tree, _>(authored_member::retire::Intent)
+        .unwrap();
+    edit.push_stage::<program::Tree, _>(fixture::model::Intent {
+        key: "a".into(),
+        value: 2,
+        key_derived_target: false,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    assert_eq!(first(&request).value, 702);
+    assert_eq!(child(&request, "from-first:borrowed:a").value, 70200);
+    assert_eq!(child(&request, "downstream:n"), unaffected);
+}

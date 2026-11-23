@@ -24,6 +24,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.unidentified_from += 1;
             self.identify(context, candidate, i, allowed)?;
         }
+        if !self.rediscovered.is_empty() {
+            self.verify_rediscovered(context, candidate)?;
+        }
         if self.needed_dirty {
             self.recompute_needed(context, allowed)?;
         }
@@ -47,21 +50,27 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 self.finish_close(context, i, None, &[])?;
                 continue;
             };
+            context.owner.supersede(self.tasks[i].reopened);
             let inputs =
                 self.tasks[i]
                     .tree
-                    .capture_inputs(context, candidate, self.tasks[i].component)?;
+                    .capture_inputs(context, candidate, self.tasks[i].component);
+            context.owner.supersede(false);
+            let inputs = inputs?;
             let mut incoming = Self::new();
             // Its suppliers are owed by the demand that owes this task.
             context.owner.owe(&self.tasks[i].owed);
-            self.tasks[i].tree.prerequisites(
+            context.owner.discover_incoming_for(i);
+            let closed = self.tasks[i].tree.prerequisites(
                 context,
                 candidate,
                 &pin,
                 source,
                 &PrerequisiteInputs::from(inputs.as_ref()),
                 &mut incoming,
-            )?;
+            );
+            context.owner.discover_for(None);
+            closed?;
             if let Some(PreparedCoupledInputs::Captured(captured)) = &inputs {
                 let drained = incoming
                     .tasks
@@ -115,7 +124,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 None => true,
             };
             if !equal {
-                self.clear_input_capture(context, index)?;
+                self.clear_input_capture(context, index, None)?;
                 changed = true;
             }
         }
@@ -126,6 +135,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         i: usize,
+        invalidator: Option<usize>,
     ) -> Result<(), SynchronousOutputFailure> {
         let subject = self.tasks[i].subject;
         let rank = self.tasks[i].rank;
@@ -139,6 +149,17 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 context.execution,
                 subject,
             )?;
+        }
+        self.leave_refusal(context, i);
+        // A parent it closed on that derived in this edit (even if reopened
+        // since), or that reaches one, is a selection it made: re-closing
+        // must select it again, verified once it derives again
+        // (`verify_rediscovered`). Every path that clears a capture keeps
+        // it, whether or not a selection change for it is still queued; a
+        // selection change (`invalidator`) also ends earlier evidence there.
+        let derived = self.derived_selections(context, i)?;
+        if !derived.is_empty() {
+            self.merge_reopen_check(context, i, invalidator, Vec::new(), derived)?;
         }
         let task = &mut self.tasks[i];
         task.close_epoch = task.close_epoch.wrapping_add(1);
@@ -222,12 +243,23 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let epoch = self.tasks[i].close_epoch;
         let mut waiting = 0usize;
         for &parent in unique_parents {
+            if parent != i {
+                let parent_task = &mut self.tasks[parent];
+                push_funded(
+                    &mut parent_task.readers,
+                    &mut parent_task._readers_memory,
+                    (i, epoch),
+                    context.execution,
+                    subject,
+                )?;
+            }
             match self.tasks[parent].state {
                 TaskState::Done { parent: Some(_) } => {}
                 TaskState::Done { parent: None } => {
                     waiting += 1;
                 }
-                TaskState::Identified | TaskState::Closed { .. } => {
+                // A pending refusal is retried before its dependents read it.
+                TaskState::Identified | TaskState::Closed { .. } | TaskState::Refused { .. } => {
                     waiting += 1;
                     if parent != i {
                         let parent_task = &mut self.tasks[parent];

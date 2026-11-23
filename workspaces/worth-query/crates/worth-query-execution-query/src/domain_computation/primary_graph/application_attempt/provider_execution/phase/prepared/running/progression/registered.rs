@@ -13,6 +13,7 @@ pub trait RegisteredProviderAttemptRuntimeExt<'run>: Sized {
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (
@@ -52,6 +53,7 @@ impl<'run> RegisteredProviderAttemptRuntimeExt<'run> for WorthQueryRegisteredPro
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (
@@ -67,7 +69,7 @@ impl<'run> RegisteredProviderAttemptRuntimeExt<'run> for WorthQueryRegisteredPro
         let freshness = provider.capture_and_compare_application_read_set(
             execution,
             &staged.read_authority(),
-            Some(candidate),
+            Some((candidate, own_outputs)),
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(control.policy(), Some(request)),
         );
         let fresh = match freshness {

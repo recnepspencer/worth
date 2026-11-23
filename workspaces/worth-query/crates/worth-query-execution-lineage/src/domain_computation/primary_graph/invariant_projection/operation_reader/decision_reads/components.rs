@@ -20,6 +20,10 @@ pub struct IssuedComponentValues {
     values: BTreeMap<ComponentSelectionKey, Issued>,
 }
 impl IssuedComponentValues {
+    /// Whether nothing was issued (PR C §1.7: a pending refusal's proofs).
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
     pub fn get(
         &self,
         key: &ComponentSelectionKey,

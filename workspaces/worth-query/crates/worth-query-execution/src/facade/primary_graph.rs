@@ -33,7 +33,7 @@ pub use worth_foundational::facade::AggregateLineageKind;
 pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
 
 pub use crate::domain_computation::{
-    WorthQueryCoupledSupportHold, WorthQueryInvariantExecutionDenialKind,
+    WorthQueryInvariantExecutionDenialKind,
     WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
     WorthQueryPreparedProviderSession, WorthQueryProductUnpublishedRecoveryFailure,
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
