@@ -131,21 +131,33 @@ fn an_aligned_read_refuses_when_a_later_stage_edits_the_probed_source() {
 }
 
 #[test]
-fn an_aligned_read_commits_when_a_later_stage_leaves_its_source_alone() {
+fn an_aligned_read_commits_when_a_later_stage_writes_the_same_kinds_under_another_scope() {
     lifecycle::run(|| {
-        // A later stage that only creates another Directory changes neither
-        // the peer's Source nor a Parent read: the aligned decision stands.
-        let run = later_stage(
-            ProducerProbe::Peer("peer"),
-            false,
-            Edit::Directory {
-                identity: "elsewhere".into(),
-            },
-            "peer",
-            0x3101_0060,
-        );
-        assert_eq!(run.observed, vec![Ok(vec!["p".to_owned()])]);
-        assert!(run.committed, "{}", run.detail);
-        assert_eq!(run.rows, ["p"]);
+        for computation in [false, true] {
+            let key = 0x3101_0060 + u64::from(computation) * 0x20;
+            // The later stage gives the unrelated Directory `A` an Item: the
+            // Source's own kinds and relation, but nothing the probed scope's
+            // Source read. Neither aligned decision is disturbed.
+            let peer = later_stage(ProducerProbe::Peer("peer"), computation, item("A"), "peer", key);
+            assert_eq!(peer.observed, vec![Ok(vec!["p".to_owned()])]);
+            assert!(peer.committed, "{}", peer.detail);
+            assert_eq!(peer.rows, ["p"]);
+            let own = later_stage(ProducerProbe::Own, computation, item("A"), "A", key + 8);
+            assert_eq!(own.observed, vec![Ok(vec!["c".to_owned()])]);
+            assert!(own.committed, "{}", own.detail);
+            assert_eq!(own.rows, ["late", "x"]);
+            // A later stage that only creates another Directory, likewise.
+            let other = later_stage(
+                ProducerProbe::Peer("peer"),
+                computation,
+                Edit::Directory {
+                    identity: "elsewhere".into(),
+                },
+                "peer",
+                key + 16,
+            );
+            assert_eq!(other.observed, vec![Ok(vec!["p".to_owned()])]);
+            assert!(other.committed, "{}", other.detail);
+        }
     });
 }

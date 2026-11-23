@@ -12,6 +12,7 @@ use crate::schema::data::{
     RelationalSchemaRegistry,
 };
 mod footprint;
+mod reach;
 
 const SCOPE: KindId = KindId(1);
 const MEMBER: KindId = KindId(3);

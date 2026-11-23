@@ -110,3 +110,30 @@ fn a_key_given_to_a_new_scope_earlier_in_the_envelope_reads_the_new_scope() {
         }
     });
 }
+
+#[test]
+fn a_peer_whose_governing_relation_was_unlinked_earlier_in_the_envelope_is_refused() {
+    lifecycle::run(|| {
+        for computation in [false, true] {
+            // At C the watch grant makes `peer` a declared peer of `catalog`.
+            // The earlier stage unlinks it; the applied candidate has no
+            // shared owner, so the probe refuses before any provider work.
+            let (observed, committed, detail) = probe_after(
+                vec![Edit::UngrantDirectory {
+                    directory: "peer".into(),
+                }],
+                "peer",
+                computation,
+                0x3102_0080 + u64::from(computation) * 0x10,
+            );
+            assert_eq!(
+                observed,
+                vec![Err(ProbeRefusal::Refused(
+                    WorthQueryManagedIndexRefusal::ForeignAssociation
+                ))],
+                "{detail}"
+            );
+            assert!(!committed);
+        }
+    });
+}

@@ -6,7 +6,7 @@ use worth_foundational::facade::{AspectValue, FieldKey, InternedString, StructAs
 
 /// A forward stored Source rooted only at the scope: other scopes root
 /// their own Sources.
-fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
+pub(super) fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
     let (_, template) = crate::tests::support::managed_cache_schema();
     let mut source = template.0.path.parts().clone();

@@ -21,6 +21,10 @@ pub enum Edit {
     RetireDirectory {
         directory: String,
     },
+    /// Removes `directory` from the watch grant: no longer a peer.
+    UngrantDirectory {
+        directory: String,
+    },
     Item {
         directory: String,
         identity: String,
@@ -65,10 +69,11 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "mai
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.authoring.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.authoring.denial.v1" });
 worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
-worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains,BoxGrant]);
+worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains,BoxGrant,GrantResource]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
 worth_query_operation_links!(AuthorCatalog => [Contains, Entries, GrantResource]);
 worth_query_operation_deletes!(AuthorCatalog => [Item, Directory]);
+worth_query_operation_unlinks!(AuthorCatalog => [GrantResource]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -103,6 +108,8 @@ pub(super) fn declare(
         .operation_read_entity(op, BoxGrant::reference())
         .operation_read_field(op, GrantIdentity::at("GrantIdentity"))
         .operation_link(op, GrantResource::reference())
+        .operation_read_relation(op, GrantResource::reference())
+        .operation_unlink(op, GrantResource::reference())
         .operation_delete(op, Directory::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())

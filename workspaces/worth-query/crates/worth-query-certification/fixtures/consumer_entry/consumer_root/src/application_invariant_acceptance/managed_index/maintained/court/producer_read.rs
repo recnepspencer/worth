@@ -8,6 +8,7 @@ use super::super::peer_scope::{
 use super::super::{authoring::Edit, host as world_host};
 use super::*;
 
+mod authored_stage;
 mod later_append;
 mod overlay;
 mod scope_resolution;

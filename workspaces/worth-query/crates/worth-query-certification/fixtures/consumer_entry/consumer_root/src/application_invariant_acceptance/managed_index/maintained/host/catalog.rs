@@ -209,6 +209,13 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
                 mutation::RenameItem::reference(),
                 Shelves::reference(),
             )
+            .operation_managed_index_read::<query::PrefixBinding, _, _>(
+                super::super::authoring::AuthorCatalog::reference(),
+            )
+            .operation_read_field(
+                super::super::authoring::AuthorCatalog::reference(),
+                ItemName::at("ItemName"),
+            )
             .operation_managed_index_read::<super::super::refinement::ExactBinding, _, _>(
                 mutation::RenameItem::reference(),
             )

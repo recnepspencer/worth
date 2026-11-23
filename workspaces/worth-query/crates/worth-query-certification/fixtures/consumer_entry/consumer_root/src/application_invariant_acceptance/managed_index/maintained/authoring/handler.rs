@@ -14,9 +14,12 @@ impl OperationHandler<Catalog, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::InvalidBatch);
         }
         let result = (|| {
+            super::super::peer_scope::stage_probe(reader)?;
             let scope = match edit {
                 Edit::Directory { .. } | Edit::GrantedDirectory { .. } => "catalog",
-                Edit::RetireDirectory { directory } => directory,
+                Edit::RetireDirectory { directory } | Edit::UngrantDirectory { directory } => {
+                    directory
+                }
                 Edit::Item { directory, .. }
                 | Edit::Items { directory, .. }
                 | Edit::Share { directory, .. }
@@ -29,6 +32,11 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
+            if matches!(edit, Edit::UngrantDirectory { .. }) {
+                reader
+                    .relations_to(GrantResource::reference(), &directory)
+                    .map_err(HandlerExecutionDenial::new)?;
+            }
             let directory = reader.mutation_target(&directory)?;
             let item = if let Edit::Share { item, .. }
             | Edit::RetireItem { item, .. }
@@ -46,7 +54,10 @@ impl OperationHandler<Catalog, Binding> for Handler {
             } else {
                 None
             };
-            let grant = if matches!(edit, Edit::GrantedDirectory { .. }) {
+            let grant = if matches!(
+                edit,
+                Edit::GrantedDirectory { .. } | Edit::UngrantDirectory { .. }
+            ) {
                 let grant = reader
                     .resolve_entity(GrantIdentity::at("GrantIdentity"), "watch-access".to_owned())?;
                 reader
@@ -90,6 +101,14 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
                         .write_field(&item, ItemEnabled::at("ItemEnabled"), *enabled)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::UngrantDirectory { .. } => {
+                    let grant = writer
+                        .projected_entity(decision.grant.as_ref().expect("resolved grant"))
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .unlink(GrantResource::reference(), &grant, &directory)
                         .map_err(HandlerExecutionDenial::new)?;
                 }
                 Edit::RetireDirectory { .. } => {

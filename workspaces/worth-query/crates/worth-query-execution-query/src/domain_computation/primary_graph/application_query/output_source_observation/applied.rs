@@ -162,11 +162,12 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                 .into(),
             );
         }
-        // A scope that was absent at C keeps that refusal; one the envelope
-        // retired or made ambiguous refuses as the candidate resolves it.
+        // A scope absent at C and at the candidate keeps C's refusal. Any
+        // other candidate refusal stands as the candidate resolved it: a
+        // retired scope is unknown, two new scopes sharing the key ambiguous.
         let scope = scope.map_err(|cause| {
             Stop::Scope(match &absent {
-                Some(absent) if matches!(cause.kind(), Resolution::Refused(_)) => absent.clone(),
+                Some(absent) if cause.kind() == absent.kind() => absent.clone(),
                 _ => cause,
             })
         })?;

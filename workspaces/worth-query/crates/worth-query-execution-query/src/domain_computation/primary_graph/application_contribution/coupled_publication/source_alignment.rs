@@ -11,13 +11,36 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_relational::facade::runtime::{
     DerivedRelationReadDenial as Read, ManagedIndexSourcePreparationDenial as Native,
+    RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
 
-impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
-    pub(super) fn retain_alignment(&self, alignment: std::sync::Arc<AppliedSourceAlignment>) {
-        self.alignments.borrow_mut().push(alignment);
-    }
+type Image = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 
+/// The retained aligned reads and the candidate image the last judged
+/// member appended to: the image a read was proved unchanged at.
+#[derive(Default)]
+pub(super) struct Alignments {
+    reads: Vec<std::sync::Arc<AppliedSourceAlignment>>,
+    image: Option<Image>,
+}
+
+impl Alignments {
+    pub(super) fn retain(&mut self, read: std::sync::Arc<AppliedSourceAlignment>, observed: &Image) {
+        self.reads.push(read);
+        // A read is made at the assembly's current image, the latest known.
+        let later = self.image.as_ref().is_none_or(|image| {
+            observed
+                .candidate_identity()
+                .includes_assembly_prefix(image.candidate_identity())
+        });
+        if later {
+            self.image = Some(observed.clone());
+        }
+    }
+}
+
+
+impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     /// Mark each retained aligned read the member that just appended changed.
     /// A read Native cannot judge is marked: equality is never manufactured.
     pub(super) fn mark_alignments(
@@ -26,8 +49,8 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         member: &qualification::AppendedMember,
     ) -> Result<(), CoupledSourceReadStop> {
-        let alignments = self.alignments.borrow();
-        if alignments.is_empty() {
+        let mut alignments = self.alignments.borrow_mut();
+        if alignments.reads.is_empty() {
             return Ok(());
         }
         let touches = match member {
@@ -40,15 +63,15 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         };
         let current = candidate.pin_source(execution)?;
         let graph = self.application.runtime.primary_graph();
-        for alignment in alignments.iter() {
-            let unchanged = match graph
-                .and_then(|graph| graph.layout_ref().managed_source(alignment.source()))
-            {
-                None => false,
-                Some(program) => match candidate.managed_source_unchanged_by(
+        for alignment in &alignments.reads {
+            let program =
+                graph.and_then(|graph| graph.layout_ref().managed_source(alignment.source()));
+            let unchanged = match (program, &alignments.image) {
+                (Some(program), Some(earlier)) => match candidate.managed_source_unchanged_by(
                     execution,
                     program,
                     &current,
+                    earlier,
                     alignment.scope(),
                     alignment.footprint(),
                     touches.records(),
@@ -61,11 +84,13 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                     }
                     Err(_) => false,
                 },
+                _ => false,
             };
             if !unchanged {
                 alignment.mark_changed(current.candidate_identity());
             }
         }
+        alignments.image = Some(current);
         Ok(())
     }
 }

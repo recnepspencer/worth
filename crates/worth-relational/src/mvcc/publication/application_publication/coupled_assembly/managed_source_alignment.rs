@@ -9,6 +9,7 @@ use crate::validation::candidate_source::{
 };
 use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectKey, FieldKey};
+mod reach;
 mod relevance;
 use relevance::SourceRelevance;
 
@@ -49,27 +50,48 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         scope: crate::identity::data::EntityId,
         footprint: &ManagedIndexParentReadFootprint,
     ) -> Result<bool, Denial> {
-        self.managed_source_unchanged(execution, program, pin, scope, footprint, None)
+        self.managed_source_unchanged(execution, program, pin, scope, footprint, None, None)
     }
 
     /// As `managed_source_unchanged_at`, judging only `records`: the records
-    /// one applied member changed (`RelationalCoupledAppendTouches::records`).
-    /// A read proved unchanged before that member appended is still the
-    /// candidate's image of it exactly when this holds. A record the member
-    /// shares with an earlier writer is judged by its whole change.
-    /// Cost: O(member records + changed records + deltas + program size).
+    /// one applied member changed (`RelationalCoupledAppendTouches::records`),
+    /// where `earlier` is the retained image right before that member. A read
+    /// proved unchanged at `earlier` is still the candidate's image of it
+    /// exactly when this holds. A change the kind-level rule finds relevant is
+    /// then judged against what the probed scope's Source actually read at
+    /// `earlier`, so a same-kind write under another scope is not this one's.
+    /// A record the member shares with an earlier writer is judged whole.
+    /// Cost: O(member records + changed records + deltas + program size),
+    /// plus one membership acquisition when a kind is relevant.
+    #[allow(clippy::too_many_arguments)]
     pub fn managed_source_unchanged_by(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         program: &ManagedIndexSourceProgram,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        earlier: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         scope: crate::identity::data::EntityId,
         footprint: &ManagedIndexParentReadFootprint,
         records: &[RecordRef],
     ) -> Result<bool, Denial> {
-        self.managed_source_unchanged(execution, program, pin, scope, footprint, Some(records))
+        if self.managed_source_unchanged(execution, program, pin, scope, footprint, Some(records), None)? {
+            return Ok(true);
+        }
+        if !pin
+            .candidate_identity()
+            .includes_assembly_prefix(earlier.candidate_identity())
+        {
+            return Err(Denial::ForeignSource);
+        }
+        match self.source_reach(execution, program, scope, earlier)? {
+            None => Ok(false),
+            reach => self.managed_source_unchanged(
+                execution, program, pin, scope, footprint, Some(records), reach,
+            ),
+        }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn managed_source_unchanged(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -78,6 +100,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         scope: crate::identity::data::EntityId,
         footprint: &ManagedIndexParentReadFootprint,
         only: Option<&[RecordRef]>,
+        reach: Option<reach::Reach>,
     ) -> Result<bool, Denial> {
         let current = self.read.borrow();
         let Some(current) = current.as_ref() else {
@@ -95,7 +118,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let key_of = |entity: crate::identity::data::EntityId| {
             scope_key_value(state, footprint.scope_key.as_ref()?, entity)
         };
-        let relevance = SourceRelevance::of(registry, program, scope, footprint, effect, &key_of);
+        let relevance = SourceRelevance::of(registry, program, scope, footprint, effect, &key_of)
+            .reached_by(reach);
         let (unchanged, _) = execution
             .run_native_with_checkpoint(|context| {
                 let only = match only {

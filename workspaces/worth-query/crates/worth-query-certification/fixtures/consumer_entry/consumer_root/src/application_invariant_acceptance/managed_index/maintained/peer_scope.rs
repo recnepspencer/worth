@@ -40,6 +40,8 @@ std::thread_local! {
     /// Seeds the `peer` Directory under the watch grant beside `catalog`.
     pub static SEED_PEERS: Cell<bool> = const { Cell::new(false) };
     pub static PRODUCER_PROBE: Cell<Option<ProducerProbe>> = const { Cell::new(None) };
+    /// An authoring stage's own decision probes this Directory.
+    pub static STAGE_PROBE: Cell<Option<&'static str>> = const { Cell::new(None) };
     pub static OBSERVED: RefCell<Vec<Observed>> = const { RefCell::new(Vec::new()) };
     /// The generated source action also creates this Item in its Directory:
     /// an unpublished change the Parent's Source sees.
@@ -115,6 +117,23 @@ where
         prefix: String::new(),
     });
     observe(rows).map(|_| ())
+}
+
+/// The armed authoring-stage probe through that stage's own `index_query`.
+pub fn stage_probe<B>(
+    reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
+) -> Result<(), HandlerExecutionDenial>
+where
+    B: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>,
+{
+    let Some(directory) = STAGE_PROBE.get() else {
+        return Ok(());
+    };
+    observe(reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+        directory: directory.to_owned(),
+        prefix: String::new(),
+    }))
+    .map(|_| ())
 }
 
 /// The Directory a probe names, from the operation's own.

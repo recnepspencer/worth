@@ -51,7 +51,10 @@ impl<S: ApplicationSchema> AppliedOutputParticipants for CoupledApplicationAssem
         alignment: std::sync::Arc<
             crate::domain_computation::primary_graph::application_attempt::AppliedSourceAlignment,
         >,
+        observed: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
     ) {
-        self.retain_alignment(alignment);
+        self.alignments.borrow_mut().retain(alignment, observed);
     }
 }

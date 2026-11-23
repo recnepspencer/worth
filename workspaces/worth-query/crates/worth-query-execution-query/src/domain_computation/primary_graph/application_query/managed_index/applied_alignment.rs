@@ -65,7 +65,7 @@ impl AppliedManagedIndexRead<'_> {
             self.candidate.candidate_identity().clone(),
         ));
         self.participants
-            .retain_source_alignment(std::sync::Arc::clone(&alignment));
+            .retain_source_alignment(std::sync::Arc::clone(&alignment), self.candidate);
         Ok(Some(alignment))
     }
 }
