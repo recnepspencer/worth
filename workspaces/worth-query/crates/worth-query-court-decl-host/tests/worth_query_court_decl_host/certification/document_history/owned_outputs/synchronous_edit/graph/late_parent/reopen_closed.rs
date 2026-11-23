@@ -4,10 +4,11 @@
 use super::*;
 use family::c3b::{decision_write_n, guarded_first};
 use family::decision_write;
-use std::sync::atomic::{AtomicBool, Ordering};
-/// Whether `decision-write-n` reads model `a` (n = 3) instead of `b` (n = 8):
-/// per court, and each court runs in its own process.
-pub(super) static SECOND_WRITER_A: AtomicBool = AtomicBool::new(false);
+thread_local! {
+    /// Whether `decision-write-n` reads model `a` (n = 3) instead of `b` (n =
+    /// 8): per court, on the court's own thread.
+    pub(super) static SECOND_WRITER_A: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
 use super::super::super::interleaved::valued_members;
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
 
@@ -180,7 +181,7 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for SecondEdge {
     fn demands_from_discovery(
         _: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(vec![decision_write_n::Demand(if SECOND_WRITER_A.load(Ordering::Relaxed) { "a" } else { "b" }.into())])
+        Ok(vec![decision_write_n::Demand(if SECOND_WRITER_A.with(std::cell::Cell::get) { "a" } else { "b" }.into())])
     }
 }
 impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for SecondEdge {
@@ -313,7 +314,7 @@ fn a_second_selection_change_while_a_reopened_task_waits_closed_is_never_dropped
 /// committed with `first:c` derived for nothing.
 #[test]
 fn a_closed_task_whose_reselection_drops_a_derived_parent_refuses() {
-    SECOND_WRITER_A.store(true, Ordering::Relaxed);
+    SECOND_WRITER_A.with(|flag| flag.set(true));
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         2,
