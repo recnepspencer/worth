@@ -134,6 +134,41 @@ mod domain_computation_primary_graph_application_runtime_certification_controls_
             self.inner
                 .record_current_ownership_contacts_for_test(request, observer)
         }
+        #[doc(hidden)]
+        pub fn probe_current_ownership_locality_for_test(
+            &self,
+            branch: WorthQueryProductBranch,
+            owner: EntityId,
+            request: &WorthQueryRequestScope,
+            seed_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
+            value_fields: impl Fn(u64) -> worth_relational::facade::transactions::AspectFieldPatch,
+        ) -> Result<
+            worth_relational::facade::runtime::CurrentOwnershipLocalityForTest,
+            WorthQueryAdvancementDenial,
+        > {
+            self.inner.probe_current_ownership_locality_for_test(
+                branch,
+                owner,
+                request,
+                seed_fields,
+                value_fields,
+            )
+        }
+        #[doc(hidden)]
+        pub fn probe_cold_current_ownership_pairing_for_test(
+            &self,
+            branch: WorthQueryProductBranch,
+            owner: EntityId,
+            unrelated: EntityId,
+            request: &WorthQueryRequestScope,
+        ) -> Result<
+            Result<Vec<Result<(), TransactionCommitError>>, TransactionCommitError>,
+            WorthQueryAdvancementDenial,
+        > {
+            self.inner.probe_cold_current_ownership_pairing_for_test(
+                branch, owner, unrelated, request,
+            )
+        }
     }
 }
 

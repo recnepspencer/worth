@@ -238,6 +238,38 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     ) -> impl Sized {
         crate::domain_computation::primary_graph::application_attempt::compare_and_commit::recording::install(self.runtime.authority_identity().as_u64(),Box::new(observer))
     }
+
+    #[doc(hidden)]
+    pub fn probe_cold_current_ownership_pairing_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        unrelated: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Result<Vec<Result<(), TransactionCommitError>>, TransactionCommitError>,
+        WorthQueryAdvancementDenial,
+    > {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual Query producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("actual Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime(&execution, |runtime| {
+                    runtime.probe_cold_current_ownership_pairing_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                        unrelated,
+                    )
+                }))
+        })?
+    }
 }
 
 mod inspection;

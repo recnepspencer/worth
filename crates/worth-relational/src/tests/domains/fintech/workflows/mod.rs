@@ -16,8 +16,9 @@ use super::complexity::{
     assert_counter_at_most, contract_ids, measure_world_action, workflow_budgets, ComplexityBudget,
 };
 use super::failure_injection::{
-    drop_latest_parent_envelope_for_replay, invalid_savepoint_rollback_code,
-    replay_latest_commit_on_wrong_branch, rollback_seeded_trade_correction_after_savepoint,
+    damage_filed_checkpoint, drop_latest_parent_envelope_for_replay,
+    invalid_savepoint_rollback_code, replay_latest_commit_on_wrong_branch,
+    rollback_seeded_trade_correction_after_savepoint,
 };
 use super::fixture::FintechWorld;
 use super::invariants::{

@@ -1,12 +1,10 @@
 use super::checkpoint_wire::{ByteString, CheckpointWire};
 use super::manifest_capture::CapturedManifest;
-#[cfg(test)]
 use crate::durability::data::DurableCheckpoint;
 use crate::durability::data::{
     NativeCheckpointSectionBytes, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
     RelationalNativeCheckpointCaptureDenial,
 };
-#[cfg(test)]
 use worth_execution::ExecutionRequestArrayBuilder;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes};
 mod writer;
@@ -51,6 +49,22 @@ pub(crate) fn encode_checkpoint_members(
         })?;
     // These existing hostile codec fixtures deliberately encode changed DATA.
     // They are never an original-source capture or publication witness.
+    populate_expanded_canonical_members(&mut captured, checkpoint, execution)?;
+    let (bytes, sections, members, _) = encode_captured(
+        captured.seal_ordinary(),
+        execution,
+        policy,
+        placement,
+        &mut CheckpointEncodingControl::Policy(policy),
+    )?;
+    Ok((bytes, sections, members))
+}
+
+pub(crate) fn populate_expanded_canonical_members(
+    captured: &mut CapturedManifest,
+    checkpoint: &DurableCheckpoint,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), RelationalNativeCheckpointCaptureDenial> {
     let memory =
         crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers::reserve(
             checkpoint.envelopes.len(),
@@ -62,12 +76,25 @@ pub(crate) fn encode_checkpoint_members(
         ExecutionRequestArrayBuilder::allocate(*execution, checkpoint.envelopes.len())
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
     for commit in &checkpoint.envelopes {
-        let prepared = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(commit.canonical_arc().clone(), execution)
+        let prepared =
+            crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(
+                commit.canonical_arc().clone(),
+                execution,
+            )
             .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-        let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(commit.position(), &prepared, execution)
+        let artifact =
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_memory_publication(
+                commit.position(),
+                &prepared,
+                execution,
+            )
             .map_err(|cause| match cause {
-                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Request(cause) => RelationalNativeCheckpointCaptureDenial::Request(cause.into()),
-                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Artifact(cause) => cause.into(),
+                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Request(
+                    cause,
+                ) => RelationalNativeCheckpointCaptureDenial::Request(cause.into()),
+                crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial::Artifact(
+                    cause,
+                ) => cause.into(),
             })?;
         let bytes = artifact.into_bytes();
         let member = super::member_frame::locator(bytes.bytes());
@@ -93,14 +120,7 @@ pub(crate) fn encode_checkpoint_members(
             .seal()
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?,
     );
-    let (bytes, sections, members, _) = encode_captured(
-        captured.seal_ordinary(),
-        execution,
-        policy,
-        placement,
-        &mut CheckpointEncodingControl::Policy(policy),
-    )?;
-    Ok((bytes, sections, members))
+    Ok(())
 }
 
 pub(crate) fn encode_captured(

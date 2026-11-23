@@ -9,7 +9,7 @@ mod lane;
 #[doc(hidden)]
 pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 #[cfg(test)]
-pub(crate) use lane::assert_external_cut_and_lane_busy;
+pub(crate) use lane::{assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy};
 mod lease;
 mod obligation;
 mod owner;

@@ -7,6 +7,10 @@ use crate::durability::medium::{
     RelationalDurableTransitionPublication,
 };
 
+#[cfg(test)]
+#[path = "publication_pause_for_test.rs"]
+mod publication_pause_for_test;
+
 mod sealed {
     pub trait Step {}
 }
@@ -73,6 +77,8 @@ pub(crate) struct LiveBranchTransitionStep<'request, 'authority> {
     medium: Option<Arc<RelationalDurableMediumBinding>>,
     policy: worth_execution::ExecutionAllocationPolicy<'request, 'authority>,
     association: Option<crate::history::data::RelationalCallerAssociation>,
+    #[cfg(test)]
+    publication_pause: publication_pause_for_test::BranchTransitionPublicationControlForTest,
 }
 
 impl<'request, 'authority> LiveBranchTransitionStep<'request, 'authority> {
@@ -84,7 +90,16 @@ impl<'request, 'authority> LiveBranchTransitionStep<'request, 'authority> {
             medium,
             policy: execution.allocation_policy(),
             association: None,
+            #[cfg(test)]
+            publication_pause: Default::default(),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn pause_publication_for_test(
+        &self,
+    ) -> publication_pause_for_test::BranchTransitionPublicationPauseForTest {
+        self.publication_pause.arm()
     }
 
     pub(crate) fn associated(
@@ -112,6 +127,8 @@ impl RelationalBranchTransitionDurableStep for LiveBranchTransitionStep<'_, '_> 
         &self,
         positioned: PositionedBranchTransition,
     ) -> Result<RelationalTransitionPublication, Self::Stop> {
+        #[cfg(test)]
+        self.publication_pause.pause();
         let admission = match &self.medium {
             Some(medium) => medium
                 .publish_transition(positioned, self.policy)

@@ -98,6 +98,95 @@ pub(super) fn alternate_branch_basis(
         .expect("alternate branch basis")
 }
 
+#[derive(Debug)]
+struct EmptyColdSource;
+impl crate::durability::medium::RelationalDurableColdSource for EmptyColdSource {
+    fn retain_members(
+        &self,
+        members: &[crate::durability::medium::RelationalDurableMemberLocator],
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::storage::data::RelationalStorageUnavailableCause,
+    > {
+        if members.is_empty() {
+            Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+        } else {
+            Err(crate::storage::data::RelationalStorageUnavailableCause::MissingMember)
+        }
+    }
+    fn read_member(
+        &self,
+        _: crate::durability::medium::RelationalDurableMemberLocator,
+        _: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        Err(crate::storage::data::RelationalStorageUnavailableCause::MissingMember)
+    }
+    fn read_commit(
+        &self,
+        _: crate::publication::patch::data::PatchStreamPosition,
+        _: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        Err(crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable)
+    }
+}
+
+pub(super) fn recover_with_rewritten_commit_err(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source_runtime: &RelationalRuntime,
+    commit_id: CommitId,
+    edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+) -> crate::durability::data::DurabilityError {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+    use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+    use crate::durability::medium::RelationalDurableRecoverySource;
+    use crate::history::data::PositionedCanonicalCommit;
+    use std::sync::Arc;
+
+    let mut edit = Some(edit);
+    let tail: Vec<_> = source_runtime
+        .durability()
+        .canonical_commit_artifacts(execution)
+        .map(|artifact| {
+            let artifact = artifact.unwrap();
+            if artifact.commit_id() == commit_id {
+                let readmitted =
+                    RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+                        .expect("original merge artifact readmits before rewrite");
+                let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+                edit.take().expect("one matching commit")(envelope.body_mut_for_test());
+                RelationalCanonicalCommitArtifact::from_positioned(
+                    &PositionedCanonicalCommit::for_test(artifact.position(), Arc::new(envelope)),
+                    execution.allocation_policy(),
+                )
+                .expect("rewritten envelope encodes")
+            } else {
+                RelationalCanonicalCommitArtifact::from_untrusted_bytes(
+                    artifact.as_bytes().to_vec(),
+                )
+                .unwrap()
+            }
+        })
+        .collect();
+    assert!(edit.is_none(), "expected merge commit {commit_id:?} in tail");
+    let transitions: Vec<_> = source_runtime
+        .durability()
+        .branch_transition_artifacts(execution.allocation_policy())
+        .map(Result::unwrap)
+        .collect();
+    let source =
+        RelationalDurableRecoverySource::new(None, tail, transitions, Arc::new(EmptyColdSource));
+    let mut recovered = runtime_with_collaboration_merge_history();
+    let plan = recovered
+        .durability()
+        .recovery_plan_from_source(execution, source, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    crate::tests::support::expect_durability_failure(error)
+}
+
 pub(super) fn published_merge_authority(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

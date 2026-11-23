@@ -24,6 +24,7 @@ mod lifecycle;
 mod redo;
 mod restore_first;
 
+mod checkpoint_recovery;
 mod sparse;
 mod typed_causes;
 

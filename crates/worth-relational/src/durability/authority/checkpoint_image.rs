@@ -234,3 +234,31 @@ fn branch_root_images(
         kinds: root_kind_images,
     })
 }
+
+#[cfg(test)]
+pub(crate) fn recompute_branch_root_image_digest_for_test(root: &mut DurableBranchRootImage) {
+    root.root_image_digest =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            crate::durability::data::branch_root_image_digest(
+                lane,
+                root.format_version,
+                root.commit_id,
+                root.partition_image_digest,
+                root.schema_carrier_digest,
+                &root.content_records,
+            )
+        });
+}
+
+#[cfg(test)]
+pub(crate) fn recompute_branch_root_digests_for_test(root: &mut DurableBranchRootImage) {
+    root.partition_image_digest =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            crate::durability::data::branch_root_partition_image_digest(
+                lane,
+                &root.partition_images,
+            )
+            .expect("mutated production image remains canonically encodable")
+        });
+    recompute_branch_root_image_digest_for_test(root);
+}

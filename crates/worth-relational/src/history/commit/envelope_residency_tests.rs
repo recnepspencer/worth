@@ -100,6 +100,37 @@ fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() 
 }
 
 #[test]
+fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (entry, source) = selected(&execution, Some(Cause::Damaged));
+    let position = entry.position;
+    let cell = RelationalCommitEnvelopeResidency::cold(
+        super::RetainedCanonicalIndex::from_ordinary_owned(entry),
+        source.clone(),
+        None,
+        None,
+    );
+    for _ in 0..2 {
+        let stop = cell.demand(&execution, 1 << 30).unwrap_err();
+        let crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
+            failure,
+        ) = stop
+        else {
+            panic!("typed storage refusal")
+        };
+        assert_eq!(
+            failure,
+            crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Envelope(position),
+                cause: Cause::Damaged,
+            }
+        );
+    }
+    assert_eq!(source.reads.load(Ordering::Relaxed), 1);
+}
+
+#[test]
 fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -259,83 +290,14 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     );
 }
 
-#[derive(Debug)]
-struct JournalRecordingMedium {
-    commits: Arc<std::sync::Mutex<std::collections::BTreeMap<PatchStreamPosition, Vec<u8>>>>,
-    source: Arc<dyn RelationalDurableColdSource>,
-}
-#[derive(Debug)]
-struct JournalRecordingSource {
-    commits: Arc<std::sync::Mutex<std::collections::BTreeMap<PatchStreamPosition, Vec<u8>>>>,
-}
-impl RelationalDurableColdSource for JournalRecordingSource {
-    fn retain_members(
-        &self,
-        _: &[RelationalDurableMemberLocator],
-    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
-        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
-    }
-    fn read_member(&self, _: RelationalDurableMemberLocator, _: u64) -> Result<Vec<u8>, Cause> {
-        Err(Cause::MissingMember)
-    }
-    fn read_commit(&self, position: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
-        self.commits
-            .lock()
-            .unwrap()
-            .get(&position)
-            .cloned()
-            .ok_or(Cause::MissingMember)
-    }
-}
-impl crate::durability::medium::RelationalDurableMedium for JournalRecordingMedium {
-    fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
-        self.source.clone()
-    }
-    fn read_transition(
-        &self,
-        _: crate::branch::RelationalBranchTransitionSequence,
-    ) -> Result<
-        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
-        crate::durability::medium::RelationalDurableTransitionReadFailure,
-    > {
-        Err(crate::durability::medium::RelationalDurableTransitionReadFailure::MediumMoved)
-    }
-    fn publish(
-        &self,
-        artifact: &RelationalCanonicalCommitArtifact,
-    ) -> crate::durability::medium::DurablePublicationFate<String> {
-        self.commits
-            .lock()
-            .unwrap()
-            .insert(artifact.position(), artifact.as_bytes().to_vec());
-        crate::durability::medium::DurablePublicationFate::Committed
-    }
-    fn publish_transition(
-        &self,
-        _: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
-    ) -> crate::durability::medium::DurablePublicationFate<String> {
-        crate::durability::medium::DurablePublicationFate::Committed
-    }
-}
-
-// Fixture adaptation (C2.4): restored from 86e84dc5cd:memory_publication_tests.rs
-// using a direct `build_durable` owned medium (no runtime_attachment).
+// Fixture adaptation (C2.4/C4): restored from 86e84dc5cd:memory_publication_tests.rs
+// using case-owned `OwnedTestDurableMedium` (no runtime_attachment).
 #[test]
 fn journal_publication_keeps_journal_placement_without_memory_frame() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let commits = Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new()));
-    let cold: Arc<dyn RelationalDurableColdSource> = Arc::new(JournalRecordingSource {
-        commits: commits.clone(),
-    });
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(test_schema_registry())
-        .build_durable(Box::new(JournalRecordingMedium {
-            commits: commits.clone(),
-            source: cold,
-        }))
-        .expect("valid native runtime configuration");
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
     let result = create_entity_outcome(&execution, &runtime, "unchanged-journal-frame");
     let cell = runtime
         .history
@@ -346,9 +308,9 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
     assert!(entry.same_owner(&cell.journal_placement().unwrap().0));
     assert!(cell.resident_payload_bytes().is_none());
     assert_eq!(cell.payload_storage_bytes(), 0);
-    let original = commits.lock().unwrap().get(&entry.position).unwrap().clone();
+    let original = medium.latest_committed_artifact().unwrap();
     let exported = cell.export_artifact(&execution).unwrap();
-    assert_eq!(exported.as_bytes(), original.as_slice());
+    assert_eq!(exported.as_bytes(), original.as_bytes());
     assert!(Arc::ptr_eq(
         &source,
         &runtime.durability.cold_source().unwrap()
@@ -360,33 +322,37 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
 fn recovered_nonhead_tail_envelopes_release_demanded_journal_body_on_drop() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let commits = Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new()));
-    let cold: Arc<dyn RelationalDurableColdSource> = Arc::new(JournalRecordingSource { commits: commits.clone() });
-    let make = || {
-        crate::facade::runtime::RelationalRuntimeApi::builder()
-            .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
-            .schema_registry(test_schema_registry())
-            .build_durable(Box::new(JournalRecordingMedium { commits: commits.clone(), source: cold.clone() }))
-            .expect("valid native runtime")
-    };
-    let runtime = make();
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
     let entity = create_entity(&execution, &runtime, "tail-body-0");
     for n in 1..4 {
         update_entity_and_release_snapshot(&execution, &runtime, entity, &format!("tail-body-{n}"));
     }
-    let tail: Vec<_> = commits.lock().unwrap().values()
-        .map(|bytes| RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap())
-        .collect();
-    let position = *commits.lock().unwrap().keys().nth(1).unwrap();
-    let mut recovered = make();
-    let recovery = crate::durability::medium::RelationalDurableRecoverySource::new(None, tail, Vec::new(), cold.clone());
-    let plan = recovered.durability().recovery_plan_from_source(&execution, recovery, crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification).unwrap();
-    recovered.durability_recovery().recover(&execution, plan).unwrap();
+    let mut recovered = durable_runtime_for_medium(&medium);
+    recover_runtime_from_medium(&execution, &mut recovered, &medium);
     recovered.history.reclaim_retired_branch_roots(1024);
-    let receipt = recovered.history().immutable_commit_receipt_at_patch_stream_position(position).unwrap();
-    let body = recovered.history().demand_commit_envelope(&execution, receipt.commit_id).unwrap().unwrap();
+    let receipt = recovered
+        .history()
+        .immutable_commit_receipt_at_patch_stream_position(PatchStreamPosition(2))
+        .unwrap();
+    let body = recovered
+        .history()
+        .demand_commit_envelope(&execution, receipt.commit_id)
+        .unwrap()
+        .unwrap();
     let weak = Arc::downgrade(&body);
     drop(body);
-    assert!(weak.upgrade().is_none(), "replay must not retain a recovered nonhead journal-backed body after drop");
-    assert_eq!(recovered.history().demand_commit_envelope(&execution, receipt.commit_id).unwrap().unwrap().commit, receipt);
+    assert!(
+        weak.upgrade().is_none(),
+        "replay must not retain a recovered nonhead journal-backed body after drop"
+    );
+    assert_eq!(
+        recovered
+            .history()
+            .demand_commit_envelope(&execution, receipt.commit_id)
+            .unwrap()
+            .unwrap()
+            .commit,
+        receipt
+    );
 }

@@ -23,6 +23,7 @@ pub(super) struct ColdCheckpointSource {
     pub(super) bytes: AtomicU64,
     pub(super) reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(super) unavailable: AtomicBool,
+    pub(super) allow_reopen_metadata_while_unavailable: AtomicBool,
     pub(super) damaged: AtomicBool,
 }
 impl ColdCheckpointSource {
@@ -38,6 +39,30 @@ impl ColdCheckpointSource {
                     .is_some_and(|bytes| bytes.starts_with(b"WORTH-REL-REG"))
             })
             .count()
+    }
+
+    /// Symbol-page demands only (`WORTH-REL-MBR1\n` with `MemberKind::Symbols == 0`).
+    pub(super) fn symbol_page_read_count(&self) -> usize {
+        self.reads
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|locator| {
+                self.members
+                    .get(*locator)
+                    .is_some_and(|bytes| is_member_kind(bytes, 0))
+            })
+            .count()
+    }
+
+    pub(super) fn is_reopen_metadata_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+    ) -> bool {
+        let Some(bytes) = self.members.get(&locator) else {
+            return false;
+        };
+        is_member_kind(bytes, 2) || self.commits.values().any(|commit| commit == bytes)
     }
 
     pub(super) fn capture(
@@ -82,6 +107,7 @@ impl ColdCheckpointSource {
             bytes: AtomicU64::new(0),
             reads: Mutex::new(Vec::new()),
             unavailable: AtomicBool::new(false),
+            allow_reopen_metadata_while_unavailable: AtomicBool::new(false),
             damaged: AtomicBool::new(false),
         })
     }
@@ -208,7 +234,12 @@ impl RelationalDurableColdSource for ColdCheckpointSource {
         if self.damaged.load(Ordering::SeqCst) {
             return Err(Cause::Damaged);
         }
-        if self.unavailable.load(Ordering::SeqCst) {
+        if self.unavailable.load(Ordering::SeqCst)
+            && !(self
+                .allow_reopen_metadata_while_unavailable
+                .load(Ordering::SeqCst)
+                && self.is_reopen_metadata_member(locator))
+        {
             return Err(Cause::SourceUnavailable);
         }
         let bytes = bounded(
@@ -227,6 +258,11 @@ impl RelationalDurableColdSource for ColdCheckpointSource {
         )
     }
 }
+fn is_member_kind(bytes: &[u8], kind: u8) -> bool {
+    const MAGIC: &[u8] = b"WORTH-REL-MBR1\n";
+    bytes.starts_with(MAGIC) && bytes.get(MAGIC.len() + 2) == Some(&kind)
+}
+
 fn bounded(bytes: &[u8], limit: u64) -> Result<Vec<u8>, Cause> {
     if bytes.len() as u64 > limit {
         return Err(Cause::LimitExceeded {

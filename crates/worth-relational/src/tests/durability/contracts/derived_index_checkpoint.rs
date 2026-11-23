@@ -386,7 +386,11 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
     }
 }
 
+#[path = "derived_index_checkpoint/artifact_affinity.rs"]
+mod artifact_affinity;
 #[path = "derived_index_checkpoint/deleted_branch_reader.rs"]
 mod deleted_branch_reader;
 #[path = "derived_index_checkpoint/historical_reader.rs"]
 mod historical_reader;
+#[path = "derived_index_checkpoint/scoped_affinity.rs"]
+mod scoped_affinity;
