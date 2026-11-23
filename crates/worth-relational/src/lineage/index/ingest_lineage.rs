@@ -62,8 +62,9 @@ impl PersistentNameBranchIndex {
                 Some(bound) if *bound == holder => {}
                 Some(_) => return Err(PersistentNameIndexDenial::ConflictingHolder { lineage }),
                 None => {
-                    journal.bound_lineage_holder(lineage);
                     self.lineage_holders.insert(lineage, holder);
+                    let prior = self.holder_lineages.insert(holder, lineage);
+                    journal.bound_lineage_holder(lineage, prior);
                 }
             }
         }
@@ -233,7 +234,9 @@ impl PersistentNameBranchIndex {
             // A name born without a discriminator has no side, exactly like a group.
             let canonical = birth.parts().canonical_discriminator();
             let side = (!canonical.is_empty()).then(|| canonical.to_vec());
-            self.insert_entry(key, NameEntry::born(commit, side, live), journal)?;
+            let scheme = Some(birth.parts().scheme_id().to_owned());
+            let entry = NameEntry::born(commit, side, scheme, live);
+            self.insert_entry(key, entry, journal)?;
             self.bind_lineage_name(lineage, key, journal)?;
         }
         if let Some(kept) = kept {

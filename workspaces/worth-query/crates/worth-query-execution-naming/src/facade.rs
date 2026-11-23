@@ -28,3 +28,7 @@ pub use crate::birth_plan::{
 pub use crate::commit_wiring::{CommittedNamedTransaction, ExecutionNamingCommitAuthority};
 pub use crate::denial::ExecutionNamingDenial;
 pub use crate::lowering::{LoweredExecutionGroupScheme, LoweredExecutionNameSchemeCatalog};
+pub use crate::tracked_resolution::{
+    ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
+    NameReadDependencies, NameReadStaleness,
+};

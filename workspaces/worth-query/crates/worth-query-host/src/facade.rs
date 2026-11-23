@@ -336,8 +336,8 @@ pub use worth_query_execution::facade::application_discovery;
 /// explanation or materialized original values. Each execution checks current
 /// inspection permission; saving an original does not preserve an access grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
-pub use worth_query_execution::facade::application_installation;
-pub use worth_query_execution::facade::application_invariants;
+pub use worth_query_execution::facade::{application_installation, application_invariants};
+pub mod application_naming;
 /// Read-only observations for facade-only certification; these reports grant no authority.
 pub use worth_query_execution::facade::certification;
 pub use worth_query_execution::facade::convergence_epoch;

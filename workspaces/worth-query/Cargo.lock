@@ -2063,6 +2063,7 @@ dependencies = [
  "worth-query-execution-diagnostics",
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-runtime",
  "worth-query-installation",

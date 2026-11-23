@@ -96,7 +96,14 @@ schema authority, and mint fixed 32-byte, kind-verified, non-forgeable
 across fresh builds, dummy pre-allocations, worker counts, forks, checkpoints,
 and tail replay—refusing `MissingBirth`, `DuplicateBirth`, and
 `InvalidDiscriminatorBasis` fail-closed with zero committed effects (automatic
-Query handler/producer lowering follows in subsequent slices).
+Query handler/producer lowering follows in subsequent slices). To hold a name and resolve it later at a reader's pinned basis, use
+`host::application_naming::ExecutionNameReader` (`entity_name_of`,
+`resolve_entity`, `relation_name_of`, `resolve_relation`) or the decision
+reader's `name_of` / `resolve`; answers are kind-checked, `Exact` refuses
+`Ambiguous { candidates }` rather than picking a member, cost is O(lineage
+path), and `NameReadDependencies::currentness_after_commit` reports which
+later commits stale a read. Bridge continuity of named records consumes the
+same resolution ([holding and resolving names](build-an-application.md#holding-and-resolving-names)).
 
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)

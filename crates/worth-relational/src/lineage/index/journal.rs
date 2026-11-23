@@ -17,7 +17,9 @@ pub(super) struct IngestionJournal {
     names: Vec<(PersistentNameKey, Option<NameEntry>)>,
     /// Lineages first bound to a name or record in this batch.
     bound_lineage_names: Vec<LineageId>,
-    bound_lineage_holders: Vec<LineageId>,
+    /// Lineages first bound to a record in this batch, with the lineage that
+    /// record was bound to before, if any.
+    bound_lineage_holders: Vec<(LineageId, Option<LineageId>)>,
 }
 
 impl IngestionJournal {
@@ -31,8 +33,8 @@ impl IngestionJournal {
         self.bound_lineage_names.push(lineage);
     }
 
-    pub(super) fn bound_lineage_holder(&mut self, lineage: LineageId) {
-        self.bound_lineage_holders.push(lineage);
+    pub(super) fn bound_lineage_holder(&mut self, lineage: LineageId, prior: Option<LineageId>) {
+        self.bound_lineage_holders.push((lineage, prior));
     }
 
     /// Puts every touched entry back, newest change first, and unbinds every
@@ -47,8 +49,14 @@ impl IngestionJournal {
         for lineage in self.bound_lineage_names {
             index.lineage_names.remove(&lineage);
         }
-        for lineage in self.bound_lineage_holders {
-            index.lineage_holders.remove(&lineage);
+        for (lineage, prior) in self.bound_lineage_holders.into_iter().rev() {
+            let Some(holder) = index.lineage_holders.remove(&lineage) else {
+                continue;
+            };
+            match prior {
+                Some(prior) => index.holder_lineages.insert(holder, prior),
+                None => index.holder_lineages.remove(&holder),
+            };
         }
     }
 }

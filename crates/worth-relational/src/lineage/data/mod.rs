@@ -25,7 +25,8 @@ pub use graph::{
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
 pub use name_resolution::{
-    PersistentNameKey, PersistentNameResolution, PersistentNameResolutionDenial,
+    PersistentNameKey, PersistentNameOfRecord, PersistentNameResolution,
+    PersistentNameResolutionDenial, PersistentNameResolutionFootprint,
     PersistentNameResolutionMetrics, PersistentNameResolutionOutcome, PersistentNameSelection,
     PersistentNameTarget,
 };

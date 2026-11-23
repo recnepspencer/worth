@@ -26,6 +26,8 @@ pub(crate) struct LiveName {
 pub(crate) struct NameEntry {
     /// Canonical birth discriminator; groups carry none.
     side: Option<Vec<u8>>,
+    /// The installed scheme the name was born under; groups carry none.
+    scheme_id: Option<String>,
     /// Strictly ascending commits from birth; each state holds until the
     /// next entry.
     timeline: Vec<(CommitId, NameState)>,
@@ -34,9 +36,15 @@ pub(crate) struct NameEntry {
 }
 
 impl NameEntry {
-    pub(crate) fn born(born_at: CommitId, side: Option<Vec<u8>>, live: LiveName) -> Self {
+    pub(crate) fn born(
+        born_at: CommitId,
+        side: Option<Vec<u8>>,
+        scheme_id: Option<String>,
+        live: LiveName,
+    ) -> Self {
         Self {
             side,
+            scheme_id,
             timeline: vec![(born_at, NameState::Live(live))],
             forward_edges: Vec::new(),
         }
@@ -44,6 +52,15 @@ impl NameEntry {
 
     pub(crate) fn side(&self) -> Option<&[u8]> {
         self.side.as_deref()
+    }
+
+    pub(crate) fn scheme_id(&self) -> Option<&str> {
+        self.scheme_id.as_deref()
+    }
+
+    /// The commit this name was born at.
+    pub(crate) fn born_at(&self) -> CommitId {
+        self.timeline[0].0
     }
 
     /// The state in force at `basis` and the commit it began, or `None` when
@@ -93,6 +110,33 @@ impl NameEntry {
                 },
                 NameState::Ended => None,
             })
+    }
+
+    /// The lineage this name held until it ended at `ended_at`; `None` for
+    /// groups.
+    ///
+    /// Complexity: O(log t) in this name's own timeline length.
+    pub(crate) fn lineage_ended_at(&self, ended_at: CommitId) -> Option<LineageId> {
+        let before = self
+            .timeline
+            .partition_point(|(commit, _)| *commit < ended_at);
+        self.timeline[..before]
+            .iter()
+            .rev()
+            .find_map(|(_, state)| match state {
+                NameState::Live(live) => live.target.lineage(),
+                NameState::Ended => None,
+            })
+    }
+
+    /// Whether `lineage` held this name at some commit at or before `basis`.
+    ///
+    /// Complexity: O(t) in this name's own timeline length.
+    pub(crate) fn binds_lineage_by(&self, lineage: LineageId, basis: CommitId) -> bool {
+        self.timeline.iter().any(|(commit, state)| {
+            *commit <= basis
+                && matches!(state, NameState::Live(live) if live.target.lineage() == Some(lineage))
+        })
     }
 
     /// Forward lineage edges recorded at exactly `commit`.

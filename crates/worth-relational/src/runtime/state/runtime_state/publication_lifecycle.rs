@@ -288,6 +288,14 @@ impl RelationalRuntimePublicationBinding {
         self.lifecycle.settlements.record(commit_id)
     }
 
+    /// Whether a commit at or before `basis` is published but unsettled.
+    pub(crate) fn has_unsettled_publication_through(
+        &self,
+        basis: crate::history::data::CommitId,
+    ) -> bool {
+        self.lifecycle.settlements.has_unsettled_through(basis)
+    }
+
     pub(crate) fn release_pending_settlement(
         &self,
         record: &Arc<super::PendingRelationalPublicationSettlement>,

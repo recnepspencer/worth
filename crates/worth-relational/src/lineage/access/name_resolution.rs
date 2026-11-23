@@ -5,12 +5,14 @@
 //! recorded at the commit where it ended, and each reached name repeats the
 //! same rule at the same basis. Nothing outside that lineage path is read.
 
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 
 use crate::history::data::CommitId;
+use crate::identity::data::LineageId;
 use crate::lineage::data::{
     PersistentNameKey, PersistentNameResolution, PersistentNameResolutionDenial,
-    PersistentNameResolutionMetrics, PersistentNameResolutionOutcome, PersistentNameSelection,
+    PersistentNameResolutionFootprint, PersistentNameResolutionMetrics,
+    PersistentNameResolutionOutcome, PersistentNameSelection, PersistentNameTarget,
 };
 use crate::lineage::index::{LiveName, NameEntry, NameState, PersistentNameBranchIndex};
 
@@ -37,8 +39,18 @@ impl PersistentNameBranchIndex {
         selection: &PersistentNameSelection,
     ) -> PersistentNameResolutionOutcome {
         let mut metrics = PersistentNameResolutionMetrics::default();
-        let result = self.resolve_counted(held, basis, selection, &mut metrics);
-        PersistentNameResolutionOutcome { result, metrics }
+        let mut ended = BTreeSet::new();
+        let mut live = Vec::new();
+        let result =
+            self.resolve_counted(held, basis, selection, &mut metrics, &mut ended, &mut live);
+        PersistentNameResolutionOutcome {
+            result,
+            metrics,
+            footprint: PersistentNameResolutionFootprint {
+                live,
+                ended_lineages: ended.into_iter().collect(),
+            },
+        }
     }
 
     fn resolve_counted(
@@ -47,6 +59,8 @@ impl PersistentNameBranchIndex {
         basis: CommitId,
         selection: &PersistentNameSelection,
         metrics: &mut PersistentNameResolutionMetrics,
+        footprint: &mut BTreeSet<LineageId>,
+        frontier: &mut Vec<PersistentNameTarget>,
     ) -> Resolution {
         let empty_filter = match selection {
             PersistentNameSelection::BoundedByCarriers { carriers } => carriers.is_empty(),
@@ -74,8 +88,16 @@ impl PersistentNameBranchIndex {
                 live.insert(held, candidate(entry, name));
                 since
             }
-            NameState::Ended => self.walk_forward(held, entry, since, basis, &mut live, metrics),
+            NameState::Ended => {
+                let walk = ForwardWalk {
+                    basis,
+                    metrics,
+                    footprint,
+                };
+                self.walk_forward(held, entry, since, &mut live, walk)
+            }
         };
+        frontier.extend(live.values().map(|found| found.live.target));
         select(&live, retired_at, selection)
     }
 
@@ -86,15 +108,20 @@ impl PersistentNameBranchIndex {
         held: PersistentNameKey,
         entry: &'index NameEntry,
         ended_at: CommitId,
-        basis: CommitId,
         live: &mut BTreeMap<PersistentNameKey, LiveCandidate<'index>>,
-        metrics: &mut PersistentNameResolutionMetrics,
+        walk: ForwardWalk<'_>,
     ) -> CommitId {
+        let ForwardWalk {
+            basis,
+            metrics,
+            footprint,
+        } = walk;
         let mut retired_at = ended_at;
         let mut visited = HashSet::from([held]);
         let mut frontier = VecDeque::from([(entry, ended_at)]);
         while let Some((entry, ended_at)) = frontier.pop_front() {
             metrics.event_visits += 1;
+            footprint.extend(entry.lineage_ended_at(ended_at));
             retired_at = retired_at.max(ended_at);
             for successor in entry.edges_at(ended_at) {
                 metrics.edge_visits += 1;
@@ -116,6 +143,13 @@ impl PersistentNameBranchIndex {
         }
         retired_at
     }
+}
+
+/// What a forward walk reads at and records into.
+struct ForwardWalk<'walk> {
+    basis: CommitId,
+    metrics: &'walk mut PersistentNameResolutionMetrics,
+    footprint: &'walk mut BTreeSet<LineageId>,
 }
 
 fn candidate<'index>(entry: &'index NameEntry, live: &'index LiveName) -> LiveCandidate<'index> {

@@ -1,8 +1,9 @@
 //! Bind cold page placement and admit each verified page into its runtime once.
 use super::{event_residency, node_residency, LineageSubsystem, ResidentLineageEventPage};
 use crate::durability::data::RelationalCheckpointDirectory;
-use crate::history::data::BranchId;
+use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::LineageId;
+use crate::lineage::data::LineageEventRecord;
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::{collections::BTreeSet, sync::Arc};
 
@@ -99,5 +100,54 @@ impl LineageSubsystem {
     }
     pub(crate) fn has_paged_events(&self) -> bool {
         self.event_residency.read().is_some()
+    }
+}
+
+impl super::LineageState {
+    /// Installs readmitted event-page rows, verifying rows already present
+    /// and feeding in-order rows to the derived naming state and name index.
+    pub(super) fn admit_readmitted_events(
+        &mut self,
+        rows: impl Clone + Iterator<Item = (Arc<LineageEventRecord>, CommitId)>,
+    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
+        use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+        let mut fresh = 0;
+        for (event, publication_commit_id) in rows.clone() {
+            if let Some(position) = self.published_event_positions.get(&event.event_id()) {
+                let existing = &self.published_events[*position];
+                if existing.event != event
+                    || existing.publication_commit_id != publication_commit_id
+                {
+                    return Err(Cause::Damaged);
+                }
+            } else {
+                fresh += 1;
+            }
+        }
+        self.published_events
+            .try_reserve(fresh)
+            .map_err(|_| Cause::MemoryExhausted)?;
+        let prior_max_event_id = self
+            .published_event_positions
+            .last_key_value()
+            .map(|(&id, _)| id);
+        let mut in_order_positions = Vec::new();
+        for (event, publication_commit_id) in rows {
+            if !self
+                .published_event_positions
+                .contains_key(&event.event_id())
+            {
+                let in_order = self
+                    .naming_rebuilt_event_frontier
+                    .is_none_or(|frontier| event.event_id() > frontier)
+                    && prior_max_event_id.is_none_or(|max_id| event.event_id() > max_id);
+                if in_order {
+                    in_order_positions.push(self.published_events.len());
+                }
+                self.record_shared_event(event, publication_commit_id, in_order);
+            }
+        }
+        self.ingest_readmitted_name_events(&in_order_positions);
+        Ok(())
     }
 }

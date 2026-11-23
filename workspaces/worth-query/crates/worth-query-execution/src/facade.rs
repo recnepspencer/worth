@@ -366,5 +366,8 @@ pub mod query_obligations;
 /// Thin forwarding surface for execution-time persistent naming lowering,
 /// birth-plan assembly, commit wiring, and admitted name elevation.
 pub mod application_naming {
+    pub use crate::domain_computation::primary_graph::{
+        PersistentNameReadVeto, WorthQueryDecisionNameDenial,
+    };
     pub use worth_query_execution_naming::facade::*;
 }
