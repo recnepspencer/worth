@@ -161,6 +161,15 @@ pub fn decision_read_target(target: &ApplicationOperationDecisionReadTarget) -> 
         ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
             format!("managed-index:{}", parent.parts().binding.as_str())
         }
+        ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+            parent,
+            relation,
+            owner,
+            member,
+        } => format!(
+            "shared-owner-managed-index:{}:{relation}:{owner}->{member}",
+            parent.parts().binding.as_str()
+        ),
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             format!("entity:{entity}")
         }
