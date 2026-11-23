@@ -72,7 +72,7 @@ impl PersistentNameBranchIndex {
         for event in events {
             match *event {
                 Event::Born { group } => {
-                    let entry = NameEntry::born(commit, None, live_group(group));
+                    let entry = NameEntry::born(commit, None, None, live_group(group));
                     self.insert_entry(PersistentNameKey::Group(group), entry, journal)?;
                 }
                 Event::Revived { group } => {

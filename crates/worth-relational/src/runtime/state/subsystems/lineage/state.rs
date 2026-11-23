@@ -5,6 +5,7 @@ use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{LineageEventRecord, LineageNode};
 
+use super::name_indexes::BranchNameIndexes;
 use super::naming_basis::{
     rebuild_all_branch_naming_states, AuthoritativeBranchNamingState,
 };
@@ -18,9 +19,10 @@ pub(crate) struct LineageState {
     pub(super) relation_lineage_holders: BTreeMap<LineageId, RelationId>,
     pub(super) branch_forks: BTreeMap<BranchId, (BranchId, CommitId)>,
     pub(super) branch_naming_states: BTreeMap<BranchId, AuthoritativeBranchNamingState>,
+    pub(super) name_indexes: BranchNameIndexes,
     pub(super) naming_rebuilt_event_frontier: Option<u64>,
     pub(super) published_events: Vec<PublishedLineageEvent>,
-    published_event_positions: BTreeMap<u64, usize>,
+    pub(super) published_event_positions: BTreeMap<u64, usize>,
     resolution_indexes: LineageResolutionIndexes,
     pub(crate) identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator,
 }
@@ -51,6 +53,7 @@ impl LineageState {
             relation_lineage_holders: BTreeMap::new(),
             branch_forks: BTreeMap::new(),
             branch_naming_states: BTreeMap::new(),
+            name_indexes: BranchNameIndexes::default(),
             naming_rebuilt_event_frontier: None,
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
@@ -63,7 +66,7 @@ impl LineageState {
         self.record_shared_event(Arc::new(event), publication_commit_id, true);
     }
 
-    fn record_shared_event(
+    pub(super) fn record_shared_event(
         &mut self,
         event: Arc<LineageEventRecord>,
         publication_commit_id: CommitId,
@@ -100,54 +103,16 @@ impl LineageState {
         });
     }
 
-    pub(super) fn admit_readmitted_events(
-        &mut self,
-        rows: impl Clone + Iterator<Item = (Arc<LineageEventRecord>, CommitId)>,
-    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
-        use crate::storage::data::RelationalStorageUnavailableCause as Cause;
-        let mut fresh = 0;
-        for (event, publication_commit_id) in rows.clone() {
-            if let Some(position) = self.published_event_positions.get(&event.event_id()) {
-                let existing = &self.published_events[*position];
-                if existing.event != event
-                    || existing.publication_commit_id != publication_commit_id
-                {
-                    return Err(Cause::Damaged);
-                }
-            } else {
-                fresh += 1;
-            }
-        }
-        self.published_events
-            .try_reserve(fresh)
-            .map_err(|_| Cause::MemoryExhausted)?;
-        let prior_max_event_id = self
-            .published_event_positions
-            .last_key_value()
-            .map(|(&id, _)| id);
-        for (event, publication_commit_id) in rows {
-            if !self
-                .published_event_positions
-                .contains_key(&event.event_id())
-            {
-                let in_order = self
-                    .naming_rebuilt_event_frontier
-                    .is_none_or(|frontier| event.event_id() > frontier)
-                    && prior_max_event_id.is_none_or(|max_id| event.event_id() > max_id);
-                self.record_shared_event(event, publication_commit_id, in_order);
-            }
-        }
-        Ok(())
-    }
-
     pub(crate) fn install_validated_event_batch(
         &mut self,
         batch: ValidatedLineageEventBatch,
         publication_commit_id: CommitId,
     ) {
+        let from = self.published_events.len();
         for event in batch.events {
             self.record_event(event, publication_commit_id);
         }
+        self.ingest_installed_name_events(from);
     }
 
     pub(crate) fn install_recovered_event_batch(
@@ -181,9 +146,11 @@ impl LineageState {
                     .ok_or_else(|| "recovered lineage event exhausted the allocator".to_owned())
             })
             .transpose()?;
+        let from = self.published_events.len();
         for event in events.iter().cloned() {
             self.record_event(event, publication_commit_id);
         }
+        self.ingest_installed_name_events(from);
         self.identity_allocator.advance_to(None, next_event_id);
         Ok(())
     }
@@ -316,6 +283,7 @@ impl LineageState {
             &self.relation_lineage_holders,
             &self.branch_forks,
         );
+        self.rebuild_name_indexes();
     }
 
     pub(crate) fn finalize_cold_naming_basis(
@@ -355,6 +323,7 @@ impl LineageState {
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_positions.clear();
         self.branch_naming_states.clear();
+        self.name_indexes.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
             .map(|published| {
@@ -381,6 +350,7 @@ impl Clone for LineageState {
             relation_lineage_holders: self.relation_lineage_holders.clone(),
             branch_forks: self.branch_forks.clone(),
             branch_naming_states: self.branch_naming_states.clone(),
+            name_indexes: self.name_indexes.clone(),
             naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
             published_events: self.published_events.clone(),
             published_event_positions: self.published_event_positions.clone(),

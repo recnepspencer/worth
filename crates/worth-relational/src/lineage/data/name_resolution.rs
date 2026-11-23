@@ -59,6 +59,14 @@ pub enum PersistentNameTarget {
 }
 
 impl PersistentNameTarget {
+    /// The lineage a record target holds; groups carry none.
+    pub const fn lineage(&self) -> Option<LineageId> {
+        match self {
+            Self::Entity { lineage, .. } | Self::Relation { lineage, .. } => Some(*lineage),
+            Self::Group { .. } => None,
+        }
+    }
+
     /// The persistent name this target is live under.
     pub const fn key(&self) -> PersistentNameKey {
         match self {
@@ -67,6 +75,24 @@ impl PersistentNameTarget {
             Self::Group { group } => PersistentNameKey::Group(*group),
         }
     }
+}
+
+/// The persistent name a record carries at a resolution basis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PersistentNameOfRecord {
+    /// The record, created with `lineage`, is live under `name` at the basis.
+    Live {
+        name: PersistentNameKey,
+        lineage: LineageId,
+    },
+    /// The record carried `name`, which no longer designates it at the basis
+    /// (the record was retired, replaced, split or merged away).
+    Ended {
+        name: PersistentNameKey,
+        lineage: LineageId,
+    },
+    /// No name was bound to the record at or before the basis.
+    Unnamed,
 }
 
 /// How a held name chooses among its live descendants at the basis.
@@ -137,9 +163,41 @@ pub struct PersistentNameResolutionMetrics {
     pub event_visits: usize,
 }
 
-/// One resolution answer with the work it cost.
+/// One resolution answer with the work it cost and what it rests on.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PersistentNameResolutionOutcome {
     pub result: Result<PersistentNameResolution, PersistentNameResolutionDenial>,
     pub metrics: PersistentNameResolutionMetrics,
+    pub footprint: PersistentNameResolutionFootprint,
+}
+
+/// Everything one resolution read, so a tracked reader can key on it.
+///
+/// A later commit can change the answer only by a lineage event whose source
+/// is a footprint lineage: a `Retire`, `Replace`, `Split` or `Merge` ending a
+/// live descendant, or a `Restore` reviving a name that had ended on the
+/// walked path. Groups contribute no lineage.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PersistentNameResolutionFootprint {
+    /// Every live descendant found at the basis, before the selection
+    /// narrowed them, in ascending name order.
+    pub live: Vec<PersistentNameTarget>,
+    /// The lineage each ended name on the walked path held until it ended,
+    /// ascending.
+    pub ended_lineages: Vec<LineageId>,
+}
+
+impl PersistentNameResolutionFootprint {
+    /// Every footprint lineage, live and ended, ascending.
+    pub fn lineages(&self) -> Vec<LineageId> {
+        let mut lineages: Vec<_> = self
+            .live
+            .iter()
+            .filter_map(PersistentNameTarget::lineage)
+            .chain(self.ended_lineages.iter().copied())
+            .collect();
+        lineages.sort_unstable();
+        lineages.dedup();
+        lineages
+    }
 }

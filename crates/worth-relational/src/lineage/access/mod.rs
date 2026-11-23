@@ -1,6 +1,7 @@
 mod discovery;
 mod observation;
 pub use discovery::RelationalLineageDiscoveryDenial;
+pub use name_observation_view::PersistentNameObservationView;
 pub use observation::RelationalLineageNodeRead;
 #[cfg(test)]
 mod aspect_history;
@@ -9,6 +10,8 @@ mod divergence;
 mod event_demand;
 #[cfg(test)]
 mod graph;
+mod name_observation_view;
+mod name_of_record;
 mod name_resolution;
 mod records;
 mod resolution;

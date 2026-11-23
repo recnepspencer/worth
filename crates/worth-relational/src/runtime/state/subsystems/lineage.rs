@@ -9,6 +9,7 @@ use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 
 mod event_page;
 mod event_residency;
+mod name_indexes;
 mod naming_basis;
 mod node_page;
 mod page_admission;

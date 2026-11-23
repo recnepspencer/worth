@@ -313,6 +313,52 @@ schema using `worth_query_decl::facade::application_naming`:
   effects. Automatic Query handler/producer lowering builds on this foundation
   in subsequent slices.
 
+#### Holding and resolving names
+
+A reader holds a name and later asks where its meaning lives now, at its
+own pinned basis, through `worth_query_host::facade::application_naming`.
+`ExecutionNameReader::at_observation(runtime, execution, observation)` reads
+the branch-local derived name index that Relational keeps current at every
+commit and rebuilds from canonical lineage events on fork, cold open, and
+replay:
+
+- `entity_name_of::<Schema, Entity>(id, &mut deps)` /
+  `relation_name_of::<Relation>(id, &mut deps)` return the admitted
+  `WorthQueryName<K>` a live record carries. A name whose installed scheme
+  governs another subject refuses `KindIdentityMismatch`; a record whose
+  name has moved on refuses `RecordNoLongerNamed`.
+- `resolve_entity::<Schema, Entity>(&held, &selection, &mut deps)` /
+  `resolve_relation` return `ResolvedName::{Exact, Plural, Retired { at_commit }}`
+  or `NameResolutionDenial::{Ambiguous { candidates }, NoMatchingCandidate,
+  UnknownName, BasisPruned}`. `NameSelection::Exact` on two or more live
+  successors refuses with every candidate; it never picks a least member.
+  Cost is O(lineage path), flat in unrelated records and commits.
+- Every read records what it rested on into `NameReadDependencies`;
+  `currentness_after_commit(&commit)` reports `Stale` exactly when that
+  commit split, merged, replaced, retired or restored a lineage the read
+  rested on, or birthed a name it found unknown, and `Clean` otherwise.
+- Inside an operation's decision reader, `reader.name_of(&identity)` and
+  `reader.resolve(&held, &selection)` admit the read against the declared
+  entity contract and record each live record the answer rested on as that
+  entity's decision fact, so a split, merge, replacement or retirement of it
+  invalidates the decision. A walk through ended names, an unknown held name
+  or a relation record has no decision fact key yet and records an unkeyed
+  read; a later `Restore` of an ended path name is not yet tracked there.
+  Group names do not resolve at runtime yet: group transitions are not part
+  of the commit envelope.
+
+Bridge continuity of a named record (`ContinuityLineageSource` on the
+Relational source) resolves the record's name over all live descendants:
+a split reports `SplitSuccessors` with exactly the resolved candidates, a
+merge reports `MergeLikeSuccessor` onto the survivor, and retirement reports
+`NoAuthoritativeSuccessor`. Records born without a name keep record-history
+continuity. Courts:
+[tracked resolution](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_resolution.rs),
+[invalidation](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_invalidation.rs),
+[rebuild equivalence](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_rebuild.rs),
+[cost](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cost.rs), and
+[Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
+
 The runnable Slice 1B counterparts are the
 [end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),
 [reorder and collision court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_reorder_and_collision.rs),

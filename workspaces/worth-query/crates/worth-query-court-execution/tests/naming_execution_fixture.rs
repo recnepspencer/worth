@@ -177,6 +177,13 @@ pub fn release_commit_snapshot(
 }
 
 pub fn cad_schema_registry() -> RelationalSchemaRegistry {
+    cad_schema_registry_with_face_aspects(Vec::new())
+}
+
+/// The CAD registry whose `Face` kind declares `face_aspects`.
+pub fn cad_schema_registry_with_face_aspects(
+    face_aspects: Vec<worth_relational::facade::schema::DeclaredAspectContractBinding>,
+) -> RelationalSchemaRegistry {
     let catalog = lowered_cad_catalog();
     let schema_id = SchemaId("worth.tests.execution.naming.CadNaming".to_owned());
     let entity = |kind_id, kind_name: &str| EntityKindRegistration {
@@ -196,8 +203,12 @@ pub fn cad_schema_registry() -> RelationalSchemaRegistry {
         aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
         relation_integrity: RelationIntegrityDeclarations::default(),
     };
+    let face = EntityKindRegistration {
+        aspect_contract_declarations: KindAspectContractDeclarations::new(face_aspects),
+        ..entity(FACE_KIND_ID, "Face")
+    };
     RelationalSchemaRegistry::new()
-        .register_entity_kind(entity(FACE_KIND_ID, "Face"))
+        .register_entity_kind(face)
         .and_then(|reg| reg.register_entity_kind(entity(EDGE_KIND_ID, "Edge")))
         .and_then(|reg| reg.register_entity_kind(entity(DUMMY_ENTITY_KIND_ID, "DummyEntity")))
         .and_then(|reg| reg.register_relation_kind(relation(SEAM_KIND_ID, "Seam")))

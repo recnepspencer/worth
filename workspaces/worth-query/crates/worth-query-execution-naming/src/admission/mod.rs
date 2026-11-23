@@ -25,6 +25,9 @@ use worth_relational::facade::transactions::{CommitResult, CreatedEntityRef, Cre
 
 use crate::denial::ExecutionNamingDenial;
 
+mod resolved;
+pub(crate) use resolved::{kind_verified_resolved_name, verify_resolved_subject, RequestedSubject};
+
 /// Sealed collection of persistent names minted during one committed
 /// Relational transaction, derived strictly from that commit's own canonical
 /// lineage artifact and Relational's installed scheme subject names.

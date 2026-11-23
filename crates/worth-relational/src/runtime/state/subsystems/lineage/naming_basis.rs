@@ -336,6 +336,7 @@ impl LineageState {
                 &target, &self.published_events, &self.nodes, &self.relation_lineage_holders, &self.branch_forks,
             )
         };
+        self.fork_name_index(&target, &source, fork_commit_id);
         self.branch_naming_states.insert(target, seeded);
     }
 

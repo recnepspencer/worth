@@ -48,7 +48,9 @@ impl IngestionJournal {
             index.lineage_names.remove(&lineage);
         }
         for lineage in self.bound_lineage_holders {
-            index.lineage_holders.remove(&lineage);
+            if let Some(holder) = index.lineage_holders.remove(&lineage) {
+                index.holder_lineages.remove(&holder);
+            }
         }
     }
 }
