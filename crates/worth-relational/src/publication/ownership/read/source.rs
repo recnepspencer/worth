@@ -29,9 +29,11 @@ impl<'a> OwnershipReadSource<'a> {
             .demand_head_partition(execution, partition)
             .map_err(|cause| match self {
                 Self::Admitted(basis) => {
-                    crate::authority::commit::preparation::storage_read_denial(basis, cause)
+                    crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                        basis, cause,
+                    )
                 }
-                Self::Candidate(_) => super::super::request(cause),
+                Self::Candidate(_) => super::super::read_request::request(cause),
             })
     }
 }

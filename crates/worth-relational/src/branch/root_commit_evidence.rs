@@ -1,6 +1,6 @@
 //! A root carries either its original frame or selected checkpoint evidence.
 use super::RelationalBranchRootSchemaAuthority;
-use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
+use crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
 pub(crate) use crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence;
 use crate::history::data::{CanonicalCommitEnvelope, RelationalCommitReceipt};
 use crate::query::data::QueryPlanEvidenceBasis;

@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 pub(super) fn validate(
     roster: &CurrentPublicationRoster,
     storage: &CurrentPublicationStorage,
-    view: &InvariantStateView<'_>,
+    view: &StructuralStateView<'_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
     let mut links = HashMap::new();
@@ -87,7 +87,7 @@ pub(super) fn validate(
         let o = &row.value.origin;
         o.validate_inputs(context).map_err(|cause| match cause {
             crate::history::data::CodecRetirementClosureStop::Request(cause) => {
-                super::super::request(cause)
+                super::super::read_request::request(cause)
             }
             _ => corrupt(
                 o.commit.commit_id,

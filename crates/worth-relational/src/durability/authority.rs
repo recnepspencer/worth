@@ -1,6 +1,6 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub(crate) use runtime_rebuild::RecoveredRootInventory;
-mod associated_effects;
+pub(crate) mod associated_effects;
 mod authority_continuity;
 pub use associated_effects::{
     ObservedRelationalMemoryCommit, ReadmittedRelationalAssociatedEffect,

@@ -3,7 +3,7 @@ pub(crate) mod authored_retirement;
 pub(crate) mod certification;
 mod observation;
 pub(crate) mod source_scope;
-pub use certification::CurrentOwnershipContactsForTest;
+pub use observation::CurrentOwnershipContactsForTest;
 pub(crate) mod cold_checkpoint_source;
 pub(crate) mod cold_pairing_court;
 pub(crate) mod locality_court;

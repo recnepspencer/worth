@@ -1,4 +1,5 @@
 //! Closed preflight of an external native-only verb against actual current custody.
+use super::observation::CurrentOwnershipContactsForTest;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
 use crate::transactions::data::intents::mutation_intent::{
@@ -7,61 +8,6 @@ use crate::transactions::data::intents::mutation_intent::{
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::{EntityReference, RecordRef};
 use worth_execution::ExecutionRequest;
-/// Actual private rows decoded by a one-hop custody read, with their source loci.
-#[derive(Debug)]
-pub struct CurrentOwnershipContactsForTest {
-    pub publication_rows: Vec<(EntityId, EntityId)>,
-    pub presence_rows: Vec<(EntityId, EntityId)>,
-    /// Each incidence is charged before its current metadata is read.
-    pub scope_links: usize,
-    pub position_links: usize,
-    /// Actual meter deltas for the per-position incidence checkpoints.
-    pub position_work: u64,
-}
-
-impl CurrentOwnershipContactsForTest {
-    pub(super) fn from_current(
-        current: &super::CurrentPublicationRoster,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Self {
-        let storage = basis
-            .inner
-            .root
-            .schema_authority()
-            .registry()
-            .current_publication_storage
-            .as_ref();
-        Self {
-            position_work: current.observed_position_work,
-            publication_rows: current
-                .publications
-                .iter()
-                .chain(&current.codec_retired)
-                .map(|r| (r.value.origin.meaning.source_scope, r.entity))
-                .collect(),
-            presence_rows: current
-                .positions
-                .iter()
-                .map(|(id, p)| (p.meaning.source_scope, *id))
-                .collect(),
-            scope_links: storage.map_or(0, |s| {
-                current
-                    .links
-                    .iter()
-                    .filter(|l| l.kind == s.scope_link)
-                    .count()
-            }),
-            position_links: storage.map_or(0, |s| {
-                current
-                    .links
-                    .iter()
-                    .filter(|l| l.kind == s.position_link)
-                    .count()
-            }),
-        }
-    }
-}
-
 pub(crate) fn probe_coherent_ownership_loss(
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,

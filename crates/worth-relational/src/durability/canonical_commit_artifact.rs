@@ -24,7 +24,7 @@ mod body_read;
 pub(crate) mod borrowed_payload;
 #[cfg(test)]
 pub(crate) mod checkpoint_body;
-mod decoded_quote;
+pub(crate) mod decoded_quote;
 pub(crate) use decoded_quote::schema_image::{
     prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
 };

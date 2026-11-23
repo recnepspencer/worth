@@ -1,18 +1,40 @@
-use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
-
-use crate::identity::data::KindId;
-use crate::identity::data::PartitionId;
-use crate::storage::data::RelationalFieldPresence;
-use crate::tests::support::*;
-use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
-use crate::transactions::data::intents::mutation_intent::CreateIntent;
-use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
-use crate::transactions::data::intents::mutation_intent::MutationIntent;
-use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
-use crate::transactions::data::primitives::WorkerIntentBatch;
+//! Certify revision identity and field presence across native exact rooted reads.
+use super::branch_history_publications::{delete_entity, fork, update_entity_on_branch};
+use super::checkpoint_recovery_observation::snapshot_for_branch;
 use worth_foundational::facade::{
-    PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
+    AspectFieldLocator, CanonicalFieldPath, LocatorAuthority, PortableAspectContractBasis,
+    PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
+use worth_relational::facade::{
+    history::BranchId,
+    identity::{KindId, PartitionId},
+    runtime::RelationalFieldPresence,
+    schema::DeclaredAspectContractBinding,
+    transactions::{
+        ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, EntitySpec,
+        MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+    },
+};
+use worth_testkit_relational::{
+    aspect_storage::{
+        aspect_key,
+        definition::entity_summary_struct_aspect,
+        field_key,
+        publications::{
+            begin_main_transaction, changed_entities, release_test_commit_snapshot,
+            string_aspect_field_patch,
+        },
+        AspectSchemaFixture,
+    },
+    durable_publication::{create_entity_outcome, memory_runtime},
+    shared_relational_certification_test_execution_policy::serial_request,
+};
+
+fn summary_binding() -> DeclaredAspectContractBinding {
+    let (binding, contract) =
+        entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
+    DeclaredAspectContractBinding { binding, contract }
+}
 
 fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
     AspectFieldLocator::new(
@@ -24,25 +46,22 @@ fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = AspectSchemaFixture {
-        entity_aspects: vec![entity_summary_struct_aspect(
-            aspect_key("summary"),
-            field_key("summary"),
-        )],
+        entity_aspects: vec![summary_binding()],
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let mut create = test_owner_begin_transaction_for_main(&runtime);
+    let mut create = begin_main_transaction(&runtime);
     create
         .push_batch(
             WorkerIntentBatch::new("field-revision-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
+                CreateIntent::Entity(EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("field-revision"),
+                    client_key: "field-revision".into(),
                     fields: string_aspect_field_patch([(
                         aspect_key("summary"),
                         field_key("title"),
@@ -76,7 +95,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
         RelationalFieldPresence::Absent
     );
 
-    let mut update = test_owner_begin_transaction_for_main(&runtime);
+    let mut update = begin_main_transaction(&runtime);
     update
         .push_batch(
             WorkerIntentBatch::new("field-revision-update").push(MutationIntent::Entity(
@@ -107,24 +126,24 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
 
 #[test]
 fn absent_present_absent_aba_has_distinct_native_revision() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
+    let binding = summary_binding();
     let contract = binding.contract.clone();
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![binding],
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let mut create = test_owner_begin_transaction_for_main(&runtime);
+    let mut create = begin_main_transaction(&runtime);
     create
         .push_batch(
             WorkerIntentBatch::new("aba-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
+                CreateIntent::Entity(EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("aba"),
+                    client_key: "aba".into(),
                     fields: string_aspect_field_patch([(
                         aspect_key("summary"),
                         field_key("title"),
@@ -157,7 +176,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
         .entity_field_revision(execution, entity, &title)
         .expect("read request remains live");
 
-    let mut set = test_owner_begin_transaction_for_main(&runtime);
+    let mut set = begin_main_transaction(&runtime);
     set.push_batch(
         WorkerIntentBatch::new("aba-set").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -178,7 +197,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
         RelationalFieldPresence::Present
     );
 
-    let mut clear = test_owner_begin_transaction_for_main(&runtime);
+    let mut clear = begin_main_transaction(&runtime);
     clear
         .push_batch(
             WorkerIntentBatch::new("aba-clear").push(MutationIntent::Entity(
@@ -217,10 +236,10 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
 
 #[test]
 fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_identity() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
+    let runtime = memory_runtime();
     let created = create_entity_outcome(execution, &runtime, "first");
     let entity = changed_entities(&created)[0];
     let name = locator("name", "name");
@@ -231,8 +250,9 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
         .entity_field_revision(execution, entity, &name)
         .expect("read request remains live")
         .unwrap();
-    let fork = create_branch_from_main(&runtime, "field-revision-fork");
-    let changed = update_entity_on_branch(execution, &runtime, entity, "second", fork.clone());
+    let sibling = BranchId("field-revision-fork".to_owned());
+    fork(execution, &runtime, &sibling.0);
+    let changed = update_entity_on_branch(execution, &runtime, entity, "second", sibling);
     let on_fork = runtime
         .read_truth()
         .project_snapshot(&changed.snapshot)
@@ -250,10 +270,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
             .expect("read request remains live"),
         Some(original)
     );
-    let main = snapshot_for_owner_branch(
-        &runtime,
-        &crate::history::data::coordinates::BranchId("main".to_owned()),
-    );
+    let main = snapshot_for_branch(&runtime, &BranchId("main".to_owned()));
     assert_eq!(
         runtime
             .read_truth()

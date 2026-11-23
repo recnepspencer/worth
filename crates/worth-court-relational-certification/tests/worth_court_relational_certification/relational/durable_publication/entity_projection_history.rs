@@ -1,13 +1,55 @@
-use super::*;
-use crate::config::data::CascadeDeletePolicy;
-use crate::tests::support::*;
+//! Certify exact and historical projection semantics through published snapshots.
+use super::branch_history_publications::delete_entity;
+use worth_relational::facade::{
+    identity::{EntityId, KindId},
+    runtime::{
+        ProjectionAspectScope, ProjectionContractRefusal, ProjectionRecordDomain,
+        RelationalProjectionContractDenial,
+    },
+    transactions::RelationalExecutionDenialCause,
+};
+use worth_testkit_relational::{
+    aspect_storage::{aspect_key, field_key, publications::changed_entities},
+    durable_publication::{create_entity_outcome, memory_runtime},
+    shared_relational_certification_test_execution_policy::serial_request,
+};
+
+#[test]
+fn borrowed_projection_cannot_bypass_installed_mask_contract() {
+    let host_request = serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = memory_runtime();
+    let created = create_entity_outcome(execution, &runtime, "masked");
+    let refusal = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot)
+        .unwrap()
+        .entity_record_with_projection_scope(
+            execution,
+            changed_entities(&created)[0],
+            ProjectionAspectScope::fields(aspect_key("name"), [field_key("alias")]),
+            |_| Some(()),
+        )
+        .expect_err("projection contract must refuse");
+
+    assert_eq!(
+        refusal,
+        RelationalExecutionDenialCause::ProjectionContract(RelationalProjectionContractDenial {
+            domain: ProjectionRecordDomain::Entity,
+            kind_id: KindId(1),
+            requirement: Some(0),
+            refusal: ProjectionContractRefusal::MaskRejected,
+        })
+    );
+}
 
 #[test]
 fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projection() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let runtime = memory_runtime();
     let created = create_entity_outcome(execution, &runtime, "live");
     let entity = changed_entities(&created)[0];
     let deleted = delete_entity(execution, &runtime, entity);
@@ -35,7 +77,7 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
         .entity_record_with_projection_scope(
             execution,
             entity,
-            super::super::ProjectionAspectScope::empty(),
+            ProjectionAspectScope::empty(),
             |_| Some(())
         )
         .expect("read request remains live")
@@ -65,7 +107,7 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
         .read_entity_retirement(execution, entity)
         .unwrap()
         .is_none());
-    let foreign = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let foreign = memory_runtime();
     assert!(foreign
         .read_truth()
         .project_snapshot(&deleted.snapshot)

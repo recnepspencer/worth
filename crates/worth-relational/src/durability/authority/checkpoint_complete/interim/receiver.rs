@@ -281,7 +281,7 @@ fn install_originals(
             ))?;
         artifact
             .envelope_residency()
-            .bind_interim_original(&row, original, request)
+            .bind_interim_original(row.original_row(), original, request)
             .map_err(RelationalRecoveryStop::AdmissionImage)?;
     }
     Ok(())

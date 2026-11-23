@@ -3,6 +3,7 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::residency::RelationalRecordHeadArenaView;
 use crate::storage::substrate::{EntityRecordKind, HistoricalMetadata, RelationRecordKind};
 
+mod aspect_state;
 mod logical_slots;
 pub(crate) mod slot_resolution;
 mod structural_adjacency;

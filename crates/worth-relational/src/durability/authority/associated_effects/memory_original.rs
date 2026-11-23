@@ -1,88 +1,7 @@
 //! Read owner-resident original meaning without claiming durable source custody.
+use super::observed_memory_commit::ObservedRelationalMemoryCommit;
 use super::{DurabilityAuthority, RelationalAssociatedEffectRefusal as Refusal};
-use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
-use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
-use crate::transactions::data::RecoveredRelationalSemanticResult;
-
-/// The actual resident Native owner artifact. This cannot qualify a directory
-/// Home, mint a performed effect, or reconstruct a live CommitResult.
-#[derive(Debug)]
-pub struct ObservedRelationalMemoryCommit {
-    origin: MemoryCommitOrigin,
-    semantic: RecoveredRelationalSemanticResult,
-    digest: [u8; 32],
-}
-#[derive(Debug)]
-enum MemoryCommitOrigin {
-    Live(PositionedCanonicalCommit),
-    Interim {
-        owner: RelationalRuntimeOrigin,
-        admitted: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
-        data: crate::durability::canonical_commit_artifact::CheckpointEffectData,
-    },
-}
-
-impl ObservedRelationalMemoryCommit {
-    pub fn receipt(&self) -> &RelationalCommitReceipt {
-        self.semantic.semantic().receipt()
-    }
-    pub fn semantic_result(&self) -> &RecoveredRelationalSemanticResult {
-        &self.semantic
-    }
-    pub fn position(&self) -> crate::publication::patch::data::PatchStreamPosition {
-        match &self.origin {
-            MemoryCommitOrigin::Live(positioned) => positioned.position(),
-            MemoryCommitOrigin::Interim { admitted, .. } => admitted.index().position,
-        }
-    }
-    pub fn artifact_digest(&self) -> &[u8; 32] {
-        &self.digest
-    }
-
-    pub(crate) fn matches_original_envelope(
-        &self,
-        expected: &std::sync::Weak<crate::history::data::CanonicalCommitEnvelope>,
-    ) -> bool {
-        match &self.origin {
-            MemoryCommitOrigin::Live(positioned) => std::sync::Weak::ptr_eq(
-                expected,
-                &std::sync::Arc::downgrade(positioned.canonical_arc()),
-            ),
-            MemoryCommitOrigin::Interim { .. } => false,
-        }
-    }
-
-    pub(crate) fn matches_interim(
-        &self,
-        expected: &RelationalRuntimeOrigin,
-        row: &crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
-    ) -> bool {
-        match &self.origin {
-            MemoryCommitOrigin::Live(_) => false,
-            MemoryCommitOrigin::Interim {
-                owner, admitted, ..
-            } => owner.same_origin(expected) && admitted.same_owner(row),
-        }
-    }
-
-    pub fn created_entity(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity: crate::identity::data::EntityId,
-    ) -> Result<Option<super::ReadmittedRelationalCreatedEntity<'_>>, Refusal> {
-        super::created_row::read_created_entity(
-            execution,
-            self.semantic.semantic(),
-            match &self.origin {
-                MemoryCommitOrigin::Live(positioned) => {
-                    &positioned.envelope().patch.authoritative_record_patches
-                }
-                MemoryCommitOrigin::Interim { data, .. } => &data.creations,
-            },
-            entity,
-        )
-    }
-}
+use crate::history::data::RelationalCommitReceipt;
 
 impl DurabilityAuthority<'_> {
     /// Observe a resident artifact explicitly. A source-backed artifact must
@@ -142,17 +61,12 @@ impl DurabilityAuthority<'_> {
                     crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
                 )
             })?;
-            return Ok(ObservedRelationalMemoryCommit {
-                semantic: RecoveredRelationalSemanticResult {
-                    semantic: data.semantic.clone(),
-                },
-                digest: entry.payload_digest,
-                origin: MemoryCommitOrigin::Interim {
-                    owner: self.runtime.services.origin_identity(),
-                    admitted: row,
-                    data,
-                },
-            });
+            return Ok(ObservedRelationalMemoryCommit::from_interim(
+                self.runtime.services.origin_identity(),
+                row,
+                data,
+                entry.payload_digest,
+            ));
         }
         let positioned = residency
             .demand_positioned(execution, 1 << 30)
@@ -166,13 +80,8 @@ impl DurabilityAuthority<'_> {
             execution,
         )
         .map_err(Refusal::Recovery)?;
-        let semantic = RecoveredRelationalSemanticResult {
-            semantic: positioned.envelope().semantic_result_arc(),
-        };
-        Ok(ObservedRelationalMemoryCommit {
-            origin: MemoryCommitOrigin::Live(positioned),
-            semantic,
-            digest,
-        })
+        Ok(ObservedRelationalMemoryCommit::from_live(
+            positioned, digest,
+        ))
     }
 }

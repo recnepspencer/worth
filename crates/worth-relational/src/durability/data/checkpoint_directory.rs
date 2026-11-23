@@ -12,9 +12,8 @@ use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMe
 /// An admitted directory intrinsically retains its complete semantic basis.
 #[derive(Debug)]
 pub(crate) struct RelationalCheckpointDirectory {
-    pub(crate) admission_owner: std::sync::OnceLock<
-        std::sync::Weak<crate::durability::checkpoint_admission::AdmissionCustody>,
-    >,
+    pub(crate) admission_owner:
+        std::sync::OnceLock<crate::durability::checkpoint_admission::DirectoryAdmissionIdentity>,
     pub(crate) admission_image:
         Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     pub(crate) source_schemas: std::sync::OnceLock<

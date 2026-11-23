@@ -1,6 +1,8 @@
 //! Read and authenticate the current private roster without historical members.
-use super::{checkpoint, corrupt, read_request::damaged, record};
+use super::read_request::{checkpoint, corrupt, damaged, request};
+use super::record;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::structural_state::StructuralStateView;
 use crate::history::data::coordinates::CommitId;
 use crate::identity::data::RelationId;
 use crate::identity::data::{EntityId, KindId};
@@ -8,7 +10,6 @@ use crate::schema::data::CurrentPublicationStorage;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
-use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 mod entity;
 mod integrity;
@@ -41,7 +42,7 @@ pub(crate) fn read_selected(
     basis: &AdmittedRelationalBranchBasis,
     records: &[RecordRef],
     scopes: &[RecordRef],
-    after: Option<&InvariantStateView<'_>>,
+    after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let roster = read_source(
@@ -78,7 +79,7 @@ fn read_source(
     source: OwnershipReadSource<'_>,
     records: &[RecordRef],
     scopes: &[RecordRef],
-    after: Option<&InvariantStateView<'_>>,
+    after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let mut roster = empty(execution, source)?;
@@ -90,7 +91,7 @@ fn read_source(
     else {
         return Ok(roster);
     };
-    let view = InvariantStateView::new(
+    let view = StructuralStateView::new(
         root,
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
@@ -120,10 +121,10 @@ fn retain<T>(funding: &mut ExecutionMemoryReservation) -> Result<(), Transaction
         .bytes()
         .checked_add((4 * std::mem::size_of::<T>()) as u64)
         .ok_or_else(|| {
-            super::request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
     funding.resize(bytes).map_err(|cause| {
-        super::request(crate::execution::denial::lease_denial(
+        request(crate::execution::denial::lease_denial(
             worth_execution::LeaseDenial::MemoryExhausted(cause),
         ))
     })
@@ -135,8 +136,8 @@ fn empty(
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let funding = execution
         .in_scope(|lease| ExecutionMemoryReservation::reserve_in_scope(lease, 0))
-        .map_err(super::request)?
-        .map_err(|cause| super::request(crate::execution::denial::lease_denial(cause)))?;
+        .map_err(request)?
+        .map_err(|cause| request(crate::execution::denial::lease_denial(cause)))?;
     Ok(CurrentPublicationRoster {
         observed_position_work: 0,
         reached_relation_scopes: Default::default(),

@@ -30,7 +30,8 @@ enum MemoryComponentOrigin {
 struct InterimComponentMeaning {
     owner: RelationalRuntimeOrigin,
     description: RecordedRelationalComponentReference,
-    canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
+    canonical:
+        Option<crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
@@ -45,7 +46,9 @@ impl ObservedRelationalMemoryComponent {
         request: &ExecutionRequest<'_, '_>,
         owner: RelationalRuntimeOrigin,
         description: RecordedRelationalComponentReference,
-        canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
+        canonical: Option<
+            crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
+        >,
     ) -> Result<
         Self,
         crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
@@ -70,7 +73,7 @@ impl ObservedRelationalMemoryComponent {
     }
     pub fn matches_original(
         &self,
-        original: &crate::durability::authority::ObservedRelationalMemoryCommit,
+        original: &crate::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommit,
     ) -> bool {
         match self.original.as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning

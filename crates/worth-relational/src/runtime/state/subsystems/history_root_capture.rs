@@ -16,7 +16,7 @@ impl HistorySubsystem {
         regions: worth_execution::ExecutionArray<
             crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
         >,
-        commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        commit: crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
         content_records: &crate::content::RelationalContentAttachments,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {

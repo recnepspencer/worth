@@ -1,5 +1,6 @@
 //! Verified-original projection and protected checkpoint-root admission.
-mod admitted_commit;
+mod admit_row;
+pub(crate) mod admitted_commit;
 mod capture_base;
 pub(crate) use capture_base::{
     FrozenSelectedCaptureBase, PreparedCheckpointCaptureBase, SelectedCheckpointCaptureBase,
@@ -7,13 +8,18 @@ pub(crate) use capture_base::{
 mod artifact;
 pub(crate) use admitted_commit::CheckpointAdmittedCommit;
 mod custody;
-pub(crate) use custody::{AdmissionCustody, CheckpointAdmissionBinding, CheckpointAdmissionOwner};
+pub(crate) use custody::{
+    CheckpointAdmissionBinding, CheckpointAdmissionOwner, DirectoryAdmissionIdentity,
+};
 mod authentication;
 pub(crate) mod binary_encoding;
+pub(crate) mod read_image;
+pub(crate) mod recorded_reference;
 pub(crate) mod refusal;
 mod root_positions;
+mod row_custody;
 pub(crate) use refusal::native_stop;
-pub(crate) use root_positions::projected_stop;
+pub(crate) use refusal::projected_stop;
 mod wire;
 
 pub use artifact::RelationalCheckpointAdmissionArtifact;
@@ -22,7 +28,8 @@ pub use refusal::{
     CheckpointAdmissionMeaning, RelationalCheckpointAdmissionRefusal,
 };
 
-pub(crate) use wire::{AdmissionRowKey, EncodedAdmissionRow};
+pub(crate) use read_image::AdmissionRowKey;
+pub(crate) use wire::EncodedAdmissionRow;
 
 pub(crate) fn emit(
     cut: &worth_foundational::facade::CheckpointAdmissionCut,

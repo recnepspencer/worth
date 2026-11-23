@@ -82,7 +82,7 @@ pub(super) fn select(
     }
     let after_image =
         crate::storage::overlay::OverlayStateView::new(basis.inner.root.as_ref(), working);
-    let after = crate::validation::engine::state_view::InvariantStateView::new(
+    let after = crate::branch::structural_state::StructuralStateView::new(
         &after_image,
         candidate.commit.version_id,
     );

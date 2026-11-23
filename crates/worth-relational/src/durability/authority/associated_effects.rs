@@ -8,10 +8,14 @@ use crate::transactions::data::RecoveredRelationalSemanticResult;
 use std::sync::{Arc, Weak};
 
 mod created_row;
+mod created_row_read;
 mod readmission;
-pub use created_row::ReadmittedRelationalCreatedEntity;
+pub use created_row_read::ReadmittedRelationalCreatedEntity;
 mod memory_original;
-pub use memory_original::ObservedRelationalMemoryCommit;
+pub(crate) mod observed_memory_commit;
+mod refusal;
+pub use observed_memory_commit::ObservedRelationalMemoryCommit;
+pub use refusal::RelationalAssociatedEffectRefusal;
 
 /// Exact discovered index and weak owner/source identities. The actual Native
 /// owner retains source custody; an observer cannot keep a closed Home serving.
@@ -124,22 +128,6 @@ impl RelationalAssociatedEffectSubject {
             .history
             .associated_effect_settlement(&self.entry, &residency)
     }
-}
-
-#[derive(Debug)]
-pub enum RelationalAssociatedEffectRefusal {
-    OwnerUnavailable,
-    Recovery(RelationalRecoveryStop),
-    AssociatedMemory {
-        commit_id: crate::history::data::CommitId,
-    },
-    MissingDiscovery {
-        commit_id: crate::history::data::CommitId,
-    },
-    ForeignRuntime,
-    CatalogSubjectChanged,
-    MissingSettlementEvidence,
-    SubjectMismatch,
 }
 
 impl DurabilityAuthority<'_> {
