@@ -27,7 +27,6 @@ use crate::relational_source::identities::record_ref_identity;
 
 /// A named record's resolution at the retained observation.
 pub(super) struct NamedContinuity {
-    held_continues: bool,
     outcome: PersistentNameResolutionOutcome,
 }
 
@@ -51,14 +50,7 @@ pub(super) fn resolve_named_continuity(
                     return None;
                 };
                 let outcome = view.resolve(name, &PersistentNameSelection::AllDescendants);
-                let held_continues = matches!(
-                    &outcome.result,
-                    Ok(PersistentNameResolution::Exact(target)) if target.key() == name
-                );
-                Some(NamedContinuity {
-                    held_continues,
-                    outcome,
-                })
+                Some(NamedContinuity { outcome })
             })
             .map_err(name_read_denial)
     })
@@ -66,13 +58,14 @@ pub(super) fn resolve_named_continuity(
 
 /// Projects a named resolution onto the Bridge lineage authority.
 ///
-/// The live descendants are the successor records. A name that still holds
-/// its record is a single successor; two or more live descendants are split
-/// successors, one lineage each; one live descendant under another name is
-/// convergence, so the ended lineages that reached it count as resolved
-/// lineages beside it (merge-like); no live descendant is no authoritative
-/// successor. Name resolution walks names, not events, so it reports no
-/// traversed event ids.
+/// The live descendants are the successor records and their lineages the
+/// resolved lineages, exactly as the record-history projection reports the
+/// lineages current at the observation: one live descendant (the name still
+/// holding a regenerated or restored record, a one-child split, a split whose
+/// siblings retired, or a merge's keeper) is a single successor; two or more
+/// are split successors; none is no authoritative successor. Ended lineages
+/// on the walked path are never reported as resolved. Name resolution walks
+/// names, not events, so it reports no traversed event ids.
 pub(super) fn project_named_authority(
     source: &RuntimeBridgeRelationalSource,
     request: BridgeHistoricalLineageRequest,
@@ -84,15 +77,9 @@ pub(super) fn project_named_authority(
         Ok(PersistentNameResolution::Retired { .. }) => Vec::new(),
         Err(denial) => return Err(resolution_denial(&denial)),
     };
-    let mut lineages: Vec<_> = live
+    let mut lineage_identities: Vec<_> = live
         .iter()
         .filter_map(PersistentNameTarget::lineage)
-        .collect();
-    if live.len() == 1 && !named.held_continues {
-        lineages.extend(named.outcome.footprint.ended_lineages.iter().copied());
-    }
-    let mut lineage_identities: Vec<_> = lineages
-        .into_iter()
         .map(|lineage| {
             BridgeHistoricalResolvedLineageIdentity::from_relational_lineage_id(lineage.0)
         })

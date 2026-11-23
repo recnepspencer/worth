@@ -185,6 +185,31 @@ pub fn cad_schema_registry_with_face_aspects(
     face_aspects: Vec<worth_relational::facade::schema::DeclaredAspectContractBinding>,
 ) -> RelationalSchemaRegistry {
     let catalog = lowered_cad_catalog();
+    cad_kind_registry(face_aspects)
+        .install_persistent_name_schemes(
+            catalog.relational_registry().clone(),
+            std::collections::BTreeMap::from([
+                (
+                    (PersistentNameSubjectKind::Entity, FACE_KIND_ID),
+                    FACE_SCHEME_ID.to_owned(),
+                ),
+                (
+                    (PersistentNameSubjectKind::Entity, EDGE_KIND_ID),
+                    EDGE_SCHEME_ID.to_owned(),
+                ),
+                (
+                    (PersistentNameSubjectKind::Relation, SEAM_KIND_ID),
+                    SEAM_SCHEME_ID.to_owned(),
+                ),
+            ]),
+        )
+        .expect("valid relational schema registry with installed naming schemes")
+}
+
+/// The CAD kinds alone, with no persistent name scheme installed.
+pub fn cad_kind_registry(
+    face_aspects: Vec<worth_relational::facade::schema::DeclaredAspectContractBinding>,
+) -> RelationalSchemaRegistry {
     let schema_id = SchemaId("worth.tests.execution.naming.CadNaming".to_owned());
     let entity = |kind_id, kind_name: &str| EntityKindRegistration {
         kind_id,
@@ -213,26 +238,7 @@ pub fn cad_schema_registry_with_face_aspects(
         .and_then(|reg| reg.register_entity_kind(entity(DUMMY_ENTITY_KIND_ID, "DummyEntity")))
         .and_then(|reg| reg.register_relation_kind(relation(SEAM_KIND_ID, "Seam")))
         .and_then(|reg| reg.register_relation_kind(relation(DUMMY_RELATION_KIND_ID, "DummyRel")))
-        .and_then(|reg| {
-            reg.install_persistent_name_schemes(
-                catalog.relational_registry().clone(),
-                std::collections::BTreeMap::from([
-                    (
-                        (PersistentNameSubjectKind::Entity, FACE_KIND_ID),
-                        FACE_SCHEME_ID.to_owned(),
-                    ),
-                    (
-                        (PersistentNameSubjectKind::Entity, EDGE_KIND_ID),
-                        EDGE_SCHEME_ID.to_owned(),
-                    ),
-                    (
-                        (PersistentNameSubjectKind::Relation, SEAM_KIND_ID),
-                        SEAM_SCHEME_ID.to_owned(),
-                    ),
-                ]),
-            )
-        })
-        .expect("valid relational schema registry with installed naming schemes")
+        .expect("valid relational CAD kinds")
 }
 
 pub fn fresh_cad_runtime() -> RelationalRuntime {

@@ -105,10 +105,15 @@ impl ExecutionNameReader<'_> {
             verify_resolved_subject(self.runtime, &view, key, requested)?;
             let (outcome, unrecorded_carrier) = match lower_selection(&view, selection) {
                 LoweredSelection::Relational(lowered) => (view.resolve(key, &lowered), false),
-                LoweredSelection::UnrecordedCarrier => (
-                    view.resolve(key, &PersistentNameSelection::AllDescendants),
-                    true,
-                ),
+                LoweredSelection::UnrecordedCarriers(unborn) => {
+                    for carrier in unborn {
+                        dependencies.record_awaited_birth(&branch, carrier);
+                    }
+                    (
+                        view.resolve(key, &PersistentNameSelection::AllDescendants),
+                        true,
+                    )
+                }
             };
             dependencies.record_footprint(&branch, &outcome.footprint);
             match (outcome.result, unrecorded_carrier) {

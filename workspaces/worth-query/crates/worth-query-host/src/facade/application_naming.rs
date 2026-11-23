@@ -9,5 +9,5 @@ pub use worth_query_declaration::facade::application_naming::{
 };
 pub use worth_query_execution::facade::application_naming::{
     ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
-    NameReadDependencies, NameReadStaleness, WorthQueryDecisionNameDenial,
+    NameReadDependencies, NameReadStaleness, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
 };

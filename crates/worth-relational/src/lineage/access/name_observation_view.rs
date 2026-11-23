@@ -36,7 +36,8 @@ impl<'index> PersistentNameObservationView<'index> {
 
     /// The name `record` carries at the basis.
     ///
-    /// Complexity: O(1) expected plus O(log t) in that name's timeline.
+    /// Complexity: O(1) expected plus O(log t) in that name's timeline for a
+    /// live record, O(t) for an ended one.
     pub fn name_of_record(&self, record: LineageRecordTarget) -> PersistentNameOfRecord {
         self.index.map_or(PersistentNameOfRecord::Unnamed, |index| {
             index.name_of_record(record, self.basis)

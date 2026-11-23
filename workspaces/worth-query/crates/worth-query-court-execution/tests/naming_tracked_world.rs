@@ -10,7 +10,7 @@ use worth_query_execution_naming::facade::{
 };
 use worth_relational::facade::identity::{EntityId, RelationId};
 use worth_relational::facade::lineage::{
-    LineageRecordTarget, PendingMergeTarget, PersistentNameIdentity,
+    LineageRecordTarget, PendingBirthTarget, PendingMergeTarget, PersistentNameIdentity,
 };
 use worth_relational::facade::mvcc::RelationalBranchObservation;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -31,6 +31,13 @@ pub struct NamedFace {
     pub id: EntityId,
     pub name: WorthQueryName<Face>,
     pub identity: PersistentNameIdentity,
+}
+
+/// How [`TrackedWorld::rebirth`] re-mints a name.
+#[derive(Clone, Copy, Debug)]
+pub enum Rebirth {
+    Regenerate,
+    Restore,
 }
 
 /// One named seam relation.
@@ -163,6 +170,85 @@ impl TrackedWorld {
         )
         .expect("merge posture");
         self.commit(execution, tx, plan).0
+    }
+
+    /// Merges `a` and `b` into a new face `key` that mints a new name.
+    pub fn merge_minting(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        a: NamedFace,
+        b: NamedFace,
+        key: &str,
+    ) -> (NamedFace, CommitResult) {
+        let intents = vec![
+            delete_face(a.id),
+            delete_face(b.id),
+            create_face_intent(key),
+        ];
+        let tx = begin_staged_tx(&self.runtime, "merge-mint", intents);
+        let mut plan = ExecutionNameBirthPlanBuilder::new(&self.catalog, [a.identity, b.identity]);
+        plan.add_merge_posture(
+            vec![
+                (LineageRecordTarget::Entity(a.id), a.identity),
+                (LineageRecordTarget::Entity(b.id), b.identity),
+            ],
+            PendingMergeTarget::Created(PendingBirthTarget::CreatedEntity(face_ref(key))),
+            ExecutionNamedMergeKeeper::mint_new(
+                FACE_SCHEME_ID,
+                "occ.merge.mint",
+                "cut_piece",
+                &FaceSplitDisc::Side { side: 9 },
+            ),
+        )
+        .expect("mint-new merge posture");
+        let (committed, names) = self.commit(execution, tx, plan);
+        (face(&names, &committed, key), committed)
+    }
+
+    /// Re-mints the name `original`, seeded as `key` under `occurrence`, was
+    /// born with onto a new record `new_key`: `Rebirth::Regenerate` retires
+    /// `original` in the same commit; `Rebirth::Restore` revives a name that
+    /// retired earlier. The new record carries the kept name, not a birth, so
+    /// it is read back through the tracked reader.
+    pub fn rebirth(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        original: NamedFace,
+        (occurrence, key, new_key): (&str, &str, &str),
+        mode: Rebirth,
+    ) -> (NamedFace, CommitResult) {
+        let regenerating = matches!(mode, Rebirth::Regenerate);
+        let mut intents = Vec::new();
+        if regenerating {
+            intents.push(delete_face(original.id));
+        }
+        intents.push(create_face_intent(new_key));
+        let tx = begin_staged_tx(&self.runtime, new_key, intents);
+        let basis = regenerating.then_some(original.identity);
+        let mut plan = ExecutionNameBirthPlanBuilder::new(&self.catalog, basis);
+        if regenerating {
+            plan.add_retire_entity(original.id, original.identity);
+        }
+        let occurrence_key = format!("{occurrence}.{key}");
+        let birth = ExecutionPendingEntityBirth::new(
+            face_ref(new_key),
+            FACE_SCHEME_ID,
+            occurrence_key,
+            "authored",
+        )
+        .with_discriminator(&FaceSplitDisc::Side { side: 0 });
+        plan.add_entity_birth(birth).expect("re-minted birth");
+        let (committed, _) = self.commit(execution, tx, plan);
+        let id = committed
+            .created_entity(&face_ref(new_key))
+            .expect("re-minted record");
+        let head = self.head();
+        let name = self
+            .reader(execution, &head)
+            .entity_name_of::<CadNamingSchema, Face>(id, &mut Default::default())
+            .expect("the new record carries the re-minted name");
+        let identity = original.identity;
+        (NamedFace { id, name, identity }, committed)
     }
 
     pub fn retire(&self, execution: &ExecutionRequest<'_, '_>, face: NamedFace) -> CommitResult {

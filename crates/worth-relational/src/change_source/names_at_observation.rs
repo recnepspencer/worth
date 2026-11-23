@@ -1,4 +1,17 @@
 //! Unprivileged persistent-name reads at an admitted branch observation.
+//!
+//! Currentness rests on lineage installation, not on the selected commit's
+//! envelope. Each commit's lineage reaches the branch's derived name index in
+//! its own settlement, before that settlement completes. Cold restore,
+//! checkpoint restore and journal replay rebuild the index from the complete
+//! restored event set before the runtime serves (a runtime without
+//! persistent-name schemes has no names, so its index is empty and complete).
+//! The one window in which an admitted observation can select a commit the
+//! index has not ingested is a publication whose settlement is still in
+//! flight. Any unsettled commit at or before the basis refuses the read, in
+//! the runtime's pending-settlement registry, whether or not that commit
+//! carried lineage and however the selected root's commit evidence was
+//! admitted.
 
 use super::RelationalObservationReadDenial;
 use crate::history::data::CommitId;
@@ -14,13 +27,10 @@ pub enum RelationalPersistentNameReadDenial {
     Observation(RelationalObservationReadDenial),
     /// The observation selects an empty branch, which has no names.
     EmptyBranch,
-    /// The observation selects a commit whose lineage the branch's derived
-    /// name index has not ingested yet: the commit is published and its
-    /// settlement is still in flight. Retry after settlement.
-    IndexBehindObservation {
-        basis: CommitId,
-        index_head: Option<CommitId>,
-    },
+    /// A commit at or before the basis is published while its settlement,
+    /// which installs its lineage into the name index, is still in flight.
+    /// The refusal is transient: retry once settlement completes.
+    SettlementInFlight { basis: CommitId },
     /// The branch's derived name index refused canonical history and stays
     /// unavailable until it is rebuilt from canonical events.
     IndexUnavailable(PersistentNameIndexDenial),
@@ -34,14 +44,15 @@ impl RelationalRuntime {
     /// held under the lineage read lock for the duration of `read` only, so
     /// `read` must not commit through this runtime.
     ///
-    /// Complexity: O(1) admission plus whatever `read` asks the view for;
-    /// each view read is O(lineage path), never O(names) or O(commits).
+    /// Complexity: O(in-flight settlements) admission plus whatever `read`
+    /// asks the view for; each view read is O(lineage path), never O(names)
+    /// or O(commits).
     ///
     /// # Errors
     ///
     /// [`RelationalPersistentNameReadDenial`] when the observation is
-    /// foreign, the request refuses, the branch is empty, the selected
-    /// commit's lineage is not yet ingested, or the index is unavailable.
+    /// foreign, the request refuses, the branch is empty, a settlement at or
+    /// before the basis is in flight, or the index is unavailable.
     pub fn with_persistent_names_at_observation<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -58,21 +69,17 @@ impl RelationalRuntime {
         let basis = observation
             .commit_id()
             .ok_or(RelationalPersistentNameReadDenial::EmptyBranch)?;
-        let selected_has_lineage = observation
-            .canonical_commit()
-            .is_some_and(|envelope| !envelope.lineage_events().is_empty());
+        if self
+            .publication_binding()
+            .has_unsettled_publication_through(basis)
+        {
+            return Err(RelationalPersistentNameReadDenial::SettlementInFlight { basis });
+        }
         let branch_id = observation.identity().branch_id();
         self.lineage
             .read_name_index(branch_id, |index| {
-                let index_head = index.and_then(|index| index.head());
-                if selected_has_lineage && index_head.is_none_or(|head| head < basis) {
-                    return Err(RelationalPersistentNameReadDenial::IndexBehindObservation {
-                        basis,
-                        index_head,
-                    });
-                }
-                Ok(read(PersistentNameObservationView::new(index, basis)))
+                read(PersistentNameObservationView::new(index, basis))
             })
-            .map_err(RelationalPersistentNameReadDenial::IndexUnavailable)?
+            .map_err(RelationalPersistentNameReadDenial::IndexUnavailable)
     }
 }

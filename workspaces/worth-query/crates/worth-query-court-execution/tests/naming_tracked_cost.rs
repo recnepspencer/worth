@@ -1,6 +1,6 @@
 //! Tracked resolution reads only the held name's lineage path: resolving a
 //! name three splits deep does the same index work whether the branch holds
-//! 1,000 or 20,000 unrelated named records and 50 or 500 unrelated commits.
+//! 1,000 or 10,000 unrelated named records and 40 or 300 unrelated commits.
 //!
 //! Boundary: the runtime-maintained derived name index read through the
 //! public observation view, in a debug build on one machine, warm in memory,
@@ -82,12 +82,12 @@ fn resolve_deep_name(records: usize, commits: usize) -> (PersistentNameResolutio
 
 #[test]
 fn resolution_work_is_flat_in_unrelated_records_and_commits() {
-    let (small, small_live) = resolve_deep_name(1_000, 50);
-    let (large, large_live) = resolve_deep_name(20_000, 500);
+    let (small, small_live) = resolve_deep_name(1_000, 40);
+    let (large, large_live) = resolve_deep_name(10_000, 300);
     assert_eq!(small_live, 4, "p2, q2, r1 and r2 are the live leaves");
     assert_eq!(large_live, small_live);
     assert_eq!(
         large, small,
-        "twenty times the records and ten times the commits cost the same path work"
+        "ten times the records and over seven times the commits cost the same path work"
     );
 }

@@ -12,9 +12,9 @@ use worth_relational::facade::lineage::{
 /// A declared selection as Relational's resolver takes it.
 pub(super) enum LoweredSelection {
     Relational(PersistentNameSelection),
-    /// A requested carrier has no recorded birth at the basis, so no live
-    /// descendant can be bounded by it.
-    UnrecordedCarrier,
+    /// These requested carriers have no recorded birth at the basis, so no
+    /// live descendant can be bounded by them until they are born.
+    UnrecordedCarriers(Vec<[u8; 32]>),
 }
 
 /// Lowers `selection`, admitting each carrier only from a birth the index
@@ -33,6 +33,7 @@ pub(super) fn lower_selection(
         },
         NameSelection::BoundedByCarriers { carriers } => {
             let mut lowered = BTreeSet::new();
+            let mut unrecorded = Vec::new();
             for carrier in carriers.as_slice() {
                 let recorded = view
                     .recorded_name(PersistentNameSubjectKind::Entity, carrier.as_bytes())
@@ -45,9 +46,12 @@ pub(super) fn lower_selection(
                         lowered.insert(identity);
                     }
                     Some(PersistentNameKey::Group(_)) | None => {
-                        return LoweredSelection::UnrecordedCarrier;
+                        unrecorded.push(*carrier.as_bytes());
                     }
                 }
+            }
+            if !unrecorded.is_empty() {
+                return LoweredSelection::UnrecordedCarriers(unrecorded);
             }
             PersistentNameSelection::BoundedByCarriers { carriers: lowered }
         }

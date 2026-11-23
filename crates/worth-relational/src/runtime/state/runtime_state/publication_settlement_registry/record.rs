@@ -118,6 +118,11 @@ impl PendingRelationalPublicationSettlement {
         self.runtime_instance_id
     }
 
+    /// Whether settlement, which installs the commit's derived state, has run.
+    pub(crate) fn is_settled(&self) -> bool {
+        matches!(*self.state(), PendingRelationalSettlementState::Settled(_))
+    }
+
     fn state(&self) -> MutexGuard<'_, PendingRelationalSettlementState> {
         self.state
             .lock()

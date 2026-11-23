@@ -14,7 +14,8 @@ impl PersistentNameBranchIndex {
     /// `basis`.
     ///
     /// Complexity: O(1) expected probes plus O(log t) in that one name's
-    /// timeline; total names and unrelated commits never enter the cost.
+    /// timeline for a live record, and O(t) in it for an ended one; total
+    /// names and unrelated commits never enter the cost.
     pub fn name_of_record(
         &self,
         record: LineageRecordTarget,

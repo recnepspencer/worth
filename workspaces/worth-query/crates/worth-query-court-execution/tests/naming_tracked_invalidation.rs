@@ -12,7 +12,7 @@ use worth_query_execution_naming::facade::{
 };
 
 use crate::naming_execution_fixture::{execution_lease_for_workers, CadNamingSchema, Face};
-use crate::naming_tracked_world::{NamedFace, TrackedWorld};
+use crate::naming_tracked_world::{NamedFace, Rebirth, TrackedWorld};
 
 fn is_stale(currentness: &NameReadCurrentness) -> bool {
     matches!(currentness, NameReadCurrentness::Stale(_))
@@ -126,5 +126,57 @@ fn lineage_changes_stale_only_the_reads_that_rested_on_them() {
     assert_eq!(
         born[0].name, future[0].name,
         "provenance mints the same name in both runtimes"
+    );
+}
+
+#[test]
+fn restoring_an_ended_name_stales_the_read_that_walked_through_it() {
+    let lease = execution_lease_for_workers(2);
+    let execution = ExecutionRequest::leased(&lease);
+    let world = TrackedWorld::new();
+    let (seeded, _) = world.seed(&execution, "occ.restore", &["s", "t"]);
+    let (s, t) = (seeded[0], seeded[1]);
+    let retired = world.retire(&execution, s);
+    let mut on_s = NameReadDependencies::new();
+    let head = world.head();
+    let answer = world
+        .reader(&execution, &head)
+        .resolve_entity::<CadNamingSchema, Face>(&s.name, &NameSelection::Exact, &mut on_s);
+    assert_eq!(
+        answer,
+        Ok(ResolvedName::Retired {
+            at_commit: retired.commit.commit_id.0
+        })
+    );
+    assert!(!on_s
+        .ended_lineages_on(head.identity().branch_id())
+        .is_empty());
+    let (_, unrelated) = world.rebirth(
+        &execution,
+        t,
+        ("occ.restore", "t", "t2"),
+        Rebirth::Regenerate,
+    );
+    assert_eq!(
+        on_s.currentness_after_commit(&unrelated),
+        NameReadCurrentness::Clean
+    );
+    let (restored, restore) =
+        world.rebirth(&execution, s, ("occ.restore", "s", "s2"), Rebirth::Restore);
+    assert!(
+        is_stale(&on_s.currentness_after_commit(&restore)),
+        "restoring s stales its read"
+    );
+    let head = world.head();
+    assert_eq!(
+        world
+            .reader(&execution, &head)
+            .resolve_entity::<CadNamingSchema, Face>(
+                &s.name,
+                &NameSelection::Exact,
+                &mut NameReadDependencies::new()
+            ),
+        Ok(ResolvedName::Exact(restored.id)),
+        "re-evaluation sees the restored record"
     );
 }

@@ -21,7 +21,7 @@ type FaceAnswer = Result<ResolvedName<EntityId>, ExecutionNameResolveDenial<Face
 type SeamAnswer = Result<ResolvedName<RelationId>, ExecutionNameResolveDenial<Seam>>;
 
 #[derive(Debug, PartialEq, Eq)]
-struct Answers {
+pub(crate) struct Answers {
     faces: Vec<FaceAnswer>,
     face_names: Vec<
         Result<
@@ -30,7 +30,7 @@ struct Answers {
         >,
     >,
     seams: Vec<SeamAnswer>,
-    dependencies: NameReadDependencies,
+    pub(crate) dependencies: NameReadDependencies,
 }
 
 fn selections() -> Vec<NameSelection> {
@@ -42,15 +42,32 @@ fn selections() -> Vec<NameSelection> {
     ]
 }
 
-/// Every answer the runtime gives at its head for the held names.
-fn answers(
+/// Every answer the runtime gives at its main head for the held names.
+pub(crate) fn answers(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     faces: &[NamedFace],
     seam: NamedSeam,
 ) -> Answers {
+    answers_on(
+        runtime,
+        &runtime.main_branch_identity(),
+        execution,
+        faces,
+        seam,
+    )
+}
+
+/// Every answer the runtime gives at `branch`'s head for the held names.
+fn answers_on(
+    runtime: &RelationalRuntime,
+    branch: &worth_relational::facade::branch::RelationalBranchIdentity,
+    execution: &ExecutionRequest<'_, '_>,
+    faces: &[NamedFace],
+    seam: NamedSeam,
+) -> Answers {
     let head = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
+        .admit_branch_basis(branch)
         .expect("head basis")
         .observation();
     let reader = worth_query_execution_naming::facade::ExecutionNameReader::at_observation(
@@ -149,4 +166,48 @@ fn recovered_runtime_rebuilds_the_name_index_and_answers_identically() {
         .expect("checkpoint covering every commit");
     let rebuilt = recover(&world.runtime, &execution);
     assert_eq!(answers(&rebuilt, &execution, &held, seam), original);
+}
+
+#[test]
+fn recovered_fork_rebuilds_its_inherited_index_without_later_parent_history() {
+    let lease = execution_lease_for_workers(2);
+    let execution = ExecutionRequest::leased(&lease);
+    let world = TrackedWorld::new();
+    let (seeded, _) = world.seed(&execution, "occ.seed", &["f1", "f2", "f3"]);
+    let (f1, f2, f3) = (seeded[0], seeded[1], seeded[2]);
+    let (seam, _) = world.seam(&execution, "occ.seam", f3, f2);
+    let fork = worth_relational::facade::history::BranchId("fork-a".to_owned());
+    let main = worth_relational::facade::history::BranchId("main".to_owned());
+    let (_, source) = world
+        .runtime
+        .observe_fork_source(&main)
+        .expect("main is forkable");
+    world
+        .runtime
+        .fork_branch(&execution, fork.clone(), source)
+        .expect("fork succeeds");
+    let (pieces, _) = world.split(&execution, f1, "occ.cut", &[("a", 1), ("b", 2)]);
+    world.retire(&execution, f2);
+    let held = [f1, f2, f3, pieces[0], pieces[1]];
+    let fork_identity = world.runtime.branch_identity(&fork).expect("fork identity");
+    let on_fork = answers_on(&world.runtime, &fork_identity, &execution, &held, seam);
+    assert_eq!(
+        on_fork.faces[0],
+        Ok(ResolvedName::Exact(f1.id)),
+        "the fork does not see the parent's later split"
+    );
+    assert_ne!(on_fork, answers(&world.runtime, &execution, &held, seam));
+    world
+        .runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .expect("checkpoint covering the fork");
+    let rebuilt = recover(&world.runtime, &execution);
+    let rebuilt_fork = rebuilt
+        .branch_identity(&fork)
+        .expect("recovered fork identity");
+    assert_eq!(
+        answers_on(&rebuilt, &rebuilt_fork, &execution, &held, seam),
+        on_fork
+    );
 }

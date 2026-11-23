@@ -338,25 +338,38 @@ replay:
   commit split, merged, replaced, retired or restored a lineage the read
   rested on, or birthed a name it found unknown, and `Clean` otherwise.
 - Inside an operation's decision reader, `reader.name_of(&identity)` and
-  `reader.resolve(&held, &selection)` admit the read against the declared
-  entity contract and record each live record the answer rested on as that
-  entity's decision fact, so a split, merge, replacement or retirement of it
-  invalidates the decision. A walk through ended names, an unknown held name
-  or a relation record has no decision fact key yet and records an unkeyed
-  read; a later `Restore` of an ended path name is not yet tracked there.
-  Group names do not resolve at runtime yet: group transitions are not part
-  of the commit envelope.
+  `reader.resolve(&held, &selection)` require the entity kind to be a
+  declared decision read (`Entity: OperationReads<Operation>`). Every live
+  record the answer rested on is admitted into the read scope, returned as a
+  local identity, and keyed as that entity's decision fact, so a split,
+  merge, replacement or retirement ending it invalidates the decision. A
+  read that failed, or whose answer also rested on ended names (which a
+  later `Restore` revives), on a held name not yet born, or on a relation
+  record, has no decision fact key and refuses to seal with
+  `FailedDecisionRead::PersistentName` instead, even when the handler
+  swallowed the error. Installed Query runtimes do not bind persistent-name
+  schemes into Relational yet, so their records carry no names. Group names
+  do not resolve at runtime yet: group transitions are not part of the
+  commit envelope.
+- Name reads refuse `SettlementInFlight` while any commit at or before the
+  reader's basis is published but not yet settled, and read a runtime with
+  no installed name schemes, including a cold-restored one, as having no
+  names.
 
 Bridge continuity of a named record (`ContinuityLineageSource` on the
 Relational source) resolves the record's name over all live descendants:
-a split reports `SplitSuccessors` with exactly the resolved candidates, a
-merge reports `MergeLikeSuccessor` onto the survivor, and retirement reports
-`NoAuthoritativeSuccessor`. Records born without a name keep record-history
+two or more live descendants report `SplitSuccessors` with exactly the
+resolved candidates, one live descendant (regeneration, restoration, a
+one-child split, a split whose siblings retired, or a merge's keeper)
+reports `SingleSuccessor`, and none reports `NoAuthoritativeSuccessor`;
+only live lineages are reported as resolved. Records born without a name keep record-history
 continuity. Courts:
 [tracked resolution](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_resolution.rs),
 [invalidation](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_invalidation.rs),
 [rebuild equivalence](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_rebuild.rs),
-[cost](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cost.rs), and
+[cost](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cost.rs),
+[cold-directory restore](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cold_directory.rs),
+[decision reader](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_decision_reader.rs), and
 [Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
 
 The runnable Slice 1B counterparts are the

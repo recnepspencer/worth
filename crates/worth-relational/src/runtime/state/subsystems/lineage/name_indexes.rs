@@ -11,7 +11,7 @@
 //! recorded unavailable and every name read on it refuses typed until the
 //! next rebuild from canonical history.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId, RelationId};
@@ -164,30 +164,43 @@ impl LineageState {
         self.name_indexes = BranchNameIndexes { by_branch: rebuilt };
     }
 
-    /// `branch`'s index through `cutoff`: its fork parent's index through
-    /// the fork commit, re-addressed, followed by its own events.
+    /// `branch`'s index through `cutoff`: its root ancestor's own events,
+    /// then each descendant's own events, each bounded by the fork commit
+    /// its child inherited. A cycle in fork metadata stops at the first
+    /// revisited branch, as the naming basis ancestry does.
     fn rebuild_branch_name_index(&self, branch: &BranchId, cutoff: CommitId) -> BranchNameIndex {
-        let mut index = match self.branch_forks.get(branch) {
-            Some((parent, fork_commit)) if parent != branch => {
-                match self.rebuild_branch_name_index(parent, cutoff.min(*fork_commit)) {
-                    BranchNameIndex::Current(index) => index.rebranched(branch.clone()),
-                    unavailable => return unavailable,
+        let mut ancestry = vec![(branch.clone(), cutoff)];
+        let mut visited = BTreeSet::from([branch.clone()]);
+        while let Some((parent, fork_commit)) = ancestry
+            .last()
+            .and_then(|(child, _)| self.branch_forks.get(child))
+        {
+            if !visited.insert(parent.clone()) {
+                break;
+            }
+            let inherited = ancestry.last().map_or(cutoff, |(_, bound)| *bound);
+            ancestry.push((parent.clone(), inherited.min(*fork_commit)));
+        }
+        let mut index: Option<PersistentNameBranchIndex> = None;
+        for (ancestor, bound) in ancestry.iter().rev() {
+            let mut current = match index.take() {
+                Some(inherited) => inherited.rebranched(ancestor.clone()),
+                None => PersistentNameBranchIndex::new(ancestor.clone(), None),
+            };
+            let own: Vec<_> = self
+                .published_events
+                .iter()
+                .filter(|p| p.event.branch_id() == ancestor && p.publication_commit_id <= *bound)
+                .cloned()
+                .collect();
+            for (_, batch) in self.name_batches(&own) {
+                if let Err(denial) = current.apply(&batch) {
+                    return BranchNameIndex::Unavailable(denial);
                 }
             }
-            _ => PersistentNameBranchIndex::new(branch.clone(), None),
-        };
-        let own: Vec<_> = self
-            .published_events
-            .iter()
-            .filter(|p| p.event.branch_id() == branch && p.publication_commit_id <= cutoff)
-            .cloned()
-            .collect();
-        for (_, batch) in self.name_batches(&own) {
-            if let Err(denial) = index.apply(&batch) {
-                return BranchNameIndex::Unavailable(denial);
-            }
+            index = Some(current);
         }
-        BranchNameIndex::Current(index)
+        BranchNameIndex::Current(index.expect("the ancestry always holds the branch itself"))
     }
 
     /// Groups consecutive events by branch and publication commit into

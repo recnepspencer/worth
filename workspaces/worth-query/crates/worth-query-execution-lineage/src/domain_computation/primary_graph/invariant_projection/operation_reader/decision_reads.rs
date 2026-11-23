@@ -55,6 +55,8 @@ pub struct DecisionReads {
     failed_walk: bool,
     components: components::IssuedComponentValues,
     failed_component: bool,
+    /// The first persistent-name read the projection cannot seal over.
+    persistent_name_veto: Option<super::naming::PersistentNameReadVeto>,
 }
 
 /// What a refused decision read, as proofs a pending refusal waits on (PR C
@@ -76,6 +78,10 @@ impl DecisionReads {
     pub fn record_unkeyed_read(&mut self) {
         self.unkeyed_reads = true;
     }
+    /// Veto sealing over a persistent-name read; the first veto is kept.
+    pub fn veto_persistent_name(&mut self, veto: super::naming::PersistentNameReadVeto) {
+        self.persistent_name_veto.get_or_insert(veto);
+    }
     /// The proofs of a decision that refused (PR C §1.7).
     /// A partitioned computation's reads are its keys too; a computation
     /// run's carried or native reads have none, so any run is conservative.
@@ -93,6 +99,7 @@ impl DecisionReads {
                 || self.failed.is_some()
                 || self.failed_walk
                 || self.failed_component
+                || self.persistent_name_veto.is_some()
                 || self.failed_managed_source
                 || self.source_publications.is_some()
                 || !self.managed_sources.is_empty()
@@ -109,6 +116,7 @@ pub enum FailedDecisionRead {
     StructuralWalk,
     ManagedSource,
     ComponentSelection,
+    PersistentName(super::naming::PersistentNameReadVeto),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
@@ -236,6 +244,7 @@ impl DecisionReads {
             components,
             failed_component,
             failed_managed_source,
+            persistent_name_veto,
             ..
         } = self;
         if let Some(failed) = failed {
@@ -249,6 +258,9 @@ impl DecisionReads {
         }
         if failed_walk {
             return Err(FailedDecisionRead::StructuralWalk);
+        }
+        if let Some(veto) = persistent_name_veto {
+            return Err(FailedDecisionRead::persistent_name(veto));
         }
         computation
             .normalize_adjacencies(&mut handler, execution)
