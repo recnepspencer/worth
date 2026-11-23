@@ -1,6 +1,11 @@
 //! The work of one envelope step, its undo and its redo.
 use super::*;
+use std::num::NonZeroUsize;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
+use worth_query_testkit_document_retention::facade::{
+    document_retention_model::host::{primary_graph, runtime, WorthQueryApplicationLimits},
+    document_world_resources::{world_resources_with_capacity, WorldLifecycleCapacity},
+};
 
 /// One step that edits the model and member `m` with both output trees bound,
 /// then its undo and its redo.
@@ -13,6 +18,25 @@ pub(crate) struct StepWork {
     /// The history journal's own storage accesses over all three: node,
     /// attempt, custody, child-index and selection.
     pub(crate) journal: [u64; 5],
+}
+
+/// Room for the deepest measured history. Every depth uses the same limits.
+fn limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
+        world_resources_with_capacity(
+            1024,
+            128 * 1024 * 1024,
+            1024,
+            WorldLifecycleCapacity {
+                live_product_branches: 128,
+                active_observations: 1024,
+                owner_created_component_custody_records: 256,
+            },
+            WorthQueryAdmissionClock::system(),
+        ),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(NonZeroUsize::new(128).unwrap()),
+        primary_graph::SignalConditionalEvaluationBudget::development(),
+    )
 }
 
 /// The work every request charged since the last call.
@@ -31,7 +55,7 @@ fn charged() -> u64 {
 pub(crate) fn measure(siblings: usize, depth: usize) -> StepWork {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_configured::<program::Program>(
-        host_limits(WorthQueryAdmissionClock::system()),
+        limits(),
         1,
         None,
         world::Configuration {

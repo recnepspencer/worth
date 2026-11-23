@@ -72,6 +72,16 @@ pub enum WorthQueryDocumentHistoryDenial {
     },
     ForeignRecording,
     UnsupportedOperation,
+    /// A producer the stage's outputs can reach is workflow control or needs
+    /// workflow authority, which no undo could take back.
+    WorkflowProducer {
+        producer: String,
+    },
+    /// A producer the stage's outputs can reach declares an external effect,
+    /// which no undo could take back.
+    ExternalEffectProducer {
+        producer: String,
+    },
     EmptyGroup,
     GroupMemberLimitExceeded,
     GroupResultLimitExceeded,

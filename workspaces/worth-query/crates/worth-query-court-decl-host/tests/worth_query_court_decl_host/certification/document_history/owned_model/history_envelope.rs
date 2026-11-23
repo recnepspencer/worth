@@ -3,6 +3,7 @@ use super::*;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::inspection::observe_maintenance_work;
 use WorthQueryDocumentHistoryDenial::UnownedOperationScope;
 use WorthQueryHistoryEditEnvelopeDenial as Denial;
 use WorthQueryHistoryEditEnvelopeOutcome as Outcome;
@@ -122,6 +123,20 @@ fn refused_as_unowned(execution: Execution<'_>) -> (world::Document<'_>, usize, 
     (document, ordinal, subject, model)
 }
 
+/// Run a refused envelope and require that it made no Native commit: the
+/// refusal came at admission, before any stage ran, not at the endpoint.
+fn refused_before_any_commit<'a>(
+    execute: impl FnOnce() -> Execution<'a>,
+) -> Execution<'a> {
+    let (execution, published) = observe_maintenance_work(8, execute);
+    assert_eq!(
+        published.published_rows.len() + published.omitted_publications,
+        0,
+        "no stage may commit before the refusal"
+    );
+    execution
+}
+
 fn occurrence(entity: EntityId) -> (u32, u64, u32) {
     (
         entity.partition_id.as_u32(),
@@ -165,8 +180,9 @@ fn a_foreign_model_stage_refuses_before_effects() {
     let head = current(&host, &document);
     let own = branch(&host, &document);
     let stages = [Stage::EditModel(2), Stage::EditMember("foreign", 34)];
-    let (document, ordinal, subject, model) =
-        refused_as_unowned(record(&host, document, "foreign-stage", &stages));
+    let (document, ordinal, subject, model) = refused_as_unowned(refused_before_any_commit(|| {
+        record(&host, document, "foreign-stage", &stages)
+    }));
     assert_eq!(ordinal, 1);
     assert_eq!(
         occurrence(subject),
@@ -188,8 +204,9 @@ fn an_unowned_existing_scope_refuses_at_admission() {
     let head = current(&host, &document);
     let own = branch(&host, &document);
     let stages = [Stage::EditModel(2), Stage::EditMember("loose", 56)];
-    let (document, ordinal, subject, _) =
-        refused_as_unowned(record(&host, document, "unowned-stage", &stages));
+    let (document, ordinal, subject, _) = refused_as_unowned(refused_before_any_commit(|| {
+        record(&host, document, "unowned-stage", &stages)
+    }));
     assert_eq!(ordinal, 1);
     assert_eq!(
         occurrence(subject),
@@ -210,7 +227,9 @@ fn an_unenrolled_operation_stage_refuses_at_admission() {
     let head = current(&host, &document);
     let own = branch(&host, &document);
     let stages = [Stage::EditModel(2), Stage::RecreateMember];
-    let (document, denial) = refused(record(&host, document, "unenrolled-stage", &stages));
+    let (document, denial) = refused(refused_before_any_commit(|| {
+        record(&host, document, "unenrolled-stage", &stages)
+    }));
     assert!(
         matches!(
             denial,
