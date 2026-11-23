@@ -180,7 +180,6 @@ impl ProductBranchObservationMismatch {
 /// history requires the caller to choose an available branch or occurrence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchAdmissionDenial {
-    DurableBranchPublicationRequired,
     HomeCreationRequestRequired,
     MemoryCreationRequestRequired,
     ProgramSourceRequired,

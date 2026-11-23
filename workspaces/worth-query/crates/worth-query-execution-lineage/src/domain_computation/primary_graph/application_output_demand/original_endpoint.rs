@@ -8,17 +8,21 @@ use crate::domain_computation::primary_graph::{
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionRequest, MapKernelContext, WorkCeilingDenial};
 use worth_runtime_world::facade::{
-    CompositeCommitIdentity, ConsumedCompositePublication, ProductBranchReferenceGeneration,
-    ProductBranchReferenceSnapshot,
+    CompositeCommitIdentity, CompositePublicationAttemptIdentity, ProductBranchReferenceGeneration,
 };
 
-type Key<'a> = (
-    &'a CompositeCommitIdentity,
-    ProductBranchReferenceGeneration,
+type Key = (CompositeCommitIdentity, ProductBranchReferenceGeneration);
+type MovementEdge<'a> = (
+    crate::basis::WorthQueryProductBranchReadIdentity,
+    crate::basis::WorthQueryProductBranchReadIdentity,
+    &'a CompositePublicationAttemptIdentity,
 );
 
-fn key(snapshot: &ProductBranchReferenceSnapshot) -> Key<'_> {
-    (snapshot.selected_commit(), snapshot.reference_generation())
+fn key(identity: &crate::basis::WorthQueryProductBranchReadIdentity) -> Key {
+    (
+        identity.selected_commit().clone(),
+        identity.reference_generation(),
+    )
 }
 
 fn refused(kind: Kind, subject: &'static str) -> Denial {
@@ -48,7 +52,7 @@ pub fn derive<'a>(
         .run_native_with_checkpoint(|context| {
             let mut memory = None;
             let mut bytes = 0;
-            let mut edges: BTreeMap<Key<'_>, &ConsumedCompositePublication> = BTreeMap::new();
+            let mut edges: BTreeMap<Key, MovementEdge<'_>> = BTreeMap::new();
             let origin = source.product_observation();
             for settlement in settlements {
                 checkpoint(context, edges.len())?;
@@ -67,18 +71,17 @@ pub fn derive<'a>(
                 if publication.co_committed_at(origin) {
                     continue;
                 }
-                let movement = publication.original_movement().ok_or_else(|| {
-                    refused(
-                        Kind::RetainedBasisUnavailable,
-                        "original output movement is unavailable",
-                    )
-                })?;
-                let before = movement.old_product_head();
-                let after = movement.new_product_head();
-                for snapshot in [before, after] {
-                    if snapshot.owner_identity() != origin.owner_identity()
-                        || snapshot.branch_identity() != origin.branch_identity()
-                        || snapshot.lifecycle_incarnation() != origin.lifecycle_incarnation()
+                let (before, after, attempt) =
+                    publication.original_movement_endpoints().ok_or_else(|| {
+                        refused(
+                            Kind::RetainedBasisUnavailable,
+                            "original output movement is unavailable",
+                        )
+                    })?;
+                for endpoint in [&before, &after] {
+                    if endpoint.branch_identity().owner_identity() != origin.owner_identity()
+                        || endpoint.branch_identity() != origin.branch_identity()
+                        || endpoint.lifecycle_incarnation() != origin.lifecycle_incarnation()
                     {
                         return Err(refused(
                             Kind::ForeignSettlement,
@@ -86,10 +89,11 @@ pub fn derive<'a>(
                         ));
                     }
                 }
-                if let Some(prior) = edges.get(&key(before)) {
-                    if prior.old_product_head() != before
-                        || prior.new_product_head() != after
-                        || prior.attempt_identity() != movement.attempt_identity()
+                let edge_key = key(&before);
+                if let Some((prior_before, prior_after, prior_attempt)) = edges.get(&edge_key) {
+                    if prior_before != &before
+                        || prior_after != &after
+                        || *prior_attempt != attempt
                     {
                         return Err(refused(
                             Kind::ForeignSettlement,
@@ -98,7 +102,7 @@ pub fn derive<'a>(
                     }
                     continue;
                 }
-                memory::grow_tree::<(Key<'_>, &ConsumedCompositePublication)>(
+                memory::grow_tree::<(Key, MovementEdge<'_>)>(
                     &mut memory,
                     &mut bytes,
                     edges.len(),
@@ -108,12 +112,15 @@ pub fn derive<'a>(
                 .map_err(|cause| {
                     read_denial(cause).with_subject("original output endpoint index")
                 })?;
-                edges.insert(key(before), movement);
+                edges.insert(edge_key, (before, after, attempt));
             }
-            let mut endpoint: Option<&ProductBranchReferenceSnapshot> = None;
-            let mut next = (origin.selected_commit(), origin.reference_generation());
+            let mut endpoint: Option<&crate::basis::WorthQueryProductBranchReadIdentity> = None;
+            let mut next = (
+                origin.selected_commit().clone(),
+                origin.reference_generation(),
+            );
             let mut followed = 0;
-            while let Some(movement) = edges.get(&next) {
+            while let Some((before, after, _)) = edges.get(&next) {
                 checkpoint(context, edges.len())?;
                 if followed == edges.len() {
                     return Err(refused(
@@ -121,7 +128,6 @@ pub fn derive<'a>(
                         "cyclic original output movements",
                     ));
                 }
-                let before = movement.old_product_head();
                 let continuous = match endpoint {
                     Some(endpoint) => endpoint == before,
                     None => before.matches_observation(origin),
@@ -132,8 +138,8 @@ pub fn derive<'a>(
                         "disconnected original output movement",
                     ));
                 }
-                endpoint = Some(movement.new_product_head());
-                next = key(endpoint.expect("one original movement supplied its successor"));
+                endpoint = Some(after);
+                next = key(after);
                 followed += 1;
             }
             // Prefer genuine producer correspondence at the same exact endpoint;

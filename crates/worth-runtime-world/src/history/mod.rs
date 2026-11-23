@@ -15,8 +15,8 @@ pub use catalog::{
     RuntimeWorldPublicationRow,
 };
 pub(crate) use catalog::{
-    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetainedExactHistoryPosition,
-    RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
+    CompositeHistoryCatalog, PendingDurableHistoryRetirement, ReservedCompositeCommitCapacity,
+    RetainedExactHistoryPosition, RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
 };
 pub(crate) use catalog::{CompositeHistoryCatalogEntry, InstalledRootCommitRollback};
 #[allow(

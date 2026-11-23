@@ -2427,8 +2427,9 @@ For installed contract inspection, call
 [joined authoring/setup/export walkthrough](#share-reads-then-use-installed-contracts)
 for typed failures, fresh bootstrap custody and separate record readmission.
 
-The following branch, output and managed-resource capabilities use MemoryOnly.
-Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,
+The following branch, output and managed-resource examples use MemoryOnly
+(durable branch creation, retirement, and history disposal are also supported on
+Directory Homes). For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
@@ -3122,11 +3123,13 @@ transition: the bootstrap runs on that lease, as if borrowed through
 `with_bootstrap_advancement_from_request`, so the lease carries the transition's
 work as well as the captured frame.
 
-### Durable branch creation
+### Durable branch creation, retirement, and history disposal
 
-On a Directory Home, creating a branch that must fork Signal state refuses with
-`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
-branch publication and retirement belong to Milestone 3's cleanup track (C2).
+On a Directory Home, durable branch creation (including Native and Signal forks),
+durable branch retirement, and durable history disposal publish through World's
+authoritative journals. Created branches, forks, and retired-branch states
+survive graceful close/reopen and quiescent kill/reopen, while disposed history
+is released once and is not resurrected on reopen.
 
 ### 4.5 Declaration failures
 

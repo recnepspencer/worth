@@ -23,7 +23,7 @@ mod slots;
 mod support;
 mod traversal;
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::budget::RuntimeWorldBudgetLimit;
@@ -45,7 +45,7 @@ pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;
 pub(crate) use exact_position::RetainedExactHistoryPosition;
-pub(crate) use history_retirement::RetiredHistoryEntries;
+pub(crate) use history_retirement::{PendingDurableHistoryRetirement, RetiredHistoryEntries};
 pub use metadata::HistoryMetadataLedger;
 pub(super) use metadata::HistoryReservationMetadata;
 pub use publication_page::{
@@ -116,6 +116,7 @@ pub(super) struct CompositeHistoryCatalogState {
     counters: counters::HistoryCatalogCountersHandle,
     root: Option<CompositeCommitIdentity>,
     spliced: HashMap<CompositeCommitIdentity, history_retirement::SplicedParent>,
+    retiring: HashSet<CompositeCommitIdentity>,
     root_reserved: bool,
     root_ever_installed: bool,
 }
@@ -143,6 +144,7 @@ impl CompositeHistoryCatalog {
                 counters,
                 root: None,
                 spliced: HashMap::new(),
+                retiring: HashSet::new(),
                 root_reserved: false,
                 root_ever_installed: false,
             })),
@@ -233,10 +235,11 @@ impl CompositeHistoryCatalog {
     ) -> Result<CompositeHistoryProtectionObligation, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity())?;
-        if state
-            .entries
-            .get(&identity)
-            .is_none_or(|slot| slot.get().is_none())
+        if state.retiring.contains(&identity)
+            || state
+                .entries
+                .get(&identity)
+                .is_none_or(|slot| slot.get().is_none())
         {
             return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
                 identity,

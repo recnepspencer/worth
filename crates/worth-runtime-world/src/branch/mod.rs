@@ -11,8 +11,9 @@ mod name;
 pub(crate) mod observation;
 mod reference_cell;
 pub(crate) use reference_cell::{
-    ActualWorldCreationRelease, WorldCreationCellRetirement, WorldCreationPermitDenial,
-    WorldProductCreationPermit, WorldProductMovementPermit,
+    ActualWorldCreationRelease, ProductBranchReferenceCellDenial, WorldCreationCellRetirement,
+    WorldCreationPermitDenial, WorldProductCreationPermit, WorldProductMovementPermit,
+    WorldProductRetirementPermit,
 };
 mod reference_description;
 #[cfg(test)]

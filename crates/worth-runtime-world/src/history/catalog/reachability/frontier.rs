@@ -3,7 +3,10 @@ use super::{lock_slot, HistoryReachabilityIndex};
 use crate::identity::CompositeCommitIdentity;
 
 impl HistoryReachabilityIndex {
-    pub(super) fn mark_changed(&mut self, identity: &CompositeCommitIdentity) {
+    pub(in crate::history::catalog) fn mark_changed(
+        &mut self,
+        identity: &CompositeCommitIdentity,
+    ) {
         {
             let mut slot = lock_slot(self.records.get(identity).expect("installed changed slot"));
             let record = slot.as_mut().expect("installed changed record");

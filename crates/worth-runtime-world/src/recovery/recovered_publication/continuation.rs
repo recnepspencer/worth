@@ -198,8 +198,14 @@ impl WorldRecoveredUnpublishedEffects {
                     cause: WorldRecoveredContinuationDenial::Durable(cause.into_cause()),
                     custody: self,
                 },
-                WorldDurablePublicationStop::EvidenceRequired => Outcome::EvidenceRequired(self),
-                WorldDurablePublicationStop::Unresolved => Outcome::Indeterminate(self),
+                WorldDurablePublicationStop::EvidenceRequired
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: true,
+                } => Outcome::EvidenceRequired(self),
+                WorldDurablePublicationStop::Unresolved
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: false,
+                } => Outcome::Indeterminate(self),
             };
         }
         let phase = lease.phase.as_mut().expect("same original phase");

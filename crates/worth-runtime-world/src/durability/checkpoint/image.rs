@@ -2,8 +2,8 @@
 use super::WorldCheckpointCoverage;
 use crate::durability::readmission::CollectedWorldHistoryStep;
 use crate::durability::readmission::{
-    AdmittedWorldCreationIntent, AdmittedWorldCreationRelease, CollectedWorldOccurrence,
-    RecordedWorldBranchCreated,
+    AdmittedWorldBranchRetirement, AdmittedWorldCreationIntent, AdmittedWorldCreationRelease,
+    AdmittedWorldHistoryRetirement, CollectedWorldOccurrence, RecordedWorldBranchCreated,
 };
 use crate::durability::{
     AdmittedWorldDisposition, AdmittedWorldOccurrence, AdmittedWorldOpenAttempt,
@@ -81,7 +81,9 @@ impl WorldImageHead {
             | WorldRecord::Released { .. }
             | WorldRecord::Continued { .. }
             | WorldRecord::CreationIntent(_)
-            | WorldRecord::CreationReleased { .. } => unreachable!("branch origin"),
+            | WorldRecord::CreationReleased { .. }
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => unreachable!("branch origin"),
         };
         Self {
             record,
@@ -157,7 +159,9 @@ fn branch_fields(
     DurableCompositeCommitIdentity,
 ) {
     match &record.record {
-        WorldRecord::Branch { head, .. } => (&head.branch, head.incarnation, head.commit),
+        WorldRecord::Branch { head, .. } | WorldRecord::BranchRetired { head, .. } => {
+            (&head.branch, head.incarnation, head.commit)
+        }
         WorldRecord::BranchCreated(created) => {
             let head = &created.intent.destination;
             (&head.branch, head.incarnation, head.commit)
@@ -173,7 +177,8 @@ fn branch_fields(
         | WorldRecord::Released { .. }
         | WorldRecord::Continued { .. }
         | WorldRecord::CreationIntent(_)
-        | WorldRecord::CreationReleased { .. } => {
+        | WorldRecord::CreationReleased { .. }
+        | WorldRecord::HistoryRetired { .. } => {
             unreachable!("only a branch origin or occurrence owns a head")
         }
     }
@@ -184,7 +189,12 @@ pub(crate) struct WorldCheckpointImage {
     pub(crate) coverage: WorldCheckpointCoverage,
     pub(crate) owner: Option<WorldOwnerRecordLocation>,
     pub(crate) frontiers: WorldIdentityFrontiers,
-    pub(crate) branches: ExecutionOrderedMap<WorldBranchImageKey, ()>,
+    pub(crate) branches: ExecutionOrderedMap<DurableProductBranchIncarnation, WorldBranchImageKey>,
+    pub(crate) retired_branches:
+        ExecutionOrderedMap<DurableProductBranchIncarnation, AdmittedWorldBranchRetirement>,
+    pub(crate) history_retirements: ExecutionOrderedMap<u64, AdmittedWorldHistoryRetirement>,
+    pub(crate) collected_history_retirements: ExecutionOrderedMap<u64, ()>,
+    pub(crate) retired_history: ExecutionOrderedMap<DurableCompositeCommitIdentity, ()>,
     pub(crate) occurrences: ExecutionOrderedMap<u64, AdmittedWorldOccurrence>,
     pub(crate) creations: ExecutionOrderedMap<
         DurableCompositePublicationAttemptIdentity,
@@ -201,6 +211,7 @@ pub(crate) struct WorldCheckpointImage {
         (
             DurableProductBranchIncarnation,
             DurableProductReferenceGeneration,
+            u8,
         ),
         CollectedWorldHistoryStep,
     >,
@@ -232,6 +243,10 @@ impl WorldCheckpointImage {
             owner: None,
             frontiers: Default::default(),
             branches: Default::default(),
+            retired_branches: Default::default(),
+            history_retirements: Default::default(),
+            collected_history_retirements: Default::default(),
+            retired_history: Default::default(),
             occurrences: Default::default(),
             creations: Default::default(),
             created: Default::default(),
@@ -248,7 +263,7 @@ impl WorldCheckpointImage {
     }
 
     pub(crate) fn first_branch(&self) -> Option<&WorldBranchImageKey> {
-        self.branches.entry_at(0).map(|(key, ())| key)
+        self.branches.entry_at(0).map(|(_, key)| key)
     }
 }
 impl std::fmt::Debug for WorldCheckpointImage {

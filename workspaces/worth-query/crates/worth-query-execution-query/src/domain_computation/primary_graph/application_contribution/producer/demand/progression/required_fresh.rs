@@ -174,10 +174,7 @@ where
         // retained program basis. Preserve its authentic optional custody;
         // the selected RequiredFresh path separately binds the current
         // source to `shared` and the claim carries the executed commit mode.
-        let retained_basis = claim
-            .selected()
-            .retained_program_basis()
-            .map(std::sync::Arc::clone);
+        let retained_basis = claim.selected().retained_program_basis();
         let predecessor = OutputRefreshPredecessor::of(
             &claim.selected().completion().authority,
             claim.interest(),

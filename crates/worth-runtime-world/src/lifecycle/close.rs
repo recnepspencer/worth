@@ -8,6 +8,8 @@ pub use home_owner::{
 mod admission;
 #[path = "close/drain.rs"]
 mod drain;
+#[path = "close/history_reclamation.rs"]
+mod history_reclamation;
 pub use admission::RuntimeWorldPreCloseAdmission;
 pub(crate) use admission::{checkpoint as checkpoint_close_step, RecoveredCloseReceipt};
 mod recovered;
@@ -100,13 +102,6 @@ where
             RuntimeWorldCloseState::Closed => super::RuntimeWorldOwnerLifecycleObservation::Closed,
         }
     }
-
-    fn require_optional_memory_history(&self) -> Result<(), HistoryReclamationDenial> {
-        match &self.state.durable {
-            Some(_) => Err(HistoryReclamationDenial::AuthoritativeDurableHistory),
-            None => Ok(()),
-        }
-    }
 }
 
 impl<D, I, E, Ctx, T> super::ports::RuntimeWorldLifecycleService
@@ -132,7 +127,6 @@ where
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
-        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -140,14 +134,19 @@ where
                     super::RuntimeWorldOwnerUnavailable::new(),
                 )
             })?;
-        let retired = self.state.history.retire_changed_history();
-        Ok(self.reclaim_retired_entries(retired))
+        if let Some(binding) = self.state.durable.as_ref() {
+            let pending = self.state.history.begin_durable_retire_changed_history();
+            let (reclaimed, _) = self.drive_durable_history_retirement(binding, pending)?;
+            Ok(reclaimed)
+        } else {
+            let retired = self.state.history.retire_changed_history();
+            Ok(self.reclaim_retired_entries(retired))
+        }
     }
     fn retire_unprotected_history(
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
-        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -155,18 +154,27 @@ where
                     super::RuntimeWorldOwnerUnavailable::new(),
                 )
             })?;
-        let retired = self
-            .state
-            .history
-            .retire_unprotected_history(keep)
-            .map_err(HistoryReclamationDenial::Catalog)?;
-        Ok(self.reclaim_retired_entries(retired))
+        if let Some(binding) = self.state.durable.as_ref() {
+            let pending = self
+                .state
+                .history
+                .begin_durable_retire_unprotected_history(keep)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            let (reclaimed, _) = self.drive_durable_history_retirement(binding, pending)?;
+            Ok(reclaimed)
+        } else {
+            let retired = self
+                .state
+                .history
+                .retire_unprotected_history(keep)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            Ok(self.reclaim_retired_entries(retired))
+        }
     }
     fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
-        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -174,15 +182,27 @@ where
                     super::RuntimeWorldOwnerUnavailable::new(),
                 )
             })?;
-        let (released, held) = self
-            .state
-            .history
-            .release_retired_branch_history(from)
-            .map_err(HistoryReclamationDenial::Catalog)?;
-        Ok(crate::history::RetiredBranchHistoryRelease::new(
-            self.reclaim_retired_entries(released),
-            held,
-        ))
+        if let Some(binding) = self.state.durable.as_ref() {
+            let pending = self
+                .state
+                .history
+                .begin_durable_release_retired_branch_history(from)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            let (reclaimed, held) = self.drive_durable_history_retirement(binding, pending)?;
+            Ok(crate::history::RetiredBranchHistoryRelease::new(
+                reclaimed, held,
+            ))
+        } else {
+            let (released, held) = self
+                .state
+                .history
+                .release_retired_branch_history(from)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            Ok(crate::history::RetiredBranchHistoryRelease::new(
+                self.reclaim_retired_entries(released),
+                held,
+            ))
+        }
     }
     fn retained_commits(
         &self,
@@ -257,38 +277,5 @@ impl RuntimeWorldCloseContract {
             RuntimeWorldCloseState::Open => Err(RuntimeWorldCloseDenial::AlreadyClosing),
             RuntimeWorldCloseState::Closed => Err(RuntimeWorldCloseDenial::AlreadyClosed),
         }
-    }
-}
-
-impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    /// Drops removed history entries and reclaims the pins only they held.
-    /// Returns the removed commits in the order given.
-    fn reclaim_retired_entries(
-        &self,
-        retired: crate::history::RetiredHistoryEntries,
-    ) -> Vec<crate::identity::CompositeCommitIdentity> {
-        let keys: Vec<_> = retired
-            .iter()
-            .filter_map(|slot| slot.get())
-            .flat_map(|entry| entry.retention_keys())
-            .collect();
-        let identities = retired
-            .iter()
-            .filter_map(|slot| slot.get())
-            .map(|entry| entry.commit().identity().clone())
-            .collect();
-        // Dropping the entries releases their pins; a pin no other holder
-        // shares is then reclaimed from the registry.
-        drop(retired);
-        self.state
-            .retention
-            .reclaim_keys(&keys, keys.len())
-            .expect("retired history pins belong to this owner");
-        identities
     }
 }

@@ -171,7 +171,7 @@ where
         Ok((cell, snapshot))
     }
 
-    fn issue_reused_observation(
+    pub(in crate::lifecycle::owner) fn issue_reused_observation(
         &self,
         snapshot: ProductBranchReferenceSnapshot,
         commit: Arc<crate::history::CompositeRuntimeWorldCommit>,

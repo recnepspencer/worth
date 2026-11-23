@@ -5,6 +5,52 @@ use crate::durability::authority::RecoveredRelationalRuntimeAuthority;
 use crate::runtime::RelationalRuntime;
 
 impl RecoveredRelationalRuntimeAuthority {
+    /// Descriptively verify that an already-readmitted Native effect advanced
+    /// `predecessor` to `successor` without re-pinning a disposed predecessor.
+    pub fn validate_recorded_publication_predecessor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        effect: &ReadmittedRelationalAssociatedEffect,
+        predecessor: &RecordedRelationalComponentReference,
+        successor: &RecordedRelationalComponentReference,
+    ) -> Result<(), RelationalRecoveredPublicationAdmissionCause> {
+        use RelationalRecoveredPublicationAdmissionCause as Cause;
+        crate::execution::check_request(execution).map_err(Cause::Request)?;
+        let Some(_operation) = runtime.owner_binding().admit() else {
+            return Err(Cause::OwnerUnavailable);
+        };
+        super::subject::validate(execution, self, runtime, effect, predecessor, successor)
+    }
+
+    /// Descriptively verify an already-readmitted Native effect whose disposed
+    /// predecessor image was pruned by a checkpoint, binding exact predecessor
+    /// branch and commit identity plus all successor publication axes.
+    pub fn validate_recorded_publication_pruned_predecessor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        effect: &ReadmittedRelationalAssociatedEffect,
+        expected_branch: &crate::history::data::BranchId,
+        expected_predecessor_commit: crate::history::data::CommitId,
+        successor: &RecordedRelationalComponentReference,
+    ) -> Result<(), RelationalRecoveredPublicationAdmissionCause> {
+        use RelationalRecoveredPublicationAdmissionCause as Cause;
+        crate::execution::check_request(execution).map_err(Cause::Request)?;
+        let Some(_operation) = runtime.owner_binding().admit() else {
+            return Err(Cause::OwnerUnavailable);
+        };
+        super::subject::validate_pruned_predecessor(
+            execution,
+            self,
+            runtime,
+            effect,
+            expected_branch,
+            expected_predecessor_commit,
+            successor,
+        )
+    }
+
     pub fn admit_recorded_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -56,13 +56,14 @@ impl WorldOccurrenceCustody {
     }
     pub(crate) fn bind_origin(
         &mut self,
+        commit_ordinal: u64,
         basis: &crate::basis::AdmittedCompositeRuntimeWorldBasis,
         pins: crate::retention::HistoryRetentionObligation,
     ) {
         self.origin
             .as_mut()
             .expect("prepared origin before journal submission")
-            .bind(basis, pins);
+            .bind(commit_ordinal, basis, pins);
     }
     pub(crate) fn take_origin(&mut self) -> super::PreparedCheckpointOccurrence {
         self.origin

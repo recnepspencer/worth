@@ -1064,8 +1064,10 @@ A cancelled Native effect without World occurrence/disposition refuses close wit
 `UnresolvedBusinessCustody`. After an unclean end, reopen retains it as recovered
 `ProductUnpublished` custody that the same key continues without rerunning its
 handler.
-Durable history and branch-publication cleanup are C2;
-C4 owns the adversarial oracle; C5 owns final retirement and certification.
+Durable World branch creation (Native and Signal forks), durable branch
+retirement, and durable history disposal publish through World's authoritative
+journals; C4 owns the adversarial oracle; C5 owns final retirement and
+certification.
 **Crash recovery is not yet certified.** Do not substitute MemoryOnly for a
 Directory application that requires persistence.
 
