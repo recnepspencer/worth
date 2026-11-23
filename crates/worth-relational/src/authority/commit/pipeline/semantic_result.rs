@@ -1,6 +1,6 @@
 //! The single original semantic producer; no publication or measured work is recorded.
 use crate::history::data::CanonicalCommitEnvelopeBody;
-use crate::runtime::RelationalPreparationRuntime;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitPublicationMeaning;
 use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
@@ -26,7 +26,7 @@ pub(super) struct SemanticResultInput<'a> {
 }
 
 pub(super) fn prepare_semantic_result(
-    runtime: &RelationalPreparationRuntime,
+    symbols: &RuntimeSymbolTable,
     input: SemanticResultInput<'_>,
 ) -> Result<Arc<RelationalCommitSemanticResult>, TransactionCommitError> {
     let denied = |refusal| {
@@ -51,10 +51,7 @@ pub(super) fn prepare_semantic_result(
         .publication_summary
         .as_ref()
         .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
-    let (created_entities, created_relations, validation) = runtime
-        .services
-        .symbols
-        .with_read(|symbols| {
+    let (created_entities, created_relations, validation) = symbols.with_read(|symbols| {
             let entities = input.entities.canonical_meaning(symbols)?;
             // Borrow a single reverse index of the genuine allocation roster. Each
             // relation endpoint pays one lookup, rather than rescanning all creates.

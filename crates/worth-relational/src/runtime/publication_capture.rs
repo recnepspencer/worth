@@ -76,3 +76,13 @@ impl RelationalPreparationRuntime {
         .map(PreparedRelationalPublication::from_versioned)
     }
 }
+
+impl<'a> From<&'a super::RelationalRuntime>
+    for crate::mvcc::publication::authority::RecoveredPublicationInstall<'a>
+{
+    fn from(runtime: &'a super::RelationalRuntime) -> Self {
+        Self {
+            history: &runtime.history,
+        }
+    }
+}

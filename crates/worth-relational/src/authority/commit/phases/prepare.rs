@@ -278,7 +278,7 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base<'a>(
     let mut phase_timing = CommitPhaseTiming::default();
     let summary_started = Instant::now();
     let mut structural_summary =
-        CommitStructuralSummary::derive(base_state, base_state, merged_plan, merge_parent_count);
+        CommitStructuralSummary::derive(base_state, merged_plan, merge_parent_count);
     if let Some(footprint) = footprint {
         structural_summary
             .touched_partitions

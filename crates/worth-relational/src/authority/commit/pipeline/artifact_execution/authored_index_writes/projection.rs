@@ -9,7 +9,7 @@ use worth_foundational::facade::{PortableAspectPatchOperation, PortableRecordAsp
 
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,
-    pub(super) runtime: &'a RelationalPreparationRuntime,
+    pub(super) schema_authority_digest: [u8; 32],
     pub(super) catalog:
         &'a crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     pub(super) unavailable: bool,
@@ -112,7 +112,7 @@ impl Projection<'_, '_, '_, '_, '_> {
     fn record(&mut self, entity: EntityId, aspect: Option<&AspectKey>) -> Result<(), Denial> {
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
-        let schema = self.runtime.schema_contract_runtime.schema_authority_digest;
+        let schema = self.schema_authority_digest;
         let Some(routing) = self.catalog.catalog.routing(schema) else {
             self.unavailable = true;
             return Ok(());

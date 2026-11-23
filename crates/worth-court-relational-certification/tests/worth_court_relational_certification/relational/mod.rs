@@ -8,6 +8,7 @@ mod lineage_checkpoint;
 mod memory_close;
 #[path = "relational_certification/mod.rs"]
 pub(crate) mod relational_certification;
+mod retained_observation_retirement;
 
 pub(crate) mod managed_source;
 

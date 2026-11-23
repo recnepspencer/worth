@@ -74,8 +74,20 @@ pub(super) struct PublicationPreparationInput<'a> {
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
 }
 
+pub(in crate::authority::commit::pipeline) use authoritative_publication::ArtifactAuthority;
+
+pub(in crate::authority::commit::pipeline) struct PublicationArtifactOwners<'a> {
+    pub(in crate::authority::commit::pipeline) index_catalog:
+        super::index_catalog::PublicationIndexCatalogInputs<'a>,
+    pub(in crate::authority::commit::pipeline) authored_indexes:
+        super::authored_index_writes::AuthoredIndexWriteInputs<'a>,
+    pub(in crate::authority::commit::pipeline) authority: ArtifactAuthority<'a>,
+    pub(in crate::authority::commit::pipeline) work:
+        Option<&'a crate::execution::RequestWorkBudget>,
+}
+
 pub(super) fn prepare_publication_artifacts(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    owners: PublicationArtifactOwners<'_>,
     input: PublicationPreparationInput<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
@@ -107,7 +119,8 @@ pub(super) fn prepare_publication_artifacts(
         diagnostics,
         adjacency,
     } = effect;
-    let (catalog, index_definition_delta) = super::index_catalog::prepare(runtime, execution)?;
+    let (catalog, index_definition_delta) =
+        super::index_catalog::prepare(owners.index_catalog, execution)?;
     let content_schema = match &schema_continuity.target_schema_registry {
         Some(registry) => registry.clone(),
         None => selected_branch_state
@@ -116,24 +129,20 @@ pub(super) fn prepare_publication_artifacts(
             .retained_schema_authority()
             .registry_arc(),
     };
-    let content = crate::execution::content_stage::run_commit_stage(
-        execution,
-        runtime.commit_work_budget.as_ref(),
-        || {
-            content.prepare_final_fields(
-                execution,
-                selected_branch_state.state().root(),
-                &content_schema,
-                working_state,
-                &publication.changed_records,
-                version_id,
-            )
-        },
-    )
+    let content = crate::execution::content_stage::run_commit_stage(execution, owners.work, || {
+        content.prepare_final_fields(
+            execution,
+            selected_branch_state.state().root(),
+            &content_schema,
+            working_state,
+            &publication.changed_records,
+            version_id,
+        )
+    })
     .map_err(crate::content::publication::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
-        runtime.commit_work_budget.as_ref(),
-        &runtime.services.symbols,
+        owners.work,
+        owners.authority.envelope.symbols,
         &catalog,
         selected_branch_state,
         working_state,
@@ -151,7 +160,7 @@ pub(super) fn prepare_publication_artifacts(
         execution,
     )?;
     let authored_index_writes = super::authored_index_writes::prepare(
-        runtime,
+        owners.authored_indexes,
         &catalog,
         selected_branch_state,
         working_state,
@@ -163,15 +172,24 @@ pub(super) fn prepare_publication_artifacts(
             && merge_base_commits.is_empty(),
         *execution,
     )?;
-    let traces = capture_publication_traces(runtime, &patch, &publication.canonical_deltas);
+    let traces = capture_publication_traces(
+        owners.authority.envelope.diagnostics.profile,
+        &patch,
+        &publication.canonical_deltas,
+    );
     let diagnostics_summary = diagnostics_summary_artifact(
-        &runtime.config,
+        owners
+            .authority
+            .envelope
+            .diagnostics
+            .profile
+            .max_entries_per_artifact,
         additional_diagnostics_entries,
         diagnostics.entries,
     );
     let authority = prepare_authoritative_publication(
         execution,
-        runtime,
+        owners.authority,
         PublicationAuthorityInput {
             content,
             index_definition_delta,

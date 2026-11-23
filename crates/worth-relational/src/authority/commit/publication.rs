@@ -310,11 +310,10 @@ fn diff_kind_order(
 }
 
 pub(super) fn diagnostics_summary_artifact(
-    config: &crate::config::data::RelationalRuntimeConfig,
+    max_entries: usize,
     reserved_entries: Vec<RelationalDiagnosticsEntry>,
     entries: Vec<RelationalDiagnosticsEntry>,
 ) -> RelationalDiagnosticArtifact {
-    let max_entries = config.diagnostics.profile.max_entries_per_artifact;
     // Reserved entries are proof-carrying summary surfaces for the authoritative lifecycle.
     // They must survive even when the optional diagnostics budget is exhausted or configured
     // below the reserved-entry count.

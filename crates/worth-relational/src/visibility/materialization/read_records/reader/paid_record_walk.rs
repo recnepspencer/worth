@@ -248,7 +248,7 @@ mod tests {
     use crate::tests::support::*;
     #[test]
     fn paid_record_walk_reports_materializations_and_historical_slot_visits() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         let left = create_entity(&execution, &runtime, "left");

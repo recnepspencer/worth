@@ -1,17 +1,17 @@
 //! Exercise real expired-entry pruning and registration replacement between stages.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirement;
 use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirementProgress as Progress;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 pub(crate) fn assert_original_registry_busy(
     task: &mut RelationalRetainedObservationRetirement,
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     descriptor: &RelationalBranchBasisDescriptor,
     request: &ExecutionRequest<'_, '_>,
 ) {
-    let registry = &runtime
-        .history
+    let registry = &history
         .branch_cell(descriptor.branch_id())
         .unwrap()
         .basis_registry;
@@ -49,12 +49,11 @@ pub(crate) fn assert_original_registry_busy(
 
 pub(crate) fn assert_pruned_original_registration(
     task: &mut RelationalRetainedObservationRetirement,
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     descriptor: &RelationalBranchBasisDescriptor,
     request: &ExecutionRequest<'_, '_>,
 ) {
-    let registry = &runtime
-        .history
+    let registry = &history
         .branch_cell(descriptor.branch_id())
         .unwrap()
         .basis_registry;
@@ -70,21 +69,19 @@ pub(crate) fn assert_pruned_original_registration(
 
 pub(crate) fn assert_successor_registration_preserved(
     task: &mut RelationalRetainedObservationRetirement,
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     descriptor: &RelationalBranchBasisDescriptor,
     request: &ExecutionRequest<'_, '_>,
+    observe_successor: impl FnOnce() -> AdmittedRelationalBranchBasis,
 ) {
-    let registry = &runtime
-        .history
+    let registry = &history
         .branch_cell(descriptor.branch_id())
         .unwrap()
         .basis_registry;
     let key = RelationalRetainedBasisKey::from(descriptor);
     advance_to_expired_entry(task, registry, descriptor, request);
     let original_id = registry.retained.lock().unwrap().entries[&key].registration_id;
-    let (_, successor) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
+    let successor = observe_successor();
     let successor_id = registry.retained.lock().unwrap().entries[&key].registration_id;
     assert_ne!(successor_id, original_id);
     assert_eq!(

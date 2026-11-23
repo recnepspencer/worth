@@ -161,7 +161,9 @@ impl PreparedPublicationPhase {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn complete_deferred_lineage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    lineage_authority: crate::authority::commit::lineage_preparation::LineagePreparationAuthority<
+        '_,
+    >,
     working_state: &mut crate::storage::overlay::WorkingState,
     envelope: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
     changed_records: &[crate::transactions::data::primitives::RecordRef],
@@ -184,19 +186,17 @@ pub(super) fn complete_deferred_lineage(
         }
         _ => None,
     };
-    let prepared = runtime
-        .lineage_preparation_authority()
-        .ensure_lineage_for_commit(
-            execution,
-            working_state,
-            &envelope.commit,
-            &envelope.merged_plan.merged_intents,
-            changed_records,
-            created_entities,
-            created_relations,
-            naming_plan,
-            graph_selection.as_deref(),
-        )?;
+    let prepared = lineage_authority.ensure_lineage_for_commit(
+        execution,
+        working_state,
+        &envelope.commit,
+        &envelope.merged_plan.merged_intents,
+        changed_records,
+        created_entities,
+        created_relations,
+        naming_plan,
+        graph_selection.as_deref(),
+    )?;
     let (lineage, nodes, relations) = prepared.into_parts();
     envelope.complete_lineage(lineage)?;
     Ok((nodes, relations))

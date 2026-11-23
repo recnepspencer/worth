@@ -1,6 +1,15 @@
 use super::RuntimeComplexityCounters;
 
 impl RuntimeComplexityCounters {
+    pub(crate) fn count_lineage_finalization(
+        &mut self,
+        event_batch_width: usize,
+        decision_log_width: usize,
+    ) {
+        self.lineage_finalization_event_batch_width += event_batch_width;
+        self.lineage_finalization_decision_log_width += decision_log_width;
+    }
+
     pub(crate) fn count_preparation_packet_shape(
         &mut self,
         packets: usize,

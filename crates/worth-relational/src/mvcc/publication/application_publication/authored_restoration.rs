@@ -4,7 +4,11 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::EntityId;
 use crate::identity::data::RelationId;
-use crate::transactions::data::*;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, WorkerIntentBatch,
+};
 use std::sync::Arc;
 
 #[derive(Clone)]

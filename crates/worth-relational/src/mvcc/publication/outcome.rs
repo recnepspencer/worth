@@ -47,7 +47,7 @@ struct PerformedRelationalCommitData {
 pub struct PerformedRelationalCommit {
     performed: worth_proof::Performed<
         PublishRelationalCommit,
-        crate::branch::RelationalBranchPublicationAuthorityMarker,
+        crate::branch::authority::RelationalBranchPublicationAuthorityMarker,
         PerformedRelationalCommitData,
     >,
     capability: PerformedSettlementCapability,

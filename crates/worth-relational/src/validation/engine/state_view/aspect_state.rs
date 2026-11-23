@@ -13,7 +13,7 @@ impl<'state> InvariantStateView<'state> {
         let locate = || self.locate_entity_aspect(entity_id);
         let location = match &self.candidate_inputs {
             Some((inputs, basis)) => {
-                inputs.entity_aspect(*basis, self.version_id, entity_id, locate)
+                inputs.entity_aspect(*basis, self.version_id(), entity_id, locate)
             }
             None => locate(),
         }?;
@@ -30,7 +30,7 @@ impl<'state> InvariantStateView<'state> {
         let metadata = crate::storage::overlay::record_observation::visible_record_metadata(
             partition.entity_arena(),
             entity_id,
-            self.version_id,
+            self.version_id(),
         )?;
         metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })
@@ -43,7 +43,7 @@ impl<'state> InvariantStateView<'state> {
         let locate = || self.locate_relation_aspect(relation_id);
         let location = match &self.candidate_inputs {
             Some((inputs, basis)) => {
-                inputs.relation_aspect(*basis, self.version_id, relation_id, locate)
+                inputs.relation_aspect(*basis, self.version_id(), relation_id, locate)
             }
             None => locate(),
         }?;
@@ -60,7 +60,7 @@ impl<'state> InvariantStateView<'state> {
         let metadata = crate::storage::overlay::record_observation::visible_record_metadata(
             partition.relation_arena(),
             relation_id,
-            self.version_id,
+            self.version_id(),
         )?;
         metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })

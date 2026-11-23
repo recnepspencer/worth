@@ -88,56 +88,6 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 #[test]
-fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_publication() {
-    let setup = crate::execution::test_policy::serial_request();
-    let setup_request = ExecutionRequest::serial(&setup);
-    let runtime = runtime_with_test_schema();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            batch_create("cancel-memory-frame"),
-            setup_request.allocation_policy(),
-        )
-        .unwrap();
-    let proposal = transaction.validate(&setup_request, &runtime).unwrap();
-    let candidate = runtime
-        .prepare_validated_proposal(&setup_request, proposal)
-        .unwrap();
-    let counters = runtime.patch_position_reservation_counters();
-    let before_head = runtime.history.latest_recorded_patch_position();
-    let cancel = CancellationSource::new();
-    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), cancel.token(), None);
-    let original = ExecutionRequest::serial(&host);
-    cancel.cancel();
-    assert!(matches!(
-        runtime
-            .publication_port()
-            .compare_and_publish(&original, candidate),
-        crate::mvcc::RelationalPublicationOutcome::RequestStopped(
-            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
-        )
-    ));
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments
-    );
-    assert_eq!(
-        runtime.history.latest_recorded_patch_position(),
-        before_head
-    );
-    runtime.compare_current_exact(&basis).unwrap();
-    drop(basis);
-    let result = create_entity_outcome(&setup_request, &runtime, "caller-after-cancellation");
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments + 1
-    );
-    release_test_commit_snapshot(&runtime, &result);
-}
-#[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);

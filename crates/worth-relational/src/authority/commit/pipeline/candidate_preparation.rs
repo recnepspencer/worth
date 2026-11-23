@@ -126,7 +126,7 @@ fn prepare_history<'scope, 'authority>(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
-    require_parent_publication_settled(runtime, &expected_root)?;
+    require_parent_publication_settled(&runtime.history, &expected_root)?;
     if let Some(admission) = &required_output_publication {
         admission.validate_before_preparation(execution, context.validation_input.basis())?;
     }
@@ -141,7 +141,7 @@ fn prepare_history<'scope, 'authority>(
         })?
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
+    let history_bound = prepare_bound_history(execution, runtime, context)?;
     CommitPhaseBacking::new(
         execution,
         HistoryPreparedCandidate {
@@ -168,14 +168,14 @@ fn prepare_history<'scope, 'authority>(
 }
 
 fn require_parent_publication_settled(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    history: &crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,
     expected_root: &std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
 ) -> Result<(), TransactionCommitError> {
     let Some(parent) = expected_root.commit_receipt() else {
         return Ok(());
     };
     let commit_id = parent.commit_id;
-    if !runtime.history.publication_requires_settlement(commit_id) {
+    if !history.publication_requires_settlement(commit_id) {
         return Ok(());
     }
     Err(publication_outcome_error(format!(

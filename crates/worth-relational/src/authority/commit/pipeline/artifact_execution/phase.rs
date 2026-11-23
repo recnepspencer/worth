@@ -1,7 +1,8 @@
 use super::super::phase_backing::CommitPhaseBacking;
 use super::super::rejection::{attach_rejection, elapsed_micros};
 use super::preparation::{
-    prepare_publication_artifacts, PublicationPreparation, PublicationPreparationInput,
+    prepare_publication_artifacts, PublicationArtifactOwners, PublicationPreparation,
+    PublicationPreparationInput,
 };
 use crate::authority::commit::phases::publication::enforce_patch_budget;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
@@ -12,7 +13,6 @@ use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::commit_log::CommitPatchBudgetSummary;
 use crate::transactions::data::commit_log::CommitPhase;
@@ -45,7 +45,8 @@ pub(super) struct ArtifactAssemblyInput<'a> {
 }
 
 pub(super) fn assemble_authoritative_publication_phase(
-    runtime: &RelationalPreparationRuntime,
+    owners: PublicationArtifactOwners<'_>,
+    max_patch_records: Option<usize>,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
@@ -57,32 +58,24 @@ pub(super) fn assemble_authoritative_publication_phase(
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
     let lease = super::super::request_lease(execution);
     let patch = assemble_patch(
-        &runtime.services.instrumentation,
-        runtime.commit_work_budget.as_ref(),
+        owners.authority.envelope.diagnostics.instrumentation,
+        owners.work,
         patch_fragments,
         lease,
     )?;
     let patch_budget_summary = CommitPatchBudgetSummary {
         patch_record_count: patch.authoritative_record_patches.len(),
-        max_patch_records_per_commit: runtime
-            .config
-            .publication
-            .policy
-            .max_patch_records_per_commit,
+        max_patch_records_per_commit: max_patch_records,
     };
     commit_log.record_patch_budget(&patch_budget_summary);
     enforce_patch_budget(
-        runtime
-            .config
-            .publication
-            .policy
-            .max_patch_records_per_commit,
-        runtime.preparation_diagnostics(),
+        max_patch_records,
+        owners.authority.envelope.diagnostics,
         &patch,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
     let publication = prepare_publication_artifacts(
-        runtime,
+        owners,
         PublicationPreparationInput {
             defer_lineage: input.defer_lineage,
             working_state: input.working_state,

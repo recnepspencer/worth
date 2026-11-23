@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
-
 use super::staged_plan::{MergedPlanPreparationTiming, StagedPlanValidation};
 use crate::authority::intent_merge::validate_branch_locality;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan};
+use crate::transactions::data::{CommitConflict, ConflictClass};
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn validate_staged_branch_locality(
@@ -115,24 +113,4 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             }))
         }
     }
-}
-
-pub(crate) fn bulk_reservations_for_plan(
-    _state: &impl CurrentPartitionAccess,
-    plan: &MergedCommitPlan,
-) -> (usize, usize) {
-    let mut entity_requests = BTreeMap::new();
-    let mut relation_requests = BTreeMap::new();
-    for intent in &plan.merged_intents {
-        if let Some((partition_id, requested)) = intent.bulk_entity_reservation() {
-            *entity_requests.entry(partition_id).or_insert(0usize) += requested;
-        }
-        if let Some((partition_id, requested)) = intent.bulk_relation_reservation() {
-            *relation_requests.entry(partition_id).or_insert(0usize) += requested;
-        }
-    }
-
-    let entity_reserved = entity_requests.into_values().sum();
-    let relation_reserved = relation_requests.into_values().sum();
-    (entity_reserved, relation_reserved)
 }

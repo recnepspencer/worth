@@ -72,7 +72,7 @@ pub(super) fn prepare_publication_phase(
         )?;
         let current_ownership = current_ownership::select(
             execution,
-            runtime,
+            runtime.commit_work_budget.as_ref(),
             &branch_basis,
             &canonical_commit_envelope,
             created_entities,
@@ -132,7 +132,7 @@ pub(super) fn prepare_publication_phase(
         let check_custody = || {
             owned_record_custody::require(
                 execution,
-                runtime,
+                runtime.current_ownership.as_deref(),
                 &canonical_commit_envelope,
                 &adjacency_deltas,
             )
@@ -145,7 +145,18 @@ pub(super) fn prepare_publication_phase(
         let (_current_ownership_funding, additional_aspects, additional_adjacency) =
             ownership_completion::complete(
                 execution,
-                runtime,
+                ownership_completion::OwnershipCompletionInputs {
+                    current: runtime.current_ownership.as_deref(),
+                    storage: &runtime.config.storage,
+                    symbols: &runtime.services.symbols,
+                    diagnostics: runtime.preparation_diagnostics(),
+                    work: runtime.commit_work_budget.as_ref(),
+                    max_patch_records: runtime
+                        .config
+                        .publication
+                        .policy
+                        .max_patch_records_per_commit,
+                },
                 &branch_basis,
                 &selected_branch_state,
                 &mut working_state,
@@ -158,7 +169,7 @@ pub(super) fn prepare_publication_phase(
         if lineage_deferred {
             (lineage_nodes, relation_lineages) = prepared_phase::complete_deferred_lineage(
                 execution,
-                runtime,
+                runtime.lineage_preparation_authority(),
                 &mut working_state,
                 &mut canonical_commit_envelope,
                 &changed_records,
@@ -185,7 +196,7 @@ pub(super) fn prepare_publication_phase(
         )?;
         canonical_commit_envelope.caller_association = caller_association;
         let semantic_result = super::super::semantic_result::prepare_semantic_result(
-            runtime,
+            &runtime.services.symbols,
             super::super::semantic_result::SemanticResultInput {
                 structural,
                 validation,

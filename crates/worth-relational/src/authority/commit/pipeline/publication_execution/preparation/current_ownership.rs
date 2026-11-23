@@ -2,14 +2,13 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::publication::ownership;
 use crate::publication::ownership::CurrentPublicationRoster;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 pub(super) fn select(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    work: Option<&crate::execution::RequestWorkBudget>,
     basis: &AdmittedRelationalBranchBasis,
     candidate: &crate::history::data::CanonicalCommitEnvelopeBody,
     created: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
@@ -136,10 +135,7 @@ pub(super) fn select(
             .map_err(ownership::request)?
             .0
     };
-    let result = match (
-        super::super::super::request_lease(execution),
-        runtime.commit_work_budget.as_ref(),
-    ) {
+    let result = match (super::super::super::request_lease(execution), work) {
         (Some(_), Some(budget)) => budget
             .run_stage(*execution, run)
             .map_err(|cause| TransactionCommitError::execution(cause.into()))?,

@@ -35,6 +35,7 @@ pub(crate) use home_program_transition::{
 pub(crate) mod commit_strategy_validation;
 pub(crate) mod interruption_counters;
 mod lineage_commit;
+mod managed_source_history;
 pub(crate) mod operation_control;
 mod ownership_certification;
 mod predecessor_publication;

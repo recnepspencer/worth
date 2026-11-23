@@ -4,7 +4,17 @@ use super::{
     CanonicalAuthoritativePatch, PublishedMergeExecutionAuthority, RecordRef,
     RelationalCommitReceipt, RelationalSemanticPlan, SchemaContinuityPlan, TransactionCommitError,
 };
-use crate::authority::commit::phases::publication::canonical_commit_envelope;
+use crate::authority::commit::phases::publication::{
+    canonical_commit_envelope, CanonicalEnvelopeInputs,
+};
+
+pub(in crate::authority::commit::pipeline) struct ArtifactAuthority<'a> {
+    pub(in crate::authority::commit::pipeline) publication:
+        crate::publication::authority::PublicationPreparationAuthority<'a>,
+    pub(in crate::authority::commit::pipeline) lineage:
+        crate::authority::commit::lineage_preparation::LineagePreparationAuthority<'a>,
+    pub(in crate::authority::commit::pipeline) envelope: CanonicalEnvelopeInputs<'a>,
+}
 
 pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
@@ -45,12 +55,12 @@ pub(super) struct PreparedPublicationAuthority {
 
 pub(super) fn prepare_authoritative_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    authority: ArtifactAuthority<'_>,
     input: PublicationAuthorityInput<'_>,
 ) -> Result<CommitPhaseBacking<PreparedPublicationAuthority>, TransactionCommitError> {
     let result = {
-        let artifacts = runtime
-            .publication_preparation_authority()
+        let artifacts = authority
+            .publication
             .assemble_publication_bundle(
                 input.commit_reference.clone(),
                 input.version_id,
@@ -73,19 +83,17 @@ pub(super) fn prepare_authoritative_publication(
                 Vec::new(),
             )
         } else {
-            runtime
-                .lineage_preparation_authority()
-                .ensure_lineage_for_commit(
-                    execution,
-                    input.working_state,
-                    input.commit_reference,
-                    &input.merged_plan.commands().merged_intents,
-                    input.changed_records,
-                    input.created_entities,
-                    input.created_relations,
-                    input.naming_plan,
-                    input.merged_plan.graph_selection(),
-                )?
+            authority.lineage.ensure_lineage_for_commit(
+                execution,
+                input.working_state,
+                input.commit_reference,
+                &input.merged_plan.commands().merged_intents,
+                input.changed_records,
+                input.created_entities,
+                input.created_relations,
+                input.naming_plan,
+                input.merged_plan.graph_selection(),
+            )?
         };
         let lineage_event_count = prepared_lineage
             .artifact()
@@ -94,7 +102,7 @@ pub(super) fn prepare_authoritative_publication(
             .event_batch_width;
         let (lineage_artifact, lineage_nodes, relation_lineages) = prepared_lineage.into_parts();
         let mut canonical_commit_envelope = canonical_commit_envelope(
-            runtime,
+            authority.envelope,
             input.content,
             input.index_definition_delta,
             input.commit_reference,

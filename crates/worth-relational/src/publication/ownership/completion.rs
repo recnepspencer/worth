@@ -9,17 +9,17 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::history::data::CommitId;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::schema::current_publication_ownership::{CATALOG, PUBLICATION};
 use crate::storage::overlay::OverlayStateView;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::*;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
 pub(crate) fn complete(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    storage_config: &crate::config::data::StorageConfig,
     basis: &AdmittedRelationalBranchBasis,
     selected: &SelectedRelationalBranchState,
     working: &mut WorkingState,
@@ -43,7 +43,7 @@ pub(crate) fn complete(
     };
     let mut writer = Writer::in_stage(
         execution,
-        &runtime.config.storage,
+        storage_config,
         basis,
         working,
         identities,

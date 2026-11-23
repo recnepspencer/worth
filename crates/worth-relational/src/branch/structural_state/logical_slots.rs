@@ -1,8 +1,8 @@
 //! Canonical occupied logical slots across a sparse proposal and its base.
-use super::InvariantStateView;
+use super::StructuralStateView;
 use crate::identity::data::PartitionId;
 
-impl InvariantStateView<'_> {
+impl StructuralStateView<'_> {
     /// O(V+B) visits and two fixed inline iterator stacks. Rejected
     /// reservations can make logical slots arbitrarily larger than row counts;
     /// neither the allocator frontier nor a dense ordinal is a scan bound.

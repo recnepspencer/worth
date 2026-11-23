@@ -87,6 +87,7 @@ pub(crate) mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
 pub(crate) mod root_regions;
+pub(crate) mod structural_state;
 pub(crate) use root::{
     retained_compilation_tree_bytes, RelationalBranchVisibilityCommitment,
     RelationalOriginalRootCommitEvidence, RelationalRootAllocationVisitor,

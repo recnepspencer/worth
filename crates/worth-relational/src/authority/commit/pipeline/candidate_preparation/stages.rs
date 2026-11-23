@@ -110,9 +110,41 @@ pub(super) fn assemble(
             .registry()
             .current_publication_storage
             .is_some();
+    let runtime = &context.runtime;
+    let work = runtime.commit_work_budget.as_ref();
+    let owners = artifact_execution::preparation::PublicationArtifactOwners {
+        index_catalog: artifact_execution::index_catalog::PublicationIndexCatalogInputs {
+            history: &runtime.history,
+            checkpoint: &runtime.checkpoint_selection,
+            catalog: &runtime.index_definitions,
+            home_catalog: runtime
+                .home_target
+                .as_ref()
+                .and_then(|target| target.index_definitions.as_ref())
+                .map(|prepared| &prepared.captured),
+            original_catalog: runtime.recovered_index_catalog.as_ref(),
+            work,
+        },
+        authored_indexes: artifact_execution::authored_index_writes::AuthoredIndexWriteInputs {
+            schema_authority_digest: runtime.schema_contract_runtime.schema_authority_digest,
+            original: runtime.recovered_authored_index_writes.as_ref(),
+            work,
+        },
+        authority: artifact_execution::preparation::ArtifactAuthority {
+            publication: runtime.publication_preparation_authority(),
+            lineage: runtime.lineage_preparation_authority(),
+            envelope: runtime.into(),
+        },
+        work,
+    };
     let assembled = artifact_execution::assemble_commit_artifacts(
         request,
-        &context.runtime,
+        owners,
+        runtime
+            .config
+            .publication
+            .policy
+            .max_patch_records_per_commit,
         validated,
         lineage_deferred,
     )?;

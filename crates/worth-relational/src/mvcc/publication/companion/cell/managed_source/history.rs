@@ -1,15 +1,15 @@
 //! Descriptive history selection comes from the actual retained observation.
 use super::ManagedIndexSourceObservation;
+use crate::history::access::relevant_writes::managed_source::selected_catalog::ManagedSourceHistoryReads;
 use crate::history::access::relevant_writes::RelationalAuthoredManagedSourceSelector;
 use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
-use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 impl ManagedIndexSourceObservation {
     /// Borrow this scope's actual canonical impact and historical pure material.
     /// This grants no historical READ or performed-correction permission.
-    pub fn authored_history_impact(
+    pub fn authored_history_impact<'a>(
         &self,
-        runtime: &RelationalRuntime,
+        reads: impl Into<ManagedSourceHistoryReads<'a>>,
         execution: ExecutionRequest<'_, '_>,
         occurrence: &crate::history::access::relevant_writes::RelationalAuthoredWriteOccurrence,
     ) -> Result<
@@ -33,9 +33,10 @@ impl ManagedIndexSourceObservation {
             }
             Ok(())
         })?;
-        let selector = self.authored_history_selector(runtime, execution)?;
+        let reads = reads.into();
+        let selector = self.authored_history_selector_from(&reads, execution)?;
         crate::history::access::relevant_writes::source_impact(
-            runtime.runtime_instance_id(),
+            reads.runtime_instance_id,
             execution,
             &self.affinity,
             selector,
@@ -44,16 +45,24 @@ impl ManagedIndexSourceObservation {
     }
     /// Select metadata for this actual program/scope, not a reconstructed key.
     /// Retained observation custody grants no Source READ or correction permission.
-    pub fn authored_history_selector(
+    pub fn authored_history_selector<'a>(
         &self,
-        runtime: &RelationalRuntime,
+        reads: impl Into<ManagedSourceHistoryReads<'a>>,
+        execution: ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalAuthoredManagedSourceSelector, Denial> {
+        self.authored_history_selector_from(&reads.into(), execution)
+    }
+
+    fn authored_history_selector_from(
+        &self,
+        reads: &ManagedSourceHistoryReads<'_>,
         execution: ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthoredManagedSourceSelector, Denial> {
         execution.consult().map_err(Denial::Request)?;
-        if self.selected.runtime_instance_id() != runtime.runtime_instance_id() {
+        if self.selected.runtime_instance_id() != reads.runtime_instance_id {
             return Err(Denial::ForeignOwner);
         }
-        runtime.authored_managed_source_selector(execution, &self.record.program, self.record.scope)
+        reads.select(execution, &self.record.program, self.record.scope)
     }
 }
 

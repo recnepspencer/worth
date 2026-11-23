@@ -30,9 +30,8 @@ impl MutatedCommitExecution {
 
 pub(super) fn mutate_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     validated: CommitPhaseBacking<BoundaryValidatedCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<MutatedCommitExecution>,
     crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
@@ -53,9 +52,9 @@ pub(super) fn mutate_commit_execution(
                 source_interpretation,
             },
         ) = prepared.into_parts();
-        telemetry::record_preparation_telemetry(runtime, outcome.preparation_telemetry);
+        telemetry::record_preparation_telemetry(instrumentation, outcome.preparation_telemetry);
         crate::authority::commit::phases::prepare::working_state_metrics::record_mutation_counters(
-            &runtime.services.instrumentation,
+            instrumentation,
             &working_state,
         );
         let (_, _, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();

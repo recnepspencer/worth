@@ -1,10 +1,22 @@
 //! Complete current ownership inside the original commit publication preparation.
-use super::*;
+use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
+use crate::publication::ownership::read::roster::CurrentPublicationRoster;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+
+pub(super) struct OwnershipCompletionInputs<'a> {
+    pub(super) current: Option<&'a CurrentPublicationRoster>,
+    pub(super) storage: &'a crate::config::data::StorageConfig,
+    pub(super) symbols: &'a RuntimeSymbolTable,
+    pub(super) diagnostics: PreparationDiagnostics<'a>,
+    pub(super) work: Option<&'a crate::execution::RequestWorkBudget>,
+    pub(super) max_patch_records: Option<usize>,
+}
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn complete(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: OwnershipCompletionInputs<'_>,
     basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &mut crate::storage::overlay::WorkingState,
@@ -24,7 +36,7 @@ pub(super) fn complete(
     ),
     TransactionCommitError,
 > {
-    let Some(current) = &runtime.current_ownership else {
+    let Some(current) = inputs.current else {
         return Ok((None, Vec::new(), 0));
     };
     let mut answer = None;
@@ -34,7 +46,7 @@ pub(super) fn complete(
                 let mut position =
                     crate::history::data::current_route_presence::completion::complete(
                         execution,
-                        &runtime.config.storage,
+                        inputs.storage,
                         basis,
                         working,
                         identities,
@@ -44,7 +56,14 @@ pub(super) fn complete(
                         context,
                     )?;
                 let roster = crate::publication::ownership::complete(
-                    execution, runtime, basis, selected, working, identities, canonical, current,
+                    execution,
+                    inputs.storage,
+                    basis,
+                    selected,
+                    working,
+                    identities,
+                    canonical,
+                    current,
                     context,
                 )?;
                 position.effect.accumulate(roster.effect);
@@ -102,15 +121,13 @@ pub(super) fn complete(
             (Ok(_), None) => unreachable!("completed publication ownership stage executed"),
         }
     };
-    let (completed, roster_funding) = match (
-        super::super::super::request_lease(execution),
-        runtime.commit_work_budget.as_ref(),
-    ) {
-        (Some(_), Some(budget)) => budget
-            .run_stage(*execution, run)
-            .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
-        _ => run(),
-    }?;
+    let (completed, roster_funding) =
+        match (super::super::super::request_lease(execution), inputs.work) {
+            (Some(_), Some(budget)) => budget
+                .run_stage(*execution, run)
+                .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
+            _ => run(),
+        }?;
     let mut effect = completed.effect;
     let fragments = std::mem::take(&mut effect.publication.patch_fragments);
     execution
@@ -119,19 +136,15 @@ pub(super) fn complete(
                 return Ok(());
             }
             crate::authority::commit::publication::extend_patch(
-                &runtime.services.instrumentation,
-                runtime.commit_work_budget.as_ref(),
+                inputs.diagnostics.instrumentation,
+                inputs.work,
                 &mut canonical.patch,
                 fragments,
                 lease,
             )?;
             crate::authority::commit::phases::publication::enforce_patch_budget(
-                runtime
-                    .config
-                    .publication
-                    .policy
-                    .max_patch_records_per_commit,
-                runtime.preparation_diagnostics(),
+                inputs.max_patch_records,
+                inputs.diagnostics,
                 &canonical.patch,
             )
         })
@@ -150,8 +163,7 @@ pub(super) fn complete(
         .iter()
         .copied()
         .collect();
-    canonical.symbol_texts = runtime
-        .services
+    canonical.symbol_texts = inputs
         .symbols
         .with_read(|symbols| {
             symbols.commit_texts(

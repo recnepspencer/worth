@@ -1,6 +1,6 @@
 //! Metadata selection through the actual installed Native Source roster.
 use super::RelationalAuthoredWriteDenial as Denial;
-mod selector_admission;
+pub(crate) mod selected_catalog;
 
 pub(super) fn require_interval(
     generation: &crate::history::access::relevant_writes::generation::AuthoredWriteGeneration,

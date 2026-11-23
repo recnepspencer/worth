@@ -135,3 +135,70 @@ fn a_completed_empty_commit_funds_its_retained_publication_metadata() {
     drop((runtime, result));
     assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
 }
+
+#[test]
+fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_publication() {
+    use worth_relational::facade::mvcc::RelationalPublicationOutcome;
+    use worth_testkit_relational::{
+        aspect_storage::publications::{begin_main_transaction, release_test_commit_snapshot},
+        durable_publication::batch_create,
+    };
+    let setup = serial_request();
+    let setup_request = ExecutionRequest::serial(&setup);
+    let runtime = memory_runtime();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = begin_main_transaction(&runtime);
+    transaction
+        .push_batch(
+            batch_create("cancel-memory-frame"),
+            setup_request.allocation_policy(),
+        )
+        .unwrap();
+    let proposal = transaction.validate(&setup_request, &runtime).unwrap();
+    let candidate = runtime
+        .prepare_validated_proposal(&setup_request, proposal)
+        .unwrap();
+    let counters = runtime.patch_position_reservation_counters();
+    let positions = || {
+        runtime
+            .durability()
+            .canonical_commit_artifacts(&setup_request)
+            .map(|frame| frame.unwrap().position())
+            .collect::<Vec<_>>()
+    };
+    let before = positions();
+    let cancel = CancellationSource::new();
+    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), cancel.token(), None);
+    let original = ExecutionRequest::serial(&host);
+    cancel.cancel();
+    assert!(matches!(
+        runtime
+            .publication_port()
+            .compare_and_publish(&original, candidate),
+        RelationalPublicationOutcome::RequestStopped(worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::Cancelled
+        ))
+    ));
+    assert_eq!(
+        runtime.patch_position_reservation_counters().assignments,
+        counters.assignments
+    );
+    assert_eq!(positions(), before);
+    runtime
+        .owner_component_services()
+        .basis_port()
+        .compare_current_exact(&basis)
+        .unwrap();
+    drop(basis);
+    let result = create_entity_outcome(&setup_request, &runtime, "caller-after-cancellation");
+    assert_eq!(
+        runtime.patch_position_reservation_counters().assignments,
+        counters.assignments + 1
+    );
+    let after = positions();
+    assert_eq!(after.len(), before.len() + 1);
+    assert!(after.starts_with(&before));
+    release_test_commit_snapshot(&runtime, &result);
+}

@@ -55,7 +55,7 @@ impl HistoryBoundCommitExecution {
 /// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn bind_commit_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    inputs: crate::authority::commit::phases::schema_continuity::inputs::SchemaContinuityInputs<'_>,
     mutated: CommitPhaseBacking<MutatedCommitExecution>,
 ) -> Result<
     CommitPhaseBacking<HistoryBoundCommitExecution>,
@@ -75,9 +75,9 @@ pub(super) fn bind_commit_history(
         let history = resolve_authoritative_history_phase(
             execution,
             CommitHistoryPreparation {
-                history: &runtime.history,
-                profile: &runtime.config.diagnostics.profile,
-                diagnostics: &runtime.diagnostics,
+                history: inputs.history,
+                profile: inputs.diagnostics.profile,
+                diagnostics: inputs.diagnostics.store,
             },
             commit_log,
             phase_timing,
@@ -106,7 +106,7 @@ pub(super) fn bind_commit_history(
                     &plan.merge_execution_summary,
                     diagnostics_plan,
                     history.commit_id,
-                    runtime.config.diagnostics.profile.max_entries_per_artifact,
+                    inputs.diagnostics.profile.max_entries_per_artifact,
                 ),
             ]
         } else {
@@ -115,7 +115,7 @@ pub(super) fn bind_commit_history(
         let merge_execution_authority =
             merge_plan.map(PublishedMergeExecutionAuthority::from_merge_plan);
         let schema_continuity =
-            resolve_schema_continuity(execution, runtime, &history.branch_id, validation_input)
+            resolve_schema_continuity(execution, inputs, &history.branch_id, validation_input)
                 .map_err(|error| {
                     super::rejection::attach_rejection(
                         commit_log,

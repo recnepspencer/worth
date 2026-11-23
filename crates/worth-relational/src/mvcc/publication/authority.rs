@@ -6,7 +6,6 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::history::commit::RelationalCommitArtifact;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
-use crate::runtime::RelationalRuntime;
 
 use super::validation::{
     validate_publication, PublicationRequest, PublicationSequence, ValidatedPublication,
@@ -81,14 +80,21 @@ impl PreparedRelationalPublication {
     }
 }
 
+pub(crate) struct RecoveredPublicationInstall<'a> {
+    pub(crate) history: &'a crate::runtime::state::subsystems::history::HistorySubsystem,
+}
+
 impl PreparedRecoveredRelationalPublication {
-    pub(crate) fn install_recovered(
+    pub(crate) fn install_recovered<'a, Owner: ?Sized>(
         self,
-        runtime: &RelationalRuntime,
+        install: &'a Owner,
         positioned: &crate::history::data::PositionedCanonicalCommit,
-    ) -> Result<(), String> {
+    ) -> Result<(), String>
+    where
+        &'a Owner: Into<RecoveredPublicationInstall<'a>>,
+    {
         crate::durability::authority::install_recovered_versioned_artifact(
-            &runtime.history,
+            install.into().history,
             self.publication,
             positioned,
         )

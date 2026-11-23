@@ -5,7 +5,7 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 
 #[test]
 fn request_root_refusal_preserves_original_and_releases_partial_backing() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_runtime, original, _) = committed_root_and_envelope(&execution);
     let axes = original.axes();
@@ -57,7 +57,7 @@ fn request_root_refusal_preserves_original_and_releases_partial_backing() {
 #[test]
 fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
     use sha2::{Digest, Sha256};
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_runtime, original, envelope) = committed_root_and_envelope(&execution);
     let axes = original.axes().unwrap();
@@ -104,7 +104,7 @@ fn interim_predecessor_memory_exhaustion_preserves_typed_request_refusal() {
     use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Refusal;
     use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let source = runtime_with_test_schema();
     let _ = create_entity_outcome(&execution, &source, "interim-seed");

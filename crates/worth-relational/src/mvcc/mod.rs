@@ -81,7 +81,6 @@ pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
     RelationalRetainedEntitySelectionPreparationError,
 };
-pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
 pub(crate) use transaction::RelationalTransactionSavepoint;
 pub(crate) use transaction::TransactionSchemaOrigin;

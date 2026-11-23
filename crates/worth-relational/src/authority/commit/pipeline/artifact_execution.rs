@@ -1,14 +1,14 @@
 use super::phase_backing::CommitPhaseBacking;
 use super::snapshot_validation::SnapshotValidatedCommitExecution;
 
-mod authored_index_writes;
+pub(crate) mod authored_index_writes;
 mod descriptive_touches;
-mod index_catalog;
+pub(crate) mod index_catalog;
 mod phase;
-pub(super) mod preparation;
+pub(crate) mod preparation;
 
 use phase::{assemble_authoritative_publication_phase, ArtifactAssemblyInput};
-use preparation::PublicationPreparation;
+use preparation::{PublicationArtifactOwners, PublicationPreparation};
 
 pub(super) struct AssembledCommitExecution {
     lineage_deferred: bool,
@@ -79,7 +79,8 @@ impl AssembledCommitExecution {
 
 pub(super) fn assemble_commit_artifacts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    owners: PublicationArtifactOwners<'_>,
+    max_patch_records: Option<usize>,
     validated: CommitPhaseBacking<SnapshotValidatedCommitExecution>,
     lineage_deferred: bool,
 ) -> Result<
@@ -116,7 +117,8 @@ pub(super) fn assemble_commit_artifacts(
             admitted.phase_view().into_parts();
         let naming_plan = validation_input.naming_plan();
         let publication = assemble_authoritative_publication_phase(
-            runtime,
+            owners,
+            max_patch_records,
             commit_log,
             phase_timing,
             ArtifactAssemblyInput {

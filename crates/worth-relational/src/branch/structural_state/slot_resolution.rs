@@ -1,7 +1,7 @@
 use crate::identity::data::PartitionId;
 use crate::storage::residency::RelationalRegionHeadView;
 
-use super::InvariantStateView;
+use super::StructuralStateView;
 
 pub(crate) use crate::storage::overlay::PartitionSource;
 
@@ -10,8 +10,8 @@ pub(crate) struct AspectLocation {
     pub(crate) source: PartitionSource,
 }
 
-impl<'state> InvariantStateView<'state> {
-    pub(super) fn partition_from_source(
+impl<'state> StructuralStateView<'state> {
+    pub(crate) fn partition_from_source(
         &self,
         partition_id: PartitionId,
         source: PartitionSource,
@@ -31,7 +31,7 @@ impl<'state> InvariantStateView<'state> {
             .map(|(_, partition)| partition)
     }
 
-    pub(super) fn entity_partition_source_for_slot(
+    pub(crate) fn entity_partition_source_for_slot(
         &self,
         partition_id: PartitionId,
         slot: usize,
@@ -52,7 +52,7 @@ impl<'state> InvariantStateView<'state> {
             .map(|(_, partition)| partition)
     }
 
-    pub(super) fn relation_partition_source_for_slot(
+    pub(crate) fn relation_partition_source_for_slot(
         &self,
         partition_id: PartitionId,
         slot: usize,

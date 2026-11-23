@@ -4,7 +4,6 @@ use crate::history::data::CodecRetirementClosureStop as Stop;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
@@ -12,11 +11,11 @@ mod candidate;
 
 pub(super) fn require(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    current: Option<&crate::publication::ownership::read::roster::CurrentPublicationRoster>,
     candidate: &CanonicalCommitEnvelopeBody,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
 ) -> Result<(), TransactionCommitError> {
-    let Some(current) = runtime.current_ownership.as_deref() else {
+    let Some(current) = current else {
         return Ok(());
     };
     if current.origins().len() == 0 {

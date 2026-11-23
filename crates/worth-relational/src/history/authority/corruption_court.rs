@@ -57,7 +57,7 @@ impl<'a> Restore<'a> {
         drop(admitted);
         let mut envelope = Arc::try_unwrap(copied)
             .expect("the newly readmitted court original has unique body custody");
-        envelope.corrupt_output_origin_header_for_test(corruption);
+        header::corrupt(&mut envelope, corruption);
         assert_eq!(
             envelope.commit.commit_id, commit,
             "corruption preserves commit identity"

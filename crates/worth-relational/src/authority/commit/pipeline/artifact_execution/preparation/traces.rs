@@ -65,11 +65,10 @@ pub(super) struct PublicationTraceCapture {
 }
 
 pub(super) fn capture_publication_traces(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics_profile: &crate::diagnostics::data::RelationalDiagnosticsProfile,
     patch: &CanonicalAuthoritativePatch,
     canonical_deltas: &[crate::authority::mutation::CanonicalRecordAspectDelta],
 ) -> PublicationTraceCapture {
-    let diagnostics_profile = &runtime.config.diagnostics.profile;
     let capture_transaction_traces = diagnostics_profile.should_capture_artifact(
         DiagnosticsScope::Transaction,
         DiagnosticsArtifactKind::DetailedTrace,
