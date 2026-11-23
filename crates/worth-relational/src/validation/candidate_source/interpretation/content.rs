@@ -1,6 +1,6 @@
 //! Logical content posture follows the actual Source interpretation.
 use super::*;
-use crate::content::{NativeContentSourceView, RelationalContentDenial as Denial};
+use crate::content::{source::NativeContentSourceView, RelationalContentDenial as Denial};
 #[derive(Debug)]
 pub(super) struct ContentViews {
     before: NativeContentSourceView,

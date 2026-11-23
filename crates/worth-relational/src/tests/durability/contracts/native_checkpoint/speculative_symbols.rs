@@ -130,3 +130,60 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
         .with_read(|symbols| symbols.contains("unpublished-client-key")));
     create_entity_outcome(execution, &recovered, "editable-after-dictionary-recovery");
 }
+
+// Fixture adaptation (C2.4): the original used `checkpoint_and_recover_with`
+// over the retired in-crate test medium. Symbol-frontier preservation across
+// checkpoint recovery has no physical-medium content, so it runs over an
+// Embedded native checkpoint and restore on the Memory runtime.
+#[test]
+fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
+    use crate::tests::support::*;
+    let request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    let runtime = runtime_with_test_schema();
+    create_entity(&execution, &runtime, "symbol-frontier-seed");
+    let mut abandoned = runtime.services.symbols.begin_pending_meanings();
+    let symbol = abandoned.reserve("abandoned-before-checkpoint").unwrap();
+    drop(abandoned);
+    let native = runtime
+        .durability_authority()
+        .native_checkpoint(&execution, execution.allocation_policy())
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .restore_native_checkpoint(&execution, &native)
+        .unwrap();
+    let mut candidate = recovered.services.symbols.begin_pending_meanings();
+    let fresh = loop {
+        match candidate.reserve("abandoned-before-checkpoint") {
+            Ok(symbol) => break symbol,
+            Err(crate::runtime::SymbolReservationDenial::ColdBucket(text)) => {
+                drop(candidate);
+                recovered
+                    .services
+                    .symbols
+                    .demand_text(&execution, text.as_str())
+                    .unwrap();
+                candidate = recovered.services.symbols.begin_pending_meanings();
+            }
+            other => panic!("recovered symbol reservation failed: {other:?}"),
+        }
+    };
+    assert!(fresh.0 > symbol.0);
+    assert_eq!(
+        recovered
+            .services
+            .symbols
+            .with_read(|symbols| symbols.resolve(symbol).map(str::to_owned)),
+        None
+    );
+    let meanings = candidate.interner().snapshot();
+    {
+        let binding = candidate.binding();
+        candidate.seal_for_publication(&meanings, &binding, [])
+    }
+    .expect("fixture meanings agree with the candidate")
+    .publish()
+    .unwrap();
+}

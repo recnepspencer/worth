@@ -4,6 +4,7 @@ use super::*;
 
 pub(crate) struct AppliedMutationCore {
     pub(crate) state: WorkingState,
+    pub(crate) content: crate::content::publication::ContentPublication,
     pub(crate) outcome: MutationApplyOutcome,
     pub(crate) identities: PendingMutationIdentities,
     pub(crate) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
@@ -80,6 +81,7 @@ pub(crate) fn apply(
         materialization,
     );
     Ok(AppliedMutationCore {
+        content: Default::default(),
         aggregate,
         state,
         outcome,
@@ -132,7 +134,7 @@ pub(crate) fn apply_authored_prefix(
     let source = identity
         .source_interpretation()
         .expect("owner-issued prefix identity");
-    applied.state.content = super::content::prepare(
+    applied.content = super::content::prepare(
         execution,
         runtime,
         selected.selected().state().root(),

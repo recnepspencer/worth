@@ -51,13 +51,14 @@ use crate::query::data::{
 };
 use crate::runtime::{RelationalRuntime, VisibilityResidency};
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::DenseSlotBitSet;
 use crate::visibility::cache_state::{
     cached_historical_state_for_version, cached_state, materialize_historical_visibility,
     residency, residency_for_version,
 };
+use crate::visibility::snapshot_read_view::RelationalReadView;
 use crate::visibility::snapshot_states::{
     read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
     resolve_snapshot_inspection, resolve_snapshot_state,

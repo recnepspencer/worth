@@ -1,6 +1,6 @@
 //! Both mirror directories retain their own original leases and Head symbols.
 use super::*;
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::residency::RelationalRegionResidency;
 use std::sync::Arc;
 

@@ -34,6 +34,8 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) stru
         crate::mvcc::OwnedNormalizedPlan,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) records:
         Vec<RecordRef>,
+    pub(in crate::mvcc::publication::application_publication::coupled_assembly) content:
+        crate::content::publication::ContentPublication,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) delta_state:
         WorkingState,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) local_keys:
@@ -103,7 +105,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         };
         self.transaction
             .attach_content(execution, content)
-            .map_err(crate::content::commit_denial)?;
+            .map_err(crate::content::publication::commit_denial)?;
         for batch in &mut batches {
             super::super::fresh_references::retain(
                 execution,
@@ -227,7 +229,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .identity
             .source_interpretation()
             .expect("owner-issued writer identity");
-        state.content = crate::authority::commit::phases::applied_mutation::content::prepare(
+        let content = crate::authority::commit::phases::applied_mutation::content::prepare(
             execution,
             &runtime,
             root.as_ref(),
@@ -271,6 +273,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .state
             .adopt_sequential_apply(state, execution)
             .map_err(custody::execution_stop)?;
+        self.mutation.content = content.clone();
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,
             &self.prepared.selected_branch_state,
@@ -289,6 +292,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             plan: recorded.unwrap_or(plan),
             records,
             delta_state,
+            content,
             local_keys,
             created,
         })
@@ -300,6 +304,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         delta_state: &WorkingState,
+        content: &crate::content::publication::ContentPublication,
         records: &[RecordRef],
         input: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
@@ -310,6 +315,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.identity,
             self.applied_parts() as u64,
             delta_state,
+            content,
             self.mutation.candidate_symbols(),
             records,
             self.aggregate_read(execution)?,

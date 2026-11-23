@@ -11,10 +11,12 @@ pub(crate) fn prepare(
     changed: &[crate::transactions::data::RecordRef],
     version: crate::identity::data::VersionId,
     source: Option<&crate::content::ContentDirectory>,
-) -> Result<crate::content::ContentPublication, MutationApplyDenial> {
-    let mut publication =
-        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
-            crate::content::prepare_publication(
+) -> Result<crate::content::publication::ContentPublication, MutationApplyDenial> {
+    let mut publication = crate::execution::content_stage::run_commit_stage(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        || {
+            crate::content::publication::prepare_publication(
                 execution,
                 before,
                 schema.registry(),
@@ -24,10 +26,11 @@ pub(crate) fn prepare(
                 version,
                 source,
             )
-        })
-        .map_err(crate::content::commit_denial)?;
+        },
+    )
+    .map_err(crate::content::publication::commit_denial)?;
     publication
         .bind_schema(schema)
-        .map_err(crate::content::commit_denial)?;
+        .map_err(crate::content::publication::commit_denial)?;
     Ok(publication)
 }

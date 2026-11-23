@@ -33,7 +33,9 @@ impl OpaqueCapturedCheckpointSubject {
         let size = std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::new::<CapturedMembers>())
             .map_err(|_| {
-                Denial::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+                Denial::Request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+                )
             })?
             .0
             .pad_to_align()

@@ -9,13 +9,13 @@ mod history;
 mod indexing;
 mod lineage;
 mod lineage_identity;
-mod owned_state;
 mod publication;
 mod publication_diagnostics;
 mod record_identity;
 mod schema_contract_runtime;
-mod services;
-mod storage;
+pub(crate) mod services;
+pub(crate) mod storage;
+mod storage_lifecycle;
 mod visibility;
 
 pub(crate) trait RuntimeSubsystem: Sized {
@@ -25,6 +25,7 @@ pub(crate) trait RuntimeSubsystem: Sized {
     fn fork(&self) -> Self;
 }
 
+pub(crate) use crate::storage::substrate::owned_state::RuntimeOwnedState;
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::{
     DurabilitySubsystem, RelationalCheckpointManifestPublication,
@@ -62,7 +63,6 @@ pub(crate) use lineage::{
     ResidentLineageNode, ValidatedLineageEventBatch,
 };
 pub(crate) use lineage_identity::LineageIdentityAllocator;
-pub(crate) use owned_state::RuntimeOwnedState;
 pub(crate) use publication::PublicationSubsystem;
 pub(crate) use publication_diagnostics::{
     RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,

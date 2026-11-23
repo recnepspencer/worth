@@ -1,11 +1,12 @@
 //! Capture exact field content from its immutable original basis.
 use super::{
-    control, NativeContentSourceView, RelationalContentDenial as Denial, RelationalContentFrame,
+    control, source::NativeContentSourceView, RelationalContentDenial as Denial,
+    RelationalContentFrame,
 };
 use crate::identity::data::{EntityId, KindId};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-impl crate::branch::AdmittedRelationalBranchBasis {
+impl crate::branch::basis::AdmittedRelationalBranchBasis {
     /// Capture the content of an actual field from this immutable original basis.
     pub fn retain_field_content(
         &self,
@@ -16,7 +17,8 @@ impl crate::branch::AdmittedRelationalBranchBasis {
         expected: worth_foundational::facade::ContentRefId,
     ) -> Result<RelationalContentFrame, Denial> {
         use crate::storage::overlay::PartitionAccess;
-        let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(self);
+        let selected =
+            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(self);
         selected
             .demand_full_partition(execution, row.partition_id)
             .map_err(|cause| match cause {
@@ -29,27 +31,26 @@ impl crate::branch::AdmittedRelationalBranchBasis {
                 crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
                     cause,
                 ) => Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::StorageUnavailable(cause),
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(cause),
                 ),
             })?;
-        let view = crate::validation::engine::state_view::InvariantStateView::new(
-            &selected,
-            self.observation().version_id(),
-        );
+        use crate::storage::overlay::record_observation::observe_record;
+        use crate::transactions::data::primitives::RecordRef;
         control::run(execution, |control| {
             control.checkpoint(128)?;
-            let metadata = view
-                .entity_metadata(row)
-                .ok_or(Denial::EncodingInconsistency)?;
-            if metadata.kind_id != kind {
+            let observation = observe_record(
+                &selected,
+                &RecordRef::Entity(row),
+                self.observation().version_id(),
+            )
+            .ok_or(Denial::EncodingInconsistency)?;
+            if observation.kind != kind {
                 return Err(Denial::EncodingInconsistency);
             }
             let [key] = locator.field_path().fields() else {
                 return Err(Denial::FormatBindingMissing);
             };
-            let state = view
-                .entity_aspect_state(row)
-                .ok_or(Denial::EncodingInconsistency)?;
+            let state = observation.aspects.ok_or(Denial::EncodingInconsistency)?;
             let aspect_work = (u64::from(usize::BITS - state.aspects().len().leading_zeros()) + 1)
                 .checked_mul(locator.aspect().aspect_key().as_str().len() as u64)
                 .ok_or(Denial::ArithmeticOverflow)?;

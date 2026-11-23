@@ -8,8 +8,8 @@ use crate::merge::data::{
     MergeConflictClassification, RelationConflictPropagation, TopologyRegionConflictReason,
     VisibleMergeRecord,
 };
-use crate::storage::data::RelationalReadView;
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(super) fn refine_relation_topology_conflicts(
     runtime: &crate::runtime::RelationalRuntime,

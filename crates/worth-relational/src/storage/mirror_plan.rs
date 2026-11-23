@@ -1,5 +1,5 @@
 //! Complete resident mirror publication, prepared before any durable effect.
-use crate::runtime::ResidentMirrorTarget;
+use crate::runtime::state::subsystems::storage::ResidentMirrorTarget;
 use crate::storage::overlay::{
     EntityWorkingSetLayout, PartitionCloneMode, PartitionMutationJournal, PartitionState,
 };

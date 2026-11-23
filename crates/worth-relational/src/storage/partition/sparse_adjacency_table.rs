@@ -16,7 +16,8 @@ impl SparseAdjacencyTable {
         slot: usize,
         policy: &AdjacencyPolicy,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<&mut AdjacencySet, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<&mut AdjacencySet, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if !self.entries.contains_key(&slot) {
             self.entries
                 .insert_for_request(slot, AdjacencySet::new(policy), request)?;
@@ -29,7 +30,7 @@ impl SparseAdjacencyTable {
         slot: usize,
         policy: &AdjacencyPolicy,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.entries
             .insert_for_request(slot, AdjacencySet::new(policy), request)?;
         Ok(())
@@ -38,7 +39,10 @@ impl SparseAdjacencyTable {
         &mut self,
         slot: usize,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<&mut AdjacencySet>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<&mut AdjacencySet>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.entries.get_mut_for_request(&slot, request)
     }
 

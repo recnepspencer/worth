@@ -2,7 +2,7 @@
 mod application;
 pub use application::apply_change;
 mod change;
-mod construction;
+pub(crate) mod partition_records;
 pub(crate) mod reconstruction;
 pub(crate) mod routes;
 mod work;

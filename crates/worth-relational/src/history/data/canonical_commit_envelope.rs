@@ -169,7 +169,7 @@ impl CanonicalCommitEnvelope {
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelopeBody {
-    pub(crate) content: crate::content::ContentPublication,
+    pub(crate) content: crate::content::publication::ContentPublication,
     pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
@@ -367,12 +367,6 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn published_lineage_mut_for_test(&mut self) -> &mut PublishedLineageArtifact {
         &mut self.lineage
     }
-    #[cfg(test)]
-    pub(crate) fn rebuild_lineage_basis_for_test(&mut self) {
-        let events = crate::lineage::data::FinalizedLineageEventBatch::new(self.lineage.lineage_events().to_vec());
-        let decisions = crate::lineage::data::LineageDecisionLog::new(self.lineage.lineage_decision_log().to_vec());
-        self.lineage = crate::lineage::data::LineageFinalizationArtifact::new(self.branch_context.clone(), events, decisions).publish();
-    }
 }
 
 fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
@@ -396,3 +390,6 @@ pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod semantic_patch_fixture;
+
+#[cfg(test)]
+mod lineage_rebuild_test;

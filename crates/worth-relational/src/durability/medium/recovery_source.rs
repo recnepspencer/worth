@@ -1,4 +1,4 @@
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalNativeCheckpoint;

@@ -182,8 +182,14 @@ pub(super) fn prepare_publication_phase(
             )?;
         if lineage_deferred {
             (lineage_nodes, relation_lineages) = prepared_phase::complete_deferred_lineage(
-                execution, runtime, &mut working_state, &mut canonical_commit_envelope,
-                &changed_records, created_entities, created_relations, naming_plan,
+                execution,
+                runtime,
+                &mut working_state,
+                &mut canonical_commit_envelope,
+                &changed_records,
+                created_entities,
+                created_relations,
+                naming_plan,
             )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
@@ -329,10 +335,8 @@ pub(super) fn prepare_publication_phase(
             runtime.commit_work_budget.as_ref(),
             || {
                 runtime
-                    .mirror_residency
-                    .prepare_publication(
+                    .prepare_mirror_publication(
                         execution,
-                        &runtime.services.symbols,
                         &branch_id,
                         prepared_history.root(),
                         &symbol_publication,

@@ -1,6 +1,6 @@
 //! The original request pays each actual copied adjacency index path.
 use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionRequest;
 
 impl AdjacencySet {
@@ -9,7 +9,7 @@ impl AdjacencySet {
         kind: KindId,
         relation: RelationId,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let kinds = self
             .entries_mut()
             .historical_by_kind

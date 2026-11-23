@@ -18,8 +18,8 @@ use crate::merge::data::{
     IdentityMatchClass, IdentityResolutionReason, MergeConflictClass, MergeConflictClassification,
     RelationConflictPropagation, VisibleMergeRecord,
 };
-use crate::storage::data::RelationalReadView;
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(super) fn classify_candidate(
     runtime: &crate::runtime::RelationalRuntime,

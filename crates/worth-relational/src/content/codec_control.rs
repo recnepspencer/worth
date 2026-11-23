@@ -6,12 +6,11 @@ use crate::validation::custom_rule::work_meter::native_rule_debit::{
 use crate::validation::data::structural_walk_denial::StructuralWalkDenialKind;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 #[cfg(test)]
-#[path = "control/tests.rs"]
 mod tests;
 
 // Only the SDK's generic nested-stop sentinel may yield to a classified inner
 // refusal. A concrete original-request stop is authoritative at final handoff.
-pub(super) fn final_denial(inner: Option<Denial>, outer: Denial) -> Denial {
+pub(crate) fn final_denial(inner: Option<Denial>, outer: Denial) -> Denial {
     match (inner, outer) {
         (
             Some(inner),

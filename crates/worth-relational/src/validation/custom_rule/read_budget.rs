@@ -1,4 +1,7 @@
 //! Borrowed consumption of the structural reader's original request and payer.
+use crate::content::codec_control::RelationalContentControl;
+use crate::content::denial::RelationalContentDenial as Denial;
+
 use super::{
     CustomInvariantWorkMeter, CustomPreparationStop, StructuralReadError, StructuralWalkDenialKind,
 };
@@ -104,5 +107,60 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
 
     pub(crate) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
         self.native_debit().refusal(error)
+    }
+}
+
+impl CustomInvariantReadBudget<'_> {
+    /// Certify the exact installed contract under this actual Source allowance.
+    pub fn require_content_contract(
+        &self,
+        frame: &crate::content::RelationalContentFrame,
+        name: &str,
+        version: u32,
+        maximum_frame_bytes: usize,
+    ) -> Result<(), crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial>
+    {
+        run_source(self, |control| {
+            frame.require_contract_controlled(control, name, version, maximum_frame_bytes)
+        })
+    }
+}
+
+/// Keep the exact Source refusal outside codec vocabulary.
+fn run_source<T>(
+    budget: &CustomInvariantReadBudget<'_>,
+    operation: impl FnOnce(&mut RelationalContentControl<'_, '_, '_>) -> Result<T, Denial>,
+) -> Result<T, crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial> {
+    use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+    use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Read;
+    let (result, source_stop) = crate::content::control::run_codec(
+        &budget.execution(),
+        Some(budget.native_debit()),
+        operation,
+    );
+    if let Some(cause) = source_stop {
+        return Err(DerivedRelationReadDenial::Structural(cause).into());
+    }
+    result.map_err(|cause| match cause {
+        Denial::Execution(cause) => Read::Source(DerivedRelationReadDenial::Request(cause)),
+        cause => Read::Content(cause),
+    })
+}
+
+impl CustomInvariantReadBudget<'_> {
+    pub(crate) fn read_field_content(
+        &self,
+        view: &crate::content::source::NativeContentSourceView,
+        row: crate::identity::data::EntityId,
+        kind: crate::identity::data::KindId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+        value: Option<&worth_foundational::facade::AspectValue>,
+    ) -> Result<
+        Option<crate::content::RelationalContentFrame>,
+        crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial,
+    > {
+        run_source(self, |control| {
+            view.read(control, row, kind, locator, value)
+        })
     }
 }

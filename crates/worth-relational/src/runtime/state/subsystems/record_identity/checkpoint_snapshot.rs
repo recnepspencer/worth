@@ -21,7 +21,8 @@ impl RecordIdentitySubsystem {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<DurableRecordIdentityState, RelationalRecoveryStop> {
-        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::request_custody::check_request(request)
+            .map_err(RelationalRecoveryStop::Request)?;
         let state = self.lock();
         let bytes = DurableRecordIdentityState::control_storage_bytes()
             .and_then(|bytes| {
@@ -142,7 +143,8 @@ fn copy_rows<T>(
     let mut output = Vec::with_capacity(rows.len());
     for row in rows {
         if let Some(request) = request {
-            crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+            crate::execution::request_custody::check_request(request)
+                .map_err(RelationalRecoveryStop::Request)?;
         }
         output.push(row);
     }

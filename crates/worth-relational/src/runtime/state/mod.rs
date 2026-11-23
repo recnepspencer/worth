@@ -13,7 +13,7 @@ pub use subsystems::{
     RelationalIndexDefinitionPreparationDenial,
 };
 mod runtime_state;
-mod subsystems;
+pub(crate) mod subsystems;
 
 pub use runtime_state::RelationalRuntime;
 pub(crate) use runtime_state::RelationalRuntimeState;
@@ -48,8 +48,7 @@ pub(crate) use subsystems::{
     DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
     IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageNamingBasisBinding, LineageState,
-    LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedGenerationBatch, PreparedIndexBasisSelection,

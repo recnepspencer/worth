@@ -1,6 +1,7 @@
 //! Owned-read control and storage failures remain typed and nonserialized.
 use crate::{
-    execution::RelationalExecutionDenialCause, storage::data::RelationalStorageUnavailableCause,
+    execution::denial_cause::RelationalExecutionDenialCause,
+    storage::data::RelationalStorageUnavailableCause,
 };
 #[derive(Debug)]
 pub enum RelationalDurableOwnedReadRefusal {

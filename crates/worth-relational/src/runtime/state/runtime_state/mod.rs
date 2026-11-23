@@ -22,6 +22,7 @@ mod preparation_runtime;
 mod prepared_close;
 mod publication_close_custody;
 mod publication_lifecycle;
+mod record_allocation_frontier;
 pub use publication_close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,

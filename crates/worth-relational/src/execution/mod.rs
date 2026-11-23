@@ -40,3 +40,8 @@ pub use request_work::observation::RelationalWorkAccountRecorderForTest;
 #[cfg(test)]
 #[path = "../tests/support/runtime.rs"]
 pub(crate) mod test_authority;
+
+pub(crate) mod content_stage;
+
+#[cfg(test)]
+pub(crate) mod test_policy;

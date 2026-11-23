@@ -5,7 +5,7 @@ use crate::durability::source_initial_inputs::RelationalInitialInputsPublication
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalInitialInputsPublicationStop {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Refused(RelationalDurablePublicationRefusal),
     Unresolved(RelationalDurabilityUnresolved),
 }

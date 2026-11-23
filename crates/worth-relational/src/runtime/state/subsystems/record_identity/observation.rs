@@ -1,7 +1,7 @@
 //! Opt-in, bounded, runtime-bound reservation evidence on the observing thread.
 use super::*;
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak as LocalWeak},

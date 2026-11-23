@@ -52,7 +52,7 @@ impl HistorySubsystem {
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
         execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,

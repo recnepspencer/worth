@@ -63,7 +63,9 @@ impl CheckpointPublication {
         let size = std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::new::<Self>())
             .map_err(|_| {
-                Capture::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+                Capture::Request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+                )
             })?
             .0
             .pad_to_align()

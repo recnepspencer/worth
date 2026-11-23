@@ -85,7 +85,7 @@ impl EntityExtra {
 
     pub(crate) fn empty_for_request(
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         funding::copy(execution, None, |state, memory| Self {
             structural_fingerprint: None,
             lineage_id: None,
@@ -127,7 +127,7 @@ impl EntityExtra {
     pub(crate) fn copy_for_request(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         funding::copy(
             execution,
             self.authoritative_aspect_state(),
@@ -161,7 +161,7 @@ impl RelationExtra {
 
     pub(crate) fn empty_for_request(
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         funding::copy(execution, None, |state, memory| Self {
             endpoints: None,
             authoritative_aspect_state: state,
@@ -198,7 +198,7 @@ impl RelationExtra {
     pub(crate) fn copy_for_request(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         funding::copy(
             execution,
             self.authoritative_aspect_state(),

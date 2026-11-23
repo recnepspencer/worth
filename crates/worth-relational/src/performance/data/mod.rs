@@ -3,7 +3,7 @@ mod complexity_contract;
 #[cfg(test)]
 mod complexity_contract_inventory;
 mod relational_candidate_input_counters;
-mod runtime_complexity_counters;
+pub(crate) mod runtime_complexity_counters;
 
 pub(crate) use candidate_input_counts::CandidateInputCounts;
 pub use complexity_contract::{ComplexityContract, ComplexityStatus};

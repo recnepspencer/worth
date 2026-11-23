@@ -43,7 +43,7 @@ pub(crate) struct PartitionEdition {
 impl PartitionEdition {
     pub(crate) fn with_symbol_admission<'read>(
         &'read self,
-        symbols: &'read crate::runtime::RuntimeSymbolTable,
+        symbols: &'read crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> impl PartitionAccess + 'read {
         symbol_read::SymbolAdmittedEdition {
             edition: self,
@@ -54,7 +54,7 @@ impl PartitionEdition {
     pub(crate) fn demand_partition_with_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         if let Some(lease) = self.demand_partition(execution, id)? {
@@ -108,7 +108,7 @@ impl PartitionEdition {
     pub(crate) fn peek_head_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionHeadProbe<'_> {
         use crate::storage::residency::PartitionHeadProbe as Probe;
         match self.partitions.get(&id) {
@@ -124,7 +124,7 @@ impl PartitionEdition {
     pub(crate) fn peek_full_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionProbe<'_> {
         use crate::storage::residency::PartitionProbe as Probe;
         match self.partitions.get(&id) {
@@ -194,7 +194,7 @@ impl PartitionEdition {
         Option<RelationalResidencyLease<Full>>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         self.partitions
             .get(&id)
@@ -215,7 +215,7 @@ impl PartitionEdition {
         Option<RelationalResidencyLease<crate::storage::residency::Head>>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         self.partitions
             .get(&id)
@@ -231,11 +231,11 @@ impl PartitionEdition {
     pub(crate) fn demand_selected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         ids: impl IntoIterator<Item = PartitionId>,
     ) -> Result<ResidentPartitionEdition, crate::storage::residency::RelationalResidencyDemandFailure>
     {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         let mut leases = BTreeMap::new();
         for id in ids {
@@ -251,10 +251,10 @@ impl PartitionEdition {
     pub(crate) fn demand_all(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<ResidentPartitionEdition, crate::storage::residency::RelationalResidencyDemandFailure>
     {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         let mut leases = BTreeMap::new();
         for (id, region) in self.cells() {
@@ -320,7 +320,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: crate::identity::data::PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         if let Some(region) = self.partitions.get(&id) {
             region.demand_head_cached(

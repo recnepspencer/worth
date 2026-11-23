@@ -39,7 +39,7 @@ pub(super) fn prepare(
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
     envelope: Arc<CanonicalCommitEnvelope>,
-    content: &crate::content::ContentPublication,
+    content: &crate::content::publication::ContentPublication,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &crate::runtime::RuntimeSymbolTable,
     execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
@@ -60,7 +60,7 @@ pub(super) fn prepare(
                 registry,
                 execution_contracts.as_ref(),
             )?;
-            let change = crate::storage::substrate::maintenance::CommitChange::from_publication(
+            let change = crate::branch::commit_change::build_commit_change(
                 execution,
                 previous.map(Arc::as_ref),
                 published_delta,
@@ -304,9 +304,11 @@ impl PreparedRootSchema {
                 cost.new_authoritative_bytes = cost
                     .new_authoritative_bytes
                     .checked_add(authoritative_bytes)
-                    .ok_or(RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
-                        crate::identity::data::PartitionId::main(),
-                    ))?;
+                    .ok_or(
+                        RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
+                            crate::identity::data::PartitionId::main(),
+                        ),
+                    )?;
             }
         }
         Ok(cost)

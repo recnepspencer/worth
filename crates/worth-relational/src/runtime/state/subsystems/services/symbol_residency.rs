@@ -17,9 +17,8 @@ mod admission;
 mod member_export;
 mod selected_directory;
 mod source_retirement;
+use crate::storage::data::SymbolPageSelection;
 use source_retirement::SymbolPageState;
-mod page_shape;
-use page_shape::SymbolPageSelection;
 
 #[cfg(test)]
 mod tests;

@@ -132,7 +132,7 @@ fn prepare_versioned_publication(
     sequence: PublicationSequence,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
     original_artifact: Option<&RelationalCommitArtifact>,
-    recovered_content: Option<&crate::content::ContentPublication>,
+    recovered_content: Option<&crate::content::publication::ContentPublication>,
 ) -> Result<crate::runtime::PreparedVersionedArtifactPublication, PublicationPreparationDenial> {
     let validated = runtime.validate_publication_request(PublicationRequest {
         commit_id,

@@ -31,7 +31,7 @@ pub(crate) use codec_retirement_closure::{
     OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
-mod canonical_record_allocation;
+pub(crate) mod canonical_record_allocation;
 mod committed_version;
 pub(crate) mod merge_branch_basis;
 #[cfg(test)]

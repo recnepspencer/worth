@@ -140,7 +140,7 @@ impl RuntimeSymbolTable {
         region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
         publication: &crate::storage::residency::SymbolPublicationKey,
     ) -> Result<bool, crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         Ok(self.update(|state| {
             if !state.admissions.contains_key(&publication.identity()) {

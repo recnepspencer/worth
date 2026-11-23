@@ -148,7 +148,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         };
         Ok(match scope {
             InspectionScope::Current => {
-                crate::storage::partition::adjacency_queries::all_relations_for_entity_from_state(
+                crate::storage::access::neighborhood::all_relations_for_entity_from_state(
                     self.runtime,
                     resident,
                     entity_id,

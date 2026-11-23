@@ -139,6 +139,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.advance_pin(
             execution,
             &applied.delta_state,
+            &applied.content,
             &latest.records,
             &latest.input,
         )

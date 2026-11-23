@@ -4,8 +4,6 @@ mod retention;
 mod retention_step;
 pub use retention_step::RelationalRetentionPassStop;
 
-pub(crate) use publication::{PreparedMirrorPublication, RelationalPublishedPartitionDelta};
-
 use crate::runtime::RelationalRuntime;
 
 pub struct StorageAuthority<'runtime> {

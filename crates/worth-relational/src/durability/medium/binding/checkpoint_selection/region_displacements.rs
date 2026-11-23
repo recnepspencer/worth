@@ -19,7 +19,9 @@ impl RegionDisplacements {
     ) -> Result<Self, Denial> {
         let bytes = std::alloc::Layout::array::<RegionDisplacement>(count)
             .map_err(|_| {
-                Denial::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+                Denial::Request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+                )
             })?
             .size();
         let memory = request

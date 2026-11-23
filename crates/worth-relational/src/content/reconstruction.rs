@@ -8,12 +8,12 @@ pub(super) fn visit_records(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &dyn crate::storage::overlay::CurrentPartitionAccess,
     callback: &mut dyn FnMut(
-        &crate::transactions::data::RecordRef,
+        &crate::transactions::data::primitives::RecordRef,
     ) -> Result<(), super::RelationalContentDenial>,
 ) -> Result<(), super::RelationalContentDenial> {
     use super::RelationalContentDenial as ContentDenial;
     use crate::identity::data::{EntityId, RelationId};
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
     super::control::run(execution, |control| {
         for partition_id in state.partition_ids_iter() {
             control.checkpoint(1)?;

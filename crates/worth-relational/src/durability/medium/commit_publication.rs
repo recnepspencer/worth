@@ -38,7 +38,7 @@ impl RelationalCommitPublication {
     /// another admitted publication for the prepared route's commit.
     pub(crate) fn publish(
         positioned: Arc<PositionedCanonicalCommit>,
-        roots: &crate::branch::RelationalBranchRootDescriptor,
+        roots: &crate::branch::target::RelationalBranchRootDescriptor,
         medium: Option<&RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         original: Option<

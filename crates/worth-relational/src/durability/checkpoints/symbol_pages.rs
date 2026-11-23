@@ -9,8 +9,6 @@ use crate::storage::data::{
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::SymbolTableSnapshot;
 
-pub(crate) const SYMBOL_PAGE_CAPACITY: usize = 256;
-
 pub(crate) fn readmit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     bytes: &[u8],

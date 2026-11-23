@@ -87,6 +87,7 @@ impl AppliedCoreCustody {
     ) -> AppliedDraftCustody {
         let AppliedMutationCore {
             state,
+            content,
             outcome,
             identities,
             aggregate,
@@ -98,6 +99,7 @@ impl AppliedCoreCustody {
         AppliedDraftCustody {
             draft: Some(AppliedMutationDraft {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,
@@ -173,6 +175,7 @@ impl Drop for AppliedDraftCustody {
             }
             let AppliedMutationDraft {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,
@@ -180,6 +183,7 @@ impl Drop for AppliedDraftCustody {
             } = draft;
             owner.return_core(AppliedMutationCore {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,

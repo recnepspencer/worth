@@ -13,7 +13,7 @@ pub(super) trait PublicationPreparationRuntime {
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>;
 
@@ -35,7 +35,7 @@ impl PublicationPreparationRuntime for RelationalRuntime {
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
     {
@@ -82,7 +82,7 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
         selected_branch_state: &SelectedRelationalBranchState,
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
     {

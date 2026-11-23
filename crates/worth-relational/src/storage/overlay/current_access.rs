@@ -22,7 +22,7 @@ pub(crate) trait CurrentPartitionAccess: Sync {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)
     }
     fn has_read_misses(&self) -> bool {

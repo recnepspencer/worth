@@ -210,7 +210,7 @@ mod tests {
             .partitions
             .demand_resident_edit(
                 &execution,
-                &runtime.services.instrumentation,
+                &runtime.services.instrumentation.complexity_counters,
                 &runtime.services.symbols,
             )
             .unwrap();

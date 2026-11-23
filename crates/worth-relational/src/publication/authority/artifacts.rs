@@ -1,4 +1,4 @@
-use crate::history::data::RelationalCommitReceipt;
+use crate::history::data::commit_receipt::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
 use crate::snapshots::data::SnapshotHandle;
 

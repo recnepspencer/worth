@@ -8,7 +8,7 @@ pub(super) struct FinalizationInput<'a> {
     pub(super) commit_reference: &'a crate::history::data::RelationalCommitReceipt,
     pub(super) branch_id: &'a crate::history::data::BranchId,
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
-    pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
+    pub(super) artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     pub(super) patch_position: crate::publication::patch::data::PatchStreamPosition,
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) phase_timing:
@@ -138,7 +138,7 @@ fn compact_durability(
 fn publish_artifacts(
     runtime: &crate::runtime::RelationalRuntime,
     version_id: crate::identity::data::VersionId,
-    artifacts: crate::storage::overlay::PublicationArtifacts,
+    artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     patch_position: crate::publication::patch::data::PatchStreamPosition,
     basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     slot: crate::runtime::PublishedSnapshotSlotReservation,

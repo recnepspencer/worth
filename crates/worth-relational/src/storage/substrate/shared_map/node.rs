@@ -1,5 +1,5 @@
 //! AVL topology owns its node allocation; value carriers retain separate payloads.
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::storage::substrate::{StorageAllocation as Arc, StoredValue};
 use std::cmp::Ordering;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};

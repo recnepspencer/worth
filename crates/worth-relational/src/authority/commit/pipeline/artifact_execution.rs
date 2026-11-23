@@ -96,6 +96,7 @@ pub(super) fn assemble_commit_artifacts(
             selected_branch_state,
             public_structural_summary,
             mut working_state,
+            content,
             invariant_executions,
             version_id,
             effect,
@@ -121,6 +122,7 @@ pub(super) fn assemble_commit_artifacts(
             ArtifactAssemblyInput {
                 defer_lineage: lineage_deferred,
                 working_state: &mut working_state,
+                content,
                 selected_branch_state: &selected_branch_state,
                 effect,
                 commit_reference: &history.commit_reference,

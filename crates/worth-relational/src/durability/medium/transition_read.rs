@@ -1,4 +1,4 @@
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactFrameRefusal;
 use std::sync::Arc;
 

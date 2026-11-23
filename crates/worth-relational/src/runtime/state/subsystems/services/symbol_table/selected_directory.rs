@@ -9,7 +9,7 @@ impl RuntimeSymbolTable {
         directory: &RelationalCheckpointDirectory,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Stop> {
-        crate::execution::check_request(request).map_err(Stop::Request)?;
+        crate::execution::request_custody::check_request(request).map_err(Stop::Request)?;
         let bytes = arc_size::<RwLock<RuntimeSymbolState>>()?
             .checked_add(arc_size::<
                 RwLock<Option<Arc<super::super::symbol_residency::RuntimeSymbolResidency>>>,
@@ -22,7 +22,7 @@ impl RuntimeSymbolTable {
             })
             .and_then(|n| n.checked_add(arc_size::<ExecutionMemoryReservation>().ok()?))
             .ok_or(Stop::Request(
-                crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
             ))?;
         let memory = request
             .reserve_retained_memory(bytes as u64)
@@ -53,6 +53,8 @@ fn arc_size<T>() -> Result<usize, Stop> {
         .extend(std::alloc::Layout::new::<T>())
         .map(|value| value.0.pad_to_align().size())
         .map_err(|_| {
-            Stop::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+            Stop::Request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+            )
         })
 }

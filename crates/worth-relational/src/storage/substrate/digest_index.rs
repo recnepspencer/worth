@@ -4,7 +4,7 @@
 pub enum DigestIndexError {
     OpaqueBranch,
     NonCanonicalKeys,
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};

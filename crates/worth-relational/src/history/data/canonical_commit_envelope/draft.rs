@@ -30,7 +30,7 @@ impl std::ops::DerefMut for CanonicalCommitEnvelopeDraft {
 }
 impl CanonicalCommitEnvelopeDraft {
     pub(crate) fn new(
-        content: crate::content::ContentPublication,
+        content: crate::content::publication::ContentPublication,
         index_definition_delta: super::CanonicalIndexDefinitionDelta,
         commit: RelationalCommitReceipt,
         branch_context: BranchId,

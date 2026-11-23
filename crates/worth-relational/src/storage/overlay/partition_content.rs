@@ -19,12 +19,12 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PartitionContentDigestError {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     UnresolvedContentSymbol(Symbol),
     InvalidHistoryCoverage,
     AllocationAccountingOverflow,
     Encoding,
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 impl From<crate::storage::substrate::DigestIndexError> for PartitionContentDigestError {

@@ -1,11 +1,14 @@
 """Source fixtures for the Relational DAG ratchet."""
+from collections import Counter
 from pathlib import Path
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_relational_dag import Audit, SOURCE, compare, facade_failures, totals
+from check_relational_dag import (
+    Audit, SOURCE, compare, facade_failures, ordinary_storage_totals, totals,
+)
 
 
 class RelationalDagTests(unittest.TestCase):
@@ -87,6 +90,25 @@ class RelationalDagTests(unittest.TestCase):
         self.write('low.rs', '/* owner file */ #[cfg(test)] mod test_impl;')
         self.write('low/test_impl.rs', 'use crate::high::Other as Alias; impl Alias {}')
         self.assertEqual(totals(self.audit().ledger['inherent_impl']), {'low -> high': 1})
+
+    def test_ordinary_storage_ratchet_counts_both_sides_of_inherent_coherence(self):
+        references = {
+            'storage -> runtime': Counter({
+                ((SOURCE / 'storage/residency/cell.rs').as_posix(), 'runtime::Payer'): 3,
+                ((SOURCE / 'storage/partition/write.rs').as_posix(), 'runtime::Payer'): 1,
+            }),
+            'runtime -> storage': Counter({
+                ((SOURCE / 'runtime/edit.rs').as_posix(), 'storage::Partition'): 1,
+            }),
+            'storage -> durability': Counter({
+                ((SOURCE / 'storage/partition/write.rs').as_posix(), 'durability::Frame'): 1,
+            }),
+        }
+        self.assertEqual(
+            ordinary_storage_totals('production_explicit', references), {'storage -> runtime': 1})
+        self.assertEqual(
+            ordinary_storage_totals('inherent_impl', references),
+            {'storage -> runtime': 1, 'runtime -> storage': 1})
 
     def test_test_only_scope_including_associated_items_and_nested_use(self):
         self.write('lib.rs', '''

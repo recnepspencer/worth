@@ -8,8 +8,8 @@ use crate::merge::data::{
     SchemaDeclaredCorrespondenceValidationSummary, ValidatedSchemaDeclaredCorrespondence,
     VisibleMergeRecord, VisibleMergeRecordKind,
 };
-use crate::storage::data::RelationalReadView;
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(crate) fn source_visible_records(
     source_view: &RelationalReadView,

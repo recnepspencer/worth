@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::history::data::{
+use crate::history::data::canonical_record_allocation::{
     CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
-use crate::transactions::data::RecordAllocationDenial;
+use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
 
 use super::record_ref::{record_partition, record_slot};
 use super::reservation::{RecordSlotReservation, ReservationOrigin};

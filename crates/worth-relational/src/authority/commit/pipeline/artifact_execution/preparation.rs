@@ -31,7 +31,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationPreparation {
 }
 
 pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
-    artifacts: crate::storage::overlay::PublicationArtifacts,
+    artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     changed_records: Vec<RecordRef>,
     canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
@@ -47,6 +47,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
 pub(super) struct PublicationPreparationInput<'a> {
     pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
     pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
@@ -77,6 +78,7 @@ pub(super) fn prepare_publication_artifacts(
     let PublicationPreparationInput {
         defer_lineage,
         working_state,
+        content,
         selected_branch_state,
         patch,
         commit_reference,
@@ -110,9 +112,11 @@ pub(super) fn prepare_publication_artifacts(
             .retained_schema_authority()
             .registry_arc(),
     };
-    working_state.content =
-        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
-            working_state.content.prepare_final_fields(
+    let content = crate::execution::content_stage::run_commit_stage(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        || {
+            content.prepare_final_fields(
                 execution,
                 selected_branch_state.state().root(),
                 &content_schema,
@@ -120,8 +124,9 @@ pub(super) fn prepare_publication_artifacts(
                 &publication.changed_records,
                 version_id,
             )
-        })
-        .map_err(crate::content::commit_denial)?;
+        },
+    )
+    .map_err(crate::content::publication::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
         runtime,
         &catalog,
@@ -163,6 +168,7 @@ pub(super) fn prepare_publication_artifacts(
         execution,
         runtime,
         PublicationAuthorityInput {
+            content,
             index_definition_delta,
             defer_lineage,
             working_state,
@@ -304,7 +310,7 @@ impl PublicationFinalizeArtifacts {
     pub(in crate::authority::commit::pipeline) fn into_parts(
         self,
     ) -> (
-        crate::storage::overlay::PublicationArtifacts,
+        crate::publication::authority::artifacts::PublicationArtifacts,
         Vec<RecordRef>,
         crate::history::data::CanonicalCommitEnvelopeDraft,
         Vec<crate::authority::mutation::AdjacencyDelta>,

@@ -23,7 +23,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
         crate::identity::data::LineageId,
     )>,
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
-        crate::storage::overlay::PublicationArtifacts,
+        crate::publication::authority::artifacts::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
         Vec<crate::transactions::data::RecordRef>,
     pub(in crate::authority::commit::pipeline::publication_execution) version_id: VersionId,
@@ -58,7 +58,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
         crate::identity::data::LineageId,
     )>,
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
-        crate::storage::overlay::PublicationArtifacts,
+        crate::publication::authority::artifacts::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
         Vec<crate::transactions::data::RecordRef>,
     pub(in crate::authority::commit::pipeline::publication_execution) version_id: VersionId,

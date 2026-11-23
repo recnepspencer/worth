@@ -1,5 +1,5 @@
 use crate::identity::data::PartitionId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn record_partition(record: &RecordRef) -> PartitionId {
     match record {

@@ -1,6 +1,6 @@
 //! The allocator lock spans admission, storage reset and reusable-slot handoff.
 use super::{ReclaimedRecordSlot, RecordIdentityState, RecordIdentitySubsystem};
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
 impl RecordIdentitySubsystem {
     /// The caller holds the actual storage writer. All fallible admission ends

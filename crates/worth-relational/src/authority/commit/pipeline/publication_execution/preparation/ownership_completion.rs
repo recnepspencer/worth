@@ -10,7 +10,7 @@ pub(super) fn complete(
     working: &mut crate::storage::overlay::WorkingState,
     identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     canonical: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
-    artifacts: &mut crate::storage::overlay::PublicationArtifacts,
+    artifacts: &mut crate::publication::authority::artifacts::PublicationArtifacts,
     changed: &mut Vec<crate::transactions::data::RecordRef>,
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
 ) -> Result<

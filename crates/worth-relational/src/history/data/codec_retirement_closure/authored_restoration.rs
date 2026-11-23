@@ -212,7 +212,7 @@ impl RelationalRuntime {
                                         payload.as_ref().and_then(|p| p.state.as_ref()),
                                         &mut content,
                                     )
-                                    .map_err(crate::content::commit_denial)?;
+                                    .map_err(crate::content::publication::commit_denial)?;
                                 charge(context, entities.len()).map_err(failure)?;
                                 let target = entities
                                     .iter()
@@ -262,7 +262,7 @@ impl RelationalRuntime {
                                         payload.as_ref().and_then(|p| p.state.as_ref()),
                                         &mut content,
                                     )
-                                    .map_err(crate::content::commit_denial)?;
+                                    .map_err(crate::content::publication::commit_denial)?;
                                 if basis
                                     .inner
                                     .root

@@ -162,7 +162,7 @@ impl RelationalPreparationHistory {
             .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
         let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
             .map_err(|cause| match cause {
-                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::commit_denial(cause),
+                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::publication::commit_denial(cause),
                 crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
                 crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
                 crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
@@ -224,7 +224,7 @@ impl RelationalPreparationHistory {
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
         execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,

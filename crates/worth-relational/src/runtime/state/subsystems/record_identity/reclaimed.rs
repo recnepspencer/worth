@@ -1,4 +1,4 @@
-use crate::history::data::RecordAllocationClass;
+use crate::history::data::record_allocation_class::RecordAllocationClass;
 use crate::identity::data::PartitionId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

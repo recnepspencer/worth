@@ -8,7 +8,7 @@ use crate::merge::data::{
     MergePolicyProofBoundary, MergePolicyResolutionRecord, PolicyResolvedMergePlan,
 };
 use crate::runtime::RelationalRuntime;
-use crate::storage::data::RelationalReadView;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::contexts::{PolicyBaseReadViewContext, PolicyReadViewContext, PolicyReadViewIndex};
 use super::decisions::{

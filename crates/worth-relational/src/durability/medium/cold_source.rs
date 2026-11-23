@@ -75,7 +75,7 @@ pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
         &self,
         _request: &worth_execution::ExecutionRequest<'_, '_>,
         _original: &(dyn std::any::Any + Send + Sync),
-        _sequence: crate::branch::RelationalBranchTransitionSequence,
+        _sequence: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
         _limit: u64,
     ) -> Result<worth_execution::ExecutionImmutableBytes, super::RelationalDurableOwnedReadRefusal>
     {

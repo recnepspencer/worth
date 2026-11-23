@@ -26,6 +26,7 @@ pub(crate) use basis_registry::{
 mod basis_retention;
 mod canonical_runtime_frame;
 pub(crate) mod checkpoint_visibility;
+mod commit_change;
 mod coordination;
 mod fork;
 mod fork_port;
@@ -75,11 +76,11 @@ pub(crate) use root::{
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
-mod root_selection;
+pub(crate) mod root_selection;
 mod selected_read;
 pub(crate) use selected_read::SelectedRelationalBranchRead;
 mod sharing_cost_cell;
-mod target;
+pub(crate) mod target;
 pub(crate) mod transition;
 pub(crate) mod version;
 

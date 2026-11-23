@@ -1,7 +1,8 @@
 //! A protected source cut is data custody, never publication or Complete authority.
 use super::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::{
-    branch::RelationalBranchTransitionSequence, publication::patch::data::PatchStreamPosition,
+    branch::transition::sequence::RelationalBranchTransitionSequence,
+    publication::patch::data::PatchStreamPosition,
 };
 use std::{
     any::Any,

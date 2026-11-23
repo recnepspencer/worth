@@ -1,10 +1,11 @@
 //! A single immutable projection of canonical commit truth for SDK maintainers.
-use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalDescriptiveTouch};
+use crate::history::data::coordinates::CommitId;
+use crate::history::data::{CanonicalCommitEnvelope, RelationalDescriptiveTouch};
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionMutationJournal;
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -90,5 +91,25 @@ impl CommitChange {
     }
     pub fn retired(&self) -> &[RecordRef] {
         &self.retired
+    }
+}
+
+impl ChangedRecord {
+    pub(crate) fn created_identity(&self) -> Option<&RecordRef> {
+        let after = self.after.as_ref()?;
+        self.before
+            .as_ref()
+            .is_none_or(|before| before.record != after.record)
+            .then_some(&after.record)
+    }
+    pub(crate) fn retired_identity(&self) -> Option<&RecordRef> {
+        let before = self.before.as_ref()?;
+        self.after
+            .as_ref()
+            .is_none_or(|after| {
+                after.record != before.record
+                    || after.retired_at != before.retired_at && after.retired_at.is_some()
+            })
+            .then_some(&before.record)
     }
 }

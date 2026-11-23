@@ -27,7 +27,7 @@ pub(crate) use home_program_transition::{
 mod interruption_counters;
 pub(crate) mod operation_control;
 mod schema_transition_admission;
-mod state;
+pub(crate) mod state;
 pub use state::{
     PreparedRelationalRuntimeClose, RelationalPublicationCompanionCustody,
     RelationalPublicationCustodyHolders, RelationalPublicationRegistryCustody,

@@ -101,6 +101,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         identity: &RelationalMutationProposalIdentity,
         revision: u64,
         state: &WorkingState,
+        content: &crate::content::publication::ContentPublication,
         symbols: &PendingSymbolMeanings,
         changed_records: &[crate::transactions::data::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
@@ -167,6 +168,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                         execution,
                         previous_root,
                         state,
+                        content,
                         &services.symbols,
                     )
                     .map_err(|failure| {

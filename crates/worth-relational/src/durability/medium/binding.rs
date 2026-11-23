@@ -118,7 +118,7 @@ impl RelationalDurableMediumBinding {
     }
     pub(crate) fn read_transition(
         &self,
-        sequence: crate::branch::RelationalBranchTransitionSequence,
+        sequence: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     ) -> Result<RelationalBranchTransitionArtifact, super::RelationalDurableTransitionReadFailure>
     {
         self.state()
@@ -171,7 +171,7 @@ impl RelationalDurableMediumBinding {
     pub(crate) fn publish(
         &self,
         commit: Arc<PositionedCanonicalCommit>,
-        roots: &crate::branch::RelationalBranchRootDescriptor,
+        roots: &crate::branch::target::RelationalBranchRootDescriptor,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurablyCommitted<RelationalDurableCommitReadmission>, RelationalDurableStepStop>
     {
@@ -187,7 +187,7 @@ impl RelationalDurableMediumBinding {
             execution,
         )
         .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
-        crate::execution::check_request(execution).map_err(|cause| {
+        crate::execution::request_custody::check_request(execution).map_err(|cause| {
             refused(RelationalDurablePublicationRefusal::Encoding(
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::Request(cause),
             ))

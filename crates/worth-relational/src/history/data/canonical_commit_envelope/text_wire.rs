@@ -23,7 +23,7 @@ pub(crate) struct CanonicalEnvelopeWire<Symbols> {
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     caller_association: Option<super::super::RelationalCallerAssociation>,
-    content: crate::content::ContentPublication,
+    content: crate::content::publication::ContentPublication,
     required_output_codec_retirements:
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]

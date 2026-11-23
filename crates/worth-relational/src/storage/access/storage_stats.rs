@@ -44,7 +44,7 @@ pub(crate) fn storage_stats(
     runtime: &RelationalRuntime,
     edition: &crate::runtime::ResidentPartitionEdition,
 ) -> StorageStats {
-    let chunked_summary = crate::storage::partition::chunks::chunked_storage_summary(
+    let chunked_summary = crate::storage::access::chunk_inspection::chunked_storage_summary(
         runtime,
         edition,
         runtime.current_version_id(),

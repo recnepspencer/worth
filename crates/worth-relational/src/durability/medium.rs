@@ -145,7 +145,7 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// bound the admitted artifact size and verify its frame before returning.
     fn read_transition(
         &self,
-        sequence: crate::branch::RelationalBranchTransitionSequence,
+        sequence: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     ) -> Result<RelationalBranchTransitionArtifact, RelationalDurableTransitionReadFailure>;
     /// Make one commit artifact durable, or say exactly why not.
     ///

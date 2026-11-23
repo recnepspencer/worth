@@ -10,8 +10,9 @@ use crate::merge::data::{
     VisibleMergeRecordKind,
 };
 use crate::merge::identity_digest::{declared_identity_signature, DeclaredIdentityDigest};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 use worth_foundational::facade::AspectKey;
 
 pub(crate) struct TargetIdentityIndex {

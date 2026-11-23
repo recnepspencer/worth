@@ -98,11 +98,8 @@ fn funded_extra_shares_actual_row_history_and_private_holds_until_last_drop() {
         owner.id(),
         EntityRecordKind::metadata_extra(&historical).id()
     );
-    let private = crate::authority::mutation::RecordMutation::EntityMaterializationSuspended {
-        entity_id: crate::identity::data::EntityId::new(PartitionId::main(), 0, 1),
-        kind_id: KindId(1),
-        old_authoritative_aspect_state: Some(owner.clone()),
-    };
+    // A retained private owner shares the same carrier as row history.
+    let private = owner.clone();
     let mut observed = Observed::default();
     current.visit_authoritative_allocations(false, &mut observed);
     assert_eq!(

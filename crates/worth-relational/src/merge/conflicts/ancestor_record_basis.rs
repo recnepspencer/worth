@@ -4,10 +4,9 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use crate::identity::data::{EntityId, LineageId, PartitionId, RelationId};
 use crate::merge::data::VisibleMergeRecord;
-use crate::storage::data::{
-    EntityReadRecord, RecordLifecycleState, RelationReadRecord, RelationalReadView,
-};
+use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 #[cfg(test)]
 mod tests;

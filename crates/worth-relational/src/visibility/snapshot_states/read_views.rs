@@ -1,10 +1,11 @@
 use crate::runtime::RelationalRuntime;
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::{
     read_work::{record_memory, record_quote},
     KindScanVisibility,
 };
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::{SnapshotState, SnapshotStateBasis};
 
