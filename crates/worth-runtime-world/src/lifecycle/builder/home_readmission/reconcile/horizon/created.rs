@@ -165,19 +165,7 @@ impl HorizonContext {
     }
 }
 
-#[cfg(test)]
 pub(crate) fn require_retained_native_predecessor(
-    claimed: &RecordedRelationalComponentReference,
-    before_native: &RecordedRelationalComponentReference,
-) -> Result<(), Denial> {
-    if claimed != before_native {
-        return Err(Denial::CreationEvidenceMismatch);
-    }
-    Ok(())
-}
-
-#[cfg(not(test))]
-fn require_retained_native_predecessor(
     claimed: &RecordedRelationalComponentReference,
     before_native: &RecordedRelationalComponentReference,
 ) -> Result<(), Denial> {

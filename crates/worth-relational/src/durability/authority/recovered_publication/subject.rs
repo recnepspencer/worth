@@ -40,10 +40,14 @@ pub(super) fn validate(
             if predecessor.descriptor().branch_id() != &original.branch_id
                 || predecessor.descriptor().reference() != &original.observation
                 || predecessor.descriptor().truth_version() != original.truth_version
-                || successor.descriptor().branch_id() != &source.branch_context
             {
                 return Err(Cause::SubjectMismatch);
             }
+            validate_original_successor_axes(
+                &original,
+                &source.branch_context,
+                successor.descriptor(),
+            )?;
         }
         super::super::associated_effects::ReadmittedEffectOrigin::Checkpoint { commit, .. } => {
             commit
@@ -113,10 +117,14 @@ pub(super) fn validate_pruned_predecessor(
             };
             if &original.branch_id != expected_branch
                 || prior_target.selected_commit_id() != expected_predecessor_commit.0
-                || successor.descriptor().branch_id() != &source.branch_context
             {
                 return Err(Cause::SubjectMismatch);
             }
+            validate_original_successor_axes(
+                &original,
+                &source.branch_context,
+                successor.descriptor(),
+            )?;
         }
         super::super::associated_effects::ReadmittedEffectOrigin::Checkpoint { commit, .. } => {
             commit
@@ -136,6 +144,32 @@ pub(super) fn validate_pruned_predecessor(
         || target.position() != effect.subject().position()
         || target.artifact_digest() != effect.subject().artifact_digest()
         || target.roots() != effect.subject().roots()
+    {
+        return Err(Cause::SubjectMismatch);
+    }
+    Ok(())
+}
+
+/// Bind Original successor axes with the exact same transition rule used to
+/// project checkpoint admission rows (`admission_projection/row.rs`).
+fn validate_original_successor_axes(
+    original: &crate::branch::RelationalBranchCellCheckpoint,
+    branch_context: &crate::history::data::BranchId,
+    successor: &crate::branch::RelationalBranchBasisDescriptor,
+) -> Result<(), Cause> {
+    let expected_generation = original
+        .observation
+        .generation()
+        .checked_advance()
+        .map_err(|_| Cause::SubjectMismatch)?;
+    let expected_truth = original
+        .truth_version
+        .checked_advance()
+        .ok_or(Cause::SubjectMismatch)?;
+    if successor.branch_id() != branch_context
+        || successor.reference().generation() != expected_generation
+        || successor.truth_version() != expected_truth
+        || successor.posture() != crate::branch::RelationalBranchBasisPosture::Live
     {
         return Err(Cause::SubjectMismatch);
     }

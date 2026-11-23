@@ -159,6 +159,35 @@ impl WorldSelectionReplay {
             }
         }
     }
+    pub(super) fn require_present_recorded_entry(
+        &self,
+        recorded: &Recorded,
+        runtime: &RelationalRuntime,
+        plan: &RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Stop> {
+        let Target::Canonical(target) = recorded.target() else {
+            return Ok(());
+        };
+        if runtime
+            .history
+            .commit_artifact(target.receipt().commit_id)
+            .is_none()
+        {
+            return Ok(());
+        }
+        let entry = self.entry(target.receipt().commit_id, runtime, plan, request)?;
+        if &entry.commit != target.receipt()
+            || entry.position != target.position()
+            || &entry.payload_digest != target.artifact_digest()
+            || &entry.root != target.roots()
+        {
+            return Err(corrupt(
+                "World source does not match its actual Native receipt and image",
+            ));
+        }
+        Ok(())
+    }
     pub(super) fn require_source(
         &self,
         recorded: &Recorded,

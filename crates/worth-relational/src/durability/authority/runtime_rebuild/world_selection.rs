@@ -114,10 +114,12 @@ impl WorldSelectionReplay {
             };
             let Some((root, _)) = roots.exact_image(request, runtime, &recorded)? else {
                 if row.source_disposed() {
+                    self.require_present_recorded_entry(&recorded, runtime, plan, request)?;
                     continue;
                 }
                 return Err(corrupt("World handoff source image is unavailable"));
             };
+            self.require_source(&recorded, &root, runtime, plan, request)?;
             roots.retain_world_selection_root(root.commit_id(), root, request)?;
         }
         for source in self.admitted.source().heads() {

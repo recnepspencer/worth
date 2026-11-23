@@ -184,83 +184,176 @@ fn recovered_publication_requires_actual_settlement_and_this_recoverys_exact_ima
 
 #[test]
 fn validate_recorded_publication_predecessor_accepts_exact_and_rejects_mismatched_predecessor() {
+    use worth_testkit_relational::initial_input_source::{
+        capture_external, home_image_input, initialized, receiver,
+    };
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let (_source, medium, predecessor, successor, association, _) = source_journey(execution);
-    let (runtime, authority) = recover(execution, &medium);
-    let owner = runtime.durability_authority();
-    let subject = owner
-        .discover_associated_effects(execution, &association)
-        .unwrap()
-        .pop()
-        .unwrap();
-    let effect = owner
-        .readmit_associated_effect(execution, &subject)
-        .unwrap();
-    authority
-        .validate_recorded_publication_predecessor(
-            execution,
-            &runtime,
-            &effect,
-            &predecessor,
-            &successor,
-        )
-        .expect("exact predecessor axes must pass descriptive validation");
+    for use_checkpoint in [false, true] {
+        let (source, medium) = if use_checkpoint {
+            initialized(execution)
+        } else {
+            let m = TestDurableMedium::new();
+            (durable_runtime(&m), m)
+        };
+        // Publish a first commit so `before` is a real Canonical predecessor.
+        create_entity(execution, &source, "canonical-predecessor");
+        let before = current(execution, &source);
+        let (_, before_basis) = source
+            .observe_branch(&source.main_branch_identity())
+            .unwrap();
+        let before_lease = source.retain_component_basis(&before_basis).unwrap();
+        let association = Association::from_bytes(b"canonical-predecessor-validation").unwrap();
+        let performed = perform(execution, &source, &association, "canonical-successor");
+        let after_basis = performed.next_basis().clone();
+        let after = source
+            .owner_component_services()
+            .basis_port()
+            .export_recorded_retained_component(execution, &after_basis)
+            .unwrap();
+        let after_lease = source.retain_component_basis(&after_basis).unwrap();
+        let result = source.settle_performed_publication(performed).unwrap();
+        release_test_commit_snapshot(&source, &result);
+        drop(after_basis);
+        let (runtime, authority) = if use_checkpoint {
+            let complete = capture_external(&source, &medium, execution);
+            medium.file_checkpoint(complete.checkpoint().clone());
+            let input = home_image_input(&medium, &complete, execution).unwrap();
+            source.release_component_basis(before_lease).unwrap();
+            source.release_component_basis(after_lease).unwrap();
+            drop((before_basis, complete, source));
+            let mut runtime = receiver(&medium);
+            let plan = runtime
+                .durability()
+                .recovery_plan_from_source(
+                    execution,
+                    input,
+                    RecoveryVerificationMode::NormalRecoveryVerification,
+                )
+                .unwrap();
+            let (_, authority) = runtime
+                .durability_recovery()
+                .recover_with_authority(execution, plan)
+                .unwrap();
+            (runtime, authority)
+        } else {
+            source.release_component_basis(before_lease).unwrap();
+            source.release_component_basis(after_lease).unwrap();
+            drop((before_basis, source));
+            recover(execution, &medium)
+        };
+        let owner = runtime.durability_authority();
+        let subject = owner
+            .discover_associated_effects(execution, &association)
+            .unwrap()
+            .pop()
+            .unwrap();
+        let effect = owner
+            .readmit_associated_effect(execution, &subject)
+            .unwrap();
+        assert_eq!(
+            effect.settlement(),
+            if use_checkpoint {
+                Settlement::CheckpointReadmitted
+            } else {
+                Settlement::PerformedSettled
+            }
+        );
+        let Target::Canonical(before_target) = before.target() else {
+            panic!("expected canonical predecessor");
+        };
+        let before_branch = before.descriptor().branch_id();
+        let before_commit = before_target.receipt().commit_id;
 
-    let mut wrong_truth = serde_json::to_value(&predecessor).unwrap();
-    let prev_truth = wrong_truth["descriptor"]["truth_version"].as_u64().unwrap();
-    wrong_truth["descriptor"]["truth_version"] = serde_json::json!(prev_truth + 1);
-    let wrong_truth: Recorded = serde_json::from_value(wrong_truth).unwrap();
-    assert!(matches!(
-        authority.validate_recorded_publication_predecessor(
-            execution,
-            &runtime,
-            &effect,
-            &wrong_truth,
-            &successor,
-        ),
-        Err(Cause::SubjectMismatch)
-    ));
+        // Exact full and pruned-predecessor validation both succeed on Original and Checkpoint.
+        authority
+            .validate_recorded_publication_predecessor(execution, &runtime, &effect, &before, &after)
+            .expect("exact canonical predecessor and successor must pass");
+        authority
+            .validate_recorded_publication_pruned_predecessor(
+                execution,
+                &runtime,
+                &effect,
+                before_branch,
+                before_commit,
+                &after,
+            )
+            .expect("exact pruned predecessor and successor must pass");
 
-    let mut wrong_branch = serde_json::to_value(&predecessor).unwrap();
-    wrong_branch["descriptor"]["branch_id"] = serde_json::json!("forged-branch");
-    let wrong_branch: Recorded = serde_json::from_value(wrong_branch).unwrap();
-    assert!(matches!(
-        authority.validate_recorded_publication_predecessor(
-            execution,
-            &runtime,
-            &effect,
-            &wrong_branch,
-            &successor,
-        ),
-        Err(Cause::SubjectMismatch)
-    ));
-    // Pruned-predecessor validation rejects wrong branch and non-matching parent commit.
-    assert!(matches!(
-        authority.validate_recorded_publication_pruned_predecessor(
-            execution,
-            &runtime,
-            &effect,
-            &worth_relational::facade::history::BranchId("forged-branch".to_owned()),
-            worth_relational::facade::history::CommitId(999),
-            &successor,
-        ),
-        Err(Cause::SubjectMismatch)
-    ));
-    assert!(matches!(
-        authority.validate_recorded_publication_pruned_predecessor(
-            execution,
-            &runtime,
-            &effect,
-            predecessor.descriptor().branch_id(),
-            worth_relational::facade::history::CommitId(999),
-            &successor,
-        ),
-        Err(Cause::SubjectMismatch)
-    ));
+        // Predecessor mismatches fail in the origin-specific arm.
+        let mut wrong_prev_truth = serde_json::to_value(&before).unwrap();
+        let prev_truth = wrong_prev_truth["descriptor"]["truth_version"].as_u64().unwrap();
+        wrong_prev_truth["descriptor"]["truth_version"] = serde_json::json!(prev_truth + 1);
+        let wrong_prev_truth: Recorded = serde_json::from_value(wrong_prev_truth).unwrap();
+        assert!(matches!(
+            authority.validate_recorded_publication_predecessor(
+                execution,
+                &runtime,
+                &effect,
+                &wrong_prev_truth,
+                &after,
+            ),
+            Err(Cause::SubjectMismatch | Cause::AdmissionImage(_))
+        ));
+        let mut wrong_prev_branch = serde_json::to_value(&before).unwrap();
+        wrong_prev_branch["descriptor"]["branch_id"] = serde_json::json!("forged-branch");
+        let wrong_prev_branch: Recorded = serde_json::from_value(wrong_prev_branch).unwrap();
+        assert!(matches!(
+            authority.validate_recorded_publication_predecessor(
+                execution,
+                &runtime,
+                &effect,
+                &wrong_prev_branch,
+                &after,
+            ),
+            Err(Cause::SubjectMismatch | Cause::AdmissionImage(_))
+        ));
 
-    // Descriptive validation must not have acquired any new read custody pins.
-    drop(effect);
-    let runtime = runtime.prepare_close().expect("no pins acquired by descriptive validation");
-    drop(runtime);
+        // Successor axis mismatches (truth_version, generation, posture) pass the shared
+        // receipt guard and MUST fail in the origin-specific Original & Checkpoint arms!
+        let mut wrong_truth = serde_json::to_value(&after).unwrap();
+        let truth = wrong_truth["descriptor"]["truth_version"].as_u64().unwrap();
+        wrong_truth["descriptor"]["truth_version"] = serde_json::json!(truth + 1);
+        let wrong_truth: Recorded = serde_json::from_value(wrong_truth).unwrap();
+
+        let mut wrong_gen = serde_json::to_value(&after).unwrap();
+        let generation = wrong_gen["descriptor"]["reference"]["generation"].as_u64().unwrap();
+        wrong_gen["descriptor"]["reference"]["generation"] = serde_json::json!(generation + 1);
+        let wrong_gen: Recorded = serde_json::from_value(wrong_gen).unwrap();
+
+        let mut wrong_posture = serde_json::to_value(&after).unwrap();
+        wrong_posture["descriptor"]["posture"] = serde_json::json!("Archived");
+        let wrong_posture: Recorded = serde_json::from_value(wrong_posture).unwrap();
+
+        for bad_after in [&wrong_truth, &wrong_gen, &wrong_posture] {
+            assert!(matches!(
+                authority.validate_recorded_publication_predecessor(
+                    execution,
+                    &runtime,
+                    &effect,
+                    &before,
+                    bad_after,
+                ),
+                Err(Cause::SubjectMismatch | Cause::AdmissionImage(_))
+            ));
+            assert!(matches!(
+                authority.validate_recorded_publication_pruned_predecessor(
+                    execution,
+                    &runtime,
+                    &effect,
+                    before_branch,
+                    before_commit,
+                    bad_after,
+                ),
+                Err(Cause::SubjectMismatch | Cause::AdmissionImage(_))
+            ));
+        }
+
+        // Descriptive validation acquires zero read custody pins.
+        drop(effect);
+        let runtime = runtime
+            .prepare_close()
+            .expect("no pins acquired by descriptive validation");
+        drop(runtime);
+    }
 }
