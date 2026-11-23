@@ -16,8 +16,12 @@ pub(super) fn materialize_all(
     Box<[CompletedPhysicalRecoveryPublicationCandidate]>,
     PhysicalRecoveryPublicationCommandOutcome,
 > {
+    // Materialize in reverse canonical artifact order (bottom-up: membership
+    // and routing blocks -> FreeSpaceManifest -> RootManifest -> protocol
+    // candidates) so an OS kill after RootManifest is durable can never leave
+    // referenced child blocks absent on the next recovery reopen.
     let mut completed = Vec::with_capacity(command.candidates.len());
-    for (ordinal, candidate) in command.candidates.iter().enumerate() {
+    for (ordinal, candidate) in command.candidates.iter().rev().enumerate() {
         let materialization = materialization::execute(
             coordination,
             media,

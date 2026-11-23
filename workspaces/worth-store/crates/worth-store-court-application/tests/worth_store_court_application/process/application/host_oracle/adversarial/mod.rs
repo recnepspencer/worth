@@ -8,6 +8,8 @@ mod dispatch_io_kills;
 mod media_fault_ops;
 mod media_fault_sweep;
 mod oracle_verifier;
+mod recovery_fixtures;
+mod recovery_interruption_oracle;
 mod seam_kill_sweep;
 mod signal_bridge_io_kills;
 mod workflow_correction_fixture;

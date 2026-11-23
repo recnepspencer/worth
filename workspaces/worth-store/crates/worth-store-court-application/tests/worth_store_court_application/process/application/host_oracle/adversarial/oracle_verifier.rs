@@ -83,6 +83,7 @@ pub(super) fn prepare_prefix(location: &Path, execution: &ExecutionRequest<'_, '
 }
 
 pub(super) struct ReferenceSnapshots {
+    pub prefix_states: Vec<StateProjection>,
     pub before: StateProjection,
     pub after: StateProjection,
     pub after_follow: StateProjection,
@@ -93,6 +94,13 @@ pub(super) struct ReferenceSnapshots {
 }
 
 pub(super) fn build_reference(execution: &ExecutionRequest<'_, '_>) -> ReferenceSnapshots {
+    build_reference_with_prefix(&[(PREFIX_KEY, PREFIX_VAL)], execution)
+}
+
+pub(super) fn build_reference_with_prefix(
+    prefix: &[(u64, u64)],
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReferenceSnapshots {
     let (reference, _) = host_observation::opening::open_with_placement(
         PlacementOpenConfig {
             location: Location::MemoryOnly,
@@ -104,9 +112,16 @@ pub(super) fn build_reference(execution: &ExecutionRequest<'_, '_>) -> Reference
         },
         execution,
     );
-    assert!(requests::set(reference.runtime(), PREFIX_KEY, PREFIX_VAL)
-        .receipt()
-        .is_some());
+    let mut prefix_states = Vec::new();
+    if prefix.len() > 1 {
+        prefix_states.push(projection::observe(reference.runtime(), execution));
+    }
+    for &(key, val) in prefix {
+        assert!(requests::set(reference.runtime(), key, val).receipt().is_some());
+        if prefix.len() > 1 {
+            prefix_states.push(projection::observe(reference.runtime(), execution));
+        }
+    }
     let before = projection::observe(reference.runtime(), execution);
     let target_out = requests::set(reference.runtime(), TARGET_KEY, TARGET_VAL);
     let target_receipt = receipts::observe(&target_out, &before.head);
@@ -120,6 +135,7 @@ pub(super) fn build_reference(execution: &ExecutionRequest<'_, '_>) -> Reference
     drop(follow_out);
     let after_follow = projection::observe(reference.runtime(), execution);
     ReferenceSnapshots {
+        prefix_states,
         before,
         after,
         after_follow,
@@ -168,6 +184,9 @@ pub(super) fn verify_reopen_with_build(
     assert_eq!(contacts.load(Ordering::SeqCst), 0, "{label}: open never runs handler");
     let reopened = projection::observe(home.runtime(), execution);
     let mut map = HostOracleComparison::default();
+    for state in &reference.prefix_states {
+        map.observe_reference(state).unwrap();
+    }
     let verdict =
         classify_and_verify_reopen(&mut map, &reopened, &reference.before, &reference.after)
             .unwrap_or_else(|e| panic!("{label}: reopen divergence: {e:?}"));
