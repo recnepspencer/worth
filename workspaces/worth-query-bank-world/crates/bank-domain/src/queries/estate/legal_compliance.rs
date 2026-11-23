@@ -12,8 +12,8 @@ use crate::{
 };
 
 use super::{
-    legal_compliance_projection::EstateLegalComplianceResult, legal_compliance_selectors::*,
-    legal_compliance_shape::legal_compliance_shape,
+    legal_compliance_projection::EstateLegalComplianceResult,
+    legal_compliance_rows::{AuthorityRow, EstateRow, HolderRow},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -76,7 +76,13 @@ pub fn estate_legal_compliance_definition() -> ApplicationQueryDefinitionBuilder
     ApplicationQueryDefinitionBuilder::declare(EstateLegalComplianceQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())
-        .result_shape(legal_compliance_shape())
+        .result_shape(
+            EstateRow::result_shape_builder::<
+                EstateLegalComplianceQuery,
+                EstateLegalComplianceQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(disclosure_contract())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
@@ -90,16 +96,17 @@ fn disclosure_contract() -> ApplicationQueryDisclosureContract {
             RestrictedBankField::LegalDocument,
         )
     };
+    type Q = EstateLegalComplianceQuery;
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
         "estate-legal-compliance",
         ViewEstateLegalComplianceCapability::reference(),
     )
-    .disclose_field_by(estate_identity(), field(), influence.clone())
-    .disclose_relation_by(estate_authorities(), field(), influence.clone())
-    .disclose_field_by(authority_identity(), field(), influence.clone())
-    .disclose_field_by(authority_kind(), field(), influence.clone())
-    .disclose_field_by(authority_recognized(), field(), influence.clone())
-    .disclose_relation_by(authority_holder(), field(), influence.clone())
-    .disclose_field_by(authority_holder_identity(), field(), influence)
+    .disclose_field_by(EstateRow::estate::<Q>(), field(), influence.clone())
+    .disclose_relation_by(EstateRow::authorities::<Q>(), field(), influence.clone())
+    .disclose_field_by(AuthorityRow::authority::<Q>(), field(), influence.clone())
+    .disclose_field_by(AuthorityRow::kind::<Q>(), field(), influence.clone())
+    .disclose_field_by(AuthorityRow::recognized::<Q>(), field(), influence.clone())
+    .disclose_relation_by(AuthorityRow::holder::<Q>(), field(), influence.clone())
+    .disclose_field_by(HolderRow::holder::<Q>(), field(), influence)
 }

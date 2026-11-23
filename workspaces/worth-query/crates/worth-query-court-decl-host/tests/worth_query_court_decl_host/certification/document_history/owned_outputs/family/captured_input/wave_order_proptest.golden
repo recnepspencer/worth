@@ -69,7 +69,7 @@
    captured:capture:w0 = 133
    first:carriage:d = 40
 == case 05 WideSupplier { width: 1, second_value: 5 }
--- second: refused CoupledReadSupportChanged hold=None
+-- second: committed
    batch id=0 rank=1 ready=[0]
    prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=1 rank=0 ready=[1, 2]
@@ -77,9 +77,12 @@
    prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=2 rank=1 ready=[5]
    prepare task=5 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   reopen task=2 owed=0
+   batch id=3 rank=0 ready=[2]
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   captured:capture:w0 = 133
-   first:carriage:d = 40
+   captured:capture:w0 = 153
+   first:carriage:d = 50
 == case 06 Carriage { pre_seed: true, steps: [ObserveChild, After(1), AttachLate] }
 -- run: committed
    batch id=0 rank=0 ready=[0]
@@ -92,8 +95,8 @@
    batch id=0 rank=1 ready=[3]
    prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(45), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   batch id=1 rank=0 ready=[14]
-   prepare task=14 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[10]
+   prepare task=10 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
    first:a = 20
    first:carriage:b = 620
@@ -199,7 +202,7 @@
    first:carriage:b = 620
    first:carriage:late = absent
 == case 14 WideSupplier { width: 2, second_value: 5 }
--- second: refused CoupledReadSupportChanged hold=None
+-- second: committed
    batch id=0 rank=1 ready=[0]
    prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(21), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=1 rank=0 ready=[1, 2, 3]
@@ -208,9 +211,14 @@
    prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=2 rank=1 ready=[7]
    prepare task=7 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(20), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   reopen task=2 owed=0
+   reopen task=3 owed=0
+   batch id=3 rank=0 ready=[2, 3]
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   prepare task=3 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(19), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   captured:capture:w0 = 133
-   first:carriage:d = 40
+   captured:capture:w0 = 153
+   first:carriage:d = 50
 == case 15 Chains { width: 2, length: 2, second_value: 5 }
 -- second: committed
    batch id=0 rank=1 ready=[0]
@@ -445,7 +453,7 @@
    first:chain:0:0 = 0
    first:chain:1:1 = 30
 == case 33 WideSupplier { width: 1, second_value: 5 }
--- second: refused CoupledReadSupportChanged hold=None
+-- second: committed
    batch id=0 rank=1 ready=[0]
    prepare task=0 subject=captured-input.supplier family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(18), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=1 rank=0 ready=[1, 2]
@@ -453,9 +461,12 @@
    prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    batch id=2 rank=1 ready=[5]
    prepare task=5 subject=captured-input.generated family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(17), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   reopen task=2 owed=0
+   batch id=3 rank=0 ready=[2]
+   prepare task=2 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(16), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   captured:capture:w0 = 133
-   first:carriage:d = 40
+   captured:capture:w0 = 153
+   first:carriage:d = 50
 == case 34 Carriage { pre_seed: false, steps: [After(3), AttachLate] }
 -- run: denied Stage { ordinal: 0, binding: "owned-outputs.edit-envelope.after-producer.v1" }
    first:a = absent

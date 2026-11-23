@@ -93,6 +93,15 @@ pub(crate) enum WorldRecord {
         association: CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
     },
+    BranchRetired {
+        head: DurableWorldHead,
+        retiring_incarnation: HomeIncarnation,
+    },
+    HistoryRetired {
+        owner: DurableWorldOwnerIdentity,
+        commits: Vec<DurableCompositeCommitIdentity>,
+        retiring_incarnation: HomeIncarnation,
+    },
     Occurrence {
         open: WorldOpenAttemptRecord,
         owners: WorldOccurrenceOwnerEvidence,
@@ -112,7 +121,8 @@ impl WorldRecord {
     pub(crate) fn owner(&self) -> DurableWorldOwnerIdentity {
         match self {
             Self::Owner { owner } => *owner,
-            Self::Branch { head, .. } => head.branch.owner(),
+            Self::Branch { head, .. } | Self::BranchRetired { head, .. } => head.branch.owner(),
+            Self::HistoryRetired { owner, .. } => *owner,
             Self::CreationIntent(intent) => intent.association.attempt().owner(),
             Self::BranchCreated(created) => created.intent.association.attempt().owner(),
             Self::CreationReleased { association, .. } => association.attempt().owner(),
@@ -127,15 +137,17 @@ impl WorldRecord {
     }
     pub(crate) const fn journal(&self) -> WorldDurableJournal {
         match self {
-            Self::Owner { .. } | Self::Branch { .. } | Self::BranchCreated(_) => {
-                WorldDurableJournal::Branches
-            }
+            Self::Owner { .. }
+            | Self::Branch { .. }
+            | Self::BranchCreated(_)
+            | Self::BranchRetired { .. } => WorldDurableJournal::Branches,
             Self::OpenAttempt(_)
             | Self::PlannedSignalLeg(_)
             | Self::Released { .. }
             | Self::Continued { .. }
             | Self::CreationIntent(_)
-            | Self::CreationReleased { .. } => WorldDurableJournal::Custody,
+            | Self::CreationReleased { .. }
+            | Self::HistoryRetired { .. } => WorldDurableJournal::Custody,
             Self::Occurrence { .. } => WorldDurableJournal::Occurrences,
         }
     }
@@ -197,7 +209,9 @@ impl WorldDurableArtifact {
             | WorldRecord::Continued { .. }
             | WorldRecord::CreationIntent(_)
             | WorldRecord::BranchCreated(_)
-            | WorldRecord::CreationReleased { .. } => None,
+            | WorldRecord::CreationReleased { .. }
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => None,
         }
     }
     pub fn as_bytes(&self) -> &[u8] {

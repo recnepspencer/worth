@@ -53,23 +53,27 @@ impl WorthQueryApplicationLimits {
 
     /// One process, serial canonical execution, and finite World population
     /// ceilings starting from [`WorthQueryBoundedApplicationLimits::DEFAULT_BUDGETS`].
-    pub const fn bounded_serial(
-        clock: WorthQueryAdmissionClock,
-    ) -> WorthQueryBoundedApplicationLimits {
+    pub fn bounded_serial(clock: WorthQueryAdmissionClock) -> WorthQueryBoundedApplicationLimits {
         WorthQueryBoundedApplicationLimits {
             budgets: WorthQueryBoundedApplicationLimits::DEFAULT_BUDGETS,
             clock,
+            execution: Self::SERIAL_EXECUTION_POLICY,
+            queries: WorthQueryApplicationQueryResourceProfile::default(),
+            conditionals: SignalConditionalEvaluationBudget::development(),
         }
     }
 }
 
 /// Finite serial limits under construction. Each override replaces exactly
-/// the named budget group with the caller's values; nothing is clamped or
-/// widened. [`install`](Self::install) validates them all at once.
+/// the named budget group or policy with the caller's values; nothing is
+/// clamped or widened. [`install`](Self::install) validates them all at once.
 #[derive(Clone, Debug)]
 pub struct WorthQueryBoundedApplicationLimits {
     budgets: RuntimeWorldBudgetInstallation,
     clock: WorthQueryAdmissionClock,
+    execution: ExecutionRequestPolicy,
+    queries: WorthQueryApplicationQueryResourceProfile,
+    conditionals: SignalConditionalEvaluationBudget,
 }
 
 impl WorthQueryBoundedApplicationLimits {
@@ -150,6 +154,32 @@ impl WorthQueryBoundedApplicationLimits {
         self
     }
 
+    /// Replaces [`WorthQueryApplicationLimits::SERIAL_EXECUTION_POLICY`] with
+    /// the caller's policy as given: its posture, determinism and work and
+    /// memory ceilings install unchanged.
+    pub const fn with_execution_policy(mut self, execution: ExecutionRequestPolicy) -> Self {
+        self.execution = execution;
+        self
+    }
+
+    /// Replaces the default native graph-work admission profile.
+    pub const fn with_query_profile(
+        mut self,
+        queries: WorthQueryApplicationQueryResourceProfile,
+    ) -> Self {
+        self.queries = queries;
+        self
+    }
+
+    /// Replaces the development conditional-evaluation quotas.
+    pub const fn with_signal_budget(
+        mut self,
+        conditionals: SignalConditionalEvaluationBudget,
+    ) -> Self {
+        self.conditionals = conditionals;
+        self
+    }
+
     /// Installs through [`WorthQueryProductWorldResources::install`]: a zero or
     /// oversized budget refuses exactly as it would for explicit resources.
     pub fn install(self) -> Result<WorthQueryApplicationLimits, RuntimeWorldBudgetDenial> {
@@ -157,14 +187,8 @@ impl WorthQueryBoundedApplicationLimits {
             self.budgets,
             WorthQueryProductWorldClock::start(self.clock),
             WorthQueryInvalidationResources::new(),
-            WorthQueryApplicationLimits::SERIAL_EXECUTION_POLICY,
+            self.execution,
         )
-        .map(|world| {
-            WorthQueryApplicationLimits::new(
-                world,
-                WorthQueryApplicationQueryResourceProfile::default(),
-                SignalConditionalEvaluationBudget::development(),
-            )
-        })
+        .map(|world| WorthQueryApplicationLimits::new(world, self.queries, self.conditionals))
     }
 }

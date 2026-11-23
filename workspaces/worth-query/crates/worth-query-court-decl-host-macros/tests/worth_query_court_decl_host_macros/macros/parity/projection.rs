@@ -3,7 +3,6 @@
 use super::super::reads::ParametersBinding;
 use super::super::schema::*;
 use super::board;
-use worth_foundational::facade::CanonicalDate;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::portable_identity::WorthQueryPortableType;
 use worth_query_decl::facade::{

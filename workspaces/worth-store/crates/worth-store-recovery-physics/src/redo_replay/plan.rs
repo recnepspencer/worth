@@ -1,5 +1,7 @@
 use super::cursor::{RecoveryPageCursor, RecoveryPageSource};
-use super::record::{decode_physical_redo_member, decode_physical_redo_records_with_distinct};
+use super::record::{
+    decode_physical_redo_member_with_storage, decode_physical_redo_records_with_distinct,
+};
 use super::{
     decode_physical_redo_records, PhysicalRedoPlanningDenial, PhysicalRedoRecord,
     PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
@@ -24,8 +26,9 @@ pub struct PhysicalRedoAdmissionLimits {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedPhysicalRedoMembers {
     scratch_bytes: u64,
+    distinct_targets: u64,
     members: Box<[AdmittedPhysicalRedoMember]>,
-    group_allocations: BTreeMap<[u8; 32], u64>,
+    group_allocations: Box<[([u8; 32], u64)]>,
     rewrites: Box<[PhysicalRewriteRedo]>,
     rewrite_admissions: Box<[PhysicalRewriteAdmission]>,
     source_copies: Box<[PhysicalExtentCopyAdmission]>,
@@ -74,9 +77,11 @@ mod source_copy;
 mod supersession;
 pub use source_copy::{admit_current_source_copy_publication, PhysicalExtentCopyAdmission};
 
+pub(in crate::redo_replay) use admission::RedoAllocationBudget;
 pub use admission::{
-    admit_physical_redo_members, physical_redo_observation_target_identities,
-    physical_redo_observation_targets, physical_redo_target_identities,
+    admit_physical_redo_members, admit_physical_redo_members_with_memory_budget,
+    physical_redo_observation_target_identities, physical_redo_observation_targets,
+    physical_redo_target_identities,
 };
 #[cfg(any(test, feature = "test-support"))]
 pub use head_replay::head_replay_limit_for_test;

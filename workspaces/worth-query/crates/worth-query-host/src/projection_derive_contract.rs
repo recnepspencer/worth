@@ -8,7 +8,7 @@
 //! kept wire identity on one slot:
 //!
 //! ```
-//! # use worth_foundational::facade::CanonicalDate;
+//! # use worth_query_decl::facade::application_schema::CanonicalDate;
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::application_schema::ApplicationSchema;
 //! # use worth_query_decl::facade::{application_identity::*, portable_identity::*, *};
@@ -70,7 +70,7 @@
 //! `String` column does not compile, at that field's type:
 //!
 //! ```compile_fail,E0308
-//! # use worth_foundational::facade::CanonicalDate;
+//! # use worth_query_decl::facade::application_schema::CanonicalDate;
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::application_schema::ApplicationSchema;
 //! # use worth_query_decl::facade::{application_identity::*, portable_identity::*, *};
@@ -120,7 +120,7 @@
 //! rows of another query:
 //!
 //! ```compile_fail,E0271
-//! # use worth_foundational::facade::CanonicalDate;
+//! # use worth_query_decl::facade::application_schema::CanonicalDate;
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::application_schema::ApplicationSchema;
 //! # use worth_query_decl::facade::{application_identity::*, portable_identity::*, *};
@@ -171,7 +171,7 @@
 //! query's row cannot read them.
 //!
 //! ```compile_fail,E0308
-//! # use worth_foundational::facade::CanonicalDate;
+//! # use worth_query_decl::facade::application_schema::CanonicalDate;
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::application_schema::ApplicationSchema;
 //! # use worth_query_decl::facade::{application_identity::*, portable_identity::*, *};
@@ -226,7 +226,7 @@
 //! without `slot = ".."` is refused at that field.
 //!
 //! ```compile_fail
-//! # use worth_foundational::facade::CanonicalDate;
+//! # use worth_query_decl::facade::application_schema::CanonicalDate;
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::application_schema::ApplicationSchema;
 //! # use worth_query_decl::facade::{application_identity::*, portable_identity::*, *};

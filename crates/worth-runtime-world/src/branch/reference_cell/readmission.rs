@@ -25,4 +25,28 @@ impl ProductBranchReferenceCell {
         drop(retired);
         Ok(())
     }
+
+    pub(crate) fn restore_readmitted_horizon(
+        &self,
+        before: &ProductBranchReferenceSnapshot,
+        successor: ProductBranchHeadProtection,
+    ) -> Result<(), ProductBranchHeadProtection> {
+        let mut current = self.state.write();
+        if current.snapshot != *before
+            || current.movement.denial().is_some()
+            || current.protection.is_none()
+            || successor.snapshot().generation().get() <= current.snapshot.generation().get()
+        {
+            return Err(successor);
+        }
+        let after = successor.snapshot().clone();
+        let retired = current.protection.replace(successor);
+        current.snapshot = after;
+        if let Some(protection) = current.protection.as_mut() {
+            protection.seat_history(true);
+        }
+        drop(current);
+        drop(retired);
+        Ok(())
+    }
 }

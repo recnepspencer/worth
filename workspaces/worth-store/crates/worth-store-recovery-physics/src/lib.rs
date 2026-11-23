@@ -32,7 +32,7 @@ pub use recovery_budget::{
 };
 pub use redo_replay::{
     admit_current_source_copy_publication, admit_physical_redo_members,
-    decode_physical_redo_records, physical_redo_observation_target_identities,
+    admit_physical_redo_members_with_memory_budget, decode_physical_redo_records, physical_redo_observation_target_identities,
     physical_redo_observation_targets, physical_redo_target_identities, plan_physical_redo,
     AdmittedPhysicalRedoMembers, AdmittedRootStepMemberView, ExceededHeadReplayBound,
     HeadReplayBound, HistoricalConsumedOperationSet, HistoricalReleasedDropTargetWitness,

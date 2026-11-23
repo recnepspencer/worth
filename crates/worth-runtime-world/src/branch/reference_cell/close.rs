@@ -28,7 +28,9 @@ impl ProductBranchReferenceCell {
             }
             super::ProductMovementPhase::Idle
             | super::ProductMovementPhase::MovementInFlight { .. }
-            | super::ProductMovementPhase::RecoveryRequired { .. } => {}
+            | super::ProductMovementPhase::RecoveryRequired { .. }
+            | super::ProductMovementPhase::RetirementInFlight
+            | super::ProductMovementPhase::RetirementRecoveryRequired => {}
         }
         if let Some(protection) = image.protection.as_mut() {
             protection

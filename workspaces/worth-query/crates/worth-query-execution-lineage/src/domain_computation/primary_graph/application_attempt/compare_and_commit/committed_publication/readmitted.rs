@@ -40,6 +40,141 @@ impl WorthQueryCommittedProductPublication {
             })),
         })
     }
+
+    pub(crate) fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        match &mut self.custody {
+            PublicationCustody::Performed(receipt) => receipt
+                .preflight_home_retirement(request)
+                .map_err(Into::into),
+            PublicationCustody::Described(_)
+            | PublicationCustody::CoCommitted { .. }
+            | PublicationCustody::SettledMovement { .. } => Ok(()),
+        }
+    }
+
+    pub(crate) fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress,
+        crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
+    > {
+        match &mut self.custody {
+            PublicationCustody::Performed(receipt) => receipt
+                .advance_home_retirement(request, native)
+                .map_err(Into::into),
+            PublicationCustody::Described(_)
+            | PublicationCustody::CoCommitted { .. }
+            | PublicationCustody::SettledMovement { .. } => Ok(crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress::Complete),
+        }
+    }
+
+    pub(crate) fn original_movement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
+        self.performed().map(|receipt| receipt.publication())
+    }
+
+    pub(crate) fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
+        match &self.custody {
+            PublicationCustody::Performed(receipt) => {
+                let before = receipt.publication().old_product_head();
+                before.branch_identity() == observation.branch_identity()
+                    && before.lifecycle_incarnation() == observation.lifecycle_incarnation()
+                    && before.reference_generation() == observation.reference_generation()
+                    && before.selected_commit() == observation.selected_commit()
+                    && before.basis().relational_basis() == observation.basis().relational_basis()
+            }
+            PublicationCustody::SettledMovement { before, .. } => {
+                before.matches_observation(observation)
+            }
+            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => false,
+        }
+    }
+
+    pub(crate) fn observed_product_identity(
+        &self,
+    ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
+        match &self.custody {
+            PublicationCustody::Performed(receipt) => Some(
+                crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+                    receipt.publication().new_product_head(),
+                ),
+            ),
+            PublicationCustody::SettledMovement { after, .. } => Some(after.as_ref().clone()),
+            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => None,
+        }
+    }
+
+    pub(crate) fn take_history(
+        &mut self,
+    ) -> Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
+    > {
+        match &mut self.custody {
+            PublicationCustody::Performed(receipt) => receipt.take_history(),
+            PublicationCustody::Described(_)
+            | PublicationCustody::CoCommitted { .. }
+            | PublicationCustody::SettledMovement { .. } => None,
+        }
+    }
+
+    /// Release performed World history and Native basis custody once a producer
+    /// output settles into Ready cache, preserving exact descriptive endpoints.
+    pub(crate) fn settle_for_ready_cache(&mut self) {
+        let PublicationCustody::Performed(receipt) = &self.custody else {
+            return;
+        };
+        let before = crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+            receipt.publication().old_product_head(),
+        );
+        let after = crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+            receipt.publication().new_product_head(),
+        );
+        let description = match self.descriptive().custody {
+            PublicationCustody::Described(description) => description,
+            _ => unreachable!("describing a performed publication yields immutable identities"),
+        };
+        self.custody = PublicationCustody::SettledMovement {
+            description,
+            before: Box::new(before),
+            after: Box::new(after),
+        };
+    }
+
+    pub(crate) fn original_movement_endpoints(
+        &self,
+    ) -> Option<(
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        &CompositePublicationAttemptIdentity,
+    )> {
+        match &self.custody {
+            PublicationCustody::Performed(receipt) => Some((
+                crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+                    receipt.publication().old_product_head(),
+                ),
+                crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
+                    receipt.publication().new_product_head(),
+                ),
+                receipt.publication().attempt_identity(),
+            )),
+            PublicationCustody::SettledMovement {
+                description,
+                before,
+                after,
+            } => Some((
+                before.as_ref().clone(),
+                after.as_ref().clone(),
+                &description.publication_attempt,
+            )),
+            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => None,
+        }
+    }
 }
 
 /// Crate-boundary port for internal `WorthQueryCommittedProductPublication`
@@ -67,6 +202,14 @@ pub trait CommittedProductPublicationInternalPort: Sized {
     fn original_movement(
         &self,
     ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication>;
+    fn original_movement_endpoints(
+        &self,
+    ) -> Option<(
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        &CompositePublicationAttemptIdentity,
+    )>;
+    fn settle_for_ready_cache(&mut self);
     fn follows_observation(&self, observation: &ProductBranchObservation) -> bool;
     fn observed_product_identity(
         &self,
@@ -125,6 +268,20 @@ impl CommittedProductPublicationInternalPort for WorthQueryCommittedProductPubli
         &self,
     ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
         Self::original_movement(self)
+    }
+
+    fn original_movement_endpoints(
+        &self,
+    ) -> Option<(
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        crate::basis::WorthQueryProductBranchReadIdentity,
+        &CompositePublicationAttemptIdentity,
+    )> {
+        Self::original_movement_endpoints(self)
+    }
+
+    fn settle_for_ready_cache(&mut self) {
+        Self::settle_for_ready_cache(self);
     }
 
     fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {

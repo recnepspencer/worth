@@ -1,5 +1,6 @@
 //! Coherence of authored selection under an already-selected binding.
 mod required_roles;
+mod shared_intent;
 use super::*;
 use crate::application_operation::ApplicationMutationInputScope;
 use crate::application_schema::*;

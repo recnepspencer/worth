@@ -186,12 +186,16 @@ impl ReadmittedPublicationRecord {
 pub(crate) enum PublicationEvidence {
     Live(Arc<super::CanonicalPublicationEnvelope>),
     Readmitted(Arc<ReadmittedPublicationRecord>),
+    /// Cold-readmitted publication whose predecessor was durably disposed
+    /// before reopen: carries no live `CommitResult` snapshot and no
+    /// predecessor-bearing `ReadmittedPublicationRecord`.
+    ReadmittedHorizon,
 }
 impl PublicationEvidence {
     pub(crate) fn live(&self) -> Option<&Arc<super::CanonicalPublicationEnvelope>> {
         match self {
             Self::Live(live) => Some(live),
-            Self::Readmitted(_) => None,
+            Self::Readmitted(_) | Self::ReadmittedHorizon => None,
         }
     }
     pub(crate) fn facts(&self) -> Option<&super::PerformedPublicationFacts> {

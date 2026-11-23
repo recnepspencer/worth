@@ -87,6 +87,8 @@ where
     let execution = *reader_self.reader().execution();
     let retention = reader_self.reader_mut().retention_control();
     let remaining = reader_self.reader().work_budget().remaining();
+    // A successor round reads its own prior output as before its chain.
+    let own_outputs = reader_self.reader().native().own_outputs().cloned();
     let (schema_any, authority_any, packages_any, predecessor_any, _) =
         access.observation_components_any();
     let installed_schema = schema_any
@@ -126,6 +128,7 @@ where
             native,
             &input,
             limit,
+            own_outputs.as_ref(),
             |reader| {
                 let (output, facts) =
                     authority.inspect_reader(reader, Some(contracts), None, |reader| {

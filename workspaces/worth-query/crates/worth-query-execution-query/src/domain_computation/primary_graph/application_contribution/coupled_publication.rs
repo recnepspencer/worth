@@ -12,11 +12,17 @@ mod applied_outputs;
 mod authored_stages;
 mod disposal;
 mod input_preparation;
+mod ledger;
 mod preparation;
+mod qualification;
+pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::ReopenTarget;
+mod settlement;
 mod source_selection;
+mod succession;
 mod verified_parents;
 pub use input_preparation::{PlannedOutput, PreparedCoupledInputs};
 pub use source_selection::SelectedCoupledSource;
+pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::AppendedMember;
 mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,
@@ -60,6 +66,18 @@ pub struct CoupledApplicationAssembly<
     parent_reads: std::cell::Cell<usize>,
     /// The parent outputs the route now being prepared consumes.
     consuming: RefCell<Vec<crate::domain_computation::primary_graph::provider::ParentRead>>,
+    /// Retained derivations and which later appends made them suspect (R2).
+    ledger: RefCell<ledger::DerivationLedger>,
+    /// The route now being read derives again: no prepared or verified reuse.
+    superseding: std::cell::Cell<bool>,
+    /// The wave task whose discovery is now retaining support (its owner).
+    discovering: std::cell::Cell<Option<(usize, bool)>>,
+    /// Parent outputs some derivation consumed (R3): (parent read, consumer read).
+    consumed: RefCell<worth_execution::ExecutionOrderedMap<(usize, usize), ()>>,
+    /// Retentions superseded at their authenticated invalidator, to reopen.
+    reopens: RefCell<Vec<qualification::Reopen>>,
+    /// Successor rounds appended: their writers took their chain's slot.
+    successors: std::cell::Cell<usize>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
 /// Work demanded through it (prerequisites, discovered children, continuations
@@ -96,6 +114,9 @@ struct CoupledWriter<'run, S> {
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
     stage: Option<CoupledWriterStage<'run>>,
     meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    /// For a successor round: its chain head's original idempotency key,
+    /// which every later round re-creates in place (§1.5 Identity).
+    head_key: Option<String>,
 }
 enum CoupledWriterStage<'run> {
     Inspected(
@@ -108,8 +129,9 @@ enum CoupledWriterStage<'run> {
     ),
 }
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
+    /// Every member append, successor rounds included, takes the next one.
     fn applied_position(&self) -> usize {
-        self.authored.borrow().len() + self.writers.borrow().len()
+        self.authored.borrow().len() + self.writers.borrow().len() + self.successors.get()
     }
     pub fn new(
         phase: &'run WorthQueryAdvancementPhase<'phase>,
@@ -143,6 +165,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             owing: RefCell::new(OwedDemand::at(0)),
             parent_reads: std::cell::Cell::new(0),
             consuming: RefCell::new(Vec::new()),
+            ledger: RefCell::new(ledger::DerivationLedger::default()),
+            superseding: std::cell::Cell::new(false),
+            discovering: std::cell::Cell::new(None),
+            consumed: RefCell::new(worth_execution::ExecutionOrderedMap::default()),
+            reopens: RefCell::new(Vec::new()),
+            successors: std::cell::Cell::new(0),
         }
     }
     pub fn owing(&self) -> OwedDemand {
@@ -170,18 +198,23 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 &self.root_session,
                 source,
                 self.applied_position(),
+                self.discovering.get(),
                 support,
             )
             .map_err(execution::denial::candidate_support_denied)
     }
+    /// The wave tasks whose outgoing support is equal at `current` (PR C §4).
     pub fn refresh_outgoing_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<Vec<usize>, WorthQueryOutputDemandDenial> {
         self.application
             .runtime
             .primary_provider
-            .refresh_outgoing_read_support(execution, &self.root_session)
+            .refresh_outgoing_read_support(execution, &self.root_session, self.before, current)
             .map_err(execution::denial::candidate_support_denied)
     }
     pub fn take_denial(&self) -> Option<WorthQueryOutputDemandDenial> {
@@ -325,6 +358,11 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         *self.rounds.borrow_mut() = synchronous_outputs::rounds::limits::ProducerRoundBudget::new(
             self.demands.round_limits,
         );
+        *self.ledger.borrow_mut() = ledger::DerivationLedger::default();
+        *self.consumed.borrow_mut() = worth_execution::ExecutionOrderedMap::default();
+        self.reopens.borrow_mut().clear();
+        self.successors.set(0);
+        self.superseding.set(false);
         let prepared = self
             .application
             .runtime

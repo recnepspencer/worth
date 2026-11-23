@@ -16,6 +16,8 @@ mod recapture;
 mod retention;
 pub mod supplier;
 #[cfg(test)]
+mod unowned_consumer;
+#[cfg(test)]
 mod wave_order;
 
 type Scope = ApplicationMutationFieldScope<ModelKey>;

@@ -49,7 +49,11 @@ impl WorldDurableOpenCustody {
                     }
                     std::thread::yield_now();
                 }
-                Err(Stop::Unresolved | Stop::EvidenceRequired) => {
+                Err(
+                    Stop::Unresolved
+                    | Stop::EvidenceRequired
+                    | Stop::BlockedByPriorBarrier { .. },
+                ) => {
                     return Err(Denial::PublicationUnresolved)
                 }
                 Err(Stop::Refused(cause)) => return Err(cause.into_cause()),

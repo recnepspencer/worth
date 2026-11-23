@@ -29,6 +29,9 @@ pub(super) fn admit(
         .bytes(clone_bytes)
         .and_then(|_| resident.bytes(assembly))
         .is_err()
+        || resident_basis::reserve_box::<VerifiedPendingWalReleaseCustody>(&mut resident).is_err()
+        || resident_basis::reserve_box::<crate::progression::PendingReleaseReplay>(&mut resident)
+            .is_err()
     {
         let limit = resident_basis::limit_failure(&context, &resident);
         return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
@@ -50,7 +53,7 @@ pub(super) fn admit(
         PlanningCustody::SourceHeads(selected_head) => {
             VerifiedPendingWalReleaseCustody::admit_from_head_v2(
                 &context.selection,
-                selected_head,
+                *selected_head,
                 head_replay.clone(),
                 basis.observed_pages.tier_custody.as_ref(),
                 projection,
@@ -143,6 +146,9 @@ pub(super) fn admit(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
-    basis.custody = PlanningCustody::PendingPrepared { claim, replay };
+    basis.custody = PlanningCustody::PendingPrepared {
+        claim: Box::new(claim),
+        replay: Box::new(replay),
+    };
     Ok(context)
 }

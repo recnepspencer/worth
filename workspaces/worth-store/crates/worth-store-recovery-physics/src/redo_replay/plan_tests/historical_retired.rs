@@ -90,6 +90,7 @@ fn member(
 fn members(retired: PersistedRecordIdentity) -> AdmittedPhysicalRedoMembers {
     AdmittedPhysicalRedoMembers {
         scratch_bytes: 0,
+        distinct_targets: 0,
         members: vec![
             member(
                 OLD,
@@ -101,7 +102,7 @@ fn members(retired: PersistedRecordIdentity) -> AdmittedPhysicalRedoMembers {
             ),
         ]
         .into_boxed_slice(),
-        group_allocations: BTreeMap::new(),
+        group_allocations: Box::new([]),
         rewrites: Box::new([]),
         rewrite_admissions: Box::new([]),
         source_copies: Box::new([]),

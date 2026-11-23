@@ -153,6 +153,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 Err(CheckpointFinishStop::Restored(stopped))
             }
             WorthQueryOutputAdvancement::Claimed(active) if *active == claim => {
+                let reached_ready = matches!(checkpoint, WorthQueryOutputCheckpoint::Ready(_));
                 output.install_checkpoint(checkpoint);
                 // The shared required row stops only for a stop intrinsic to
                 // it; any other stays with the advance that met it, and the
@@ -163,6 +164,14 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 } else {
                     output.reopen();
                 }
+                let released_basis = if reached_ready {
+                    record
+                        .readmission_source
+                        .as_ref()
+                        .and_then(|source| source.release_retained_program_basis())
+                } else {
+                    None
+                };
                 record.wake.notify();
                 record.finish();
                 if terminal {
@@ -171,6 +180,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                     state.defer_terminal_cleanup(self.member.key_arc());
                 }
                 drop(state);
+                drop(released_basis);
                 Ok(())
             }
             _ => Err(CheckpointFinishStop::Returned(

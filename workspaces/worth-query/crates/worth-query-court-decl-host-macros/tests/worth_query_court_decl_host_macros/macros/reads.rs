@@ -1,7 +1,7 @@
 //! Two parameterized project reads whose rows share one derived projection:
 //! a case-insensitive text search and a native due-date range.
 use super::schema::*;
-use worth_foundational::facade::{CanonicalDate, WorthValue};
+use worth_foundational::facade::WorthValue;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::{
     application_query::*, application_schema::*, worth_query_application_query,

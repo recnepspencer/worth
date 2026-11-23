@@ -8,7 +8,9 @@
 //! ResultBinding`, `decision = Decision`, optional `outputs = Outputs`, the
 //! flags `body` (the handler is the operation's authored body) and `program`
 //! (execution requires the application program), the forwarded `access(..)`
-//! block and inline capability lists such as `reads(Task)`.
+//! block, inline capability lists such as `reads(Task)` and an optional
+//! `validate = path::to::check`, the input binding's capture-time validator
+//! (`fn(&Self) -> Result<(), &'static str>`).
 //!
 //! Exactly one scope: a field marked `#[worth_query(scope = Selection)]`
 //! (`column = ".."` when the column is named otherwise) or the struct key

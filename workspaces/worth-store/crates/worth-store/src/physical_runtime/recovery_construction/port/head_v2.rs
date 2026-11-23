@@ -7,62 +7,24 @@ use worth_store_recovery_physics::{
 };
 
 use super::super::{
-    selected_rejoin, RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    selected_rejoin, PreparedRecoveredRuntimeCoreBacking,
+    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 use super::PhysicalRecoveryConstructionPort;
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{
-    ClosedPhysicalRecoveryCleanup, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCoordination,
+    ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryCoordination,
 };
 
 impl PhysicalRecoveryConstructionPort {
-    pub fn construct_with_verified_head_custody_v2(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        claim: VerifiedSelectedReleaseHeadCustodyV2,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_head_v2(
-            coordination,
-            media,
-            cleanup,
-            recovery_allocation,
-            claim,
-            tier,
-            || {},
-        )
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_head_custody_v2_and_rejoin_pause(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        claim: VerifiedSelectedReleaseHeadCustodyV2,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_head_v2(
-            coordination,
-            media,
-            cleanup,
-            recovery_allocation,
-            claim,
-            tier,
-            pause_before_final_reread,
-        )
-    }
-
-    fn construct_head_v2(
+    pub(super) fn construct_head_v2(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         mut coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        claim: VerifiedSelectedReleaseHeadCustodyV2,
+        claim: Box<VerifiedSelectedReleaseHeadCustodyV2>,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
@@ -112,16 +74,38 @@ impl PhysicalRecoveryConstructionPort {
                 return Err(super::rejoin_denial::construction_denial(denial));
             }
         };
-        let mut core = Self::construct_inner(
+        Self::finish_head_v2(
+            backing,
             coordination,
             media,
             reopen,
-            None,
+            claim,
+            tier,
+            selected_wal,
+            selected_controls,
+        )
+    }
+
+    #[inline(never)]
+    fn finish_head_v2(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        reopen: CompletedPhysicalRecoveryFreshReopen,
+        claim: Box<VerifiedSelectedReleaseHeadCustodyV2>,
+        tier: Option<VerifiedSelectedTierEpochCustody>,
+        selected_wal: selected_rejoin::SelectedWalMediaFingerprint,
+        selected_controls: selected_rejoin::SelectedControlMediaFingerprint,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        Self::construct_inner(
+            backing,
+            coordination,
+            media,
+            reopen,
+            Some(RecoveredReleaseCustody::HeadV2(*claim)),
             tier,
             Some(selected_wal),
             Some(selected_controls),
-        )?;
-        core.head_v2_custody = Some(claim);
-        Ok(core)
+        )
     }
 }

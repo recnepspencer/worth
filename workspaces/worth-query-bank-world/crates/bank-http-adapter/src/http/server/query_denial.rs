@@ -57,9 +57,6 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
         Selection::ExpectedDescriptionVersionUnsupported { .. } => {
             BankHttpDenial::new(Kind::UnsupportedProtocol, Next::CorrectRequest)
         }
-        Selection::DurableBranchPublicationRequired => {
-            BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator)
-        }
         Selection::ExpectedDescriptionNameInvalid => malformed(),
         Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),

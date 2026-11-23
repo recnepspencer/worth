@@ -89,6 +89,7 @@ pub(crate) struct HomeContext {
     // Exclusive close accesses use get_mut; no gate is held across callbacks.
     pub(crate) world_close_checkpoint:
         Mutex<crate::close::checkpoint_result::HomeCloseCheckpointResult>,
+    pub(crate) close_custody: Mutex<crate::close::posture::PreparedHomeCloseCustody>,
     pub(crate) world_slot: Option<crate::world_section::UnclaimedWorldSlot>,
     pub(crate) checkpoint: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     pub(crate) location: std::path::PathBuf,

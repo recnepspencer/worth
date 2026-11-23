@@ -80,6 +80,8 @@ pub fn admit_home(
         let world_close_checkpoint =
             crate::close::checkpoint_result::HomeCloseCheckpointResult::prepare(execution)
                 .map_err(ApplicationHomeOpenRefusal::Execution)?;
+        let close_custody = crate::close::posture::PreparedHomeCloseCustody::prepare(execution)
+            .map_err(ApplicationHomeOpenRefusal::Execution)?;
         let crate::ApplicationHomeRequest {
             location,
             relational,
@@ -223,6 +225,7 @@ pub fn admit_home(
             world_owner_retirement: None,
             signal_owner_retirement: None,
             world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
+            close_custody: std::sync::Mutex::new(close_custody),
             world_slot: Some(world_slot),
             checkpoint,
             location,

@@ -4,25 +4,8 @@ use crate::domain_computation::primary_graph::application_attempt::coupled_outpu
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
-enum PendingOutputDemand<'a> {
-    Prefix(&'a DeclaredCoupledOutputDemand),
-    Stage(DeclaredCoupledOutputDemand, usize),
-}
-impl PendingOutputDemand<'_> {
-    fn demand(&self) -> &DeclaredCoupledOutputDemand {
-        match self {
-            Self::Prefix(demand) => demand,
-            Self::Stage(demand, _) => demand,
-        }
-    }
-    /// The applied position of the stage whose effect owes this demand.
-    fn owed(&self) -> usize {
-        match self {
-            Self::Prefix(_) => 0,
-            Self::Stage(_, owed) => *owed,
-        }
-    }
-}
+mod pending;
+use pending::PendingOutputDemand;
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
     pub fn prepare(
         &self,
@@ -117,6 +100,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .map(PendingOutputDemand::Prefix)
             .collect::<Vec<_>>();
         for (physical, capture) in self.stage_captures().iter().enumerate() {
+            if let Some(order) = &order {
+                let context = synchronous_outputs::SynchronousOutputAssembly {
+                    owner: self,
+                    execution,
+                    before: &before_pin,
+                    order,
+                };
+                wave.qualify(&context, candidate).map_err(|cause| cause.0)?;
+            }
             self.prepare_pending(
                 execution,
                 &before_pin,
@@ -190,30 +182,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             };
             wave.drive(&context, candidate, None)
                 .map_err(|cause| cause.0)?;
-        }
-        Ok(())
-    }
-    fn prepare_pending(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        before: &worth_relational::facade::runtime::RelationalPinnedRead,
-        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
-        pending: &mut Vec<PendingOutputDemand<'_>>,
-        allowed: Option<&[String]>,
-    ) -> Result<(), CoupledSourceReadStop> {
-        let mut position = 0;
-        while position < pending.len() {
-            if allowed.is_none_or(|families| {
-                families
-                    .iter()
-                    .any(|family| family == pending[position].demand().family)
-            }) {
-                let demand = pending.remove(position);
-                self.owe_at(demand.owed());
-                self.prepare_one(execution, before, demand.demand(), candidate)?;
-            } else {
-                position += 1;
-            }
         }
         Ok(())
     }
@@ -299,6 +267,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             source.partition,
             &producer.declaration.identity,
         )?;
+        // A reopened route that already has a part continues its chain (§1.5).
+        let chain = self.continued_chain(
+            execution,
+            candidate,
+            demand.family,
+            source.scope,
+            &source.partition,
+        )?;
         let pin = candidate.pin_source(execution)?;
         let prepared = producer.coupled_executor().prepare_coupled_writer(
             self.phase,
@@ -309,15 +285,17 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             self.before,
             before_pin,
             &pin,
+            chain.as_ref().map(|chain| &chain.own),
             self,
             source,
             producer.edition,
             captured,
-        )?;
+        )
+        .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
         let PreparedCoupledWriter {
             writer,
             publication,
-            batch,
+            mut batch,
             content,
         } = prepared;
         // Keep the session even when Native requests an ordinary symbol retry;
@@ -328,39 +306,57 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .clone();
         let source_scope = meaning.source_scope;
         let position = self.applied_position() + 1;
-        self.writers.borrow_mut().push(CoupledWriter {
+        let produces = self.next_read();
+        self.record_consumption(execution, &self.consuming(), produces)?;
+        if let Some(chain) = &chain {
+            self.require_independent(execution, candidate, chain, writer.session(), &pin)?;
+            self.rekey_original(chain.index, writer.session(), &mut batch);
+        }
+        let next = CoupledWriter {
             position,
             owed: self.owing(),
             consumes: self.consuming(),
-            produces: self.next_read(),
+            produces,
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
-        });
-        match self
-            .application
-            .runtime
-            .primary_provider
-            .application_attempt_operation_control_ref()
-            .take_coupled_participant_corruption(self.writers.borrow().len())
-        {
-            fault @ (1..=9) => candidate.append_corrupt_participant_for_test(
-                execution,
-                publication,
-                &content,
-                vec![batch],
-                fault,
-            )?,
-            _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
+            head_key: None,
+        };
+        let chain = chain.map(|chain| chain.index);
+        let index = self.append_round(
+            execution,
+            candidate,
+            chain,
+            next,
+            (publication, content, batch),
+        )?;
+        let owed = self.writers.borrow()[index].owed.position();
+        // Only an owned route can derive its chain's next round: Native's own
+        // predicate (`next_producer_round`). Any other participant (ordinary,
+        // or an independent publication) is neither registered for reopen nor
+        // reopenable as its parent's consumer; its changed reads stay with
+        // final qualification.
+        let continues = candidate.continues_owned_route(index);
+        self.mark_append(
+            execution,
+            candidate,
+            super::AppendedMember::Part {
+                index,
+                position,
+                owed,
+                meaning: meaning.clone(),
+                continues,
+            },
+        )?;
+        if continues {
+            self.register_part(execution, index, produces)?;
         }
         let entities = candidate
             .appended_output_entities(execution, &producer.declaration.identity, &meaning)?
             .expect("Native appended this participant");
         let after_own = candidate.pin_source(execution)?;
         let writers = self.writers.borrow();
-        let Some(CoupledWriterStage::Inspected(writer)) =
-            writers.last().and_then(|writer| writer.stage.as_ref())
-        else {
+        let Some(CoupledWriterStage::Inspected(writer)) = writers[index].stage.as_ref() else {
             unreachable!("actual appended writer")
         };
         self.application
@@ -375,7 +371,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     entities,
                 },
             );
-        let writer = writers.last().expect("actual appended writer");
+        let writer = &writers[index];
         let input = candidate.applied_output_input(execution, &writer.meaning)?;
         Ok(Some(
             synchronous_outputs::AppliedOutputParent::new(after_own, source_scope, input)

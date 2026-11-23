@@ -40,6 +40,7 @@ impl<'run> ApprovedCoupledWriter<'run> {
                     authority,
                     fresh,
                     Some(&pin),
+                    custody.own_outputs.as_ref(),
                     control,
                 )
         });

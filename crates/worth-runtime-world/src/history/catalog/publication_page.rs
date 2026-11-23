@@ -147,6 +147,10 @@ impl CompositeHistoryCatalog {
             };
             examined += 1;
             last = Some(identity.clone());
+            if state.retiring.contains(identity) {
+                pending = true;
+                continue;
+            }
             let entry = state.entries.get(identity).and_then(|slot| slot.get());
             match entry.and_then(|entry| {
                 entry

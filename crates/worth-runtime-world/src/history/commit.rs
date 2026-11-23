@@ -230,6 +230,30 @@ impl CompositeRuntimeWorldCommit {
         })
     }
 
+    fn from_horizon_ordinary(
+        identity: CompositeCommitIdentity,
+        original_parent: CompositeCommitIdentity,
+        basis: AdmittedCompositeRuntimeWorldBasis,
+        publication: CompositePublicationAttemptIdentity,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+        component_evidence: CompositeComponentEvidence,
+    ) -> Result<Self, CompositeCommitConstructionDenial> {
+        require_owner(identity.owner_identity(), basis.owner_identity())?;
+        require_owner(identity.owner_identity(), original_parent.owner_identity())?;
+        require_owner(identity.owner_identity(), publication.owner_identity())?;
+        Ok(Self {
+            identity,
+            basis: Some(basis),
+            lineage: CompositeCommitLineage::Ordinary {
+                parent: CompositeCommitParent::Ordinary(OrdinaryParent::new(original_parent)),
+                provenance: CompositeCommitProvenance::Publication(publication),
+            },
+            component_evidence,
+            caller_correlation: None,
+            _memory: memory,
+        })
+    }
+
     pub fn identity(&self) -> &CompositeCommitIdentity {
         &self.identity
     }

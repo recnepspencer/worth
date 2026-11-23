@@ -32,6 +32,10 @@ pub struct IssuedWalkValues {
     memory: Option<ExecutionMemoryReservation>,
 }
 impl IssuedWalkValues {
+    /// Whether nothing was issued (PR C §1.7: a pending refusal's proofs).
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
     pub fn take_memory(&mut self) -> Option<ExecutionMemoryReservation> {
         self.memory.take()
     }

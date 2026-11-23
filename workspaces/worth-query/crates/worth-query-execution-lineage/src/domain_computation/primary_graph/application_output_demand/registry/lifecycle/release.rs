@@ -24,6 +24,7 @@ impl WorthQueryOutputDemandRegistry {
         let awaited = needs_awaited
             && refreshed_rejoin::awaited_by_stale_owner(&state.records, &interest.key);
         let mut retirement = None;
+        let mut released_basis = None;
         let remove = state
             .records
             .get_mut(&interest.key)
@@ -40,6 +41,10 @@ impl WorthQueryOutputDemandRegistry {
                 };
                 let stopped = retirement.is_some_and(RowRetirement::releases_finished_work);
                 if ready && record.interests == 0 && !stopped {
+                    released_basis = record
+                        .readmission_source
+                        .as_ref()
+                        .and_then(|source| source.release_retained_program_basis());
                     crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
                         crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::CachedReadyClosed,
                         record.settlements.len(), record.prerequisites.len(),
@@ -121,6 +126,7 @@ impl WorthQueryOutputDemandRegistry {
             }
         }
         drop(state);
+        drop(released_basis);
         drop(released_prerequisites);
         drop(finished);
         drop(unawaited);

@@ -12,9 +12,29 @@ pub enum PreparedMutationProjection<Schema, Operation> {
     Applied {
         decision: AppliedOperationProjection<Schema, Operation>,
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     },
 }
 impl<Schema: ApplicationSchema, Operation> PreparedMutationProjection<Schema, Operation> {
+    /// What an applied decision read, kept when it refuses (PR C §1.7).
+    pub fn refusal_proofs(&self) -> Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs> {
+        match self {
+            Self::Applied { decision, .. } => {
+                // The decision's source facts (an optional resolution or an
+                // indexed selection that found nothing) are proofs too; one
+                // Native cannot key makes every append a possible change.
+                let mut proofs = decision.facts.refusal_proofs();
+                for fact in decision.source_facts.values() {
+                    match crate::domain_computation::primary_graph::application_attempt::fact::touch_key::fact_keys(fact) {
+                        Some(keys) => proofs.touches.extend(keys),
+                        None => proofs.conservative = true,
+                    }
+                }
+                Some(proofs)
+            }
+            Self::Committed(_) => None,
+        }
+    }
     pub fn prepared_current_inputs(&self) -> PreparedCurrentInputs<'_> {
         match self {
             Self::Committed(projection) => projection.prepared_current_inputs(),
@@ -33,8 +53,17 @@ impl<Schema: ApplicationSchema, Operation> PreparedMutationProjection<Schema, Op
                 .begin_projected_application_read_attempt_with_request(
                     execution, admission, projection, allocation,
                 ),
-            Self::Applied { decision, pin } => runtime.begin_applied_application_read_attempt(
-                execution, admission, decision, pin, allocation,
+            Self::Applied {
+                decision,
+                pin,
+                own_outputs,
+            } => runtime.begin_applied_application_read_attempt(
+                execution,
+                admission,
+                decision,
+                pin,
+                allocation,
+                own_outputs.as_ref(),
             ),
         }
     }

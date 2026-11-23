@@ -133,6 +133,10 @@ impl WorthQueryApplicationCommitReceipt {
         &self.committed_product_publication
     }
 
+    pub(crate) fn settle_for_ready_cache(&mut self) {
+        self.committed_product_publication.settle_for_ready_cache();
+    }
+
     /// What a commit that kept no fact answers at `observation`, and `None`
     /// for a commit that rebased: its facts answer. One whose effect moved a
     /// read is superseded at its own publication, as it is where its rebase

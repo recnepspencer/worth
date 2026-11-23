@@ -140,7 +140,9 @@ impl WorldProgramActivationHistory {
                 | WorldRecord::CreationIntent(_)
                 | WorldRecord::CreationReleased { .. }
                 | WorldRecord::Continued { .. }
-                | WorldRecord::PlannedSignalLeg(_) => {
+                | WorldRecord::PlannedSignalLeg(_)
+                | WorldRecord::BranchRetired { .. }
+                | WorldRecord::HistoryRetired { .. } => {
                     unreachable!("validated history stores only origins and original opens")
                 }
             }

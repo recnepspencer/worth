@@ -121,6 +121,11 @@ pub struct RecoveryStagingCommandPlan {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecoveryBaseImagePlan {
+    inner: Vec<RecoveryBaseImagePlanBody>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct RecoveryBaseImagePlanBody {
     selected_selector: DurableRootSelector,
     selected_root: DurablePhysicalRootManifest,
     latest_blob_publication: Option<IndexedThroughBlobPublication>,
@@ -136,6 +141,12 @@ pub struct RecoveryBaseImagePlan {
     root_states: Box<[PersistedPhysicalRecoveryRootState]>,
     release_head_replay: Option<crate::progression::PendingReleaseReplay>,
     source_artifacts: Box<[RecordArtifactFile]>,
+}
+
+impl RecoveryBaseImagePlan {
+    const fn body(&self) -> &RecoveryBaseImagePlanBody {
+        &self.inner.as_slice()[0]
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -181,6 +192,11 @@ pub struct RecoveryStagingRedoStep {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct RecoveryPublicationPlan {
+    inner: Vec<RecoveryPublicationPlanBody>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct RecoveryPublicationPlanBody {
     expectation_backing: ExpectationBacking,
     store: StableStoreIdentity,
     checkpoint: Option<PhysicalCheckpointIdentity>,
@@ -195,6 +211,18 @@ pub struct RecoveryPublicationPlan {
     candidates: Box<[RecoveryPublicationCandidateArtifact]>,
     created_artifacts: Box<[RecordArtifactFile]>,
     release_topology: Option<RecoveryReleaseTopologyProof>,
+}
+
+impl RecoveryPublicationPlan {
+    const fn body(&self) -> &RecoveryPublicationPlanBody {
+        &self.inner.as_slice()[0]
+    }
+
+    fn into_body(mut self) -> RecoveryPublicationPlanBody {
+        self.inner
+            .pop()
+            .expect("recovery publication plan holds one body")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

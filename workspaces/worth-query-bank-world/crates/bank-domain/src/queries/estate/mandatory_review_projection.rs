@@ -5,7 +5,7 @@ use worth_query_host::facade::primary_graph::{
 
 use crate::{estate::EstateCaseId, reads::EstateReviewView, schema::BankSchema};
 
-use super::{mandatory_review::EstateMandatoryReviewQuery, mandatory_review_selectors::*};
+use super::{mandatory_review::EstateMandatoryReviewQuery, mandatory_review_rows::EstateRow};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EstateMandatoryReviewResult {
@@ -29,25 +29,10 @@ impl WorthQueryApplicationProjection<BankSchema, EstateMandatoryReviewQuery>
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, BankSchema, EstateMandatoryReviewQuery>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        let reviews = row
-            .many(estate_reviews())?
-            .iter()
-            .map(|review| {
-                let reviewer = review
-                    .optional(review_principal())?
-                    .map(|principal| principal.field(review_principal_identity()))
-                    .transpose()?;
-                Ok(EstateReviewView::from_projection(
-                    review.field(review_identity())?,
-                    review.field(review_kind())?,
-                    review.field(review_status())?,
-                    reviewer,
-                ))
-            })
-            .collect::<Result<Vec<_>, WorthQueryApplicationProjectionDenial>>()?;
+        let EstateRow { estate, reviews } = EstateRow::project_row(row)?;
         Ok(Self {
-            estate: row.field(estate_identity())?,
-            reviews,
+            estate,
+            reviews: reviews.into_iter().map(Into::into).collect(),
         })
     }
 }

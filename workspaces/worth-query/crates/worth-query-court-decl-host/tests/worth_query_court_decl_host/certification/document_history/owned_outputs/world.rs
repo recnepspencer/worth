@@ -1,6 +1,7 @@
 //! Separate installed world: model `a` (value 1) owning member `m`, plus NAV grant.
 use super::*;
 pub(super) mod authorization_clock;
+mod second_member;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
@@ -20,6 +21,9 @@ pub struct Configuration {
     pub captured_composed: Option<(usize, bool)>,
     pub captured_chains: Option<(usize, usize)>,
     pub wrong_inverse_member: bool,
+    /// Member `n` (this value) of model `a` and model `c` (9) (PR C C4 r2
+    /// blocker 1, r3).
+    pub second_member: Option<u64>,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -27,13 +31,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         synchronous_edit::reconciliation::contracts(contracts)?;
-        family::decision_write::contracts(contracts)?;
-        family::convergent::contracts(contracts)?;
-        family::decision_input::contracts(contracts)?;
-        family::parity_input::contracts(contracts)?;
-        family::ordinary_input::contracts(contracts)?;
-        family::diamond::contracts(contracts)?;
-        family::predecessor_family::contracts(contracts)?;
+        family::registry::contracts(contracts)?;
         from_first::contracts(contracts)?;
         restricted_from_first::contracts(contracts)?;
         first::contracts(contracts)?;
@@ -79,13 +77,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<query::identity::expectation::Binding, _>(
             query::identity::expectation::Handler,
         )?;
-        family::decision_write::install(setup)?;
-        family::convergent::install(setup)?;
-        family::decision_input::install(setup)?;
-        family::parity_input::install(setup)?;
-        family::ordinary_input::install(setup)?;
-        family::diamond::install(setup)?;
-        family::predecessor_family::install(setup)?;
+        family::registry::install(setup)?;
         from_first::install(setup)?;
         restricted_from_first::install(setup)?;
         first::install(setup)?;
@@ -240,6 +232,9 @@ where
             }
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;
+            }
+            if let Some(value) = configuration.second_member {
+                second_member::seed(graph, value)?;
             }
             Ok(())
         },

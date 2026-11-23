@@ -65,12 +65,18 @@ impl OriginalHomeTransitionContinuation {
                             WorldDurablePublicationStop::Pending
                             | WorldDurablePublicationStop::Busy,
                         ) => return Ok(OriginalContinuationAdvance::Pending),
-                        Err(WorldDurablePublicationStop::EvidenceRequired) => {
-                            return Ok(OriginalContinuationAdvance::EvidenceRequired)
-                        }
-                        Err(WorldDurablePublicationStop::Unresolved) => {
-                            return Ok(OriginalContinuationAdvance::Indeterminate)
-                        }
+                        Err(
+                            WorldDurablePublicationStop::EvidenceRequired
+                            | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                                evidence_required: true,
+                            },
+                        ) => return Ok(OriginalContinuationAdvance::EvidenceRequired),
+                        Err(
+                            WorldDurablePublicationStop::Unresolved
+                            | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                                evidence_required: false,
+                            },
+                        ) => return Ok(OriginalContinuationAdvance::Indeterminate),
                         Err(WorldDurablePublicationStop::Refused(cause)) => {
                             loan.unsubmit();
                             return Err(Denial::Medium(cause.into_cause()));

@@ -16,13 +16,7 @@ mod certification_controls;
 #[path = "identity_runtime/installation.rs"]
 mod installation;
 pub use installation::install_payment_workflow_spec;
-pub(crate) mod product_world_resources;
-
-#[cfg(test)]
-pub(crate) fn bank_application_limits(
-) -> worth_query_host::facade::application_installation::WorthQueryApplicationLimits {
-    installation::bank_application_limits()
-}
+pub(crate) mod application_limits;
 
 use bank_domain::estate::BankEstateWorld;
 use bank_domain::model::BankPrincipalId;

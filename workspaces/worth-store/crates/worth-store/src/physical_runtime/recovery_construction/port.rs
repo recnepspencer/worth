@@ -4,16 +4,19 @@ use worth_store_recovery_physics::{
     VerifiedSelectedNoReleaseCustody, VerifiedSelectedTierEpochCustody,
 };
 
-use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
+use crate::physical_runtime::record_serving::{RecoveredNoReleaseCustody, RecoveredReleaseCustody};
 use crate::physical_runtime::{
     ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
     PhysicalRecoveryCoordination,
 };
 
 use super::{
-    selected_rejoin, RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    selected_rejoin, PreparedRecoveredRuntimeCoreBacking,
+    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 mod binding;
+#[path = "port/funded.rs"]
+mod funded;
 #[path = "port/generation_zero.rs"]
 mod generation_zero;
 #[path = "port/head_v2.rs"]
@@ -32,7 +35,8 @@ pub struct PhysicalRecoveryConstructionPort {
 }
 
 impl PhysicalRecoveryConstructionPort {
-    pub fn construct(
+    pub(super) fn construct_direct(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
@@ -42,6 +46,7 @@ impl PhysicalRecoveryConstructionPort {
             return Err(RecoveredPhysicalRuntimeConstructionDenial::CleanupMediaNotQuiescent);
         }
         Self::construct_inner(
+            backing,
             coordination,
             media,
             cleanup.into_reopen(),
@@ -52,42 +57,13 @@ impl PhysicalRecoveryConstructionPort {
         )
     }
 
-    pub fn construct_with_verified_tier_no_release(
+    pub(super) fn construct_tier_no_release(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         tier: VerifiedSelectedTierEpochCustody,
-        no_release: VerifiedSelectedNoReleaseCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_tier_no_release(coordination, media, cleanup, tier, no_release, || {})
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_tier_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        no_release: VerifiedSelectedNoReleaseCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_tier_no_release(
-            coordination,
-            media,
-            cleanup,
-            tier,
-            no_release,
-            pause_before_final_reread,
-        )
-    }
-
-    fn construct_tier_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        no_release: VerifiedSelectedNoReleaseCustody,
+        no_release: Box<VerifiedSelectedNoReleaseCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0 {
@@ -113,49 +89,24 @@ impl PhysicalRecoveryConstructionPort {
                 return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
             }
         };
-        Self::construct_inner(
+        Self::finish_selected_no_release(
+            backing,
             coordination,
             media,
             reopen,
-            Some(RecoveredNoReleaseCustody::Selected(no_release)),
-            Some(tier),
-            Some(selected_wal),
-            Some(selected_controls),
-        )
-    }
-
-    pub fn construct_with_verified_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        no_release: VerifiedSelectedNoReleaseCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_no_release(coordination, media, cleanup, no_release, || {})
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        no_release: VerifiedSelectedNoReleaseCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_no_release(
-            coordination,
-            media,
-            cleanup,
             no_release,
-            pause_before_final_reread,
+            Some(tier),
+            selected_wal,
+            selected_controls,
         )
     }
 
-    fn construct_no_release(
+    pub(super) fn construct_no_release(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
-        no_release: VerifiedSelectedNoReleaseCustody,
+        no_release: Box<VerifiedSelectedNoReleaseCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0 {
@@ -183,22 +134,50 @@ impl PhysicalRecoveryConstructionPort {
                     );
                 }
             };
-        Self::construct_inner(
+        Self::finish_selected_no_release(
+            backing,
             coordination,
             media,
             reopen,
-            Some(RecoveredNoReleaseCustody::Selected(no_release)),
+            no_release,
             None,
+            selected_wal,
+            selected_controls,
+        )
+    }
+
+    #[inline(never)]
+    fn finish_selected_no_release(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        reopen: CompletedPhysicalRecoveryFreshReopen,
+        no_release: Box<VerifiedSelectedNoReleaseCustody>,
+        tier: Option<VerifiedSelectedTierEpochCustody>,
+        selected_wal: selected_rejoin::SelectedWalMediaFingerprint,
+        selected_controls: selected_rejoin::SelectedControlMediaFingerprint,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        Self::construct_inner(
+            backing,
+            coordination,
+            media,
+            reopen,
+            Some(RecoveredReleaseCustody::NoRelease(
+                RecoveredNoReleaseCustody::Selected(*no_release),
+            )),
+            tier,
             Some(selected_wal),
             Some(selected_controls),
         )
     }
 
-    fn construct_inner(
+    #[inline(never)]
+    pub(super) fn construct_inner(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         reopen: CompletedPhysicalRecoveryFreshReopen,
-        no_release_custody: Option<RecoveredNoReleaseCustody>,
+        release_custody: Option<RecoveredReleaseCustody>,
         tier_custody: Option<VerifiedSelectedTierEpochCustody>,
         selected_wal: Option<selected_rejoin::SelectedWalMediaFingerprint>,
         selected_controls: Option<selected_rejoin::SelectedControlMediaFingerprint>,
@@ -209,21 +188,28 @@ impl PhysicalRecoveryConstructionPort {
         }
         let observed_root_sha256: [u8; 32] =
             Sha256::digest(reopen.fresh_reopen_occurrence().root().bytes()).into();
-        if no_release_custody.as_ref().is_some_and(|custody| {
-            custody.selected_root() != reopen.root()
-                || custody.selected_root_sha256() != observed_root_sha256
-                || custody.selected().is_some_and(|verified| {
-                    let marker_digest: [u8; 32] = Sha256::digest(verified.marker().encode()).into();
-                    verified.marker().checkpoint() != verified.checkpoint().source().identity()
-                        || verified.marker().root_sha256()
-                            != verified.checkpoint_source_root_sha256()
-                        || verified.marker_payload_sha256() != marker_digest
-                })
-        }) || tier_custody.as_ref().is_some_and(|verified| {
-            verified.selected_root() != reopen.root()
-                || verified.selected_root_sha256() != observed_root_sha256
-                || reopen.root().tier_epoch_anchor() != Some(verified.tier_epoch_anchor())
-        }) {
+        let no_release_mismatch = match &release_custody {
+            Some(RecoveredReleaseCustody::NoRelease(custody)) => {
+                custody.selected_root() != reopen.root()
+                    || custody.selected_root_sha256() != observed_root_sha256
+                    || custody.selected().is_some_and(|verified| {
+                        let marker_digest: [u8; 32] =
+                            Sha256::digest(verified.marker().encode()).into();
+                        verified.marker().checkpoint() != verified.checkpoint().source().identity()
+                            || verified.marker().root_sha256()
+                                != verified.checkpoint_source_root_sha256()
+                            || verified.marker_payload_sha256() != marker_digest
+                    })
+            }
+            _ => false,
+        };
+        if no_release_mismatch
+            || tier_custody.as_ref().is_some_and(|verified| {
+                verified.selected_root() != reopen.root()
+                    || verified.selected_root_sha256() != observed_root_sha256
+                    || reopen.root().tier_epoch_anchor() != Some(verified.tier_epoch_anchor())
+            })
+        {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
         }
@@ -253,7 +239,7 @@ impl PhysicalRecoveryConstructionPort {
                 crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::MissingResidentAdmission,
             ),
         )?;
-        Ok(RecoveredPhysicalRuntimeCore {
+        Ok(backing.finish(super::handoff::RecoveredPhysicalRuntimeCoreBody {
             serving_custody_backing,
             residency,
             checkpoint_ownership,
@@ -264,14 +250,10 @@ impl PhysicalRecoveryConstructionPort {
             root: reopen.root().clone(),
             media,
             reopen,
-            head_v2_custody: None,
-            no_release_custody,
-            pending_wal_release_custody: None,
-            effective_release_heads: None,
-            historical_release_custody: None,
+            release_custody,
             tier_custody,
             selected_wal,
             selected_controls,
-        })
+        }))
     }
 }

@@ -1,7 +1,8 @@
 //! A copy is a bounded regeneration recipe, never an empty frame-target record.
 use super::*;
 use worth_store_physical_format::{
-    PersistedExtentCopyRecipe, PersistedPhysicalRecoveryPayload, PhysicalRecoveryProjectionDenial,
+    PersistedExtentCopyRecipe, PersistedPhysicalRecoveryPayload, PhysicalRecoveryDecodeFailure,
+    PhysicalRecoveryDecodeStorage, PhysicalRecoveryProjectionDenial,
 };
 
 const DOMAIN: &[u8] = b"store.physical.extent-copy-publication.v1";
@@ -47,17 +48,19 @@ pub(super) fn is_copy(bytes: &[u8]) -> bool {
     field(&mut &*bytes).is_ok_and(|domain| domain == DOMAIN)
 }
 
-pub(super) fn admit(
+pub(super) fn admit_with_storage<S: PhysicalRecoveryDecodeStorage<Denial = PhysicalRedoPlanningDenial>>(
     member: &PhysicalRedoMemberInput,
     format: PhysicalRecordFormatDeclaration,
     limits: PhysicalRecoveryProjectionDecodeLimits,
+    storage: &mut S,
 ) -> Result<Option<PhysicalExtentCopyAdmission>, PhysicalRedoPlanningDenial> {
-    let Some(projection) = admit_current_source_copy_publication(
+    let Some(projection) = admit_current_source_copy_with_storage(
         member.operation(),
         member.lsn_range(),
         member.canonical_redo(),
         format,
         limits,
+        storage,
     )?
     else {
         return Ok(None);
@@ -87,6 +90,27 @@ pub fn admit_current_source_copy_publication(
     format: PhysicalRecordFormatDeclaration,
     limits: PhysicalRecoveryProjectionDecodeLimits,
 ) -> Result<Option<PersistedPhysicalRecoveryProjection>, PhysicalRedoPlanningDenial> {
+    let mut unrestricted = super::RedoAllocationBudget::new(u64::MAX);
+    admit_current_source_copy_with_storage(
+        operation,
+        range,
+        canonical_redo,
+        format,
+        limits,
+        &mut unrestricted,
+    )
+}
+
+fn admit_current_source_copy_with_storage<
+    S: PhysicalRecoveryDecodeStorage<Denial = PhysicalRedoPlanningDenial>,
+>(
+    operation: [u8; 32],
+    range: WalLsnRange,
+    canonical_redo: &[u8],
+    format: PhysicalRecordFormatDeclaration,
+    limits: PhysicalRecoveryProjectionDecodeLimits,
+    storage: &mut S,
+) -> Result<Option<PersistedPhysicalRecoveryProjection>, PhysicalRedoPlanningDenial> {
     if !is_copy(canonical_redo) {
         return Ok(None);
     }
@@ -111,13 +135,24 @@ pub fn admit_current_source_copy_publication(
         total_entries: limits.total_entries.min(1),
         inline_allocations: 0,
     };
-    let projection = PersistedPhysicalRecoveryProjection::decode(encoded, copy_limits, format)
-        .map_err(|denial| match denial {
-            PhysicalRecoveryProjectionDenial::UnsupportedVersion(version) => {
-                PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(version)
-            }
-            _ => PhysicalRedoPlanningDenial::InvalidRecoveryProjection,
-        })?;
+    let projection = PersistedPhysicalRecoveryProjection::decode_with_storage(
+        encoded,
+        copy_limits,
+        format,
+        storage,
+    )
+    .map_err(|failure| match failure {
+        PhysicalRecoveryDecodeFailure::Projection(
+            PhysicalRecoveryProjectionDenial::UnsupportedVersion(version),
+        ) => PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(version),
+        PhysicalRecoveryDecodeFailure::Allocation(denial) => denial,
+        PhysicalRecoveryDecodeFailure::AllocationFailed { .. }
+        | PhysicalRecoveryDecodeFailure::AllocatorExceededReservation { .. }
+        | PhysicalRecoveryDecodeFailure::SizeOverflow => {
+            PhysicalRedoPlanningDenial::CounterOverflow
+        }
+        _ => PhysicalRedoPlanningDenial::InvalidRecoveryProjection,
+    })?;
     let PersistedPhysicalRecoveryPayload::SourceCopy(recipe) = projection.payload() else {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     };

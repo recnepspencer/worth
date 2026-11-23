@@ -13,7 +13,8 @@ use worth_store_physical_format::{
 #[test]
 fn retired_inline_slot_needs_exact_wal_witness_even_when_not_new_record() {
     let full = inline_with_retired_slot(0);
-    let admitted = admit_projection(&full, store(), format()).unwrap();
+    let mut budget = RedoAllocationBudget::new(u64::MAX);
+    let admitted = admit_projection(&full, store(), format(), &mut budget).unwrap();
     assert_eq!(admitted.inline_frames().len(), 1);
     assert_eq!(admitted.inline_frames()[0].records.len(), 5);
     assert_eq!(full.record_identities().len(), 1);
@@ -24,9 +25,10 @@ fn retired_inline_slot_needs_exact_wal_witness_even_when_not_new_record() {
     );
     for mutation in [1, 2, 3] {
         let corrupted = inline_with_retired_slot(mutation);
+        let mut budget = RedoAllocationBudget::new(u64::MAX);
         assert!(
             matches!(
-                admit_projection(&corrupted, store(), format()),
+                admit_projection(&corrupted, store(), format(), &mut budget),
                 Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)
             ),
             "mutation {mutation} must deny"

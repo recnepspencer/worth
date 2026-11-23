@@ -122,4 +122,152 @@ impl CompositeRuntimeWorldCommit {
         .map_err(Denial::Construction)?;
         Ok(Arc::new(result))
     }
+
+    pub(crate) fn from_readmitted_horizon_publication(
+        request: &ExecutionRequest<'_, '_>,
+        identity: CompositeCommitIdentity,
+        original_parent: CompositeCommitIdentity,
+        basis: AdmittedCompositeRuntimeWorldBasis,
+        publication: CompositePublicationAttemptIdentity,
+        native_commit: Option<RelationalCommitIdentity>,
+        signal: Option<&worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+    ) -> Result<Arc<Self>, ReadmittedWorldCommitDenial> {
+        use ReadmittedWorldCommitDenial as Denial;
+        request.consult().map_err(Denial::Request)?;
+        let mismatch = || Denial::Construction(CompositeCommitConstructionDenial::BasisMismatch);
+        let relational = match native_commit {
+            Some(commit) => RelationalComponentEvidence::Published {
+                commit,
+                basis: basis.relational_basis().admission_identity().clone(),
+            },
+            None => RelationalComponentEvidence::RetainedExact {
+                basis: basis.relational_basis().admission_identity().clone(),
+            },
+        };
+        let signal = match signal {
+            Some(actual) => {
+                if actual.basis().admission_identity() != basis.signal_basis().admission_identity()
+                {
+                    return Err(mismatch());
+                }
+                use worth_signal::facade::durability::SignalAuthoredBranchChange;
+                match actual.original().change() {
+                    SignalAuthoredBranchChange::Advanced => {
+                        SignalComponentEvidence::Published(
+                            CompositeSignalPublicationIdentity::Advanced(
+                                actual.basis().admission_identity().clone(),
+                            ),
+                        )
+                    }
+                    SignalAuthoredBranchChange::Created { .. }
+                    | SignalAuthoredBranchChange::SnapshotCaptured
+                    | SignalAuthoredBranchChange::Restored
+                    | SignalAuthoredBranchChange::Retired => return Err(mismatch()),
+                }
+            }
+            None => SignalComponentEvidence::RetainedExact {
+                basis: basis.signal_basis().admission_identity().clone(),
+            },
+        };
+        let memory = reserve_horizon_commit_memory(request, 0)?;
+        let result = Self::from_horizon_ordinary(
+            identity,
+            original_parent,
+            basis,
+            publication,
+            memory,
+            CompositeComponentEvidence { relational, signal },
+        )
+        .map_err(Denial::Construction)?;
+        Ok(Arc::new(result))
+    }
+
+    pub(crate) fn from_readmitted_horizon_branch_creation(
+        request: &ExecutionRequest<'_, '_>,
+        identity: CompositeCommitIdentity,
+        original_parent: CompositeCommitIdentity,
+        basis: AdmittedCompositeRuntimeWorldBasis,
+        attempt: CompositePublicationAttemptIdentity,
+        native_forked: bool,
+        signal: Option<&worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+    ) -> Result<Arc<Self>, ReadmittedWorldCommitDenial> {
+        use ReadmittedWorldCommitDenial as Denial;
+        request.consult().map_err(Denial::Request)?;
+        let mismatch = || Denial::Construction(CompositeCommitConstructionDenial::BasisMismatch);
+        if !native_forked && signal.is_none() {
+            return Err(mismatch());
+        }
+        let relational = if native_forked {
+            RelationalComponentEvidence::Forked {
+                target: basis.relational_basis().identity().clone(),
+                basis: basis.relational_basis().admission_identity().clone(),
+            }
+        } else {
+            RelationalComponentEvidence::RetainedExact {
+                basis: basis.relational_basis().admission_identity().clone(),
+            }
+        };
+        let signal = match signal {
+            Some(actual) => {
+                if actual.basis().admission_identity() != basis.signal_basis().admission_identity()
+                {
+                    return Err(mismatch());
+                }
+                use worth_signal::facade::durability::SignalAuthoredBranchChange;
+                match actual.original().change() {
+                    SignalAuthoredBranchChange::Created {
+                        parent: Some(_), ..
+                    } => SignalComponentEvidence::Published(
+                        CompositeSignalPublicationIdentity::Forked(
+                            basis.signal_basis().admission_identity().clone(),
+                        ),
+                    ),
+                    SignalAuthoredBranchChange::Created { parent: None, .. }
+                    | SignalAuthoredBranchChange::Advanced
+                    | SignalAuthoredBranchChange::SnapshotCaptured
+                    | SignalAuthoredBranchChange::Restored
+                    | SignalAuthoredBranchChange::Retired => return Err(mismatch()),
+                }
+            }
+            None => SignalComponentEvidence::RetainedExact {
+                basis: basis.signal_basis().admission_identity().clone(),
+            },
+        };
+        let extra = if native_forked {
+            basis.relational_basis().descriptor().branch_id().0.len()
+        } else {
+            0
+        };
+        let memory = reserve_horizon_commit_memory(request, extra)?;
+        let result = Self::from_horizon_ordinary(
+            identity,
+            original_parent,
+            basis,
+            attempt,
+            memory,
+            CompositeComponentEvidence { relational, signal },
+        )
+        .map_err(Denial::Construction)?;
+        Ok(Arc::new(result))
+    }
+}
+
+fn reserve_horizon_commit_memory(
+    request: &ExecutionRequest<'_, '_>,
+    extra_bytes: usize,
+) -> Result<Option<worth_execution::ExecutionMemoryReservation>, ReadmittedWorldCommitDenial> {
+    use ReadmittedWorldCommitDenial as Denial;
+    let layout = Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+        .extend(Layout::new::<CompositeRuntimeWorldCommit>())
+        .map_err(|_| Denial::CapacityOverflow)?
+        .0
+        .pad_to_align();
+    let bytes = layout
+        .size()
+        .checked_add(extra_bytes)
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or(Denial::CapacityOverflow)?;
+    request
+        .reserve_retained_memory(bytes)
+        .map_err(Denial::Request)
 }

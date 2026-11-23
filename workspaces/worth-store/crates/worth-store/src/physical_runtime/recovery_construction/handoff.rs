@@ -2,16 +2,51 @@ use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, DurablePhysicalRootManifest,
 };
-use worth_store_recovery_physics::{
-    VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
-    VerifiedSelectedTierEpochCustody,
-};
+use worth_store_recovery_physics::VerifiedSelectedTierEpochCustody;
 
-use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
 
+/// Prepaid one-slot backing for `RecoveredPhysicalRuntimeCore`, reserved by the
+/// recovery owner before recovery effects so Store construction never allocates
+/// the core body after publication.
+pub struct PreparedRecoveredRuntimeCoreBacking {
+    inner: Vec<RecoveredPhysicalRuntimeCoreBody>,
+}
+
+impl PreparedRecoveredRuntimeCoreBacking {
+    pub const fn required_bytes() -> u64 {
+        std::mem::size_of::<RecoveredPhysicalRuntimeCoreBody>() as u64
+    }
+
+    pub fn try_prepare() -> Result<Self, std::collections::TryReserveError> {
+        let mut inner = Vec::new();
+        inner.try_reserve_exact(1)?;
+        Ok(Self { inner })
+    }
+
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.inner.capacity())
+            .ok()?
+            .checked_mul(Self::required_bytes())
+    }
+
+    #[inline(never)]
+    pub(super) fn finish(
+        mut self,
+        body: RecoveredPhysicalRuntimeCoreBody,
+    ) -> RecoveredPhysicalRuntimeCore {
+        assert!(self.inner.is_empty() && self.inner.capacity() >= 1);
+        self.inner.push(body);
+        RecoveredPhysicalRuntimeCore { inner: self.inner }
+    }
+}
+
 pub struct RecoveredPhysicalRuntimeCore {
+    inner: Vec<RecoveredPhysicalRuntimeCoreBody>,
+}
+
+pub(super) struct RecoveredPhysicalRuntimeCoreBody {
     pub(super) serving_custody_backing:
         crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking,
     pub(super) residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
@@ -24,11 +59,7 @@ pub struct RecoveredPhysicalRuntimeCore {
     pub(super) root: DurablePhysicalRootManifest,
     pub(super) media: AdmittedRecoveryFilesystemMedia,
     pub(super) reopen: CompletedPhysicalRecoveryFreshReopen,
-    pub(super) head_v2_custody: Option<VerifiedSelectedReleaseHeadCustodyV2>,
-    pub(super) no_release_custody: Option<RecoveredNoReleaseCustody>,
-    pub(super) pending_wal_release_custody: Option<VerifiedPendingWalReleaseCustody>,
-    pub(super) effective_release_heads: Option<VerifiedEffectiveReleaseHeadRosterV14>,
-    pub(super) historical_release_custody: Option<VerifiedOrderedHistoricalReleaseCustody>,
+    pub(super) release_custody: Option<RecoveredReleaseCustody>,
     pub(super) tier_custody: Option<VerifiedSelectedTierEpochCustody>,
     pub(super) selected_wal: Option<super::selected_rejoin::SelectedWalMediaFingerprint>,
     pub(super) selected_controls: Option<super::selected_rejoin::SelectedControlMediaFingerprint>,
@@ -150,44 +181,54 @@ pub enum PhysicalRecoveryWalResidentStage {
 }
 
 impl RecoveredPhysicalRuntimeCore {
+    pub(super) const fn body(&self) -> &RecoveredPhysicalRuntimeCoreBody {
+        &self.inner.as_slice()[0]
+    }
+
+    pub(super) fn into_body(mut self) -> RecoveredPhysicalRuntimeCoreBody {
+        self.inner
+            .pop()
+            .expect("recovered physical runtime core holds one body")
+    }
+
     /// Actual capacity of the original-funded serving evidence backing.
     /// This observation grants no allocation or serving authority.
     pub fn serving_evidence_backing_bytes(&self) -> Option<u64> {
-        self.serving_custody_backing.owned_heap_bytes()
+        self.body().serving_custody_backing.owned_heap_bytes()
     }
 
     pub fn checkpoint(&self) -> Option<&crate::physical_runtime::SharedRecoveryCheckpoint> {
-        self.checkpoint_ownership.checkpoint()
+        self.body().checkpoint_ownership.checkpoint()
     }
 
     /// Actual retained WAL fingerprint slot capacity. This observes storage,
     /// not pool accounting, and grants no media or allocation authority.
     pub fn selected_wal_owned_heap_bytes(&self) -> Option<u64> {
-        self.selected_wal.as_ref()?.owned_heap_bytes()
+        self.body().selected_wal.as_ref()?.owned_heap_bytes()
     }
 
     /// Actual full-tree witness backing, excluding routing and effect slices.
     #[cfg(feature = "certification-test-authority")]
     pub fn selected_head_walk_owned_heap_bytes(&self) -> Option<u64> {
-        self.selected_controls.as_ref()?.head_walk_heap_bytes()
+        self.body().selected_controls.as_ref()?.head_walk_heap_bytes()
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn selected_head_effect_owned_heap_bytes(&self) -> Option<u64> {
-        self.selected_controls.as_ref()?.effect_heap_bytes()
+        self.body().selected_controls.as_ref()?.effect_heap_bytes()
     }
 
     pub const fn residency_policy(
         &self,
     ) -> crate::physical_runtime::record_serving::AdmittedPhysicalRecordResidencyPolicy {
-        self.residency.admitted_policy()
+        self.body().residency.admitted_policy()
     }
 
     #[cfg(feature = "certification-test-authority")]
     pub fn certification_residency_allocations(
         &self,
     ) -> worth_store_buffer_pool::PhysicalResidencyAllocationEventObserver {
-        self.residency.ports().allocation_events()
+        self.body().residency.ports().allocation_events()
     }
 
     /// Test-only pressure on the carried pool; grants no media or Serving authority.
@@ -199,45 +240,45 @@ impl RecoveredPhysicalRuntimeCore {
         worth_store_buffer_pool::OperationAllocationGrant,
         worth_store_buffer_pool::PhysicalResidencyDenial,
     > {
-        self.residency.ports().begin_operation(
+        self.body().residency.ports().begin_operation(
             worth_store_buffer_pool::PhysicalOperationAllocationScope::Recovery,
             bytes,
         )
     }
 
     pub const fn store_identity(&self) -> StableStoreIdentity {
-        self.store
+        self.body().store
     }
     /// Original Store-issued recovery ceiling, preserved across the Serving handoff.
     pub const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
-        self.recovery_allocation
+        self.body().recovery_allocation
     }
     pub const fn runtime_identity(&self) -> RuntimeIdentity {
-        self.runtime
+        self.body().runtime
     }
     pub const fn recovery_runtime_identity(&self) -> RuntimeIdentity {
-        self.recovery_runtime
+        self.body().recovery_runtime
     }
     pub const fn root(&self) -> &DurablePhysicalRootManifest {
-        &self.root
+        &self.body().root
     }
     pub const fn reopen(&self) -> &CompletedPhysicalRecoveryFreshReopen {
-        &self.reopen
+        &self.body().reopen
     }
     pub fn recovery_effect_count(&self) -> u64 {
-        self.media.recovery_effect_count()
+        self.body().media.recovery_effect_count()
     }
     pub const fn backend_profile(
         &self,
     ) -> &worth_store_physical_backend::QualifiedPhysicalBackendProfile {
-        self.media.backend_profile()
+        self.body().media.backend_profile()
     }
     pub const fn media_generation(
         &self,
     ) -> worth_store_physical_backend::PhysicalRecoveryMediaGeneration {
-        self.media.media_generation()
+        self.body().media.media_generation()
     }
 
     /// Release media for certification that deliberately changes selected

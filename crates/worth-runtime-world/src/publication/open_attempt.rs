@@ -104,10 +104,20 @@ impl WorldPendingOpenAttempt {
             Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                 WorldOpenAttemptOutcome::Pending(self)
             }
-            Err(WorldDurablePublicationStop::Unresolved) => {
+            Err(
+                WorldDurablePublicationStop::Unresolved
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: false,
+                },
+            ) => {
                 WorldOpenAttemptOutcome::Unresolved(self)
             }
-            Err(WorldDurablePublicationStop::EvidenceRequired) => {
+            Err(
+                WorldDurablePublicationStop::EvidenceRequired
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: true,
+                },
+            ) => {
                 WorldOpenAttemptOutcome::EvidenceRequired(self)
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {

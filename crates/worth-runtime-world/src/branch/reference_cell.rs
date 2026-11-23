@@ -30,7 +30,7 @@ pub(crate) mod publication_unwind;
 mod readmission;
 mod retirement;
 mod successor_validation;
-pub(crate) use retirement::ProductBranchReferenceRetirement;
+pub(crate) use retirement::{ProductBranchReferenceRetirement, WorldProductRetirementPermit};
 use successor_validation::validate_successor;
 
 #[derive(Debug)]
@@ -279,7 +279,7 @@ impl ProductBranchReferenceCell {
         loop {
             let candidate = {
                 let current = self.state.read();
-                if current.protection.is_none() {
+                if current.is_retired_or_retiring() {
                     return Err(ProductBranchReferenceObservationFailure::Retired);
                 }
                 current.snapshot.clone()
@@ -288,7 +288,7 @@ impl ProductBranchReferenceCell {
                 Ok(protection) => protection,
                 Err(denial) => {
                     let current = self.state.read();
-                    if current.protection.is_none() {
+                    if current.is_retired_or_retiring() {
                         return Err(ProductBranchReferenceObservationFailure::Retired);
                     }
                     if current.snapshot != candidate {
@@ -301,7 +301,9 @@ impl ProductBranchReferenceCell {
                 }
             };
             let current = self.state.read();
-            if current.protection.is_none() {
+            if current.is_retired_or_retiring() {
+                drop(current);
+                drop(history_protection);
                 return Err(ProductBranchReferenceObservationFailure::Retired);
             }
             let still_selected = current.snapshot == candidate;
@@ -319,7 +321,7 @@ impl ProductBranchReferenceCell {
                 }
             };
             let current = self.state.read();
-            if current.protection.is_none() {
+            if current.is_retired_or_retiring() {
                 drop(current);
                 drop(components);
                 drop(history_protection);

@@ -191,3 +191,153 @@ fn actual_owner_loss_during_successor_retention_remains_owner_lost() {
     assert!(owner.cleanup_recovery_handle(&handle).is_some());
     assert_eq!(owner.recovery_record_count(), 0);
 }
+
+#[test]
+fn retired_branch_second_frame_busy_returns_resume_commit_and_treats_fence_as_held() {
+    use super::durability_unresolved::{
+        setup_history_chain, ScriptedHistoryAnswer as Ans, ScriptedHistoryMedium,
+    };
+    use crate::durability::WorldDurableMediumBinding;
+    use crate::history::HistoryReclamationDenial;
+
+    // 4 unowned commits (chain[1..=4]) above protected root chain[0]; drop tip_guard so
+    // the whole retired branch tail [4, 3, 2, 1] is eligible leaf-to-root.
+    let (_fx1, owner, chain, _rg1, tip_guard1) = setup_history_chain(4);
+    drop(tip_guard1);
+    let policy = owner.state.execution.request_policy();
+    let serial = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let exec = worth_execution::ExecutionRequest::serial(&serial);
+    let medium = ScriptedHistoryMedium::new(vec![Ans::Commit, Ans::Busy]);
+    let binding = Arc::new(WorldDurableMediumBinding::new(medium.clone(), &exec).unwrap());
+    let pending = owner
+        .state
+        .history
+        .begin_durable_release_retired_branch_history(chain[4].identity())
+        .unwrap();
+    let err = owner
+        .drive_durable_history_retirement_with_chunk_size(&binding, pending, 2)
+        .unwrap_err();
+    let resume_from = match err {
+        HistoryReclamationDenial::PartialPublication {
+            reclaimed,
+            resume_from: Some(next),
+            indeterminate: false,
+        } => {
+            assert_eq!(reclaimed, vec![chain[4].identity().clone(), chain[3].identity().clone()]);
+            assert_eq!(next, chain[2].identity().clone());
+            next
+        }
+        other => panic!("expected PartialPublication with resume_from=c2, got {other:?}"),
+    };
+    assert!(owner.state.history.lookup(chain[4].identity()).is_none());
+    assert!(owner.state.history.lookup(chain[3].identity()).is_none());
+    // Retrying from the exact resume_from reclaims the remaining suffix [c2, c1] once.
+    medium.answers.lock().unwrap().push_back(Ans::Commit);
+    let retry = owner
+        .state
+        .history
+        .begin_durable_release_retired_branch_history(&resume_from)
+        .unwrap();
+    let (reclaimed_suffix, held) = owner
+        .drive_durable_history_retirement_with_chunk_size(&binding, retry, 2)
+        .unwrap();
+    assert!(held.is_none());
+    assert_eq!(
+        reclaimed_suffix,
+        vec![chain[2].identity().clone(), chain[1].identity().clone()]
+    );
+    assert!(owner.state.history.lookup(chain[2].identity()).is_none());
+    assert!(owner.state.history.lookup(chain[1].identity()).is_none());
+    assert!(owner.state.history.lookup(chain[0].identity()).is_some());
+
+    // Case 2: second frame Unresolved leaves [c2, c1] fenced; walking to a fenced commit
+    // MUST report held=Some(c2) rather than completion (held=None).
+    let (_fx2, owner2, chain2, _rg2, tip_guard2) = setup_history_chain(4);
+    drop(tip_guard2);
+    let medium2 = ScriptedHistoryMedium::new(vec![Ans::Commit, Ans::Unresolved]);
+    let binding2 = Arc::new(WorldDurableMediumBinding::new(medium2, &exec).unwrap());
+    let pending2 = owner2
+        .state
+        .history
+        .begin_durable_release_retired_branch_history(chain2[4].identity())
+        .unwrap();
+    let err2 = owner2
+        .drive_durable_history_retirement_with_chunk_size(&binding2, pending2, 2)
+        .unwrap_err();
+    let fenced_head = match err2 {
+        HistoryReclamationDenial::PartialPublication {
+            reclaimed,
+            resume_from: Some(next),
+            indeterminate: true,
+        } => {
+            assert_eq!(reclaimed, vec![chain2[4].identity().clone(), chain2[3].identity().clone()]);
+            assert_eq!(next, chain2[2].identity().clone());
+            next
+        }
+        other => panic!("expected indeterminate PartialPublication at c2, got {other:?}"),
+    };
+    let hit_fence = owner2
+        .state
+        .history
+        .begin_durable_release_retired_branch_history(&fenced_head)
+        .unwrap();
+    let (reclaimed_fenced, held_fenced) = owner2
+        .drive_durable_history_retirement_with_chunk_size(&binding2, hit_fence, 2)
+        .unwrap();
+    assert!(reclaimed_fenced.is_empty());
+    assert_eq!(
+        held_fenced,
+        Some(chain2[2].identity().clone()),
+        "a walk reaching a fenced commit must report held rather than finished"
+    );
+}
+
+#[test]
+fn signal_only_horizon_creation_rejects_mismatched_native_predecessor() {
+    use crate::durability::WorldReadmissionDenial as Denial;
+    use worth_relational::facade::branch::RecordedRelationalComponentReference as Recorded;
+
+    let (_fixture, owner, expected) = setup();
+    let policy = owner.state.execution.request_policy();
+    let serial = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let exec = worth_execution::ExecutionRequest::serial(&serial);
+    let before = owner
+        .state
+        .relational_services()
+        .basis_port()
+        .export_recorded_retained_component(&exec, expected.basis().relational_basis())
+        .unwrap();
+    assert!(
+        crate::lifecycle::builder::require_retained_native_predecessor_for_test(&before, &before)
+            .is_ok()
+    );
+    let mut wrong_branch = serde_json::to_value(&before).unwrap();
+    wrong_branch["descriptor"]["branch_id"] = serde_json::json!("forged-native-branch");
+    let wrong_branch: Recorded = serde_json::from_value(wrong_branch).unwrap();
+    assert!(matches!(
+        crate::lifecycle::builder::require_retained_native_predecessor_for_test(
+            &wrong_branch,
+            &before,
+        ),
+        Err(Denial::CreationEvidenceMismatch)
+    ));
+    let mut wrong_truth = serde_json::to_value(&before).unwrap();
+    let truth = wrong_truth["descriptor"]["truth_version"].as_u64().unwrap();
+    wrong_truth["descriptor"]["truth_version"] = serde_json::json!(truth + 1);
+    let wrong_truth: Recorded = serde_json::from_value(wrong_truth).unwrap();
+    assert!(matches!(
+        crate::lifecycle::builder::require_retained_native_predecessor_for_test(
+            &wrong_truth,
+            &before,
+        ),
+        Err(Denial::CreationEvidenceMismatch)
+    ));
+}

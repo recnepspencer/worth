@@ -81,6 +81,12 @@ fn no_effect(refusal: Refusal) -> NoEffectCause {
         Refusal::Basis(RelationalBranchBasisDenial::OwnerUnavailable) => {
             NoEffectCause::OwnerUnavailable
         }
+        Refusal::Basis(
+            RelationalBranchBasisDenial::ForeignRuntime { .. }
+            | RelationalBranchBasisDenial::UnknownBranch(_)
+            | RelationalBranchBasisDenial::ArchivedBranch(_)
+            | RelationalBranchBasisDenial::DeletingBranch(_),
+        ) => NoEffectCause::OwnerDeniedBeforeEffect,
         _ => NoEffectCause::PreEffectFailure,
     }
 }

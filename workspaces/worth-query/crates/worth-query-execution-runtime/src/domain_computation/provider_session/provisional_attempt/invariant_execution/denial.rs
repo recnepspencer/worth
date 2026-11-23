@@ -3,7 +3,6 @@ mod coupled_support;
 mod native_denial;
 pub mod refusal_decode;
 mod relation_law;
-pub use coupled_support::WorthQueryCoupledSupportHold;
 use native_denial::NativeDenial;
 pub use refusal_decode::{
     canonical_wire_maximum, decode_refusal_payload, WorthQueryInvariantRefusalDecodeDenial,
@@ -44,6 +43,10 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// A Native participant has no retained Query settlement session.
     CoupledSettlementMissing,
     CoupledReadSupportChanged,
+    /// R3 settlement left members of one coupled group consuming each
+    /// other's outputs in a cycle: no order of the members derives them, so
+    /// the edit refuses whole before the World commit.
+    CoupledConsumptionCycle,
     CoupledReadSupportUnavailable {
         cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
     },
@@ -150,7 +153,6 @@ pub struct WorthQueryInvariantExecutionFailure {
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
     native: Option<NativeDenial>,
     affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
-    hold: Option<WorthQueryCoupledSupportHold>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -216,7 +218,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -231,7 +232,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -246,7 +246,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: Some(custom_invariant),
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -331,7 +330,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: Some(native),
             affected_records: None,
-            hold: None,
         }
     }
     /// Exact physical owner cause, including its original checked quote.

@@ -219,7 +219,11 @@ where
                 .map_err(Denial::Durable)?;
         let mut original_occurrence =
             WorldOccurrenceCustody::prepare(&original_open, execution).map_err(Denial::Durable)?;
-        original_occurrence.bind_origin(after.commit().basis(), origin_pins);
+        original_occurrence.bind_origin(
+            after.selected_commit().ordinal(),
+            after.commit().basis(),
+            origin_pins,
+        );
         let occurrence = original_occurrence
             .finalize_owners(evidence, effects.claim_incarnation())
             .map_err(Denial::Durable)?

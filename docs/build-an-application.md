@@ -897,7 +897,12 @@ Bindings that share a principal mapping, idempotency key and denial name one
 Context,` after the schema in `worth_query_mutation_binding!` or
 `worth_query_query_binding!`. Omitted principal, `idempotency` and `denial`
 clauses resolve to the context; a clause written on the binding wins. Both
-spellings install the same canonical schema.
+spellings install the same canonical schema. When one input serves several
+operations (an action enum, for example), bind each operation's own intent
+type to the shared input: `pub OpenBinding for Action, schema S, context C,
+intent OpenCase => OpenCase::action, ..` makes `OpenCase` the
+`ApplicationMutationIntent` whose `input()` lends the shared `Action` and
+whose scope `value` reads `OpenCase`.
 
 `decl::application_identity::ApplicationIdentityNamespace` derives one root's
 identities (`root.input`, `root.binding`, `root.request`, `root.result`,
@@ -946,12 +951,25 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   field, `result_shape::<Query>()` and `WorthQueryApplicationProjection` for
   every query whose result binding carries the row. Each field names its
   selection with `field = Alias`; a field whose type differs from the column's
-  does not compile.
+  does not compile. A field may instead traverse a relation:
+  `relation = R, nested = Binding` leaves the root along `R`, and
+  `reverse_from = Entity` arrives at the root from `R`'s declaring entity. The
+  field type selects the cardinality (`T` one, `Option<T>` at most one,
+  `Vec<T>` many), where `T` is itself a derived projection rooted at the
+  related entity; `Binding` identifies its nested shape. Every derived row
+  also has `result_shape_builder::<Query, Binding>()` and
+  `project_row::<Query>(row)`, so a row can feed a domain result type that
+  converts from it. `selector = name` renames a slot's generated selector
+  function when the row already has a method of the field's name.
 - `WorthQueryAction` on an input declares its input binding, operation (with
   forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`.
+  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
+  `validate:`: an invalid input is refused at capture
+  (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
+  key returned, before any effect.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -977,11 +995,15 @@ pub struct TaskRow {
 #[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
     input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
     result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    validate = titled)]
 pub struct Rename {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+fn titled(rename: &Rename) -> Result<(), &'static str> {
+    (!rename.title.trim().is_empty()).then_some(()).ok_or("a task needs a title")
 }
 ```
 
@@ -991,8 +1013,13 @@ installs a derived board beside hand-written members under
 searches with a case-insensitive `where_filter`, filters an
 `Option<CanonicalDate>` column and commits derived and written actions through
 `WorthQuerySourceCustody`; its parity courts compare derived and hand-written
-declarations, wire-identity overrides included. A `CanonicalDate` input
-member is captured through `serde::Serialize`; it is not a `WorthValue`.
+declarations, wire-identity overrides included. `CanonicalDate` and the other
+native scalar carriers (`CanonicalTime`, `CanonicalTimestamp`,
+`CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`, `InlineBytes`,
+`InternedString`) are named from `decl::application_schema` (in Host,
+`host::declaration::application_schema`), so an application needs no
+`worth-foundational` dependency. A `CanonicalDate` input member is captured
+through `serde::Serialize`; it is not a `WorthValue`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
@@ -2427,8 +2454,9 @@ For installed contract inspection, call
 [joined authoring/setup/export walkthrough](#share-reads-then-use-installed-contracts)
 for typed failures, fresh bootstrap custody and separate record readmission.
 
-The following branch, output and managed-resource capabilities use MemoryOnly.
-Durable branch creation remains pending. For an isolated branch from a selection already admitted in a host advancement,
+The following branch, output and managed-resource examples use MemoryOnly
+(durable branch creation, retirement, and history disposal are also supported on
+Directory Homes). For an isolated branch from a selection already admitted in a host advancement,
 consume that selection with `runtime.branches().fork_expected(selected)` and
 create it with the same runtime's phase. The returned candidate retains its
 source; use `candidate.branch()` for ordinary requests and `candidate.close(&phase)`
@@ -3122,11 +3150,13 @@ transition: the bootstrap runs on that lease, as if borrowed through
 `with_bootstrap_advancement_from_request`, so the lease carries the transition's
 work as well as the captured frame.
 
-### Durable branch creation
+### Durable branch creation, retirement, and history disposal
 
-On a Directory Home, creating a branch that must fork Signal state refuses with
-`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
-branch publication and retirement belong to Milestone 3's cleanup track (C2).
+On a Directory Home, durable branch creation (including Native and Signal forks),
+durable branch retirement, and durable history disposal publish through World's
+authoritative journals. Created branches, forks, and retired-branch states
+survive graceful close/reopen and quiescent kill/reopen, while disposed history
+is released once and is not resurrected on reopen.
 
 ### 4.5 Declaration failures
 
@@ -3670,7 +3700,9 @@ or phase is retained; matching a variant lends or returns the exact owner. Match
 `Pending`'s cause rather than retrying blindly:
 `Close(NativeObligationRetained)` means native recovery still owns the
 command. Report `Declined` evidence and drop it; do not keep the native carrier
-across frames.
+across frames. `WorthQueryTerminalSourceEvidence<S, I>` is `Debug` whenever the
+binding's `Denial` and `Result` are, so a generic helper reports it with that one
+bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`).
 
 <!-- illustrative -->
 ```rust,ignore
@@ -4810,8 +4842,11 @@ binds that mode and the complete original sequence into the whole intent under
 the same key. Mode changes and reordered requests therefore drift before
 handlers. Each position consumes its original nominal C admission once and
 reads the genuine pre-stage D image as data; an earlier-created reference is
-not a Current grant. Later invalidation of an earlier read still refuses at
-final support validation. Native same-record writer conflicts are unchanged.
+not a Current grant. A later change to an earlier read is qualified as
+described under [Ordinary coupled source edits](#later-changes-inside-one-edit-qualified-use):
+the derivation re-runs where one commit per stage would, and what still differs
+refuses at final support validation. Native same-record writer conflicts are
+unchanged.
 
 Only roots returned by positions already applied enter the shared wave. A
 later position that reads those outputs waits at the actual producer barrier;
@@ -5112,13 +5147,80 @@ either limit refuses typed before contacting a handler and rolls back the whole
 edit. A retry of an already committed key resolves the original receipt before
 producer starts. The limits carry no permission and do not change intent identity.
 
-A route publishes one producing run per synchronous edit. Native refuses a
-further in-edit run of the same route that would change anything, with
-`CoupledContinuationProvenancePostponed { issue: 119 }`, before publication;
-a run that applies nothing leaves the edit exactly as it was. No application
-entry requests such a run yet: a route whose output depends on its own effect
-is completed by ordinary delivery after the commit. An explicit retirement,
-restoration or selection writer runs exactly once
+#### Later changes inside one edit (qualified use)
+
+A later append in the same edit can change what an earlier derivation read.
+Query retains every derivation with its proofs: decision reads, verified
+parent and discovery support, and the outputs it consumed. It **qualifies**
+each one before use. Each append's Native-certified touch keys mark the
+derivations whose proofs they intersect. Before a wave task, a pending value
+demand, an authored stage or final support consumes a marked derivation,
+Query compares it exactly against the current candidate. A read with no
+narrower key (query support, source selections) is compared at every append.
+An equal derivation stays usable. A changed one is **reopened**, owed at the
+later of its own demand and the invalidating member, and re-runs before
+anything consumes it. A comparison that cannot be answered at an intermediate
+image (the read is unavailable there) proves neither: the derivation is kept,
+not reopened, and final support decides it against the final candidate. Any
+other failure of a comparison, such as an execution stop, cancellation, an
+allocation denial, the deadline or a work budget, refuses the edit at once.
+
+- A retained verified parent re-derives as a fresh part. Its source is
+  recaptured through ordinary Source admission, with ordinary failure; it
+  never reuses its earlier verification. A verified parent whose support is
+  equal stays verified, and is never recaptured.
+- A producer that already published re-runs as a successor round of the same
+  route. Its own output records read as they were before its first round. Any
+  other read of a key its chain wrote stops before append, with
+  `CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }`.
+  Native folds the round in place, so the route keeps one part and one
+  writer, only when its fold proof holds. Otherwise the edit refuses with the
+  same #119 postponement and reason `UncoveredWrite` (the round does not
+  re-patch a field, or re-create a record, an earlier round of its chain
+  wrote), `FreshDelete` (it deletes a record its chain created),
+  `StructuralEffect` (an effect a fold cannot lower in place: a deletion, a
+  relation change, a new record or content) or `IntervenedOutput` (another
+  writer changed one of the chain's records after its earlier round).
+  The own-output view covers records, not relations (public #277): a
+  relation read at the current image can reach a record the chain
+  created, which the view holds as absent. Such a round, whether it reads
+  the record's fields or only reaches it as a relation endpoint, stops
+  with the same #119 postponement and reason `PriorEffectRead`, and the
+  edit refuses until #277 makes that view coherent.
+- A consumer of a re-derived output settles when the replacement is equal in
+  payload, role, generation, custody, readiness and demand key. Otherwise the
+  consumer re-runs.
+- A task's discovery whose support changed selects again. A child it already
+  derived and no longer selects refuses `SupersededSelectionDropped`, and so
+  does a parent it closed on that had derived in the edit, even if that
+  parent is being derived again. At the end of the edit, any output the
+  edit derived that no live selection reaches refuses the same way, so a
+  dropped derivation is never published. A dropped parent the edit only
+  verified (its committed output reused) also refuses; one commit per
+  stage would commit there. A root
+  selection never selects again; one commit per stage evaluates each root
+  once, in its own stage. Its support holds through that stage: a change by a
+  member that runs before the next authored stage's append, in owed order,
+  refuses the edit at final support (`CoupledReadSupportChanged`). The window
+  ends at that append. A change by the next authored stage itself, a later
+  one, or a producer owed at or after it is outside the window and is
+  accepted, with no re-seed.
+- A producer whose decision refuses in its domain while one of its proofs can
+  still change waits. An append that changes one of those proofs retries it.
+  If the refusal is still pending where its output is needed, or at the end of
+  the edit, its original refusal is reported. A refusal without proofs is
+  reported at once.
+
+Reopens consume producer starts and are bounded by the round limits above. A
+change that no declared edge orders before its reader is not reordered: an
+authored stage's read accepts only a change by a member that one commit per
+stage runs after it, and any other change refuses plainly. Final support then
+checks every retained read against the final candidate. A reopened read is
+checked only up to the append that invalidated it, and its replacement is
+checked on its own; every other read is checked in full. What still differs
+refuses the whole edit with `CoupledReadSupportChanged`, naming the reader and
+the later writer. No such refusal is held for an open issue. An explicit
+retirement, restoration or selection writer runs exactly once
 (`CoupledContinuationRequiresEditSource`).
 
 A wide edit is also bounded by host budgets. Each producer an edit starts holds
@@ -7863,6 +7965,10 @@ reservations, 256 custody records). Each `with_*` override replaces one budget
 group verbatim, and `install()` validates through
 `WorthQueryProductWorldResources::install`, returning the same
 `RuntimeWorldBudgetDenial` an explicit installation would.
+`with_execution_policy`, `with_query_profile` and `with_signal_budget` replace
+the preset's serial unlimited-work execution policy, default query profile and
+development conditional budget verbatim, so an application with finite work
+and memory ceilings keeps them under the preset.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

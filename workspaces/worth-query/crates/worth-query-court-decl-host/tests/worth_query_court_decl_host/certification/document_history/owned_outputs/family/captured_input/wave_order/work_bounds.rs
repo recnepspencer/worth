@@ -54,6 +54,31 @@ fn wide_chains_cost_placements_not_turns_times_placements() {
     }
 }
 
+/// PR C §4 touch-filtered reclosure: a quiescent outgoing reclosure runs
+/// again only the completed rows whose outgoing support changed since it was
+/// retained, or that hold none. Each chain link's outgoing selector reads
+/// what no later append changes, so the born edit re-closes no row; full
+/// reclosure (PR B) re-ran every one of the `W * L` links. Red with the
+/// filter disabled.
+#[test]
+fn quiescent_reclosure_reruns_only_rows_whose_outgoing_support_changed() {
+    for (width, length) in [(2, 2), (8, 8)] {
+        type Host = WorthQueryProgramApplicationRuntime<Schema, chains::Program>;
+        let host: Host = install(world::Configuration {
+            captured_chains: Some((width, length)),
+            ..Default::default()
+        });
+        let observation = WorthQueryExecutionObservation::install_on_this_thread();
+        let (outcome, events, _) =
+            edit_stage!(&host, chains::Tree, "chains-reclosure", "carriage:d", 4);
+        assert_eq!(outcome, "committed");
+        assert!(events.iter().any(|event| event == "quiescence"), "{events:#?}");
+        let revisited = observation.outgoing_rows_revisited_for_test();
+        eprintln!("PR C reclosure (W={width}, L={length}): {revisited} rows re-closed");
+        assert_eq!(revisited, 0, "an untouched link was re-closed (W={width}, L={length})");
+    }
+}
+
 /// #232-like one-stage fan-out at 16 and 32 routes: wave charged work scales
 /// near-linearly with the route count, not with its square.
 #[test]

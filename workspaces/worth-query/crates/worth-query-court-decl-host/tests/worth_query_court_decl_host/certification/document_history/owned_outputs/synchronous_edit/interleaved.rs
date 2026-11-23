@@ -15,6 +15,7 @@ mod discovered_envelope;
 mod occurrence_topology;
 mod occurrences;
 pub(in super::super) mod prerequisite_partition;
+pub(in super::super) mod valued_members;
 mod prerequisite_path;
 mod program;
 mod reading;
@@ -27,13 +28,13 @@ use program::{ProducedTree, Program};
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    prerequisite_path::declare(component_carriage::declare(
+    valued_members::declare(prerequisite_path::declare(component_carriage::declare(
         prerequisite_partition::declare(occurrence_topology::declare(created::declare(
             reading::declare(seal::declare(dependent::declare(
                 seed_children::frontier::declare(schema),
             ))),
         ))),
-    ))
+    )))
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,

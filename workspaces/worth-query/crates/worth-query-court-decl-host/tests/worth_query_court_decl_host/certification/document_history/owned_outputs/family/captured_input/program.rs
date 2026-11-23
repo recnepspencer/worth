@@ -189,6 +189,13 @@ where
     features
 }
 
+thread_local! {
+    /// The switching `choice` member drains on the seed port, before the
+    /// zero-weight control `a` (PR C C4 r4): its first choice derives
+    /// first. Per court, on the court's own thread.
+    pub(in super::super::super) static CHOICE_FIRST: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 pub(in super::super::super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     parent_switch: Option<bool>,
@@ -224,6 +231,13 @@ pub(in super::super::super) fn seed(
         Some(true) => &switching,
     };
     for &(key, parent, weight) in members {
+        let weight = if key == "capture:choice"
+            && CHOICE_FIRST.with(std::cell::Cell::get)
+        {
+            1
+        } else {
+            weight
+        };
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(
                 Member::reference(),

@@ -3,8 +3,9 @@ use super::*;
 impl RejoinConstruction {
     pub(super) fn pending_release(
         self,
-        pending: VerifiedPendingWalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
+        pending: Box<VerifiedPendingWalReleaseCustody>,
+        effective: Vec<VerifiedEffectiveReleaseHeadRosterV14>,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
         _selection: &crate::orchestration::ResidentSourceSelection,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
@@ -26,24 +27,31 @@ impl RejoinConstruction {
                 .find(|route| route.record() == pending.reservation_record())
                 .expect("pending-WAL reservation was already joined");
             crate::certification::pause_after_claim(reservation);
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_pending_wal_release_and_rejoin_pause(
-                    coordination, media, closed_cleanup, allocation, pending, effective,
-                    crate::certification::take_rejoin_pause(),
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_pending_wal_release_and_backing_and_rejoin_pause(
+                core_body,
+                coordination,
+                media,
+                closed_cleanup,
+                allocation,
+                pending,
+                effective,
+                crate::certification::take_rejoin_pause(),
+            )
         } else {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_pending_wal_release(
-                    coordination, media, closed_cleanup, allocation, pending, effective,
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_pending_wal_release_and_backing(
+                core_body, coordination, media, closed_cleanup, allocation, pending, effective,
+            )
         }
         #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_pending_wal_release(
-                coordination, media, closed_cleanup, allocation, pending, effective,
-            )
+        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_pending_wal_release_and_backing(
+            core_body, coordination, media, closed_cleanup, allocation, pending, effective,
+        )
     }
     pub(super) fn tier_pending_release(
         self,
-        pending: VerifiedPendingWalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
+        pending: Box<VerifiedPendingWalReleaseCustody>,
+        effective: Vec<VerifiedEffectiveReleaseHeadRosterV14>,
         tier: VerifiedSelectedTierEpochCustody,
         recovery_allocation: Option<PhysicalRecoveryAllocationAdmission>,
         _selection: &crate::orchestration::ResidentSourceSelection,
@@ -66,18 +74,25 @@ impl RejoinConstruction {
                 .find(|route| route.record() == pending.reservation_record())
                 .expect("pending-WAL reservation was already joined");
             crate::certification::pause_after_claim(reservation);
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_and_pending_wal_release_and_rejoin_pause(
-                    coordination, media, closed_cleanup, allocation, pending, effective, tier,
-                    crate::certification::take_rejoin_pause(),
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_and_pending_wal_release_and_backing_and_rejoin_pause(
+                core_body,
+                coordination,
+                media,
+                closed_cleanup,
+                allocation,
+                pending,
+                effective,
+                tier,
+                crate::certification::take_rejoin_pause(),
+            )
         } else {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_pending_wal_release(
-                    coordination, media, closed_cleanup, allocation, pending, effective, tier,
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_pending_wal_release_and_backing(
+                core_body, coordination, media, closed_cleanup, allocation, pending, effective, tier,
+            )
         }
         #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_pending_wal_release(
-                coordination, media, closed_cleanup, allocation, pending, effective, tier,
-            )
+        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_and_pending_wal_release_and_backing(
+            core_body, coordination, media, closed_cleanup, allocation, pending, effective, tier,
+        )
     }
 }

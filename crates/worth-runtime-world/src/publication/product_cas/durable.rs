@@ -200,10 +200,20 @@ impl WorldPendingDurablePublication {
             Err(WorldDurablePublicationStop::Refused(cause)) => self
                 .ready
                 .durable_recovery(WorldDurablePublicationDenial::Medium(cause.into_cause())),
-            Err(WorldDurablePublicationStop::Unresolved) => self
+            Err(
+                WorldDurablePublicationStop::Unresolved
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: false,
+                },
+            ) => self
                 .ready
                 .durable_recovery(WorldDurablePublicationDenial::Indeterminate),
-            Err(WorldDurablePublicationStop::EvidenceRequired) => self
+            Err(
+                WorldDurablePublicationStop::EvidenceRequired
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: true,
+                },
+            ) => self
                 .ready
                 .durable_recovery(WorldDurablePublicationDenial::EvidenceRequired),
         }
