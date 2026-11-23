@@ -1,6 +1,7 @@
 //! Any mix of envelope steps, navigation and paging keeps every step's snapshot.
 use super::*;
 use proptest::prelude::*;
+use proptest::test_runner::RngSeed;
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Bare;
 
 /// One caller key for each envelope a sequence can record.
@@ -205,8 +206,29 @@ fn holds(actions: &[Action]) {
     close(&host, document);
 }
 
+/// Each case installs a world, so twelve cases cost about seventy seconds.
+/// Every run draws a new seed and prints it; `PROPTEST_RNG_SEED` replays one.
+fn config() -> ProptestConfig {
+    let mut config = ProptestConfig {
+        cases: 12,
+        max_shrink_iters: 32,
+        ..ProptestConfig::default()
+    };
+    let seed = match config.rng_seed {
+        RngSeed::Fixed(seed) => seed,
+        RngSeed::Random => std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos()
+            .into(),
+    };
+    config.rng_seed = RngSeed::Fixed(seed);
+    eprintln!("property seed {seed}: replay with PROPTEST_RNG_SEED={seed}");
+    config
+}
+
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 12, max_shrink_iters: 32, ..ProptestConfig::default() })]
+    #![proptest_config(config())]
     #[test]
     fn any_mix_of_envelopes_navigation_and_paging_keeps_every_step(
         actions in proptest::collection::vec(action(), 3..=8)

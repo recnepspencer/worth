@@ -8,6 +8,7 @@ mod navigation;
 mod operation;
 mod output_intent;
 mod output_read;
+mod owned_attachment;
 mod recording_outputs;
 mod retention;
 pub use output_intent::{WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial};
@@ -165,7 +166,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     })
                 }
             };
-        let application = head.application();
+        let application = head.custody();
         let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
             &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources, retention_resources,
         ) {
@@ -183,7 +184,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             retention_pause: None,
             marker: std::marker::PhantomData,
         };
-        match pending.confirm(phase, document.application(), document.branch(), document) {
+        match pending.confirm(phase, self, document.branch(), document) {
             Ok(document) => Ok(document),
             Err((document, denial)) => Err(WorthQueryDocumentHistoryAttachmentFailure {
                 head: document.selection.take().head,

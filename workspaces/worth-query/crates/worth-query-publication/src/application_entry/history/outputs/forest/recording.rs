@@ -87,6 +87,25 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
         *owner = None;
         Ok(())
     }
+    /// Close the forest an ended request left bound to `branch`, so that
+    /// branch can close.
+    pub(in crate::application_entry::history::outputs) fn release_recording_owner_for_branch(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        branch: WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        let mut owner = self.recording_owner()?;
+        if let Some(forest) = &mut *owner
+            && forest
+                .origin
+                .as_ref()
+                .is_some_and(|origin| origin.candidate() == branch)
+        {
+            forest.close(phase, branch)?;
+            *owner = None;
+        }
+        Ok(())
+    }
     pub(in crate::application_entry::history::outputs) fn close_recording_owner(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,

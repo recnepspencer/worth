@@ -64,6 +64,7 @@ pub use history::{
     WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryIdentity,
     WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
     WorthQueryGovernedHistoryPayload, WorthQueryGroupedHistoryDocument,
+    WorthQueryOwnedApplicationHistoryDocument,
     WorthQueryHistoryCheckoutDescription, WorthQueryHistoryCheckoutTarget,
     WorthQueryHistoryClosingOutputs, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryCommands, WorthQueryHistoryContextRefreshDenial,

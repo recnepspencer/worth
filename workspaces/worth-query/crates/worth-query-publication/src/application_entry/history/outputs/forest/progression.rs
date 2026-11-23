@@ -34,6 +34,7 @@ impl<S: ApplicationSchema + 'static, H: ApplicationHistoryBinding<S>> OutputDriv
         phase: &WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
     ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        self.release_recording_owner_for_branch(phase, branch)?;
         for entry in &self.trees {
             funding::checkpoint(phase, entry.tree.runtime())?;
             entry.tree.release(phase, branch)?;

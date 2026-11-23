@@ -22,7 +22,8 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryHistoryEditAdvance<Self> {
-        let runtime = self.document.owner.application();
+        // The caller established that this request names the document's runtime.
+        let runtime = request.application;
         let result = runtime.with_application_advancement(request.scope, |phase| {
             self.document
                 .read_in_advancement(&phase, request)

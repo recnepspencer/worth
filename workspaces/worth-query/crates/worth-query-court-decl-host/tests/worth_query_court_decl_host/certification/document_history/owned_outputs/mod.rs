@@ -72,4 +72,4 @@ mod predecessor;
 
 mod synchronous_edit;
 
-mod history_envelope;
+pub(crate) mod history_envelope;

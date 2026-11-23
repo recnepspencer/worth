@@ -1,7 +1,10 @@
 //! An envelope on a document with bound output trees records every tree in its one step.
 use super::*;
 
+mod owned_document;
 mod property;
+pub(crate) mod step_work;
+mod stopped_request;
 
 type Forest<'a> = Document<'a, WorthQueryHistoryWithOutputTrees<Schema>>;
 
@@ -35,13 +38,13 @@ fn attach_with_both_trees(host: &world::Host) -> Forest<'_> {
     courts::configure_all_trees(host, world::attach(host))
 }
 
-fn record_step<'a>(
-    host: &'a world::Host,
-    document: Forest<'a>,
+fn record_step<'d>(
+    host: &world::Host,
+    document: Forest<'d>,
     key: &'static str,
     model: u64,
     member: u64,
-) -> (Forest<'a>, WorthQueryHistoryStep) {
+) -> (Forest<'d>, WorthQueryHistoryStep) {
     let stages = Stages { key, model, member };
     recorded(record(host, document, &request_scope(), stages, metadata(b"")))
 }

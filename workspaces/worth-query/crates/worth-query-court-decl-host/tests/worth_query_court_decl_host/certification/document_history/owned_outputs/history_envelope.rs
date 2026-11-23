@@ -9,7 +9,7 @@ use WorthQueryHistoryEditEnvelopeDenial as Denial;
 use WorthQueryHistoryEditEnvelopeOutcome as Outcome;
 
 mod metadata;
-mod output_forest;
+pub(crate) mod output_forest;
 mod recording;
 mod replay;
 mod rollback;
@@ -43,13 +43,13 @@ fn metadata(bytes: &[u8]) -> WorthQueryHistoryStepMetadata {
 }
 
 /// Author both stages on the document and execute them as one recorded step.
-fn record<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
-    host: &'a world::Host,
-    document: Document<'a, O>,
+fn record<'d, O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    host: &world::Host,
+    document: Document<'d, O>,
     scope: &WorthQueryRequestScope,
     stages: Stages,
     metadata: WorthQueryHistoryStepMetadata,
-) -> Execution<'a, O> {
+) -> Execution<'d, O> {
     let principal = authenticate_operator(host.installed_schema(), scope);
     let branch = document
         .selection(&host.request(&principal, scope))
@@ -60,14 +60,29 @@ fn record<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
 }
 
 /// `record` for a document whose branch the caller already read.
-fn record_on<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
-    host: &'a world::Host,
-    document: Document<'a, O>,
+fn record_on<'d, O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    host: &world::Host,
+    document: Document<'d, O>,
     scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     stages: Stages,
     metadata: WorthQueryHistoryStepMetadata,
-) -> Execution<'a, O> {
+) -> Execution<'d, O> {
+    record_within(host, document, scope, branch, stages, metadata, |execute| {
+        execute()
+    })
+}
+
+/// `record_on` whose execution, after both stages are authored, runs inside `within`.
+fn record_within<'d, O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    host: &world::Host,
+    document: Document<'d, O>,
+    scope: &WorthQueryRequestScope,
+    branch: WorthQueryProductBranch,
+    stages: Stages,
+    metadata: WorthQueryHistoryStepMetadata,
+    within: impl FnOnce(Box<dyn FnOnce() -> Execution<'d, O> + '_>) -> Execution<'d, O>,
+) -> Execution<'d, O> {
     let principal = authenticate_operator(host.installed_schema(), scope);
     let request = host.request(&principal, scope).on_branch(branch);
     let mut envelope = document.edit_envelope(host, &request, stages.key.to_owned())?;
@@ -83,7 +98,9 @@ fn record_on<'a, O: WorthQueryHistoryOutputsMode<Schema, History>>(
             value: stages.member,
         })
         .unwrap();
-    envelope.execute_recorded(metadata, ExecutionAllocationPolicy::SystemAllocation)
+    within(Box::new(move || {
+        envelope.execute_recorded(metadata, ExecutionAllocationPolicy::SystemAllocation)
+    }))
 }
 
 fn recorded<O>(execution: Execution<'_, O>) -> (Document<'_, O>, WorthQueryHistoryStep) {

@@ -111,6 +111,8 @@ pub use navigation::{
 };
 mod observation;
 mod outputs;
+mod owned;
+pub use owned::WorthQueryOwnedApplicationHistoryDocument;
 mod owner_handoff;
 mod recipe_fault;
 pub use outputs::{

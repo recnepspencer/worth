@@ -43,7 +43,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         if let Some(prior) = self.prior_cleanup.take()
-            && let Err(prior) = retry_release(self.application, phase, prior)
+            && let Err(prior) = retry_release(&self.application, phase, prior)
         {
             self.prior_cleanup = Some(prior);
             return Err(WorthQueryHistoryNavigationDenial::Cleanup);
@@ -119,7 +119,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let NavigationPhase::Discarding(cleanup) = &mut self.phase else {
             return Ok(0);
         };
-        let closed = cleanup.retry(self.application, phase)?;
+        let closed = cleanup.retry(&self.application, phase)?;
         self.phase = NavigationPhase::Discarded;
         drop(self.pending_slot.take());
         Ok(closed)
