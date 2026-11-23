@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
+use crate::runtime::state::runtime_state::preparation_runtime::mirror_publication::prepare_mirror_publication;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
@@ -80,8 +81,6 @@ pub(super) fn prepare_publication_phase(
             &working_state,
             required_output_publication.as_ref(),
         )?;
-        let runtime_with_current = runtime.with_current_ownership(current_ownership);
-        let runtime = &runtime_with_current;
         if required_output_materialization.is_some()
             && (recovered_codec_publication_custody.is_some()
                 || required_output_publication.is_some())
@@ -115,7 +114,10 @@ pub(super) fn prepare_publication_phase(
                         Some(crate::history::data::canonical_commit_envelope::required_output_origin::installation::complete::install_required_output_origin(
                             &mut canonical_commit_envelope,
                             execution,
-                            runtime,
+                            crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationInputs {
+                                current_ownership: &current_ownership,
+                                ..runtime.into()
+                            },
                             &branch_basis,
                             created_entities,
                             created_relations,
@@ -132,7 +134,7 @@ pub(super) fn prepare_publication_phase(
         let check_custody = || {
             owned_record_custody::require(
                 execution,
-                runtime.current_ownership.as_deref(),
+                current_ownership.as_deref(),
                 &canonical_commit_envelope,
                 &adjacency_deltas,
             )
@@ -146,7 +148,7 @@ pub(super) fn prepare_publication_phase(
             ownership_completion::complete(
                 execution,
                 ownership_completion::OwnershipCompletionInputs {
-                    current: runtime.current_ownership.as_deref(),
+                    current: current_ownership.as_deref(),
                     storage: &runtime.config.storage,
                     symbols: &runtime.services.symbols,
                     diagnostics: runtime.preparation_diagnostics(),
@@ -271,7 +273,7 @@ pub(super) fn prepare_publication_phase(
             })?;
         crate::branch::model_ownership::validate_candidate_ownership(
             execution,
-            runtime,
+            &runtime.schema_contract_runtime.custom_invariant_registries,
             prepared_history.root(),
             &canonical_commit_envelope,
         )?;
@@ -281,6 +283,7 @@ pub(super) fn prepare_publication_phase(
             &canonical_commit_envelope,
         )?;
         runtime
+            .lineage_identity
             .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
             .map_err(|detail| {
                 TransactionCommitError::publication(PublicationError::new(
@@ -323,21 +326,22 @@ pub(super) fn prepare_publication_phase(
             execution,
             runtime.commit_work_budget.as_ref(),
             || {
-                runtime
-                    .prepare_mirror_publication(
-                        execution,
-                        &branch_id,
-                        prepared_history.root(),
-                        &symbol_publication,
-                        clone_mode,
-                        committed_partitions,
+                prepare_mirror_publication(
+                    &runtime.mirror_residency,
+                    &runtime.services.symbols,
+                    execution,
+                    &branch_id,
+                    prepared_history.root(),
+                    &symbol_publication,
+                    clone_mode,
+                    committed_partitions,
+                )
+                .map_err(|failure| {
+                    crate::authority::commit::preparation::storage_read_denial(
+                        &branch_basis,
+                        failure,
                     )
-                    .map_err(|failure| {
-                        crate::authority::commit::preparation::storage_read_denial(
-                            &branch_basis,
-                            failure,
-                        )
-                    })
+                })
             },
         )?;
         runtime

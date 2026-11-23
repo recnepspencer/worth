@@ -12,6 +12,7 @@ mod history_preparation;
 mod history_resolution_phase;
 mod merge_draft;
 mod mutation_execution;
+pub(crate) mod performed_outcome;
 mod phase_backing;
 pub(crate) mod publication_execution;
 mod rejection;
@@ -20,7 +21,7 @@ mod snapshot_validation;
 
 pub(crate) use crate::execution::request_custody::request_lease;
 pub(crate) use authority_context::AuthoritativeCommitContext;
-pub(crate) use execution::{execute_authoritative_commit, publish_prepared_authoritative_commit};
+pub(crate) use execution::execute_authoritative_commit;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
 pub(crate) use publication_execution::{publish_commit_execution, PublishedCommitExecution};

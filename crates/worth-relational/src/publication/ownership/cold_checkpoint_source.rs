@@ -1,63 +1,30 @@
 //! Read-only archive of the real recorder's members and canonical commit artifacts.
 use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+use crate::durability::published_medium::{
+    RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+};
 use crate::{
     durability::{data::*, medium::*},
     publication::patch::data::PatchStreamPosition,
-    runtime::RelationalRuntime,
     storage::data::RelationalStorageUnavailableCause as Cause,
 };
 use std::{collections::BTreeMap, sync::Arc};
 #[derive(Debug)]
-pub(super) struct Source {
+pub(crate) struct Source {
     members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
 }
 impl Source {
-    pub(super) fn capture(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
-    ) -> (RelationalNativeCheckpoint, Arc<Self>) {
-        let native = runtime
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::ExternalMembers {
-                    current_members: &[],
-                    source: None,
-                },
-            )
-            .expect("the actual private branch records");
-        Self::archive(execution, runtime, native)
-    }
-
-    pub(super) fn capture_corrupted(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
-        publication: crate::history::data::CommitId,
-        change: u8,
-    ) -> (RelationalNativeCheckpoint, Arc<Self>) {
-        let original = runtime
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::Embedded,
-            )
-            .expect("actual Query checkpoint");
-        let native = original
-            .corrupt_current_publication_roster_external_for_test(execution, publication, change)
-            .expect(
-                "the real recorder emits damaged external current members without admitting them",
-            );
-        Self::archive(execution, runtime, native)
-    }
-
-    fn archive(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+    pub(crate) fn archive<I>(
         native: RelationalNativeCheckpoint,
-    ) -> (RelationalNativeCheckpoint, Arc<Self>) {
+        artifacts: impl FnOnce() -> I,
+    ) -> RelationalDurableRecoverySource
+    where
+        I: Iterator<Item = Result<
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+        >>,
+{
         let members = native
             .members()
             .iter()
@@ -66,15 +33,24 @@ impl Source {
                 _ => panic!("first external capture owns its actual members"),
             })
             .collect();
-        let commits = runtime
-            .durability()
-            .canonical_commit_artifacts(execution)
+        let commits = artifacts()
             .map(|artifact| {
                 let artifact = artifact.expect("the actual retained commit encodes");
                 (artifact.position(), artifact.as_bytes().to_vec())
             })
             .collect();
-        (native, Arc::new(Self { members, commits }))
+        RelationalDurableRecoverySource::new(
+            Some(RelationalDurableCheckpointSource::new(
+                native.covered_position().expect("recorded position"),
+                native
+                    .covered_branch_transitions()
+                    .expect("recorded branch coverage"),
+                native,
+            )),
+            Vec::new(),
+            Vec::new(),
+            Arc::new(Self { members, commits }),
+        )
     }
 }
 impl Source {

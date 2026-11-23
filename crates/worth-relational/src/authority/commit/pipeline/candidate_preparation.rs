@@ -14,7 +14,7 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
     publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     transaction_id: crate::transactions::data::primitives::TransactionId,
     branch_id: crate::history::data::BranchId,
-    control: crate::mvcc::RelationalOperationControl,
+    control: crate::runtime::operation_control::RelationalOperationControl,
     retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
     decision_basis: crate::branch::basis::AdmittedRelationalBranchBasis,
     coupled_proposal:

@@ -41,22 +41,6 @@ pub(crate) mod truth_kind_scan;
 mod truth_record_access;
 pub(crate) mod truth_relation_kind_scan;
 
-use crate::query::data::QueryPlanContextId;
-use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::storage::overlay::PartitionAccess;
-use crate::storage::partition::DenseSlotBitSet;
-use crate::visibility::cache_state::materialize_historical_visibility;
-use crate::visibility::snapshot_read_view::RelationalReadView;
-use crate::visibility::snapshot_states::{
-    read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
-    resolve_snapshot_inspection, resolve_snapshot_state,
-};
-
-use super::visibility::{
-    visible_relation_slots_in_partition_from_state, visible_slots_in_partition_from_state,
-};
-
 pub use context::VisibilityReadContext;
 pub use pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
@@ -84,6 +68,5 @@ pub use truth_relation_kind_scan::{
 
 #[cfg(test)]
 mod request_paid_truth;
-pub(crate) use projection_record_reader::ProjectionRecordReader;
 
 pub use frontier_admission::BoundedFrontierReadStop;

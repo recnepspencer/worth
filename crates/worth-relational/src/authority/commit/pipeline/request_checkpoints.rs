@@ -68,8 +68,6 @@ pub(crate) mod observation;
 mod tests;
 
 #[cfg(test)]
-mod split_publication;
-#[cfg(test)]
 mod stage_counts;
 
 impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {

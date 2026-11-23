@@ -1,7 +1,5 @@
 //! Issued custody, real owner gates, and authentic registration interleavings.
 use super::*;
-use crate::runtime::RelationalRuntimeCloseDenial;
-use crate::tests::support::runtime_with_test_schema;
 use std::sync::Arc;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 
@@ -204,13 +202,10 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
         None,
     );
     let request = ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let retained = runtime.retain_observation_snapshot(&basis).unwrap();
-    let accounting = runtime
-        .services
+    let fixture = NativeFixture::new();
+    let (_, basis) = fixture.observe();
+    let retained = fixture.retain(&basis);
+    let accounting = fixture
         .instrumentation
         .external_retention_terminal_accounting();
     let before = accounting.snapshot();
@@ -218,15 +213,7 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
     drop(retained.observation);
     finish(&mut task, &request);
     let retired = task.into_retired().unwrap();
-    let refused = runtime.prepare_close().unwrap_err();
-    assert!(
-        matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
-            crate::change_source::read_custody::RelationalReadCustodyHolders::SnapshotsAndHistory {
-                active_snapshots, detached_history,
-            }
-        ) if active_snapshots != 0 || detached_history)
-    );
-    let runtime = refused.into_runtime();
+    assert!(fixture.history.has_detached_retention_obligations());
     assert_eq!(
         accounting.snapshot().explicit_releases,
         before.explicit_releases + 1
@@ -236,7 +223,7 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
         before.dropped_releases
     );
     drop(basis);
-    runtime.prepare_close().unwrap().finish();
+    assert!(!fixture.history.has_detached_retention_obligations());
     retired.reclaim();
     assert_eq!(
         accounting.snapshot().explicit_releases,

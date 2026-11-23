@@ -42,7 +42,7 @@ pub(super) fn prepare(
     content: &crate::content::publication::ContentPublication,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     crate::execution::phase_observation::run(
         execution,
@@ -59,9 +59,7 @@ pub(super) fn prepare(
                 &envelope.schema_authority,
                 envelope.descriptor_semantics_version,
                 registry,
-                execution_contracts
-                    .as_ref()
-                    .map(|contracts| &contracts.schema),
+                planned_schema,
             )?;
             let change = crate::branch::commit_change::build_commit_change(
                 execution,
@@ -125,11 +123,12 @@ pub(super) fn prepare(
                         envelope.commit.commit_id,
                     )
                 },
-                execution_contracts: match execution_contracts {
-                    Some(contracts) => std::sync::OnceLock::from(contracts),
-                    None => previous
+                execution_contracts: if planned_schema.is_none() {
+                    previous
                         .map(|source| source.execution_contracts.clone())
-                        .unwrap_or_default(),
+                        .unwrap_or_default()
+                } else {
+                    Default::default()
                 },
                 schema_authority: prepared_schema.authority,
                 _memory: memory,

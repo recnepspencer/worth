@@ -8,9 +8,6 @@ mod published_release;
 pub(crate) use published_release::PublishedSnapshotReleaseObservation;
 mod version_counts;
 
-#[cfg(test)]
-mod cross_registry_composition_tests;
-
 use std::sync::Arc;
 
 use crate::identity::data::VersionId;

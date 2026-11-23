@@ -14,10 +14,9 @@ pub(super) fn prepare_bound_history(
     context: AuthoritativeCommitContext,
 ) -> Result<CommitPhaseBacking<HistoryBoundCommitExecution>, TransactionCommitError> {
     let prepared = prepare_draft(execution, runtime, context)?;
-    let round_runtime = runtime.with_candidate_symbols(prepared.value().candidate_symbols());
     let boundary = stages::validate_boundary(execution, prepared)?;
-    let mutated = stages::mutate(execution, &round_runtime.services.instrumentation, boundary)?;
-    stages::bind(execution, &round_runtime, mutated)
+    let mutated = stages::mutate(execution, &runtime.services.instrumentation, boundary)?;
+    stages::bind(execution, runtime.into(), mutated)
 }
 
 #[inline(never)]

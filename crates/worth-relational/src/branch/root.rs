@@ -182,7 +182,7 @@ impl RelationalBranchRoot {
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             execution,
@@ -194,7 +194,7 @@ impl RelationalBranchRoot {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
     pub(crate) fn retained_content(&self) -> &crate::content::ContentDirectory {

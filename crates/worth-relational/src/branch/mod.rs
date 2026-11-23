@@ -23,18 +23,6 @@ pub(crate) mod basis_observation_inputs;
 mod basis_readmission;
 mod basis_readmission_inputs;
 pub(crate) mod basis_registry;
-pub(crate) mod head_visibility_inputs;
-pub(crate) mod historical_selection;
-pub(crate) mod home_program_step;
-#[path = "envelope/retained_allocation.rs"]
-pub(crate) mod retained_allocation;
-pub(crate) mod root_capture_denial;
-mod root_snapshot_custody;
-#[cfg(test)]
-pub(crate) use basis_registry::{
-    assert_original_registry_busy, assert_pruned_original_registration,
-    assert_successor_registration_preserved,
-};
 pub(crate) mod basis_retention;
 mod basis_retention_runtime;
 mod canonical_runtime_frame;
@@ -45,9 +33,16 @@ pub(crate) mod fork;
 mod fork_materialization;
 mod fork_port;
 mod fork_source_basis;
+pub(crate) mod head_visibility_inputs;
+pub(crate) mod historical_selection;
+pub(crate) mod home_program_step;
 pub mod maintenance;
+#[path = "envelope/retained_allocation.rs"]
+pub(crate) mod retained_allocation;
 mod retained_fork_admission;
 mod retained_fork_source;
+pub(crate) mod root_capture_denial;
+mod root_snapshot_custody;
 pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 pub(crate) mod identity;
 pub(crate) mod lifecycle;

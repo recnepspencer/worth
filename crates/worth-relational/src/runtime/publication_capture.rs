@@ -49,8 +49,16 @@ impl RelationalPreparationRuntime {
             &envelope.content,
             schema_registry,
             &self.services.symbols,
-            self.execution_contracts.clone(),
+            self.execution_contracts
+                .as_ref()
+                .map(|contracts| &contracts.schema),
         )?;
+        if let Some(contracts) = &self.execution_contracts {
+            root.root()
+                .execution_contracts
+                .set(Arc::clone(contracts))
+                .expect("prepared Home root has not bound any executor");
+        }
         let mutation = crate::config::data::MutationConfig {
             cascade_delete_policy: self.config.storage.cascade_delete_policy,
             adjacency_policy: self.config.storage.adjacency_policy.clone(),

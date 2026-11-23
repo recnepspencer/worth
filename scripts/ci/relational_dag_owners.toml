@@ -74,6 +74,7 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
 "indexes/access/field_candidate_comparison.rs" = "branch"
 "indexes/access/prepared_field_certification.rs" = "branch"
 "indexes/access/prepared_lookup_admission.rs" = "branch"
@@ -549,7 +550,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/publication_authority.rs" = "runtime"
 "runtime/publication_body.rs" = "runtime"
 "runtime/interruption_counters.rs" = "contracts"
-"runtime/operation_control/interruption_event" = "contracts"
+"runtime/operation_control" = "contracts"
 # Native contract comparison is pure schema meaning. Runtime translates installation refusal.
 "runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis" = "contracts"
 
@@ -721,6 +722,8 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
+"runtime/operation_control" = "contracts"
 "branch/structural_state" = "branch"
 "history/access/relevant_writes/managed_source/selected_catalog.rs" = "branch"
 "authority/commit/lineage_preparation.rs" = "publication"

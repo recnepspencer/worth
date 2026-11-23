@@ -41,3 +41,7 @@ mod commit_result_publication;
 mod pinned_read_custody;
 mod pinned_read_publication;
 mod public_cache_publication;
+
+mod snapshot_registry_composition;
+
+mod split_publication_refusals;

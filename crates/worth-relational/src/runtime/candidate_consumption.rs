@@ -19,8 +19,11 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: crate::mvcc::publication::candidate::PreparedRelationalCommitCandidate,
     ) -> Result<CommitResult, TransactionCommitError> {
-        crate::authority::commit::pipeline::publish_prepared_authoritative_commit(
-            execution, self, candidate,
-        )
+        let outcome = self
+            .publication_port()
+            .compare_and_publish(execution, candidate);
+        let performed =
+            crate::authority::commit::pipeline::performed_outcome::require_performed(outcome)?;
+        self.settle_performed_publication(performed)
     }
 }

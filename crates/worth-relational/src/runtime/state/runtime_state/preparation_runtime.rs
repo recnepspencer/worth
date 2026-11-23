@@ -213,28 +213,6 @@ impl RelationalPreparationRuntime {
         &self.snapshot_ids
     }
 
-    pub(crate) fn validate_reserved_lineage_events(
-        &self,
-        events: &[crate::lineage::data::LineageEventRecord],
-    ) -> Result<(), String> {
-        let mut previous = None;
-        for event in events {
-            if previous.is_some_and(|prior| event.event_id() <= prior) {
-                return Err(
-                    "live lineage event ids must advance within their reserved batch".to_owned(),
-                );
-            }
-            if event.event_id() >= self.lineage_identity.frontiers().1 {
-                return Err(format!(
-                    "live lineage event {} was not reserved by this allocator",
-                    event.event_id()
-                ));
-            }
-            previous = Some(event.event_id());
-        }
-        Ok(())
-    }
-
     pub(crate) fn performance_access(&self) -> PerformanceAccess<'_> {
         PerformanceAccess::from_instrumentation(&self.services.instrumentation)
     }
@@ -318,7 +296,7 @@ impl crate::capabilities::AspectPlanSource for RelationalPreparationRuntime {
 pub(crate) mod inline_type_budget;
 
 #[path = "preparation_runtime/mirror_publication.rs"]
-mod mirror_publication;
+pub(crate) mod mirror_publication;
 
 #[path = "preparation_runtime/working_state.rs"]
 mod working_state;

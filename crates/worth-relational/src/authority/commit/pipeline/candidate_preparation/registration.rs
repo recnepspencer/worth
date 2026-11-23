@@ -23,7 +23,7 @@ pub(super) struct CandidateRegistration {
     pub(super) publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     pub(super) transaction_id: crate::transactions::data::primitives::TransactionId,
     pub(super) branch_id: crate::history::data::BranchId,
-    pub(super) control: crate::mvcc::RelationalOperationControl,
+    pub(super) control: crate::runtime::operation_control::RelationalOperationControl,
     pub(super) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
     pub(super) decision_basis: crate::branch::basis::AdmittedRelationalBranchBasis,
     pub(super) coupled_proposal:

@@ -2,7 +2,7 @@
 use super::super::phase_backing::CommitPhaseBacking;
 use super::super::{boundary_validation, history_binding, mutation_execution};
 use super::PreparedCommitExecution;
-use crate::runtime::RelationalPreparationRuntime;
+use crate::authority::commit::phases::schema_continuity::inputs::SchemaContinuityInputs;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
@@ -30,9 +30,9 @@ pub(super) fn mutate(
 #[inline(never)]
 pub(super) fn bind(
     request: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: SchemaContinuityInputs<'_>,
     source: CommitPhaseBacking<mutation_execution::MutatedCommitExecution>,
 ) -> Result<CommitPhaseBacking<history_binding::HistoryBoundCommitExecution>, TransactionCommitError>
 {
-    history_binding::bind_commit_history(request, runtime.into(), source)
+    history_binding::bind_commit_history(request, inputs, source)
 }

@@ -11,7 +11,7 @@ pub(crate) struct ReservedRelationalSettlement {
     pub(crate) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
     pub(crate) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(crate) control: crate::runtime::RelationalOperationControl,
+    pub(crate) control: crate::runtime::operation_control::RelationalOperationControl,
     pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
@@ -21,7 +21,7 @@ pub(crate) struct PerformedRelationalSettlement {
     pub(crate) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
     pub(crate) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(crate) control: crate::runtime::RelationalOperationControl,
+    pub(crate) control: crate::runtime::operation_control::RelationalOperationControl,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
     pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     pub(crate) settlement_retention:

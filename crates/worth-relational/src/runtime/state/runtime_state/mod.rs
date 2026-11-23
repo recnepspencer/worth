@@ -22,7 +22,7 @@ mod owner_lifecycle;
 mod partition_edition_access;
 mod preparation_home_contracts;
 mod preparation_round;
-mod preparation_runtime;
+pub(crate) mod preparation_runtime;
 mod prepared_close;
 pub(crate) mod publication_lifecycle;
 mod record_allocation_frontier;

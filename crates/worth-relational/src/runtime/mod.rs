@@ -98,7 +98,8 @@ pub use initial_schema_installation::{
     RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
-pub use operation_control::RelationalPatchPositionReservationGateForTest;
+mod court_patch_position_gate;
+pub use court_patch_position_gate::RelationalPatchPositionReservationGateForTest;
 pub use operation_control::{
     RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,
     RelationalInterruptionEvent, RelationalOperationControl, RelationalOperationInterruption,
@@ -180,4 +181,6 @@ mod authored_publication_reads;
 mod required_output_reads;
 mod retirement_history_inputs;
 
+mod cold_ownership_probe;
 mod merge_ownership_probe;
+mod metadata_guard_probe;

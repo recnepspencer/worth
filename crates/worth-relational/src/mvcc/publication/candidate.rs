@@ -53,7 +53,7 @@ pub(crate) struct CandidatePayload {
     retention: crate::history::retention::RelationalCandidateRetentionObligation,
     published_snapshot_slot:
         crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
-    control: crate::mvcc::RelationalOperationControl,
+    control: crate::runtime::operation_control::RelationalOperationControl,
 }
 
 pub(super) struct PreparedRelationalPublicationParts {
@@ -70,7 +70,7 @@ pub(super) struct PreparedRelationalPublicationParts {
     pub(super) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
     pub(super) candidate_retention:
         crate::history::retention::RelationalCandidateRetentionObligation,
-    pub(super) control: crate::mvcc::RelationalOperationControl,
+    pub(super) control: crate::runtime::operation_control::RelationalOperationControl,
 }
 
 pub(crate) enum PreparedRelationalCandidateAdmissionStop {
@@ -92,7 +92,7 @@ impl PreparedRelationalCommitCandidate {
         execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
         retention: crate::history::retention::RelationalCandidateRetentionObligation,
         published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
-        control: crate::mvcc::RelationalOperationControl,
+        control: crate::runtime::operation_control::RelationalOperationControl,
         maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
         let reservation_count = execution.reservation_count();

@@ -50,12 +50,6 @@ impl PreparedCommitExecution {
         )
     }
 
-    pub(super) fn candidate_symbols(
-        &self,
-    ) -> &crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings {
-        self.mutation.candidate_symbols()
-    }
-
     pub(super) fn into_parts(self) -> (PreparedCommitState, AppliedMutationDraft) {
         (self.state, self.mutation)
     }

@@ -59,7 +59,7 @@ impl HistorySubsystem {
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
@@ -77,7 +77,7 @@ impl HistorySubsystem {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
 
