@@ -84,7 +84,8 @@ impl RelationalOwnedModelForeignRelation {
         entity: EntityId,
         edge: StructuralRelationRecord,
     ) -> Result<Self, RelationalOwnedModelSelectionDenial> {
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .schema_authority()
             .registry()
@@ -104,7 +105,9 @@ impl RelationalOwnedModelForeignRelation {
         })
     }
     pub fn deletion_contracts(&self) -> &[EndpointDeletionIntegrityDeclaration] {
-        &(*self.basis.owner_inner())
+        &self
+            .basis
+            .owner_inner()
             .root
             .schema_authority()
             .registry()

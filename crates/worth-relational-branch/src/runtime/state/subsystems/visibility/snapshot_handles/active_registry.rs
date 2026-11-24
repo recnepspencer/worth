@@ -1,3 +1,4 @@
+use crate::history::retention::RetentionBusy;
 pub mod head_selection;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -29,13 +30,13 @@ struct ActiveEntries {
 }
 
 impl ActiveSnapshotHandleRegistry {
-    pub(super) fn try_empty(&self) -> Result<bool, ()> {
+    pub(super) fn try_empty(&self) -> Result<bool, RetentionBusy> {
         match self.entries.try_lock() {
             Ok(value) => Ok(value.handles.is_empty()),
             Err(std::sync::TryLockError::Poisoned(error)) => {
                 Ok(error.into_inner().handles.is_empty())
             }
-            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => Err(RetentionBusy),
         }
     }
     pub(super) fn new() -> Self {

@@ -10,7 +10,7 @@ pub(crate) fn validate(
     root: &RelationalBranchRoot,
     candidate: &CanonicalCommitEnvelope,
 ) -> Result<(), TransactionCommitError> {
-    let Some(event) = &(*candidate.owner_historical_output_selection()) else {
+    let Some(event) = candidate.owner_historical_output_selection() else {
         return Ok(());
     };
     let _funding = execution

@@ -96,7 +96,7 @@ impl ManagedIndexSourceProjection<'_> {
         match &self.backing {
             SourceProjectionBacking::Invariant { relations, .. } => {
                 Ok(Some(relations.derived_source_identity(
-                    &(*self.program.owner_field_0()).path,
+                    &self.program.owner_field_0().path,
                     scope,
                     DerivedRelationReadShape::Adjacency { reverse: false },
                 )?))
@@ -364,7 +364,7 @@ pub(crate) fn selected_rows<'a>(
     expected: &'a Arc<ManagedIndexPublishedSourceRoot>,
     execution: ExecutionRequest<'a, 'a>,
 ) -> ManagedIndexSourceRows<'a> {
-    let association = &(*expected.owner_association());
+    let association = expected.owner_association();
     ManagedIndexSourceRows {
         scope: association.scope,
         projection: ManagedIndexSourceProjection {

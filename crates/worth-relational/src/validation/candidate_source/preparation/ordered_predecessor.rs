@@ -11,7 +11,7 @@ use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBra
 
 impl ManagedIndexSourceScope<'_> {
     pub fn ordered_predecessor(&self) -> Result<Option<EntityId>, Denial> {
-        let Some(recipe) = (*self.program.owner_field_0()).ordered else {
+        let Some(recipe) = self.program.owner_field_0().ordered else {
             return Ok(None);
         };
         if !self.scope_exists()? {
@@ -46,7 +46,9 @@ impl ManagedIndexSourceScope<'_> {
         predecessor: &Arc<dyn Any + Send + Sync>,
     ) -> Result<Vec<(EntityId, Option<PreparedManagedIndexSourceOccurrence>)>, Denial> {
         use super::row_read::{OccurrenceMembership, OrderedStepSupport};
-        let recipe = (*self.program.owner_field_0())
+        let recipe = self
+            .program
+            .owner_field_0()
             .ordered
             .ok_or(Denial::ForeignSource)?;
         let parent = self.ordered_predecessor()?.ok_or(Denial::ForeignSource)?;
@@ -59,7 +61,8 @@ impl ManagedIndexSourceScope<'_> {
             });
         }
         let basis = self.interpretation.physical_basis();
-        let image = (*basis.owner_inner())
+        let image = basis
+            .owner_inner()
             .root
             .managed_source_image
             .get()
@@ -149,7 +152,7 @@ impl ManagedIndexSourceScope<'_> {
     fn event_records(&self, relation: KindId) -> Result<Vec<StructuralRelationRecord>, Denial> {
         self.views
             .after
-            .require_derived_relation(&(*self.program.owner_field_0()).path)?;
+            .require_derived_relation(&self.program.owner_field_0().path)?;
         let mut source = StructuralSource {
             view: &self.views.after,
             reads: DerivedRelationReads::default(),

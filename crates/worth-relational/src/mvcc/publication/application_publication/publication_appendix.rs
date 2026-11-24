@@ -101,7 +101,7 @@ pub(crate) fn prepare_publication_appendix(
                     let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(&selected, partitions);
                     execution.run_native_with_checkpoint(|context| -> Result<bool, TransactionCommitError> {
                         if !matches_live_members(context, &read, &adoption, execution.allocation_policy())? { return Ok(false); }
-                        let schema = (*basis.owner_inner()).root.retained_schema_authority();
+                        let schema = basis.owner_inner().root.retained_schema_authority();
                         let plans = schema.aspect_plans();
                         for intent in &body.intents {
                             crate::execution::request_stage::checkpoint(context, 1).map_err(super::custody::execution_stop)?;

@@ -47,7 +47,8 @@ impl IndexAuthority<'_> {
         if let Err(refusal) = self.demand_build_index_image(execution, &request) {
             return refusal;
         }
-        if let Err(failure) = (*basis.owner_inner())
+        if let Err(failure) = basis
+            .owner_inner()
             .root
             .demand_all_full(execution, &self.runtime.services.symbols)
         {

@@ -77,7 +77,7 @@ impl RelationalCommitResultSnapshotCleanup {
             Ok(Some(true)) => return self.complete(),
             Ok(None) => return self.pending(Pending::Busy),
             Ok(Some(false)) => {}
-            Err(()) => {
+            Err(_) => {
                 return self.refused(Denial::Release(
                     RelationalCommitResultSnapshotReleaseDenial::RetirementInterrupted,
                 ));
@@ -93,7 +93,7 @@ impl RelationalCommitResultSnapshotCleanup {
                     return self.pending(Pending::Advanced);
                 }
                 Ok(None) => return self.pending(Pending::Busy),
-                Err(()) => {
+                Err(_) => {
                     return self.refused(Denial::Release(
                         RelationalCommitResultSnapshotReleaseDenial::RegistrationMismatch,
                     ));
@@ -104,7 +104,7 @@ impl RelationalCommitResultSnapshotCleanup {
             Ok(Some(true)) => self.complete(),
             Ok(Some(false)) => self.pending(Pending::Advanced),
             Ok(None) => self.pending(Pending::Busy),
-            Err(()) => self.refused(Denial::Release(
+            Err(_) => self.refused(Denial::Release(
                 RelationalCommitResultSnapshotReleaseDenial::RetirementInterrupted,
             )),
         }

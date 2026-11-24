@@ -9,7 +9,7 @@ impl RelationalRequiredOutputPublication {
         &self,
     ) -> Option<impl Fn() -> bool + Send + Sync + use<>> {
         self.readmitted_at.as_ref().map(|basis| {
-            let weak = Arc::downgrade(&(*basis.owner_inner()));
+            let weak = Arc::downgrade(basis.owner_inner());
             move || weak.strong_count() != 0
         })
     }

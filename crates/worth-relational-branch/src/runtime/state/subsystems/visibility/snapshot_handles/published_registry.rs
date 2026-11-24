@@ -1,6 +1,8 @@
+use crate::history::retention::RetentionBusy;
 pub mod head_selection;
 use super::published_release::PublishedSnapshotReleaseObservation;
 pub mod original_cleanup;
+pub use original_cleanup::PublishedSnapshotRegistrationMismatch;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -36,13 +38,13 @@ struct PublishedSnapshotRegistration {
 }
 
 impl PublishedSnapshotHandleRegistry {
-    pub(super) fn try_empty(&self) -> Result<bool, ()> {
+    pub(super) fn try_empty(&self) -> Result<bool, RetentionBusy> {
         match self.entries.try_lock() {
             Ok(value) => Ok(value.by_id.is_empty()),
             Err(std::sync::TryLockError::Poisoned(error)) => {
                 Ok(error.into_inner().by_id.is_empty())
             }
-            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => Err(RetentionBusy),
         }
     }
     pub(super) fn new() -> Self {

@@ -131,7 +131,7 @@ pub(in crate::durability) fn capture_complete(
             .map_err(|_| corrupt("retained component root disagrees with original descriptor"))?;
         observations.push(Observation {
             descriptor,
-            root: &(*basis.owner_inner()).root,
+            root: &basis.owner_inner().root,
         });
     }
     observations

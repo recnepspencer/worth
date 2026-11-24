@@ -30,7 +30,8 @@ pub(super) fn select(
     }
     let selected = execution
         .run_native_with_checkpoint(|context| {
-            (*basis.owner_inner())
+            basis
+                .owner_inner()
                 .root
                 .output_publication_positions
                 .get(meaning, context)
@@ -39,7 +40,8 @@ pub(super) fn select(
         .0?;
     consult_stage(execution, CommitStage::Admission)?;
     let selected = if selected.is_none()
-        && (*basis.owner_inner())
+        && basis
+            .owner_inner()
             .root
             .output_publication_positions
             .unresolved_prefix()

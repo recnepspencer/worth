@@ -51,8 +51,10 @@ pub(super) fn prepare<'a>(
         .ok_or(Denial::ForeignSource)?;
     let basis = owner.physical_basis();
     if !std::sync::Arc::ptr_eq(
-        &(*basis.owner_inner()).root.retained_schema_authority(),
-        &(*source.basis().owner_inner())
+        &basis.owner_inner().root.retained_schema_authority(),
+        &source
+            .basis()
+            .owner_inner()
             .root
             .retained_schema_authority(),
     ) {
@@ -94,7 +96,7 @@ pub(super) fn prepare<'a>(
     let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
         runtime_instance_id: identity.runtime_instance_id(),
         branch_id: identity.branch_id().clone(),
-        root_id: (*basis.owner_inner()).root.id(),
+        root_id: basis.owner_inner().root.id(),
         version_id: basis.observation().version_id(),
         commit_id: basis.observation().commit_id(),
         position: Some(position),
@@ -119,7 +121,10 @@ impl NativeManagedSourceCorrespondence<'_> {
         if !self.authority.admits(&self.proof) {
             return Err(Denial::ForeignSource);
         }
-        let Some(image) = (*self.owner.physical_basis().owner_inner())
+        let Some(image) = self
+            .owner
+            .physical_basis()
+            .owner_inner()
             .root
             .managed_source_image
             .get()

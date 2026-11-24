@@ -33,9 +33,11 @@ impl RelationalRuntime {
                 RelationalRuntimeCloseDenial::PublicationCustodyRetained(holders),
             ));
         }
-        let (active, published, capacity, replay) =
-            self.visibility.try_memory_read_registrations()?;
-        let targets = !self.history.try_memory_targets_empty()?;
+        let (active, published, capacity, replay) = self
+            .visibility
+            .try_memory_read_registrations()
+            .map_err(|_| ())?;
+        let targets = !self.history.try_memory_targets_empty().map_err(|_| ())?;
         if active || published || capacity || replay || targets {
             return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained(
                 Holders::Registrations {

@@ -112,7 +112,8 @@ pub(super) fn install(
             co_anchors: predecessor.co_anchors.clone(),
             publications: Vec::new(),
         }));
-    let mut positions = (*basis.owner_inner())
+    let mut positions = basis
+        .owner_inner()
         .root
         .output_publication_positions
         .clone();

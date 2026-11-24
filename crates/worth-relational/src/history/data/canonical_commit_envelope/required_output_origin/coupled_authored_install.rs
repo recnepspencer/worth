@@ -79,7 +79,7 @@ pub(super) fn install(
             &full,
             &group.authored_records,
             state,
-            (*basis.owner_inner()).root.schema_authority().registry(),
+            basis.owner_inner().root.schema_authority().registry(),
             context,
         )?;
         let sources = super::coupled_source::install(
@@ -137,7 +137,7 @@ pub(super) fn install(
                 &full,
                 &part.records,
                 state,
-                (*basis.owner_inner()).root.schema_authority().registry(),
+                basis.owner_inner().root.schema_authority().registry(),
                 context,
             )?;
             super::installation::complete::install_completion(
@@ -175,7 +175,8 @@ pub(super) fn install(
             sources,
             participants,
         };
-        let mut positions = (*basis.owner_inner())
+        let mut positions = basis
+            .owner_inner()
             .root
             .output_publication_positions
             .clone();
@@ -200,7 +201,7 @@ pub(super) fn install(
         .map_err(super::installation::relation_stop)?;
     for origin in envelope.output_origins() {
         crate::history::data::publication_relations::validate(
-            &(*basis.owner_inner()).root,
+            &basis.owner_inner().root,
             Some(state),
             origin,
             Some(

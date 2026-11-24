@@ -92,8 +92,8 @@ impl RelationalPreparationRuntime {
         if historical.commit_identity().is_none() {
             return Err(Denial::HistoricalSourceUnavailable);
         }
-        let target_schema = (*current.owner_inner()).root.retained_schema_authority();
-        let source_schema = (*historical.owner_inner()).root.retained_schema_authority();
+        let target_schema = current.owner_inner().root.retained_schema_authority();
+        let source_schema = historical.owner_inner().root.retained_schema_authority();
         let same_authority = std::sync::Arc::ptr_eq(&source_schema, &target_schema);
         if !same_authority
             && (source_schema.authority_digest() != target_schema.authority_digest()

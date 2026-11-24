@@ -24,7 +24,9 @@ impl RelationalOwnedModelGraphSelection {
         let entities = self.entities();
         let mut selected_entities = Vec::new();
         for &id in self.restored_entities() {
-            let kind = (*entities.selected_basis().owner_inner())
+            let kind = entities
+                .selected_basis()
+                .owner_inner()
                 .root
                 .get_current_partition(id.partition_id)
                 .and_then(|region| region.entity(id))

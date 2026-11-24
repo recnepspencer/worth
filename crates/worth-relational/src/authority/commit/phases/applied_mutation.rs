@@ -213,7 +213,7 @@ pub(crate) fn apply_retained_entity_selection_draft<'a>(
         &state,
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
-        Some((*retained._source.owner_inner()).root.retained_content()),
+        Some(retained._source.owner_inner().root.retained_content()),
     )?;
     source_interpretation
         .bind_content(

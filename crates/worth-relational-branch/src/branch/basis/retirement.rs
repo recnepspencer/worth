@@ -76,7 +76,7 @@ impl RelationalBranchBasisRetirement {
         self.complete = self
             .original
             .advance_retaining_allocation()
-            .map_err(|()| Denial::Busy)?;
+            .map_err(|_| Denial::Busy)?;
         Ok(if self.complete {
             Progress::Complete
         } else {

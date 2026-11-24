@@ -47,7 +47,11 @@ where
             RecordRef::Relation(id) => id.partition_id,
         };
         partitions.insert(partition);
-        (*retained.graph.entities().selected_basis().owner_inner())
+        retained
+            .graph
+            .entities()
+            .selected_basis()
+            .owner_inner()
             .root
             .demand_head_partition(execution, partition)
             .map_err(|cause| {

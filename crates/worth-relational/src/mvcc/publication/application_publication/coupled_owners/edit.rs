@@ -27,11 +27,13 @@ impl AuthoredPublicationReads<'_> {
         {
             return Err(foreign());
         }
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .demand_head_partition(execution, source.partition_id)
             .map_err(custody::execution_stop)?;
-        if !(*basis.owner_inner())
+        if !basis
+            .owner_inner()
             .root
             .get_current_partition(source.partition_id)
             .and_then(|partition| partition.entity_arena().get(&source))

@@ -47,7 +47,7 @@ impl<'a> From<&'a crate::mvcc::RelationalTransactionValidationInput>
     fn from(input: &'a crate::mvcc::RelationalTransactionValidationInput) -> Self {
         Self {
             operation: input.control(),
-            retention: &(*input.basis().owner_inner()).retention_binding,
+            retention: &input.basis().owner_inner().retention_binding,
         }
     }
 }
@@ -61,7 +61,7 @@ impl From<&crate::mvcc::RelationalTransactionValidationInput>
             .map(|target| target.meaning.catalog_receipt())
             .or_else(|| {
                 crate::runtime::home_program_transition::retain_root_execution_contracts(
-                    &(*input.basis().owner_inner()).root,
+                    &input.basis().owner_inner().root,
                 )
                 .map(|meaning| meaning.catalog_receipt())
             });

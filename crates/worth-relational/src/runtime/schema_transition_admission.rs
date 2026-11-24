@@ -40,7 +40,7 @@ impl RelationalRuntime {
         crate::mvcc::BranchBoundRelationalTransaction,
         RelationalSchemaTransitionAdmissionDenial,
     > {
-        let source_authority = (*basis.owner_inner()).root.schema_authority();
+        let source_authority = basis.owner_inner().root.schema_authority();
         let source = registry_basis(source_authority.registry()).map_err(|detail| {
             RelationalSchemaTransitionAdmissionDenial::new(
                 RelationalSchemaTransitionAdmissionDenialKind::SourceBasisMismatch,

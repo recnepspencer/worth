@@ -172,7 +172,7 @@ pub fn open_retained_commit_snapshot(
     Ok(RelationalRetainedCommitSnapshot {
         commit: canonical_commit.clone(),
         snapshot_handle: SnapshotHandle {
-            runtime_instance_id: runtime_instance_id,
+            runtime_instance_id,
             branch_id: binding.branch_id,
             snapshot_id,
             version_id: binding.version_id,

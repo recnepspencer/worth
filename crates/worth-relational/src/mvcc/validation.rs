@@ -155,7 +155,7 @@ impl RelationalTransactionValidationInput {
             home_target_coverage: None,
             schema_origin: crate::mvcc::TransactionSchemaOrigin::BasisRoot,
             recovered_codec_publication_custody: None,
-            schema_authority: (*basis.owner_inner()).root.retained_schema_authority(),
+            schema_authority: basis.owner_inner().root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),

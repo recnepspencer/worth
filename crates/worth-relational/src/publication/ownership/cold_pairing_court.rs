@@ -32,7 +32,8 @@ pub(crate) fn observe_unrelated(
 ) -> Result<(), TransactionCommitError> {
     assert!(
         matches!(
-            (*basis.owner_inner())
+            basis
+                .owner_inner()
                 .root
                 .probe_head_region(owner.partition_id),
             crate::storage::residency::PartitionHeadProbe::Cold

@@ -68,16 +68,18 @@ impl RelationalSourceHistoryBinding {
             .next_retained_envelope(after))
     }
     pub(crate) fn live_root(&self, index: usize) -> Result<RelationalSourceRootSlot, ()> {
-        self.branches.source_retirement_root(index)
+        self.branches.source_retirement_root(index).map_err(|_| ())
     }
     pub(crate) fn retired_root(
         &self,
         after: Option<usize>,
     ) -> Result<Option<(usize, Arc<RelationalBranchRoot>)>, ()> {
-        self.retention.next_source_retirement_root(after)
+        self.retention
+            .next_source_retirement_root(after)
+            .map_err(|_| ())
     }
     pub(crate) fn retire_head(&self, index: usize) -> Result<Option<bool>, ()> {
-        self.branches.try_retire_stopped_head(index)
+        self.branches.try_retire_stopped_head(index).map_err(|_| ())
     }
     pub(crate) fn retained_close_holders(
         &self,

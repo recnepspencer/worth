@@ -27,7 +27,7 @@ pub(super) fn capture(
     dependency: [u8; 32],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalOutputMember>, TransactionCommitError> {
-    let after_image = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
+    let after_image = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
     let mut members = Vec::with_capacity(roles.len());
     for (member_ordinal, role) in roles.iter().enumerate() {
         context
@@ -66,8 +66,8 @@ pub(super) fn capture(
                             "existing target is outside the prior live publication",
                         )
                     })?;
-                let partition = (*basis
-                    .owner_inner())
+                let partition = basis
+                    .owner_inner()
                     .root
                     .get_current_partition(id.partition_id)
                     .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output partition absent"))?;
@@ -197,7 +197,7 @@ pub(super) fn capture(
             }
         }
         if role.posture == Posture::Create {
-            let schema = (*basis.owner_inner()).root.schema_authority();
+            let schema = basis.owner_inner().root.schema_authority();
             context
                 .checkpoint(
                     u64::from(usize::BITS - schema.entity_aspect_plan_count().leading_zeros()) + 1,

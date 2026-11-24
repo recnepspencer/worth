@@ -54,7 +54,7 @@ fn lookup_prefix(
 
     let prepared = prepare_related_lookup(
         read.selected_index((*request.owner_ordered()).index_id()),
-        &(*request.owner_ordered()),
+        request.owner_ordered(),
     )
     .map_err(Denial::Lookup)?;
     let _projection_memory = reserve_basis_copy(read, allocation, meter)?;

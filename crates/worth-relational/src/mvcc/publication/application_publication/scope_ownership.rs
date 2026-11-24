@@ -16,7 +16,8 @@ impl RelationalInstalledApplicationPublicationAuthority {
         (),
         crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
-        if (*(*basis.owner_inner())
+        if (*basis
+            .owner_inner()
             .root
             .schema_authority()
             .registry()
@@ -72,7 +73,8 @@ impl RelationalInstalledApplicationPublicationAuthority {
             return Ok(());
         };
         if self.source_scope_ownership.scope_kind(producer).is_some() {
-            (*basis.owner_inner())
+            basis
+                .owner_inner()
                 .root
                 .demand_full_partition(execution, meaning.source_scope.partition_id)
                 .map_err(super::custody::execution_stop)?;

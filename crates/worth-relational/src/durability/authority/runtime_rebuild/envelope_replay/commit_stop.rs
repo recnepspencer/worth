@@ -51,6 +51,7 @@ pub(crate) fn replay_commit_stop(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
     use super::*;
     #[test]
     fn execution_storage_refusal_is_cold_storage_failure_in_tail_replay() {
@@ -114,6 +115,3 @@ mod tests {
         );
     }
 }
-
-#[cfg(test)]
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;

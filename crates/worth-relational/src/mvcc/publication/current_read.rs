@@ -24,22 +24,14 @@ impl<'cell> PublicationReadCoordination<'cell> {
         let separate = source.filter(|source| source.identity() != target.identity());
         let (target_guard, source_guard) = match separate {
             Some(source) if source.identity() < target.identity() => {
-                let source_guard = (*source.owner_inner())
-                    .publication_cell
-                    .coordination()
-                    .enter();
+                let source_guard = source.owner_inner().publication_cell.coordination().enter();
                 (target.coordination().enter(), Some(source_guard))
             }
             Some(source) => {
                 let target_guard = target.coordination().enter();
                 (
                     target_guard,
-                    Some(
-                        (*source.owner_inner())
-                            .publication_cell
-                            .coordination()
-                            .enter(),
-                    ),
+                    Some(source.owner_inner().publication_cell.coordination().enter()),
                 )
             }
             None => (target.coordination().enter(), None),
@@ -66,14 +58,14 @@ impl<'cell> PublicationReadCoordination<'cell> {
             .filter(|source| source.identity() != self.target.identity());
         let (target, source) = match separate {
             Some(source) if source.identity() < self.target.identity() => {
-                let source = (*source.owner_inner()).publication_cell.enter_state();
+                let source = source.owner_inner().publication_cell.enter_state();
                 (self.target.enter_state(), Some(source))
             }
             Some(source) => {
                 let target = self.target.enter_state();
                 (
                     target,
-                    Some((*source.owner_inner()).publication_cell.enter_state()),
+                    Some(source.owner_inner().publication_cell.enter_state()),
                 )
             }
             None => (self.target.enter_state(), None),

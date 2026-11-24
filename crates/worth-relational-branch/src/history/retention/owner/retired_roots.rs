@@ -1,5 +1,6 @@
 //! The original root inventory has one explicit gate, released before lane work.
 use super::*;
+use crate::history::retention::RetentionBusy;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 impl RelationalBranchRetentionOwnerInner {
@@ -25,12 +26,12 @@ impl RelationalBranchRetentionOwner {
     pub fn next_source_retirement_root(
         &self,
         after: Option<usize>,
-    ) -> Result<Option<(usize, Arc<RelationalBranchRoot>)>, ()> {
+    ) -> Result<Option<(usize, Arc<RelationalBranchRoot>)>, RetentionBusy> {
         use std::ops::Bound::{Excluded, Unbounded};
         let roots = match self.inner.retired_roots.try_read() {
             Ok(roots) => roots,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         let next = match after {
             None => roots.first_key_value(),

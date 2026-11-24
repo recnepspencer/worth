@@ -84,11 +84,14 @@ impl crate::branch::reference::RelationalBranchReferenceCell {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct ForeignRelationalBranchIdentity;
+
 pub fn require_local_identity(
     runtime_instance_id: u64,
     identity: &crate::branch::identity::RelationalBranchIdentity,
-) -> Result<(), ()> {
+) -> Result<(), ForeignRelationalBranchIdentity> {
     (identity.runtime_instance_id() == runtime_instance_id)
         .then_some(())
-        .ok_or(())
+        .ok_or(ForeignRelationalBranchIdentity)
 }

@@ -3,6 +3,7 @@ use super::owner::RelationalBranchRetentionOwnerInner;
 use super::{RelationalHeadRetentionObligation, RelationalRetentionAcquisitionDenial};
 use crate::branch::identity::RelationalBranchIdentity;
 use crate::branch::root::RelationalBranchRoot;
+use crate::history::retention::RetentionBusy;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -18,17 +19,17 @@ pub(super) struct CheckedHeadObligation {
 impl RelationalBranchHeadRetentionCell {
     /// Retire this exact live-head obligation without releasing its root data.
     /// The stopped authentic owner keeps the branch cell and root inventory.
-    pub fn try_retire_stopped_head(&self) -> Result<(), ()> {
+    pub fn try_retire_stopped_head(&self) -> Result<(), RetentionBusy> {
         let slot = match self.obligation.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         if let Some(obligation) = slot.as_ref() {
             let mut obligation = match obligation.try_lock() {
                 Ok(value) => value,
                 Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-                Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+                Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
             };
             obligation.consume();
         }

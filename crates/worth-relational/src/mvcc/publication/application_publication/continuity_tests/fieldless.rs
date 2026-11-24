@@ -126,12 +126,14 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         .unwrap();
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
-    let partition = (*basis.owner_inner())
+    let partition = basis
+        .owner_inner()
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
         .unwrap();
-    let plan = (*basis.owner_inner())
+    let plan = basis
+        .owner_inner()
         .root
         .schema_authority()
         .entity_aspect_plan(KindId(1))

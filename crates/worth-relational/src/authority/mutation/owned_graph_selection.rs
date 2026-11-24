@@ -36,7 +36,10 @@ pub(crate) fn apply(
     budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, MutationApplyDenial> {
     let graph = &retained.graph;
-    let source = (*graph.entities().selected_basis().owner_inner())
+    let source = graph
+        .entities()
+        .selected_basis()
+        .owner_inner()
         .root
         .as_ref();
     let mut workspace = MutationWorkspace::new(

@@ -75,7 +75,7 @@ impl RequiredOutputPublicationAdmission {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Option<crate::history::data::CommitId>, TransactionCommitError> {
         use crate::history::data::RequiredOutputRoutePosition as Position;
-        let positions = &(*basis.owner_inner()).root.output_publication_positions;
+        let positions = &basis.owner_inner().root.output_publication_positions;
         match positions.get(meaning, context)? {
             Some(Position::Published(_)) => Err(origin_denial(
                 "an installed family publication requires its exact predecessor",
@@ -115,7 +115,8 @@ pub(crate) fn readmit_required_output_route_absence(
         installed.require_current_ownership_storage(basis, meaning.source_scope)?;
     }
     let current = if installed.source_scope_ownership.is_empty()
-        || (*basis.owner_inner())
+        || basis
+            .owner_inner()
             .root
             .output_publication_positions
             .unresolved_prefix()
@@ -130,7 +131,7 @@ pub(crate) fn readmit_required_output_route_absence(
                 lease,
                 None,
                 |context| {
-                    let positions = &(*basis.owner_inner()).root.output_publication_positions;
+                    let positions = &basis.owner_inner().root.output_publication_positions;
                     use crate::history::data::RequiredOutputRoutePosition as Position;
                     let selected = match positions.get(meaning, context)?.or(current) {
                         Some(position) => Some(position),

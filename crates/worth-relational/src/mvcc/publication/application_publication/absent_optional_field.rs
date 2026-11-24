@@ -80,7 +80,8 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         let entity = changed_entities(&committed)[0];
         release_test_commit_snapshot(&runtime, &committed);
         let basis = test_owner_main_basis(&runtime).unwrap();
-        let partition = (*basis.owner_inner())
+        let partition = basis
+            .owner_inner()
             .root
             .partition_state(entity.partition_id)
             .expect("fixture root has admitted Full custody")

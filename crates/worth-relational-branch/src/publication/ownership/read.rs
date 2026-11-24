@@ -85,10 +85,10 @@ fn read_source(
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let mut roster = empty(execution, source)?;
     let root = source.root();
-    let Some(storage) = &(*root
+    let Some(storage) = root
         .schema_authority()
         .registry()
-        .owner_current_publication_storage())
+        .owner_current_publication_storage()
     else {
         return Ok(roster);
     };

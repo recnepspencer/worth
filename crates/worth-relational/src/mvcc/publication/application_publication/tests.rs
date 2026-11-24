@@ -128,7 +128,8 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         vec![entity]
     );
     let original_basis = basis;
-    let original_partition = (*original_basis.owner_inner())
+    let original_partition = original_basis
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -170,7 +171,8 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let changed = update_entity(execution, &runtime, entity, "different");
     release_test_commit_snapshot(&runtime, &changed);
     let current_basis = test_owner_main_basis(&runtime).unwrap();
-    let current_partition = (*current_basis.owner_inner())
+    let current_partition = current_basis
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()

@@ -158,7 +158,7 @@ pub(super) fn install_route(
         state,
         &outputs,
         previous.map_or(0, |prior| prior.relations.len()),
-        (*basis.owner_inner()).root.schema_authority().registry(),
+        basis.owner_inner().root.schema_authority().registry(),
         contribution_records,
         lease,
         context,
@@ -174,7 +174,8 @@ pub(super) fn install_route(
             context,
         )?;
     }
-    let mut positions = (*basis.owner_inner())
+    let mut positions = basis
+        .owner_inner()
         .root
         .output_publication_positions
         .clone();
@@ -233,7 +234,7 @@ pub(super) fn install_route(
             )?)
         };
         crate::history::data::publication_relations::validate(
-        &(*basis.owner_inner()).root,
+        &basis.owner_inner().root,
         Some(state),
         (*envelope.owner_required_output_origin()).as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
         Some(current),

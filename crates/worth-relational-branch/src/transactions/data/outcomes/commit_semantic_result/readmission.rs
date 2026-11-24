@@ -16,12 +16,12 @@ pub fn validate_envelope(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Refusal> {
     if (*semantic.owner_receipt()) != envelope.commit
-        || (*semantic.owner_history()).target_branch != (*semantic.owner_receipt()).branch_id.0
+        || semantic.owner_history().target_branch != semantic.owner_receipt().branch_id.0
     {
         return Err(Refusal::ReceiptMismatch);
     }
     let same_transition = match (
-        &(*semantic.owner_schema()).transition,
+        &semantic.owner_schema().transition,
         &envelope.schema_transition,
     ) {
         (None, None) => true,
@@ -29,9 +29,9 @@ pub fn validate_envelope(
         _ => false,
     };
     if !same_transition
-        || (*semantic.owner_schema()).descriptor_semantics_version
+        || semantic.owner_schema().descriptor_semantics_version
             != envelope.descriptor_semantics_version
-        || (*semantic.owner_structural()).descriptor_semantics_version
+        || semantic.owner_structural().descriptor_semantics_version
             != envelope.descriptor_semantics_version
     {
         return Err(Refusal::SchemaMismatch);
@@ -48,23 +48,24 @@ pub fn validate_envelope(
                     .binary_search(&patch.target)
                     .is_err()
             })
-        || (*semantic.owner_change()).changed_record_count
-            != (*semantic.owner_changed_records()).len()
+        || semantic.owner_change().changed_record_count != (*semantic.owner_changed_records()).len()
     {
         return Err(Refusal::ChangedRecordsMismatch);
     }
-    if (*semantic.owner_publication()).patch_record_count
+    if semantic.owner_publication().patch_record_count
         != envelope.patch.authoritative_record_patches.len()
-        || (*semantic.owner_publication()).lineage_event_count != envelope.lineage_events().len()
-        || (*semantic.owner_publication()).merge_parent_count
-            != (*semantic.owner_receipt()).parents.len().saturating_sub(1)
-        || (*semantic.owner_history()).parent_count != (*semantic.owner_receipt()).parents.len()
-        || (*semantic.owner_history()).merge_base_count != envelope.merge_base_commits.len()
-        || (*semantic.owner_structural())
+        || semantic.owner_publication().lineage_event_count != envelope.lineage_events().len()
+        || semantic.owner_publication().merge_parent_count
+            != semantic.owner_receipt().parents.len().saturating_sub(1)
+        || semantic.owner_history().parent_count != semantic.owner_receipt().parents.len()
+        || semantic.owner_history().merge_base_count != envelope.merge_base_commits.len()
+        || semantic
+            .owner_structural()
             .touched_partitions
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
-        || (*semantic.owner_aspects())
+        || semantic
+            .owner_aspects()
             .touched_aspects
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
@@ -121,7 +122,7 @@ fn validate_creations(
         .checked_add((*semantic.owner_created_relations()).len())
         .ok_or(Refusal::CreateCardinalityOverflow)?;
     let mut records = Vec::with_capacity(count);
-    for created in &(*semantic.owner_created_entities()) {
+    for created in semantic.owner_created_entities() {
         if created.key.partition != created.assigned.partition_id {
             return Err(Refusal::CreatePartitionMismatch);
         }
@@ -134,7 +135,7 @@ fn validate_creations(
             .ok()
             .map(|index| (*semantic.owner_created_entities())[index].assigned),
     };
-    for created in &(*semantic.owner_created_relations()) {
+    for created in semantic.owner_created_relations() {
         if created.key.partition != created.assigned.partition_id {
             return Err(Refusal::CreatePartitionMismatch);
         }

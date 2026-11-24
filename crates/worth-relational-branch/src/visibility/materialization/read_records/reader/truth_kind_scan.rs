@@ -313,6 +313,16 @@ impl ProjectionRecordReader<'_> {
     }
 }
 
+pub trait BoundedEntityKindTruthReadFieldsPort {
+    fn owner_records(&self) -> &Vec<EntityReadRecord>;
+}
+
+impl BoundedEntityKindTruthReadFieldsPort for BoundedEntityKindTruthRead {
+    fn owner_records(&self) -> &Vec<EntityReadRecord> {
+        &self.records
+    }
+}
+
 #[cfg(test)]
 mod paid_stop_tests {
     use super::*;
@@ -333,15 +343,5 @@ mod paid_stop_tests {
             );
             assert_eq!(scan.finish().entity_records_reserved(), 0);
         }
-    }
-}
-
-pub trait BoundedEntityKindTruthReadFieldsPort {
-    fn owner_records(&self) -> &Vec<EntityReadRecord>;
-}
-
-impl BoundedEntityKindTruthReadFieldsPort for BoundedEntityKindTruthRead {
-    fn owner_records(&self) -> &Vec<EntityReadRecord> {
-        &self.records
     }
 }

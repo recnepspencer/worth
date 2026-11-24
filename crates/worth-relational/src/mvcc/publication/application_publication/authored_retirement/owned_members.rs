@@ -50,16 +50,18 @@ impl AuthoredPublicationReads<'_> {
                 RecordRef::Entity(anchor),
             ));
         }
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .demand_head_partition(execution, anchor.partition_id)
             .map_err(super::super::custody::execution_stop)?;
-        let axes = (*basis.owner_inner())
+        let axes = basis
+            .owner_inner()
             .root
             .axes()
             .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, RecordRef::Entity(anchor)))?;
         let state = InvariantStateView::new(
-            (*basis.owner_inner()).root.as_ref(),
+            basis.owner_inner().root.as_ref(),
             crate::identity::data::VersionId(axes.storage_version),
         );
         use crate::execution::request_stage::checkpoint;
@@ -70,7 +72,8 @@ impl AuthoredPublicationReads<'_> {
                 for &id in edges.iter() {
                     checkpoint(context, kinds.len() as u64 + 1)
                         .map_err(super::super::custody::execution_stop)?;
-                    (*basis.owner_inner())
+                    basis
+                        .owner_inner()
                         .root
                         .demand_head_partition(execution, id.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
@@ -84,7 +87,8 @@ impl AuthoredPublicationReads<'_> {
                     else {
                         continue;
                     };
-                    (*basis.owner_inner())
+                    basis
+                        .owner_inner()
                         .root
                         .demand_head_partition(execution, edge.source.partition_id)
                         .map_err(super::super::custody::execution_stop)?;

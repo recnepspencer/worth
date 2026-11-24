@@ -104,7 +104,7 @@ impl<'a> CandidateWrites<'a> {
                 absence.publication,
             ));
         }
-        for retirement in &(*candidate.owner_required_output_codec_retirements()) {
+        for retirement in candidate.owner_required_output_codec_retirements() {
             crate::publication::ownership::checkpoint(
                 context,
                 retirement.meaning.family.len() as u64 + 1,

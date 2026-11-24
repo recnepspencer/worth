@@ -38,7 +38,7 @@ impl AdmittedRelationalBranchBasis {
         let schema = self.inner.root.retained_schema_authority();
         let staged = ContentFrameAdmission::admit(
             execution,
-            &(*schema.registry().owner_content_formats()),
+            schema.registry().owner_content_formats(),
             attachments,
         )?;
         Ok(RelationalContentReadClosure {
@@ -115,7 +115,7 @@ impl RelationalContentReadClosure {
     ) -> Result<RelationalContentFrame, Denial> {
         let root = &self.basis.inner.root;
         let schema = root.retained_schema_authority();
-        let formats = &(*schema.registry().owner_content_formats());
+        let formats = schema.registry().owner_content_formats();
         control::run(execution, |control| {
             control.checkpoint(formats.lookup_bound())
         })?;

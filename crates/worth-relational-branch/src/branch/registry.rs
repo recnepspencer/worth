@@ -1,3 +1,4 @@
+use crate::history::retention::RetentionBusy;
 pub mod source_retirement;
 pub use source_retirement::RelationalSourceRootSlot;
 pub mod component_capture;
@@ -46,22 +47,22 @@ pub enum RelationalForkTargetReservationDenial {
 }
 
 impl RelationalBranchReferenceRegistry {
-    pub fn try_memory_targets_empty(&self) -> Result<bool, ()> {
+    pub fn try_memory_targets_empty(&self) -> Result<bool, RetentionBusy> {
         let state = match self.state.try_read() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         Ok(state.reserved_targets.is_empty())
     }
 
     /// After actual lifecycle quiescence the dense cells cannot reorder. Keep
     /// the original cells/root data while retiring one genuine head token.
-    pub fn try_retire_stopped_head(&self, index: usize) -> Result<Option<bool>, ()> {
+    pub fn try_retire_stopped_head(&self, index: usize) -> Result<Option<bool>, RetentionBusy> {
         let state = match self.state.try_read() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         let Some((_, cell)) = state.cells.get_index(index) else {
             return Ok(Some(true));
@@ -127,6 +128,10 @@ impl RelationalBranchReferenceRegistry {
 
     pub fn len(&self) -> usize {
         self.read().cells.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.read().cells.is_empty()
     }
 
     pub fn keys(&self) -> Vec<BranchId> {

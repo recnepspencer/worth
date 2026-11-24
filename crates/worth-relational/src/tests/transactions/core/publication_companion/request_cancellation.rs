@@ -44,7 +44,8 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
         let runtime = runtime_with_test_schema();
         let anchor = create_entity(execution, &runtime, "original-cancellation-anchor");
         let before = test_owner_main_basis(&runtime).unwrap();
-        let before_partition = (*before.owner_inner())
+        let before_partition = before
+            .owner_inner()
             .root
             .partition_state(anchor.partition_id)
             .expect("fixture root has admitted Full custody")
@@ -84,7 +85,8 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
         )),"the original request stop must dominate both domain refusal and a prepared successful companion: {outcome:?}");
         let unchanged = test_owner_main_basis(&runtime).unwrap();
         assert_eq!(unchanged.descriptor(), before.descriptor());
-        let partition = (*unchanged.owner_inner())
+        let partition = unchanged
+            .owner_inner()
             .root
             .partition_state(anchor.partition_id)
             .expect("fixture root has admitted Full custody")

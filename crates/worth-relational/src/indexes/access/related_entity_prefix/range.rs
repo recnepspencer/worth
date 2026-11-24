@@ -88,7 +88,7 @@ pub(super) fn select(
     } else {
         bound(
             rows,
-            *request.owner_prefix(),
+            request.owner_prefix(),
             ordering,
             false,
             meter,
@@ -100,7 +100,7 @@ pub(super) fn select(
     } else {
         bound(
             rows,
-            *request.owner_prefix(),
+            request.owner_prefix(),
             ordering,
             true,
             meter,
@@ -114,8 +114,8 @@ pub(super) fn select(
     if (*after.owner_runtime()) != read.runtime_identity
         || (*after.owner_basis()).root_id() != read.basis().root_id()
         || (*after.owner_basis()).branch_id() != read.basis().branch_id()
-        || (*after.owner_generation()).generation_id != prepared.generation_id
-        || (*after.owner_generation()).index_id != (*request.owner_ordered()).index_id()
+        || after.owner_generation().generation_id != prepared.generation_id
+        || after.owner_generation().index_id != (*request.owner_ordered()).index_id()
         || (*after.owner_parent()) != (*request.owner_ordered()).parent_entity_id()
         || (*after.owner_child_kind()) != (*request.owner_ordered()).child_kind()
         || (*after.owner_prefix_len()) != (*request.owner_prefix()).len()
@@ -128,7 +128,7 @@ pub(super) fn select(
     // Same immutable generation and position; changed scope/prefix is nevertheless rejected.
     if compare_prefix(
         entry(rows, *after.owner_last(), meter)?,
-        *request.owner_prefix(),
+        request.owner_prefix(),
         ordering,
         meter,
     )? != Ordering::Equal

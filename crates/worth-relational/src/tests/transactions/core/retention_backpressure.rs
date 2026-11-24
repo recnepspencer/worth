@@ -335,9 +335,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
     else {
         panic!("a prepared system-allocated root must publish");
     };
-    let cost = (*performed.next_basis().owner_inner())
-        .root
-        .publication_cost();
+    let cost = performed.next_basis().owner_inner().root.publication_cost();
     assert!(cost.new_authoritative_bytes > 0);
     assert_eq!(cost.touched_regions, 1);
     assert_eq!(

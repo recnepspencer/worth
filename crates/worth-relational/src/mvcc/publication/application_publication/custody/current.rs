@@ -157,7 +157,8 @@ fn owner_matches(
             .source_scope_ownership
             .scope_kind(&origin.producer)
             == Some(kind)
-        && (*basis.owner_inner())
+        && basis
+            .owner_inner()
             .root
             .get_current_partition(origin.meaning.source_scope.partition_id)
             .and_then(|partition| partition.entity_arena().get(&origin.meaning.source_scope))

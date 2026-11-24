@@ -48,7 +48,7 @@ pub(super) fn select_registered_retained_commit(
         }) {
             continue;
         }
-        if (*actual.owner_inner()).retention.owner_relationship(&owner)
+        if actual.owner_inner().retention.owner_relationship(&owner)
             != RelationalRetentionOwnerRelationship::SameOwner
         {
             continue;

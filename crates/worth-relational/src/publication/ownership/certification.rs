@@ -35,7 +35,7 @@ pub(crate) fn probe_coherent_ownership_loss(
             current.positions.clear();
             super::read::anchors::validate(
                 &mut current,
-                &(*basis.owner_inner()).root.output_publication_positions,
+                &basis.owner_inner().root.output_publication_positions,
                 &records,
                 context,
             )
@@ -62,7 +62,7 @@ pub(crate) fn probe_unmatched_ownership_presence(
             current.codec_retired.clear();
             super::read::anchors::validate(
                 &mut current,
-                &(*basis.owner_inner()).root.output_publication_positions,
+                &basis.owner_inner().root.output_publication_positions,
                 &records,
                 context,
             )
@@ -77,7 +77,7 @@ pub(crate) fn current_owned_aggregate_memberships(
     owner: EntityId,
 ) -> Result<Vec<crate::identity::data::RelationId>, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let registry = (*basis.owner_inner()).root.schema_authority().registry();
+    let registry = basis.owner_inner().root.schema_authority().registry();
     Ok(current
         .origins()
         .filter(|o| o.meaning.source_scope == owner)
@@ -155,7 +155,7 @@ pub(crate) fn owned_edge_retarget_intent(
     target: EntityId,
 ) -> Result<MutationIntent, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let registry = (*basis.owner_inner()).root.schema_authority().registry();
+    let registry = basis.owner_inner().root.schema_authority().registry();
     let edge = current
         .origins()
         .filter(|origin| origin.meaning.source_scope == owner)

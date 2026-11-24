@@ -34,7 +34,8 @@ pub(crate) fn owner_kind(
     basis: &AdmittedRelationalBranchBasis,
     owner: EntityId,
 ) -> Result<KindId, TransactionCommitError> {
-    (*basis.owner_inner())
+    basis
+        .owner_inner()
         .root
         .get_current_partition(owner.partition_id)
         .and_then(|p| p.entity_arena().get(&owner))
@@ -90,7 +91,7 @@ pub(crate) fn inspect_recovered_locality(
         WorkerIntentBatch,
     ) -> Result<Result<(), TransactionCommitError>, TransactionCommitError>,
 ) -> Result<CurrentOwnershipLocalityForTest, TransactionCommitError> {
-    let root = &(*basis.owner_inner()).root;
+    let root = &basis.owner_inner().root;
     let count = || {
         (1002..=1064)
             .filter(|p| {

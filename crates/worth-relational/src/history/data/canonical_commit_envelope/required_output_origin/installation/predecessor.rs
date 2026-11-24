@@ -37,7 +37,8 @@ pub(super) fn validate<'a>(
             ),
         );
     }
-    let position = (*basis.owner_inner())
+    let position = basis
+        .owner_inner()
         .root
         .output_publication_positions
         .get(&origin.meaning, context)?;
@@ -125,7 +126,7 @@ pub(super) fn validate<'a>(
         .map_err(super::relation_stop)?;
     compare_retained_origin(origin, expected, context)?;
     crate::history::data::publication_relations::validate(
-        &(*basis.owner_inner()).root,
+        &basis.owner_inner().root,
         None,
         origin,
         Some(

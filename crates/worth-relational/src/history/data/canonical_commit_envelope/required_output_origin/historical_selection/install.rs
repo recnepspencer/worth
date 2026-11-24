@@ -52,7 +52,8 @@ pub(crate) fn install(
                 "historical selection basis cannot enter canonical frame",
             )
         })?;
-    let mut positions = (*basis.owner_inner())
+    let mut positions = basis
+        .owner_inner()
         .root
         .output_publication_positions
         .clone();

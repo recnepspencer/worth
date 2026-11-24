@@ -58,7 +58,7 @@ pub(super) fn readmit(
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     >,
 ) -> Result<RecoveredIndexCatalog, RelationalRecoveryStop> {
-    let delta = &(*original.envelope().owner_index_definition_delta());
+    let delta = original.envelope().owner_index_definition_delta();
     for _ in delta.definitions() {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     }

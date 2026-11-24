@@ -24,7 +24,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin::
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CanonicalHistoricalOutputAbsence, TransactionCommitError> {
-    let overlay = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), working);
+    let overlay = OverlayStateView::new(basis.owner_inner().root.as_ref(), working);
     for member in original
         .members
         .iter()

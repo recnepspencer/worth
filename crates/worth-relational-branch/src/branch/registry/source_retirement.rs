@@ -1,5 +1,6 @@
 //! Dense stopped-owner cells lend their actual roots without copying names.
 use super::*;
+use crate::history::retention::RetentionBusy;
 
 pub enum RelationalSourceRootSlot {
     Root(Arc<crate::branch::root::RelationalBranchRoot>),
@@ -7,11 +8,14 @@ pub enum RelationalSourceRootSlot {
     Complete,
 }
 impl RelationalBranchReferenceRegistry {
-    pub fn source_retirement_root(&self, index: usize) -> Result<RelationalSourceRootSlot, ()> {
+    pub fn source_retirement_root(
+        &self,
+        index: usize,
+    ) -> Result<RelationalSourceRootSlot, RetentionBusy> {
         let registry = match self.state.try_read() {
             Ok(state) => state,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         let Some((_, cell)) = registry.cells.get_index(index) else {
             return Ok(RelationalSourceRootSlot::Complete);
@@ -19,7 +23,7 @@ impl RelationalBranchReferenceRegistry {
         let state = match cell.state.try_lock() {
             Ok(state) => state,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         Ok(match &state.root {
             Some(root) => RelationalSourceRootSlot::Root(root.clone()),

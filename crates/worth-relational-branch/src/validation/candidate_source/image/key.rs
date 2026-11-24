@@ -17,11 +17,12 @@ impl SourceKey {
 }
 impl Ord for SourceKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        (*self.program.owner_field_0())
+        self.program
+            .owner_field_0()
             .path
             .parts()
             .identity
-            .cmp(&(*other.program.owner_field_0()).path.parts().identity)
+            .cmp(&other.program.owner_field_0().path.parts().identity)
             .then_with(|| self.scope.cmp(&other.scope))
     }
 }

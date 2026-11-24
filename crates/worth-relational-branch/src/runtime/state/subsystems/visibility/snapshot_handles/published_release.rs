@@ -1,11 +1,15 @@
 //! Original-registration fact and its actual removed-binding retirement custody.
 use super::super::SnapshotHandleBinding;
 use super::published_registry::PublishedSnapshotHandleRegistry;
+use crate::history::retention::RetentionBusy;
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex, Weak,
 };
+
+#[derive(Clone, Copy, Debug)]
+pub struct PublishedSnapshotRetirementInterrupted;
 
 #[derive(Debug)]
 pub struct PublishedSnapshotReleaseObservation {
@@ -38,7 +42,7 @@ impl PublishedSnapshotRetirement {
     }
 }
 impl PublishedSnapshotBindingRetirement {
-    fn advance(&mut self) -> Result<bool, ()> {
+    fn advance(&mut self) -> Result<bool, RetentionBusy> {
         if let Some(binding) = self.binding.take() {
             self.basis = Some(binding.basis.into_retirement());
             return Ok(false);
@@ -93,14 +97,16 @@ impl PublishedSnapshotReleaseObservation {
         }
         matches!(*phase, PublishedSnapshotRetirement::Complete)
     }
-    pub fn retirement_complete(&self) -> Result<Option<bool>, ()> {
+    pub fn retirement_complete(
+        &self,
+    ) -> Result<Option<bool>, PublishedSnapshotRetirementInterrupted> {
         let phase = match self.retirement.try_lock() {
             Ok(guard) => guard,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Ok(None),
         };
         if matches!(*phase, PublishedSnapshotRetirement::Interrupted) {
-            return Err(());
+            return Err(PublishedSnapshotRetirementInterrupted);
         }
         Ok(Some(matches!(
             *phase,
@@ -108,18 +114,20 @@ impl PublishedSnapshotReleaseObservation {
         )))
     }
     /// Called only under an authentic Native owner borrow, after exact removal.
-    pub fn advance_retirement(&self) -> Result<Option<bool>, ()> {
+    pub fn advance_retirement(
+        &self,
+    ) -> Result<Option<bool>, PublishedSnapshotRetirementInterrupted> {
         let mut phase = match self.retirement.try_lock() {
             Ok(guard) => guard,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Ok(None),
         };
         match &mut *phase {
-            PublishedSnapshotRetirement::Registered => Err(()),
-            PublishedSnapshotRetirement::Interrupted => Err(()),
+            PublishedSnapshotRetirement::Registered => Err(PublishedSnapshotRetirementInterrupted),
+            PublishedSnapshotRetirement::Interrupted => Err(PublishedSnapshotRetirementInterrupted),
             PublishedSnapshotRetirement::Complete => Ok(Some(true)),
             PublishedSnapshotRetirement::Removed(retirement) => match retirement.advance() {
-                Err(()) => Ok(None),
+                Err(_) => Ok(None),
                 Ok(false) => Ok(Some(false)),
                 Ok(true) => {
                     *phase = PublishedSnapshotRetirement::Complete;

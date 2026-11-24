@@ -92,7 +92,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 "recovery retained no codec target",
             )
         })?;
-        let source_authority = (*basis.owner_inner()).root.schema_authority();
+        let source_authority = basis.owner_inner().root.schema_authority();
         let source = source_authority.registry();
         let target = &state.target_registry;
         if installed.runtime_instance_id != self.runtime.runtime_instance_id()

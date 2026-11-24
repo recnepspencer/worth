@@ -19,7 +19,8 @@ impl RelationalRuntime {
         if selected.identity().runtime_instance_id() != self.runtime_instance_id()
             || installed.runtime_instance_id != self.runtime_instance_id()
             || installed.schema_digest
-                != (*selected.owner_inner())
+                != selected
+                    .owner_inner()
                     .root
                     .schema_authority()
                     .authority_digest()

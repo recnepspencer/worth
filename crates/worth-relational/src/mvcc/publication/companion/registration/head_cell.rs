@@ -91,7 +91,7 @@ impl PublicationCompanionRegistrationPort {
         let basis = runtime
             .admit_branch_basis(branch)
             .map_err(|_| Stop::HeadUnavailable)?;
-        let root = &(*basis.owner_inner()).root;
+        let root = &basis.owner_inner().root;
         let observation = basis.observation();
         let commit_id = observation.commit_id();
         let position = match commit_id {

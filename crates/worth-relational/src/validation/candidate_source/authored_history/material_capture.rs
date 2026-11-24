@@ -22,7 +22,9 @@ pub(crate) fn capture(
         .prepared
         .get()
         .ok_or(Denial::IncompletePreparation)?;
-    let image = (*interpretation.physical_basis().owner_inner())
+    let image = interpretation
+        .physical_basis()
+        .owner_inner()
         .root
         .managed_source_image
         .get();

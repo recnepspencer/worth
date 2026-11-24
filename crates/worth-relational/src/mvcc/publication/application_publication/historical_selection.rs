@@ -97,15 +97,18 @@ fn require_bases(
         || selected.identity().runtime_instance_id() != runtime_instance_id
         || installed.runtime_instance_id != runtime_instance_id
         || installed.schema_digest
-            != (*current.owner_inner())
+            != current
+                .owner_inner()
                 .root
                 .schema_authority()
                 .authority_digest()
-        || (*current.owner_inner())
+        || current
+            .owner_inner()
             .root
             .schema_authority()
             .authority_digest()
-            != (*selected.owner_inner())
+            != selected
+                .owner_inner()
                 .root
                 .schema_authority()
                 .authority_digest()
@@ -179,7 +182,8 @@ fn admit_publication(
     origin: Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ordinal: usize,
 ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
-    let source_kind = (*basis.owner_inner())
+    let source_kind = basis
+        .owner_inner()
         .root
         .get_current_partition(origin.meaning.source_scope.partition_id)
         .and_then(|region| region.entity(origin.meaning.source_scope))
@@ -230,9 +234,10 @@ fn existing_entities(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let view = crate::validation::engine::state_view::InvariantStateView::new(
-        (*basis.owner_inner()).root.as_ref(),
+        basis.owner_inner().root.as_ref(),
         crate::identity::data::VersionId(
-            (*basis.owner_inner())
+            basis
+                .owner_inner()
                 .root
                 .axes()
                 .map_or(0, |axes| axes.storage_version),
@@ -241,7 +246,8 @@ fn existing_entities(
     let mut records = Vec::new();
     for id in entities {
         crate::execution::request_stage::checkpoint(context, 1).map_err(custody::execution_stop)?;
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .demand_head_partition(execution, id.partition_id)
             .map_err(|stop| {

@@ -88,7 +88,8 @@ pub(super) fn install_empty(
             context,
         );
     }
-    Ok((*basis.owner_inner())
+    Ok(basis
+        .owner_inner()
         .root
         .output_publication_positions
         .clone())

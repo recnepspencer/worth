@@ -115,7 +115,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             }
             previous.resident_basis().basis().retain_root()
         } else {
-            (*basis.owner_inner()).root.clone()
+            basis.owner_inner().root.clone()
         };
         let answer = execution
             .run_native_with_checkpoint(|context| {
@@ -252,7 +252,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         };
         let fields = crate::indexes::authority::maintenance::AppliedFieldImage::capture(
             execution,
-            Arc::clone(&(*basis.owner_inner()).root),
+            Arc::clone(&basis.owner_inner().root),
             Arc::clone(&root),
             identity.proposal.proposed_version_id(),
             changed_records,
@@ -268,7 +268,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             .map_err(request_stop)?;
         let applied_changes = changes::capture(
             execution,
-            (*basis.owner_inner()).root.id(),
+            basis.owner_inner().root.id(),
             aggregate,
             previous_changes,
             fields,

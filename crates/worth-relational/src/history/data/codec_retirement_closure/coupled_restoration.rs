@@ -87,7 +87,7 @@ impl RelationalRuntime {
         installed: &RelationalInstalledApplicationPublicationAuthority,
         restoration: RelationalAuthoredRestoration,
     ) -> Result<Option<RelationalAuthoredCoupledOwners>, TransactionCommitError> {
-        let Some(group) = &(*restoration.retirement.owner_coupled_authored_publication()) else {
+        let Some(group) = restoration.retirement.owner_coupled_authored_publication() else {
             return Ok(None);
         };
         let Some(source) = restoration.retirement.authored_source_retirement() else {

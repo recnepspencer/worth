@@ -94,7 +94,7 @@ impl VisibilityReadContext<'_> {
                             &super::super::super::native_scan_stop::NativeScanStop::Request,
                         )
                     },
-                    |read| super::super::super::read_footprint::relations(&(*read.owner_records())),
+                    |read| super::super::super::read_footprint::relations(read.owner_records()),
                 )
             },
         )
@@ -187,7 +187,7 @@ impl VisibilityReadContext<'_> {
                             &super::super::super::native_scan_stop::NativeScanStop::Request,
                         )
                     },
-                    |read| super::super::super::read_footprint::relations(&(*read.owner_records())),
+                    |read| super::super::super::read_footprint::relations(read.owner_records()),
                 )
             },
         )

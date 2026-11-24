@@ -46,7 +46,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     batches,
                 );
             };
-            let registry = (*self.binding.owners.before.owner_inner())
+            let registry = self
+                .binding
+                .owners
+                .before
+                .owner_inner()
                 .root
                 .schema_authority()
                 .registry();

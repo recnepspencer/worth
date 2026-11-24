@@ -11,7 +11,7 @@ pub(super) fn participants(
     read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
 ) -> Result<BTreeSet<EntityId>, Denial> {
     let bound = history.branch.catalog_len();
-    let mut next = (*current.owner_inner()).root.commit_id();
+    let mut next = current.owner_inner().root.commit_id();
     for _ in 0..bound {
         let Some(commit) = next else {
             return Ok(BTreeSet::new());

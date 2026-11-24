@@ -29,7 +29,8 @@ pub(crate) fn complete(
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedCurrentRecords, TransactionCommitError> {
-    let storage = (*(*basis.owner_inner())
+    let storage = (*basis
+        .owner_inner()
         .root
         .schema_authority()
         .registry()
@@ -61,7 +62,8 @@ pub(crate) fn complete(
         })
     {
         *positions = Some(
-            (*basis.owner_inner())
+            basis
+                .owner_inner()
                 .root
                 .output_publication_positions
                 .clone(),
@@ -137,7 +139,7 @@ pub(crate) fn complete(
         }
         replace(&mut writer, storage, old, None)?;
     }
-    for event in &(*candidate.owner_required_output_codec_retirements()) {
+    for event in candidate.owner_required_output_codec_retirements() {
         writer.checkpoint(current.len() + 1)?;
         // A codec event for a non-opted-in route has no presence row.
         if let Some(old) = current

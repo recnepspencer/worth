@@ -24,7 +24,7 @@ impl RelationalPublicationAuthority<'_> {
             .unwrap_or_else(|| self.schema.clone());
         let original_artifact = self.history.commit_artifact(commit_id);
         let content = (*envelope.owner_content())
-            .readmit_unchanged_root(execution, &(*binding.owner_inner()).root)
+            .readmit_unchanged_root(execution, &binding.owner_inner().root)
             .map_err(|cause| {
                 PublicationPreparationDenial::from(
                     crate::branch::root::RelationalBranchRootCaptureDenial::Content(cause),

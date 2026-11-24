@@ -142,7 +142,9 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         performed.durability_posture(),
         crate::mvcc::RelationalPublicationDurabilityPosture::OwnerAcknowledgementDeferred
     );
-    assert!((*performed.next_basis().owner_inner())
+    assert!(performed
+        .next_basis()
+        .owner_inner()
         .root
         .is_complete(execution, &runtime.services.symbols.interner_snapshot()));
     let observation = performed.next_basis().observation();

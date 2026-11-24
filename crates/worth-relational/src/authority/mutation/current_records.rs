@@ -104,7 +104,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         kind: KindId,
     ) -> Result<Vec<RelationId>, TransactionCommitError> {
         let view = crate::validation::engine::state_view::InvariantStateView::new(
-            (*self.basis.owner_inner()).root.as_ref(),
+            self.basis.owner_inner().root.as_ref(),
             self.candidate.commit.version_id,
         );
         view.outgoing_relations_for_entity_observed(entity, || self.checkpoint(1))
@@ -283,7 +283,8 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         partitions.extend(entities.iter().map(|id| id.partition_id));
         partitions.extend(relations.iter().map(|id| id.partition_id));
         for partition in &partitions {
-            (*self.basis.owner_inner())
+            self.basis
+                .owner_inner()
                 .root
                 .demand_head_partition(self.execution, *partition)
                 .map_err(|cause| {
@@ -295,7 +296,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         let mut held = self.funding.bytes();
         let funding = &mut self.funding;
         self.working.materialize_consequence_records(
-            (*self.basis.owner_inner()).root.as_ref(),
+            self.basis.owner_inner().root.as_ref(),
             &partitions,
             &entities,
             &relations,
@@ -314,7 +315,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
                 })
             },
         )?;
-        let schema = (*self.basis.owner_inner()).root.schema_authority();
+        let schema = self.basis.owner_inner().root.schema_authority();
         let config = crate::config::data::MutationConfig {
             cascade_delete_policy: self.config.cascade_delete_policy,
             adjacency_policy: self.config.adjacency_policy.clone(),

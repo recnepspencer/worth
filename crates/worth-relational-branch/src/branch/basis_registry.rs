@@ -1,3 +1,4 @@
+use crate::history::retention::RetentionBusy;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
@@ -91,13 +92,13 @@ pub struct RelationalBasisRegistryLease {
 }
 
 impl RelationalBranchBasisRegistry {
-    pub fn try_memory_empty(&self) -> Result<bool, ()> {
+    pub fn try_memory_empty(&self) -> Result<bool, RetentionBusy> {
         match self.retained.try_lock() {
             Ok(value) => Ok(value.entries.is_empty()),
             Err(std::sync::TryLockError::Poisoned(error)) => {
                 Ok(error.into_inner().entries.is_empty())
             }
-            Err(std::sync::TryLockError::WouldBlock) => Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => Err(RetentionBusy),
         }
     }
     pub fn with_metrics(metrics: Arc<RelationalBranchBasisRegistryMetrics>) -> Self {

@@ -70,7 +70,7 @@ impl super::BranchBoundRelationalTransaction {
         symbols: &crate::runtime::RuntimeSymbolTable,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        let root = &(*self.basis.owner_inner()).root;
+        let root = &self.basis.owner_inner().root;
         let mut partitions = self.footprint.validation_partitions();
         // A new schema carrier reframes every retained region, including
         // unchanged records. Admit those contents during the operation;
