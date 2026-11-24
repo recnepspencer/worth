@@ -26,7 +26,6 @@ pub(crate) struct WorthQueryProductRuntimeFields {
     pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
     pub(crate) signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
     pub(crate) signal_lifecycle: super::signal_lifecycle::SignalLifecycleServices,
-    pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
     pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
@@ -57,6 +56,7 @@ impl ProductRuntimeBacking for WorthQueryProductRuntimeFields {
 pub struct WorthQueryProductRuntime {
     pub(crate) home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
     pub(crate) source: Option<RuntimeBridgeRelationalSource>,
+    pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
     inner: Arc<dyn ProductRuntimeBacking>,
 }
 
@@ -105,6 +105,7 @@ impl WorthQueryProductRuntime {
         Self {
             home_maintenance: None,
             source: Some(source),
+            owner_cleanup,
             inner: Arc::new(WorthQueryProductRuntimeFields {
                 branch_program_source_owner: None,
                 owner,
@@ -115,7 +116,6 @@ impl WorthQueryProductRuntime {
                 relational_lifecycle,
                 signal_basis,
                 signal_lifecycle,
-                owner_cleanup,
                 default_branch,
                 default_occurrence,
                 root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),

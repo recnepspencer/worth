@@ -119,21 +119,16 @@ impl WorthQueryProductBranchOwnerCleanup {
     }
 
     pub fn pending_work(&self) -> Vec<WorthQueryProductBranchOwnerCleanupWork> {
-        self.runtime
-            .fields()
-            .owner_cleanup
-            .pending_work(self.identity)
+        self.runtime.owner_cleanup.pending_work(self.identity)
     }
 
     pub(crate) fn release_retired_history(
         &self,
         retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
-        self.runtime.fields().owner_cleanup.release_history(
-            self.identity,
-            &self.runtime,
-            retirements,
-        )
+        self.runtime
+            .owner_cleanup
+            .release_history(self.identity, &self.runtime, retirements)
     }
 
     pub(crate) fn pending_signal_bases(
@@ -143,7 +138,6 @@ impl WorthQueryProductBranchOwnerCleanup {
         worth_signal::facade::branch::SignalBranchBasisObservationDenial,
     > {
         self.runtime
-            .fields()
             .owner_cleanup
             .pending_signal_references(self.identity)
             .into_iter()
@@ -173,7 +167,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductBranchOwnerCleanupFailure,
     > {
-        let registry = self.runtime.fields().owner_cleanup.clone();
+        let registry = self.runtime.owner_cleanup.clone();
         match registry.retry(self.identity, &self.runtime, retirements) {
             Ok(receipt) => Ok(receipt),
             Err(denial) => Err(WorthQueryProductBranchOwnerCleanupFailure {
@@ -290,8 +284,7 @@ impl WorthQueryProductRuntime {
         WorthQueryProductBranchOwnerCleanupReservation,
         WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     > {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .reserve(CleanupScope::WorkspaceRetirement)
     }
 
@@ -302,8 +295,7 @@ impl WorthQueryProductRuntime {
         WorthQueryProductBranchOwnerCleanupReservation,
         WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     > {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .reserve(CleanupScope::ApplicationRetirement(occurrence))
     }
 
@@ -313,7 +305,7 @@ impl WorthQueryProductRuntime {
         WorthQueryProductBranchOwnerCleanupReservation,
         WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     > {
-        self.fields().owner_cleanup.reserve(CleanupScope::Creation)
+        self.owner_cleanup.reserve(CleanupScope::Creation)
     }
 
     pub(crate) fn reserve_owner_cleanup_for_application(
@@ -322,14 +314,11 @@ impl WorthQueryProductRuntime {
         WorthQueryProductBranchOwnerCleanupReservation,
         WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     > {
-        self.fields()
-            .owner_cleanup
-            .reserve(CleanupScope::Application)
+        self.owner_cleanup.reserve(CleanupScope::Application)
     }
 
     pub(crate) fn pending_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .pending_identities()
             .into_iter()
             .map(|identity| WorthQueryProductBranchOwnerCleanup::new(self.clone(), identity))
@@ -339,8 +328,7 @@ impl WorthQueryProductRuntime {
     pub(crate) fn pending_workspace_owner_cleanup(
         &self,
     ) -> Vec<WorthQueryProductBranchOwnerCleanup> {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .pending_workspace_identities()
             .into_iter()
             .map(|identity| WorthQueryProductBranchOwnerCleanup::new(self.clone(), identity))
@@ -350,18 +338,16 @@ impl WorthQueryProductRuntime {
     pub(crate) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .pending_application_retired_product_occurrences()
     }
 
     pub(crate) fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
-        self.fields().owner_cleanup.replace_after_install_hook(hook);
+        self.owner_cleanup.replace_after_install_hook(hook);
     }
 
     pub fn replace_owner_cleanup_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
-        self.fields()
-            .owner_cleanup
+        self.owner_cleanup
             .replace_after_component_progress_hook(hook);
     }
 }

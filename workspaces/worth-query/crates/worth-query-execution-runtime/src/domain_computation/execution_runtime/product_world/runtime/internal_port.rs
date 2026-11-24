@@ -180,7 +180,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn owner_cleanup_ref(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
-        &self.fields().owner_cleanup
+        &self.owner_cleanup
     }
 
     fn default_branch(&self) -> &ProductBranchIdentity {

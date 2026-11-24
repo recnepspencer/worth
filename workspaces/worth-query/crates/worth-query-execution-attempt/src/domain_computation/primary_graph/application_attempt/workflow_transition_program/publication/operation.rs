@@ -61,19 +61,23 @@ pub struct RequiredWorkflowOperation {
     pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
-trait WorkflowOperationAuthorityBacking: Send + Sync + std::fmt::Debug {
-    fn into_authority(self: Box<Self>) -> WorkflowOperationAuthority;
+trait WorkflowOperationAuthorityBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe + std::fmt::Debug
+{
+    fn take(&self) -> Option<WorkflowOperationAuthority>;
 }
 
-impl WorkflowOperationAuthorityBacking for WorkflowOperationAuthority {
-    fn into_authority(self: Box<Self>) -> WorkflowOperationAuthority {
-        *self
+impl WorkflowOperationAuthorityBacking for Mutex<Option<WorkflowOperationAuthority>> {
+    fn take(&self) -> Option<WorkflowOperationAuthority> {
+        self.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
     }
 }
 
 #[derive(Debug)]
 pub struct WorkflowOperationAuthoritySlot {
-    authority: Mutex<Option<Box<dyn WorkflowOperationAuthorityBacking>>>,
+    authority: Option<Box<dyn WorkflowOperationAuthorityBacking>>,
     issued: bool,
 }
 
@@ -123,20 +127,17 @@ impl WorkflowOperationAuthoritySlot {
     pub(crate) fn new(authority: Option<WorkflowOperationAuthority>) -> Arc<Self> {
         Arc::new(Self {
             issued: authority.is_some(),
-            authority: Mutex::new(
-                authority
-                    .map(|value| Box::new(value) as Box<dyn WorkflowOperationAuthorityBacking>),
-            ),
+            authority: authority.map(|value| {
+                Box::new(Mutex::new(Some(value))) as Box<dyn WorkflowOperationAuthorityBacking>
+            }),
         })
     }
 
     #[doc(hidden)]
     pub fn take(&self) -> Option<WorkflowOperationAuthority> {
         self.authority
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
-            .map(WorkflowOperationAuthorityBacking::into_authority)
+            .as_deref()
+            .and_then(WorkflowOperationAuthorityBacking::take)
     }
 
     #[doc(hidden)]
@@ -197,7 +198,6 @@ impl RequiredWorkflowOperation {
     }
 
     #[doc(hidden)]
-
     pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.branch
     }
@@ -311,7 +311,6 @@ impl WorkflowOperationAuthority {
     }
 
     #[doc(hidden)]
-
     pub fn facts(&self) -> &[WorthQueryApplicationObservedFact] {
         &self.facts
     }

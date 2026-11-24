@@ -28,6 +28,11 @@ pub struct WorthQueryPendingApplicationPublicationRegistryOwner(
     Arc<dyn PendingApplicationPublicationRegistryBacking>,
 );
 
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<WorthQueryPendingApplicationPublicationRegistryOwner>();
+};
+
 impl WorthQueryPendingApplicationPublicationRegistryOwner {
     pub fn new(registry: WorthQueryPendingApplicationPublicationRegistry) -> Self {
         Self(Arc::new(Mutex::new(registry)))

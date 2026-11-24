@@ -64,17 +64,21 @@ pub struct RequiredWorkflowOperation {
     pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
-trait WorkflowOperationAuthorityBacking: Send + Sync + std::fmt::Debug {
-    fn into_authority(self: Box<Self>) -> WorkflowOperationAuthority;
+trait WorkflowOperationAuthorityBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe + std::fmt::Debug
+{
+    fn take(&self) -> Option<WorkflowOperationAuthority>;
 }
-impl WorkflowOperationAuthorityBacking for WorkflowOperationAuthority {
-    fn into_authority(self: Box<Self>) -> WorkflowOperationAuthority {
-        *self
+impl WorkflowOperationAuthorityBacking for Mutex<Option<WorkflowOperationAuthority>> {
+    fn take(&self) -> Option<WorkflowOperationAuthority> {
+        self.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
     }
 }
 #[derive(Debug)]
 pub struct WorkflowOperationAuthoritySlot {
-    authority: Mutex<Option<Box<dyn WorkflowOperationAuthorityBacking>>>,
+    authority: Option<Box<dyn WorkflowOperationAuthorityBacking>>,
     issued: bool,
 }
 const _: fn() = || {
@@ -123,10 +127,8 @@ impl WorkflowOperationAuthoritySlot {
     #[doc(hidden)]
     pub fn take(&self) -> Option<WorkflowOperationAuthority> {
         self.authority
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
-            .map(WorkflowOperationAuthorityBacking::into_authority)
+            .as_deref()
+            .and_then(WorkflowOperationAuthorityBacking::take)
     }
     #[doc(hidden)]
     pub const fn was_issued(&self) -> bool {
@@ -179,10 +181,9 @@ impl RequiredWorkflowOperation {
             input_identity,
             authority: Arc::new(WorkflowOperationAuthoritySlot {
                 issued: authority.is_some(),
-                authority: Mutex::new(
-                    authority
-                        .map(|value| Box::new(value) as Box<dyn WorkflowOperationAuthorityBacking>),
-                ),
+                authority: authority.map(|value| {
+                    Box::new(Mutex::new(Some(value))) as Box<dyn WorkflowOperationAuthorityBacking>
+                }),
             }),
         }
     }

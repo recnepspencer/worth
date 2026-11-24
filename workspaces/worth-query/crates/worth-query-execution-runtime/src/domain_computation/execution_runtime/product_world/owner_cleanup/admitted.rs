@@ -52,7 +52,7 @@ impl WorthQueryProductBranchOwnerCleanup {
                 lease,
                 None,
                 |context| {
-                    attempted = Some(self.runtime.fields().owner_cleanup.retry_admitted(
+                    attempted = Some(self.runtime.owner_cleanup.retry_admitted(
                         execution,
                         self.identity,
                         &self.runtime,

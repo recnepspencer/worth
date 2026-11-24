@@ -20,7 +20,7 @@ impl WorthQueryProductRuntime {
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn owner_cleanup_for_test(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
-        &self.fields().owner_cleanup
+        &self.owner_cleanup
     }
 }
 
@@ -36,7 +36,7 @@ impl WorthQueryProductRuntime {
     pub fn owner_cleanup_mut_for_test(
         &mut self,
     ) -> &mut WorthQueryProductBranchOwnerCleanupRegistry {
-        &mut self.fields_mut().owner_cleanup
+        &mut self.owner_cleanup
     }
 }
 

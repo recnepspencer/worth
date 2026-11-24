@@ -44,6 +44,12 @@ impl Deref for SharedMemoryConditionalOwner {
 #[derive(Clone)]
 pub struct WeakMemoryConditionalOwner(Weak<dyn MemoryConditionalOwnerBacking>);
 
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedMemoryConditionalOwner>();
+    assert_auto_traits::<WeakMemoryConditionalOwner>();
+};
+
 impl WeakMemoryConditionalOwner {
     pub fn upgrade(&self) -> Option<SharedMemoryConditionalOwner> {
         self.0.upgrade().map(SharedMemoryConditionalOwner)
