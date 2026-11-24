@@ -102,6 +102,7 @@ pub trait HistoryStepConstructionPort: Sized {
             crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryNodeId,
         >,
         label: Option<std::sync::Arc<str>>,
+        metadata: crate::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryStepMetadata,
         endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
     ) -> Self;
 

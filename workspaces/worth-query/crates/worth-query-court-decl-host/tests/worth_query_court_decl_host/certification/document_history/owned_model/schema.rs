@@ -97,8 +97,8 @@ fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = schema;
-    query::member::declare(query::model::declare(edit::declare(navigation::declare(
-        schema,
+    birth::declare(query::member::declare(query::model::declare(edit::declare(
+        navigation::declare(schema),
     ))))
     .declared_operation::<ownership_change::ChangeOwnership>(
         ownership_change::ChangeOwnership::reference()
@@ -126,6 +126,7 @@ fn declare(
         .owns(Child::reference())
         .operation::<edit::model::Binding>("Edit model")
         .operation::<ownership_change::Binding>("Move ownership")
+        .operation::<birth::Binding>("Add member")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )
     .application_history(

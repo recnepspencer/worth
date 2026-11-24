@@ -10,6 +10,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<edit::model::Binding, _>(edit::model::Handler)?;
         setup.handler::<ownership_change::Binding, _>(ownership_change::Handler)?;
         setup.handler::<generation::Binding, _>(generation::Handler)?;
+        setup.handler::<birth::Binding, _>(birth::Handler)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)
     }
 }

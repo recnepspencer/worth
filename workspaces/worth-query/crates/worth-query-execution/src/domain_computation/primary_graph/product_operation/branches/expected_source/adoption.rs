@@ -92,8 +92,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
+        let application = self.application.clone();
         let execution = match phase
-            .execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(_) => {
@@ -109,7 +110,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
                 self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::HeadReplaced)
             );
         }
-        let application = self.application;
         let mut occurrences = [
             self.source.product_branch().occurrence(),
             self.branch.occurrence(),
@@ -190,8 +190,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         (WorthQueryProductBranch, Self),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        let world = self
-            .application
+        let application = self.application.clone();
+        let world = application
             .inner
             .runtime
             .product_runtime_ref()

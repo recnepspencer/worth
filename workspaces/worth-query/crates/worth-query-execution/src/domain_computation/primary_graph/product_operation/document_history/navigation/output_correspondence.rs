@@ -30,7 +30,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema> NavigationAttempt<'
                 Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
                 Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
             };
-            (progress.application, progress.output_profile.clone())
+            (progress.application.clone(), progress.output_profile.clone())
         };
         // The full canonical comparison can allocate and walk variable input.
         // Neither an attempt nor a document-selection guard remains held.

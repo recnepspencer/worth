@@ -61,9 +61,12 @@ pub(super) trait OutputDriver<S: ApplicationSchema, H: ApplicationHistoryBinding
     fn records_output_forest(&self) -> bool {
         false
     }
+    /// `candidate` is the branch this recording works on. A forest that an
+    /// ended request left bound to another candidate is closed there first.
     fn with_recording<T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
+        candidate: worth_query_execution::facade::product::WorthQueryProductBranch,
         consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
     ) -> Result<T, WorthQueryHistoryOutputDenial>;
     fn discard_recording(
@@ -130,6 +133,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> OutputDriver<S, H>
     fn with_recording<T>(
         &self,
         _: &WorthQueryAdvancementPhase<'_>,
+        _: worth_query_execution::facade::product::WorthQueryProductBranch,
         consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
     ) -> Result<T, WorthQueryHistoryOutputDenial> {
         Ok(consume(None).0)
