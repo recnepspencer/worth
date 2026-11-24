@@ -2,7 +2,7 @@
 //! orthogonal matrices, failing fast on unexpected panics.
 use super::{media_fault_sweep::panic_message, BarrierKill, TAIL_VARIANCE_BOUND};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// Run every measured barrier ordinal `1..=total` in parallel across isolated
 /// per-worker fixtures, failing fast on the first unexpected panic.
@@ -25,17 +25,18 @@ where
         .clamp(1, 8)
         .min(total as usize);
     let next = AtomicU64::new(1);
-    let aborted = AtomicBool::new(false);
+    let aborted = Arc::new(AtomicBool::new(false));
     let results: Mutex<Vec<Option<Result<(BarrierKill, T), String>>>> =
         Mutex::new((0..total as usize).map(|_| None).collect());
-    let (next_ref, abort_ref, results_ref) = (&next, &aborted, &results);
+    let (next_ref, results_ref) = (&next, &results);
     let (prep_ref, run_ref) = (&prepare_worker, &run_case);
     std::thread::scope(|scope| {
         for _ in 0..workers {
+            let aborted = Arc::clone(&aborted);
             scope.spawn(move || {
                 let worker_state = prep_ref();
                 loop {
-                    if abort_ref.load(Ordering::Acquire) {
+                    if aborted.load(Ordering::Acquire) {
                         break;
                     }
                     let ordinal = next_ref.fetch_add(1, Ordering::Relaxed);
@@ -47,7 +48,7 @@ where
                     }))
                     .map_err(|payload| panic_message(&*payload));
                     if outcome.is_err() {
-                        abort_ref.store(true, Ordering::Release);
+                        aborted.store(true, Ordering::Release);
                     }
                     results_ref.lock().unwrap()[(ordinal - 1) as usize] = Some(outcome);
                 }
@@ -79,12 +80,13 @@ pub(super) fn run_parallel_calibrated_barriers<W: Send, T: Send>(
         "{label}: target operation must execute durable syncs"
     );
     let queue = Mutex::new((1..=max_total).collect::<Vec<u64>>());
-    let aborted = AtomicBool::new(false);
+    let aborted = Arc::new(AtomicBool::new(false));
     let results: Mutex<Vec<Option<Result<T, String>>>> =
         Mutex::new((0..max_total as usize).map(|_| None).collect());
     std::thread::scope(|scope| {
         for (w, w_total) in prepared {
-            let (queue, aborted, results, run_ref) = (&queue, &aborted, &results, &run_case);
+            let (queue, results, run_ref) = (&queue, &results, &run_case);
+            let aborted = Arc::clone(&aborted);
             scope.spawn(move || loop {
                 if aborted.load(Ordering::Acquire) {
                     break;
@@ -107,8 +109,15 @@ pub(super) fn run_parallel_calibrated_barriers<W: Send, T: Send>(
             });
         }
     });
+    let slots = results.into_inner().unwrap();
+    if let Some((idx, msg)) = slots.iter().enumerate().find_map(|(i, s)| match s {
+        Some(Err(m)) => Some((i, m)),
+        _ => None,
+    }) {
+        panic!("{label} sync#{} of {max_total} failed: {msg}", idx + 1);
+    }
     let mut out = Vec::with_capacity(max_total as usize);
-    for (idx, slot) in results.into_inner().unwrap().into_iter().enumerate() {
+    for (idx, slot) in slots.into_iter().enumerate() {
         let ordinal = (idx as u64) + 1;
         match slot {
             Some(Ok(val)) => out.push((ordinal, BarrierKill::Killed, val)),
@@ -124,6 +133,12 @@ fn collect_barrier_results<T>(
     total: u64,
     slots: Vec<Option<Result<(BarrierKill, T), String>>>,
 ) -> Vec<(u64, BarrierKill, T)> {
+    if let Some((idx, msg)) = slots.iter().enumerate().find_map(|(i, s)| match s {
+        Some(Err(m)) => Some((i, m)),
+        _ => None,
+    }) {
+        panic!("{label} sync#{} of {total} failed: {msg}", idx + 1);
+    }
     let mut out = Vec::with_capacity(total as usize);
     let mut killed = 0u64;
     let mut min_tail = total;
@@ -153,7 +168,7 @@ fn collect_barrier_results<T>(
 /// failing fast on the first panic and reporting all captured failures.
 pub(super) fn run_parallel_items<T: Sync>(suite: &str, items: &[T], run: impl Fn(&T) + Sync) {
     let next = AtomicUsize::new(0);
-    let aborted = AtomicBool::new(false);
+    let aborted = Arc::new(AtomicBool::new(false));
     let errors = Mutex::new(Vec::<String>::new());
     let workers = std::thread::available_parallelism()
         .map(usize::from)
@@ -161,7 +176,8 @@ pub(super) fn run_parallel_items<T: Sync>(suite: &str, items: &[T], run: impl Fn
         .clamp(1, 6);
     std::thread::scope(|scope| {
         for _ in 0..workers {
-            let (next, aborted, errors, run) = (&next, &aborted, &errors, &run);
+            let (next, errors, run) = (&next, &errors, &run);
+            let aborted = Arc::clone(&aborted);
             scope.spawn(move || loop {
                 if aborted.load(Ordering::Acquire) {
                     break;
@@ -185,4 +201,70 @@ pub(super) fn run_parallel_items<T: Sync>(suite: &str, items: &[T], run: impl Fn
     });
     let errs = errors.into_inner().unwrap();
     assert!(errs.is_empty(), "{suite} failures:\n{}", errs.join("\n"));
+}
+
+/// Run independent indexed cases across pre-built per-worker states, failing
+/// fast on the first panic via `Arc<AtomicBool>` and reporting the first real
+/// failure before any skipped slots.
+pub(super) fn run_parallel_worker_cases<W: Sync, C: std::fmt::Debug + Sync, T: Send>(
+    label: &str,
+    workers: &[W],
+    cases: &[C],
+    run_case: impl Fn(&W, &C) -> T + Sync,
+) -> Vec<T> {
+    let next = AtomicUsize::new(0);
+    let aborted = Arc::new(AtomicBool::new(false));
+    let results: Mutex<Vec<Option<Result<T, String>>>> =
+        Mutex::new((0..cases.len()).map(|_| None).collect());
+    std::thread::scope(|scope| {
+        for worker in workers {
+            let (next, results, run_case) = (&next, &results, &run_case);
+            let aborted = Arc::clone(&aborted);
+            scope.spawn(move || loop {
+                if aborted.load(Ordering::Acquire) {
+                    break;
+                }
+                let idx = next.fetch_add(1, Ordering::Relaxed);
+                let Some(case) = cases.get(idx) else {
+                    break;
+                };
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run_case(worker, case)
+                }))
+                .map_err(|payload| panic_message(&*payload));
+                if outcome.is_err() {
+                    aborted.store(true, Ordering::Release);
+                }
+                results.lock().unwrap()[idx] = Some(outcome);
+            });
+        }
+    });
+    collect_case_results(label, cases, results.into_inner().unwrap())
+}
+
+/// Collect fail-fast parallel case outcomes, surfacing the first real error
+/// before any skipped (`None`) slots.
+pub(super) fn collect_case_results<C: std::fmt::Debug, T>(
+    label: &str,
+    cases: &[C],
+    slots: Vec<Option<Result<T, String>>>,
+) -> Vec<T> {
+    if let Some((idx, msg)) = slots.iter().enumerate().find_map(|(i, s)| match s {
+        Some(Err(m)) => Some((i, m)),
+        _ => None,
+    }) {
+        panic!("{label} case #{idx} ({:?}) failed: {msg}", cases[idx]);
+    }
+    slots
+        .into_iter()
+        .enumerate()
+        .map(|(idx, slot)| match slot {
+            Some(Ok(v)) => v,
+            Some(Err(msg)) => panic!("{label} case #{idx} ({:?}) failed: {msg}", cases[idx]),
+            None => panic!(
+                "{label} case #{idx} ({:?}) skipped after earlier failure",
+                cases[idx]
+            ),
+        })
+        .collect()
 }
