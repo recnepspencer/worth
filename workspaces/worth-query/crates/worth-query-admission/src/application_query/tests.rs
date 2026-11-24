@@ -127,6 +127,7 @@ impl Registration<PlanningTestSchema> for Contracts {
                 .application_query(complete_closure::derived_definition(complete_closure::ForwardQuery::reference(), false))
                 .application_query(complete_closure::derived_definition(complete_closure::ReverseQuery::reference(), true))
                 .application_query(optional_parameters::definition())
+                .application_query(optional_parameters::required_null_definition())
                 .application_query(query_definition()))
     }
 }
@@ -337,6 +338,19 @@ fn installed_optional_search_query()
 > {
     installed_schema()
         .certification_query(optional_parameters::OptionalSearchQuery::reference())
+        .unwrap()
+}
+
+fn installed_required_null_query()
+-> worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
+    PlanningTestSchema,
+    optional_parameters::RequiredNullQuery,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+> {
+    installed_schema()
+        .certification_query(optional_parameters::RequiredNullQuery::reference())
         .unwrap()
 }
 

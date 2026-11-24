@@ -190,6 +190,91 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
         Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue)
     );
 
+    // Noncanonical native values (out-of-range CanonicalTime and noncanonical
+    // NaN CanonicalF64) refuse structured predicates and where_filter literals.
+    let bad_time = AspectValue::Time(worth_foundational::facade::CanonicalTime {
+        nanos_since_midnight: worth_foundational::facade::CanonicalTime::NANOS_PER_DAY,
+    });
+    assert!(!bad_time.has_canonical_representation());
+    let mut noncanonical_pred = definition_parts();
+    noncanonical_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        "Entity".into(),
+        "Task".into(),
+        "At".into(),
+        bad_time,
+        ScalarAspectType::Time,
+    )];
+    assert_eq!(
+        validate_portable_application_query_freshly(&noncanonical_pred),
+        Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue)
+    );
+    let bad_f64 = AspectValue::Float64(worth_foundational::facade::CanonicalF64(
+        f64::NAN.to_bits() ^ 1,
+    ));
+    assert!(!bad_f64.has_canonical_representation());
+    let mut noncanonical_f64_pred = definition_parts();
+    noncanonical_f64_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        "Entity".into(),
+        "Task".into(),
+        "Score".into(),
+        bad_f64.clone(),
+        ScalarAspectType::Float64,
+    )];
+    assert_eq!(
+        validate_portable_application_query_freshly(&noncanonical_f64_pred),
+        Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue)
+    );
+    assert_eq!(
+        admit(
+            vec![
+                field("score", "Entity", ScalarAspectType::Float64, false),
+                literal("bad", ScalarAspectType::Float64, bad_f64),
+            ],
+            "score == bad"
+        ),
+        Err(Denial::InvalidLiteralValue)
+    );
+
+    // Erased literal predicate on a unit-bearing field refuses at schema closure.
+    let mut unit_pred = definition_parts();
+    unit_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        "Entity".into(),
+        "Task".into(),
+        "Meters".into(),
+        AspectValue::Int64(10),
+        ScalarAspectType::Int64,
+    )];
+    let unit_members = vec![
+        crate::application_schema::ApplicationSchemaMember::Entity {
+            entity: "Entity".into(),
+        },
+        crate::application_schema::ApplicationSchemaMember::Field {
+            entity: "Entity".into(),
+            aspect: "Task".into(),
+            field: "Meters".into(),
+            scalar_family: ScalarAspectType::Int64,
+            value_type: "worth.tests.meter.v1".into(),
+            unit: Some("worth.units.metre.v1".into()),
+            frame: None,
+            presence: ApplicationFieldPresence::Required,
+            writable: true,
+            equality_queryable: true,
+            canonical: None,
+            content_format: None,
+            unique: false,
+        },
+        crate::application_schema::ApplicationSchemaMember::ApplicationQuery {
+            definition:
+                crate::application_query::ErasedApplicationQueryDefinition::from_untrusted_parts(
+                    unit_pred,
+                ),
+        },
+    ];
+    assert_eq!(
+        crate::application_schema::validate_application_query_members(&unit_members),
+        Err(crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidApplicationQuery)
+    );
+
     // A relation EqualParameter predicate must carry a parameter, never a literal value.
     let mut forged_rel = definition_parts();
     let child = ApplicationQueryResultShape::from_untrusted_parts(

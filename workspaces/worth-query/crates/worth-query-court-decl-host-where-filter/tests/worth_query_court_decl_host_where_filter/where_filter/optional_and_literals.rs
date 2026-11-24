@@ -2,7 +2,7 @@
 //! literal equality constants (`DX-2`), including pinned/live consistency and
 //! bounded work metering.
 use super::edit::{EditNotes, Edited};
-use super::world::{funded_due, Host, Seed};
+use super::world::{funded_due, funded_due_with_budget, Host, Seed};
 use super::*;
 use worth_query_decl::facade::application_query::{
     ApplicationQueryParameterRef, ApplicationQueryParameterSet,
@@ -80,6 +80,12 @@ fn exact_root_where_equal_value_matches_only_the_authored_constant() {
     assert_eq!(matched[0].key, 1);
     let filtered = world::exact_project(&host, 2).expect("project 2 is filtered out");
     assert!(filtered.is_empty());
+
+    // Chaining `.where_equal_value(Status, "open")` + `.where_equal(TaskKey, expected_key)`
+    // on an exact-root query intersects both structured guards.
+    assert_eq!(keys(world::exact_open_task(&host, 1, 1)), [1]);
+    assert!(keys(world::exact_open_task(&host, 1, 2)).is_empty());
+    assert!(keys(world::exact_open_task(&host, 3, 3)).is_empty());
 }
 
 fn wide_notes_board(width: usize) -> Vec<Seed> {
@@ -104,6 +110,23 @@ fn cancellable() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(None, source.token(), WorthQueryAdmissionClock::system())
 }
 
+fn is_budget_exhaustion(denial: &Denial) -> bool {
+    match denial {
+        Denial::Execution(denial) => matches!(
+            denial.kind(),
+            Kind::ExecutionRequest(_)
+                | Kind::WorkLimitExceeded
+                | Kind::ResultBufferLimitExceeded
+                | Kind::Projection(_)
+        ),
+        Denial::ExecutionRequest(_)
+        | Denial::Admission(_)
+        | Denial::ScopeResolution(_)
+        | Denial::PrincipalResolution(_) => true,
+        _ => false,
+    }
+}
+
 fn minimal_due_budget(host: &Host, intent: &DueBy) -> u64 {
     let (mut low, mut high) = (1_u64, 1 << 24);
     let scope = cancellable();
@@ -112,10 +135,63 @@ fn minimal_due_budget(host: &Host, intent: &DueBy) -> u64 {
         let middle = low + (high - low) / 2;
         match funded_due(host, &scope, middle, intent.clone()) {
             Ok(_) => high = middle,
-            Err(_) => low = middle + 1,
+            Err(denial) if is_budget_exhaustion(&denial) => low = middle + 1,
+            Err(other) => panic!("unexpected denial while calibrating work threshold: {other:?}"),
         }
     }
     low
+}
+
+fn minimal_due_memory_budget(host: &Host, intent: &DueBy) -> u64 {
+    let (mut low, mut high) = (1024_u64, 16 * 1024 * 1024);
+    let scope = cancellable();
+    assert!(funded_due_with_budget(host, &scope, high, 1 << 24, intent.clone()).is_ok());
+    while low < high {
+        let middle = low + (high - low) / 2;
+        match funded_due_with_budget(host, &scope, middle, 1 << 24, intent.clone()) {
+            Ok(_) => high = middle,
+            Err(denial) if is_budget_exhaustion(&denial) => low = middle + 1,
+            Err(other) => panic!("unexpected denial while calibrating memory threshold: {other:?}"),
+        }
+    }
+    low
+}
+
+#[test]
+fn where_filter_refuses_when_memory_budget_exhausts_after_parameter_admission() {
+    let mut single = wide_notes_board(16);
+    single.truncate(1);
+    let host = install(&single);
+    let absent = DueBy {
+        project: 1,
+        max_due_days: None,
+        text: None,
+    };
+    let present = DueBy {
+        project: 1,
+        max_due_days: None,
+        text: Some("m".repeat(60 * 1024)),
+    };
+    let absent_mem = minimal_due_memory_budget(&host, &absent);
+    let present_mem = minimal_due_memory_budget(&host, &present);
+    assert!(
+        present_mem > 60 * 1024 && present_mem > absent_mem,
+        "60 KiB optional parameter must raise peak memory above absent baseline: {absent_mem} vs {present_mem}"
+    );
+    let scope = cancellable();
+    assert!(funded_due_with_budget(&host, &scope, present_mem, 1 << 24, present.clone()).is_ok());
+    // One byte under the calibrated memory floor passes parameter admission
+    // (which peaked earlier) and refuses specifically inside `where_filter`.
+    match funded_due_with_budget(&host, &scope, present_mem - 1, 1 << 24, present) {
+        Err(Denial::Execution(denial)) => {
+            assert!(
+                matches!(denial.kind(), Kind::ExecutionRequest(_)),
+                "{denial:?}"
+            );
+            assert_eq!(denial.subject(), "where_filter");
+        }
+        other => panic!("finite memory exhaustion must refuse inside where_filter: {other:?}"),
+    }
 }
 
 #[test]
@@ -263,6 +339,19 @@ fn bind_optional_refuses_present_codec_encoding_null() {
         }
     }
     struct DummyParam;
+    let required_ref = ApplicationQueryParameterRef::<
+        queries::DueQuery,
+        DummyParam,
+        NullEncodingBinding,
+    >::from_query_identifier("null_param");
+    let required_denial = ApplicationQueryParameterSet::new()
+        .bind(required_ref, ())
+        .expect_err("required parameter encoding Null must refuse");
+    assert!(matches!(
+        required_denial,
+        ApplicationValueEncodeDenial::CodecRejected { .. }
+    ));
+
     let reference = ApplicationQueryParameterRef::<
         queries::DueQuery,
         DummyParam,

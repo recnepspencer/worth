@@ -22,6 +22,74 @@ worth_query_application_query!(
     name "account_optional_search"
 );
 
+struct RequiredNullParam;
+struct RequiredNullSlot;
+worth_query_portable_type!(RequiredNullSlot => "worth.query.test.admission.required-null-slot.v1");
+worth_query_application_query!(
+    pub(super) RequiredNullQuery for PlanningTestSchema,
+    identity "worth.query.test.admission.required-null.v1",
+    parameters ActivityParametersBinding,
+    result ActivityResultBinding,
+    scope Account => "Account",
+    name "account_required_null"
+);
+
+struct RequiredNullBinding;
+impl ApplicationScalarValueBinding for RequiredNullBinding {
+    type Value = ();
+    type Unit = ();
+    type Decode = ApplicationValueDecodeUnavailable;
+    type Identity = ApplicationValueIsNotIdentity;
+    type SignedAggregate = ApplicationValueSignedAggregateUnavailable;
+    const IDENTITY_NAME: &'static str = "worth.query.test.admission.required-null-value.v1";
+    const SCALAR_FAMILY: worth_foundational::facade::ScalarAspectType =
+        worth_foundational::facade::ScalarAspectType::Null;
+    fn validate(_: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
+        Ok(())
+    }
+    fn encode(_: &Self::Value) -> Result<AspectValue, ApplicationValueEncodeDenial> {
+        Ok(AspectValue::Null)
+    }
+}
+
+pub(super) fn required_null_definition() -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    RequiredNullQuery,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+> {
+    let param = ApplicationQueryParameterRef::<
+        RequiredNullQuery,
+        RequiredNullParam,
+        RequiredNullBinding,
+    >::from_query_identifier("n");
+    let shape = ApplicationQueryResultShapeBuilder::<
+        PlanningTestSchema,
+        RequiredNullQuery,
+        Account,
+        ActivityResult,
+        ActivityResultBinding,
+    >::new(Account::reference())
+    .field(ApplicationQueryResultFieldRef::<
+        RequiredNullQuery,
+        RequiredNullSlot,
+        PlanningTestSchema,
+        AccountId,
+    >::new("account_id", AccountId::at("AccountId")))
+    .build();
+    ApplicationQueryDefinitionBuilder::declare(RequiredNullQuery::reference())
+        .root(Account::reference())
+        .scope(Account::reference())
+        .result_shape(shape)
+        .cardinality(ApplicationQueryCardinality::OptionalOne)
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .public()
+        .parameter(param)
+}
+
 fn optional_text_param() -> ApplicationQueryParameterRef<
     OptionalSearchQuery,
     OptionalSearchParam,
@@ -110,13 +178,24 @@ fn optional_parameter_admission_validates_layout_distinguishes_none_from_empty_a
             .expect_err("omitting an optional parameter refuses");
     assert_eq!(missing.kind(), DenialKind::ParameterSetMismatch);
 
-    // Null for a required parameter refuses ParameterTypeMismatch.
+    // Null for a required parameter refuses ParameterTypeMismatch, even if
+    // the required parameter declared ScalarAspectType::Null.
     let null_for_required = readmit_recorded_application_query_parameters(
         &required_query,
         vec![("account".to_owned(), AspectValue::Null)],
     )
     .expect_err("Null refuses for a required parameter");
     assert_eq!(null_for_required.kind(), DenialKind::ParameterTypeMismatch);
+    let required_null_query = installed_required_null_query();
+    let null_for_required_null_decl = readmit_recorded_application_query_parameters(
+        &required_null_query,
+        vec![("n".to_owned(), AspectValue::Null)],
+    )
+    .expect_err("Null refuses for a required ScalarAspectType::Null parameter");
+    assert_eq!(
+        null_for_required_null_decl.kind(),
+        DenialKind::ParameterTypeMismatch
+    );
 
     // Work & memory metering: Some(large_string) charges strictly more than None.
     let mut none_work = 0usize;

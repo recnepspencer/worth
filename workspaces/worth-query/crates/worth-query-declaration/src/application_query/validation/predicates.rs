@@ -15,6 +15,7 @@ pub(crate) fn predicate_literal_is_valid(
 ) -> bool {
     scalar_family != ScalarAspectType::Null
         && value.value_family() == scalar_family
+        && value.has_canonical_representation()
         && !matches!(value, AspectValue::String(InternedString::Symbol(_)))
         && value.semantic_byte_width() <= MAXIMUM_PORTABLE_PREDICATE_LITERAL_BYTES
 }

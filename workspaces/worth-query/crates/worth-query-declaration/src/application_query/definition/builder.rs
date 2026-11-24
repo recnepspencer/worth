@@ -21,6 +21,7 @@ use super::{
 
 pub struct ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, QueryResult, Scope> {
     definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
+    unit_bearing_literal_predicate: bool,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope>
@@ -65,6 +66,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 lanes: parts.lanes,
                 _marker: PhantomData,
             },
+            unit_bearing_literal_predicate: false,
         }
     }
 
@@ -140,6 +142,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         Field: crate::application_schema::fragment::RecordSelection<Binding = Binding>,
         Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
     {
+        if Binding::UNIT.is_some() {
+            self.unit_bearing_literal_predicate = true;
+        }
         self.definition
             .field_expectations
             .push(field.expected_recipe());
@@ -295,6 +300,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
         ApplicationQueryDefinitionDenial,
     > {
+        if self.unit_bearing_literal_predicate {
+            return Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue);
+        }
         self.normalize();
         let portable =
             super::super::WorthQueryPortableApplicationQueryParts::project_typed(&self.definition);

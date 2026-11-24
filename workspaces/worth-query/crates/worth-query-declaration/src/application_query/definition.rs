@@ -106,6 +106,13 @@ impl ApplicationQueryPredicate {
     pub const fn scalar_family(&self) -> ScalarAspectType {
         self.scalar_family
     }
+
+    /// Declaration-owned local validity check for a structured literal expected
+    /// value (canonical representation, exact non-null scalar family, portable
+    /// string, and bounded byte width).
+    pub fn literal_value_is_valid(value: &AspectValue, scalar_family: ScalarAspectType) -> bool {
+        super::predicate_literal_is_valid(value, scalar_family)
+    }
 }
 
 pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope> {

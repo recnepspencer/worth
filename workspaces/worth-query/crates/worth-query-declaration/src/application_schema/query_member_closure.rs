@@ -15,9 +15,9 @@ mod invariant_source;
 mod managed_index;
 mod where_filter;
 
-use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
+use super::schema_read_closure::{entity_exists, field_is_unitless, field_matches, relation_exists};
 
-pub(super) fn validate_application_query_members(
+pub(crate) fn validate_application_query_members(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut names = BTreeSet::new();
@@ -135,10 +135,11 @@ fn validate_predicates(
                 })
             }
             crate::application_query::ApplicationQueryPredicateExpected::Value(value) => {
-                crate::application_query::predicate_literal_is_valid(
-                    value,
-                    predicate.scalar_family(),
-                )
+                field_is_unitless(members, entity, aspect, field)
+                    && crate::application_query::predicate_literal_is_valid(
+                        value,
+                        predicate.scalar_family(),
+                    )
             }
         };
         if !expected_ok {

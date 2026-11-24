@@ -1,4 +1,4 @@
-use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+use worth_foundational::facade::ScalarAspectType;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryContinuationTarget, ApplicationQueryLiveCauseContract,
     ApplicationQueryLiveTargetMode, ApplicationQueryOrderingDirection,
@@ -117,6 +117,11 @@ fn decode_with_shape_depth(
     let basis_support = controls::decode_basis_support(input)?;
     let lanes = controls::decode_lanes(input)?;
     let where_filter = where_filter::decode(input, budget)?;
+    if let Some(filter) = where_filter.as_ref() {
+        filter
+            .validate_against_parameters(&parameters)
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
+    }
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
         WorthQueryPortableApplicationQueryParts {
             name,
@@ -224,10 +229,7 @@ fn decode_predicate(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryPredi
     let scalar_family = foundational_aspect::decode_scalar_type(input)?;
     if parameter.is_empty() {
         let expected = foundational_value::decode_aspect_value(input)?;
-        if scalar_family == ScalarAspectType::Null
-            || expected.value_family() != scalar_family
-            || matches!(expected, AspectValue::String(InternedString::Symbol(_)))
-        {
+        if !ApplicationQueryPredicate::literal_value_is_valid(&expected, scalar_family) {
             return Err(Denial::new(Kind::InvalidRecordShape));
         }
         Ok(ApplicationQueryPredicate::from_untrusted_value(

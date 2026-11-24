@@ -234,9 +234,29 @@ pub fn exact_project(
         .map(|result| result.rows().to_vec())
 }
 
+pub fn exact_open_task(host: &Host, task: u64, expected_key: u64) -> Rows {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    host.runtime()
+        .request(&principal, &scope)
+        .query(ExactOpenTask { task, expected_key })
+        .execute()
+        .map(|result| result.rows().to_vec())
+}
+
 pub fn funded_due(
     host: &Host,
     scope: &WorthQueryRequestScope,
+    work: u64,
+    intent: DueBy,
+) -> Result<(Vec<u64>, usize), WorthQueryApplicationRequestQueryDenial> {
+    funded_due_with_budget(host, scope, 64 * 1024 * 1024, work, intent)
+}
+
+pub fn funded_due_with_budget(
+    host: &Host,
+    scope: &WorthQueryRequestScope,
+    memory_bytes: u64,
     work: u64,
     intent: DueBy,
 ) -> Result<(Vec<u64>, usize), WorthQueryApplicationRequestQueryDenial> {
@@ -246,7 +266,7 @@ pub fn funded_due(
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
-                Some(64 * 1024 * 1024),
+                Some(memory_bytes),
                 Some(work),
             ),
         ),

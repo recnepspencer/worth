@@ -157,9 +157,11 @@ impl<Query> ApplicationQueryParameterSet<Query> {
     where
         Binding: ApplicationScalarValueBinding,
     {
-        Binding::validate(&value)?;
-        self.bindings
-            .push((parameter.name(), Binding::encode(&value)?));
+        let encoded = encode_non_null::<Binding>(
+            &value,
+            "a required query parameter must encode a non-null scalar value",
+        )?;
+        self.bindings.push((parameter.name(), encoded));
         Ok(self)
     }
 
@@ -178,17 +180,10 @@ impl<Query> ApplicationQueryParameterSet<Query> {
         Binding: ApplicationScalarValueBinding,
     {
         let encoded = match value {
-            Some(value) => {
-                Binding::validate(&value)?;
-                let value = Binding::encode(&value)?;
-                if matches!(value, AspectValue::Null) {
-                    return Err(ApplicationValueEncodeDenial::CodecRejected {
-                        binding_identity: Binding::IDENTITY,
-                        reason: "a present optional query parameter must encode a scalar value",
-                    });
-                }
-                value
-            }
+            Some(value) => encode_non_null::<Binding>(
+                &value,
+                "a present optional query parameter must encode a scalar value",
+            )?,
             None => AspectValue::Null,
         };
         self.bindings.push((parameter.name(), encoded));
@@ -210,4 +205,19 @@ impl<Query> Default for ApplicationQueryParameterSet<Query> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn encode_non_null<Binding: ApplicationScalarValueBinding>(
+    value: &Binding::Value,
+    null_reason: &'static str,
+) -> Result<AspectValue, ApplicationValueEncodeDenial> {
+    Binding::validate(value)?;
+    let encoded = Binding::encode(value)?;
+    if matches!(encoded, AspectValue::Null) {
+        return Err(ApplicationValueEncodeDenial::CodecRejected {
+            binding_identity: Binding::IDENTITY,
+            reason: null_reason,
+        });
+    }
+    Ok(encoded)
 }

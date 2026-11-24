@@ -111,6 +111,15 @@ impl ApplicationQueryWhereFilterProgram {
         &self.semantic_material
     }
 
+    /// Declaration-owned local check that every parameter operand matches a
+    /// declared parameter's scalar family, unitless posture, and optionality.
+    pub fn validate_against_parameters(
+        &self,
+        parameters: &[crate::application_query::ApplicationQueryParameterDefinition],
+    ) -> Result<(), crate::application_query::ApplicationQueryDefinitionDenial> {
+        super::validation::validate_parameter_operands(parameters, self)
+    }
+
     fn identity_key(&self) -> (&[Operand], &[u8], &str) {
         (&self.operands, &self.draft, &self.semantic_material)
     }

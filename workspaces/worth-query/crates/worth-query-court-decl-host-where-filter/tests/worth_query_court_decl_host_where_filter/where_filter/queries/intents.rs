@@ -7,6 +7,7 @@ pub struct MaxDue;
 pub struct MinRank;
 pub struct MaxLength;
 pub struct StatusValue;
+pub struct ExpectedTaskKey;
 
 #[derive(Clone, Debug, WorthValue)]
 pub struct Search {
@@ -34,6 +35,11 @@ pub struct ExactProject {
     pub project: u64,
 }
 #[derive(Clone, Debug, WorthValue)]
+pub struct ExactOpenTask {
+    pub task: u64,
+    pub expected_key: u64,
+}
+#[derive(Clone, Debug, WorthValue)]
 pub struct Fit {
     pub project: u64,
     pub min_rank: i64,
@@ -50,6 +56,7 @@ worth_query_structured_value_binding!(pub DueInput for DueBy {identity:"where-fi
 worth_query_structured_value_binding!(pub OpenInboxInput for OpenInbox {identity:"where-filter.open-inbox-input.v1"});
 worth_query_structured_value_binding!(pub LiteralFilterInput for LiteralFilter {identity:"where-filter.literal-filter-input.v1"});
 worth_query_structured_value_binding!(pub ExactProjectInput for ExactProject {identity:"where-filter.exact-project-input.v1"});
+worth_query_structured_value_binding!(pub ExactOpenTaskInput for ExactOpenTask {identity:"where-filter.exact-open-task-input.v1"});
 worth_query_structured_value_binding!(pub FitInput for Fit {identity:"where-filter.fit-input.v1"});
 worth_query_structured_value_binding!(pub StatusInput for ByStatus {identity:"where-filter.status-input.v1"});
 
@@ -108,6 +115,18 @@ fn exact_project_parameters(
 ) -> ApplicationQueryParameterSet<ExactProjectQuery> {
     ApplicationQueryParameterSet::new()
 }
+fn exact_open_task_parameters(
+    input: &ExactOpenTask,
+) -> ApplicationQueryParameterSet<ExactOpenTaskQuery> {
+    ApplicationQueryParameterSet::new()
+        .bind(
+            parameter::<ExactOpenTaskQuery, ExpectedTaskKey, U64ApplicationValueBinding>(
+                "expected_key",
+            ),
+            input.expected_key,
+        )
+        .expect("expected task key encodes")
+}
 fn fit_parameters(input: &Fit) -> ApplicationQueryParameterSet<FitQuery> {
     ApplicationQueryParameterSet::new()
         .bind(
@@ -156,6 +175,9 @@ fn literal_filter_project(input: LiteralFilter) -> u64 {
 }
 fn exact_project_id(input: ExactProject) -> u64 {
     input.project
+}
+fn exact_open_task_id(input: ExactOpenTask) -> u64 {
+    input.task
 }
 macro_rules! binding {
     ($binding:ident, $intent:ident, $identity:literal, $input:ident, $query:ident, $parameters:ident, $project:ident) => {
@@ -226,3 +248,9 @@ worth_query_query_binding!(pub ExactProjectBinding for ExactProject, schema Sche
     result ProjectRowBinding, principal PrincipalBinding, mapping ExternalMapping,
     principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope ProjectKey, field ProjectKey::at("ProjectKey"), value exact_project_id, limits results 64);
+worth_query_query_binding!(pub ExactOpenTaskBinding for ExactOpenTask, schema Schema,
+    identity "where-filter.exact-open-task-binding.v1", input ExactOpenTaskInput,
+    query ExactOpenTaskQuery, parameters ParametersBinding => |input: &ExactOpenTask| exact_open_task_parameters(input),
+    result RowBinding, principal PrincipalBinding, mapping ExternalMapping,
+    principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
+    scope TaskKey, field TaskKey::at("TaskKey"), value exact_open_task_id, limits results 64);

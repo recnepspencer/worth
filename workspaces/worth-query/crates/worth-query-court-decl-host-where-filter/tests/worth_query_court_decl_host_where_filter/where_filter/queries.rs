@@ -76,6 +76,20 @@ pub fn project_key_slot(
     ApplicationQueryResultFieldRef::new("key", ProjectKey::at("ProjectKey"))
 }
 
+worth_query_application_query!(pub ExactOpenTaskQuery for Schema, identity "where-filter.exact-open-task.v1",
+    parameters ParametersBinding, result RowBinding, scope Task => "Task", name "exact_open_task");
+impl WorthQueryApplicationProjection<Schema, ExactOpenTaskQuery> for TaskRow {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, Schema, ExactOpenTaskQuery>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        Ok(Self {
+            key: row.field(key())?,
+            title: row.field(title())?,
+            rank: row.field(rank())?,
+        })
+    }
+}
+
 type Declaration = ApplicationSchemaDeclarationBuilder<Schema>;
 thread_local! {
     /// A court-local extra declaration, so refusal courts reach the real
@@ -258,6 +272,39 @@ pub fn exact_project(
         .where_equal_value(ProjectKey::at("ProjectKey"), project_one)
 }
 
+pub fn exact_open_task(
+) -> ApplicationQueryDefinitionBuilder<Schema, ExactOpenTaskQuery, Parameters, TaskRow, Task> {
+    let open =
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("open".to_owned())
+            .expect("open encodes");
+    let expected_key =
+        parameter::<ExactOpenTaskQuery, ExpectedTaskKey, U64ApplicationValueBinding>("expected_key");
+    ApplicationQueryDefinitionBuilder::declare(ExactOpenTaskQuery::reference())
+        .root(Task::reference())
+        .scope(Task::reference())
+        .result_shape(
+            ApplicationQueryResultShapeBuilder::<
+                Schema,
+                ExactOpenTaskQuery,
+                Task,
+                TaskRow,
+                RowBinding,
+            >::new(Task::reference())
+            .field(key())
+            .field(title())
+            .field(rank())
+            .build(),
+        )
+        .cardinality(ApplicationQueryCardinality::OptionalOne)
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
+        .public()
+        .parameter(expected_key)
+        .where_equal_value(Status::at("Status"), open)
+        .where_equal(TaskKey::at("TaskKey"), expected_key)
+}
+
 pub fn fit() -> ApplicationQueryDefinitionBuilder<Schema, FitQuery, Parameters, TaskRow, Project> {
     let min_rank = parameter::<FitQuery, MinRank, I64ApplicationValueBinding>("min_rank");
     let max_length =
@@ -318,6 +365,8 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Schema
             .application_query(literal_filter())
             .application_query_binding::<LiteralFilterBinding>()
             .application_query(exact_project())
-            .application_query_binding::<ExactProjectBinding>())
+            .application_query_binding::<ExactProjectBinding>()
+            .application_query(exact_open_task())
+            .application_query_binding::<ExactOpenTaskBinding>())
     }
 }

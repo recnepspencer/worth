@@ -138,7 +138,7 @@ pub fn select_root_path_union(
     };
     Ok(BoundedRootSelection {
         candidates,
-        selected_predicate_source: None,
+        selected_predicate_sources: Vec::new(),
         root_path_source,
         result_set_source,
         examined_candidates: work.predicate_records_examined,

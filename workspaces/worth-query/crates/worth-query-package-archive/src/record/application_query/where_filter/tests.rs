@@ -284,4 +284,77 @@ fn literal_operands_and_value_predicates_round_trip_and_refuse_malformed_payload
         decode_bytes(&sym_bytes).unwrap_err().kind(),
         Kind::InvalidRecordShape
     );
+
+    // Over-limit (> 64 KiB) structured literal predicate refuses decode.
+    let mut oversized_pred = unfiltered().into_parts();
+    oversized_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        "Task".into(),
+        "Schedule".into(),
+        "status".into(),
+        AspectValue::String(InternedString::Raw("a".repeat(64 * 1024 + 1))),
+        ScalarAspectType::String,
+    )];
+    let oversized_bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
+        oversized_pred,
+    ));
+    assert_eq!(
+        decode_bytes(&oversized_bytes).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
+
+    // Noncanonical native value (out-of-range CanonicalTime) refuses decode.
+    let mut noncanonical_pred = unfiltered().into_parts();
+    noncanonical_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        "Task".into(),
+        "Schedule".into(),
+        "at".into(),
+        AspectValue::Time(worth_foundational::facade::CanonicalTime {
+            nanos_since_midnight: worth_foundational::facade::CanonicalTime::NANOS_PER_DAY,
+        }),
+        ScalarAspectType::Time,
+    )];
+    let noncanonical_bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
+        noncanonical_pred,
+    ));
+    assert_eq!(
+        decode_bytes(&noncanonical_bytes).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
+
+    // OptionalParameter operand against a required parameter declaration refuses decode.
+    let mut opt_operand_for_req = unfiltered().into_parts();
+    let opt_draft = expressions().parse("!is_some(max_due)").unwrap().encode();
+    opt_operand_for_req.where_filter = Some(
+        ApplicationQueryWhereFilterProgram::from_untrusted(
+            vec![ApplicationQueryWhereFilterOperand::from_untrusted(
+                "max_due".to_owned(),
+                ApplicationQueryWhereFilterSource::OptionalParameter {
+                    parameter: "max_due".to_owned(),
+                    scalar_family: ScalarAspectType::Date,
+                },
+            )],
+            &opt_draft,
+        )
+        .unwrap(),
+    );
+    let opt_for_req_bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
+        opt_operand_for_req,
+    ));
+    assert_eq!(
+        decode_bytes(&opt_for_req_bytes).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
+
+    // Required Parameter operand against an optional parameter declaration refuses decode.
+    let mut req_operand_for_opt = filtered().into_parts();
+    req_operand_for_opt.parameters[0] = req_operand_for_opt.parameters[0]
+        .clone()
+        .with_optional_presence();
+    let req_for_opt_bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
+        req_operand_for_opt,
+    ));
+    assert_eq!(
+        decode_bytes(&req_for_opt_bytes).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
 }

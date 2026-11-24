@@ -78,6 +78,7 @@ impl ApplicationQueryWhereFilterSource {
         let limit = ApplicationQueryWhereFilterProgram::PROFILE
             .limit(ExpressionResource::SourceBytes);
         if value.value_family() != *scalar_family
+            || !value.has_canonical_representation()
             || (value.semantic_byte_width() as u64) > limit
             || ExpressionValue::from_aspect_value(value).is_err()
         {
