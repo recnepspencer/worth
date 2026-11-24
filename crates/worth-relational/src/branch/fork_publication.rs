@@ -82,7 +82,12 @@ impl RelationalForkPort {
         let validated = self.validate_fork_input(source).map_err(denied)?;
         // The fork association uses the actual current registration through
         // durable installation. A rebind cannot turn its pending lookup live.
-        let source_epoch = if validated.source_root.managed_source_image.get().is_some() {
+        let source_epoch = if validated
+            .source_root
+            .managed_source_image
+            .for_branch(validated.descriptor.source_branch())
+            .is_some()
+        {
             Some(self.publication.companion_epoch().map_err(|_| {
                 denied(RelationalForkDenial::ManagedSource(
                     crate::mvcc::CompanionPreflightStop::RegistrationChanged,

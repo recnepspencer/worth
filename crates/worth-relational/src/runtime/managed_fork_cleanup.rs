@@ -3,7 +3,7 @@ use crate::branch::coordination::RelationalBranchCoordinationCell;
 use crate::history::data::BranchId;
 use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
 use crate::mvcc::CompanionBranchCellSlot;
-use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::ManagedIndexSourceCellPlacement;
 use crate::mvcc::PreparedPublicationCompanionEffect;
 use crate::mvcc::PublicationCompanionPreflight;
 use crate::mvcc::RelationalPublicationCompanion;
@@ -56,10 +56,10 @@ impl Drop for Lookup {
     }
 }
 impl RelationalPublicationCompanion for Owner {
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
         let memory = execution
             .reserve_retained_memory(4096)
@@ -69,11 +69,11 @@ impl RelationalPublicationCompanion for Owner {
         self.targets
             .lock()
             .unwrap()
-            .insert(target.target_branch().clone(), slot.clone());
+            .insert(target.branch().clone(), slot.clone());
         Ok(Box::new(Lookup {
             coordination: Arc::clone(&self.coordination),
             targets: Arc::clone(&self.targets),
-            branch: target.target_branch().clone(),
+            branch: target.branch().clone(),
             slot,
             drops: Arc::clone(&self.drops),
             _memory: memory,

@@ -8,6 +8,7 @@ use worth_relational_branch::internal_port as branch;
 pub struct ManagedIndexSourceRebuild {
     pub(crate) projection: VisibilityProjectionView,
     pub(crate) expected: Arc<ManagedIndexPublishedSourceRoot>,
+    expected_placed: bool,
     image: ManagedSourceRootImage,
     selected: PositionedRelationalSnapshot,
     generation: u64,
@@ -54,12 +55,15 @@ impl ManagedIndexSourceRebuild {
             selected,
             generation,
             &self.expected,
+            self.expected_placed,
             payload,
             memory,
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn prepare(
+        execution: &ExecutionRequest<'_, '_>,
         image: &ManagedSourceRootImage,
         projection: VisibilityProjectionView,
         selected: PositionedRelationalSnapshot,
@@ -67,18 +71,27 @@ impl ManagedIndexSourceRebuild {
         scope: EntityId,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         generation: u64,
+        admit_cold_scope: impl FnOnce(&VisibilityProjectionView) -> Result<(), Denial>,
     ) -> Result<ManagedIndexSourceRebuild, Denial> {
         image.admit_selected(&selected, generation)?;
-        let expected = image
-            .selected_source_image()?
-            .retained(program, scope)?
-            .ok_or(Denial::RootUnavailable)?;
+        let (expected, expected_placed) = match image.selected_source_image()?.retained(program, scope)? {
+            Some(placed) => (placed, true),
+            None => {
+                admit_cold_scope(&projection)?;
+                let revision = selected.commit_id().ok_or(Denial::RootUnavailable)?;
+                let cold =
+                    ManagedIndexBranchImage::plan_cold_source(execution, program, scope, revision)
+                        .map_err(Denial::Publication)?;
+                (cold, false)
+            }
+        };
         if expected.physical_availability() != ManagedIndexSourceAvailability::Available {
             return Err(Denial::RootUnavailable);
         }
         Ok(ManagedIndexSourceRebuild {
             projection,
             expected,
+            expected_placed,
             image: image.clone(),
             selected,
             generation,
@@ -104,7 +117,9 @@ pub trait ManagedIndexSourceRebuildOwnerPort: Sized {
         Denial,
     >;
 
+    #[allow(clippy::too_many_arguments)]
     fn prepare(
+        execution: &ExecutionRequest<'_, '_>,
         image: &ManagedSourceRootImage,
         projection: VisibilityProjectionView,
         selected: PositionedRelationalSnapshot,
@@ -112,6 +127,7 @@ pub trait ManagedIndexSourceRebuildOwnerPort: Sized {
         scope: EntityId,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         generation: u64,
+        admit_cold_scope: impl FnOnce(&VisibilityProjectionView) -> Result<(), Denial>,
     ) -> Result<ManagedIndexSourceRebuild, Denial>;
 }
 
@@ -134,6 +150,7 @@ impl ManagedIndexSourceRebuildOwnerPort for ManagedIndexSourceRebuild {
     }
 
     fn prepare(
+        execution: &ExecutionRequest<'_, '_>,
         image: &ManagedSourceRootImage,
         projection: VisibilityProjectionView,
         selected: PositionedRelationalSnapshot,
@@ -141,9 +158,18 @@ impl ManagedIndexSourceRebuildOwnerPort for ManagedIndexSourceRebuild {
         scope: EntityId,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         generation: u64,
+        admit_cold_scope: impl FnOnce(&VisibilityProjectionView) -> Result<(), Denial>,
     ) -> Result<ManagedIndexSourceRebuild, Denial> {
         Self::prepare(
-            image, projection, selected, program, scope, memory, generation,
+            execution,
+            image,
+            projection,
+            selected,
+            program,
+            scope,
+            memory,
+            generation,
+            admit_cold_scope,
         )
     }
 }

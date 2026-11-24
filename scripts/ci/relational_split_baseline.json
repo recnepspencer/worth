@@ -997,7 +997,7 @@
     "facade::mvcc::ManagedIndexParentReadFootprint",
     "facade::mvcc::ManagedIndexPublicCache",
     "facade::mvcc::ManagedIndexPublicCacheRetirement",
-    "facade::mvcc::ManagedIndexSourceForkPreparation",
+    "facade::mvcc::ManagedIndexSourceCellPlacement",
     "facade::mvcc::PendingCompanionRegistration",
     "facade::mvcc::PerformedRelationalCommit",
     "facade::mvcc::PreparedCompanionBranchCell",

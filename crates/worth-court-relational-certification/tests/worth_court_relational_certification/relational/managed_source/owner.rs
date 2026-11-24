@@ -101,15 +101,15 @@ impl Drop for ForkLookup {
 }
 
 impl RelationalPublicationCompanion for SourceOwner {
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+        target: &worth_relational::facade::mvcc::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
         execution
             .consult()
             .map_err(|cause| CompanionPreflightStop::Execution(cause.into()))?;
-        let branch = target.target_branch().clone();
+        let branch = target.branch().clone();
         let slot = target.lookup_slot();
         self.0
             .source_cells

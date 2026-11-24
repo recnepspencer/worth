@@ -63,7 +63,7 @@ pub struct CompanionBranchCellCore {
     reservation_live: AtomicBool,
     topology_generation: AtomicU64,
     source_affinity: OnceLock<Arc<ManagedSourceCellAffinity>>,
-    _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+    _placement_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl CompanionBranchCellCore {
@@ -81,7 +81,7 @@ impl CompanionBranchCellCore {
             reservation_live: AtomicBool::new(false),
             topology_generation: AtomicU64::new(1),
             source_affinity: OnceLock::new(),
-            _fork_memory: None,
+            _placement_memory: None,
         })
     }
 
@@ -135,17 +135,17 @@ impl CompanionBranchCellCore {
         })
     }
 
-    pub fn bind_unshared_fork_funding(
+    pub fn bind_unshared_placement_funding(
         owner: &mut Arc<Self>,
         funding: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
     ) {
         Arc::get_mut(owner)
-            .expect("fresh unshared fork core")
-            ._fork_memory = funding;
+            .expect("fresh unshared placement core")
+            ._placement_memory = funding;
     }
 
-    pub fn fork_funding(&self) -> Option<&Arc<worth_execution::ExecutionMemoryReservation>> {
-        self._fork_memory.as_ref()
+    pub fn placement_funding(&self) -> Option<&Arc<worth_execution::ExecutionMemoryReservation>> {
+        self._placement_memory.as_ref()
     }
 
     pub fn source_affinity(&self) -> Option<&Arc<ManagedSourceCellAffinity>> {

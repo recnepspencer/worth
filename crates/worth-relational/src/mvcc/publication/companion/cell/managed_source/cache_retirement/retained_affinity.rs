@@ -2,7 +2,7 @@
 use super::*;
 use crate::branch::lifecycle::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
-use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceForkPreparation;
+use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceCellPlacement;
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationFixturePort as _;
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedSourceRootImageFixturePort as _;
 #[cfg(not(test))]
@@ -17,10 +17,10 @@ impl RelationalPublicationCompanion for ForkOwner {
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         self.0.prepare(context)
     }
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, CompanionPreflightStop> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
@@ -80,7 +80,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     let snapshot = snapshot_for_owner_identity(&runtime, &identity);
     let cell = owner.0.slots.lock().unwrap()[1].admitted().unwrap();
     let weak = Arc::downgrade(cell.companion_core_for_test());
-    let fork_grant = Arc::downgrade(cell.companion_core_for_test().fork_funding().unwrap());
+    let fork_grant = Arc::downgrade(cell.companion_core_for_test().placement_funding().unwrap());
     let generation = cell.companion_core_for_test().registration_generation();
     let old = runtime
         .read_truth()
@@ -131,9 +131,9 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
             .unwrap()
             .root()
             .managed_source_image
-            .get()
+            .for_branch(&target)
             .unwrap()
-            .clone();
+            .into_owned();
     assert!(matches!(
         image.admit_selected(&selected, generation + 1),
         Err(Denial::Publication(

@@ -57,7 +57,7 @@ pub use companion::CompanionDerivedRootPreparationStop;
 pub use companion::CompanionDerivedRootStopped;
 pub use companion::CompanionPublicationCompletion;
 pub use companion::CompanionPublicationCompletionObserver;
-pub use companion::ManagedIndexSourceForkPreparation;
+pub use companion::ManagedIndexSourceCellPlacement;
 pub use companion::ManagedIndexSourceRebuild;
 pub use companion::PreparedCompanionBranchCell;
 pub use companion::PreparedCompanionDerivedRoot;

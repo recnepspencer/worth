@@ -21,13 +21,12 @@ impl PublicationCellAdmission {
     }
 }
 
-/// Fork preparation has no mutation-candidate permission. Only its durable
-/// fork cutover can admit this lookup into the already-prepared target.
-pub(in crate::internal_port::mvcc::publication::companion) struct PreparedManagedForkCell {
+/// Only Native may make this prepared Source cell visible at its placement.
+pub(in crate::internal_port::mvcc::publication::companion) struct PreparedManagedSourceCell {
     cell: CompanionBranchCell<worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage>,
     admission: Arc<PublicationCellAdmission>,
 }
-impl PreparedManagedForkCell {
+impl PreparedManagedSourceCell {
     pub(in crate::internal_port::mvcc::publication::companion) fn new(
         cell: CompanionBranchCell<worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage>,
     ) -> Self {

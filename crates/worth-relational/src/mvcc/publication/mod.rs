@@ -30,7 +30,7 @@ pub use companion::{
     CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
+    ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceCellPlacement,
     ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PreparedCompanionBranchCell,
     PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PublicationCompanionPreflight, PublicationCompanionRegistrationStop,

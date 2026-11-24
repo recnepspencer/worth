@@ -36,7 +36,7 @@ pub use publication::{
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
-    ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
+    ManagedIndexSourceCellPlacement, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
     PerformedRelationalCommit, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
     PreparedPublicationCompanionEffect, PreparedRelationalCommitCandidate,
     PublicationCompanionPreflight, PublicationCompanionRegistrationStop, PublishRelationalCommit,
