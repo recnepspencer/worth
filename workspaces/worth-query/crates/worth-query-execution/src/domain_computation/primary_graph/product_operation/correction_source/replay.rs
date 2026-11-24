@@ -10,8 +10,10 @@ use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
-use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    AdvancementPhaseInternalPort as _, ProductBranchLeaseInternalPort as _,
+    ProductRuntimeInternalPort as _,
+};
 
 /// Correction-command lookup under fresh disclosure for the chosen action binding.
 ///
@@ -102,8 +104,19 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
     let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
         target, source, key, &lineage,
     );
+    let inspection = target
+        .application()
+        .inner
+        .runtime
+        .product_runtime_ref()
+        .owner_ref()
+        .inspection_port();
     select_action::<Schema, ApplicationInverseBinding<Schema, C>>(
-        &target.application().inner.runtime.primary_provider_ref(),
+        (
+            target.application().inner.runtime.primary_provider_ref(),
+            &inspection,
+            &execution,
+        ),
         observed,
         intent,
         key,
@@ -191,8 +204,19 @@ pub(super) fn select_reapplication_input<
         key,
         &lineage,
     );
+    let inspection = target
+        .application()
+        .inner
+        .runtime
+        .product_runtime_ref()
+        .owner_ref()
+        .inspection_port();
     select_action::<Schema, C::Source>(
-        &target.application().inner.runtime.primary_provider_ref(),
+        (
+            target.application().inner.runtime.primary_provider_ref(),
+            &inspection,
+            &execution,
+        ),
         observed,
         intent,
         key,
@@ -201,7 +225,11 @@ pub(super) fn select_reapplication_input<
 }
 
 fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
-    provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    context: (
+        &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        &worth_execution::ExecutionRequest<'_, '_>,
+    ),
     observed: Observed,
     intent: WorthQueryCorrectionIntent,
     key: &WorthQueryCorrectionCommandKey,
@@ -217,6 +245,7 @@ fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<
     WorthQueryCorrectionActionInputSelection<Schema, Binding>,
     WorthQueryCorrectionDerivationDenial,
 > {
+    let (provider, inspection, execution) = context;
     use WorthQueryCorrectionActionInputSelection as Selection;
     Ok(match observed {
         Observed::Unseen => Selection::FirstUse(intent),
@@ -228,20 +257,24 @@ fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<
             {
                 return Ok(Selection::IntentDrift);
             }
-            let material = provider
-                .observe_correction_material(recorded.semantic_result().semantic().receipt())
+            let capture = provider
+                .observe_correction_capture_for_replay(
+                    execution,
+                    recorded.semantic_result().semantic().receipt(),
+                    inspection,
+                )
                 .map_err(WorthQueryCorrectionDerivationDenial::Material)?;
-            if &material.capture.key != recorded.idempotency_key_identity()
-                || material.capture.intent != recorded.recorded_intent()
-                || material.capture.mutation != Binding::IDENTITY
+            if &capture.key != recorded.idempotency_key_identity()
+                || capture.intent != recorded.recorded_intent()
+                || capture.mutation != Binding::IDENTITY
                 || !identity
-                    .matches_mutation_input(Binding::IDENTITY, &material.capture.input_identity)
+                    .matches_mutation_input(Binding::IDENTITY, &capture.input_identity)
             {
                 return Err(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning);
             }
             let input = super::material::recorded_input::recover_bytes(
-                &material.capture.input,
-                material.capture.input_identity,
+                &capture.input,
+                capture.input_identity,
                 factory,
             )?;
             Selection::Replay {

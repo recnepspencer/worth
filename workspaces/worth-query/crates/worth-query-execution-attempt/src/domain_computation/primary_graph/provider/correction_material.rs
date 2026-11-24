@@ -31,6 +31,27 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or(Denial::AdmissionRequired)?
             .admit_original_metadata(commit)
     }
+    pub fn has_captured_correction_material(
+        &self,
+        original: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> bool {
+        self.correction_material
+            .get()
+            .is_some_and(|owner| owner.has_captured_original(original))
+    }
+    pub fn settle_correction_pins_for_close(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+    ) -> Result<(), Denial> {
+        let Some(owner) = self.correction_material.get() else {
+            return Ok(());
+        };
+        let originals = inspection
+            .observe_program_activation_history(request)
+            .map_err(|_| Denial::Unavailable)?;
+        owner.abandon_released(&originals, request)
+    }
     pub fn observe_correction_material(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -42,6 +63,25 @@ impl WorthQueryPrimaryGraphProvider {
             .get()
             .ok_or(Denial::AdmissionRequired)?
             .observe_original(commit)
+    }
+    pub fn observe_correction_capture_for_replay(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+    ) -> Result<
+        Arc<crate::domain_computation::primary_graph::retained_correction::record::MaterialCapture>,
+        Denial,
+    > {
+        let owner = self
+            .correction_material
+            .get()
+            .ok_or(Denial::AdmissionRequired)?;
+        owner.observe_capture_for_replay(commit, || {
+            inspection
+                .observe_program_activation_history(request)
+                .map_err(|_| Denial::Unavailable)
+        })
     }
     pub fn readmit_correction_material(
         &self,

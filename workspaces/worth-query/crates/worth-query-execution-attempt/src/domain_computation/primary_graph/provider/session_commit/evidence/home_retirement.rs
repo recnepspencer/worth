@@ -30,7 +30,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
         request.consult().map_err(Denial::Execution)?;
         // Dispose one recovered selector per admitted step before Native closes.
         // Its weak source is not durable custody; the index rebuilds on reopen.
-        if self.recovered_dispatch.pop_first().is_some() {
+        if self.recovered_dispatch.pop_first().is_some()
+            || self.pending_recovered_dispatch.pop_first().is_some()
+        {
             return Ok(Progress::Advanced);
         }
         let next = match self.home_retired_through {

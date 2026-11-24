@@ -48,9 +48,19 @@ impl PlanningResidentAllowance {
         Ok(window)
     }
 
-    #[cfg(test)]
     pub(crate) const fn used(&self) -> u64 {
         self.used
+    }
+
+    /// Release scratch charges back to `baseline_used` after all scratch
+    /// allocations made since that checkpoint have been dropped, preserving
+    /// the recorded peak high-water mark.
+    pub(crate) fn release_to_baseline(&mut self, baseline_used: u64) {
+        assert!(
+            baseline_used <= self.used,
+            "cannot release below charged baseline"
+        );
+        self.used = baseline_used;
     }
 
     pub(crate) const fn maximum(&self) -> u64 {
@@ -258,6 +268,22 @@ mod tests {
             allowance.reserve::<u8>(21),
             Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed: 101 },)
         ));
+    }
+
+    #[test]
+    fn release_to_baseline_reclaims_unreleased_scratch_while_preserving_peak() {
+        let mut allowance = PlanningResidentAllowance::new(60, 100).unwrap();
+        let baseline = allowance.used();
+        let leaked_scratch = allowance.reserve::<u8>(30).unwrap();
+        drop(leaked_scratch);
+        assert_eq!((allowance.used(), allowance.peak()), (90, 90));
+        allowance.release_to_baseline(baseline);
+        assert_eq!((allowance.used(), allowance.peak()), (60, 90));
+        let reused = allowance.reserve::<u8>(40).unwrap();
+        assert_eq!((allowance.used(), allowance.peak()), (100, 100));
+        drop(reused);
+        allowance.release(40);
+        assert_eq!((allowance.used(), allowance.peak()), (60, 100));
     }
 
     #[test]

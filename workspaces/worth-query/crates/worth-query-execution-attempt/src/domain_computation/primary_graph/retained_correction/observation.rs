@@ -35,6 +35,17 @@ impl CorrectionMaterialOwner {
         }
         Ok(())
     }
+    pub fn has_captured_original(
+        &self,
+        original: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> bool {
+        let state = self.state();
+        state.pending.is_none()
+            && matches!(
+                state.catalog.material.get(&original).map(|entry| &entry.body),
+                Some(MaterialBody::Captured(_))
+            )
+    }
     pub fn observe_original(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -64,6 +75,52 @@ impl CorrectionMaterialOwner {
                 | MaterialBody::Expired { .. }
                 | MaterialBody::Abandoned => {}
             }
+        }
+        found.ok_or(Denial::Unavailable)
+    }
+    pub fn observe_capture_for_replay(
+        &self,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        load_originals: impl FnOnce() -> Result<
+            worth_runtime_world::facade::WorldProgramActivationHistory,
+            Denial,
+        >,
+    ) -> Result<Arc<MaterialCapture>, Denial> {
+        match self.observe_original(commit) {
+            Ok(retained) => return Ok(retained.capture),
+            Err(Denial::Unavailable) => {}
+            Err(cause) => return Err(cause),
+        }
+        let originals = load_originals()?;
+        let state = self.state();
+        if state.pending.is_some() {
+            return Err(Denial::PublicationPending);
+        }
+        let mut found = None;
+        for (identity, entry) in &state.catalog.material {
+            let MaterialBody::Captured(capture) = &entry.body else {
+                continue;
+            };
+            let Some(original) = originals.original_state(*identity) else {
+                continue;
+            };
+            if !matches!(
+                original.fate(),
+                worth_foundational::facade::WorldOriginalFate::Published
+                    | worth_foundational::facade::WorldOriginalFate::Continued
+            ) {
+                continue;
+            }
+            if !originals.original_observations().any(|obs| {
+                obs.identity() == original.reserved_commit()
+                    && obs.relational_commit() == Some(commit.commit_id)
+            }) {
+                continue;
+            }
+            if found.is_some() {
+                return Err(Denial::OriginalMismatch);
+            }
+            found = Some(Arc::clone(capture));
         }
         found.ok_or(Denial::Unavailable)
     }

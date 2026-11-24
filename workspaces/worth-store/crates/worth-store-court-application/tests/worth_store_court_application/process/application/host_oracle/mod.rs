@@ -2,6 +2,7 @@
 use worth_store_testkit_application_oracle::facade::*;
 mod abandonment;
 mod admission_retry;
+mod adversarial;
 mod automatic;
 mod concurrent;
 mod continuation;

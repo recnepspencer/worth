@@ -112,7 +112,23 @@ where
                     selected.node_path(),
                 )
                 .ok_or_else(|| mismatch("captured workflow input support changed"))?;
+            let basis = self.lease.product().relational_basis();
             let contract = self.lease.handle().with_runtime(execution, |runtime| {
+                crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted(
+                    execution,
+                    runtime,
+                    basis,
+                    [Some(layout.captured_input.identity_index_id)],
+                )
+                .map_err(|stop| match stop {
+                    crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop::Admission(
+                        worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                    ) => WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                        cause,
+                        "captured workflow target",
+                    ),
+                    _ => mismatch("captured workflow target index unavailable"),
+                })?;
                 crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
                     execution, runtime, self.lease.snapshot(), layout, input_observation.proposal,
                     &input_observation.proposal_identity, selected.node_path(), self.admission.scope_entity_id(),
