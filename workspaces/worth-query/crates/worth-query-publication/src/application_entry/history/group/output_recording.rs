@@ -47,7 +47,7 @@ where
                 let member = self.members.member(self.members.len() - 1);
                 document
                     .outputs
-                    .with_recording(&phase, |forest| {
+                    .with_recording(&phase, candidate.branch(), |forest| {
                         let result = (|| {
                             let Some(forest) = forest else {
                                 self.posture = WorthQueryHistoryGroupPosture::ReadyToComplete;

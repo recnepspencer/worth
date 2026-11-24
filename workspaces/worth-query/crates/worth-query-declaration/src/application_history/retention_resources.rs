@@ -26,11 +26,15 @@ impl ApplicationHistoryRecentSteps {
 pub struct ApplicationHistoryRetentionResources {
     pub maximum_bookmarks: NonZeroUsize,
     pub maximum_pending_releases: NonZeroUsize,
+    /// Largest application metadata one recorded step may carry, in bytes.
+    /// Zero refuses any step metadata.
+    pub maximum_step_metadata_bytes: usize,
 }
 
 impl ApplicationHistoryRetentionResources {
     pub const DEFAULT: Self = Self {
         maximum_bookmarks: NonZeroUsize::new(32).unwrap(),
         maximum_pending_releases: NonZeroUsize::new(32).unwrap(),
+        maximum_step_metadata_bytes: 4096,
     };
 }

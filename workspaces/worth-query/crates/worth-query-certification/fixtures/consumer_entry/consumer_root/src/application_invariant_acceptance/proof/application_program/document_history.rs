@@ -10,6 +10,7 @@ use worth_query_topology_entry::{
     PlanarDocumentHistory, PlanarInitialAdjustment, PlanarOutputDemand, PlanarOutputRead,
 };
 mod aggregate;
+mod envelope;
 mod journeys;
 mod navigation_outputs;
 mod profile;

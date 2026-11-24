@@ -134,22 +134,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             if scope.entity_id() != selector.subject() {
                 return Err(Stop::ForeignClosure.into());
             }
-            let (product, basis) = self
-                .application
-                .retain_selected_query_basis_admitted(self.shared)
-                .map_err(Stop::Basis)?;
-            let limits = self
-                .application
-                .resolve_application_query_limits(installed.limits());
-            let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-                product,
-                basis,
-                limits.maximum_results(),
-                self.request,
-            )
-            .map_err(|cause| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(cause)))?
-            .with_selection_origin(selected.selection_origin())
-            .with_original_settled_producer(selected.original_settled_producer().cloned());
+            let controls = self.applied_source_controls(&installed)?;
             let access =
                 WorthQueryApplicationQueryAccessContext::new(principal.principal(), &scope);
             let plan = self
@@ -165,6 +150,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     before,
                     candidate,
                     self.request,
+                    self.read_control(),
                     native,
                 )
                 .map_err(Stop::Admission)?;

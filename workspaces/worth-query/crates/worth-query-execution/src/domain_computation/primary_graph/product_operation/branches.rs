@@ -18,8 +18,12 @@ use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
 mod inventory;
 pub use inventory::{WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial};
+mod custody;
 mod expected_source;
 mod owned_head;
+pub(in crate::domain_computation::primary_graph) use custody::{
+    SharedPrimaryRuntime, WorthQueryRuntimeCustody,
+};
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial,

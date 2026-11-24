@@ -17,6 +17,7 @@ mod preparation;
 mod qualification;
 pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::ReopenTarget;
 mod settlement;
+mod source_alignment;
 mod source_selection;
 mod succession;
 mod verified_parents;
@@ -76,6 +77,8 @@ pub struct CoupledApplicationAssembly<
     consumed: RefCell<worth_execution::ExecutionOrderedMap<(usize, usize), ()>>,
     /// Retentions superseded at their authenticated invalidator, to reopen.
     reopens: RefCell<Vec<qualification::Reopen>>,
+    /// Aligned managed Source reads, marked by each later append (#310).
+    alignments: RefCell<source_alignment::Alignments>,
     /// Successor rounds appended: their writers took their chain's slot.
     successors: std::cell::Cell<usize>,
 }
@@ -170,6 +173,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             discovering: std::cell::Cell::new(None),
             consumed: RefCell::new(worth_execution::ExecutionOrderedMap::default()),
             reopens: RefCell::new(Vec::new()),
+            alignments: RefCell::default(),
             successors: std::cell::Cell::new(0),
         }
     }
@@ -361,6 +365,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         *self.ledger.borrow_mut() = ledger::DerivationLedger::default();
         *self.consumed.borrow_mut() = worth_execution::ExecutionOrderedMap::default();
         self.reopens.borrow_mut().clear();
+        *self.alignments.borrow_mut() = Default::default();
         self.successors.set(0);
         self.superseding.set(false);
         let prepared = self

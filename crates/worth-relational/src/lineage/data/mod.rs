@@ -10,6 +10,7 @@ mod metrics;
 mod name_resolution;
 mod naming;
 mod naming_denial;
+mod pending_birth_identity;
 mod postures;
 mod resolution;
 

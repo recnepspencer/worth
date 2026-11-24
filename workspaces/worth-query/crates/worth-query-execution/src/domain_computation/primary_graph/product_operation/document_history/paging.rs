@@ -57,6 +57,7 @@ pub struct WorthQueryHistoryPageEntry {
     pub(super) id: WorthQueryHistoryNodeId,
     pub(super) parent: WorthQueryHistoryParentBoundary,
     pub(super) label: Option<std::sync::Arc<str>>,
+    pub(super) metadata: super::WorthQueryHistoryStepMetadata,
     pub(super) endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
 }
 impl WorthQueryHistoryPageEntry {
@@ -68,6 +69,10 @@ impl WorthQueryHistoryPageEntry {
     }
     pub fn label(&self) -> Option<&str> {
         self.label.as_deref()
+    }
+    /// Application bytes recorded with the step; empty when none were given.
+    pub fn metadata(&self) -> &super::WorthQueryHistoryStepMetadata {
+        &self.metadata
     }
     pub fn endpoint(&self) -> &crate::basis::WorthQueryProductBranchReadIdentity {
         &self.endpoint

@@ -45,6 +45,7 @@ where
     fn with_recording<T>(
         &self,
         _: &WorthQueryAdvancementPhase<'_>,
+        _: WorthQueryProductBranch,
         consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
     ) -> Result<T, WorthQueryHistoryOutputDenial> {
         Ok(consume(None).0)

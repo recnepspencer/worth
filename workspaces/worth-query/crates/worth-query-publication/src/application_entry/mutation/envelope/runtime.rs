@@ -1,6 +1,8 @@
 //! Runtime-length authoring uses the same nominal entries and execution spine.
 use super::*;
 use entry::{CaptureEditStages, EditEntry};
+mod history_front;
+pub(in crate::application_entry) use history_front::CapturedEnvelopeIntent;
 
 #[doc(hidden)]
 pub struct RuntimeEditStages<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K> {
@@ -83,11 +85,18 @@ where
     }
     /// Select positioned semantics before capturing the original stage list.
     pub fn ordered_authored(mut self) -> Result<Self, WorthQueryEditEnvelopeModeDenial> {
+        self.order_authored()?;
+        Ok(self)
+    }
+
+    pub(in crate::application_entry) fn order_authored(
+        &mut self,
+    ) -> Result<(), WorthQueryEditEnvelopeModeDenial> {
         if !self.envelope.envelope.stages.entries.is_empty() {
             return Err(WorthQueryEditEnvelopeModeDenial::StagesAlreadyCaptured);
         }
         self.envelope.envelope.context.order = ApplicationEditEnvelopeOrder::OrderedAuthored;
-        Ok(self)
+        Ok(())
     }
 
     pub fn push_stage<R, I>(

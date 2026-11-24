@@ -139,6 +139,7 @@
 # C3.1 Signal readmission rows append one changed Signal advance through the Home's physical journal, then abort.
 # C3 Track (PR #280 split owners: exact callers of moved execution-attempt/lineage/query controls).
 # C2 ruling 2026-11-21: exact certification callers of the Native capture/finalize split and recovered-retirement gate doors.
+# History envelope courts count real producer contacts, request work and journal accesses, and stop the real request at its own consults.
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/execution/interruption_view/stop_settlement.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/single_stage.rs
@@ -151,6 +152,7 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-certification/
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/cost/host/temporal_conditional_operation/work_prefix.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_conditional_operation/contribution_installation/request_cancellation/mod.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/request_stops.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest/stopped_request.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/reconciliation/kept_refusals.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/fact/cancellation_tests/mod.rs
@@ -1867,6 +1869,7 @@ workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-qu
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/process/certification/application_graph/source_bound_replay/mod.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/workflow_actor_contract/allocation/mod.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/application_graph/document_retention_model/workflow/governed_read/court/mod.rs
+workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest/step_work.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/new_source/identity.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/budget.rs
 workspaces/worth-query/crates/worth-query-execution-runtime/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/recording/allocation.rs
@@ -2931,6 +2934,10 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/hierarchy/recording_parent/permission.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/hierarchy/recording_parent/permission/selected_recipe.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/historical_source.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest/stopped_request.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/recording.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/replay.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/incomplete_forest.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/mixed_verification.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/predecessor/control.rs
@@ -4143,6 +4150,7 @@ workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/cr
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/recovery.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/resources.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/navigation/retirement.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest/step_work.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/graph/cleanup/owned.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/handoff.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/paging/mod.rs

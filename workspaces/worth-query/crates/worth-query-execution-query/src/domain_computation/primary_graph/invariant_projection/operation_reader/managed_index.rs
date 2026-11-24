@@ -80,7 +80,7 @@ where
 
 /// The issued decision read: declared Parent and projected fields first, then
 /// the read basis (the committed admitted basis, or an applied candidate's
-/// aligned before basis), then the resolved scope's declared authority, all
+/// issuing assembly), then the resolved scope's declared authority, all
 /// before any provider call. The complete managed Source fact of every read,
 /// per scope, is recorded with the owning decision or computation call.
 fn decision_index_query<Schema: ApplicationSchema, Operation, B>(
@@ -144,10 +144,19 @@ where
             None => Failure::ManagedIndex(cause),
         })?;
         let snapshot = reader_self.reader().snapshot();
-        reader_self
-            .decision_facts_mut()
-            .record_managed_source(&observation, admission, contracts, snapshot, execution)
-            .map_err(Failure::Native)?;
+        let storage = reader_self.reader().retention_control();
+        let facts = reader_self.decision_facts_mut();
+        use application_query::managed_index::DecisionSource;
+        match observation {
+            DecisionSource::Committed(observation) => facts.record_managed_source(
+                &observation, admission, contracts, snapshot, execution,
+            ),
+            DecisionSource::Applied { facts: observed, authorization, allocation: _allocation } => {
+                facts.record_applied_managed_source(
+                    observed, &authorization, admission, contracts, snapshot, storage,
+                )
+            }
+        }.map_err(Failure::Native)?;
         Ok(rows)
     })();
     if result.is_err() {
