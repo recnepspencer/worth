@@ -7,7 +7,7 @@ pub(in crate::visibility::materialization::read_records::reader) struct AppliedR
     pub(super) before_root: u64,
     pub(in crate::visibility::materialization::read_records::reader) aggregate:
         Option<crate::aggregate_identity::AggregateCandidateRead>,
-    pub(crate) fields: Arc<crate::indexes::AppliedFieldImage>,
+    pub(crate) fields: Arc<crate::indexes::authority::maintenance::AppliedFieldImage>,
     _memory: ExecutionMemoryReservation,
 }
 
@@ -16,7 +16,7 @@ pub(super) fn capture(
     before_root: u64,
     aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
     previous: Option<&AppliedReadChanges>,
-    fields: Arc<crate::indexes::AppliedFieldImage>,
+    fields: Arc<crate::indexes::authority::maintenance::AppliedFieldImage>,
 ) -> Result<Arc<AppliedReadChanges>, TransactionCommitError> {
     if previous.is_some_and(|prior| prior.before_root != before_root) {
         return Err(crate::mvcc::origin_denial(

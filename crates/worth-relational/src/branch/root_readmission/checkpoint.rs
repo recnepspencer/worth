@@ -19,7 +19,7 @@ impl RelationalBranchRoot {
             crate::branch::root_regions::PreparedRelationalRegionSet::new(root_id, request)?;
         let (mut entity_slots, mut relation_slots) = (0usize, 0usize);
         for region in directory.iter().cloned() {
-            crate::execution::check_request(request)
+            crate::execution::request_custody::check_request(request)
                 .map_err(RelationalBranchRootCaptureDenial::Request)?;
             entity_slots = entity_slots
                 .checked_add(region.entity_slots)

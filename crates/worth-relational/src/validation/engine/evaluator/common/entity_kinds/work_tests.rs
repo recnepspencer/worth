@@ -1,10 +1,12 @@
 //! Candidate lookup work is bounded by its declared keys, not their product.
 use super::*;
 use crate::execution::{execute_read_only_packets, ReadOnlyPacket};
-use crate::transactions::data::{
-    AspectFieldPatch, BulkEntityCreateIntent, CreateIntent, MergedCommitPlan, MutationIntent,
-    TransactionId,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::TransactionId;
 use crate::validation::engine::{
     budget::LeasedInvariantBudget, InvariantObservation, InvariantRuntimeView,
 };
@@ -66,7 +68,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
             ]
         })
     {
-        let lease = crate::tests::support::test_execution_authority()
+        let lease = crate::execution::test_authority::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     posture,
@@ -106,7 +108,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
                     });
                     let actual = entity_reference_kind(
                         &context,
-                        crate::validation::data::InvariantClass::CommitBoundary,
+                        crate::validation::data::execution::InvariantClass::CommitBoundary,
                         &reference,
                     )
                     .unwrap();

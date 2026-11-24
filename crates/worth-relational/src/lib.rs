@@ -71,7 +71,9 @@ pub mod facade;
 mod tests;
 
 #[cfg(test)]
-mod test_execution_policy;
+mod test_execution_policy {
+    pub(crate) use crate::execution::test_policy::{serial_request, serial_request_with_memory};
+}
 #[cfg(test)]
 use worth_harness::facade::process_deadline;
 #[cfg(test)]

@@ -288,7 +288,7 @@ fn quote_footprint(
     plan: &LoweredAspectContractPlan,
     creation: bool,
 ) -> storage_footprint::Footprint {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (mut quote, _) = execution
         .run_native_with_checkpoint(|context| {

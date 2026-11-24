@@ -1,8 +1,9 @@
 //! Reobserve Native-issued frontier records on both sides; no caller deltas.
 use super::*;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
-use crate::transactions::data::RecordRef;
-use crate::validation::data::{StructuralReadError, StructuralRelationRecord};
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::data::structural_read::StructuralReadError;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 pub(super) fn acquire(
     proposed: &StructuralRelationView<'_>,

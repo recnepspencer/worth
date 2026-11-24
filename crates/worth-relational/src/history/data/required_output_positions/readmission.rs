@@ -3,9 +3,8 @@ use super::{
     PositionNode, PublicationRoute, RequiredOutputPublicationPositions, RequiredOutputRoutePosition,
 };
 use crate::durability::canonical_commit_artifact::borrowed_payload::Cursor;
-use crate::durability::checkpoint_admission::{
-    native_stop, RelationalCheckpointAdmissionRefusal as Refusal,
-};
+use crate::durability::checkpoint_admission::refusal::native_stop;
+use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
 use crate::history::data::CommitId;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -20,7 +19,7 @@ struct Readmission<'r, 'scope, 'authority> {
 }
 impl Readmission<'_, '_, '_> {
     fn charge(&self, bytes: u64) -> Result<(), Refusal> {
-        crate::durability::artifact_payload_emission::request::account_work(self.request, bytes)
+        crate::durability::data::recovery_stop::account_work(self.request, bytes)
             .map_err(native_stop)
     }
     fn reserve<T>(&self, tail: usize) -> Result<Option<ExecutionMemoryReservation>, Refusal> {
@@ -84,7 +83,7 @@ fn key(cursor: &mut Cursor<'_, '_>, expected: &str) -> Result<(), Refusal> {
 fn require_count(
     count: Result<
         usize,
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
+        crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal,
     >,
     expected: usize,
 ) -> Result<(), Refusal> {
@@ -94,9 +93,9 @@ fn require_count(
     Ok(())
 }
 fn projected_stop(
-    cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
+    cause: crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal,
 ) -> Refusal {
-    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Cause;
+    use crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Cause;
     match cause {
         Cause::Request(cause) => Refusal::Request(cause),
         Cause::Content(cause) => Refusal::Content(cause),

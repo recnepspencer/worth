@@ -136,7 +136,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ))
     ));
     assert!(matches!(
-        image.affinity.admit(&main_observation.selected, generation),
+        crate::mvcc::publication::companion::cell::managed_source::affinity::admit_affinity(
+            &image.affinity,
+            &main_observation.selected,
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     let foreign = crate::tests::support::runtime_with_test_schema();
@@ -146,7 +150,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .positioned_snapshot(&foreign_snapshot)
         .unwrap();
     assert!(matches!(
-        image.affinity.admit(&foreign_selected, generation),
+        crate::mvcc::publication::companion::cell::managed_source::affinity::admit_affinity(
+            &image.affinity,
+            &foreign_selected,
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     drop(foreign);

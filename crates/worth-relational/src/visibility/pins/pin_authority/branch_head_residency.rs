@@ -33,11 +33,10 @@ impl<'runtime> VisibilityPinAuthority<'runtime> {
             else {
                 continue;
             };
-            let Some(basis) = VisibilitySnapshotBasis::capture_current_for_optional_maintenance(
-                self.runtime,
-                &branch_id,
-                version_id,
-            ) else {
+            let Some(basis) = self
+                .runtime
+                .capture_optional_current_visibility_basis(&branch_id, version_id)
+            else {
                 continue;
             };
             protect_branch_head_state(self.runtime, &basis);
@@ -74,12 +73,9 @@ impl<'runtime> VisibilityPinAuthority<'runtime> {
                 self.runtime.services.instrumentation.count(|counters| {
                     counters.visibility_cache_branch_head_promotions += 1;
                 });
-            } else if let Some(basis) =
-                VisibilitySnapshotBasis::capture_current_for_optional_maintenance(
-                    self.runtime,
-                    branch_id,
-                    version_id,
-                )
+            } else if let Some(basis) = self
+                .runtime
+                .capture_optional_current_visibility_basis(branch_id, version_id)
             {
                 protect_branch_head_state(self.runtime, &basis);
                 self.runtime.services.instrumentation.count(|counters| {

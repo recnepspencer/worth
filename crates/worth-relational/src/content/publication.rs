@@ -1,6 +1,6 @@
 //! Content admission belongs to the same candidate as its referencing fields.
 use super::{ContentDirectory, RelationalContentAttachments, RelationalContentDenial as Denial};
-use crate::branch::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
+use crate::branch::root::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
 use serde::{Deserialize, Serialize};
 use worth_execution::ExecutionRequest;
 
@@ -12,7 +12,7 @@ pub(crate) struct ContentPublication {
     #[serde(skip)]
     source: Option<ContentDirectory>,
     #[serde(skip)]
-    schema: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
+    schema: Option<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
 }
 
 impl PartialEq for ContentPublication {
@@ -25,7 +25,7 @@ impl Eq for ContentPublication {}
 impl ContentPublication {
     pub(crate) fn bind_schema(
         &mut self,
-        schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+        schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
     ) -> Result<(), Denial> {
         if self.schema.is_some() {
             return Err(Denial::EncodingInconsistency);
@@ -38,7 +38,7 @@ impl ContentPublication {
     ) -> Result<
         (
             &ContentDirectory,
-            &crate::branch::RelationalBranchRootSchemaAuthority,
+            &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         ),
         Denial,
     > {
@@ -89,8 +89,8 @@ pub(crate) fn prepare_publication(
     root: &RelationalBranchRoot,
     schema: &crate::schema::data::RelationalSchemaRegistry,
     records: &RelationalContentAttachments,
-    state: &crate::runtime::WorkingState,
-    changed: &[crate::transactions::data::RecordRef],
+    state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+    changed: &[crate::transactions::data::primitives::RecordRef],
     version: crate::identity::data::VersionId,
     source: Option<&ContentDirectory>,
 ) -> Result<ContentPublication, Denial> {
@@ -113,8 +113,8 @@ impl ContentPublication {
         execution: &ExecutionRequest<'_, '_>,
         root: &RelationalBranchRoot,
         schema: &crate::schema::data::RelationalSchemaRegistry,
-        state: &crate::runtime::WorkingState,
-        changed: &[crate::transactions::data::RecordRef],
+        state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+        changed: &[crate::transactions::data::primitives::RecordRef],
         version: crate::identity::data::VersionId,
     ) -> Result<Self, Denial> {
         let prior = root.retained_content();
@@ -141,10 +141,15 @@ impl ContentPublication {
     }
 }
 
-pub(crate) fn commit_denial(denial: Denial) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{
-        CommitConflict, CommitExecutionDenial, CommitExecutionDenialKind, ConflictClass,
-        TransactionCommitError,
+pub(crate) fn commit_denial(
+    denial: Denial,
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    use crate::transactions::data::outcomes::{
+        commit_conflict::CommitConflict,
+        conflict_class::ConflictClass,
+        transaction_commit_error::{
+            CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+        },
     };
     match denial {
         Denial::Execution(cause) => TransactionCommitError::execution(CommitExecutionDenial {

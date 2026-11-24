@@ -32,7 +32,7 @@ fn engine_executes_custom_invariant_packets() {
     }
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
 }
 
@@ -54,16 +54,16 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
     let denial = InvariantEngine::new(&runtime)
         .execute(
             &worth_execution::ExecutionRequest::leased(
-                &crate::tests::support::test_execution_lease(),
+                &crate::execution::test_authority::test_execution_lease(),
             ),
             request,
         )
         .expect_err("opaque custom execution must fail closed under a lease");
     assert!(matches!(
         denial,
-        crate::transactions::data::TransactionCommitError::Execution {
-            denial: crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+            denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                     crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
                 ),
                 ..
@@ -97,11 +97,11 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
     assert_eq!(results.results().len(), 1);
     assert_eq!(
         results.results()[0].execution_point,
-        crate::validation::data::InvariantExecutionPoint::GraphComposition
+        crate::validation::data::execution::InvariantExecutionPoint::GraphComposition
     );
     assert_eq!(
         results.metadata().max_cost(),
-        crate::validation::data::InvariantCostClass::Touched
+        crate::validation::data::groups::InvariantCostClass::Touched
     );
     match &results.results()[0].rule {
         InvariantReportedRule::Custom(identity) => {
@@ -111,13 +111,13 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
     }
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
 }
 
 #[test]
 fn engine_executes_custom_packets_against_real_structural_surfaces() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let structural = || CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap();
     let rejects = || CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap();
@@ -144,11 +144,11 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     assert_eq!(results.results().len(), 2);
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
     assert!(matches!(
         results.results()[1].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
     assert_eq!(counters.custom_invariant_preparation_count, 2);
     assert_eq!(counters.custom_invariant_execution_count, 2);
@@ -170,7 +170,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     assert_eq!(after_topology_change.results().len(), 2);
     assert!(matches!(
         after_topology_change.results()[1].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
     assert_eq!(
         changed_counters.custom_invariant_candidate_relation_reads,
@@ -206,13 +206,13 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
     );
 
     assert_eq!(results.results().len(), 1);
-    let crate::validation::data::InvariantVerdict::Violation(violation) =
+    let crate::validation::data::execution::InvariantVerdict::Violation(violation) =
         &results.results()[0].verdict
     else {
         panic!("expected captured prepare panic to produce a violation");
     };
     match &violation.fields {
-        crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
+        crate::validation::data::results::InvariantViolationFields::CustomInvariantFailure {
             identity,
             phase,
             failure,
@@ -224,11 +224,11 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
             );
             assert_eq!(
                 phase,
-                &crate::validation::data::CustomInvariantFailurePhase::Preparation
+                &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase::Preparation
             );
             assert_eq!(
                 failure,
-                &crate::validation::data::ResultCustomInvariantFailureKind::Panic
+                &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::Panic
             );
         }
         other => panic!("expected custom invariant failure fields, got {other:?}"),
@@ -262,13 +262,13 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
     );
 
     assert_eq!(results.results().len(), 1);
-    let crate::validation::data::InvariantVerdict::Violation(violation) =
+    let crate::validation::data::execution::InvariantVerdict::Violation(violation) =
         &results.results()[0].verdict
     else {
         panic!("expected captured evaluate panic to produce a violation");
     };
     match &violation.fields {
-        crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
+        crate::validation::data::results::InvariantViolationFields::CustomInvariantFailure {
             identity,
             phase,
             failure,
@@ -280,11 +280,11 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
             );
             assert_eq!(
                 phase,
-                &crate::validation::data::CustomInvariantFailurePhase::Execution
+                &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase::Execution
             );
             assert_eq!(
                 failure,
-                &crate::validation::data::ResultCustomInvariantFailureKind::Panic
+                &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::Panic
             );
         }
         other => panic!("expected custom invariant failure fields, got {other:?}"),

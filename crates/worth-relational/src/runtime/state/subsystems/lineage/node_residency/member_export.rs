@@ -1,7 +1,7 @@
 //! Node-frame transport and point demand share terminal page damage.
 use super::*;
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
 use crate::durability::medium::{RelationalDurableMemberCustody, RelationalDurableMemberLocator};
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::RelationalStorageSubject;
 #[derive(Debug)]
 struct NodeMemberExport {

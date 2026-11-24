@@ -20,7 +20,9 @@ impl From<Cause> for MutationPatchDenial {
         Self::Request(cause)
     }
 }
-impl From<MutationPatchDenial> for crate::transactions::data::TransactionCommitError {
+impl From<MutationPatchDenial>
+    for crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError
+{
     fn from(denial: MutationPatchDenial) -> Self {
         match denial {
             MutationPatchDenial::Request(cause) => Self::execution(cause.into()),
@@ -28,7 +30,9 @@ impl From<MutationPatchDenial> for crate::transactions::data::TransactionCommitE
         }
     }
 }
-impl From<MutationPatchDenial> for crate::mvcc::RelationalTransactionReadDenial {
+impl From<MutationPatchDenial>
+    for crate::mvcc::transaction::read_denial::RelationalTransactionReadDenial
+{
     fn from(denial: MutationPatchDenial) -> Self {
         match denial {
             MutationPatchDenial::Request(cause) => Self::Request(cause),

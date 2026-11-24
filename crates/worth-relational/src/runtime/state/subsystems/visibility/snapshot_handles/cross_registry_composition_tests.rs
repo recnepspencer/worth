@@ -1,4 +1,4 @@
-use crate::facade::history::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotId;
 use crate::tests::support::*;
@@ -58,7 +58,7 @@ fn with_cross_registry_world(
 /// discipline note on `SnapshotHandles`.
 #[test]
 fn a_known_snapshot_is_found_in_whichever_registry_holds_it() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     with_cross_registry_world(execution, |runtime, identities| {
         assert!(runtime.visibility.is_known_snapshot(identities.active));

@@ -10,7 +10,7 @@ const LARGE_TEXT: usize = 1024 * 1024;
 
 #[test]
 fn uniqueness_ignores_large_sibling_and_unrelated_kind_payloads() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let runtime = fixture();
     let large = "x".repeat(LARGE_TEXT);
@@ -48,7 +48,7 @@ fn uniqueness_ignores_large_sibling_and_unrelated_kind_payloads() {
 
 #[test]
 fn uniqueness_refuses_large_matching_field_before_cloning_it() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let runtime = fixture();
     commit_entity_with_summary(
@@ -64,9 +64,9 @@ fn uniqueness_refuses_large_matching_field_before_cloning_it() {
     // the clone exists: the refused increment is at least the field itself.
     let Err(TransactionCommitError::Execution {
         denial:
-            crate::transactions::data::CommitExecutionDenial {
+            crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
                 kind:
-                    crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                             requested,
                             admitted,
@@ -121,7 +121,7 @@ fn fixture() -> RelationalRuntime {
 fn evaluate(
     runtime: &RelationalRuntime,
 ) -> Result<crate::validation::engine::InvariantExecutionResult, TransactionCommitError> {
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,

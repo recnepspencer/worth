@@ -1,6 +1,6 @@
 //! Resource proofs invoke actual metadata producers, not a reservation proxy.
 use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::{EntityId, PartitionId};
 use crate::storage::substrate::{
     EntityArena, EntityRecordKind, MetadataWriteDenial, RecordKind, SlotInit,

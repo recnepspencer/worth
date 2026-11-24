@@ -20,9 +20,10 @@ use super::entity_field_collection::{collect, EntityFieldCollectionRead};
 /// the admitted observation, not a current-head claim or a registry lock.
 pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
-    instrumentation: crate::runtime::RuntimeInstrumentation,
+    instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     basis: ResidentVisibilitySnapshotBasis,
-    definition: crate::indexes::RetainedDerivedIndexDefinition,
+    definition: crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
     generation: Arc<DerivedIndexGeneration>,
     kind: KindId,
 }
@@ -38,7 +39,9 @@ impl PreparedEntityFieldLookup {
     pub(super) fn belongs_to_owner(&self, runtime_identity: u64) -> bool {
         self.runtime_identity == runtime_identity
     }
-    pub fn retain_definition(&self) -> crate::indexes::RetainedDerivedIndexDefinition {
+    pub fn retain_definition(
+        &self,
+    ) -> crate::indexes::retained_definition::RetainedDerivedIndexDefinition {
         self.definition.clone()
     }
     pub fn index_id(&self) -> DerivedIndexId {
@@ -88,9 +91,6 @@ impl PreparedEntityFieldLookup {
         Ok(entries.is_empty())
     }
 
-    fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
-        crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
-    }
     /// Complete finite selection. The callback controls interruption; it does
     /// not claim admission of temporary key or result Vec backing.
     pub fn execute_prepared_entity_field_lookup<E: worth_execution::ChargedBytes>(
@@ -108,7 +108,7 @@ impl PreparedEntityFieldLookup {
                 self.index_id(),
             )));
         }
-        self.performance_access().count_query_index_attempt();
+        self.instrumentation.count_query_index_attempt();
         self.collect_prepared_entity_field_lookup(value, limit, parity, execution, admission)
     }
 
@@ -159,11 +159,10 @@ impl PreparedEntityFieldLookup {
                 &outcome,
                 &mut admission,
             )?;
-            self.performance_access()
-                .count_query_index_parity_verification();
+            self.instrumentation.count_query_index_parity_verification();
         }
         super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
-        self.performance_access().count_query_index_path();
+        self.instrumentation.count_query_index_path();
         Ok(outcome)
     }
 }
@@ -210,7 +209,7 @@ pub(super) fn denied(kind: Denial, index: DerivedIndexId) -> BoundedEntityFieldL
     BoundedEntityFieldLookupDenial::new(kind, index)
 }
 
-impl crate::visibility::materialization::read_records::ProjectionRecordSource
+impl crate::visibility::materialization::read_records::projection::ProjectionRecordSource
     for PreparedEntityFieldLookup
 {
     // Construction already admitted and retained the complete immutable source.
@@ -218,21 +217,21 @@ impl crate::visibility::materialization::read_records::ProjectionRecordSource
     fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        crate::execution::request_custody::check_request(execution)
     }
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        crate::execution::request_custody::check_request(execution)
     }
     fn demand_regions_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.basis
             .demand_regions_head(execution, partitions)
             .map_err(Into::into)
@@ -243,7 +242,7 @@ impl crate::visibility::materialization::read_records::ProjectionRecordSource
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
         self.basis.head_region(id)
     }
-    fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
+    fn selected_root(&self) -> Option<&Arc<crate::branch::root::RelationalBranchRoot>> {
         Some(self.basis.root())
     }
     fn is_exact_basis(&self) -> bool {
@@ -268,10 +267,10 @@ impl PreparedEntityFieldLookup {
     pub(crate) fn pin(
         runtime_identity: u64,
         basis: ResidentVisibilitySnapshotBasis,
-        definition: crate::indexes::RetainedDerivedIndexDefinition,
+        definition: crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
         kind: KindId,
         locator: &AspectFieldLocator,
-        instrumentation: crate::runtime::RuntimeInstrumentation,
+        instrumentation: crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
         generation: impl FnOnce(&DerivedIndexDefinition) -> Option<Arc<DerivedIndexGeneration>>,
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
         let index = definition.index_id;

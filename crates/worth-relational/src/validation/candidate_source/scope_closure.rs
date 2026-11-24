@@ -3,16 +3,18 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::program::ManagedIndexSourceProgram;
 use crate::authority::mutation::AdjacencyDelta;
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
 use crate::derived_relation::evaluation::{evaluate_position, SourceRead};
-use crate::derived_relation::{DerivedRelationData, DerivedRelationDenial as Definition};
-use crate::derived_relation::{
-    DerivedRelationReadDenial as Denial, DerivedRelationReads, StructuralSource,
-};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
+use crate::derived_relation::DerivedRelationData;
+use crate::derived_relation::DerivedRelationReads;
+use crate::derived_relation::StructuralSource;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::EntityId;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
-use crate::validation::data::{StructuralReadError, StructuralRelationView};
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
+use crate::validation::data::structural_read::StructuralReadError;
 
 mod home_target;
 mod ordered_birth;
@@ -182,7 +184,7 @@ impl SourceRead for LifecycleSource<'_, '_> {
     fn admit_definition(
         &mut self,
         registry: &RelationalSchemaRegistry,
-        handle: &crate::derived_relation::DerivedRelationHandle,
+        handle: &crate::derived_relation::definition::DerivedRelationHandle,
     ) -> Result<(), Denial> {
         self.0.admit_definition(registry, handle)
     }
@@ -210,7 +212,8 @@ impl SourceRead for LifecycleSource<'_, '_> {
     fn adjacency(
         &mut self,
         probe: crate::derived_relation::DerivedRelationAdjacency,
-    ) -> Result<Vec<crate::validation::data::StructuralRelationRecord>, Denial> {
+    ) -> Result<Vec<crate::validation::data::structural_read::StructuralRelationRecord>, Denial>
+    {
         self.0.adjacency(probe)
     }
     fn reads(&self) -> DerivedRelationReads {

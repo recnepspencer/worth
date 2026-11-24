@@ -2,7 +2,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::commit_strategies::data::StrategyExecutionDraft;
 
-use super::bound_execution::BoundStrategyExecution;
+use super::bound_strategy::BoundStrategyExecution;
 use super::error::StrategyExecutionError;
 
 pub(crate) fn execute_bound_strategy(

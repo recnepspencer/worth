@@ -22,17 +22,19 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
             display_name: Arc::from("Test Custom Violation"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
                     include_relation_endpoint_entity_touches: true,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }
@@ -50,7 +52,7 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         Ok(CustomInvariantVerdict::Violation(
-            crate::validation::data::CustomInvariantRefusal::Empty,
+            crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
         ))
     }
 }
@@ -80,7 +82,7 @@ impl CustomInvariantRule for RejectsPlannedRelationRule {
             CustomInvariantVerdict::Pass
         } else {
             CustomInvariantVerdict::Violation(
-                crate::validation::data::CustomInvariantRefusal::Empty,
+                crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
             )
         })
     }
@@ -151,17 +153,19 @@ impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
             display_name: Arc::from("Test Graph Composition Custom Rule"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
                     include_relation_endpoint_entity_touches: true,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::GraphComposition,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::GraphComposition,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }
@@ -179,7 +183,7 @@ impl CustomInvariantRule for GraphCompositionViolatesCustomRule {
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         Ok(CustomInvariantVerdict::Violation(
-            crate::validation::data::CustomInvariantRefusal::Empty,
+            crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
         ))
     }
 }
@@ -203,17 +207,19 @@ impl CustomInvariantRule for StructuralSurfaceRule {
             display_name: Arc::from("Structural Surface Rule"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
                     include_relation_endpoint_entity_touches: true,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }
@@ -245,7 +251,7 @@ impl CustomInvariantRule for StructuralSurfaceRule {
             Ok(CustomInvariantVerdict::Pass)
         } else {
             Ok(CustomInvariantVerdict::Violation(
-                crate::validation::data::CustomInvariantRefusal::Empty,
+                crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
             ))
         }
     }
@@ -263,17 +269,19 @@ impl CustomInvariantRule for PanicDuringPrepareRule {
             display_name: Arc::from("Panic During Prepare"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
                     include_relation_endpoint_entity_touches: true,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }
@@ -306,17 +314,19 @@ impl CustomInvariantRule for PanicDuringEvaluateRule {
             display_name: Arc::from("Panic During Evaluate"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: vec![crate::identity::data::KindId(1)],
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
                     include_relation_endpoint_entity_touches: true,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }

@@ -1,9 +1,9 @@
 //! Minimal owned read context for exact checkpoint-image verification.
 use crate::branch::RelationalBranchRoot;
-use crate::durability::data::RelationalRecoveryStop as Stop;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::history::data::BranchId;
-use crate::runtime::{RelationalRuntime, VisibilityProjectionView};
 use crate::storage::substrate::maintenance::ReconstructionLane;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -13,8 +13,9 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 pub(crate) struct CheckpointProjectionContext {
     runtime_identity: u64,
     current_version: crate::identity::data::VersionId,
-    instrumentation: crate::runtime::RuntimeInstrumentation,
-    symbols: crate::runtime::RuntimeSymbolTable,
+    instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+    symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
 }
 pub(crate) struct RequestOwnedCheckpointProjection {
     view: VisibilityProjectionView,
@@ -26,15 +27,23 @@ impl RequestOwnedCheckpointProjection {
     }
 }
 impl CheckpointProjectionContext {
-    pub(crate) fn capture(_lane: &ReconstructionLane<'_>, runtime: &RelationalRuntime) -> Self {
+    pub(crate) fn from_read_handles(
+        _lane: &ReconstructionLane<'_>,
+        runtime_identity: u64,
+        current_version: crate::identity::data::VersionId,
+        instrumentation: crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+        symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> Self {
         Self {
-            runtime_identity: runtime.runtime_instance_id(),
-            current_version: runtime.current_version_id(),
-            instrumentation: runtime.services.instrumentation.clone(),
-            symbols: runtime.services.symbols.clone(),
+            runtime_identity,
+            current_version,
+            instrumentation,
+            symbols,
         }
     }
-    pub(crate) fn symbols(&self) -> crate::runtime::RuntimeSymbolTable {
+    pub(crate) fn symbols(
+        &self,
+    ) -> crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable {
         self.symbols.clone()
     }
     pub(crate) fn project(
@@ -46,10 +55,7 @@ impl CheckpointProjectionContext {
     ) -> Result<RequestOwnedCheckpointProjection, Stop> {
         // The root is already admitted by its actual source owner. This operation
         // copies the observing branch name and shares that immutable root/schema.
-        crate::durability::artifact_payload_emission::request::account_work(
-            request,
-            branch.0.len() as u64 + 1,
-        )?;
+        crate::durability::data::recovery_stop::account_work(request, branch.0.len() as u64 + 1)?;
         let memory = request
             .reserve_retained_memory(branch.0.len() as u64)
             .map_err(|cause| Stop::Request(cause.into()))?;
@@ -62,7 +68,7 @@ impl CheckpointProjectionContext {
             .commit_receipt()
             .map(|receipt| receipt.version_id)
             .ok_or_else(|| {
-                crate::durability::checkpoints::region_directory::corrupt(
+                crate::durability::data::recovery_errors::DurabilityError::corrupt_checkpoint(
                     "index checkpoint root has no commit",
                 )
             })?;

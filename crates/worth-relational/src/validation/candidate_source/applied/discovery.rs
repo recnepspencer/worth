@@ -68,7 +68,7 @@ impl<'a> DiscoveredSource<'a> {
         }
         if !work.try_claim_bytes(size_of::<Self>() as u64) {
             return Err(DerivedRelationReadDenial::Definition(
-                crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded,
+                crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
             )
             .into());
         }
@@ -109,7 +109,7 @@ fn admit(budget: &CustomPreparationBudget, units: usize) -> Result<(), Denial> {
 }
 fn exhausted() -> Denial {
     DerivedRelationReadDenial::Definition(
-        crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded,
+        crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
     )
     .into()
 }

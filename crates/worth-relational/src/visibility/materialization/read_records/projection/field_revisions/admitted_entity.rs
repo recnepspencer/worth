@@ -2,7 +2,7 @@
 
 use worth_foundational::facade::{AspectFieldLocator, AspectShape, LocatorAuthority};
 
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::EntityId;
 use crate::storage::data::{
     RecordLifecycleState, RelationalFieldPresence, RelationalFieldRevision,
@@ -22,9 +22,9 @@ impl VisibilityProjectionView {
         mut admit_work: impl FnMut(u64) -> Result<(), Stop>,
     ) -> Result<
         Result<Option<RelationalFieldRevision>, Stop>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if self.is_exact_basis() {
             self.demand_regions_head(execution, [entity.partition_id])?;
         }

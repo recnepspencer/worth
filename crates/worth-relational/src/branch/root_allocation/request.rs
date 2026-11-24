@@ -1,5 +1,5 @@
 //! Before-growth quotes for the branch owner's concrete Arc and Box allocations.
-use crate::branch::RelationalBranchRootCaptureDenial as Denial;
+use crate::branch::root::RelationalBranchRootCaptureDenial as Denial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 // Ordinary by-value header copies do not transfer the original allocation's
@@ -48,7 +48,7 @@ fn reserve(
     let Some(request) = request else {
         return Ok(None);
     };
-    crate::execution::check_request(request).map_err(Denial::Request)?;
+    crate::execution::request_custody::check_request(request).map_err(Denial::Request)?;
     request
         .reserve_retained_memory(
             u64::try_from(layout.size()).map_err(|_| Denial::AllocationLayoutOverflow)?,

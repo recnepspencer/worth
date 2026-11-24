@@ -2,10 +2,11 @@
 use super::funding;
 use super::preparation::derived_laws::{validate, LawStage};
 use crate::authority::mutation::MutationEffect;
-use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
+use crate::branch::root::RelationalBranchRootSchemaAuthority;
+use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::state_view::InvariantStateView;
 
 pub(crate) fn validate_final_derived_laws(
@@ -16,8 +17,8 @@ pub(crate) fn validate_final_derived_laws(
     working: &WorkingState,
     effect: &MutationEffect,
     version: VersionId,
-    symbols: &crate::runtime::RuntimeSymbolTable,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
 ) -> Result<super::AggregateReadObservations, TransactionCommitError> {
     if authority.registry().derived_relations.is_empty()
         || authority.registry().native_private_kinds.is_empty()
@@ -28,8 +29,9 @@ pub(crate) fn validate_final_derived_laws(
         execution,
         &selected.with_symbol_admission(symbols),
         |partitions| {
-            let selected =
-                crate::branch::SelectedRelationalBranchRead::in_round(selected, partitions);
+            let selected = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
+                selected, partitions,
+            );
             funding::run_observed(execution, budget, |work| {
                 work.poll()?;
                 let before = InvariantStateView::new(&selected, selected.version_id());
@@ -50,7 +52,9 @@ pub(crate) fn validate_final_derived_laws(
             .map(|(_, _, reads)| reads)
         },
     )
-    .map_err(|failure| crate::authority::commit::preparation::storage_read_denial(basis, failure))?
+    .map_err(|failure| {
+        crate::authority::commit::preparation::storage_denial::storage_read_denial(basis, failure)
+    })?
 }
 struct LawsValidated;
 impl worth_execution::ChargedBytes for LawsValidated {

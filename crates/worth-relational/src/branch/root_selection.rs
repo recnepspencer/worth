@@ -1,5 +1,5 @@
-use super::AdmittedRelationalBranchBasis;
-use super::{RelationalBranchRoot, RelationalBranchRootState};
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRootState;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use worth_foundational::FoundationalBranchTarget;
@@ -21,12 +21,14 @@ impl Eq for SelectedRelationalBranchState {}
 impl SelectedRelationalBranchState {
     pub(crate) fn with_symbol_admission<'read>(
         &'read self,
-        symbols: &'read crate::runtime::RuntimeSymbolTable,
-    ) -> super::SymbolAdmittedRootRead<'read> {
-        super::SymbolAdmittedRootRead::new(self.state().root(), symbols)
+        symbols: &'read crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> crate::branch::symbol_read::SymbolAdmittedRootRead<'read> {
+        crate::branch::symbol_read::SymbolAdmittedRootRead::new(self.state().root(), symbols)
     }
 
-    pub(crate) fn from_admitted_basis(basis: &super::AdmittedRelationalBranchBasis) -> Self {
+    pub(crate) fn from_admitted_basis(
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    ) -> Self {
         let state = RelationalBranchRootState::new(basis.inner.root.clone());
         match basis.descriptor().reference().target() {
             FoundationalBranchTarget::Empty => Self::Empty(state),
@@ -116,24 +118,5 @@ impl crate::storage::overlay::CurrentPartitionAccess for SelectedRelationalBranc
         &self,
     ) -> Box<dyn Iterator<Item = crate::identity::data::PartitionId> + '_> {
         self.state().partition_ids_iter()
-    }
-}
-
-impl crate::runtime::RelationalRuntime {
-    pub(crate) fn selected_branch_state(
-        &self,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Result<SelectedRelationalBranchState, crate::transactions::data::CommitPreparationError>
-    {
-        if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(
-                crate::transactions::data::CommitPreparationError::selected_branch_root_reference_mismatch(
-                    basis.identity().branch_id().clone(),
-                    basis.observation().commit_id().map(|id| id.0),
-                    basis.observation().version_id(),
-                ),
-            );
-        }
-        Ok(SelectedRelationalBranchState::from_admitted_basis(basis))
     }
 }

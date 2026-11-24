@@ -71,7 +71,7 @@ impl DenseSlotBitSet {
         slot: usize,
         value: bool,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let (word, previous, next) = self.changed_word(slot, value);
         let changed = if next == previous {
             Ok(0)
@@ -214,7 +214,7 @@ impl DenseSlotBitSet {
         _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         words: impl IntoIterator<Item = (usize, u64)>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let mut result = Self::with_capacity(0);
         for (index, word) in words {
             request.consult()?;

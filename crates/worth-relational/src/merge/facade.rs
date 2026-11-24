@@ -36,8 +36,6 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: crate::merge::data::PreparedMergeExecution,
     ) -> Result<MergeExecutionOutcome, crate::merge::data::MergeExecutionError> {
-        crate::merge::execution::prepared_execution::execute_prepared_merge(
-            execution, self, prepared,
-        )
+        crate::runtime::prepared_merge_execution::execute_prepared_merge(execution, self, prepared)
     }
 }

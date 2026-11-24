@@ -27,20 +27,20 @@ impl super::RelationalCommitArtifact {
     pub(crate) fn prepare_catalog_owner(
         mut self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Arc<Self>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let layout = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .ok()
             .map(|(layout, _)| layout.pad_to_align());
         let bytes = layout
             .and_then(|layout| u64::try_from(layout.size()).ok())
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+            .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
         let memory = execution
             .reserve_retained_memory(bytes)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         execution
             .check_live()
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         self.allocation_memory = memory;
         Ok(Arc::new(self))
     }

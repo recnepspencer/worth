@@ -8,7 +8,9 @@ mod relation_traversal;
 mod unique_entity_fields;
 pub(crate) use relation_cardinality::CurrentVersionMinimumIndex;
 
-use crate::validation::data::{InvariantClass, InvariantRule, InvariantViolation};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::rules::InvariantRule;
 
 use super::context::InvariantExecutionContext;
 use partition_isolation::evaluate_partition_isolation_contract;
@@ -46,7 +48,7 @@ pub(crate) fn evaluate_rule(
                         "merged commit plan has {} intents, limit is {}",
                         merged_len, limit
                     ),
-                    fields: crate::validation::data::InvariantViolationFields::MergedIntentLimit {
+                    fields: crate::validation::data::results::InvariantViolationFields::MergedIntentLimit {
                         merged_intent_count: merged_len,
                         limit: *limit,
                     },

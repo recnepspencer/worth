@@ -7,7 +7,7 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalBorrowedRecordReadDenial {
     ExactBasisRequired,
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

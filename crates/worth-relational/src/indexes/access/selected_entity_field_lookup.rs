@@ -1,6 +1,6 @@
 //! Lookup at an issued exact selected view under the original execution request.
 use super::{
-    bounded_entity_field_lookup::{sealed, BoundedEntityFieldLookupRead},
+    pinning::{sealed, BoundedEntityFieldLookupRead},
     IndexAccess,
 };
 use crate::identity::data::KindId;

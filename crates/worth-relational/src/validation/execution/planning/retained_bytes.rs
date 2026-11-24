@@ -1,7 +1,8 @@
 use std::mem::size_of;
 
 use crate::identity::data::KindId;
-use crate::validation::data::{CustomInvariantAccessContract, InvariantRegistration};
+use crate::validation::data::catalog::InvariantRegistration;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 
 pub(super) fn native_registration_retained_bytes(registration: &InvariantRegistration) -> u64 {
     let nested = registration.rule.owned_allocation_capacity_bytes();

@@ -56,11 +56,9 @@ impl CanonicalCommitEnvelopeBody {
         allow_empty: bool,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
-        use crate::{
-            mvcc::RequiredOutputRolePosture as Posture,
-            publication::patch::data::RecordStructuralChange as Change,
-            transactions::data::RecordRef,
-        };
+        use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+        use crate::publication::patch::data::RecordStructuralChange as Change;
+        use crate::transactions::data::primitives::RecordRef;
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, self.patch.authoritative_record_patches.len() + 1)?;
         if (!allow_empty && !event.owned_members && event.publications.is_empty())
@@ -209,7 +207,7 @@ impl<'a> ValidatedOutputOrigins<'a> {
 
     pub(crate) fn output_origin_for_route(
         &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<&'a Arc<CanonicalRequiredOutputOrigin>, Stop> {
         for origin in self.envelope.output_origins() {
@@ -264,7 +262,7 @@ impl std::ops::Deref for OwnedValidatedOutputOrigins {
 impl OwnedValidatedOutputOrigins {
     pub(crate) fn materialization_origin_for_record(
         &self,
-        record: &crate::transactions::data::RecordRef,
+        record: &crate::transactions::data::primitives::RecordRef,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
         self.as_view()
@@ -273,7 +271,7 @@ impl OwnedValidatedOutputOrigins {
 
     pub(crate) fn materialization_origin_for_route(
         &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
         self.as_view()
@@ -296,7 +294,7 @@ impl OwnedValidatedOutputOrigins {
     }
     pub(crate) fn output_origin_for_route(
         &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
         self.as_view().output_origin_for_route(meaning, context)

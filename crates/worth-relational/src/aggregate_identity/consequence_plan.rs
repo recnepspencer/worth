@@ -10,11 +10,17 @@ use crate::identity::data::{EntityId, PartitionId, RelationId};
 mod membership;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    AspectFieldPatch, CreateIntent, CreatedEntityRef, DeleteRelationIntent, EntityMutationIntent,
-    EntityReference, EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec,
-    UpdateEntityFieldsIntent,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::DeleteRelationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::AggregateIdentity;

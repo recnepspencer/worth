@@ -1,29 +1,5 @@
 //! Concrete backing owned by the private durable declaration roster.
 use super::*;
-impl DurableEntitySchemaRegistration {
-    /// Capacities, not entry counts: the decoder supplies its checked Vec
-    /// growth/overlap bounds. Nested strings/contracts remain separately quoted.
-    pub(crate) fn declaration_roster_storage_bytes(
-        aspect_capacity: usize,
-        identity_capacity: usize,
-        policy_capacity: usize,
-    ) -> Option<usize> {
-        std::alloc::Layout::array::<DurableDeclaredAspectBinding>(aspect_capacity)
-            .ok()?
-            .size()
-            .checked_add(
-                std::alloc::Layout::array::<IdentityBasisDeclaration>(identity_capacity)
-                    .ok()?
-                    .size(),
-            )?
-            .checked_add(
-                std::alloc::Layout::array::<AspectMergePolicyDeclaration>(policy_capacity)
-                    .ok()?
-                    .size(),
-            )
-    }
-}
-
 /// One decode's admissions for independently shared identity/policy leaves.
 pub(crate) struct DurableSchemaDeclarationMemory {
     pub(crate) identities: Vec<crate::merge::data::MergeIdentityMemory>,

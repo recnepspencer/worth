@@ -1,6 +1,18 @@
 //! Request-funded record walks have no independent work limit.
+use super::super::materialization::{
+    materialize_authoritative_entity_record_at_version,
+    materialize_authoritative_relation_record_at_version,
+};
 use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
-use super::*;
+use super::super::visibility::{
+    entity_slot_matches_kind_at_version, relation_slot_matches_kind_at_version,
+};
+use super::context::VisibilityReadContext;
+use super::{
+    kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
+};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
 impl ProjectionRecordReader<'_> {
     pub(crate) fn paid_entities_in_partition(
         &self,
@@ -11,7 +23,8 @@ impl ProjectionRecordReader<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if matches!(visibility, KindScanVisibility::Live) {
             return self.paid_current_entities(
                 state.get_current_partition(partition_id),
@@ -102,7 +115,10 @@ impl ProjectionRecordReader<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if matches!(visibility, KindScanVisibility::Live) {
             return self.paid_current_relations(
                 state.get_current_partition(partition_id),
@@ -197,7 +213,8 @@ impl VisibilityReadContext<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
@@ -213,7 +230,10 @@ impl VisibilityReadContext<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,

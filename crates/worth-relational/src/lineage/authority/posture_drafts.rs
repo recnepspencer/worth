@@ -9,10 +9,11 @@ use crate::lineage::data::{
     LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget, LineageSubject,
     PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::RecordRef;
 
 use super::posture_allocation_drafts::ordered_allocation_drafts;
 use super::posture_validation::{ValidatedMergeTarget, ValidatedPosture, ValidatedPostureBatch};

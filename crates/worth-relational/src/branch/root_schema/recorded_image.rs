@@ -1,6 +1,7 @@
 //! A schema's immutable descriptive carrier shares its original admitted backing.
 use super::RelationalBranchRootSchemaAuthority;
-use crate::durability::data::{DurableBranchRootSchemaImage, RelationalRecoveryStop};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
+use crate::durability::data::DurableBranchRootSchemaImage;
 use worth_execution::ExecutionRequest;
 
 impl RelationalBranchRootSchemaAuthority {
@@ -10,7 +11,8 @@ impl RelationalBranchRootSchemaAuthority {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<DurableBranchRootSchemaImage, RelationalRecoveryStop> {
-        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::request_custody::check_request(request)
+            .map_err(RelationalRecoveryStop::Request)?;
         match self.recorded_image.get() {
             Some(image) => Ok(image.clone()),
             None => DurableBranchRootSchemaImage::capture_for_request(self, request),
@@ -33,7 +35,8 @@ impl RelationalBranchRootSchemaAuthority {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<DurableBranchRootSchemaImage, RelationalRecoveryStop> {
-        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::request_custody::check_request(request)
+            .map_err(RelationalRecoveryStop::Request)?;
         if let Some(image) = self.recorded_image.get() {
             return Ok(image.clone());
         }

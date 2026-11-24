@@ -10,7 +10,7 @@ use super::{IndexingState, IndexingSubsystem};
 impl IndexingSubsystem {
     pub(crate) fn retire_after_publication(
         &self,
-        history: &crate::runtime::HistorySubsystem,
+        history: &crate::runtime::state::subsystems::history::HistorySubsystem,
         publication: &CanonicalCommitEnvelope,
         maximum_older_visits: usize,
     ) -> Vec<Arc<DerivedIndexGeneration>> {

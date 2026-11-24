@@ -1,18 +1,28 @@
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-use crate::facade::identity::PartitionId;
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
-use crate::facade::schema::{
-    EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
-    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
-};
+use crate::identity::data::PartitionId;
 use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::schema::data::EntityKindRegistration;
+use crate::schema::data::KindAspectContractDeclarations;
 use crate::schema::data::RelationIntegrityDeclarations;
+use crate::schema::data::RelationKindRegistration;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::data::SchemaId;
+use crate::schema::data::SchemaVersionId;
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    CreateIntent, DeleteEntityIntent, EntityMutationIntent, EntityReference, EntitySpec,
-    MergedCommitPlan, MutationIntent, RelationMutationIntent, RelationSpec, ReplaceEntityIntent,
-    TransactionId, UpdateRelationEndpointsIntent, WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::intents::mutation_intent::ReplaceEntityIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateRelationEndpointsIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
+use crate::transactions::data::primitives::TransactionId;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::engine::{
     InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
 };
@@ -21,7 +31,7 @@ use super::CandidateTouchedKinds;
 
 #[test]
 fn replacement_defers_old_kind_and_adjacency_to_the_ordinary_planner() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime();
@@ -43,7 +53,7 @@ fn replacement_defers_old_kind_and_adjacency_to_the_ordinary_planner() {
 
 #[test]
 fn endpoint_move_defers_old_source_kind_to_the_ordinary_planner() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime();
@@ -67,7 +77,7 @@ fn endpoint_move_defers_old_source_kind_to_the_ordinary_planner() {
 
 #[test]
 fn entity_delete_defers_cascade_applicability_to_the_ordinary_planner() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime();
@@ -85,7 +95,7 @@ fn entity_delete_defers_cascade_applicability_to_the_ordinary_planner() {
 
 #[test]
 fn endpoint_touch_policy_preserves_default_and_allows_explicit_opt_out() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime();
@@ -103,7 +113,7 @@ fn endpoint_touch_policy_preserves_default_and_allows_explicit_opt_out() {
         })),
     );
     let kinds = touched(&runtime, &plan).expect("create has a complete footprint");
-    let mut access = crate::validation::data::CustomInvariantAccessContract {
+    let mut access = crate::validation::data::descriptor::CustomInvariantAccessContract {
         read_entity_kinds: vec![KindId(2)],
         read_relation_kinds: Vec::new(),
         affected_entity_kinds: vec![KindId(2)],
@@ -133,15 +143,15 @@ fn direct_entity_creation_still_admits_entity_rule() {
         })),
     );
     let kinds = touched(&runtime, &plan).expect("create has a complete footprint");
-    assert!(
-        kinds.may_affect(&crate::validation::data::CustomInvariantAccessContract {
+    assert!(kinds.may_affect(
+        &crate::validation::data::descriptor::CustomInvariantAccessContract {
             read_entity_kinds: vec![KindId(2)],
             read_relation_kinds: Vec::new(),
             affected_entity_kinds: vec![KindId(2)],
             affected_relation_kinds: Vec::new(),
             include_relation_endpoint_entity_touches: false,
-        })
-    );
+        }
+    ));
 }
 
 fn touched(runtime: &RelationalRuntime, plan: &MergedCommitPlan) -> Option<CandidateTouchedKinds> {
@@ -220,7 +230,7 @@ fn create_entity(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::transactions::data::RecordRef::Entity(id) => Some(*id),
+            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
             _ => None,
         })
         .expect("entity identity")
@@ -254,7 +264,7 @@ fn create_relation(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::transactions::data::RecordRef::Relation(id) => Some(*id),
+            crate::transactions::data::primitives::RecordRef::Relation(id) => Some(*id),
             _ => None,
         })
         .expect("relation identity")

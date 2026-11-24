@@ -9,8 +9,8 @@ impl RelationalCommitEnvelopeResidency {
         self.demand_read(execution, limit)?
             .positioned
             .ok_or_else(|| {
-                crate::durability::data::DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
                     "checkpoint envelope has no performed position",
                 )
                 .into()
@@ -28,7 +28,7 @@ impl RelationalCommitEnvelopeResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<ResidentEnvelopeRead, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(failure.into());

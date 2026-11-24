@@ -1,5 +1,5 @@
 use crate::publication::patch::data::{ordered_aspect_keys, RecordStructuralChange};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
@@ -8,7 +8,7 @@ use crate::authority::mutation::canonical_deltas::patch_authority::{
     authoritative_patch_binding_evidence, evaluate_authoritative_patch_delta,
 };
 use crate::authority::mutation::field_versions::changed_fields;
-use crate::capabilities::AspectPlanSource;
+use crate::schema::aspect_plan_source::AspectPlanSource;
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
 use super::state_views::EntityAuthoritativeState;

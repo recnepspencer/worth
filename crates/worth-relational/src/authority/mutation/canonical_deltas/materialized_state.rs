@@ -327,7 +327,7 @@ fn entity_field_binding_requires_authoritative_patch(
     field: &worth_foundational::facade::FieldKey,
 ) -> CanonicalDeltaError {
     CanonicalDeltaError::EntityFieldBindingRequiresAuthoritativePatchEvidence {
-        target: crate::transactions::data::planned_single_field_locator(
+        target: crate::transactions::data::aspect_field_patch::planned_single_field_locator(
             aspect_key.clone(),
             field.clone(),
         ),

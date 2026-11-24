@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::capabilities::AspectPlanSource;
 use crate::merge::aspect_components::{binding_component_from_visible_record, VisibleRecordSide};
 use crate::merge::aspect_witness_digest::canonical_aspect_witness_digest;
 use crate::merge::data::{
@@ -8,11 +7,12 @@ use crate::merge::data::{
     MaterializedAspectValueEvidence, MergeExecutionCompilationError, MergeValueMaterialization,
     MergeValueSourceSide,
 };
+use crate::schema::data::AspectContractPlanCatalog;
 use crate::schema::data::LoweredAspectContractBinding;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn compile_executable_aspect_plans(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source_record: &crate::merge::data::VisibleMergeRecord,
     lowered_record: &crate::merge::data::LoweredMergePlanRecord,
 ) -> Result<Arc<[ExecutableAspectPlan]>, MergeExecutionCompilationError> {
@@ -43,7 +43,7 @@ pub(super) fn compile_executable_aspect_plans(
             }
             LoweredAspectExecutionIntent::PreserveSharedValue { .. } => {
                 let witness_digest = aspect_shared_witness_digest(
-                    runtime,
+                    aspect_plans,
                     source_record,
                     &aspect.aspect_key,
                     lowered_record.record.clone(),
@@ -150,13 +150,13 @@ fn aspect_materialized_reference(
 }
 
 fn aspect_shared_witness_digest(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source_record: &crate::merge::data::VisibleMergeRecord,
     aspect_key: &worth_foundational::facade::AspectKey,
     record: RecordRef,
 ) -> Result<String, MergeExecutionCompilationError> {
     let binding =
-        aspect_binding_for_record(runtime, source_record, aspect_key).ok_or_else(|| {
+        aspect_binding_for_record(aspect_plans, source_record, aspect_key).ok_or_else(|| {
             MergeExecutionCompilationError::MissingAspectBinding {
                 record: record.clone(),
                 aspect_key: aspect_key.clone(),
@@ -186,17 +186,12 @@ fn aspect_shared_witness_digest(
 }
 
 fn aspect_binding_for_record<'a>(
-    runtime: &'a crate::runtime::RelationalRuntime,
+    aspect_plans: &'a AspectContractPlanCatalog,
     source_record: &crate::merge::data::VisibleMergeRecord,
     aspect_key: &worth_foundational::facade::AspectKey,
 ) -> Option<&'a LoweredAspectContractBinding> {
-    let kind_id = source_record.source_kind_id.or(source_record.kind_id)?;
-    let plan = match source_record.record_kind {
-        crate::merge::data::VisibleMergeRecordKind::Entity => runtime.entity_aspect_plan(kind_id),
-        crate::merge::data::VisibleMergeRecordKind::Relation => {
-            runtime.relation_aspect_plan(kind_id)
-        }
-    }?;
+    let plan =
+        crate::merge::aspect_plan_lookup::lowered_plan_for_record(aspect_plans, source_record)?;
     plan.executable_bindings
         .iter()
         .find(|binding| binding.aspect_key() == aspect_key)

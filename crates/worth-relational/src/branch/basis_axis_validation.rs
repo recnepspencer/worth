@@ -2,15 +2,16 @@ use std::sync::Arc;
 
 use worth_foundational::{FoundationalBranchReferenceMismatchAxis, FoundationalBranchTarget};
 
-use super::{
-    RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
-    RelationalBranchReferenceObservation, RelationalBranchRoot, RelationalBranchVersion,
-};
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::version::RelationalBranchVersion;
 use crate::history::data::CommitId;
 
 pub(crate) fn reject_cross_branch_target_substitution(
-    history: &crate::runtime::HistorySubsystem,
-    branch_cell: &super::RelationalBranchReferenceCell,
+    history: &crate::runtime::state::subsystems::history::HistorySubsystem,
+    branch_cell: &crate::branch::reference::RelationalBranchReferenceCell,
     descriptor: &RelationalBranchBasisDescriptor,
     current_reference: &RelationalBranchReferenceObservation,
 ) -> Result<(), RelationalBranchBasisDenial> {
@@ -65,13 +66,13 @@ pub(crate) fn require_current_descriptor_axes(
     }
     if descriptor.root_identity() != root.id() {
         return Err(RelationalBranchBasisDenial::MixedAxis(
-            super::RelationalBranchBasisMismatchAxis::RootIdentity,
+            crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::RootIdentity,
         ));
     }
     let schema_commitment = root.schema_authority().authority_digest();
     if descriptor.schema_commitment() != schema_commitment {
         return Err(RelationalBranchBasisDenial::MixedAxis(
-            super::RelationalBranchBasisMismatchAxis::SchemaRoot,
+            crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::SchemaRoot,
         ));
     }
     let visibility = root
@@ -80,7 +81,7 @@ pub(crate) fn require_current_descriptor_axes(
         .unwrap_or([0; 32]);
     if descriptor.visibility_commitment() != visibility {
         return Err(RelationalBranchBasisDenial::MixedAxis(
-            super::RelationalBranchBasisMismatchAxis::Visibility,
+            crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Visibility,
         ));
     }
     require_root_matches_reference(current_reference, root)
@@ -101,17 +102,17 @@ pub(crate) fn require_root_matches_reference(
                 .ok_or(RelationalBranchBasisDenial::UnavailableRetainedTarget)?;
             if root_descriptor.truth_root() != target.roots().truth_root() {
                 return Err(RelationalBranchBasisDenial::MixedAxis(
-                    super::RelationalBranchBasisMismatchAxis::TruthRoot,
+                    crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::TruthRoot,
                 ));
             }
             if root_descriptor.schema_root() != target.roots().schema_root() {
                 return Err(RelationalBranchBasisDenial::MixedAxis(
-                    super::RelationalBranchBasisMismatchAxis::SchemaRoot,
+                    crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::SchemaRoot,
                 ));
             }
             if root.commit_id().map(|commit| commit.0) != Some(target.selected_commit_id()) {
                 return Err(RelationalBranchBasisDenial::MixedAxis(
-                    super::RelationalBranchBasisMismatchAxis::Commit,
+                    crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Commit,
                 ));
             }
             Ok(())

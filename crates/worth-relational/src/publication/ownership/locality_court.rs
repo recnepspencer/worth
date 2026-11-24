@@ -97,9 +97,9 @@ impl RelationalRuntime {
             .map_err(|e| TransactionCommitError::conflict(e.into_conflict()))?;
         drop(ordinary.commit(execution, self)?);
         let (checkpoint, source) = source::Source::capture(execution, self);
-        let recovery = crate::durability::medium::RelationalDurableRecoverySource::new(
+        let recovery = crate::durability::published_medium::RelationalDurableRecoverySource::new(
             Some(
-                crate::durability::medium::RelationalDurableCheckpointSource::new(
+                crate::durability::published_medium::RelationalDurableCheckpointSource::new(
                     checkpoint.covered_position().expect("recorded position"),
                     checkpoint
                         .covered_branch_transitions()

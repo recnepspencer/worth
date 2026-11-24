@@ -29,11 +29,12 @@ pub(crate) use decoded_quote::schema_image::{
 };
 pub(crate) use decoded_quote::{decode_checkpoint_effect, CheckpointEffectData};
 mod commitment_writer;
-pub(crate) const MAXIMUM_ARTIFACT_BYTES: usize = 256 * 1024 * 1024;
+use frame_contract::MAXIMUM_ARTIFACT_BYTES;
 
 pub(crate) mod encode_denial;
 mod encoding;
 mod frame;
+pub(crate) mod frame_contract;
 pub(crate) mod frame_refusal;
 pub(crate) mod input_commitment;
 mod memory_publication;
@@ -43,10 +44,10 @@ pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
 pub(crate) mod payload_digest;
 mod payload_wire;
 mod readmission;
-mod readmission_refusal;
+pub(crate) mod readmission_refusal;
 mod request_agreement;
 mod request_encoding;
-pub(crate) use request_encoding::ControlledFrameCopyDenial;
+
 mod retained_export;
 
 pub use encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;

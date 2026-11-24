@@ -1,10 +1,8 @@
 //! Actual gate contention assertions, borrowing the registered caller's fixture.
 use super::*;
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::change_source::{
-    RelationalRetainedObservationRetirement,
-    RelationalRetainedObservationRetirementProgress as Progress,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirement;
+use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirementProgress as Progress;
 
 pub(crate) fn assert_external_cut_and_lane_busy(
     task: &mut RelationalRetainedObservationRetirement,

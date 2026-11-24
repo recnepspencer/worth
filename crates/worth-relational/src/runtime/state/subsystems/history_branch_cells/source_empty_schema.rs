@@ -1,6 +1,6 @@
 //! Reconstruct an Empty source cell using its recorded schema and axes.
 use super::*;
-use crate::runtime::OriginalEmptySchemaObservation;
+use crate::branch::transition::original_inputs::OriginalEmptySchemaObservation;
 
 impl HistorySubsystem {
     pub(crate) fn restore_source_empty_schema(

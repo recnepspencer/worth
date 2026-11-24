@@ -2,9 +2,9 @@
 mod administration;
 mod publication;
 use super::*;
-use crate::validation::data::{
-    InvariantExecutionPoint as Point, InvariantFailureEffect as Effect, InvariantVerdict,
-};
+use crate::validation::data::execution::InvariantExecutionPoint as Point;
+use crate::validation::data::execution::InvariantFailureEffect as Effect;
+use crate::validation::data::execution::InvariantVerdict;
 
 struct AtPoint {
     probe: ScopeProbe,

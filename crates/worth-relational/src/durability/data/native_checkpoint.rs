@@ -32,7 +32,7 @@ pub struct RelationalNativeCheckpoint {
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
     canonical_publication:
         Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
-    publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
+    publication: Option<Arc<crate::durability::published_medium::CheckpointPublication>>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last
@@ -197,7 +197,7 @@ impl RelationalNativeCheckpoint {
     pub fn acknowledgement_progress(
         &self,
     ) -> Result<
-        Option<crate::durability::medium::RelationalCheckpointAcknowledgementProgress>,
+        Option<crate::durability::published_medium::RelationalCheckpointAcknowledgementProgress>,
         crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
     > {
         self.publication
@@ -208,7 +208,7 @@ impl RelationalNativeCheckpoint {
 
     pub fn publication_subject(
         &self,
-    ) -> Option<&crate::durability::medium::OpaqueCapturedCheckpointSubject> {
+    ) -> Option<&crate::durability::published_medium::OpaqueCapturedCheckpointSubject> {
         self.publication
             .as_ref()
             .map(|publication| publication.subject())

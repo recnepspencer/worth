@@ -1,5 +1,5 @@
 mod access;
-mod authority;
+pub(crate) mod authority;
 pub mod bundle;
 mod canonical_history;
 pub mod cdc;

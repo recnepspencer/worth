@@ -1,7 +1,7 @@
 //! Immutable original contributions retained by the shipping merge planner.
 use crate::history::data::CommitId;
 use crate::merge::data::{BranchCommitDelta, MergePlanningArtifactCore};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 /// A planning artifact with its actual per-record original commit contributions.
 /// This observation grants no mutation, transaction admission or publication.

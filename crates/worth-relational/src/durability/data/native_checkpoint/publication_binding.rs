@@ -1,16 +1,17 @@
 //! Bind the exact captured data subject to its actual medium.
 use super::*;
+use crate::durability::published_medium::OpaqueCapturedCheckpointSubject;
 impl RelationalNativeCheckpoint {
     pub(crate) fn bind_publication(
         self,
-        binding: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+        binding: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, super::super::RelationalNativeCheckpointCaptureDenial> {
         self.bind_original_publication(binding, None, execution)
     }
     pub(crate) fn bind_original_publication(
         mut self,
-        binding: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+        binding: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
         initial_inputs: Option<
             crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
         >,
@@ -22,7 +23,7 @@ impl RelationalNativeCheckpoint {
                 .as_ref()
                 .is_some_and(|publication| publication.source_matches(&binding.cold_source()))
         {
-            let subject = crate::durability::medium::OpaqueCapturedCheckpointSubject::new(
+            let subject = OpaqueCapturedCheckpointSubject::new(
                 self.bytes.clone(),
                 self.region.clone(),
                 self.members.entries(),
@@ -30,7 +31,7 @@ impl RelationalNativeCheckpoint {
                 execution,
             )?;
             self.publication = Some(Arc::new(
-                crate::durability::medium::CheckpointPublication::new(
+                crate::durability::published_medium::CheckpointPublication::new(
                     subject,
                     Arc::downgrade(&binding),
                     self.clone(),

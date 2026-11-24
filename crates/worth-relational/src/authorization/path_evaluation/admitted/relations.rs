@@ -6,9 +6,8 @@ use crate::authorization::{
 };
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::data::RecordLifecycleState;
-use crate::visibility::materialization::read_records::{
-    RelationalAdjacencyDirection, RelationalAdjacencyVisit,
-};
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyVisit;
 
 type OrderedRelation = ((u32, u64, u32, u64, u32, u64), RelationId);
 

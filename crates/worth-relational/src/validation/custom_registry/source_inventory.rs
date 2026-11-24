@@ -1,16 +1,8 @@
 //! The installed Source roster carries its original compilation funding.
 use super::SourcePreparationGroup;
+pub(crate) use crate::validation::candidate_source::authored_history::catalog_funding::CustomInvariantCompilationFunding;
 use std::{ops::Deref, sync::Arc};
-use worth_execution::ExecutionMemoryReservation;
 
-pub(crate) struct CustomInvariantCompilationFunding {
-    pub(super) _memory: Option<ExecutionMemoryReservation>,
-}
-impl std::fmt::Debug for CustomInvariantCompilationFunding {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("CustomInvariantCompilationFunding")
-    }
-}
 #[derive(Debug, Default)]
 pub(crate) struct SourcePreparationInventory {
     groups: Vec<SourcePreparationGroup>,

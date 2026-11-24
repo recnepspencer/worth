@@ -1,6 +1,7 @@
 //! The publication receiver lends only its own alias slot to Native retirement.
 use super::RelationalPublicationPort;
-use crate::durability::medium::{RelationalDurableMediumBinding, RelationalMediumRetirementDenial};
+use crate::durability::medium::RelationalMediumRetirementDenial;
+use crate::durability::published_medium::RelationalDurableMediumBinding;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 impl RelationalPublicationPort {

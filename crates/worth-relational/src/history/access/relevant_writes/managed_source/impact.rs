@@ -1,18 +1,18 @@
 //! Genuine historical weak material; opaque acquisition is an outside-guard handoff.
+use super::super::RelationalAuthoredManagedSourceSelector;
 use super::super::{
     ordered_visit, run, visit, RelationalAuthoredWriteDenial as Denial,
     RelationalAuthoredWriteOccurrence,
 };
+use crate::branch::managed_source_affinity::ManagedSourceCellAffinity;
 use crate::history::data::{CanonicalCommitEnvelope, LiveManagedSourceHistory};
 use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
-use crate::validation::candidate_source::{
-    authored_history::{
-        material::HistoricalSourcePair, ManagedSourceImpactKey, ManagedSourceImpactRows,
-    },
-    opaque_custody::{FundedSourceMaterialReceipt, FundedSourceMaterialShare},
-    ManagedIndexSourceProgram,
-};
+use crate::validation::candidate_source::authored_history::material::HistoricalSourcePair;
+use crate::validation::candidate_source::authored_history::ManagedSourceImpactKey;
+use crate::validation::candidate_source::authored_history::ManagedSourceImpactRows;
+use crate::validation::candidate_source::opaque_custody::FundedSourceMaterialReceipt;
+use crate::validation::candidate_source::opaque_custody::FundedSourceMaterialShare;
+use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 
@@ -86,17 +86,17 @@ impl RelationalAuthoredManagedSourceMaterial {
 }
 
 pub(crate) fn source_impact(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
     execution: ExecutionRequest<'_, '_>,
-    observation: &crate::mvcc::ManagedIndexSourceObservation,
+    affinity: &Arc<ManagedSourceCellAffinity>,
+    selector: RelationalAuthoredManagedSourceSelector,
     occurrence: &RelationalAuthoredWriteOccurrence,
 ) -> Result<RelationalAuthoredManagedSourceImpact, Denial> {
-    let selector = observation.authored_history_selector(runtime, execution)?;
     run(execution, |context| {
         visit(context)?;
         let packet = LiveManagedSourceHistory::verified(&occurrence.canonical)
             .ok_or(Denial::IncompleteManagedSourceHistory)?;
-        if packet.runtime != runtime.runtime_instance_id() {
+        if packet.runtime != runtime_instance_id {
             return Err(Denial::ForeignOwner);
         }
         if !Arc::ptr_eq(&packet.catalog, &selector.catalog) {
@@ -107,7 +107,7 @@ pub(crate) fn source_impact(
         let Some(owner) = &material.owner else {
             return Ok(RelationalAuthoredManagedSourceImpact::Conservative);
         };
-        if !owner.admits(observation) {
+        if !Arc::ptr_eq(owner, affinity) {
             return Err(Denial::ForeignOwner);
         }
         let key = ManagedSourceImpactKey {

@@ -5,7 +5,7 @@ use crate::publication::patch::data::{
     RecordStructuralChange,
 };
 use crate::schema::data::LoweredAspectContractPlan;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::{
     AspectBinding, AuthoritativeRecordAspectState, ContractValidatedAspectValue,
@@ -18,7 +18,7 @@ use denial::{DuplicateSummary, OperationSummary, PresentSummary, UnsupportedPayl
 
 #[derive(Debug)]
 pub(super) enum OutputPayloadCoverageFailure {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Unsupported(UnsupportedPayload),
     Corrupt(String),
 }
@@ -317,7 +317,7 @@ pub(super) fn charge(
 ) -> Result<(), OutputPayloadCoverageFailure> {
     let units = u64::try_from(work).map_err(|_| {
         OutputPayloadCoverageFailure::Request(
-            crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+            crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
         )
     })?;
     crate::execution::request_stage::checkpoint(context, units)

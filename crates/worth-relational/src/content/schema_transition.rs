@@ -3,11 +3,11 @@ use super::{ContentDirectory, RelationalContentAttachments, RelationalContentDen
 
 pub(super) fn prepare_directory(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     schema: &crate::schema::data::RelationalSchemaRegistry,
     attachments: &RelationalContentAttachments,
-    state: &crate::runtime::WorkingState,
-    changed: &[crate::transactions::data::RecordRef],
+    state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+    changed: &[crate::transactions::data::primitives::RecordRef],
     version: crate::identity::data::VersionId,
     source: Option<&ContentDirectory>,
 ) -> Result<ContentDirectory, Denial> {

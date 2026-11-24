@@ -7,29 +7,29 @@ mod schema_relation_admission;
 
 use std::collections::BTreeSet;
 
-use crate::capabilities::SchemaSource;
-use crate::runtime::RuntimeInstrumentation;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, MutationIntent, RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 pub(super) fn validate_relation_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     intent: &MutationIntent,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     match intent {
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
             relation_creation_admission::validate_relation_creation_intent(
                 state,
-                schema_source,
+                schema,
                 default_cross_context_policy,
-                instrumentation,
+                candidates_scanned,
                 created_entities,
                 deleted_relations,
                 spec,
@@ -38,9 +38,9 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
             relation_creation_admission::validate_relation_creation(
                 state,
-                schema_source,
+                schema,
                 default_cross_context_policy,
-                instrumentation,
+                candidates_scanned,
                 created_entities,
                 deleted_relations,
                 spec.partition_id,
@@ -52,9 +52,9 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
             relation_creation_admission::validate_bulk_relation_creation_intent(
                 state,
-                schema_source,
+                schema,
                 default_cross_context_policy,
-                instrumentation,
+                candidates_scanned,
                 created_entities,
                 deleted_relations,
                 spec.partition_id,
@@ -65,9 +65,9 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
             endpoint_update_admission::validate_relation_endpoint_update_intent(
                 state,
-                schema_source,
+                schema,
                 default_cross_context_policy,
-                instrumentation,
+                candidates_scanned,
                 created_entities,
                 spec,
             )

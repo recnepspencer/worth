@@ -12,7 +12,7 @@ impl VisibilityProjectionView {
     pub(crate) fn with_symbols(
         runtime: &RelationalRuntime,
         basis: crate::visibility::snapshot_states::SnapshotStateBasis,
-        symbols: crate::runtime::RuntimeSymbolTable,
+        symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Self {
         let schema = match basis.root() {
             Some(root) => super::schema_custody::ProjectionSchemaCustody::Published(

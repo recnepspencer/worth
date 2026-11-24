@@ -22,7 +22,7 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn copy_extra_for_request(
         extra: &Self::Extra,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<Self::Extra, crate::execution::denial_cause::RelationalExecutionDenialCause>;
     #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra;
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId);
@@ -60,7 +60,7 @@ pub(crate) trait HistoricalMetadata: Sized {
     fn fund_for_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause>;
 }
 
 #[derive(Debug, Clone)]
@@ -87,7 +87,7 @@ impl RecordKind for EntityRecordKind {
     fn copy_extra_for_request(
         extra: &Self::Extra,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self::Extra, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         extra.copy_for_request(request)
     }
 
@@ -161,7 +161,7 @@ impl HistoricalMetadata for VersionedEntityMetadata {
     fn fund_for_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         VersionedEntityMetadata::fund_for_request(self, request)
     }
     fn effective_at(&self) -> VersionId {
@@ -201,7 +201,7 @@ impl RecordKind for RelationRecordKind {
     fn copy_extra_for_request(
         extra: &Self::Extra,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self::Extra, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         extra.copy_for_request(request)
     }
 
@@ -275,7 +275,7 @@ impl HistoricalMetadata for VersionedRelationMetadata {
     fn fund_for_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         VersionedRelationMetadata::fund_for_request(self, request)
     }
     fn effective_at(&self) -> VersionId {

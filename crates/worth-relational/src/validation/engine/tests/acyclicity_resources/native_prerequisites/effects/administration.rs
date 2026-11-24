@@ -17,7 +17,7 @@ fn unchecked_automatic_admission_retains_precedence_over_a_real_native_cycle() {
         .build()
         .expect("valid native runtime configuration");
     let fixture = DagFixture::from_runtime(runtime, 2);
-    let original = crate::test_execution_policy::serial_request();
+    let original = crate::execution::test_policy::serial_request();
     let seed = fixture
         .publish(
             &ExecutionRequest::serial(&original),
@@ -27,7 +27,7 @@ fn unchecked_automatic_admission_retains_precedence_over_a_real_native_cycle() {
     crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &seed);
     assert_eq!(hooks.observed(), (1, 1));
     let before = fixture.head();
-    let automatic = crate::tests::support::test_execution_authority()
+    let automatic = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -53,7 +53,7 @@ fn unchecked_automatic_admission_retains_precedence_over_a_real_native_cycle() {
     };
     assert_eq!(
         denial.kind,
-        crate::transactions::data::CommitExecutionDenialKind::Cause(
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
             crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel,
         )
     );

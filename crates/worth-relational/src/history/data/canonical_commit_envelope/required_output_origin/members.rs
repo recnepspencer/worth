@@ -1,12 +1,15 @@
 //! Admit complete dynamic membership from native allocations and prior live rows.
 use super::*;
-use crate::mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget};
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::{
     current_entity_partition_source_for_slot, OverlayStateView, WorkingState,
 };
-use crate::transactions::data::{CommitCreatedEntityBindings, EntityReference, RecordRef};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
@@ -35,7 +38,7 @@ pub(super) fn capture(
                     .map_err(origin_request)?;
                 (
                     created.resolve(target).ok_or_else(|| {
-                        crate::mvcc::origin_denial("output was not allocated by this mutation")
+                        crate::transactions::data::outcomes::transaction_commit_error::origin_denial("output was not allocated by this mutation")
                     })?,
                     None,
                     None,
@@ -43,7 +46,7 @@ pub(super) fn capture(
             }
             (EntityReference::Existing(id), Posture::Preserve | Posture::Retire) => {
                 let prior = previous.ok_or_else(|| {
-                    crate::mvcc::origin_denial(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "existing output has no complete predecessor publication",
                     )
                 })?;
@@ -57,7 +60,7 @@ pub(super) fn capture(
                     .map(|index| &prior.members[index])
                     .filter(|member| member.posture != Posture::Retire)
                     .ok_or_else(|| {
-                        crate::mvcc::origin_denial(
+                        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                             "existing target is outside the prior live publication",
                         )
                     })?;
@@ -65,19 +68,19 @@ pub(super) fn capture(
                     .inner
                     .root
                     .get_current_partition(id.partition_id)
-                    .ok_or_else(|| crate::mvcc::origin_denial("prior output partition absent"))?;
+                    .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output partition absent"))?;
                 let row = partition
                     .entity_arena()
                     .get(id)
                     .filter(|row| row.is_live())
                     .ok_or_else(|| {
-                        crate::mvcc::origin_denial("prior output generation absent or retired")
+                        crate::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output generation absent or retired")
                     })?;
                 let write = partition
                     .entity_arena()
                     .current_metadata_at(id.slot_index())
                     .ok_or_else(|| {
-                        crate::mvcc::origin_denial("prior output write position absent")
+                        crate::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output write position absent")
                     })?
                     .effective_at;
                 if member.kind != role.kind
@@ -99,16 +102,18 @@ pub(super) fn capture(
                         )
                         .map_err(super::installation::relation_stop)?)
                 {
-                    return Err(crate::mvcc::origin_denial(
+                    return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "intervening native write revoked producer ownership before Preserve",
                     ));
                 }
                 (*id, Some(member), Some(write))
             }
             _ => {
-                return Err(crate::mvcc::origin_denial(
-                    "invalid native output posture/target",
-                ))
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "invalid native output posture/target",
+                    ),
+                )
             }
         };
         let (_, partition) = current_entity_partition_source_for_slot(
@@ -116,17 +121,24 @@ pub(super) fn capture(
             id.partition_id,
             id.slot_index(),
         )
-        .ok_or_else(|| crate::mvcc::origin_denial("output partition absent"))?;
-        let record = partition
-            .entity_arena()
-            .get(&id)
-            .ok_or_else(|| crate::mvcc::origin_denial("output generation absent"))?;
+        .ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "output partition absent",
+            )
+        })?;
+        let record = partition.entity_arena().get(&id).ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "output generation absent",
+            )
+        })?;
         if record.kind_id() != Some(role.kind)
             || record.is_live() != (role.posture != Posture::Retire)
         {
-            return Err(crate::mvcc::origin_denial(
-                "output kind/lifecycle differs from completed role",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "output kind/lifecycle differs from completed role",
+                ),
+            );
         }
         let after_write = if role.posture == Posture::Retire {
             context
@@ -142,16 +154,22 @@ pub(super) fn capture(
                 })
                 || record.retired_at() != Some(envelope.commit.version_id)
             {
-                return Err(crate::mvcc::origin_denial(
-                    "Retire lacks this publication's actual native deletion",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "Retire lacks this publication's actual native deletion",
+                    ),
+                );
             }
             envelope.commit.version_id
         } else {
             partition
                 .entity_arena()
                 .current_metadata_at(id.slot_index())
-                .ok_or_else(|| crate::mvcc::origin_denial("output write position absent"))?
+                .ok_or_else(|| {
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "output write position absent",
+                    )
+                })?
                 .effective_at
         };
         if role.posture == Posture::Preserve {
@@ -169,9 +187,11 @@ pub(super) fn capture(
             }) || (before_write.is_some_and(|before| before != after_write)
                 && after_write != envelope.commit.version_id)
             {
-                return Err(crate::mvcc::origin_denial(
-                    "Preserve differs from its actual supported native mutation",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "Preserve differs from its actual supported native mutation",
+                    ),
+                );
             }
         }
         if role.posture == Posture::Create {
@@ -182,7 +202,9 @@ pub(super) fn capture(
                 )
                 .map_err(origin_request)?;
             let plan = schema.entity_aspect_plan(role.kind).ok_or_else(|| {
-                crate::mvcc::origin_denial("output physical contract plan absent")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "output physical contract plan absent",
+                )
             })?;
             payload_coverage::validate_created_output_payload(
                 envelope,
@@ -232,15 +254,19 @@ pub(super) fn capture(
         .map_err(origin_request)?;
     members.sort_unstable_by(|left, right| left.role.cmp(&right.role));
     if members.windows(2).any(|pair| pair[0].role == pair[1].role) {
-        return Err(crate::mvcc::origin_denial(
-            "publication repeats output role",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "publication repeats output role",
+            ),
+        );
     }
     members.sort_unstable_by_key(|member| member.id);
     if members.windows(2).any(|pair| pair[0].id == pair[1].id) {
-        return Err(crate::mvcc::origin_denial(
-            "publication repeats native output",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "publication repeats native output",
+            ),
+        );
     }
     if let Some(previous) = previous {
         for old in &previous.members {
@@ -252,9 +278,11 @@ pub(super) fn capture(
                     .binary_search_by_key(&old.id, |member| member.id)
                     .is_err()
             {
-                return Err(crate::mvcc::origin_denial(
-                    "successor omits prior live output member",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "successor omits prior live output member",
+                    ),
+                );
             }
         }
     }
@@ -262,5 +290,7 @@ pub(super) fn capture(
 }
 
 fn overflow() -> TransactionCommitError {
-    origin_request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
+    origin_request(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+    )
 }

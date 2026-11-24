@@ -1,4 +1,5 @@
-//! Owner row application follows packet staging in the same original Work account.
+//! Commit entry points spend their caller’s original Work account.
+mod proposal_entries;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -27,15 +28,8 @@ enum Rows {
 
 #[test]
 fn bulk_owner_rows_share_the_original_account_after_packet_staging() {
-    // One process authority funds every trial; each trial owns a fresh lease.
-    let authority = worth_execution::ExecutionAuthority::try_construct(
-        worth_execution::ExecutionAuthorityConfig {
-            max_workers: std::num::NonZeroUsize::MIN,
-            charged_memory_bytes: Some(512 * 1024 * 1024),
-        },
-    )
-    .unwrap();
-    let trial = |rows, ceiling, wrapped| trial(&authority, rows, ceiling, wrapped);
+    let authority = execution_authority();
+    let trial = |rows, ceiling, wrapped| trial(authority, rows, ceiling, wrapped);
     for rows in [Rows::Entities, Rows::Relations] {
         let (reference, required) = trial(rows, FUNDED, true);
         reference.unwrap();
@@ -134,10 +128,7 @@ fn trial(
             execution.allocation_policy(),
         )
         .unwrap();
-    let run = || {
-        RelationalWorkAccountRecorderForTest::new()
-            .record_for_test(|| transaction.commit(&execution, &runtime))
-    };
+    let run = || record_work(|| transaction.commit(&execution, &runtime));
     let ((outcome, charges), whole) = if wrapped {
         let (outcome, report) = execution
             .run(ExecutionWorkCeiling::new(None), |_| run())
@@ -164,4 +155,23 @@ fn trial(
         );
     }
     (outcome, whole.unwrap_or(settled))
+}
+
+fn execution_authority() -> &'static worth_execution::ExecutionAuthority {
+    // One process authority funds every trial; each trial owns a fresh lease.
+    static AUTHORITY: std::sync::OnceLock<worth_execution::ExecutionAuthority> =
+        std::sync::OnceLock::new();
+    AUTHORITY.get_or_init(|| {
+        worth_execution::ExecutionAuthority::try_construct(
+            worth_execution::ExecutionAuthorityConfig {
+                max_workers: std::num::NonZeroUsize::MIN,
+                charged_memory_bytes: Some(512 * 1024 * 1024),
+            },
+        )
+        .unwrap()
+    })
+}
+
+fn record_work<R>(run: impl FnOnce() -> R) -> (R, Vec<u64>) {
+    RelationalWorkAccountRecorderForTest::new().record_for_test(run)
 }

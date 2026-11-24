@@ -26,7 +26,7 @@ impl ResidentMirrorTarget {
     ) -> Result<
         (
             Arc<crate::storage::residency::RelationalRegionResidency>,
-            Option<crate::runtime::RuntimeSymbolTable>,
+            Option<crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable>,
         ),
         (),
     > {
@@ -43,7 +43,10 @@ impl ResidentMirrorTarget {
         }
     }
 
-    pub(super) fn new(lease: RelationalResidencyLease<Full>, clear_pins: bool) -> Self {
+    pub(in crate::runtime::state) fn new(
+        lease: RelationalResidencyLease<Full>,
+        clear_pins: bool,
+    ) -> Self {
         let id = lease.full_view().partition().partition_id;
         Self {
             id,
@@ -130,6 +133,31 @@ impl ResidentMirrorTarget {
             }
         }
     }
+    /// Pay for the outgoing mirror payload's original symbols before write.
+    pub(in crate::runtime::state) fn demand_preserved_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let retention = self.retention();
+        let head =
+            self.current_lease()
+                .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(
+                        self.partition_id(),
+                    ),
+                    cause:
+                        crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                })?;
+        if head.has_complete_history() {
+            retention
+                .demand_full(execution, 1 << 30)?
+                .admit_symbols(execution, symbols)
+        } else {
+            head.admit_owned_symbols(execution, symbols)
+        }
+    }
+
     pub(super) fn current_lease(&self) -> Option<RelationalResidencyLease<Head>> {
         match &*self
             .contents

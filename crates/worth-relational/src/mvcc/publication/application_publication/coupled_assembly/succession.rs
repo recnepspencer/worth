@@ -211,7 +211,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         part.records = records;
         self.successor_rounds += 1;
         let input = self.parts[index].input.clone();
-        self.advance_pin(execution, &applied.delta_state, &applied.records, &input)
+        self.advance_pin(
+            execution,
+            &applied.delta_state,
+            &applied.content,
+            &applied.records,
+            &input,
+        )
     }
 
     /// Native judgment of the rescoped round against what its chain wrote.

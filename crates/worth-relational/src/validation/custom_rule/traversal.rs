@@ -4,7 +4,8 @@ use std::sync::Mutex;
 use crate::identity::data::EntityId;
 
 use super::structural_views::StructuralRelationView;
-use crate::validation::data::{CustomInvariantTraversalError, TouchedStructuralSet};
+use crate::validation::data::custom_rule::errors::CustomInvariantTraversalError;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 
 use crate::structural_traversal as breadth_first;
 mod complete;

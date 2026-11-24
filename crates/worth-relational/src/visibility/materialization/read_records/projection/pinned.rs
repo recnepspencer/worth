@@ -1,31 +1,35 @@
 //! Exact projection is immutable native custody, with no owner borrow.
 use super::{schema_custody::ProjectionSchemaCustody, VisibilityProjectionView};
+use crate::identity::data::VersionId;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::runtime::RelationalPinnedRead;
+use crate::visibility::snapshot_states::{ResidentVisibilitySnapshotBasis, SnapshotStateBasis};
 impl VisibilityProjectionView {
-    pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
-        let symbols = read.resident_basis().symbols().clone();
+    pub(crate) fn from_resident_basis(
+        resident: &ResidentVisibilitySnapshotBasis,
+        runtime_identity: u64,
+        current_version: VersionId,
+        instrumentation: &RuntimeInstrumentation,
+    ) -> Self {
         Self {
-            runtime_identity: read.runtime_instance_id(),
-            current_version: read.pinned_current_version(),
-            instrumentation: read.pinned_instrumentation().clone(),
-            symbols,
-            schema: ProjectionSchemaCustody::Published(
-                read.pinned_basis().root().retained_schema_authority(),
-            ),
-            resident: Some(read.resident_basis().clone()),
-            basis: crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
-                read.pinned_basis().clone(),
-            ),
+            runtime_identity,
+            current_version,
+            instrumentation: instrumentation.clone(),
+            symbols: resident.symbols().clone(),
+            schema: ProjectionSchemaCustody::Published(resident.root().retained_schema_authority()),
+            resident: Some(resident.clone()),
+            basis: SnapshotStateBasis::Exact(resident.basis().clone()),
         }
     }
-}
-impl RelationalPinnedRead {
-    /// Project this exact snapshot. No installed owner is borrowed or consulted.
-    pub fn project_snapshot(
-        &self,
-        handle: &crate::snapshots::data::SnapshotHandle,
-    ) -> Option<VisibilityProjectionView> {
-        (handle == self.snapshot()).then(|| VisibilityProjectionView::from_pinned(self))
+
+    // The protected structural-walk lane still uses this call shape.
+    pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
+        Self::from_resident_basis(
+            read.resident_basis(),
+            read.runtime_instance_id(),
+            read.pinned_current_version(),
+            read.pinned_instrumentation(),
+        )
     }
 }
 
@@ -34,7 +38,7 @@ impl VisibilityProjectionView {
         &self,
     ) -> (
         crate::identity::data::VersionId,
-        crate::runtime::RuntimeInstrumentation,
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
         crate::symbols::data::StringInterner,
     ) {
         (

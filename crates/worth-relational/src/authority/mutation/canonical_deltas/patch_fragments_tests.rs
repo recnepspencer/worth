@@ -10,7 +10,7 @@ use crate::publication::patch::data::{
     RecordStructuralChange,
 };
 use crate::schema::data::AspectContractPlanRevision;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,

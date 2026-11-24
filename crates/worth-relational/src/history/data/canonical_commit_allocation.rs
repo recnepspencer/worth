@@ -1,5 +1,5 @@
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
-use crate::transactions::data::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct CanonicalCommitEnvelopeAllocationInventory {

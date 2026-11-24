@@ -1,16 +1,15 @@
 //! Compare independently written current facts once at region readmission/load.
 use super::*;
-use crate::{
-    publication::ownership::{checkpoint, record, request},
-    schema::data::RelationalSchemaRegistry,
-    storage::data::{
-        RelationalStorageSubject, RelationalStorageUnavailable,
-        RelationalStorageUnavailableCause as Cause,
-    },
-    storage::overlay::PartitionState,
-    storage::residency::RelationalResidencyDemandFailure as Failure,
-    transactions::data::*,
-};
+use crate::publication::ownership::read_request::checkpoint;
+use crate::publication::ownership::read_request::request;
+use crate::publication::ownership::record;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::storage::data::RelationalStorageSubject;
+use crate::storage::data::RelationalStorageUnavailable;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::overlay::PartitionState;
+use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+use crate::transactions::data::*;
 use std::collections::HashMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -64,25 +63,27 @@ pub(crate) fn validate(
                     .ok_or_else(|| damaged(partition))?;
                 let bad = |source| corrupt(publication, source, id);
                 if kind == storage.catalog_kind {
-                    let value: record::Catalog = crate::publication::ownership::decode_payload(
-                        bytes,
-                        publication,
-                        &RecordRef::Entity(id),
-                        &mut funding,
-                        context,
-                    )?;
+                    let value: record::Catalog =
+                        crate::publication::ownership::read::payload::decode(
+                            bytes,
+                            publication,
+                            &RecordRef::Entity(id),
+                            &mut funding,
+                            context,
+                        )?;
                     if publication != CommitId(0) {
                         return Err(damaged(partition));
                     }
                     catalogs.push((id, value));
                 } else if kind == storage.position_kind {
-                    let value: RoutePresence = crate::publication::ownership::decode_payload(
-                        bytes,
-                        publication,
-                        &RecordRef::Entity(id),
-                        &mut funding,
-                        context,
-                    )?;
+                    let value: RoutePresence =
+                        crate::publication::ownership::read::payload::decode(
+                            bytes,
+                            publication,
+                            &RecordRef::Entity(id),
+                            &mut funding,
+                            context,
+                        )?;
                     let source = value.meaning.source_scope;
                     let key = (
                         value.meaning.family.clone(),
@@ -96,13 +97,14 @@ pub(crate) fn validate(
                         return Err(bad(source));
                     }
                 } else {
-                    let value: record::Publication = crate::publication::ownership::decode_payload(
-                        bytes,
-                        publication,
-                        &RecordRef::Entity(id),
-                        &mut funding,
-                        context,
-                    )?;
+                    let value: record::Publication =
+                        crate::publication::ownership::read::payload::decode(
+                            bytes,
+                            publication,
+                            &RecordRef::Entity(id),
+                            &mut funding,
+                            context,
+                        )?;
                     let source = value.origin.meaning.source_scope;
                     let key = (
                         value.origin.meaning.family.clone(),
@@ -205,7 +207,7 @@ fn corrupt(publication: CommitId, source: EntityId, record: EntityId) -> Transac
 }
 fn damaged(partition: &PartitionState) -> TransactionCommitError {
     request(
-        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
             RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Region(partition.partition_id),
                 cause: Cause::Damaged,

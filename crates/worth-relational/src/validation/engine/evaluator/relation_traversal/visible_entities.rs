@@ -1,4 +1,5 @@
-use crate::transactions::data::{CreatedEntityRef, EntityReference};
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::common::contract_candidate_kind_matches;
@@ -91,8 +92,8 @@ fn collect_planned_entities(
             return;
         }
         match intent {
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Entity(spec),
+            crate::transactions::data::intents::MutationIntent::Create(
+                crate::transactions::data::intents::CreateIntent::Entity(spec),
             ) => {
                 if contract_candidate_kind_matches(spec.kind_id, kind_ids) {
                     if !context.claim_scratch(
@@ -108,8 +109,8 @@ fn collect_planned_entities(
                     }));
                 }
             }
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::BulkEntities(spec),
+            crate::transactions::data::intents::MutationIntent::Create(
+                crate::transactions::data::intents::CreateIntent::BulkEntities(spec),
             ) if contract_candidate_kind_matches(spec.kind_id, kind_ids) => {
                 for client_key in &spec.client_keys {
                     if !context.checkpoint(1) {

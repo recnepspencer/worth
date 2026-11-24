@@ -1,9 +1,9 @@
 //! Reconstruct deletion publication through the same planners as live mutation.
 use super::{canonical_deltas::canonical_delta_for_mutation, outcomes::RecordMutation};
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::publication::patch::data::{PatchDetail, PublishedAuthoritativePatch};
-use crate::transactions::data::CommitConflict;
+use crate::schema::aspect_plan_source::AspectPlanSource;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(crate) fn entity_deletion_publication_patch(
@@ -15,7 +15,7 @@ pub(crate) fn entity_deletion_publication_patch(
     detail: PatchDetail,
 ) -> Result<PublishedAuthoritativePatch, CommitConflict> {
     let authoritative_patch = super::intents::entity_authoritative_deletion_patch::plan_entity_authoritative_deletion_patch(state, declarations)
-        .map_err(|denial| CommitConflict::new(crate::transactions::data::ConflictClass::EntityAuthoritativeAspectStateDenied { kind_id, denial }))?;
+        .map_err(|denial| CommitConflict::new(crate::transactions::data::outcomes::conflict_class::ConflictClass::EntityAuthoritativeAspectStateDenied { kind_id, denial }))?;
     let mutation = RecordMutation::EntityDeleted {
         entity_id: id,
         kind_id,

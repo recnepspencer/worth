@@ -1,6 +1,7 @@
 //! One invoking request funds the actual index decode and its retained owners.
-use super::funding::{IndexArray, IndexArrayBuilder, IndexCheckpointWork};
+use super::funding::{IndexArrayBuilder, IndexCheckpointWork};
 use crate::durability::data::RelationalRecoveryStop as Stop;
+use crate::runtime::state::subsystems::indexing::checkpoint_image::IndexArray;
 use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Default)]

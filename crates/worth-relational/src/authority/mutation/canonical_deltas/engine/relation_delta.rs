@@ -1,6 +1,6 @@
 use crate::identity::data::EntityId;
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
@@ -8,7 +8,7 @@ use crate::authority::mutation::canonical_deltas::data::{
 use crate::authority::mutation::canonical_deltas::materialized_state::evaluate_authoritative_binding_delta;
 use crate::authority::mutation::canonical_deltas::patch_authority::evaluate_authoritative_patch_delta;
 use crate::authority::mutation::field_versions::field_changes_for_evidence;
-use crate::capabilities::AspectPlanSource;
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use worth_foundational::facade::{AspectBinding, AspectShape};
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};

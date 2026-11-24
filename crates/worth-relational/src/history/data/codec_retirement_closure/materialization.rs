@@ -2,7 +2,7 @@
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
@@ -63,7 +63,7 @@ pub(super) fn validate_semantics(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), super::PublicationHistoryFailure> {
     validate_header(
         envelope,

@@ -11,28 +11,30 @@ pub enum RelationalTransactionStagingDenial {
 }
 
 impl RelationalTransactionStagingDenial {
-    pub(crate) fn into_conflict(self) -> crate::transactions::data::CommitConflict {
+    pub(crate) fn into_conflict(
+        self,
+    ) -> crate::transactions::data::outcomes::commit_conflict::CommitConflict {
         let class = match self {
-            Self::SymbolIdentityExhausted => crate::transactions::data::ConflictClass::SymbolIdentityExhausted,
-            Self::AllocationDenied(denial) => crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
-            Self::CardinalityOverflow => crate::transactions::data::ConflictClass::TransactionStagingCardinalityOverflow,
-            Self::InputDirectoryAllocationDenied { requested_batches } => crate::transactions::data::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches },
+            Self::SymbolIdentityExhausted => crate::transactions::data::outcomes::conflict_class::ConflictClass::SymbolIdentityExhausted,
+            Self::AllocationDenied(denial) => crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied { denial },
+            Self::CardinalityOverflow => crate::transactions::data::outcomes::conflict_class::ConflictClass::TransactionStagingCardinalityOverflow,
+            Self::InputDirectoryAllocationDenied { requested_batches } => crate::transactions::data::outcomes::conflict_class::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches },
             Self::SavepointCapacityExhausted { maximum_savepoints } => {
-                crate::transactions::data::ConflictClass::TransactionSavepointBudgetExceeded {
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::TransactionSavepointBudgetExceeded {
                     maximum_savepoints,
                 }
             }
             Self::SavepointIdentityExhausted => {
-                crate::transactions::data::ConflictClass::TransactionSavepointIdentityExhausted
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::TransactionSavepointIdentityExhausted
             }
             Self::MaterializationAuthorityRequired => {
-                crate::transactions::data::ConflictClass::MaterializationAuthorityRequired
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::MaterializationAuthorityRequired
             }
             Self::MaterializationModeMismatch => {
-                crate::transactions::data::ConflictClass::MaterializationModeMismatch
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::MaterializationModeMismatch
             }
         };
-        crate::transactions::data::CommitConflict::new(class)
+        crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(class)
     }
 }
 

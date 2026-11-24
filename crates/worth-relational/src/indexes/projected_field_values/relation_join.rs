@@ -15,7 +15,7 @@ pub(in crate::indexes) fn build_relation_join_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
-    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    context: &mut crate::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<RelationJoinIndex, IndexKernelStop> {
     let mut left = BTreeMap::new();
     let mut right = BTreeMap::new();
@@ -80,7 +80,7 @@ fn collect_join_relations_checked(
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
     collected: &mut ColdJoinLeg,
-    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    context: &mut crate::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<(), IndexKernelStop> {
     let budget = std::cell::RefCell::new(context);
     let stream_bytes = std::cell::Cell::new(0_u64);
@@ -100,7 +100,7 @@ fn collect_join_relations_checked(
                     budget.borrow_mut().checkpoint(units)?;
                     budget.borrow().settle_temporary_scratch(
                         stream_bytes.get().checked_add(bytes).ok_or_else(||
-                            super::checked_entry_map::read_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?
+                            super::checked_entry_map::read_request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow))?
                     )
                 };
                 if projection
@@ -145,7 +145,7 @@ pub(in crate::indexes) fn build_relation_join_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     definition: RelationJoinDefinition,
-) -> Result<RelationJoinIndex, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<RelationJoinIndex, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let left = collect_join_relations(
         execution,
         projection,
@@ -191,7 +191,7 @@ fn collect_join_relations(
     projection: &IndexProjectionSource<'_>,
     leg: RelationJoinLeg,
     shared_entity_kind: KindId,
-) -> Result<ColdJoinLeg, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<ColdJoinLeg, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let mut collected = ColdJoinLeg::new();
     projection.for_each_relation(execution, leg.relation_kind(), |relation| {
         let (shared, external) = join_endpoints(relation, leg.shared_endpoint());

@@ -1,7 +1,7 @@
 //! Exact applied-record comparison admits reuse, never committed Source READ.
 use super::{ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram};
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
-use crate::derived_relation::DerivedRelationReadDenial as ReadDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
 use crate::runtime::{PositionedRelationalSnapshot, RelationalPreparationRuntime};
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelContext};
@@ -117,8 +117,10 @@ impl NativeManagedSourceCorrespondence<'_> {
 }
 
 fn overflow() -> Denial {
-    ReadDenial::Definition(crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded)
-        .into()
+    ReadDenial::Definition(
+        crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
+    )
+    .into()
 }
 fn charge(context: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), Denial> {
     context

@@ -10,6 +10,7 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
     pub(super) patch: &'a CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a crate::history::data::BranchId,
@@ -32,7 +33,7 @@ pub(super) struct PublicationAuthorityInput<'a> {
 }
 
 pub(super) struct PreparedPublicationAuthority {
-    pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
+    pub(super) artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     pub(super) canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     pub(super) lineage_event_count: usize,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -94,7 +95,7 @@ pub(super) fn prepare_authoritative_publication(
         let (lineage_artifact, lineage_nodes, relation_lineages) = prepared_lineage.into_parts();
         let mut canonical_commit_envelope = canonical_commit_envelope(
             runtime,
-            input.working_state.content.clone(),
+            input.content,
             input.index_definition_delta,
             input.commit_reference,
             input.branch_id,

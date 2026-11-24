@@ -38,7 +38,7 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
     let positioned = artifact.readmit_framed(&request).unwrap().into_positioned();
-    let retained = crate::runtime::RetainedCanonicalPosition::from_positioned(&positioned);
+    let retained = crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition::from_positioned(&positioned);
     let same = retained.clone();
     let fixed = fixed_allocation_bill();
     drop(artifact);
@@ -69,7 +69,7 @@ fn owned_artifact(source: &Artifact, request: &ExecutionRequest<'_, '_>) -> Arti
 
 fn source_artifact() -> Artifact {
     // Ordinary source production precedes the bounded readmission operation.
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let result = crate::tests::support::create_entity_outcome(
@@ -123,7 +123,7 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
         #[serde(rename = "future \" \\ λ")]
         future: &'a T,
     }
-    let producer = crate::test_execution_policy::serial_request();
+    let producer = crate::execution::test_policy::serial_request();
     let produce = ExecutionRequest::serial(&producer);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let result =

@@ -1,7 +1,8 @@
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-    TransactionCommitError,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::{
     apply_entity_aspect_patch, apply_relation_aspect_patch, bulk_create_entities,

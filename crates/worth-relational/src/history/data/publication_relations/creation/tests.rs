@@ -15,7 +15,7 @@ use worth_foundational::facade::AspectBinding;
 
 #[test]
 fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let schema = AspectSchemaFixture {
         relation_aspects: vec![relation_source_aspect(), relation_target_aspect()],

@@ -12,7 +12,8 @@ use std::sync::Arc;
 pub(crate) struct RecordHistoryPrefix {
     pub(crate) custody: Arc<RecordHistoryCustody>,
     pub(crate) member: RelationalDurableMemberLocator,
-    pub(crate) history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
+    pub(crate) history_members:
+        Arc<crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory>,
     pub(crate) partition_id: PartitionId,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) row_index: usize,

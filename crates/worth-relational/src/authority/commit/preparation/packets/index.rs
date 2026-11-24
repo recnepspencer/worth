@@ -1,7 +1,8 @@
 use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::PreparationLocalityProof;
-use crate::authority::commit::preparation::reduction::keys::IndexReductionKey;
+mod reduction_key;
 use crate::indexes::data::DerivedIndexDefinition;
+pub(crate) use reduction_key::IndexReductionKey;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IndexFragmentIdentity {

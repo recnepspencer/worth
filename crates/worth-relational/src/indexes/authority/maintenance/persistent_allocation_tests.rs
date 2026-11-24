@@ -69,7 +69,7 @@ fn cold_reconstruction_obeys_the_callers_memory_limit() {
             assert!(matches!(
                 result.unwrap_err().kind,
                 Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                         ancestor: 0,
                         ..
                     }
@@ -87,7 +87,7 @@ fn edit_credit_is_monotone_and_bounded_by_a_fresh_map() {
     );
     let mut previous = 0;
     for k in [1, 2, 64, 2000] {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = ExecutionRequest::serial(&host);
         let mut offered = edits(k, false);
         for (key, rows) in &mut offered {

@@ -1,5 +1,5 @@
 //! Read and authenticate the current private roster without historical members.
-use super::{checkpoint, corrupt, record};
+use super::{checkpoint, corrupt, read_request::damaged, record};
 use crate::{
     branch::AdmittedRelationalBranchBasis,
     history::data::CommitId,
@@ -16,9 +16,8 @@ mod integrity;
 mod linked;
 mod selector;
 pub(crate) use linked::selectors as linked_selectors;
-mod payload;
-pub(crate) use payload::decode as decode_payload;
 pub(in crate::publication::ownership) mod anchors;
+pub(crate) mod payload;
 mod reach;
 mod source;
 pub(super) use reach::claims as publication_claims;
@@ -213,24 +212,6 @@ fn retain<T>(funding: &mut ExecutionMemoryReservation) -> Result<(), Transaction
             worth_execution::LeaseDenial::MemoryExhausted(cause),
         ))
     })
-}
-
-pub(super) fn damaged(record: &RecordRef) -> TransactionCommitError {
-    use crate::storage::data::{
-        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
-    };
-    let partition = match record {
-        RecordRef::Entity(id) => id.partition_id,
-        RecordRef::Relation(id) => id.partition_id,
-    };
-    super::request(
-        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
-            RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Region(partition),
-                cause: RelationalStorageUnavailableCause::Damaged,
-            },
-        ),
-    )
 }
 
 fn empty(

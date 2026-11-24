@@ -1,11 +1,13 @@
 //! The immutable query shape declares the buffers claimed during packet assembly.
 use super::query_execution::QueryReadExecutionStop;
 use super::query_packetization::PacketizedQueryWork;
-use super::query_preparation_packetization::encoded_value_bound;
-use super::*;
+use super::query_preparation_packetization::{
+    encoded_value_bound, TARGET_TRAVERSAL_SEEDS_PER_PACKET,
+};
 use crate::identity::data::{EntityId, KindId, PartitionId};
+use crate::query::data::{PlannedQueryPacket, QueryScope};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn declared_bytes(
     packet: &PlannedQueryPacket,

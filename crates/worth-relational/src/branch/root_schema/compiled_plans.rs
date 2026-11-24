@@ -3,7 +3,7 @@ use super::{
     aspect_plan_quote,
     compiled_retention::{RetainedRelationalAspectPlans, SchemaCompilationFunding},
 };
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::schema::{data::RelationalSchemaRegistry, SchemaCompilationControl};
 use std::sync::Arc;
 impl RetainedRelationalAspectPlans {

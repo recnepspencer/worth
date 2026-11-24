@@ -21,6 +21,7 @@ use crate::transactions::data::{
 pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
     pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) effect: MutationEffect,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
@@ -70,6 +71,7 @@ pub(super) fn assemble_authoritative_publication_phase(
         PublicationPreparationInput {
             defer_lineage: input.defer_lineage,
             working_state: input.working_state,
+            content: input.content,
             selected_branch_state: input.selected_branch_state,
             patch,
             commit_reference: input.commit_reference,

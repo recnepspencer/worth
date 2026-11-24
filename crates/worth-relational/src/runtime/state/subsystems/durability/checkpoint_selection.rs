@@ -138,7 +138,7 @@ impl RelationalCheckpointManifestSelection {
     }
     pub(crate) fn admitted_commit(
         &self,
-        entry: &crate::history::RelationalCommitIndexEntry,
+        entry: &crate::history::commit::RelationalCommitIndexEntry,
     ) -> Result<
         Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
         crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,

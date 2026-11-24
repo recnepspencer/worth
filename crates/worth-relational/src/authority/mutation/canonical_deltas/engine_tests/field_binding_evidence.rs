@@ -5,12 +5,12 @@ use worth_foundational::{
 
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId};
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
-use crate::transactions::data::AspectDeltaFailureFields;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaFailureFields;
 
 use super::super::data::CanonicalAspectDeltaEvidence;
 use super::super::{canonical_delta_for_mutation, CanonicalDeltaError};
@@ -21,7 +21,7 @@ use super::support::{
 
 #[test]
 fn entity_field_patch_evidence_denial_carries_typed_target() {
-    let target = crate::transactions::data::planned_single_field_locator(
+    let target = crate::transactions::data::aspect_field_patch::planned_single_field_locator(
         FoundationalAspectKey::new("name").expect("valid aspect key"),
         worth_foundational::facade::FieldKey::new("name").expect("valid field key"),
     );
@@ -30,8 +30,10 @@ fn entity_field_patch_evidence_denial_carries_typed_target() {
     }
     .to_commit_conflict();
 
-    let crate::transactions::data::ConflictClass::AspectDeltaFailure { fields, detail } =
-        conflict.class
+    let crate::transactions::data::outcomes::conflict_class::ConflictClass::AspectDeltaFailure {
+        fields,
+        detail,
+    } = conflict.class
     else {
         panic!("expected aspect delta failure conflict");
     };
@@ -46,7 +48,7 @@ fn entity_field_patch_evidence_denial_carries_typed_target() {
 
 #[test]
 fn entity_field_delta_requires_authoritative_state() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();

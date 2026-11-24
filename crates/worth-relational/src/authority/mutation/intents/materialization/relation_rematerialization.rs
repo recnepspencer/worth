@@ -1,9 +1,12 @@
 use super::*;
 
 pub(super) fn rematerialize_relation(
-    intent: &crate::transactions::data::RematerializeRelationIntent,
+    intent: &crate::transactions::data::intents::materialization_intent::RematerializeRelationIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let target_record = RecordAspectPatchTarget::RelationCreation {
         kind_id: intent.kind_id,
     };
@@ -39,7 +42,7 @@ pub(super) fn rematerialize_relation(
             .state
             .get_partition_mut_for_request(intent.relation_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         partition
             .relation_arena
@@ -59,14 +62,14 @@ pub(super) fn rematerialize_relation(
             .map_err(|denial| {
                 let detail = match denial {
                     crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                        return crate::transactions::data::TransactionCommitError::execution(
+                        return crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
                             cause.into(),
                         )
                     }
                     crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
                 };
                 materialization_conflict(
-                    crate::transactions::data::RecordRef::Relation(intent.relation_id),
+                    crate::transactions::data::primitives::RecordRef::Relation(intent.relation_id),
                     detail,
                 )
                 .into()
@@ -79,9 +82,9 @@ pub(super) fn rematerialize_relation(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     let state = workspace.with_context(|context| {
         context.state.retained_relation_extra(

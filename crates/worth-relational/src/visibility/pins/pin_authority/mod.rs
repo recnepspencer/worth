@@ -1,6 +1,6 @@
 mod branch_head_residency;
-mod replay_pins;
-pub(crate) use replay_pins::ResidentReplayPins;
+mod replay_authority;
+pub(super) mod replay_pins;
 
 use crate::runtime::RelationalRuntime;
 

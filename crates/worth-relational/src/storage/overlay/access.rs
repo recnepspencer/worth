@@ -30,7 +30,7 @@ pub(crate) trait PartitionAccess: super::CurrentPartitionAccess {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         _partition_id: PartitionId,
     ) -> Result<(), super::super::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(super::super::residency::RelationalResidencyDemandFailure::Request)?;
         Ok(())
     }

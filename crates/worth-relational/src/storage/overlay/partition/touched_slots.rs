@@ -1,5 +1,5 @@
 //! The numeric touched-slot journal, sharing only its actual AVL owners.
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::storage::substrate::SharedMap;
 use worth_execution::ExecutionRequest;
 

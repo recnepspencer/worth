@@ -19,7 +19,7 @@ pub(in crate::branch) struct PreparedForkTarget {
     pub(in crate::branch) shared_commit_id: Option<CommitId>,
     pub(in crate::branch) source_head_version: Option<crate::identity::data::VersionId>,
     pub(in crate::branch) reservation: RelationalForkTargetReservation,
-    pub(in crate::branch) indexes: Option<crate::indexes::PreparedForkIndexSelection>,
+    pub(in crate::branch) indexes: Option<crate::indexes::authority::PreparedForkIndexSelection>,
     pub(in crate::branch) managed_source: Option<crate::mvcc::PreparedManagedIndexSourceFork>,
 }
 

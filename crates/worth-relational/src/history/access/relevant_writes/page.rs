@@ -27,7 +27,7 @@ impl RelationalAuthoredWriteOccurrence {
     /// canonical occurrence. Admit the roster length before traversing it.
     pub fn allocated_records(
         &self,
-    ) -> impl ExactSizeIterator<Item = &crate::transactions::data::RecordRef> {
+    ) -> impl ExactSizeIterator<Item = &crate::transactions::data::primitives::RecordRef> {
         self.canonical
             .record_allocations()
             .iter()

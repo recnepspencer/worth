@@ -1,22 +1,12 @@
 //! Cold dictionary installation and explicit demand boundaries.
-use super::super::symbol_residency::RuntimeSymbolResidency;
 use super::*;
+use crate::storage::data::symbol_residency::RuntimeSymbolResidency;
 
 #[derive(Debug)]
 pub(crate) enum ColdSymbolDirectoryDenial {
     Invalid(&'static str),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
-}
-
-impl ColdSymbolDirectoryDenial {
-    pub(crate) fn into_recovery_stop(self) -> crate::durability::data::RelationalRecoveryStop {
-        match self {
-            Self::Invalid(message) => {
-                crate::durability::checkpoints::region_directory::corrupt(message).into()
-            }
-            Self::StorageUnavailable(failure) => failure.into(),
-        }
-    }
 }
 
 impl RuntimeSymbolTable {
@@ -87,33 +77,22 @@ impl RuntimeSymbolTable {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .is_some()
     }
-    pub(crate) fn install_cold_pages(
-        &self,
-        directory: &crate::durability::data::RelationalCheckpointDirectory,
-    ) -> Result<(), ColdSymbolDirectoryDenial> {
-        self.install_cold_symbol_pages(&directory.manifest, directory.source.clone())
-    }
     pub(crate) fn install_cold_symbol_pages(
         &self,
-        manifest: &crate::durability::data::RelationalCheckpointManifest,
+        roster: crate::storage::data::symbol_page_roster::SymbolPageRoster<'_>,
         source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(), ColdSymbolDirectoryDenial> {
-        let frontier = manifest
-            .symbols
-            .iter()
-            .map(|page| page.last)
-            .max()
-            .unwrap_or(0);
+        let frontier = roster.by_id.iter().map(|page| page.last).max().unwrap_or(0);
         let frontier = u32::try_from(frontier)
             .ok()
             .and_then(|last| last.checked_add(1))
             .ok_or(ColdSymbolDirectoryDenial::Invalid(
                 "checkpoint symbol frontier is exhausted",
             ))?;
-        let frontier = frontier.max(manifest.symbol_identity_frontier);
+        let frontier = frontier.max(roster.frontier);
         let pages = RuntimeSymbolResidency::new(
-            manifest.symbols.ordinary_owned_copy(),
-            manifest.symbol_buckets.ordinary_owned_copy(),
+            roster.by_id.ordinary_owned_copy(),
+            roster.by_value.ordinary_owned_copy(),
             source,
         )
         .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;
@@ -132,11 +111,11 @@ impl RuntimeSymbolTable {
     /// Recovery's install above deliberately clears proofs for a new dictionary.
     pub(crate) fn place_exported_symbol_pages_cold_for_test(
         &self,
-        manifest: &crate::durability::data::RelationalCheckpointManifest,
+        roster: crate::storage::data::symbol_page_roster::SymbolPageRoster<'_>,
         source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(), ColdSymbolDirectoryDenial> {
         let admitted = self.read_state(|state| state.admissions.clone());
-        self.install_cold_symbol_pages(manifest, source)?;
+        self.install_cold_symbol_pages(roster, source)?;
         // No meaning or region changed. Carry owner-issued proof; do not mint
         // admission from the exported descriptor or revalidate product truth.
         self.update(|state| state.admissions = admitted);

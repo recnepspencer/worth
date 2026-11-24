@@ -1,13 +1,16 @@
 //! Request-funded preparation of deterministic, atomic aggregate consequences.
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
-use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead};
+use crate::branch::root::RelationalBranchRootSchemaAuthority;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
-use crate::transactions::data::{
-    AuthoritativeApplyPlan, MergedCommitPlan, MutationIntent, TransactionCommitError, TransactionId,
-};
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::TransactionId;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 
@@ -70,7 +73,7 @@ impl ChargedBytes for PreparedValue {
     fn additional_charged_bytes(&self) -> u64 {
         let backing = (self.apply.merged_intents.capacity()
             + self.admission.merged_intents.capacity()) as u64
-            * std::mem::size_of::<crate::transactions::data::MutationIntent>() as u64;
+            * std::mem::size_of::<crate::transactions::data::intents::MutationIntent>() as u64;
         self.apply
             .merged_intents
             .iter()
@@ -187,7 +190,8 @@ pub(super) fn prepare(
         work.retain(
             (count as u64)
                 .checked_mul(
-                    std::mem::size_of::<crate::transactions::data::MutationIntent>() as u64,
+                    std::mem::size_of::<crate::transactions::data::intents::MutationIntent>()
+                        as u64,
                 )
                 .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?,
         )?;

@@ -4,11 +4,13 @@ mod retirement;
 pub(crate) use retained_retirement::RelationalRetainedObservationShares;
 pub(crate) use retirement::RelationalObservationRetirement;
 
-use crate::branch::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,
-    RelationalBranchBasisDescriptor, RelationalBranchIdentity,
-    RelationalBranchReferenceObservation, RelationalBranchRoot, RelationalBranchVersion,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::version::RelationalBranchVersion;
 
 /// Immutable repeatable read view issued from one admitted branch basis.
 ///
@@ -102,7 +104,7 @@ impl RelationalBranchObservation {
         self.canonical_commit().map(|envelope| &envelope.patch)
     }
 
-    pub fn correctness_index(&self) -> Option<crate::branch::RelationalRootCorrectnessIndex> {
+    pub fn correctness_index(&self) -> Option<crate::branch::root::RelationalRootCorrectnessIndex> {
         self.inner.root.axes().map(|axes| axes.correctness_index)
     }
 
@@ -112,5 +114,37 @@ impl RelationalBranchObservation {
 
     pub(crate) fn selected_root(&self) -> &Arc<RelationalBranchRoot> {
         &self.inner.root
+    }
+}
+
+impl RelationalBranchObservation {
+    /// Whether the schema retained with this observation declares `aspect`
+    /// for entity kind `kind_id`. A later schema change never alters the
+    /// answer.
+    pub fn entity_kind_declares_aspect(
+        &self,
+        kind_id: crate::identity::data::KindId,
+        aspect: &worth_foundational::facade::AspectKey,
+    ) -> bool {
+        self.selected_root()
+            .schema_authority()
+            .entity_aspect_plan(kind_id)
+            .and_then(|plan| plan.contract_for(aspect))
+            .is_some()
+    }
+
+    /// Whether the schema retained with this observation declares `aspect`
+    /// for relation kind `kind_id`. A later schema change never alters the
+    /// answer.
+    pub fn relation_kind_declares_aspect(
+        &self,
+        kind_id: crate::identity::data::KindId,
+        aspect: &worth_foundational::facade::AspectKey,
+    ) -> bool {
+        self.selected_root()
+            .schema_authority()
+            .relation_aspect_plan(kind_id)
+            .and_then(|plan| plan.contract_for(aspect))
+            .is_some()
     }
 }

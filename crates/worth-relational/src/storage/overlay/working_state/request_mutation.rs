@@ -1,7 +1,7 @@
 //! Original-request admission at the real working-state growth doors.
 use super::WorkingState;
 use crate::config::data::AdjacencyPolicy;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionMutationJournal, PartitionState, TouchedSlots};
 use crate::storage::substrate::{EntityArena, RelationArena};

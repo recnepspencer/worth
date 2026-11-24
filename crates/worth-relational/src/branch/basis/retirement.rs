@@ -1,6 +1,6 @@
 //! Original admitted-basis custody retires through Native's observation owner.
 use super::AdmittedRelationalBranchBasis;
-use crate::mvcc::RelationalObservationRetirement;
+use crate::mvcc::observation::RelationalObservationRetirement;
 use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 

@@ -76,7 +76,7 @@ fn overflow(memory: &QueryPacketMemory) -> Failure {
         MapKernelFailure::ResultCapacityExceeded
     } else {
         MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(
-            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
         ))
     }
 }

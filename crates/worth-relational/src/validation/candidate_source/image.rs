@@ -69,7 +69,7 @@ impl ManagedIndexBranchImage {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: &Program,
         scope: EntityId,
-        budget: &crate::validation::CustomPreparationBudget,
+        budget: &crate::validation::custom_rule::CustomPreparationBudget,
     ) -> Result<
         Option<super::opaque_custody::FundedSourceMaterialReceipt>,
         super::ManagedIndexSourcePreparationDenial,
@@ -77,7 +77,7 @@ impl ManagedIndexBranchImage {
         let roots = self.directory();
         let identity = &program.0.path.parts().identity;
         let overflow = || {
-            crate::derived_relation::DerivedRelationReadDenial::Request(
+            crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(
                 crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         };
@@ -94,8 +94,8 @@ impl ManagedIndexBranchImage {
         let work = height.checked_mul(width.max(1)).ok_or_else(overflow)?;
         if !budget.try_visit(work) {
             return Err(
-                crate::derived_relation::DerivedRelationReadDenial::Definition(
-                    crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded,
+                crate::derived_relation::read_denial::DerivedRelationReadDenial::Definition(
+                    crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
                 )
                 .into(),
             );
@@ -113,7 +113,9 @@ impl ManagedIndexBranchImage {
         // can become last if another thread evicts immediately after unlock.
         let receipt =
             super::opaque_custody::FundedSourceMaterialReceipt::retain(execution, payload)
-                .map_err(crate::derived_relation::DerivedRelationReadDenial::Request)?;
+                .map_err(
+                    crate::derived_relation::read_denial::DerivedRelationReadDenial::Request,
+                )?;
         Ok(Some(receipt))
     }
 }

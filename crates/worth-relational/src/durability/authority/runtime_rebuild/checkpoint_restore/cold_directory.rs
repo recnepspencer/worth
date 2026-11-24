@@ -41,13 +41,18 @@ pub(super) fn restore(
         runtime
             .services
             .symbols
-            .from_selected_directory_for_request(&directory, execution)?
+            .from_selected_directory_for_request(
+                directory.manifest.symbol_page_roster(),
+                directory.symbol_member_custody(),
+                execution,
+            )?
     } else {
         let paged = runtime.services.symbols.detached_owner_snapshot();
         paged.replace(symbols);
-        paged
-            .install_cold_pages(&directory)
-            .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
+        paged.install_cold_symbol_pages(
+            directory.manifest.symbol_page_roster(),
+            directory.source.clone(),
+        )?;
         paged
     };
     let mut regions = ReadmittedRegionDirectory::new(
@@ -174,7 +179,12 @@ pub(super) fn restore(
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
-    let has_naming_schemes = !runtime.config.schema.registry.persistent_name_schemes().is_empty()
+    let has_naming_schemes = !runtime
+        .config
+        .schema
+        .registry
+        .persistent_name_schemes()
+        .is_empty()
         || regions.schemas.has_persistent_name_schemes();
     let runtime = super::super::unshared_state(runtime)?;
     runtime.services.symbols = paged_symbols;

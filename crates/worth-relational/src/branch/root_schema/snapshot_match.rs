@@ -6,7 +6,7 @@ pub(super) fn retain_revisions(
     control: crate::schema::SchemaCompilationControl<'_, '_>,
 ) -> Result<
     Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let mut revisions = Vec::with_capacity(expected.relation_kinds.len());
     for kind in &expected.relation_kinds {

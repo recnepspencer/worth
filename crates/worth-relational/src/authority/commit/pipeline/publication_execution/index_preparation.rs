@@ -1,7 +1,7 @@
 //! Attach the index owner's funded result to the exact prepared publication.
 use crate::branch::RelationalBranchRoot;
+use crate::indexes::authority::PreparedCandidateIndexPublication;
 use crate::indexes::data::{DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceWork};
-use crate::indexes::PreparedCandidateIndexPublication;
 use crate::publication::{bundle::PublicationStage, data::PublicationError};
 use crate::transactions::data::TransactionCommitError;
 use std::sync::Arc;

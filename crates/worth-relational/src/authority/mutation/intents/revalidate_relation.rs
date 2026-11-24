@@ -2,7 +2,8 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_relation_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{RevalidateRelationIntent, TransactionCommitError};
+use crate::transactions::data::intents::mutation_intent::RevalidateRelationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) fn apply(
     intent: &RevalidateRelationIntent,
@@ -18,7 +19,7 @@ pub(super) fn apply(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         Ok::<(), TransactionCommitError>(())
     })?;

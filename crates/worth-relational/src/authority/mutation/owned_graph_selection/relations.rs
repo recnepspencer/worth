@@ -2,7 +2,7 @@
 use super::*;
 pub(super) fn select(
     workspace: &mut MutationWorkspace<'_>,
-    source: &crate::branch::RelationalBranchRoot,
+    source: &crate::branch::root::RelationalBranchRoot,
     id: RelationId,
     version: VersionId,
     outcome: &mut MutationOutcome,

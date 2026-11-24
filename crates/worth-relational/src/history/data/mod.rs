@@ -9,7 +9,7 @@ pub use replay_retention_denial::RelationalReplayRetentionDenial;
 pub(crate) mod branch_creation;
 mod caller_association;
 mod canonical_commit_allocation;
-mod canonical_commit_envelope;
+pub(crate) mod canonical_commit_envelope;
 pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,
@@ -31,7 +31,7 @@ pub(crate) use codec_retirement_closure::{
     OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
-mod canonical_record_allocation;
+pub(crate) mod canonical_record_allocation;
 mod committed_version;
 pub(crate) mod merge_branch_basis;
 #[cfg(test)]
@@ -60,7 +60,7 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub(crate) use canonical_commit_envelope::EmbeddedCheckpointEnvelopeRef;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CanonicalIndexDefinitionDelta, CommittedRecordChange,
+    CanonicalIndexDefinitionDelta,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCodecRetirementKind,

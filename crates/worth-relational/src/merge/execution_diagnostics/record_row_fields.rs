@@ -75,7 +75,7 @@ pub(super) fn executed_record_diagnostic_fields(
 }
 
 fn optional_record_ref(
-    record: Option<&crate::transactions::data::RecordRef>,
+    record: Option<&crate::transactions::data::primitives::RecordRef>,
 ) -> RelationalDiagnosticValue {
     RelationalDiagnosticValue::optional(record.map(record_ref_fields))
 }

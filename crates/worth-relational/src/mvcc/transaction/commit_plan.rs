@@ -1,11 +1,12 @@
 use std::collections::BTreeMap;
 
 use crate::authority::intent_merge::{
-    canonical_intent_key, collect_created_entity_refs, collect_deleted_relation_ids,
-    detect_conflicting_updates, validate_branch_locality, validate_intent,
+    collect_created_entity_refs, collect_deleted_relation_ids, detect_conflicting_updates,
+    validate_branch_locality, validate_intent,
 };
 use crate::capabilities::{InstrumentationSource, RuntimeConfigSource};
 use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::canonical_intent_key::canonical_intent_key;
 use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan};
 use std::time::Instant;
 
@@ -50,15 +51,22 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         let deleted_relations = collect_deleted_relation_ids(&intents.plan().merged_intents);
         let validation_started = Instant::now();
         for intent in &intents.plan().merged_intents {
-            validate_intent(
+            let mut candidates_scanned = 0;
+            let validation = validate_intent(
                 current_state,
-                self.mutation_schema_authority().as_ref(),
+                self.mutation_schema_authority().registry(),
                 runtime.runtime_config().storage.cross_context_policy,
-                runtime.runtime_instrumentation(),
+                &mut candidates_scanned,
                 &created_entities,
                 &deleted_relations,
                 intent,
-            )?;
+            );
+            if candidates_scanned != 0 {
+                runtime.runtime_instrumentation().count(|counters| {
+                    counters.relation_identity_candidates_scanned += candidates_scanned;
+                });
+            }
+            validation?;
         }
         let validation_micros = validation_started.elapsed().as_micros() as u64;
         let sort_started = Instant::now();

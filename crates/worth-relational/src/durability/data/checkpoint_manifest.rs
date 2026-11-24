@@ -250,15 +250,6 @@ pub(crate) struct RelationalCheckpointRegion {
     pub(crate) history: RelationalDurableMemberLocator,
 }
 
-/// Value lookup has its own directory so interning a new value need not load
-/// the id-ordered dictionary. Successive publications append immutable pages.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RelationalCheckpointSymbolBucket {
-    pub(crate) bucket: u8,
-    pub(crate) pages: Vec<RelationalDurableMemberLocator>,
-}
-
 /// Exact owner-recorded Empty observation with its executable schema carrier.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -273,4 +264,16 @@ pub(crate) struct RelationalCheckpointEmptyComponent {
 pub(crate) struct RelationalCheckpointContent {
     pub(crate) identity: worth_foundational::facade::ContentRefId,
     pub(crate) member: RelationalDurableMemberLocator,
+}
+
+impl RelationalCheckpointManifest {
+    pub(crate) fn symbol_page_roster(
+        &self,
+    ) -> crate::storage::data::symbol_page_roster::SymbolPageRoster<'_> {
+        crate::storage::data::symbol_page_roster::SymbolPageRoster {
+            by_id: &self.symbols,
+            by_value: &self.symbol_buckets,
+            frontier: self.symbol_identity_frontier,
+        }
+    }
 }

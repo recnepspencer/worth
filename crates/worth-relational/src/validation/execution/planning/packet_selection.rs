@@ -1,5 +1,6 @@
 use crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration;
-use crate::validation::data::{CustomInvariantNonApplicability, CustomInvariantScopePlanner};
+use crate::validation::custom_rule::CustomInvariantScopePlanner;
+use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use std::mem::size_of;
@@ -93,7 +94,7 @@ pub(super) fn eligible_registrations<'state>(
                 return None;
             }
             if unrelated {
-                let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::empty();
+                let prepared_scope = crate::validation::custom_rule::PreparedCustomInvariantScope::empty();
                 let retained_touched = prepared_scope.retained_touched();
                 return Some(InvariantPacketRegistration::CustomNotApplicable {
                     registration: registration.clone(),
@@ -106,7 +107,7 @@ pub(super) fn eligible_registrations<'state>(
             let observation = request.observation_for(registration.execution_point());
             let version = request.version_for(registration.execution_point());
             let prepared_scope =
-                crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
+                crate::validation::custom_rule::PreparedCustomInvariantScope::capture_with_shared_inputs(
                     observation,
                     version,
                     request.semantic_plan(),

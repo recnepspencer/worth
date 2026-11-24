@@ -52,7 +52,7 @@ fn owned_business_allocations_preserve_reclaimed_generation_and_append_consequen
 fn fork_releases_its_copied_reclaimed_reservation_without_releasing_source() {
     let (authority, pending, _) = reserved_reclaimed();
     let original = authority.pending_snapshot();
-    let fork = crate::runtime::RuntimeSubsystem::fork(&authority);
+    let fork = authority.detached();
     assert!(fork.pending_snapshot().is_empty());
     assert_eq!(fork.reusable_snapshot().len(), 1);
     assert_eq!(authority.pending_snapshot(), original);

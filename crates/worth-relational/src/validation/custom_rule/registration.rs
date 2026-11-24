@@ -12,15 +12,14 @@ use panic_value::panic_value_message;
 
 use super::execution_context::CustomInvariantExecutionContext;
 use super::scope_planner::CustomInvariantScopePlanner;
-use crate::validation::data::{
-    CustomInvariantDescriptor, CustomInvariantRuleId, CustomInvariantSemanticIdentity,
-    CustomInvariantVerdict,
-};
-use crate::validation::data::{
+use crate::validation::data::custom_rule::errors::{
     CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
-    CustomInvariantPreparationError, CustomInvariantRuntimePhase,
+    CustomInvariantPreparationError, CustomInvariantRuntimePhase, CustomInvariantVerdict,
     PreparedCustomInvariantExecutionOutcome,
 };
+use crate::validation::data::descriptor::CustomInvariantDescriptor;
+use crate::validation::data::rule_id::CustomInvariantRuleId;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 
 pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
     type Scope: Send + Sync + 'static;
@@ -314,7 +313,8 @@ fn run_custom_rule_safely<T>(
 pub struct CustomInvariantRegistration {
     descriptor: CustomInvariantDescriptor,
     executable: Arc<dyn ErasedCustomInvariantRule>,
-    pub(crate) model_ownership: Option<Arc<crate::branch::RelationalModelOwnership>>,
+    pub(crate) model_ownership:
+        Option<Arc<crate::branch::model_ownership::RelationalModelOwnership>>,
     pub(crate) managed_sources:
         Arc<[crate::validation::candidate_source::ManagedIndexSourceProgram]>,
 }
@@ -353,19 +353,19 @@ impl CustomInvariantRegistration {
         &self.descriptor
     }
 
-    pub fn execution_point(&self) -> crate::validation::data::InvariantExecutionPoint {
+    pub fn execution_point(&self) -> crate::validation::data::execution::InvariantExecutionPoint {
         self.descriptor.operational.execution_point
     }
 
-    pub fn groups(&self) -> crate::validation::data::InvariantGroupSet {
+    pub fn groups(&self) -> crate::validation::data::groups::InvariantGroupSet {
         self.descriptor.operational.groups
     }
 
-    pub fn cost_class(&self) -> crate::validation::data::InvariantCostClass {
+    pub fn cost_class(&self) -> crate::validation::data::groups::InvariantCostClass {
         self.descriptor.operational.cost_class
     }
 
-    pub fn failure_effect(&self) -> crate::validation::data::InvariantFailureEffect {
+    pub fn failure_effect(&self) -> crate::validation::data::execution::InvariantFailureEffect {
         self.descriptor.operational.failure_effect
     }
 
@@ -373,7 +373,9 @@ impl CustomInvariantRegistration {
         self.descriptor.operational.maximum_work_units
     }
 
-    pub fn access_contract(&self) -> &crate::validation::data::CustomInvariantAccessContract {
+    pub fn access_contract(
+        &self,
+    ) -> &crate::validation::data::descriptor::CustomInvariantAccessContract {
         &self.descriptor.operational.access
     }
 

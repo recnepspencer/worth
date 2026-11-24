@@ -2,14 +2,14 @@
 use super::*;
 use RelationalIndexDefinitionPreparationDenial as Denial;
 
-use crate::indexes::{IndexDefinitionBacking, RetainedIndexDefinitionMeaning};
+use crate::indexes::retained_definition::{IndexDefinitionBacking, RetainedIndexDefinitionMeaning};
 
 fn add(total: &mut u64, bytes: u64) -> Result<(), Denial> {
     *total = total.checked_add(bytes).ok_or(Denial::CapacityOverflow)?;
     Ok(())
 }
 fn tree<K, V>(entries: usize) -> Result<u64, Denial> {
-    crate::branch::retained_compilation_tree_bytes::<K, V>(entries)
+    crate::branch::root::schema::standard_tree_quote::retained_tree_bytes::<K, V>(entries)
         .map_err(|_| Denial::CapacityOverflow)
 }
 fn arc<T>() -> Result<u64, Denial> {
@@ -38,34 +38,42 @@ pub(super) fn copy_catalog(
     original: &IndexDefinitionCatalog,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<IndexDefinitionCatalog, Denial> {
-    let mut bytes = tree::<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>(
-        original.definitions.len(),
-    )?;
+    let mut bytes = tree::<
+        DerivedIndexId,
+        crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+    >(original.definitions.len())?;
     add(
         &mut bytes,
         tree::<DerivedIndexId, u64>(original.definitions.len())?,
     )?;
     add(
         &mut bytes,
-        tree::<AspectKey, BTreeMap<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>>(
-            original.field_definitions.len(),
-        )?,
+        tree::<
+            AspectKey,
+            BTreeMap<
+                FieldKey,
+                Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+            >,
+        >(original.field_definitions.len())?,
     )?;
     for (aspect, fields) in &original.field_definitions {
         request.consult().map_err(Denial::Request)?;
         add(&mut bytes, aspect.as_str().len() as u64)?;
         add(
             &mut bytes,
-            tree::<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>(fields.len())?,
+            tree::<
+                FieldKey,
+                Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+            >(fields.len())?,
         )?;
         for (field, definitions) in fields {
             request.consult().map_err(Denial::Request)?;
             add(&mut bytes, field.as_str().len() as u64)?;
             add(
                 &mut bytes,
-                std::alloc::Layout::array::<crate::indexes::RetainedDerivedIndexDefinition>(
-                    definitions.len(),
-                )
+                std::alloc::Layout::array::<
+                    crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+                >(definitions.len())
                 .map_err(|_| Denial::CapacityOverflow)?
                 .size() as u64,
             )?;
@@ -91,7 +99,10 @@ pub(super) fn prepare_insert(
     // The reviewed standard tree retains at most n+1 nodes for n entries.
     // Paying two maximal nodes per insertion also covers a transient split;
     // the preceding catalog copy paid its entire original node population.
-    let mut bytes = tree::<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>(1)?;
+    let mut bytes = tree::<
+        DerivedIndexId,
+        crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+    >(1)?;
     add(&mut bytes, tree::<DerivedIndexId, u64>(1)?)?;
     add(&mut bytes, arc::<RetainedIndexDefinitionMeaning>()?)?;
     // This definition is moved, not copied. Retain the original caller backing
@@ -102,12 +113,18 @@ pub(super) fn prepare_insert(
             &mut bytes,
             tree::<
                 AspectKey,
-                BTreeMap<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
+                BTreeMap<
+                    FieldKey,
+                    Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+                >,
             >(1)?,
         )?;
         add(
             &mut bytes,
-            tree::<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>(1)?,
+            tree::<
+                FieldKey,
+                Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+            >(1)?,
         )?;
         add(&mut bytes, aspect.as_str().len() as u64)?;
         add(&mut bytes, field.as_str().len() as u64)?;
@@ -123,9 +140,11 @@ pub(super) fn prepare_insert(
             .max(4);
         add(
             &mut bytes,
-            std::alloc::Layout::array::<crate::indexes::RetainedDerivedIndexDefinition>(capacity)
-                .map_err(|_| Denial::CapacityOverflow)?
-                .size() as u64,
+            std::alloc::Layout::array::<
+                crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+            >(capacity)
+            .map_err(|_| Denial::CapacityOverflow)?
+            .size() as u64,
         )?;
     }
     retain(catalog, request, bytes)

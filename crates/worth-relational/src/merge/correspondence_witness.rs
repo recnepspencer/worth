@@ -3,30 +3,17 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::merge::data::{
-    IdentityMatchCandidate, IdentityResolutionReason, PreparedMergeExecution,
-    RelationalMergeCorrespondenceWitness,
+    IdentityMatchCandidate, IdentityResolutionReason, RelationalMergeCorrespondenceWitness,
 };
 
-use super::MergeAccess;
-
-impl<'runtime> MergeAccess<'runtime> {
-    pub fn retain_merge_correspondence_witness_from_prepared_execution(
-        &self,
-        prepared: &PreparedMergeExecution,
-    ) -> RelationalMergeCorrespondenceWitness {
-        self.retain_merge_correspondence_witness_from_planning_artifact(prepared.artifact())
-    }
-
-    pub fn retain_merge_correspondence_witness_from_planning_artifact(
-        &self,
-        artifact: &MergePlanningArtifactCore,
-    ) -> RelationalMergeCorrespondenceWitness {
-        retained_merge_correspondence_witness(
-            artifact.request.request_digest().to_string(),
-            artifact.branch_basis.basis_digest(),
-            &artifact.identity_discovery.candidates,
-        )
-    }
+pub(super) fn retain_merge_correspondence_witness_from_planning_artifact(
+    artifact: &MergePlanningArtifactCore,
+) -> RelationalMergeCorrespondenceWitness {
+    retained_merge_correspondence_witness(
+        artifact.request.request_digest().to_string(),
+        artifact.branch_basis.basis_digest(),
+        &artifact.identity_discovery.candidates,
+    )
 }
 
 fn retained_merge_correspondence_witness(
@@ -69,8 +56,8 @@ fn retained_merge_correspondence_witness(
 }
 
 struct SchemaDeclaredCorrespondenceCounts {
-    source_counts: BTreeMap<crate::transactions::data::RecordRef, usize>,
-    target_counts: BTreeMap<crate::transactions::data::RecordRef, usize>,
+    source_counts: BTreeMap<crate::transactions::data::primitives::RecordRef, usize>,
+    target_counts: BTreeMap<crate::transactions::data::primitives::RecordRef, usize>,
 }
 
 fn schema_declared_correspondence_counts(

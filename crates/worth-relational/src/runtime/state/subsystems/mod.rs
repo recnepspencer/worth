@@ -1,21 +1,17 @@
-pub(crate) use history::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
-};
 pub(crate) use record_identity::MutationRecordAllocations;
 mod commit_strategies;
-mod durability;
-mod history;
-mod indexing;
-mod lineage;
-mod lineage_identity;
-mod owned_state;
+pub(crate) mod durability;
+pub(crate) mod history;
+pub(crate) mod indexing;
+pub(crate) mod lineage;
+pub(crate) mod lineage_identity;
 mod publication;
 mod publication_diagnostics;
-mod record_identity;
+pub(crate) mod record_identity;
 mod schema_contract_runtime;
-mod services;
-mod storage;
+pub(crate) mod services;
+pub(crate) mod storage;
+mod storage_lifecycle;
 mod visibility;
 
 pub(crate) trait RuntimeSubsystem: Sized {
@@ -25,33 +21,37 @@ pub(crate) trait RuntimeSubsystem: Sized {
     fn fork(&self) -> Self;
 }
 
+pub(crate) use crate::storage::substrate::owned_state::RuntimeOwnedState;
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::{
     DurabilitySubsystem, RelationalCheckpointManifestPublication,
     RelationalCheckpointManifestSelection,
 };
+pub(crate) use history::canonical_publication_routes::{
+    authored_write_commit_denial, readmit_positioned_canonical_commit, BranchTransitionPublication,
+    BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPublicationRecordError, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+    RelationalPerformedSourceWalk, RetainedBranchTransition,
+};
 pub use history::canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub use history::history_costs::RelationalBranchSharingCostCounters;
+pub(crate) use history::history_preparation_binding::RelationalPreparationHistory;
+pub(crate) use history::history_source_retirement::RelationalSourceHistoryBinding;
 pub use history::RelationalPhase4ReferenceCostCounters;
-pub(crate) use history::{authored_write_commit_denial, AuthoredWriteGeneration};
 pub(crate) use history::{
-    readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
-    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, HistorySubsystem,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    BranchHeadVersionIndexAuthority, HistorySubsystem, PreparedCommitSequence,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPerformedSourceWalk,
-    RelationalPreparationHistory, RelationalSourceHistoryBinding, RetainedCanonicalPosition,
+    PreparedVersionedArtifactPublication, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding,
 };
 pub(crate) use indexing::{
-    CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
-    IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
-    PreparedIndexBasisSelection,
+    CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
+    IndexingState, OriginalCheckpointIndexes,
 };
 pub use indexing::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
@@ -62,7 +62,6 @@ pub(crate) use lineage::{
     ResidentLineageNode, ValidatedLineageEventBatch,
 };
 pub(crate) use lineage_identity::LineageIdentityAllocator;
-pub(crate) use owned_state::RuntimeOwnedState;
 pub(crate) use publication::PublicationSubsystem;
 pub(crate) use publication_diagnostics::{
     RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
@@ -72,9 +71,8 @@ pub(crate) use record_identity::{
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
 pub(crate) use services::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
-    PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable,
-    SymbolReservationDenial,
+    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication,
+    RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable, SymbolReservationDenial,
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,

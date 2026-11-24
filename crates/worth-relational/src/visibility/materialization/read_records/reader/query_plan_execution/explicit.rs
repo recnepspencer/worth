@@ -17,7 +17,7 @@ impl RelationalPinnedRead {
                 prepare_explicit_packets(targets, budget)
             })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
-        record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
+        record_query_packet_metrics(self.pinned_instrumentation(), &plan, &metrics);
         let basis = &self.basis;
         let remaining_lease = lease
             .map(|lease| remaining_work_lease(lease, preparation))
@@ -34,7 +34,7 @@ impl RelationalPinnedRead {
         .map_err(|stop| combine_query_stop(stop, preparation))?;
         let report = Some(combine_query_reports(preparation, report));
         Ok(Some(query_execution_outcome_maybe_leased(
-            &self.performance_access(),
+            self.pinned_instrumentation(),
             plan,
             metrics.packet_count,
             metrics.touched_partitions,

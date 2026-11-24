@@ -14,7 +14,7 @@ pub(in crate::history::data::codec_retirement_closure) fn reconstruct(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::super::payload_reconstruction::ReconstructedPayload>, Stop> {
     reconstruct_chain(
         runtime,
@@ -39,7 +39,7 @@ pub(in crate::history::data::codec_retirement_closure) fn reconstruct_canonical_
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::super::payload_reconstruction::ReconstructedPayload>, Stop> {
     reconstruct_chain(
         runtime,
@@ -64,7 +64,7 @@ fn reconstruct_chain(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     validate_gap_payload: bool,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::super::payload_reconstruction::ReconstructedPayload>, Stop> {
     super::super::restoration_payload::validate_groups(
         runtime,
@@ -210,7 +210,7 @@ fn reconstruct_chain(
             .authoritative_record_patches
             .iter()
             .find(|patch| patch.target == RecordRef::Entity(id));
-        let creation = member.posture == crate::mvcc::RequiredOutputRolePosture::Create;
+        let creation = member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Create;
         let wrote = writes(envelope, id, context)?;
         if creation {
             if envelope
@@ -229,7 +229,7 @@ fn reconstruct_chain(
             {
                 return Err("output lacks actual native birth allocation/patch".into());
             }
-        } else if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+        } else if member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
             if member.after_write != envelope.commit.version_id
                 || patch
                     .is_none_or(|patch| patch.structural_change != RecordStructuralChange::Deleted)

@@ -1,6 +1,6 @@
 //! Receiving frozen codecs bind without replacing registered Source issuers.
 use super::*;
-use crate::branch::RelationalBranchRootCaptureDenial as Denial;
+use crate::branch::root::RelationalBranchRootCaptureDenial as Denial;
 impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn bind_home_executables(
         self: &Arc<Self>,

@@ -2,7 +2,8 @@
 use super::{planned_incidence::PlannedIncidence, RelationIntegrityScopeAccumulator};
 use crate::identity::data::KindId;
 use crate::storage::partition::AdjacencyDirection;
-use crate::transactions::data::{EntityReference, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeSet;
 
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {

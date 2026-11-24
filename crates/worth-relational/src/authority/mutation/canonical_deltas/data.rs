@@ -3,11 +3,13 @@ use smallvec::SmallVec;
 use crate::identity::data::EntityId;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::schema::data::AspectContractPlanRevision;
-use crate::transactions::data::RecordRef;
-use crate::transactions::data::{
-    AspectDeltaFailureFields, AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial,
-    AspectDeltaRecordClass, CommitConflict, ConflictClass,
-};
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaFailureFields;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchConstructionDenial;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchValueDenial;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaRecordClass;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectFieldLocator, AspectKey, AspectValueLocator,
     ContractValidatedAspectValue, FieldLevelAspectPatch,

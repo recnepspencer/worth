@@ -1,5 +1,5 @@
 use super::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationKind};
-use crate::branch::RelationalPersistentRegionAllocationKind;
+use crate::branch::root_regions::RelationalPersistentRegionAllocationKind;
 
 /// Allocation-owner evidence assembled independently of the sharing summary.
 ///

@@ -6,15 +6,17 @@ pub(super) fn validate<'a>(
     runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
-    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
     if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
-        return Err(crate::mvcc::origin_denial(
-            "foreign native predecessor publication custody",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "foreign native predecessor publication custody",
+            ),
+        );
     }
     let origin = &predecessor.origin;
     crate::execution::request_stage::checkpoint(
@@ -26,9 +28,11 @@ pub(super) fn validate<'a>(
         || origin.meaning.source_scope != meaning.source_scope
         || origin.meaning.source_partition != meaning.source_partition
     {
-        return Err(crate::mvcc::origin_denial(
-            "successor changes complete installed family/source correspondence",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "successor changes complete installed family/source correspondence",
+            ),
+        );
     }
     let position = basis
         .inner
@@ -44,24 +48,26 @@ pub(super) fn validate<'a>(
             != crate::history::data::RequiredOutputRoutePosition::Published(origin.commit.commit_id)
     }) || (position.is_none() && !exact_cold_basis)
     {
-        return Err(crate::mvcc::origin_denial(
-            "predecessor is not the publication selected at the native before image",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "predecessor is not the publication selected at the native before image",
+            ),
+        );
     }
     if origin.source_scope_owned
         && origin
             .members
             .iter()
-            .any(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+            .any(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
     {
         let current = runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
-            crate::mvcc::origin_denial("live owned predecessor requires current Native custody")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("live owned predecessor requires current Native custody")
         })?;
         let canonical = current
             .origins()
             .find(|other| other.meaning.same_route(&origin.meaning))
             .ok_or_else(|| {
-                crate::mvcc::origin_denial(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                     "live owned predecessor is absent from current Native custody",
                 )
             })?;
@@ -70,7 +76,7 @@ pub(super) fn validate<'a>(
             &predecessor.evidence
             && retained.basis.as_ref() != Some(basis.descriptor())
         {
-            return Err(crate::mvcc::origin_denial(
+            return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                 "current publication custody has a different Native basis",
             ));
         }
@@ -82,14 +88,18 @@ pub(super) fn validate<'a>(
     let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
         &predecessor.evidence
     else {
-        return Err(crate::mvcc::origin_denial(
-            "historical predecessor requires its canonical envelope",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "historical predecessor requires its canonical envelope",
+            ),
+        );
     };
     if envelope.commit != origin.commit {
-        return Err(crate::mvcc::origin_denial(
-            "carried origin differs from its canonical envelope",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "carried origin differs from its canonical envelope",
+            ),
+        );
     }
     let canonical = validated_history
         .by_version(
@@ -104,7 +114,9 @@ pub(super) fn validate<'a>(
         )
         .map_err(super::relation_stop)?
         .ok_or_else(|| {
-            crate::mvcc::origin_denial("retained predecessor canonical position absent")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "retained predecessor canonical position absent",
+            )
         })?;
     let expected = canonical
         .output_origin_for_route(&origin.meaning, context)
@@ -138,19 +150,19 @@ pub(super) fn validate<'a>(
 /// Legacy retirement preserves its exact complete, Retire-only roster contract.
 pub(super) fn require_complete_retirement(
     origin: &CanonicalRequiredOutputOrigin,
-    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+    roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
 ) -> Result<(), TransactionCommitError> {
     if roles
         .iter()
-        .any(|role| role.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+        .any(|role| role.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
         || roles.len()
             != origin
                 .members
                 .iter()
-                .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+                .filter(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
                 .count()
     {
-        return Err(crate::mvcc::origin_denial(
+        return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
             "authored retirement requires every prior live member and only Retire roles",
         ));
     }

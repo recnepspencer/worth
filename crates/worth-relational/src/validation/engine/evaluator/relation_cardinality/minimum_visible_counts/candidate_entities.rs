@@ -3,7 +3,7 @@ use super::{
     InvariantExecutionContext, LoweredCardinalityMinimumContract, VisibleRelationCountSnapshot,
 };
 use crate::identity::data::KindId;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use crate::validation::engine::evaluator::common::contract_candidate_kind_matches;
 
 pub(super) fn record_candidate_entity(

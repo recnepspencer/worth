@@ -5,7 +5,8 @@ pub(in crate::validation::candidate_source) struct SourcePreparationContext<'a> 
     pub execution: worth_execution::ExecutionRequest<'a, 'a>,
     pub runtime: &'a RelationalPreparationRuntime,
     pub selected: SelectedRelationalBranchRead<'a>,
-    pub proposal: &'a crate::mvcc::RelationalMutationProposalIdentity,
+    pub proposal:
+        &'a crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     pub records: &'a [RecordRef],
 }
 impl SourcePreparationContext<'_> {

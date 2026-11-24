@@ -1,7 +1,8 @@
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    CreateIntent, EntityReference, MutationIntent, RelationMutationIntent,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::transactions::data::primitives::EntityReference;
 
 use super::super::CustomInvariantWorkMeter;
 
@@ -30,7 +31,7 @@ fn claim_references(
 /// the per-candidate work meter.
 pub(super) fn claim_intent_nested_allocations(
     intent: &MutationIntent,
-    access: &crate::validation::data::CustomInvariantAccessContract,
+    access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
     work: &CustomInvariantWorkMeter,
 ) -> bool {
     match intent {

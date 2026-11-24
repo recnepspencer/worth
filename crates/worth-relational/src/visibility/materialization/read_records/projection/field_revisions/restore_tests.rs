@@ -1,16 +1,20 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
 use crate::facade::durability::RecoveryVerificationMode;
-use crate::facade::history::BranchId;
-use crate::facade::identity::{EntityId, KindId, PartitionId};
-use crate::facade::mvcc::WorkerIntentBatch;
-use crate::facade::runtime::{RelationalFieldPresence, RelationalFieldRevision};
-use crate::facade::snapshots::SnapshotHandle;
-use crate::facade::transactions::{
-    ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, MutationIntent,
-    UpdateEntityFieldsIntent,
-};
+use crate::history::data::coordinates::BranchId;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
+use crate::snapshots::data::SnapshotHandle;
+use crate::storage::data::RelationalFieldPresence;
+use crate::storage::data::RelationalFieldRevision;
 use crate::tests::support::*;
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
@@ -25,7 +29,7 @@ fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn checkpoint_restore_preserves_exact_field_revision() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -102,7 +106,7 @@ fn checkpoint_restore_preserves_exact_field_revision() {
 
 #[test]
 fn checkpoint_restore_preserves_relation_field_revision() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = || {
@@ -170,7 +174,7 @@ fn checkpoint_restore_preserves_relation_field_revision() {
 
 #[test]
 fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
@@ -187,7 +191,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
     create
         .push_batch(
             WorkerIntentBatch::new("checkpoint-field-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw("field-checkpoint"),
@@ -302,7 +306,7 @@ fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
 
 #[test]
 fn checkpoint_restore_rejects_incomplete_field_revision_column() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -344,7 +348,7 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
-        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint
+        crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint
     );
     assert!(
         error.detail.contains("column length") || error.detail.contains("field revision length"),

@@ -34,7 +34,7 @@ impl HistorySubsystem {
 
     pub(crate) fn detached_owner_snapshot(
         &self,
-    ) -> Result<Self, crate::runtime::RelationalRuntimeForkDenial> {
+    ) -> Result<Self, crate::runtime::fork_denial::RelationalRuntimeForkDenial> {
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         let branch_cells = self.branch_cells.detached_owner_snapshot();
         let mut cells = branch_cells.take_all();
@@ -48,9 +48,9 @@ impl HistorySubsystem {
         );
         canonical_publication_routes.install_checkpoint_catalog(self.commit_artifacts());
         for positioned in self.canonical_publication_routes.performed_snapshot() {
-            let artifact = self
-                .commit_artifact(positioned.commit.commit_id)
-                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            let artifact = self.commit_artifact(positioned.commit.commit_id).ok_or(
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,
+            )?;
             canonical_publication_routes
                 .install_recovered(
                     positioned,
@@ -58,7 +58,7 @@ impl HistorySubsystem {
                     artifact.roots().clone(),
                 )
                 .map_err(|_| {
-                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
                 })?;
         }
         let mut snapshot = Self {
@@ -88,7 +88,9 @@ impl HistorySubsystem {
         };
         snapshot
             .try_reset_retention_owner(snapshot.runtime_instance_id)
-            .map_err(|_| crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            .map_err(|_| {
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+            })?;
         Ok(snapshot)
     }
 }

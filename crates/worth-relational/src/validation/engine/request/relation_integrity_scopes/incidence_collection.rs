@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::identity::data::RelationId;
 use crate::storage::partition::AdjacencyDirection;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use crate::validation::engine::request::PreparedVisibleRelationEdge;
 
 use super::{relation_scope_details_for_id, RelationIntegrityScopeAccumulator};
@@ -10,7 +10,10 @@ use super::{relation_scope_details_for_id, RelationIntegrityScopeAccumulator};
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn scan_touched_relations(
         &mut self,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut scanned_sources = BTreeSet::new();
         let mut scanned_targets = BTreeSet::new();
         loop {
@@ -49,7 +52,10 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     fn scan_relation_ids(
         &mut self,
         relation_ids: impl IntoIterator<Item = RelationId>,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         for relation_id in relation_ids {
             self.check_live()?;
             if !self.scanned_relations.insert(relation_id)

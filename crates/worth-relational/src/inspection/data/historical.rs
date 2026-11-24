@@ -4,8 +4,9 @@ use crate::history::data::{AspectHistoryQueryResult, BranchId};
 use crate::identity::data::VersionId;
 use crate::lineage::data::HistoricalLineageResolution;
 use crate::snapshots::data::SnapshotHandle;
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::{
     InspectionAccessPath, InspectionAvailability, InspectionDegradation, InspectionOrigin,

@@ -1,6 +1,6 @@
 //! Content follows the actual field loan, never a caller-supplied identity.
 use super::*;
-use crate::content::{NativeContentSourceView, RelationalContentFrame};
+use crate::content::{source::NativeContentSourceView, RelationalContentFrame};
 impl ManagedIndexSourceProjection<'_> {
     pub(crate) fn with_field_content_at<T>(
         &self,
@@ -16,8 +16,8 @@ impl ManagedIndexSourceProjection<'_> {
                     interpretation,
                     before,
                     ..
-                } => interpretation.content_view(*before)?.read_source(
-                    &relations.read_budget(),
+                } => relations.read_budget().read_field_content(
+                    interpretation.content_view(*before)?,
                     row,
                     kind,
                     &field.locator,

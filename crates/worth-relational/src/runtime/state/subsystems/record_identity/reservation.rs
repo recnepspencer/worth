@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::history::data::RecordAllocationClass;
+use crate::history::data::record_allocation_class::RecordAllocationClass;
 use crate::identity::data::PartitionId;
 
 use super::RecordIdentityState;

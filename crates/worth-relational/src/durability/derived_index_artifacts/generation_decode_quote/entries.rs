@@ -59,14 +59,14 @@ fn map<K: Ord + Clone, R: Clone>(
         })?;
         // im 15.1 Serde materializes Vec<Arc<R>> before its persistent vector.
         add(&mut bytes, vector::<Arc<R>>(count)?)?;
-        let (_, backing) =
-            crate::indexes::row_copy_bounds::<R>(count, true).map_err(|_| malformed())?;
+        let (_, backing) = crate::indexes::authority::row_copy_bounds::<R>(count, true)
+            .map_err(|_| malformed())?;
         add(&mut bytes, backing as u64)
     })?;
     // Its map visitor likewise retains a concrete Vec of key/row handles.
     add(&mut bytes, vector::<(Arc<K>, DerivedIndexRows<R>)>(count)?)?;
-    let (path, node) =
-        crate::indexes::persistent_map_path_bytes::<K, R>(count).map_err(|_| malformed())?;
+    let (path, node) = crate::indexes::authority::persistent_map_path_bytes::<K, R>(count)
+        .map_err(|_| malformed())?;
     let nodes = count
         .div_ceil(31)
         .checked_add(2)

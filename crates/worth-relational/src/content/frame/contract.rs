@@ -15,7 +15,7 @@ impl RelationalContentFrame {
             self.require_contract_controlled(control, name, version, maximum_frame_bytes)
         })
     }
-    pub(in crate::content) fn require_contract_controlled(
+    pub(crate) fn require_contract_controlled(
         &self,
         control: &mut crate::content::RelationalContentControl<'_, '_, '_>,
         name: &str,
@@ -38,17 +38,5 @@ impl RelationalContentFrame {
             return Err(Denial::FormatMismatch);
         }
         Ok(())
-    }
-    /// Certify the exact installed contract under this actual Source allowance.
-    pub fn require_source_contract(
-        &self,
-        budget: &crate::validation::data::CustomInvariantReadBudget<'_>,
-        name: &str,
-        version: u32,
-        maximum_frame_bytes: usize,
-    ) -> Result<(), crate::validation::candidate_source::ManagedIndexSourcePreparationDenial> {
-        control::run_source(budget, |control| {
-            self.require_contract_controlled(control, name, version, maximum_frame_bytes)
-        })
     }
 }

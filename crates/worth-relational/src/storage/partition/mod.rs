@@ -5,7 +5,6 @@ mod bitsets;
 pub(crate) mod chunks;
 mod relation_projection;
 mod sparse_adjacency_table;
-pub(crate) mod storage_stats;
 
 pub(crate) use adjacency::*;
 pub(crate) use adjacency_direction::{AdjacencyDirection, AdjacencyKindBasis};

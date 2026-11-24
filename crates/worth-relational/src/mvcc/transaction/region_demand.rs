@@ -8,7 +8,7 @@ impl super::BranchBoundRelationalTransaction {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
-        indexes: &crate::runtime::IndexDefinitionReadBinding,
+        indexes: &crate::runtime::state::RuntimeIndexDefinitionReadBinding,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         self.demand_preparation_inputs(execution, symbols, indexes)?;
@@ -22,7 +22,7 @@ impl super::BranchBoundRelationalTransaction {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
-        indexes: &crate::runtime::IndexDefinitionReadBinding,
+        indexes: &crate::runtime::state::RuntimeIndexDefinitionReadBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let mut raw = BTreeSet::new();
         if symbols.has_cold_pages() && self.client_key_symbol_policy.interns_requested_strings() {

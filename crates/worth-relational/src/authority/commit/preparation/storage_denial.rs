@@ -1,7 +1,12 @@
 //! Preserve storage refusal as a pre-effect preparation outcome.
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::storage::residency::RelationalResidencyDemandFailure;
-use crate::transactions::data::{CommitPreparationError, TransactionCommitError};
+use crate::transactions::data::outcomes::{
+    commit_preparation::CommitPreparationError,
+    transaction_commit_error::{
+        CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+    },
+};
 
 pub(crate) fn storage_read_denial(
     basis: &AdmittedRelationalBranchBasis,
@@ -9,18 +14,16 @@ pub(crate) fn storage_read_denial(
 ) -> TransactionCommitError {
     match failure {
         RelationalResidencyDemandFailure::Content(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                    cause.into_execution_cause(),
-                ),
+            TransactionCommitError::execution(CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(cause.into_execution_cause()),
                 partition_identity: None,
             })
         }
         RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
             if let crate::storage::data::RelationalStorageUnavailableCause::CorruptCurrentOwnership{publication,source,record}=failure.cause {
                 let mut error=crate::publication::data::PublicationError::authored_retirement(
-                    crate::publication::data::AuthoredRetirementRefusal::CorruptCurrentOwnership{publication},crate::transactions::data::RecordRef::Entity(source));
-                if source!=record {error.context.affected_records.push(crate::transactions::data::RecordRef::Entity(record));}
+                    crate::publication::data::AuthoredRetirementRefusal::CorruptCurrentOwnership{publication},crate::transactions::data::primitives::RecordRef::Entity(source));
+                if source!=record {error.context.affected_records.push(crate::transactions::data::primitives::RecordRef::Entity(record));}
                 return TransactionCommitError::publication(error);
             }
             TransactionCommitError::preparation(CommitPreparationError::storage_unavailable(
@@ -31,8 +34,8 @@ pub(crate) fn storage_read_denial(
             ))
         }
         RelationalResidencyDemandFailure::Request(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            TransactionCommitError::execution(CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(cause),
                 partition_identity: None,
             })
         }

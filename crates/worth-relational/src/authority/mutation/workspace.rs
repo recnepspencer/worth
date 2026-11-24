@@ -9,7 +9,7 @@ use crate::authority::commit::preparation::planning::strategy::{
 use crate::config::data::MutationConfig;
 use crate::identity::data::VersionId;
 use crate::identity::data::{EntityId, RelationId};
-use crate::runtime::MutationSymbolMeanings;
+use crate::runtime::state::subsystems::services::symbol_table::MutationSymbolMeanings;
 use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
@@ -62,7 +62,9 @@ pub(crate) struct MutationWorkspace<'a> {
     preparation_telemetry: MutationPreparationTelemetry,
     created_entities: ExecutionOrderedMap<CreatedEntityKey<'a>, EntityId>,
     created_relations: ExecutionOrderedMap<CreatedRelationKey<'a>, RelationId>,
-    record_allocations: Option<&'a mut dyn crate::runtime::MutationRecordAllocations>,
+    record_allocations: Option<
+        &'a mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
+    >,
 }
 
 impl<'a> MutationWorkspace<'a> {
@@ -75,7 +77,7 @@ impl<'a> MutationWorkspace<'a> {
         aspect_plans: &'a AspectContractPlanCatalog,
         version_id: VersionId,
         branch_local_delete_allowance: BranchLocalDeleteAllowance,
-        record_allocations: Option<&'a mut dyn crate::runtime::MutationRecordAllocations>,
+        record_allocations: Option<&'a mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations>,
         commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     ) -> Self {
         Self {
@@ -116,7 +118,9 @@ impl<'a> MutationWorkspace<'a> {
         mutate: impl FnOnce(&mut Self) -> Result<T, E>,
     ) -> Result<T, E>
     where
-        E: From<crate::transactions::data::TransactionCommitError>,
+        E: From<
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+        >,
     {
         let execution = self.execution;
         let budget = self.commit_work_budget.clone();
@@ -150,7 +154,7 @@ impl<'a> MutationWorkspace<'a> {
             version,
         )
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
         super::field_versions::write_field_versions_for_delta(
             &self.execution,
@@ -159,7 +163,7 @@ impl<'a> MutationWorkspace<'a> {
             version,
         )
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
         Ok(())
     }
@@ -186,10 +190,10 @@ impl<'a> MutationWorkspace<'a> {
 
     pub(crate) fn prepare_entity_field_update(
         &self,
-        intent: &crate::transactions::data::UpdateEntityFieldsIntent,
+        intent: &crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent,
     ) -> Result<
         super::intents::entity_aspect_preparation::PreparedEntityAspectMutation,
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
         super::intents::entity_aspect_preparation::prepare_fields(
             &self.execution(),
@@ -201,10 +205,10 @@ impl<'a> MutationWorkspace<'a> {
 
     pub(crate) fn prepare_entity_aspect_patch(
         &self,
-        intent: &crate::transactions::data::ApplyEntityAspectPatchIntent,
+        intent: &crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent,
     ) -> Result<
         super::intents::entity_aspect_preparation::PreparedEntityAspectMutation,
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
         super::intents::entity_aspect_preparation::prepare_portable(
             &self.execution(),
@@ -264,7 +268,7 @@ impl<'a> MutationWorkspace<'a> {
     }
 }
 
-impl crate::capabilities::AspectPlanSource for MutationWorkspace<'_> {
+impl crate::schema::aspect_plan_source::AspectPlanSource for MutationWorkspace<'_> {
     fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
         self.aspect_plans
     }

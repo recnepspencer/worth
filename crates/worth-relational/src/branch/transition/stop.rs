@@ -1,5 +1,25 @@
 use crate::durability::medium::RelationalDurabilityUnresolved;
 
+/// Why a transition was not recorded. None of these left a live effect;
+/// only an unresolved `Step` stop may have left a durable one.
+#[derive(Debug)]
+pub(crate) enum BranchTransitionRecordError<D, S> {
+    /// The transition's preparation, re-checked inside the reservation,
+    /// refused.
+    Denied(D),
+    /// The original request stopped during reservation or storage preparation.
+    ReservationWaitStopped(worth_execution::WorkCeilingDenial),
+    /// No sequence remains after the last performed one.
+    SequenceCapacityExhausted,
+    /// The actual retained transition backing cannot be represented.
+    StorageCapacityExhausted,
+    /// A restored sequence disagrees with this stream's original prefix.
+    OriginalPrefixMismatch,
+    OriginalInputsStopped(crate::durability::data::recovery_stop::RelationalRecoveryStop),
+    /// The durable step did not admit the cutover.
+    Step(S),
+}
+
 /// Why a fork, archive or delete did not take effect.
 ///
 /// Every variant leaves no live effect: nothing was installed, no branch
@@ -16,7 +36,7 @@ pub enum RelationalBranchTransitionStop<D> {
     /// transition waited for the patch-position reservation, before any
     /// effect.
     RequestStopped(worth_execution::WorkCeilingDenial),
-    OriginalInputsStopped(crate::durability::data::RelationalRecoveryStop),
+    OriginalInputsStopped(crate::durability::data::recovery_stop::RelationalRecoveryStop),
     /// The medium could not tell whether the transition became durable.
     DurabilityUnresolved(RelationalDurabilityUnresolved),
 }
@@ -42,22 +62,15 @@ impl<D> RelationalBranchTransitionStop<D> {
 }
 
 impl<D: super::RelationalBranchTransitionDenial>
-    From<
-        crate::runtime::BranchTransitionRecordError<
-            D,
-            crate::durability::medium::RelationalDurableStepStop,
-        >,
-    > for RelationalBranchTransitionStop<D>
+    From<BranchTransitionRecordError<D, crate::durability::medium::RelationalDurableStepStop>>
+    for RelationalBranchTransitionStop<D>
 {
     /// How a live transition that did not take effect answers its caller.
     fn from(
-        error: crate::runtime::BranchTransitionRecordError<
-            D,
-            crate::durability::medium::RelationalDurableStepStop,
-        >,
+        error: BranchTransitionRecordError<D, crate::durability::medium::RelationalDurableStepStop>,
     ) -> Self {
+        use self::BranchTransitionRecordError as Record;
         use crate::durability::medium::RelationalDurableStepStop as Step;
-        use crate::runtime::BranchTransitionRecordError as Record;
         match error {
             Record::Denied(denial) => Self::Denied(denial),
             Record::ReservationWaitStopped(stop) => Self::RequestStopped(stop),

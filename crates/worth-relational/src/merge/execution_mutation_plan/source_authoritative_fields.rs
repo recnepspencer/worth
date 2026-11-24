@@ -2,22 +2,23 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::ContractValidatedAspectValueView;
 
-use crate::capabilities::AspectPlanSource;
 use crate::merge::data::{AdoptSourceRecordPlan, MergeExecutionMutationPlanError};
 use crate::schema::data::AspectBinding;
+use crate::schema::data::AspectContractPlanCatalog;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
 pub(super) fn entity_create_fields_from_authoritative_state(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     plan: &AdoptSourceRecordPlan,
     entity: &EntityReadRecord,
 ) -> Result<AspectFieldPatch, MergeExecutionMutationPlanError> {
     let Some(authoritative_state) = entity.authoritative_aspect_state.as_ref() else {
         return Ok(AspectFieldPatch::default());
     };
-    let lowered_plan = runtime
-        .entity_aspect_plan(entity.kind.kind_id)
+    let lowered_plan = aspect_plans
+        .entity_plans
+        .get(&entity.kind.kind_id)
         .ok_or_else(
             || MergeExecutionMutationPlanError::UnsupportedReconcileRecordKind {
                 record: plan.source_record.clone(),
@@ -50,7 +51,7 @@ pub(super) fn entity_create_fields_from_authoritative_state(
                     });
                 };
                 fields.insert(
-                    crate::transactions::data::planned_single_field_locator(
+                    crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                         aspect_key.clone(),
                         field.clone(),
                     ),
@@ -73,7 +74,7 @@ pub(super) fn entity_create_fields_from_authoritative_state(
                 }
                 for (field, value) in struct_value.fields() {
                     fields.insert(
-                        crate::transactions::data::planned_single_field_locator(
+                        crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                             aspect_key.clone(),
                             field.clone(),
                         ),
@@ -87,15 +88,16 @@ pub(super) fn entity_create_fields_from_authoritative_state(
 }
 
 pub(super) fn relation_create_fields_from_authoritative_state(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     plan: &AdoptSourceRecordPlan,
     relation: &RelationReadRecord,
 ) -> Result<AspectFieldPatch, MergeExecutionMutationPlanError> {
     let Some(authoritative_state) = relation.authoritative_aspect_state.as_ref() else {
         return Ok(AspectFieldPatch::default());
     };
-    let lowered_plan = runtime
-        .relation_aspect_plan(relation.kind.kind_id)
+    let lowered_plan = aspect_plans
+        .relation_plans
+        .get(&relation.kind.kind_id)
         .ok_or_else(
             || MergeExecutionMutationPlanError::UnsupportedReconcileRecordKind {
                 record: plan.source_record.clone(),
@@ -119,7 +121,7 @@ pub(super) fn relation_create_fields_from_authoritative_state(
                 ContractValidatedAspectValueView::Scalar(value),
             ) => {
                 fields.insert(
-                    crate::transactions::data::planned_single_field_locator(
+                    crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                         aspect_key.clone(),
                         field.clone(),
                     ),
@@ -133,7 +135,7 @@ pub(super) fn relation_create_fields_from_authoritative_state(
             ) => {
                 for (field, value) in struct_value.fields() {
                     fields.insert(
-                        crate::transactions::data::planned_single_field_locator(
+                        crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                             aspect_key.clone(),
                             field.clone(),
                         ),

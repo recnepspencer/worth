@@ -2,7 +2,8 @@
 use super::*;
 pub(crate) struct PendingProposedPass {
     pub(super) prefix: ReducedInvariantPrefix,
-    pub(super) proposal: crate::mvcc::RelationalMutationProposalIdentity,
+    pub(super) proposal:
+        crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
 }
 pub(crate) enum StartedProposedPass {
     Pending(PendingProposedPass),
@@ -15,9 +16,12 @@ impl InvariantEngine<'_> {
         request: InvariantExecutionRequest<'state>,
         prepare_sources: &mut dyn FnMut() -> Result<
             (),
-            crate::transactions::data::TransactionCommitError,
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
         >,
-    ) -> Result<StartedProposedPass, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        StartedProposedPass,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         check_live(*execution)?;
         self.admit_custom_posture(execution, &request)?;
         if execution.has_accounting() {
@@ -36,19 +40,22 @@ impl InvariantEngine<'_> {
         request: InvariantExecutionRequest<'state>,
         prepare_sources: &mut dyn FnMut() -> Result<
             (),
-            crate::transactions::data::TransactionCommitError,
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
         >,
-    ) -> Result<StartedProposedPass, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        StartedProposedPass,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let proposal = request.proposal_identity().cloned().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::conflict(
-                crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::StaleValidationBasis {
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                         detail: "native prerequisites require an exact proposal identity".into(),
                     },
                 ),
             )
         })?;
-        let lease = crate::authority::commit::pipeline::request_lease(execution);
+        let lease = crate::execution::request_custody::request_lease(execution);
         let mut runtime = self.runtime.with_candidate_input_plan(&request);
         runtime.custom_kernel_posture = lease.map_or(
             worth_foundational::ExecutionPosture::Serial,

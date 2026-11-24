@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::visibility::snapshot_read_view::RelationalReadView;
 pub(super) struct PolicyReadViewContext<'a> {
     view: &'a RelationalReadView,
     index: &'a PolicyReadViewIndex,

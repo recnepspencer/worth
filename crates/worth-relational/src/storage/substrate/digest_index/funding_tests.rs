@@ -34,7 +34,7 @@ fn controlled_patricia_refuses_exact_leaf_and_late_parent_and_refunds_children()
         .unwrap_err();
         match error {
             DigestIndexError::Request(
-                crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                     requested,
                     admitted,
                     ancestor: 0,

@@ -2,7 +2,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::aggregate_identity::{AggregateGroupLineageEvent, AggregateGroupTransition};
+use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
+use crate::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, LineageId, RelationId};
 #[cfg(test)]

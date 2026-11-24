@@ -10,7 +10,8 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if !self.is_exact_basis() {
             self.demand_selected_scan(execution)?;
         }
@@ -45,7 +46,10 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
-    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<EntityReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.demand_selected_regions(execution, [entity_id.partition_id])?;
         crate::visibility::materialization::read_records::read_work::point_with_quote(
             execution,
@@ -70,7 +74,8 @@ impl VisibilityProjectionView {
     pub(crate) fn all_authoritative_entity_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.demand_selected_scan(execution)?;
         super::super::read_work::metered_with_memory(
             execution,
@@ -97,7 +102,8 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: KindId,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if !self.is_exact_basis() {
             self.demand_selected_regions(execution, [partition_id])?;
         }
@@ -134,7 +140,10 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if !self.is_exact_basis() {
             self.demand_selected_scan(execution)?;
         }
@@ -169,7 +178,10 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
-    ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.demand_selected_regions(execution, [relation_id.partition_id])?;
         super::super::read_work::point_with_quote(
             execution,
@@ -187,7 +199,10 @@ impl VisibilityProjectionView {
     pub(crate) fn all_authoritative_relation_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.demand_selected_scan(execution)?;
         super::super::read_work::metered_with_memory(
             execution,
@@ -214,7 +229,10 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
         kind_id: KindId,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if !self.is_exact_basis() {
             self.demand_selected_regions(execution, [partition_id])?;
         }

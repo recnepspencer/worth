@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 
 pub(super) fn packet_partition_scope(
     semantic_plan: Option<RelationalSemanticPlan<'_>>,

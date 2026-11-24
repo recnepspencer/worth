@@ -1,6 +1,6 @@
 //! Fresh admission preserves the original initialization publisher's fate.
 use crate::durability::data::RelationalRecoveryStop;
-use crate::durability::medium::RelationalInitialInputsPublicationStop;
+use crate::durability::published_medium::RelationalInitialInputsPublicationStop;
 
 #[derive(Debug)]
 pub enum RelationalFreshSourceAdmissionStop {

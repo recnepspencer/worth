@@ -1,10 +1,10 @@
 //! A node page has one shared load, sticky storage damage and counted readers.
 mod member_export;
 use super::node_page::{self, ReadmittedLineageNodePage};
-use crate::durability::data::{RelationalCheckpointDirectory, RelationalCheckpointPage};
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageNode;
+use crate::storage::data::checkpoint_page::RelationalCheckpointPage;
 use crate::storage::data::{
     RelationalStorageUnavailable, RelationalStorageUnavailableCause as Cause,
 };
@@ -36,43 +36,29 @@ pub(super) struct RuntimeLineageNodeResidency {
 
 impl RuntimeLineageNodeResidency {
     pub(super) fn new(
-        directory: &RelationalCheckpointDirectory,
+        page_descriptors: &[RelationalCheckpointPage],
+        source: &Arc<dyn RelationalDurableColdSource>,
     ) -> Result<Self, RelationalStorageUnavailable> {
-        let members = directory
-            .manifest
-            .lineage
+        let members = page_descriptors
             .iter()
             .map(|page| page.member)
             .collect::<Vec<_>>();
-        let placement = directory.source.retain_members(&members).map_err(|cause| {
-            RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Lineage {
-                    first: LineageId(
-                        directory
-                            .manifest
-                            .lineage
-                            .first()
-                            .map_or(0, |page| page.first),
-                    ),
-                    last: LineageId(
-                        directory
-                            .manifest
-                            .lineage
-                            .last()
-                            .map_or(0, |page| page.last),
-                    ),
-                },
-                cause,
-            }
-        })?;
+        let placement =
+            source
+                .retain_members(&members)
+                .map_err(|cause| RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Lineage {
+                        first: LineageId(page_descriptors.first().map_or(0, |page| page.first)),
+                        last: LineageId(page_descriptors.last().map_or(0, |page| page.last)),
+                    },
+                    cause,
+                })?;
         Ok(Self {
             custody: Mutex::new(crate::durability::medium::NativeSourceMemberState::new(
-                directory.source.clone(),
+                source.clone(),
                 placement,
             )),
-            pages: directory
-                .manifest
-                .lineage
+            pages: page_descriptors
                 .iter()
                 .map(|descriptor| {
                     Arc::new(NodePageCell {
@@ -132,7 +118,7 @@ impl NodePageCell {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &dyn RelationalDurableColdSource,
     ) -> Result<NodePageLease, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if matches!(*state, NodePageState::Cold) {
             const PAGE_BYTE_LIMIT: u64 = 1 << 20;

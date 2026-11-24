@@ -3,7 +3,7 @@ use super::*;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 #[derive(Debug)]
 pub(super) struct RelationalRetentionObligationRecord {
-    pub(super) component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+    pub(super) component: Option<Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>>,
     pub(super) active_operation: bool,
     kind: AtomicU8,
     first: AtomicU64,
@@ -13,7 +13,7 @@ pub(super) struct RelationalRetentionObligationRecord {
 impl RelationalRetentionObligationRecord {
     pub(super) fn new(
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+        component: Option<Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>>,
         roots: roots::RootIds,
         active_operation: bool,
     ) -> Self {

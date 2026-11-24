@@ -50,7 +50,9 @@ impl FreshRelationalInitialSchemaInstallation<'_> {
 
 pub(crate) enum InitialSchemaCutover {
     Receiver,
-    Durable(DurablyCommitted<crate::durability::medium::RelationalCommittedInitialInputs>),
+    Durable(
+        DurablyCommitted<crate::durability::published_medium::RelationalCommittedInitialInputs>,
+    ),
 }
 impl InitialSchemaCutover {
     pub(crate) fn apply(self, cutover: impl FnOnce(Option<Arc<InitialInputsImage>>)) {

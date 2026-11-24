@@ -8,10 +8,11 @@ mod work_account;
 use super::super::custom_rules::AlwaysViolatesCustomRule;
 use super::super::validation_engine_fixtures::*;
 use super::fixture::DagFixture;
-use crate::facade::runtime::CustomInvariantLeaseBudget;
-use crate::transactions::data::{
-    ConflictClass, EntityReference, RecordRef, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::custom_rule::CustomInvariantLeaseBudget;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -156,7 +157,7 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
         let fixture = DagFixture::from_runtime(runtime, 2);
         let source = fixture.nodes[0];
         let target = fixture.nodes[1];
-        let lease = crate::tests::support::test_execution_authority()
+        let lease = crate::execution::test_authority::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     posture.unwrap_or(ExecutionPosture::Serial),
@@ -261,7 +262,7 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             .iter()
             .filter(|result| {
                 result.metadata().execution_point()
-                    == crate::validation::data::InvariantExecutionPoint::ProposedState
+                    == crate::validation::data::execution::InvariantExecutionPoint::ProposedState
             })
             .collect::<Vec<_>>();
         assert_eq!(boundary.len(), 1, "both stages retain one boundary result");
@@ -271,7 +272,7 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             .iter()
             .filter(|r| {
                 r.execution_point
-                    == crate::validation::data::InvariantExecutionPoint::CommitBoundary
+                    == crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
             })
             .collect::<Vec<_>>();
         assert_eq!(results.len(), 2);

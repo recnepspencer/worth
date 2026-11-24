@@ -122,47 +122,42 @@ impl std::fmt::Debug for PinnedAggregateLineageRead {
     }
 }
 
-impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    /// Scan the selected schema roster and occupied entity slots once, then
-    /// follow actual merge targets. Work includes radix/slot navigation and
-    /// raw incident adjacency at each hop; no constant-time lookup is claimed.
-    pub fn read_aggregate_lineage(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        scope: PinnedAggregateLineageScope<'_>,
-    ) -> Result<PinnedAggregateLineageRead, PinnedAggregateReadDenial> {
-        coordination::read(
-            self,
-            execution,
-            scope.limits,
-            |root, view, work| {
-                let contract = contract::resolve(root, scope.selection, work)?;
-                let selected = lookup::find(root, view, contract, scope.identity, work)?;
-                let resolved = resolution::resolve(
-                    view,
-                    selected.clone(),
-                    contract,
-                    root.schema_authority().registry(),
-                    work,
-                )?;
-                work.checkpoint(0)?;
-                Ok(Value {
-                    definition: contract.definition,
-                    identity: selected.record.identity,
-                    retired: selected.record.retired,
-                    incident: resolved.incident,
-                    steps: resolved.steps,
-                    latest: resolved.latest,
-                })
-            },
-            |value, reads, work, retention| {
-                PinnedAggregateLineageRead(Arc::new(Data {
-                    value,
-                    reads,
-                    work,
-                    _retention: retention,
-                }))
-            },
-        )
-    }
+pub(crate) fn read_aggregate_lineage(
+    basis: &VisibilitySnapshotBasis,
+    execution: &ExecutionRequest<'_, '_>,
+    scope: PinnedAggregateLineageScope<'_>,
+) -> Result<PinnedAggregateLineageRead, PinnedAggregateReadDenial> {
+    coordination::read(
+        basis,
+        execution,
+        scope.limits,
+        |root, view, work| {
+            let contract = contract::resolve(root, scope.selection, work)?;
+            let selected = lookup::find(root, view, contract, scope.identity, work)?;
+            let resolved = resolution::resolve(
+                view,
+                selected.clone(),
+                contract,
+                root.schema_authority().registry(),
+                work,
+            )?;
+            work.checkpoint(0)?;
+            Ok(Value {
+                definition: contract.definition,
+                identity: selected.record.identity,
+                retired: selected.record.retired,
+                incident: resolved.incident,
+                steps: resolved.steps,
+                latest: resolved.latest,
+            })
+        },
+        |value, reads, work, retention| {
+            PinnedAggregateLineageRead(Arc::new(Data {
+                value,
+                reads,
+                work,
+                _retention: retention,
+            }))
+        },
+    )
 }

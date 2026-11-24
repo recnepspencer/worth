@@ -1,12 +1,13 @@
 //! Native borrowed field walks use inline navigation and retain original request stops.
 use super::*;
-use crate::config::data::CascadeDeletePolicy;
-use crate::execution::{
-    execute_read_only_packets, PacketBudgetDenial, PacketMemory, ReadOnlyPacket,
-};
+use crate::execution::packet_memory::PacketMemory;
+use crate::execution::read_only_packets::execute_read_only_packets;
+use crate::execution::read_only_packets::PacketBudgetDenial;
+use crate::execution::read_only_packets::ReadOnlyPacket;
+use crate::execution::test_authority::test_execution_authority;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionAccess;
-use crate::tests::support::*;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::{
     num::NonZeroUsize,
     sync::atomic::{AtomicU64, AtomicUsize, Ordering},
@@ -14,6 +15,7 @@ use std::{
 use worth_execution::{
     CancellationSource, CancellationToken, ExecutionRequest, LeaseRequest, MapKernelFailure,
 };
+use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     PartitionIdentity,
@@ -44,19 +46,14 @@ fn packet() -> Vec<ReadOnlyPacket<()>> {
     }]
 }
 
-fn native_field_navigation_boundary(relations: bool) {
-    let setup = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&setup);
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity(&execution, &runtime, "left");
-    let right = create_entity(&execution, &runtime, "right");
-    let created = create_relation_outcome(&execution, &runtime, left, right, "edge");
-    let relation = changed_relations(&created)[0];
-    let view = runtime
-        .read_truth()
-        .project_snapshot(&created.snapshot)
-        .unwrap();
-    let source = IndexProjectionSource::exact(&view).unwrap();
+pub(crate) fn verify_native_field_navigation(
+    view: &VisibilityProjectionView,
+    left: EntityId,
+    right: EntityId,
+    relation: RelationId,
+    relations: bool,
+) {
+    let source = IndexProjectionSource::exact(view).unwrap();
     let root = source.projection.selected_root().unwrap();
     let partition = root.get_partition(PartitionId::main()).unwrap();
     let slots = if relations {
@@ -88,10 +85,13 @@ fn native_field_navigation_boundary(relations: bool) {
     let opening = opening.load(Ordering::Relaxed);
     assert!(opening > 0);
     let field_name = if relations { "label" } else { "name" };
-    let field = aspect_field_locator(aspect_key(field_name), field_key(field_name));
-    let left_value = string_aspect_value("left");
-    let right_value = string_aspect_value("right");
-    let edge_value = string_aspect_value("edge");
+    let field = crate::transactions::data::aspect_field_patch::planned_single_field_locator(
+        AspectKey::new(field_name).unwrap(),
+        FieldKey::new(field_name).unwrap(),
+    );
+    let left_value = AspectValue::String(InternedString::Raw("left".into()));
+    let right_value = AspectValue::String(InternedString::Raw("right".into()));
+    let edge_value = AspectValue::String(InternedString::Raw("edge".into()));
     let lease = lease(Some(opening), CancellationToken::new());
     let request = ExecutionRequest::leased(&lease);
     let visited = AtomicUsize::new(0);
@@ -189,19 +189,9 @@ fn native_field_navigation_boundary(relations: bool) {
         stopped,
         Err(
             crate::visibility::materialization::read_records::read_stop::ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::Cancelled
+                crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
             )
         )
     ));
     assert_eq!(stopped_lease.charged_memory_bytes(), 0);
-    release_test_commit_snapshot(&runtime, &created);
-}
-
-#[test]
-fn native_entity_field_navigation_uses_inline_stack_and_keeps_request_stops() {
-    native_field_navigation_boundary(false);
-}
-#[test]
-fn native_relation_field_navigation_uses_inline_stack_and_keeps_request_stops() {
-    native_field_navigation_boundary(true);
 }

@@ -20,6 +20,16 @@ pub(crate) struct PolicyValueLookupCounters {
 }
 
 impl PolicyValueLookupCounters {
+    pub(crate) fn accumulate(&mut self, work: &Self) {
+        self.source_state_hit += work.source_state_hit;
+        self.target_state_hit += work.target_state_hit;
+        self.base_state_hit += work.base_state_hit;
+        self.base_patch_authority_hit += work.base_patch_authority_hit;
+        self.missing_ancestor_basis += work.missing_ancestor_basis;
+        self.missing_visible_state += work.missing_visible_state;
+        self.invalid_shape += work.invalid_shape;
+    }
+
     pub(crate) fn record_source(&mut self, result: Result<(), PolicyValueLookupFailure>) {
         self.record_visible_state(result, true);
     }

@@ -49,8 +49,8 @@ pub fn admitted<'a>(
     let maximum = usize::try_from(expected.maximum_frame_bytes)
         .map_err(|_| refuse(Native::ArithmeticOverflow))?;
     match control.source_budget() {
-        Some(source) => frame
-            .require_source_contract(source, &expected.name, expected.version, maximum)
+        Some(source) => source
+            .require_content_contract(frame, &expected.name, expected.version, maximum)
             .map_err(|cause| {
                 use worth_relational::facade::runtime::{
                     DerivedRelationReadDenial as Source,

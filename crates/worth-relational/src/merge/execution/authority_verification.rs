@@ -2,7 +2,7 @@ use crate::merge::data::{
     MergeExecutionCompilationError, MergeExecutionError, PreparedMergeExecution, RuntimeInstanceId,
 };
 
-use super::super::planning_artifact::merge_schema_snapshot_for_execution_ready;
+use super::super::planning_artifact::selected_basis::merge_schema_snapshot_for_execution_ready;
 
 pub(super) fn verify_prepared_merge_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

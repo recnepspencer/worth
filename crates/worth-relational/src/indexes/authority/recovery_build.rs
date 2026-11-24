@@ -1,5 +1,6 @@
 //! Explicit recovery operations retain the lane inside their fixed implementation.
-use super::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest, IndexAuthority};
+use super::live_access::IndexAuthority;
+use super::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest};
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 

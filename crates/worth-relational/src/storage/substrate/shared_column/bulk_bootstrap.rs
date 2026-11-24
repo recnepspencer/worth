@@ -1,7 +1,7 @@
 //! Dense construction retains each node bill independently of temporary levels.
 use super::node::{ColumnNode, ColumnStorage};
 use super::{SharedColumn, StoredValue, PAGE_LEN};
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::storage::substrate::StorageAllocation as Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 

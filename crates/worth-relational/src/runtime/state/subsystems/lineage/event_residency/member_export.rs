@@ -39,11 +39,19 @@ impl EventPageCell {
         }
         let limit = limit.min(LINEAGE_EVENT_PAGE_BYTES);
         let result = if self.descriptor.member.length > limit {
-            Err(Cause::LimitExceeded { length: self.descriptor.member.length, limit })
-        } else { source.read_member(self.descriptor.member, limit) }.and_then(|bytes| {
-            crate::durability::log::native_checkpoint_codec::member_frame::decode(
-                &bytes, self.descriptor.member,
-                crate::durability::log::native_checkpoint_codec::member_frame::MemberKind::LineageEvents)?;
+            Err(Cause::LimitExceeded {
+                length: self.descriptor.member.length,
+                limit,
+            })
+        } else {
+            source.read_member(self.descriptor.member, limit)
+        }
+        .and_then(|bytes| {
+            crate::storage::data::member_frame::decode(
+                &bytes,
+                self.descriptor.member,
+                crate::storage::data::member_frame::MemberKind::LineageEvents,
+            )?;
             Ok(bytes)
         });
         if let Err(cause) = &result

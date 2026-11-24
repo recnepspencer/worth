@@ -8,7 +8,8 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
 
 use super::cost_counters::{RelationalRetentionAtomicCounters, RelationalRetentionCostCounters};
 
@@ -43,8 +44,7 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) component_capture_pause:
         Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
     #[cfg(test)]
-    pub(super) reclamation_drop_pause:
-        Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    pub(super) reclamation_drop_pause: Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
     #[cfg(test)]
     pub(super) reclamation_gate_contended: Mutex<Option<std::sync::mpsc::SyncSender<()>>>,
     max_live_root_obligations: usize,
@@ -85,7 +85,7 @@ impl RelationalBranchRetentionOwner {
             crate::history::data::BranchId,
             super::RelationalBranchRetentionBinding,
         )>,
-    ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
+    ) -> Vec<crate::branch::basis::AdmittedRelationalBranchBasis> {
         let _cut = self
             .inner
             .external_cut

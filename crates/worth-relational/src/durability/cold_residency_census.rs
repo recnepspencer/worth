@@ -12,6 +12,7 @@ use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId, PartitionId, VersionId};
 use crate::indexes::data::{DerivedIndexGenerationId, DerivedIndexId};
 use crate::performance::data::RuntimeComplexityCounters;
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::runtime::RelationalRuntime;
 use crate::storage::residency::history_capture_bound::{
     HISTORY_CAPTURE_INPUT_TARGET, HISTORY_CAPTURE_MAX_LAYERS,
@@ -62,13 +63,20 @@ pub struct RelationalResidentSymbolDictionary {
     pub entries: Vec<(Symbol, String)>,
 }
 impl RelationalResidentSymbolDictionary {
-    pub fn len(&self) -> usize { self.entries.len() }
-    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
     pub fn contains_text(&self, text: &str) -> bool {
         self.entries.iter().any(|(_, value)| value == text)
     }
     pub fn resolve(&self, symbol: Symbol) -> Option<&str> {
-        self.entries.iter().find(|(id, _)| *id == symbol).map(|(_, value)| value.as_str())
+        self.entries
+            .iter()
+            .find(|(id, _)| *id == symbol)
+            .map(|(_, value)| value.as_str())
     }
 }
 /// Read-only history-capture fold bounds of one checkpoint directory.
@@ -120,10 +128,7 @@ fn partition_slot_census(
         .iter()
         .filter_map(|&slot| {
             let physical = state.entity_arena.physical_index(slot)?;
-            let view = crate::storage::substrate::SlotView::new(
-                &state.entity_arena,
-                physical,
-            );
+            let view = crate::storage::substrate::SlotView::new(&state.entity_arena, physical);
             Some((slot, view.generation()))
         })
         .collect();
@@ -166,8 +171,12 @@ impl RelationalRuntime {
     ) -> RelationalRegionResidencyObservation {
         let edition = self.peek_partition_edition();
         RelationalRegionResidencyObservation {
-            head: head_status(edition.peek_head_region_with_symbols(partition, &self.services.symbols)),
-            full: full_status(edition.peek_full_region_with_symbols(partition, &self.services.symbols)),
+            head: head_status(
+                edition.peek_head_region_with_symbols(partition, &self.services.symbols),
+            ),
+            full: full_status(
+                edition.peek_full_region_with_symbols(partition, &self.services.symbols),
+            ),
         }
     }
     pub fn observe_branch_region_residency(
@@ -177,8 +186,12 @@ impl RelationalRuntime {
     ) -> Option<RelationalRegionResidencyObservation> {
         let root = self.history.branch_cell(branch)?.root()?;
         Some(RelationalRegionResidencyObservation {
-            head: head_status(root.peek_head_region_with_symbols(partition, &self.services.symbols)),
-            full: full_status(root.peek_full_region_with_symbols(partition, &self.services.symbols)),
+            head: head_status(
+                root.peek_head_region_with_symbols(partition, &self.services.symbols),
+            ),
+            full: full_status(
+                root.peek_full_region_with_symbols(partition, &self.services.symbols),
+            ),
         })
     }
     pub fn observe_partition_slot_census(
@@ -186,7 +199,9 @@ impl RelationalRuntime {
         partition: PartitionId,
     ) -> Option<RelationalPartitionSlotCensus> {
         let edition = self.peek_partition_edition();
-        Some(partition_slot_census(edition.peek_accepted_full_partition(partition)?))
+        Some(partition_slot_census(
+            edition.peek_accepted_full_partition(partition)?,
+        ))
     }
     pub fn observe_branch_partition_slot_census(
         &self,
@@ -208,7 +223,11 @@ impl RelationalRuntime {
         let occupied_entity_slots: Vec<usize> = entities.occupied_slots_iter().collect();
         let occupied_entity_generations = occupied_entity_slots
             .iter()
-            .filter_map(|&slot| entities.get_slot(slot).map(|view| (slot, view.generation())))
+            .filter_map(|&slot| {
+                entities
+                    .get_slot(slot)
+                    .map(|view| (slot, view.generation()))
+            })
             .collect();
         let relations = head.relation_arena();
         Some(RelationalPartitionSlotCensus {
@@ -240,7 +259,10 @@ impl RelationalRuntime {
         else {
             return None;
         };
-        state.entity_arena.metadata_history_at(entity.slot_index()).map(|column| column.len())
+        state
+            .entity_arena
+            .metadata_history_at(entity.slot_index())
+            .map(|column| column.len())
     }
     pub fn observe_complexity_counters(&self) -> RuntimeComplexityCounters {
         self.performance_access().complexity_counters_snapshot()
@@ -249,7 +271,7 @@ impl RelationalRuntime {
         self.history.retained_branch_transitions().1.len()
     }
     pub fn pending_canonical_publication_route_count(&self) -> usize {
-        self.history.pending_canonical_publication_route_count()
+        pending_canonical_publication_route_count(&self.history)
     }
     pub fn observe_carried_index_checkpoint_image(&self) -> Option<RelationalDurableMemberLocator> {
         self.indexes.carried_checkpoint_image()
@@ -364,6 +386,7 @@ impl CompleteRelationalNativeCheckpoint {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RelationalCompleteIndexSelectionInspection>, RelationalRecoveryStop> {
-        self.checkpoint().inspect_carried_index_selections(execution)
+        self.checkpoint()
+            .inspect_carried_index_selections(execution)
     }
 }

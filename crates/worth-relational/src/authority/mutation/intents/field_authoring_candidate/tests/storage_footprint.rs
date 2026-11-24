@@ -26,7 +26,7 @@ pub(super) fn full_peak(source: &AspectFieldPatch, plan: &LoweredAspectContractP
         selection::build(&rows, PortablePatchReadmissionPurpose::RecordCreation).unwrap(),
     );
     lower_peak(source, plan).max(
-        allocation::readmission_bytes(retained, &candidate, Some(plan))
+        crate::schema::portable_patch::quote::readmission_bytes(retained, &candidate, Some(plan))
             .unwrap()
             // Growing and later shrinking the same ticket both enter the
             // resizer's actual Result<(), Cause> native callback shape.

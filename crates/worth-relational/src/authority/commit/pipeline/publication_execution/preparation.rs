@@ -1,4 +1,5 @@
 mod application_effect;
+mod source_history;
 use super::super::phase_backing::CommitPhaseBacking;
 mod current_ownership;
 mod owned_record_custody;
@@ -182,8 +183,14 @@ pub(super) fn prepare_publication_phase(
             )?;
         if lineage_deferred {
             (lineage_nodes, relation_lineages) = prepared_phase::complete_deferred_lineage(
-                execution, runtime, &mut working_state, &mut canonical_commit_envelope,
-                &changed_records, created_entities, created_relations, naming_plan,
+                execution,
+                runtime,
+                &mut working_state,
+                &mut canonical_commit_envelope,
+                &changed_records,
+                created_entities,
+                created_relations,
+                naming_plan,
             )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
@@ -225,10 +232,7 @@ pub(super) fn prepare_publication_phase(
         let canonical_commit_envelope = crate::execution::transaction_stage(
             execution,
             runtime.commit_work_budget.as_ref(),
-            || {
-                canonical_commit_envelope
-                    .freeze_with_managed_source_history(source_interpretation, *execution)
-            },
+            || source_history::freeze(canonical_commit_envelope, source_interpretation, *execution),
         )?;
         let clone_mode = working_state.clone_mode();
         let committed_partitions = working_state.into_partition_commits().1;
@@ -317,22 +321,19 @@ pub(super) fn prepare_publication_phase(
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
         let symbol_publication =
-            crate::storage::residency::SymbolPublicationAdmission::prepare(prepared_history.root())
-                .map_err(|failure| {
-                    crate::authority::commit::preparation::storage_read_denial(
-                        &branch_basis,
-                        failure,
-                    )
-                })?;
+            crate::branch::symbol_publication::SymbolPublicationAdmission::prepare(
+                prepared_history.root(),
+            )
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+            })?;
         let mirror_publication = crate::execution::transaction_stage(
             execution,
             runtime.commit_work_budget.as_ref(),
             || {
                 runtime
-                    .mirror_residency
-                    .prepare_publication(
+                    .prepare_mirror_publication(
                         execution,
-                        &runtime.services.symbols,
                         &branch_id,
                         prepared_history.root(),
                         &symbol_publication,

@@ -3,20 +3,20 @@ use std::sync::Arc;
 use super::RelationalBranchReferenceCell;
 
 impl RelationalBranchReferenceCell {
-    pub(crate) fn root(&self) -> Option<Arc<super::super::RelationalBranchRoot>> {
+    pub(crate) fn root(&self) -> Option<Arc<crate::branch::root::RelationalBranchRoot>> {
         self.state().root.clone()
     }
 
-    pub(crate) fn install_root(&mut self, root: Arc<super::super::RelationalBranchRoot>) {
+    pub(crate) fn install_root(&mut self, root: Arc<crate::branch::root::RelationalBranchRoot>) {
         self.state().root = Some(root);
     }
 
     pub(crate) fn register_basis(
         &self,
-        basis: super::super::AdmittedRelationalBranchBasis,
+        basis: crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Result<
-        super::super::AdmittedRelationalBranchBasis,
-        super::super::RelationalBranchBasisDenial,
+        crate::branch::basis::AdmittedRelationalBranchBasis,
+        crate::branch::basis_denial::RelationalBranchBasisDenial,
     > {
         self.basis_registry.register(basis)
     }
@@ -27,9 +27,9 @@ impl RelationalBranchReferenceCell {
         pay_scan: impl FnOnce(usize) -> Result<(), E>,
     ) -> Result<
         worth_execution::ExecutionArray<
-            std::sync::Weak<super::super::AdmittedRelationalBranchBasisInner>,
+            std::sync::Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>,
         >,
-        super::super::RelationalRetainedBasisSnapshotStop<E>,
+        crate::branch::basis_registry::RelationalRetainedBasisSnapshotStop<E>,
     > {
         self.basis_registry
             .snapshot_retained_for_request(request, pay_scan)
@@ -37,23 +37,24 @@ impl RelationalBranchReferenceCell {
 
     pub(crate) fn readmit_retained_basis(
         &self,
-        descriptor: &super::super::RelationalBranchBasisDescriptor,
-    ) -> Option<super::super::AdmittedRelationalBranchBasis> {
+        descriptor: &crate::branch::basis::RelationalBranchBasisDescriptor,
+    ) -> Option<crate::branch::basis::AdmittedRelationalBranchBasis> {
         self.basis_registry.readmit_retained(descriptor)
     }
 
     pub(crate) fn bind_basis_registry_metrics(
         &mut self,
-        metrics: Arc<super::super::RelationalBranchBasisRegistryMetrics>,
+        metrics: Arc<crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics>,
     ) {
         self.basis_registry.bind_metrics(metrics);
     }
 
     pub(crate) fn reset_basis_registry(
         &mut self,
-        metrics: Arc<super::super::RelationalBranchBasisRegistryMetrics>,
+        metrics: Arc<crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics>,
     ) {
-        self.basis_registry = super::super::RelationalBranchBasisRegistry::with_metrics(metrics);
+        self.basis_registry =
+            crate::branch::basis_registry::RelationalBranchBasisRegistry::with_metrics(metrics);
     }
 
     #[cfg(test)]
@@ -85,13 +86,13 @@ impl CheckpointComponentCellSource {
     ) -> Option<(
         worth_foundational::FoundationalBranchReferenceGeneration,
         super::RelationalBranchVersion,
-        Arc<super::super::RelationalBranchRoot>,
+        Arc<crate::branch::root::RelationalBranchRoot>,
     )> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if !matches!(
             state.observation.target(),
             worth_foundational::FoundationalBranchTarget::Empty
-        ) || state.lifecycle != super::super::RelationalBranchLifecyclePosture::Live
+        ) || state.lifecycle != crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
         {
             return None;
         }
@@ -104,16 +105,16 @@ impl CheckpointComponentCellSource {
 
     pub(crate) fn snapshot(
         &self,
-        expected: &crate::branch::RelationalBranchCellCheckpoint,
-        posture: crate::branch::RelationalBranchLifecyclePosture,
+        expected: &crate::branch::reference::checkpoint::RelationalBranchCellCheckpoint,
+        posture: crate::branch::lifecycle::RelationalBranchLifecyclePosture,
     ) -> Result<
         Option<(
-            Arc<crate::branch::RelationalBranchRoot>,
+            Arc<crate::branch::root::RelationalBranchRoot>,
             crate::history::retention::RelationalBranchRetentionBinding,
         )>,
-        crate::branch::CheckpointBranchMetadataCaptureDenial,
+        crate::branch::registry::CheckpointBranchMetadataCaptureDenial,
     > {
-        use crate::branch::CheckpointBranchMetadataCaptureDenial as Denial;
+        use crate::branch::registry::CheckpointBranchMetadataCaptureDenial as Denial;
         let root = {
             let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
             if self.runtime_instance_id != expected.runtime_instance_id

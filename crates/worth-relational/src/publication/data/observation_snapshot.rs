@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::CommitId;
-use crate::publication::bundle::PublicationStatus;
+use crate::publication::bundle::publication_status::PublicationStatus;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::snapshots::data::SnapshotId;
 

@@ -2,7 +2,6 @@ mod aspect_plan_compilation;
 mod authority_verification;
 mod lineage_continuity;
 mod plan_compilation;
-pub(super) mod prepared_execution;
 mod record_plan_compilation;
 
 #[cfg(test)]
@@ -12,10 +11,33 @@ use crate::merge::data::{
     MergeExecutionPreparationError, OwnerBoundMergeExecutionRequest, PreparedMergeExecution,
 };
 
-use super::planning_artifact::materialize_planning_artifact;
+use super::planning_artifact::selected_basis::materialize_planning_artifact;
 use super::MergeAccess;
 
 impl<'runtime> MergeAccess<'runtime> {
+    pub(crate) fn derive_merge_commit_mutation_plan(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        compiled: &CompiledMergeExecution,
+    ) -> Result<super::data::PreparedMergeMutationPlan, super::data::MergeExecutionMutationPlanError>
+    {
+        let runtime = self.runtime;
+        super::execution_mutation_plan::derive_merge_commit_mutation_plan(
+            &runtime.schema_contract_runtime.aspect_contract_plans,
+            &mut |entity| {
+                let current = runtime.storage_access().current_edition();
+                super::execution_mutation_plan::current_entity_snapshot(
+                    &current,
+                    &runtime.services.symbols,
+                    &runtime.config.schema.registry,
+                    execution,
+                    entity,
+                )
+            },
+            compiled,
+        )
+    }
+
     #[cfg(test)]
     pub fn prepare_merge_execution(
         &self,
@@ -85,12 +107,9 @@ impl<'runtime> MergeAccess<'runtime> {
             artifact.schema_snapshot.clone(),
         )
         .map_err(MergeExecutionPreparationError::NotExecutionReady)?;
-        let bound_executable_plan = plan_compilation::compile_bound_executable_plan(
-            self.runtime,
-            &normalized_request,
-            &execution_ready_plan,
-        )
-        .map_err(MergeExecutionPreparationError::Compilation)?;
+        let bound_executable_plan =
+            compile_bound_executable_plan(self.runtime, &normalized_request, &execution_ready_plan)
+                .map_err(MergeExecutionPreparationError::Compilation)?;
 
         let compiled = CompiledMergeExecution::new(
             normalized_request,
@@ -124,7 +143,7 @@ impl<'runtime> MergeAccess<'runtime> {
         crate::merge::data::BoundExecutableMergePlan,
         crate::merge::data::MergeExecutionCompilationError,
     > {
-        plan_compilation::compile_bound_executable_plan(
+        compile_bound_executable_plan(
             self.runtime,
             &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
                 execution_ready.basis.target_head.branch_id.clone(),
@@ -157,4 +176,41 @@ impl<'runtime> MergeAccess<'runtime> {
             .replace_bound_plan_and_mutation_plan_for_test(bound_executable_plan, mutation_plan);
         Ok(())
     }
+}
+
+fn compile_bound_executable_plan(
+    runtime: &crate::runtime::RelationalRuntime,
+    request: &super::data::NormalizedRelationalMergeRequest,
+    execution_ready: &ExecutionReadyLoweredMergePlan,
+) -> Result<super::data::BoundExecutableMergePlan, super::data::MergeExecutionCompilationError> {
+    use super::data::{MergeExecutionCompilationError, RuntimeInstanceId};
+    let records = plan_compilation::compile_merge_records(
+        &runtime.schema_contract_runtime.aspect_contract_plans,
+        request,
+        execution_ready,
+    )?;
+    let (target_reference, target_truth_version) = runtime
+        .history()
+        .branch_reference_state(request.target_branch())
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "target branch is unavailable during merge compilation",
+            },
+        )?;
+    let (source_reference, source_truth_version) = runtime
+        .history()
+        .branch_reference_state(request.source_branch())
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "source branch is unavailable during merge compilation",
+            },
+        )?;
+
+    Ok(records.bind(
+        request,
+        execution_ready,
+        RuntimeInstanceId(runtime.runtime_instance_id()),
+        (target_reference, target_truth_version),
+        (source_reference, source_truth_version),
+    ))
 }

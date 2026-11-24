@@ -6,8 +6,8 @@ use crate::authorization::{
     RelationalAuthorizationObservationAdmission, RelationalAuthorizationObservationCounters,
 };
 use crate::identity::data::{EntityId, RelationId};
-use crate::runtime::RelationalRuntime;
-use crate::visibility::materialization::read_records::VisibilityProjectionView;
+use crate::schema::data::AspectContractPlanCatalog;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use worth_foundational::facade::AspectFieldLocator;
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -26,7 +26,7 @@ impl Witness {
     }
 }
 pub(super) struct Context<'r, 'v> {
-    pub(super) runtime: &'r RelationalRuntime,
+    pub(super) aspect_plans: &'r AspectContractPlanCatalog,
     pub(super) view: &'v VisibilityProjectionView,
 }
 pub(super) struct State<'a, A> {

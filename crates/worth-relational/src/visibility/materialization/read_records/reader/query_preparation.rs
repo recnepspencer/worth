@@ -53,7 +53,7 @@ pub(super) fn consult_query_preparation_request(
         .map_err(|stop| query_preparation_request_stop(stop, execution))
 }
 pub(super) fn query_preparation_read_stop(
-    cause: crate::execution::RelationalExecutionDenialCause,
+    cause: crate::execution::denial_cause::RelationalExecutionDenialCause,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> QueryReadExecutionStop {
     let Some(stop) = cause.as_kernel_stop() else {

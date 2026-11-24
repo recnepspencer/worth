@@ -1,6 +1,8 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredAcyclicityContract;
-use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::super::super::context::InvariantExecutionContext;
 mod graph;

@@ -1,6 +1,8 @@
 use crate::identity::data::RelationId;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitConflict, ConflictClass, ExistingRecordTarget};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::ExistingRecordTarget;
 
 use super::super::record_lookup::relation_exists_in_state;
 

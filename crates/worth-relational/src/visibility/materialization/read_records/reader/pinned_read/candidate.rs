@@ -18,31 +18,6 @@ pub struct RelationalAppliedCandidateReadIdentity {
     phase: CandidateReadPhase,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CandidateReadPhase {
-    AssemblyRevision(u64),
-    PreparedCandidate(u64),
-}
-
-/// Compact descriptive qualification for values read from one applied image.
-/// It retains no proposal, source context, record payload or runtime handle.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RelationalAppliedCandidateReadQualification {
-    runtime_instance_id: u64,
-    proposal_ordinal: u64,
-    proposed_version: crate::identity::data::VersionId,
-    phase: CandidateReadPhase,
-}
-impl RelationalAppliedCandidateReadQualification {
-    pub const fn runtime_instance_id(&self) -> u64 {
-        self.runtime_instance_id
-    }
-
-    pub const fn proposed_version_id(&self) -> crate::identity::data::VersionId {
-        self.proposed_version
-    }
-}
-
 impl RelationalAppliedCandidateReadIdentity {
     pub const fn qualification(&self) -> RelationalAppliedCandidateReadQualification {
         RelationalAppliedCandidateReadQualification {
@@ -91,7 +66,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
     /// Physical projections retain their candidate root; this cannot issue an
     /// operational snapshot or a branch observation.
     pub fn project_candidate(&self) -> super::super::super::projection::VisibilityProjectionView {
-        super::super::super::projection::VisibilityProjectionView::from_pinned(self)
+        self.project_read()
     }
 
     pub(crate) fn capture_applied(
@@ -101,6 +76,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         identity: &RelationalMutationProposalIdentity,
         revision: u64,
         state: &WorkingState,
+        content: &crate::content::publication::ContentPublication,
         symbols: &PendingSymbolMeanings,
         changed_records: &[crate::transactions::data::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
@@ -167,6 +143,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                         execution,
                         previous_root,
                         state,
+                        content,
                         &services.symbols,
                     )
                     .map_err(|failure| {
@@ -248,7 +225,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             descriptor_semantics_version: schema.descriptor_semantics_version(),
             evidence_basis,
         };
-        let fields = crate::indexes::AppliedFieldImage::capture(
+        let fields = crate::indexes::authority::maintenance::AppliedFieldImage::capture(
             execution,
             Arc::clone(&basis.inner.root),
             Arc::clone(&root),

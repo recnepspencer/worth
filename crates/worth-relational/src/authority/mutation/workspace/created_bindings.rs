@@ -2,9 +2,10 @@
 use super::*;
 use crate::identity::data::KindId;
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    CreatedEntityRef, CreatedRelationRef, EntityReference, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::CreatedRelationRef;
+use crate::transactions::data::primitives::EntityReference;
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub(super) struct CreatedEntityKey<'a> {
@@ -46,9 +47,9 @@ impl<'a> MutationWorkspace<'a> {
     pub(crate) fn into_created_bindings(
         self,
     ) -> (
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
-    ) {
+        crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
+    ){
         let entity = self
             .created_entities
             .iter()
@@ -60,11 +61,11 @@ impl<'a> MutationWorkspace<'a> {
             .map(|(key, id)| (key.owned(), *id))
             .collect();
         (
-            crate::transactions::data::CommitCreatedEntityBindings::from_owner_map(
+            crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings::from_owner_map(
                 entity,
                 self.symbols.lookup(),
             ),
-            crate::transactions::data::CommitCreatedRelationBindings::from_owner_map(
+            crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings::from_owner_map(
                 relation,
                 self.symbols.lookup(),
             ),

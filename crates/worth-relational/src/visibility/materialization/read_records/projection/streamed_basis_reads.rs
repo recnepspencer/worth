@@ -18,18 +18,18 @@ pub(crate) trait ProjectionRecordSource {
     fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause>;
     fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause>;
 
     fn demand_regions_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause>;
     fn admitted_head_region(
         &self,
         id: PartitionId,
@@ -57,27 +57,27 @@ pub(crate) trait ProjectionRecordSource {
     ) -> Result<Option<T>, ReadStop<E>> {
         self.demand_regions_full(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let bytes = self
             .candidate_entity_heap_for_id(id)
             .and_then(|heap| {
                 heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
-                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                    .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
             .map_err(ReadStop::Request)?;
         before_candidate(super::super::read_prices::KEYED_RECORD, bytes)
             .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let record = preclaimed_records::entity(self, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::read_footprint::entity)
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             .map_err(ReadStop::Request)?;
         if actual > bytes {
             return Err(ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
         before_candidate(0, actual).map_err(ReadStop::Admission)?;
@@ -137,7 +137,7 @@ pub(crate) trait ProjectionRecordSource {
             return kind_reads::entity(self, execution, kind, None, before_candidate, visit);
         }
         self.demand_all_full(execution).map_err(ReadStop::Request)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -165,7 +165,7 @@ pub(crate) trait ProjectionRecordSource {
             return kind_reads::relation(self, execution, kind, None, before_candidate, visit);
         }
         self.demand_all_full(execution).map_err(ReadStop::Request)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -183,7 +183,7 @@ pub(crate) trait ProjectionRecordSource {
     fn candidate_entity_heap_for_id(
         &self,
         id: EntityId,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let Some(root) = self.selected_root() else {
             return Ok(0);
         };
@@ -199,9 +199,9 @@ pub(crate) trait ProjectionRecordSource {
                 });
         }
         let visibility = if self.is_exact_basis() {
-            super::super::reader::KindScanVisibility::Live
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
         } else {
-            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
         };
         super::super::read_work::record_quote::entity_for_id(
             root.as_ref(),
@@ -214,7 +214,7 @@ pub(crate) trait ProjectionRecordSource {
     fn candidate_relation_heap_for_id(
         &self,
         id: RelationId,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let Some(root) = self.selected_root() else {
             return Ok(0);
         };
@@ -230,9 +230,9 @@ pub(crate) trait ProjectionRecordSource {
                 });
         }
         let visibility = if self.is_exact_basis() {
-            super::super::reader::KindScanVisibility::Live
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
         } else {
-            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
         };
         super::super::read_work::record_quote::relation_for_id(
             root.as_ref(),

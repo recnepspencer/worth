@@ -33,8 +33,8 @@ fn retain_one_basis_per_branch(
     runtime: &crate::runtime::RelationalRuntime,
     branch_population: usize,
 ) -> (
-    super::RelationalBranchBasisDescriptor,
-    Vec<super::AdmittedRelationalBranchBasis>,
+    crate::branch::basis::RelationalBranchBasisDescriptor,
+    Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
 ) {
     let mut retained = Vec::with_capacity(branch_population);
     let mut target = None;
@@ -54,9 +54,9 @@ fn retain_one_basis_per_branch(
 
 fn prove_single_readmission_is_fixed_work(
     runtime: &crate::runtime::RelationalRuntime,
-    target: &super::RelationalBranchBasisDescriptor,
+    target: &crate::branch::basis::RelationalBranchBasisDescriptor,
     branch_population: usize,
-) -> super::RelationalBranchBasisCostCounters {
+) -> crate::branch::basis_counters::RelationalBranchBasisCostCounters {
     let before = runtime.branch_basis_cost_counters();
     let population_scans_before = runtime
         .phase4_reference_cost_counters()
@@ -91,7 +91,7 @@ fn prove_single_readmission_is_fixed_work(
 
 fn assert_exact_registry_cleanup(
     runtime: &crate::runtime::RelationalRuntime,
-    after_readmission: super::RelationalBranchBasisCostCounters,
+    after_readmission: crate::branch::basis_counters::RelationalBranchBasisCostCounters,
     branch_population: usize,
 ) {
     let cleaned = runtime.branch_basis_cost_counters();
@@ -108,7 +108,7 @@ fn assert_exact_registry_cleanup(
 
 #[test]
 fn retained_basis_registry_cost_is_fixed_at_one_sixty_four_and_four_thousand_ninety_six_branches() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for branch_population in [1, 64, 4_096] {
@@ -118,7 +118,7 @@ fn retained_basis_registry_cost_is_fixed_at_one_sixty_four_and_four_thousand_nin
 
 #[test]
 fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for branch_population in [64, 4_096] {

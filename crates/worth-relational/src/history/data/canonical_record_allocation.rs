@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub use super::record_allocation_class::RecordAllocationClass;
 

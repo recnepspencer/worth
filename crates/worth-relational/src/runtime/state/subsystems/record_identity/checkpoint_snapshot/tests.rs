@@ -92,7 +92,7 @@ fn identity_snapshot_refuses_actual_backing_and_original_cancellation_before_cop
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
     assert!(matches!(owner.checkpoint_identity_for_request(&request),
-        Err(RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+        Err(RelationalRecoveryStop::Request(crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested, admitted, ancestor: 0,
         })) if requested >= minimum as u64 && admitted < minimum as u64));
     assert_eq!(budget.charged_memory_bytes(), 0);
@@ -103,7 +103,7 @@ fn identity_snapshot_refuses_actual_backing_and_original_cancellation_before_cop
     assert!(matches!(
         owner.checkpoint_identity_for_request(&ExecutionRequest::serial(&host)),
         Err(RelationalRecoveryStop::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
+            crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
         ))
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);

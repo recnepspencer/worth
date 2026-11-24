@@ -66,7 +66,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     {
         return Err(TransactionCommitError::publication_denied(
             crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(
-                crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionRequired,
+                crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial::TransitionRequired,
             ),
         ));
     }

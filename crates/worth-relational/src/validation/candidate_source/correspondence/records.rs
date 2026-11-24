@@ -1,8 +1,8 @@
 //! Compare the complete authoritative records, including absence and contracts.
 use super::*;
-use crate::branch::RelationalMaterializationRecord;
+use crate::branch::materialization::RelationalMaterializationRecord;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(super) fn matches(
@@ -34,7 +34,7 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = crate::branch::SymbolAdmittedRootRead::new(
+    let backing = crate::branch::symbol_read::SymbolAdmittedRootRead::new(
         &source.basis().inner.root,
         &runtime.services.symbols,
     );

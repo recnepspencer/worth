@@ -1,7 +1,9 @@
 //! Interpret actual fields using the selected schema's canonical declarations.
 use super::{control, RelationalContentDenial as Denial, RelationalContentFormat as Format};
-use crate::validation::engine::state_view::InvariantStateView;
-use crate::{schema::data::RelationalSchemaRegistry, transactions::data::RecordRef};
+use crate::identity::data::VersionId;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::storage::overlay::{record_observation::observe_record, CurrentPartitionAccess};
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     AspectShape, AspectValue, ContentRefId, ContractValidatedAspectValueView, ScalarAspectType,
@@ -10,23 +12,17 @@ use worth_foundational::facade::{
 pub(super) fn visit(
     execution: &ExecutionRequest<'_, '_>,
     schema: &RelationalSchemaRegistry,
-    view: &InvariantStateView<'_>,
+    state: &dyn CurrentPartitionAccess,
+    version: VersionId,
     record: &RecordRef,
     callback: &mut dyn FnMut(ContentRefId, &Format) -> Result<(), Denial>,
 ) -> Result<(), Denial> {
     control::run(execution, |control| {
         control.checkpoint(1)?;
-        let (aspects, kind) = match record {
-            RecordRef::Entity(id) => (
-                view.entity_aspect_state(*id),
-                view.entity_metadata(*id).map(|meta| meta.kind_id),
-            ),
-            RecordRef::Relation(id) => (
-                view.relation_aspect_state(*id),
-                view.relation_metadata(*id).map(|meta| meta.kind_id),
-            ),
+        let Some(observation) = observe_record(state, record, version) else {
+            return Ok(());
         };
-        let Some(aspects) = aspects else {
+        let Some(aspects) = observation.aspects else {
             return Ok(());
         };
         for (aspect_key, value) in aspects.aspects().entries() {
@@ -46,7 +42,7 @@ pub(super) fn visit(
                             control,
                             schema,
                             record,
-                            kind.ok_or(Denial::EncodingInconsistency)?,
+                            observation.kind,
                             aspect_key,
                             key,
                         )?;

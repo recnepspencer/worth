@@ -3,21 +3,20 @@ mod admission_fault;
 mod attachments;
 pub(crate) mod codec;
 pub(crate) mod codec_control;
-mod control;
+pub(crate) mod control;
 pub(crate) mod decoding;
 pub(crate) mod denial;
 mod directory;
 mod field_references;
 mod frame;
 mod frame_admission;
-mod publication;
-mod read_closure;
+pub(crate) mod publication;
+pub(crate) mod read_closure;
 mod reconstruction;
 pub(crate) mod registry;
-mod schema_transition;
-pub use read_closure::RelationalContentReadClosure;
 mod resolution;
 pub(crate) mod schema;
+mod schema_transition;
 pub use schema::{
     RelationalContentFieldBinding, RelationalContentFormatDeclaration,
     RelationalContentSchemaSnapshot,
@@ -26,15 +25,12 @@ mod historical;
 mod preimage;
 mod projection;
 mod restoration;
-mod source;
+pub(crate) mod source;
 mod transaction;
-pub(crate) use publication::{commit_denial, prepare_publication, ContentPublication};
-pub(crate) use source::NativeContentSourceView;
 
 pub use attachments::RelationalContentAttachments;
 pub use codec::{RelationalContentCodec, RelationalContentSink};
 pub use codec_control::RelationalContentControl;
-pub(crate) use control::run_commit_stage;
 pub use denial::{RelationalContentDenial, RelationalContentRejection};
 pub(crate) use directory::ContentDirectory;
 pub use frame::{RelationalContentFrame, RelationalContentRecord};
@@ -57,3 +53,5 @@ pub(crate) fn charge_bytes(
         Ok(())
     })
 }
+
+mod basis_read;

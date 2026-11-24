@@ -18,9 +18,10 @@ pub(super) struct CheckpointEnvelopeLocation {
 /// carry them out of the subsystem lock without copying them.
 #[derive(Debug, Default)]
 pub(crate) struct DurabilityState {
-    pub(super) medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    pub(super) medium:
+        Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
     pub(super) transition_history:
-        Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+        Option<crate::durability::published_medium::RelationalTransitionHistoryReader>,
     pub(super) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub(super) log: VecDeque<(
         CommitId,
@@ -36,7 +37,9 @@ pub(crate) struct DurabilityState {
 impl DurabilityState {
     pub(super) fn fork_snapshot(
         &self,
-        transition_history: Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+        transition_history: Option<
+            crate::durability::published_medium::RelationalTransitionHistoryReader,
+        >,
     ) -> Self {
         Self {
             medium: None,
@@ -70,12 +73,12 @@ impl DurabilityState {
         // with an older coverage frontier. Equal coverage can carry updated
         // derived index images and remains a valid new checkpoint.
         if self.checkpoints.last().is_some_and(|current| {
-            crate::durability::access::checkpoint_coverage(current)
-                >= crate::durability::access::checkpoint_coverage(&checkpoint)
+            crate::durability::checkpoint_coverage::checkpoint_coverage(current)
+                >= crate::durability::checkpoint_coverage::checkpoint_coverage(&checkpoint)
                 && current.coverage.up_to_branch_transition
                     >= checkpoint.coverage.up_to_branch_transition
-                && (crate::durability::access::checkpoint_coverage(current)
-                    > crate::durability::access::checkpoint_coverage(&checkpoint)
+                && (crate::durability::checkpoint_coverage::checkpoint_coverage(current)
+                    > crate::durability::checkpoint_coverage::checkpoint_coverage(&checkpoint)
                     || current.coverage.up_to_branch_transition
                         > checkpoint.coverage.up_to_branch_transition)
         }) {

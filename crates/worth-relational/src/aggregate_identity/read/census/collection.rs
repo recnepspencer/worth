@@ -62,7 +62,7 @@ pub(super) fn read<Projection>(
 fn lookup(
     member: &NativeMemberKey,
     count: usize,
-    budget: &crate::validation::data::CustomInvariantReadBudget<'_>,
+    budget: &crate::validation::custom_rule::CustomInvariantReadBudget<'_>,
 ) -> Result<(), AggregateReadDenial> {
     let units = member
         .comparison_work(count)

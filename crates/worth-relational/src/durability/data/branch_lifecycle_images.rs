@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::branch::RelationalBranchLifecyclePosture;
+use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
 use crate::history::data::BranchId;
 
 /// The lifecycle posture a checkpoint records for one branch it holds. A

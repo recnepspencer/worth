@@ -13,8 +13,11 @@ pub(crate) fn encode(
     publication: CommitId,
     bytes: Vec<u8>,
 ) -> Result<AspectFieldPatch, TransactionCommitError> {
-    let text = String::from_utf8(bytes)
-        .map_err(|_| crate::mvcc::origin_denial("Native ownership payload UTF-8 refused"))?;
+    let text = String::from_utf8(bytes).map_err(|_| {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+            "Native ownership payload UTF-8 refused",
+        )
+    })?;
     Ok(AspectFieldPatch::new(BTreeMap::from([
         (
             locator(aspect, "publication"),
@@ -40,14 +43,21 @@ impl Writer<'_, '_, '_, '_, '_> {
         if let Some(stop) = stop {
             return Err(stop);
         }
-        result.map_err(|_| crate::mvcc::origin_denial("Native ownership payload width refused"))?;
+        result.map_err(|_| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "Native ownership payload width refused",
+            )
+        })?;
         // The exact-sized Vec and its Raw string carrier coexist during handoff.
         self.retain((width as u64).checked_mul(2).ok_or_else(|| {
             request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?)?;
         let mut bytes = Vec::with_capacity(width);
-        serde_json::to_writer(&mut bytes, value)
-            .map_err(|_| crate::mvcc::origin_denial("Native ownership payload encoding refused"))?;
+        serde_json::to_writer(&mut bytes, value).map_err(|_| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "Native ownership payload encoding refused",
+            )
+        })?;
         Ok(bytes)
     }
 }

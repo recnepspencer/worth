@@ -3,7 +3,7 @@ use super::state::VisibilitySnapshotBasis;
 
 #[derive(Debug)]
 pub(crate) struct VisibilitySnapshotBasisRetirement {
-    observation: Option<crate::mvcc::RelationalObservationRetirement>,
+    observation: Option<crate::mvcc::observation::RelationalObservationRetirement>,
     _root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
 }
 

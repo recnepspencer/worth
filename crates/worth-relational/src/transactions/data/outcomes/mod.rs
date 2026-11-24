@@ -17,7 +17,7 @@ pub use commit_semantic_result::{
 pub(crate) mod commit_validation;
 pub(crate) mod conflict_class;
 pub(crate) mod created_entity_bindings;
-mod created_relation_bindings;
+pub(crate) mod created_relation_bindings;
 pub(crate) mod plan_artifacts;
 pub(crate) mod rollback;
 pub(crate) mod transaction_commit_error;

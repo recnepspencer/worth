@@ -3,13 +3,15 @@ use super::{
     candidate_publication::PreparedCandidateIndexPublication, owner::IndexMaintenanceOwner,
     request_payment, root_view::IndexRootView,
 };
-use crate::branch::RelationalBranchRoot;
+use crate::branch::maintenance::CommitChange;
+use crate::branch::root::RelationalBranchRoot;
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::runtime::{IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions};
-use crate::storage::substrate::maintenance::CommitChange;
+use crate::runtime::state::subsystems::indexing::{
+    IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions,
+};
 use std::sync::Arc;
 
 impl IndexDefinitionReadBinding {
@@ -65,7 +67,7 @@ impl IndexDefinitionReadBinding {
         definitions: Option<&PreparedRelationalIndexDefinitions>,
         maintenance_budget: Option<DerivedIndexMaintenanceBudget>,
     ) -> Result<Option<PreparedCandidateIndexPublication>, DerivedIndexMaintenanceDenial> {
-        crate::execution::check_request(execution).map_err(|cause| {
+        crate::execution::request_custody::check_request(execution).map_err(|cause| {
             DerivedIndexMaintenanceDenial {
                 kind: Denial::Execution(cause),
                 work: Default::default(),
@@ -164,7 +166,7 @@ impl IndexDefinitionReadBinding {
                             )
                         }
                         _ => crate::storage::substrate::maintenance::MaintenanceRefusal::Execution(
-                            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                         ),
                     })
             };
@@ -176,13 +178,13 @@ impl IndexDefinitionReadBinding {
                             crate::storage::substrate::maintenance::ReconstructionWork::from_change_work(
                                 shared,
                             );
-                        crate::storage::substrate::maintenance::Maintained::cold(
+                        crate::branch::maintenance::Maintained::cold(
                             &mut maintainer,
                             lane,
                             &mut cold_work,
                         )
                     } else {
-                        crate::storage::substrate::maintenance::apply_change(
+                        crate::branch::maintenance::apply_change(
                             &mut maintainer,
                             previous.as_ref(),
                             change,

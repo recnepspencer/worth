@@ -8,7 +8,7 @@ use crate::tests::support::*;
 
 #[test]
 fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let result = Arc::new(create_entity_outcome(

@@ -89,9 +89,7 @@ pub(crate) use symbol_changes::RegionSymbolChanges;
 mod symbol_inheritance;
 pub(crate) use symbol_admission_identity::RelationalRegionSymbolAdmissionIdentity;
 mod symbol_publication;
-pub(crate) use symbol_publication::{
-    RegionSymbolPublication, SymbolPublicationAdmission, SymbolPublicationKey,
-};
+pub(crate) use symbol_publication::{RegionSymbolPublication, SymbolPublicationKey};
 
 pub(crate) use content_capture::restore_failure as content_reconstruction_failure;
 

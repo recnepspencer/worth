@@ -5,7 +5,7 @@ mod derived_changes;
 mod execution_context;
 pub(crate) mod interruption;
 pub use interruption::CustomInvariantInterruption;
-mod read_budget;
+pub(crate) mod read_budget;
 pub use read_budget::{CustomInvariantNativeCheckpointDenial, CustomInvariantReadBudget};
 mod managed_source;
 #[cfg(test)]

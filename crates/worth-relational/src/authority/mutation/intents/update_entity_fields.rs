@@ -1,15 +1,19 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityFieldUpdateMissingState, UpdateEntityFieldsIntent,
-};
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::EntityFieldUpdateMissingState;
 
 use super::entity_aspect_preparation::PreparedEntityAspectMutation;
 
 pub(super) fn apply(
     intent: &UpdateEntityFieldsIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let version_id = workspace.version_id();
     let slot = intent.entity_id.slot_index();
     let PreparedEntityAspectMutation {
@@ -27,13 +31,13 @@ pub(super) fn apply(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let partition = context
             .state
             .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         if let Some(prior) = &authoritative_aspect_state {
             new_authoritative_aspect_state.lineage_id = prior.lineage_id;
@@ -48,10 +52,10 @@ pub(super) fn apply(
                 version_id,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     let new_authoritative_aspect_state = workspace.with_context(|context| {
         context

@@ -43,7 +43,10 @@ fn capture_inner(
         frozen.current.components.observations(),
         request,
     )?;
-    let indexes = frozen.current.indexes.resolve_for_request(request)?;
+    let indexes = crate::durability::authority::checkpoint_image::capture_frozen_indexes(
+        frozen.current.indexes,
+        request,
+    )?;
     let lineage = super::super::metadata::capture_lineage(frames, None, request)?;
     let mut metadata = super::super::metadata::capture_metadata_members(
         &dictionary,

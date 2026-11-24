@@ -41,7 +41,7 @@ pub(crate) fn enforce_patch_budget(
 
 pub(crate) fn canonical_commit_envelope(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    content: crate::content::ContentPublication,
+    content: crate::content::publication::ContentPublication,
     index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     commit_reference: &RelationalCommitReceipt,
     branch_id: &BranchId,

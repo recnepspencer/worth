@@ -1,7 +1,7 @@
-use crate::transactions::data::{
-    AspectEvaluationTrace, AspectEvaluationTraceRow, AspectLifecycleTransitionClass,
-    AspectTraceEvidence,
-};
+use crate::transactions::data::aspect_traces::AspectEvaluationTrace;
+use crate::transactions::data::aspect_traces::AspectEvaluationTraceRow;
+use crate::transactions::data::aspect_traces::AspectLifecycleTransitionClass;
+use crate::transactions::data::aspect_traces::AspectTraceEvidence;
 
 use super::data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,

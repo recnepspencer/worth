@@ -1,9 +1,9 @@
 use worth_foundational::FoundationalBranchTarget;
 
 use super::CANONICAL_RUNTIME_INSTANCE_ID;
-use crate::branch::{
-    RelationalBranchReferenceCell, RelationalBranchRootDescriptor, RelationalBranchTarget,
-};
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::target::RelationalBranchRootDescriptor;
+use crate::branch::target::RelationalBranchTarget;
 use crate::history::data::BranchId;
 
 fn cell_on(runtime_instance_id: u64) -> RelationalBranchReferenceCell {

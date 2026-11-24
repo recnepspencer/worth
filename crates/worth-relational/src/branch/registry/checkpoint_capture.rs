@@ -6,8 +6,8 @@ pub(crate) use data::{CheckpointBranchMetadata, CheckpointBranchMetadataFields};
 
 use super::RelationalBranchReferenceRegistry;
 use crate::branch::reference::CheckpointCellSource;
-use crate::branch::RelationalBranchCellCheckpoint;
-use crate::durability::data::DurableBranchLifecycleImage;
+use crate::branch::reference::RelationalBranchCellCheckpoint;
+use crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage;
 use crate::history::data::BranchId;
 use worth_execution::ExecutionRequest;
 
@@ -15,7 +15,7 @@ use worth_execution::ExecutionRequest;
 pub(crate) enum CheckpointBranchMetadataCaptureDenial {
     SizeOverflow,
     SourceChanged,
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 struct CellSource {

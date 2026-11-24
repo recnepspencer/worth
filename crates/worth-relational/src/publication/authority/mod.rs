@@ -1,3 +1,4 @@
+pub(crate) mod artifacts;
 mod bundle_publication;
 mod diagnostic_emission;
 mod pending_settlement;

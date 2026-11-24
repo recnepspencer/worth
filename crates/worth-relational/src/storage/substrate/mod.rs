@@ -21,3 +21,5 @@ pub use shared_column::observe_history_prefix_traversal;
 pub(crate) use shared_column::SharedColumn;
 pub(crate) use shared_map::{SharedMap, SharedMapIter};
 pub(crate) use storage_allocation::StorageAllocation;
+
+pub(crate) mod owned_state;

@@ -1,5 +1,5 @@
 //! Keep a native owner's typed refusal through only a generic nested handoff.
-use super::RelationalRecordHistoryDenial as Denial;
+use super::denial::RelationalRecordHistoryDenial as Denial;
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
 
 pub(super) fn run<T>(

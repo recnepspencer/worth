@@ -6,11 +6,11 @@ pub(crate) fn ensure_historical_state(
     runtime: &RelationalRuntime,
     basis: HistoricalVisibilityBasis,
     recent_candidate: bool,
-) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
-    crate::execution::check_request(execution)?;
+) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    crate::execution::request_custody::check_request(execution)?;
     if let Some(root) = basis.root() {
         root.demand_all_full(execution, &runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);
     if let Some(state) = runtime.visibility.cache.state(&key) {
@@ -54,14 +54,14 @@ pub(crate) fn materialize_historical_visibility(
     runtime: &RelationalRuntime,
     version_id: crate::identity::data::VersionId,
     allow_recent_admission: bool,
-) -> Result<Option<SnapshotState>, crate::execution::RelationalExecutionDenialCause> {
-    crate::execution::check_request(execution)?;
+) -> Result<Option<SnapshotState>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    crate::execution::request_custody::check_request(execution)?;
     let Ok(basis) = historical_basis_for_retained_version(runtime, version_id) else {
         return Ok(None);
     };
     if let Some(root) = basis.root() {
         root.demand_all_full(execution, &runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);
     if let Some(state) = runtime.visibility.cache.state(&key) {

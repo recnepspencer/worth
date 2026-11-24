@@ -11,25 +11,19 @@ use crate::merge::data::{
     RelationalMergeProofPacketAdmissionPosture, RelationalMergeProofPacketCanonicalBasis,
 };
 
-use super::MergeAccess;
-
 const PHASE_6_CANONICAL_RULE_VERSION: &str = "worth.relational.merge.proof_packet.canonical.v1";
 
-impl<'runtime> MergeAccess<'runtime> {
-    pub fn lower_merge_proof_packet_to_foundational_canonical_basis(
-        &self,
-        packet: &RelationalMergeProofPacket,
-    ) -> TransitionOutcome<RelationalMergeProofPacketCanonicalBasis, CanonicalBasisConstructionDenial>
-    {
-        let version = CanonicalizationRuleVersion::new(PHASE_6_CANONICAL_RULE_VERSION)
+pub(super) fn lower_merge_proof_packet_to_foundational_canonical_basis(
+    packet: &RelationalMergeProofPacket,
+) -> TransitionOutcome<RelationalMergeProofPacketCanonicalBasis, CanonicalBasisConstructionDenial> {
+    let version = CanonicalizationRuleVersion::new(PHASE_6_CANONICAL_RULE_VERSION)
             .expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "phase 6 canonical rule version must be valid");
-        prepare_canonical_basis_sequence(
-            version,
-            CanonicalBasisDomain::Transition,
-            merge_proof_packet_canonical_entries(packet),
-        )
-        .map_success(RelationalMergeProofPacketCanonicalBasis::new)
-    }
+    prepare_canonical_basis_sequence(
+        version,
+        CanonicalBasisDomain::Transition,
+        merge_proof_packet_canonical_entries(packet),
+    )
+    .map_success(RelationalMergeProofPacketCanonicalBasis::new)
 }
 
 fn merge_proof_packet_canonical_entries(

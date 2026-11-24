@@ -4,13 +4,15 @@ use super::{
     traversal::{self, Read},
     *,
 };
-use crate::{
-    branch::RelationalBranchRoot,
-    history::data::CanonicalCommitEnvelope,
-    runtime::RelationalPreparationRuntime,
-    transactions::data::{CommitConflict, ConflictClass, RecordRef, TransactionCommitError},
-    validation::data::{CustomInvariantRefusal, InvariantViolationFields},
-};
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
+use crate::validation::data::results::InvariantViolationFields;
 use worth_execution::ExecutionRequest;
 
 pub(crate) fn validate_candidate_ownership(
@@ -60,7 +62,7 @@ pub(crate) fn validate_candidate_ownership(
                 Ok(()) => {},
                 Err(RelationalModelOwnershipDenial::Conflict(conflict)) => {
                     let _memory = execution.reserve_retained_memory(256).map_err(request)?;
-                    let bytes = conflict.encode().map_err(|_| crate::mvcc::origin_denial("ownership refusal cannot encode"))?;
+                    let bytes = conflict.encode().map_err(|_| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("ownership refusal cannot encode"))?;
                     return Err(TransactionCommitError::conflict(CommitConflict::new(ConflictClass::InvariantViolation {
                         code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
                         detail: "model ownership has two document roots in the completed publication candidate".into(),
@@ -75,7 +77,7 @@ pub(crate) fn validate_candidate_ownership(
                 Err(RelationalModelOwnershipDenial::Custody(cause)) => return Err(cause),
                 Err(RelationalModelOwnershipDenial::Request(cause)) => return Err(request(cause)),
                 Err(RelationalModelOwnershipDenial::Native(cause)) => return Err(request(cause)),
-                Err(cause) => return Err(crate::mvcc::origin_denial(format!("completed ownership observation: {cause:?}"))),
+                Err(cause) => return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!("completed ownership observation: {cause:?}"))),
             }
         Ok(())
     }).map_err(request)?.0
@@ -83,5 +85,5 @@ pub(crate) fn validate_candidate_ownership(
 fn request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    crate::publication::ownership::request(cause.into())
+    crate::publication::ownership::read_request::request(cause.into())
 }

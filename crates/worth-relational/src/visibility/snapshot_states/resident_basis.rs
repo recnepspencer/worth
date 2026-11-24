@@ -13,16 +13,16 @@ use regions::ReadRegionCustody;
 #[derive(Clone, Debug)]
 pub(crate) struct ResidentVisibilitySnapshotBasis {
     basis: VisibilitySnapshotBasis,
-    symbols: crate::runtime::RuntimeSymbolTable,
+    symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     regions: Arc<ReadRegionCustody>,
 }
 impl ResidentVisibilitySnapshotBasis {
     pub(crate) fn admit(
         basis: VisibilitySnapshotBasis,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(request)?;
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        crate::execution::request_custody::check_request(request)?;
         Ok(Self {
             basis,
             symbols: symbols.detached_owner_snapshot(),
@@ -34,7 +34,9 @@ impl ResidentVisibilitySnapshotBasis {
     }
     /// One isolated dictionary owner per pin; projections retain its shared
     /// persistent maps instead of reconstructing all symbol entries per read.
-    pub(crate) fn symbols(&self) -> &crate::runtime::RuntimeSymbolTable {
+    pub(crate) fn symbols(
+        &self,
+    ) -> &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable {
         &self.symbols
     }
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
@@ -67,7 +69,7 @@ impl ResidentVisibilitySnapshotBasis {
         ids: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
-        crate::execution::check_request(request).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(request).map_err(Failure::Request)?;
         for id in ids {
             if self.regions.has_head(id) {
                 continue;
@@ -85,7 +87,7 @@ impl ResidentVisibilitySnapshotBasis {
         ids: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
-        crate::execution::check_request(request).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(request).map_err(Failure::Request)?;
         for id in ids {
             if self.regions.has_full(id) {
                 continue;

@@ -1,6 +1,7 @@
 //! Paid current-record walks consume Head views without opening history.
 use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
-use super::*;
+use super::projection_record_reader::ProjectionRecordReader;
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 impl ProjectionRecordReader<'_> {
     pub(super) fn paid_current_entities(
         &self,
@@ -9,7 +10,8 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let Some(head) = head else {
             return Ok(Vec::new());
         };
@@ -59,7 +61,10 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let Some(head) = head else {
             return Ok(Vec::new());
         };

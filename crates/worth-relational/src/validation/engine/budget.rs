@@ -15,7 +15,7 @@ pub(crate) trait InvariantBudget {
     fn check_scratch_peak(&self, bytes: u64) -> bool;
     fn ensure_result_total(&self, bytes: u64) -> bool;
     fn check_result_peak(&self, bytes: u64) -> bool;
-    fn custom_meter(&self) -> &dyn crate::validation::data::CustomInvariantLeaseBudget;
+    fn custom_meter(&self) -> &dyn crate::validation::custom_rule::CustomInvariantLeaseBudget;
     fn deny_unchecked_custom(&self);
     fn remaining_scratch(&self) -> Option<u64>;
     fn custom_structural_budget(
@@ -137,7 +137,7 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
         self.attempt(|context| context.check_result_peak(bytes))
     }
 
-    fn custom_meter(&self) -> &dyn crate::validation::data::CustomInvariantLeaseBudget {
+    fn custom_meter(&self) -> &dyn crate::validation::custom_rule::CustomInvariantLeaseBudget {
         self
     }
 
@@ -148,7 +148,9 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
     }
 }
 
-impl crate::validation::data::CustomInvariantLeaseBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
+impl crate::validation::custom_rule::CustomInvariantLeaseBudget
+    for LeasedInvariantBudget<'_, '_, '_, '_>
+{
     fn checkpoint(&self, units: u64) -> bool {
         InvariantBudget::checkpoint(self, units)
     }

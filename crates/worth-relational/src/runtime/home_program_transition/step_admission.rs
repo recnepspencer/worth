@@ -19,24 +19,6 @@ pub enum RelationalHomeProgramStepContracts<'contracts> {
     AfterTarget,
 }
 
-#[derive(Debug)]
-pub(crate) struct AdmittedRelationalHomeProgramStep {
-    pub(crate) step: HomeProgramTransitionStepAssociation,
-    pub(crate) admission: worth_proof::AdmittedHomeProgramTransitionStep<
-        crate::branch::RelationalBranchBasisAdmissionIdentity,
-    >,
-    pub(crate) commitment: [u8; 32],
-    pub(crate) association: [u8; 32],
-    pub(crate) index_budget: crate::indexes::data::DerivedIndexMaintenanceBudget,
-    _memory: Option<ExecutionMemoryReservation>,
-}
-impl AdmittedRelationalHomeProgramStep {
-    pub(crate) fn admits_association(&self, bytes: &[u8]) -> bool {
-        HomeProgramTransitionCaller::recognizes(bytes)
-            && self.association == <[u8; 32]>::from(Sha256::digest(bytes))
-    }
-}
-
 impl RelationalRuntime {
     /// Every transition step uses this same authenticated source-bound receiver.
     #[allow(clippy::too_many_arguments)]

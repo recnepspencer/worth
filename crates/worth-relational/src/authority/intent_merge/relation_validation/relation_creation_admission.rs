@@ -1,11 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::capabilities::SchemaSource;
-use crate::runtime::RuntimeInstrumentation;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreatedEntityRef, EntityReference, RelationIdentity,
-    RelationSpec,
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, EntityReference, RelationIdentity, RelationSpec,
 };
 
 use super::endpoint_admission::validate_relation_endpoint_primitives;
@@ -14,18 +14,18 @@ use super::schema_relation_admission::require_registered_relation_kind;
 
 pub(super) fn validate_relation_creation_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     spec: &RelationSpec,
 ) -> Result<(), CommitConflict> {
     validate_relation_creation(
         state,
-        schema_source,
+        schema,
         default_cross_context_policy,
-        instrumentation,
+        candidates_scanned,
         created_entities,
         deleted_relations,
         spec.partition_id,
@@ -38,9 +38,9 @@ pub(super) fn validate_relation_creation_intent(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_relation_creation(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     partition_id: crate::identity::data::PartitionId,
@@ -48,7 +48,7 @@ pub(super) fn validate_relation_creation(
     source: &EntityReference,
     target: &EntityReference,
 ) -> Result<(), CommitConflict> {
-    let relation_registration = require_registered_relation_kind(schema_source, kind_id)?;
+    let relation_registration = require_registered_relation_kind(schema, kind_id)?;
     validate_relation_endpoint_primitives(
         state,
         relation_registration.cross_context_policy,
@@ -59,7 +59,7 @@ pub(super) fn validate_relation_creation(
     )?;
     reject_existing_relation_identity(
         state,
-        instrumentation,
+        candidates_scanned,
         partition_id,
         kind_id,
         source,
@@ -70,16 +70,16 @@ pub(super) fn validate_relation_creation(
 
 pub(super) fn validate_bulk_relation_creation_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     endpoints: &[(EntityReference, EntityReference)],
 ) -> Result<(), CommitConflict> {
-    let relation_registration = require_registered_relation_kind(schema_source, kind_id)?;
+    let relation_registration = require_registered_relation_kind(schema, kind_id)?;
     let grouped_targets = validate_bulk_relation_endpoint_batch(
         state,
         relation_registration.cross_context_policy,
@@ -93,7 +93,7 @@ pub(super) fn validate_bulk_relation_creation_intent(
     for (source, targets) in grouped_targets {
         reject_existing_relation_identity(
             state,
-            instrumentation,
+            candidates_scanned,
             partition_id,
             kind_id,
             &source,
@@ -165,7 +165,7 @@ fn reject_duplicate_relation_identity_in_batch(
 
 fn reject_existing_relation_identity(
     state: &impl CurrentPartitionAccess,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     source: &EntityReference,
@@ -174,7 +174,7 @@ fn reject_existing_relation_identity(
 ) -> Result<(), CommitConflict> {
     if existing_relation_targets_for_source(
         state,
-        instrumentation,
+        candidates_scanned,
         partition_id,
         kind_id,
         source,

@@ -27,13 +27,13 @@ fn cause(error: TransactionCommitError) -> Cause {
     let TransactionCommitError::Execution { denial, .. } = error else {
         panic!("execution denial required: {error:?}")
     };
-    let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) = denial.kind;
+    let crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause) = denial.kind;
     cause
 }
 
 #[test]
 fn dependent_stages_spend_one_request_work_account_and_release_result_custody() {
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: policy(256 * 1024, 100),
             deadline: None,
@@ -66,7 +66,7 @@ fn dependent_stages_spend_one_request_work_account_and_release_result_custody() 
 
 #[test]
 fn before_growth_memory_refusal_preserves_the_original_policy_cause() {
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: policy(64 * 1024, 1000),
             deadline: None,
@@ -155,8 +155,8 @@ fn unaccounted_serial_backing_cannot_hide_its_real_accounted_ancestor() {
 
 #[test]
 fn native_custom_read_debits_rule_once_and_original_enclosing_report_once() {
-    use crate::validation::CustomInvariantWorkMeter;
-    let lease = crate::tests::support::test_execution_authority()
+    use crate::validation::custom_rule::work_meter::CustomInvariantWorkMeter;
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: policy(256 * 1024, 100),
             deadline: None,

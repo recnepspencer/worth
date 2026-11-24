@@ -1,6 +1,7 @@
 //! Current-version required-input meaning follows genuine restoration identity.
 use super::*;
-use crate::mvcc::{RequiredOutputInputs, RequiredOutputPublicationMeaning};
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
+use crate::mvcc::RequiredOutputInputs;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn copy(
@@ -19,7 +20,7 @@ pub(super) fn copy(
         )
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or_else(|| {
-            origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            origin_request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
     let memory = ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
         .map_err(|cause| origin_request(crate::execution::denial::lease_denial(cause)))?;

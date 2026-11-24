@@ -1,5 +1,9 @@
 //! Real external native checkpoint input for aggregate cold-read integration.
-use crate::durability::{data::*, medium::*};
+use crate::durability::{
+    data::*,
+    medium::*,
+    published_medium::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource},
+};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::tests::support::*;

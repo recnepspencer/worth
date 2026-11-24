@@ -1,15 +1,7 @@
 //! Retained Source identity owns no live cell, newer image or execution request.
 use super::*;
 
-pub(in crate::mvcc::publication::companion) struct ManagedSourceCellAffinity {
-    runtime: u64,
-    branch: BranchId,
-    generation: u64,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
-    // Weak<Core> still owns its Arc allocation after Core value destruction.
-    // Share the existing fork quote through the last retained affinity owner.
-    _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
-}
+pub(in crate::mvcc::publication::companion) use crate::branch::managed_source_affinity::ManagedSourceCellAffinity;
 impl CompanionBranchCellCore {
     pub(in crate::mvcc::publication::companion) fn retain_source_affinity(
         &self,
@@ -41,22 +33,22 @@ impl CompanionBranchCellCore {
         ))
     }
 }
-impl ManagedSourceCellAffinity {
-    pub(in crate::mvcc::publication::companion) fn admit(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        generation: u64,
-    ) -> Result<(), Denial> {
-        if self.generation != generation {
-            return Err(Denial::Publication(
-                CompanionPreflightStop::RegistrationChanged,
-            ));
-        }
-        if self.runtime != selected.runtime_instance_id() || self.branch != *selected.branch_id() {
-            return Err(Denial::ForeignSource);
-        }
-        Ok(())
+pub(in crate::mvcc::publication::companion) fn admit_affinity(
+    affinity: &ManagedSourceCellAffinity,
+    selected: &PositionedRelationalSnapshot,
+    generation: u64,
+) -> Result<(), Denial> {
+    if affinity.generation != generation {
+        return Err(Denial::Publication(
+            CompanionPreflightStop::RegistrationChanged,
+        ));
     }
+    if affinity.runtime != selected.runtime_instance_id()
+        || affinity.branch != *selected.branch_id()
+    {
+        return Err(Denial::ForeignSource);
+    }
+    Ok(())
 }
 
 impl ManagedSourceRootImage {
@@ -65,7 +57,7 @@ impl ManagedSourceRootImage {
         selected: &PositionedRelationalSnapshot,
         generation: u64,
     ) -> Result<(), Denial> {
-        self.affinity.admit(selected, generation)?;
+        admit_affinity(&self.affinity, selected, generation)?;
         if self.image.root_id != selected.root_id()
             || self.image.commit_id != selected.commit_id()
             || self.image.position() != selected.position()

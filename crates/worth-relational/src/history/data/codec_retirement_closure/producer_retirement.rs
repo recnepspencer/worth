@@ -3,10 +3,9 @@ use super::{charge, source_scope_closure, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, ValidatedOutputOrigins,
 };
-use crate::{
-    mvcc::RequiredOutputRolePosture as Posture,
-    publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
-};
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate(
@@ -14,7 +13,7 @@ pub(super) fn validate(
     view: ValidatedOutputOrigins<'_>,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let envelope = view.envelope();
     let Some(event) = &envelope.producer_cascade_retirement else {

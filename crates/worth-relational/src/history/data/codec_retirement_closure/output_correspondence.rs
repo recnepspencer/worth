@@ -1,7 +1,8 @@
 //! Re-admit complete original output association on the recovered source state.
 use super::{charge, request, CodecRetirementClosureStop as Stop};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::{branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime};
+use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 #[derive(Clone)]
 pub(crate) struct SelectedOutputPublication {
@@ -18,8 +19,8 @@ pub(crate) fn validate_codec_output_correspondence(
     basis: &AdmittedRelationalBranchBasis,
     producer: &str,
     dependency: &[u8; 32],
-    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
-    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+    roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
 ) -> Result<SelectedOutputPublication, Stop> {
     let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let result = execution.in_scope(|lease| {
@@ -61,7 +62,7 @@ pub(crate) fn validate_codec_output_correspondence(
                 let mut origin_frames = OutputOriginHistory::default();
                 let validated_history = &mut origin_frames;
                 for (index, role) in roles.iter().enumerate() {
-                    let crate::transactions::data::EntityReference::Existing(id) = role.target else {
+                    let crate::transactions::data::primitives::EntityReference::Existing(id) = role.target else {
                         return Err("recovered output role requires exact existing identity".into());
                     };
                     let kind = role.kind;
@@ -69,13 +70,13 @@ pub(crate) fn validate_codec_output_correspondence(
                         context,
                         index.saturating_add(1),
                     )?;
-                    if roles[..index].iter().any(|other| other.target == crate::transactions::data::EntityReference::Existing(id)) {
+                    if roles[..index].iter().any(|other| other.target == crate::transactions::data::primitives::EntityReference::Existing(id)) {
                         return Err(
                             "output correspondence requires distinct exact native identities".into()
                         );
                     }
                     context.checkpoint_cost(work, navigation).map_err(request)?;
-                    let (selected, origin) = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+                    let (selected, origin) = if role.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
                         let selected = super::membership::latest(runtime, basis, id, validated_history, context, lease)?;
                         let origin = super::membership::validate_member(runtime, basis, &selected, id, None, validated_history, context, lease)?;
                         (selected, origin)
@@ -97,8 +98,8 @@ pub(crate) fn validate_codec_output_correspondence(
                             Ok::<_, Stop>((selected, origin))
                         })
                         .map_err(|denial| match denial {
-                            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Stop::Request(cause),
-                            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Stop::from("output correspondence native probe requires an exact basis"),
+                            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => Stop::Request(cause),
+                            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Stop::from("output correspondence native probe requires an exact basis"),
                         })?
                         .ok_or("output correspondence native identity is absent or retired")?? };
                     charge(
@@ -139,7 +140,7 @@ pub(crate) fn validate_codec_output_correspondence(
                         if origin.outputs.len() != roles.len()
                             || roles
                                 .iter()
-                                .any(|role| match role.target { crate::transactions::data::EntityReference::Existing(id) => origin.outputs.binary_search(&id).is_err(), _ => true })
+                                .any(|role| match role.target { crate::transactions::data::primitives::EntityReference::Existing(id) => origin.outputs.binary_search(&id).is_err(), _ => true })
                         {
                             return Err(
                                 "output correspondence omits or adds native producer output"

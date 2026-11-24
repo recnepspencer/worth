@@ -2,7 +2,8 @@ use crate::identity::data::RelationId;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionState;
 use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
-use crate::transactions::data::{CommitConflict, ConflictClass};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 
@@ -12,7 +13,8 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     let slot = relation_id.slot_index();
     if !relation_is_visible_for_audit_retention(state, relation_id) {
         return Ok(());
@@ -28,12 +30,12 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
         .relation_arena
         .retire_for_request(execution, slot, version_id)
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?
         .ok_or_else(|| {
             CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                 relation_id,
-                missing: crate::transactions::data::RelationEndpointUpdateMissingState::Slot,
+                missing: crate::transactions::data::outcomes::conflict_class::RelationEndpointUpdateMissingState::Slot,
             })
         })?;
     partition
@@ -44,7 +46,7 @@ pub(in crate::authority::mutation) fn retain_relation_dangling_for_audit(
             RecordLifecycleState::RetainedDanglingForAudit,
         )
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
     partition
         .relation_arena
@@ -79,7 +81,8 @@ pub(in crate::authority::mutation) fn delete_relation(
     version_id: crate::identity::data::VersionId,
     relation_id: RelationId,
     outcome: &mut MutationOutcome,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     let slot = relation_id.slot_index();
     if !relation_is_live(state, relation_id) {
         return Ok(());
@@ -96,12 +99,12 @@ pub(in crate::authority::mutation) fn delete_relation(
         .relation_arena
         .retire_for_request(execution, slot, version_id)
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?
         .ok_or_else(|| {
             CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                 relation_id,
-                missing: crate::transactions::data::RelationEndpointUpdateMissingState::Slot,
+                missing: crate::transactions::data::outcomes::conflict_class::RelationEndpointUpdateMissingState::Slot,
             })
         })?;
     let lifecycle = deletion_retention_lifecycle(partition, slot);
@@ -109,7 +112,7 @@ pub(in crate::authority::mutation) fn delete_relation(
         .relation_arena
         .set_lifecycle_for_slot_for_request(execution, slot, lifecycle)
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
 
     let Some(snapshot) = snapshot else {

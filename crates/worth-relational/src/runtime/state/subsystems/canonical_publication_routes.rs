@@ -4,11 +4,10 @@ use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 #[path = "canonical_publication_routes/narrowed_cutover_control.rs"]
 mod narrowed_cutover_control;
 
-use dashmap::DashMap;
-
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
+use dashmap::DashMap;
 
 #[path = "canonical_publication_routes/associated_effect_observation.rs"]
 mod associated_effect_observation;
@@ -30,24 +29,24 @@ mod pending_settlement;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
-mod position_admission;
+pub(crate) mod position_admission;
 #[path = "canonical_publication_routes/recovered_source.rs"]
 mod recovered_source;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
 pub(crate) use authored_writes::AuthoredWriteGeneration;
-#[path = "canonical_publication_routes/position_retention.rs"]
-mod position_retention;
-pub(crate) use position_retention::RetainedCanonicalPosition;
-
 #[path = "canonical_publication_routes/indexed_catalog.rs"]
 mod indexed_catalog;
+#[path = "canonical_publication_routes/position_retention.rs"]
+mod position_retention;
+#[path = "canonical_publication_routes/retained_position.rs"]
+pub(crate) mod retained_position;
 #[path = "canonical_publication_routes/source_retirement.rs"]
 mod source_retirement;
+pub(crate) use crate::branch::transition::BranchTransitionRecordError;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
-    BranchTransitionPublication, BranchTransitionRecordError, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
+    BranchTransitionPublication, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
@@ -306,7 +305,7 @@ impl PreparedCanonicalPublicationRoute {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
-        medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
+        medium: Option<&crate::durability::published_medium::RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {

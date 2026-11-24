@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
-use crate::durability::medium::RelationalTransitionHistoryReader;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
+use crate::durability::published_medium::RelationalTransitionHistoryReader;
+use crate::durability::published_medium::{
+    RelationalDurableMedium, RelationalDurableMediumBinding,
+};
+
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
-mod checkpoint_selection;
+pub(crate) mod checkpoint_selection;
 mod source_retirement;
 mod state;
 pub(crate) use checkpoint_selection::{
@@ -52,13 +55,13 @@ impl DurabilitySubsystem {
 
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         self.attach_recovered_medium(
-            crate::durability::medium::RelationalDurableMediumTransfer::fresh(medium),
+            crate::durability::published_medium::RelationalDurableMediumTransfer::fresh(medium),
         );
     }
 
     pub(crate) fn attach_recovered_medium(
         &mut self,
-        transfer: crate::durability::medium::RelationalDurableMediumTransfer,
+        transfer: crate::durability::published_medium::RelationalDurableMediumTransfer,
     ) {
         let binding = Arc::new(RelationalDurableMediumBinding::new(transfer));
         let source = binding.cold_source();
@@ -72,7 +75,7 @@ impl DurabilitySubsystem {
     /// to publish. `None` when it has no medium or the medium already moved.
     pub(crate) fn detach_medium(
         &self,
-    ) -> Option<crate::durability::medium::RelationalDurableMediumTransfer> {
+    ) -> Option<crate::durability::published_medium::RelationalDurableMediumTransfer> {
         self.medium().as_ref().and_then(|binding| binding.detach())
     }
 

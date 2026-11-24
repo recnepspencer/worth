@@ -1,7 +1,7 @@
 mod edition_copy_lane;
 mod edition_writer;
 mod mirror_state;
-mod partition_edition;
+pub(crate) mod partition_edition;
 mod residency_demand;
 mod resident_target;
 mod source_retirement;
@@ -16,13 +16,13 @@ pub(crate) use edition_writer::{
 pub(crate) use partition_edition::{PartitionEdition, PartitionMap, ResidentPartitionEdition};
 
 use crate::identity::data::PartitionId;
-use crate::runtime::state::subsystems::{
-    RuntimeInstrumentation, RuntimeOwnedState, RuntimeSubsystem,
-};
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::storage::overlay::PartitionState;
 use crate::storage::residency::RelationalRegionRetention;
 #[cfg(test)]
 use crate::storage::residency::{Full, RelationalResidencyLease};
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
+use std::sync::Mutex;
 
 /// The runtime's record substrate, owned behind its own lock.
 ///
@@ -51,10 +51,10 @@ impl StorageSubsystem {
     /// Exclusive authority to install the next edition, charged to `lane`.
     pub(crate) fn edit<'subsystem>(
         &'subsystem self,
-        instrumentation: &'subsystem RuntimeInstrumentation,
+        copy_counters: &'subsystem Mutex<RuntimeComplexityCounters>,
         lane: PartitionEditionCopyLane,
     ) -> PartitionEditionWriter<'subsystem> {
-        PartitionEditionWriter::new(self.partitions.write(), instrumentation, lane)
+        PartitionEditionWriter::new(self.partitions.write(), copy_counters, lane)
     }
 
     /// Demand outside the write lock, then seal the current edition. Publication
@@ -62,8 +62,8 @@ impl StorageSubsystem {
     pub(crate) fn demand_resident_edit<'subsystem>(
         &'subsystem self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        instrumentation: &'subsystem RuntimeInstrumentation,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        copy_counters: &'subsystem Mutex<RuntimeComplexityCounters>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<
         ResidentPartitionEditionWriter<'subsystem>,
         crate::storage::residency::RelationalResidencyDemandFailure,
@@ -71,7 +71,7 @@ impl StorageSubsystem {
         loop {
             self.acquire().demand_all(execution, symbols)?;
             match self
-                .edit(instrumentation, PartitionEditionCopyLane::Ordinary)
+                .edit(copy_counters, PartitionEditionCopyLane::Ordinary)
                 .accept_resident(symbols)
             {
                 Ok(writer) => return Ok(writer),
@@ -99,7 +99,7 @@ impl StorageSubsystem {
 
     pub(crate) fn install_owned(
         &self,
-        instrumentation: &RuntimeInstrumentation,
+        copy_counters: &Mutex<RuntimeComplexityCounters>,
         lane: PartitionEditionCopyLane,
         partitions: impl IntoIterator<Item = (PartitionId, PartitionState)>,
     ) {
@@ -109,20 +109,14 @@ impl StorageSubsystem {
                 (partition_id, RelationalRegionRetention::resident(partition))
             })
             .collect();
-        self.edit(instrumentation, lane).install(installed);
+        self.edit(copy_counters, lane).install(installed);
     }
 }
 
-impl RuntimeSubsystem for StorageSubsystem {
-    type Config = ();
-
-    fn new(_: &Self::Config) -> Self {
-        Self::default()
-    }
-
+impl StorageSubsystem {
     /// Share immutable cells; runtime pin counters detach at the first write.
     /// Cold cells remain cold; current edits carry Head, history edits carry Full.
-    fn fork(&self) -> Self {
+    pub(super) fn detached(&self) -> Self {
         let partitions = self
             .acquire()
             .cells()

@@ -1,11 +1,13 @@
 //! Install the authored prefix's actual posture without inventing a retirement.
 use super::*;
-use crate::{
-    history::data::RequiredOutputPublicationPositions,
-    mvcc::{CoupledSource, RelationalAuthoredRetirement, RelationalCoupledAuthoredPublication},
-    storage::overlay::WorkingState,
-    transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings, RecordRef},
-};
+use crate::history::data::RequiredOutputPublicationPositions;
+use crate::mvcc::CoupledSource;
+use crate::mvcc::RelationalAuthoredRetirement;
+use crate::mvcc::RelationalCoupledAuthoredPublication;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 

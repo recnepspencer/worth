@@ -3,6 +3,9 @@ use super::super::region_image::*;
 use super::*;
 use crate::durability::data::*;
 use crate::durability::medium::*;
+use crate::durability::published_medium::{
+    RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+};
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::{
     create_entity_in_partition, create_relation_in_partition, durable_runtime_for_medium,

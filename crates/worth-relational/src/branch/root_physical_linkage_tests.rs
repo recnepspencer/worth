@@ -16,11 +16,12 @@ use crate::publication::patch::data::{
     CanonicalAuthoritativePatch, PatchOrdering, PatchPublicationMode,
 };
 use crate::schema::data::{DescriptorSemanticsVersion, RelationalSchemaRegistry, SchemaVersionId};
-use crate::transactions::data::{MergedCommitPlan, TransactionId};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::TransactionId;
 
 #[test]
 fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let envelope = Arc::new(envelope_input(execution));
     let descriptor = RelationalBranchRootDescriptor::new([7; 32], [8; 32]);
@@ -49,7 +50,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
         publication_cost: Default::default(),
     });
     let root = Arc::new(root);
-    let artifact = crate::history::RelationalCommitArtifact::from_envelope_with_root(
+    let artifact = crate::history::commit::RelationalCommitArtifact::from_envelope_with_root(
         Arc::clone(&envelope),
         Arc::clone(&root),
     )

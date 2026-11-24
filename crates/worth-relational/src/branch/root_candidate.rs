@@ -7,7 +7,7 @@ impl RelationalBranchRoot {
         issuer: &RelationalBranchRootIdentityIssuer,
         previous: &Arc<Self>,
         delta: &RelationalPublishedPartitionDelta,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         content: crate::content::ContentDirectory,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         issuer.validate_capture_capacity(delta.len())?;

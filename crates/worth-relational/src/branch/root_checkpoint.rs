@@ -23,12 +23,15 @@ pub(crate) struct RelationalRootRegionCheckpoint {
 /// Selection retains one immutable root; native capture walks its leaves.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootCheckpoint {
-    root: Arc<super::RelationalBranchRoot>,
+    root: Arc<crate::branch::root::RelationalBranchRoot>,
     commit_id: CommitId,
 }
 
 impl RelationalBranchRootCheckpoint {
-    pub(crate) fn new(commit_id: CommitId, root: Arc<super::RelationalBranchRoot>) -> Self {
+    pub(crate) fn new(
+        commit_id: CommitId,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
+    ) -> Self {
         Self { root, commit_id }
     }
     pub(crate) fn content(&self) -> &crate::content::ContentDirectory {
@@ -43,7 +46,7 @@ impl RelationalBranchRootCheckpoint {
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         self.root.demand_all_full(execution, symbols)
     }
@@ -65,7 +68,9 @@ impl RelationalBranchRootCheckpoint {
             })
             .collect()
     }
-    pub(crate) fn schema_authority(&self) -> &super::RelationalBranchRootSchemaAuthority {
+    pub(crate) fn schema_authority(
+        &self,
+    ) -> &crate::branch::root::schema::RelationalBranchRootSchemaAuthority {
         self.root.schema_authority()
     }
 }

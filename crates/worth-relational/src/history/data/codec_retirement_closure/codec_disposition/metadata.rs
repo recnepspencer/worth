@@ -33,7 +33,7 @@ pub(super) fn reserve(
 struct Width<'a, 'b, 'c> {
     context: &'a mut MapKernelContext<'b, 'c>,
     bytes: usize,
-    stopped: Option<crate::execution::RelationalExecutionDenialCause>,
+    stopped: Option<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 }
 impl Write for Width<'_, '_, '_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {

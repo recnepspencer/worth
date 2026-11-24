@@ -9,7 +9,7 @@ use crate::indexes::projected_field_values::{
 };
 use crate::schema::data::LoweredAspectContractPlan;
 use crate::storage::data::{AuthoritativeFieldComparisonKey as Key, RecordLifecycleState};
-use crate::visibility::materialization::read_records::authoritative_state_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value;
 use worth_foundational::facade::{
     AspectFieldLocator, AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
 };

@@ -37,7 +37,7 @@ impl QueryPacketMemory {
         let total = charged.checked_add(additional).ok_or_else(|| {
             if self.ceiling.is_none() {
                 MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 ))
             } else {
                 MapKernelFailure::ResultCapacityExceeded

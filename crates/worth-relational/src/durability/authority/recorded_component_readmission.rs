@@ -98,9 +98,10 @@ impl RecoveredRelationalRuntimeAuthority {
                 }
                 match evidence {
                     crate::branch::RelationalRootCommitEvidence::Original(original) => {
-                        let admitted = artifact
-                            .envelope_residency()
-                            .readmit_original_positioned(execution)
+                        let admitted = crate::durability::history_source_readmission::readmit_original_positioned(
+                            &artifact.envelope_residency(),
+                            execution,
+                        )
                             .map_err(|cause| refused(Cause::Source(cause)))?;
                         if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload_for_request(
                             &admitted, original.envelope(), execution,

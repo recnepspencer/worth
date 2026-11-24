@@ -35,7 +35,7 @@ impl super::RelationalBranchRoot {
 
 #[test]
 fn incremental_content_matches_cold_rebuild_after_each_real_graph_publication() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -64,7 +64,7 @@ fn assert_complete(runtime: &crate::runtime::RelationalRuntime, stage: &str) {
     assert!(
         root.is_complete(
             &worth_execution::ExecutionRequest::serial(
-                &crate::test_execution_policy::serial_request()
+                &crate::execution::test_policy::serial_request()
             ),
             &symbols
         ),

@@ -2,21 +2,19 @@ use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
 
 use crate::authority::commit::preparation::packets::index::IndexPreparationPacket;
-use crate::authority::commit::preparation::planning::strategy::{
-    ParallelLegality, ParallelProfitability, PreparationStrategy, PreparationStrategySelection,
-};
-use crate::authority::commit::preparation::reduction::keys::IndexReductionKey;
+use crate::authority::commit::preparation::packets::index::IndexReductionKey;
 use crate::authority::commit::preparation::reduction::merge::{
     canonical_merge_streams, canonical_merge_streams_checked, OrderedReductionStream,
 };
-use crate::execution::{
-    execute_read_only_packets_with_budget, PacketBudgetDenial, PacketExecutionStop,
-    PacketKernelContext, ReadOnlyPacket, RequestWorkBudget,
-};
+use crate::execution::packet_memory::PacketKernelContext;
+use crate::execution::read_only_packets::execute_read_only_packets_with_budget;
+use crate::execution::read_only_packets::PacketBudgetDenial;
+use crate::execution::read_only_packets::PacketExecutionStop;
+use crate::execution::read_only_packets::ReadOnlyPacket;
+use crate::execution::request_work::RequestWorkBudget;
 use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexExecutionDenial, DerivedIndexId, DerivedIndexKind,
 };
-use crate::runtime::RelationalRuntime;
 
 use super::super::projected_field_values::{
     build_entity_aspect_field_index, build_entity_aspect_field_index_checked,
@@ -34,37 +32,6 @@ pub(super) struct IndexPreparationResult {
 
 type IndexResultStream = OrderedReductionStream<IndexReductionKey, IndexPreparationResult>;
 
-pub(super) fn record_index_preparation_strategy_counters(
-    runtime: &RelationalRuntime,
-    definition_count: usize,
-    strategy: &PreparationStrategy,
-) {
-    runtime.performance_access().count_preparation_packet_shape(
-        definition_count,
-        definition_count,
-        usize::from(definition_count != 0),
-        usize::from(definition_count != 0),
-    );
-    if strategy.parallel_legality == ParallelLegality::ProvenParallel {
-        runtime
-            .performance_access()
-            .count_preparation_parallel_legal();
-    }
-    if strategy.parallel_profitability == ParallelProfitability::Profitable {
-        runtime
-            .performance_access()
-            .count_preparation_parallel_profitable();
-    }
-    match strategy.selected_mode {
-        PreparationStrategySelection::Serial => runtime
-            .performance_access()
-            .count_preparation_serial_strategy(),
-        PreparationStrategySelection::StagedParallel => runtime
-            .performance_access()
-            .count_preparation_staged_parallel_strategy(),
-    }
-}
-
 pub(super) fn execute_index_packets(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -79,7 +46,7 @@ pub(super) fn execute_index_packets(
     ordered.sort_by_key(|packet| (packet.definition.index_id.0, packet.header.packet_index));
     // Each packet charges the lease what it actually holds; the lease's own
     // memory policy is the bound, not a per-packet share of it.
-    let memory = crate::execution::PacketMemory::Tracked;
+    let memory = crate::execution::packet_memory::PacketMemory::Tracked;
     let inputs = ordered
         .into_iter()
         .enumerate()
@@ -103,7 +70,7 @@ pub(super) fn execute_index_inputs(
 ) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
     let reconstruction = projection.reconstructing(lane);
     let projection = &reconstruction;
-    crate::execution::admit_read_only_packet_order(&inputs)
+    crate::execution::read_only_packets::admit_read_only_packet_order(&inputs)
         .map_err(PacketExecutionStop::Admission)
         .map_err(index_execution_denial)?;
     let streams = if let Some(lease) = lease {
@@ -125,9 +92,10 @@ pub(super) fn execute_index_inputs(
         )
         .map_err(index_execution_denial)?
     } else {
-        crate::execution::execute_unleased_read_only_packets(&inputs, |packet| {
-            index_packet_result(lane, execution, projection, packet)
-        })
+        crate::execution::unleased_read_only_packets::execute_unleased_read_only_packets(
+            &inputs,
+            |packet| index_packet_result(lane, execution, projection, packet),
+        )
         .map_err(|stop| index_execution_denial(stop.into()))?
     };
     let merged = if let Some(lease) = lease {
@@ -220,7 +188,7 @@ fn index_packet_result(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
-) -> Result<IndexResultStream, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<IndexResultStream, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
             build_entity_aspect_field_index(lane, execution, projection, field_locator)?.into(),

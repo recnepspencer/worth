@@ -1,6 +1,6 @@
 //! Only the fixed metadata allocation is funded here; Extra retains its own bill.
 use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionRequest;
 impl VersionedEntityMetadata {
     /// Ordinary image/maintenance construction carries no controlled allocation claim.

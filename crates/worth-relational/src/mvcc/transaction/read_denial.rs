@@ -1,13 +1,17 @@
 //! A transaction read preserves storage and caller-request refusals.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalTransactionReadDenial {
-    Conflict(crate::transactions::data::CommitConflict),
+    Conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     Request(crate::execution::RelationalExecutionDenialCause),
 }
 
-impl From<crate::transactions::data::CommitConflict> for RelationalTransactionReadDenial {
-    fn from(conflict: crate::transactions::data::CommitConflict) -> Self {
+impl From<crate::transactions::data::outcomes::commit_conflict::CommitConflict>
+    for RelationalTransactionReadDenial
+{
+    fn from(
+        conflict: crate::transactions::data::outcomes::commit_conflict::CommitConflict,
+    ) -> Self {
         Self::Conflict(conflict)
     }
 }

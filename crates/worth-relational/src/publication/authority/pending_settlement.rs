@@ -1,3 +1,6 @@
+use crate::runtime::state::subsystems::history::history_canonical_routes::{
+    mark_publication_settled, publication_requires_settlement,
+};
 use std::sync::Arc;
 
 use crate::authority::commit::pipeline::{assemble_commit_result, publish_commit_execution};
@@ -128,7 +131,7 @@ impl RelationalRuntime {
             event
         });
         let committed = assemble_commit_result(self, published, late_interruption);
-        self.history.mark_publication_settled(commit_id);
+        mark_publication_settled(&self.history, commit_id);
         let receipt = positioned.envelope().commit.clone();
         // A receipt-only executor keeps the published snapshot open, because a
         // performed witness may still be live and owed this exact result.
@@ -196,7 +199,7 @@ impl RelationalRuntime {
         &self,
         commit_id: CommitId,
     ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {
-        if self.history.publication_requires_settlement(commit_id) {
+        if publication_requires_settlement(&self.history, commit_id) {
             return Err(PublicationSettlementRepairError::RecoveryUnavailable { commit_id });
         }
         if let Some(artifact) = self.history.commit_artifact(commit_id) {

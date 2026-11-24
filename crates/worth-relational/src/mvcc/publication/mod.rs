@@ -1,6 +1,6 @@
 pub(crate) use application_publication::BoundAuthoredCoupling;
 pub(crate) use application_publication::CoupledSource;
-mod application_publication;
+pub(crate) mod application_publication;
 mod authority;
 mod caller_association;
 mod preparation_denial;
@@ -53,7 +53,7 @@ pub use candidate::{
 };
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,

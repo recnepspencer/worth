@@ -1,6 +1,6 @@
 //! Merge declarations follow the actual retained payload and one live heap key per stream.
 use super::*;
-pub(super) fn declaration<K: Ord, T, O>(
+pub(in crate::authority::commit::preparation::reduction::merge) fn declaration<K: Ord, T, O>(
     streams: &Vec<OrderedReductionStream<K, T>>,
     item_bytes: &impl Fn(&K, &T) -> u64,
     key_clone_bytes: &impl Fn(&K) -> u64,
@@ -12,7 +12,9 @@ pub(super) fn declaration<K: Ord, T, O>(
         (streams.capacity() as u64).checked_mul(size_of::<OrderedReductionStream<K, T>>() as u64);
     for stream in streams {
         result_count = result_count.checked_add(stream.items.len() as u64).ok_or(
-            PacketExecutionStop::Admission(crate::execution::PacketAdmissionDenial::MemoryOverflow),
+            PacketExecutionStop::Admission(
+                crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
+            ),
         )?;
         let stream_key_peak = std::cell::Cell::new(0_u64);
         let stream_bytes = stream.owned_allocation_capacity_bytes(|key, item| {
@@ -27,11 +29,13 @@ pub(super) fn declaration<K: Ord, T, O>(
         });
         owned_bytes = owned_bytes.and_then(|bytes| bytes.checked_add(stream_bytes));
         cloned_key_peak = cloned_key_peak.checked_add(stream_key_peak.get()).ok_or(
-            PacketExecutionStop::Admission(crate::execution::PacketAdmissionDenial::MemoryOverflow),
+            PacketExecutionStop::Admission(
+                crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
+            ),
         )?;
     }
     let owned_bytes = owned_bytes.ok_or(PacketExecutionStop::Admission(
-        crate::execution::PacketAdmissionDenial::MemoryOverflow,
+        crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
     ))?;
     let result_bound = result_count
         .checked_mul(size_of::<O>() as u64)
@@ -47,7 +51,7 @@ pub(super) fn declaration<K: Ord, T, O>(
         .zip(scratch_bound)
         .map(|(result, scratch)| result.max(scratch))
         .ok_or(PacketExecutionStop::Admission(
-            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+            crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
         ))?;
     Ok((owned_bytes, declared_bytes))
 }

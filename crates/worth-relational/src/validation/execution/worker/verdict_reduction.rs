@@ -1,6 +1,8 @@
 //! Reduction of one registered-rule evaluation into worker evidence.
 
-use crate::validation::data::{InvariantCheckResult, InvariantVerdict, InvariantWitnessKey};
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::execution::InvariantWitnessKey;
+use crate::validation::engine::result::InvariantCheckResult;
 
 use super::super::envelope::InvariantWorkerResult;
 use super::super::packets::InvariantWorkPacket;

@@ -1,8 +1,7 @@
 mod compiled_artifacts;
-mod instrumentation;
+pub(crate) mod instrumentation;
 mod sequence;
-mod symbol_residency;
-mod symbol_table;
+pub(crate) mod symbol_table;
 #[cfg(test)]
 mod tests;
 
@@ -12,8 +11,8 @@ pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
 pub(crate) use symbol_table::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
-    PreparedSymbolPublication, RuntimeSymbolTable, SymbolReservationDenial,
+    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication, RuntimeSymbolTable,
+    SymbolReservationDenial,
 };
 
 #[derive(Debug, Clone)]

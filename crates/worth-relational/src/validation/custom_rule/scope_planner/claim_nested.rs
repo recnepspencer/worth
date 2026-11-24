@@ -1,5 +1,5 @@
-use crate::transactions::data::EntityReference;
-use crate::validation::data::TouchedStructuralSet;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 
 use super::super::CustomInvariantWorkMeter;
 

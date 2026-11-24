@@ -81,22 +81,26 @@ pub(super) fn bind_commit_history(
         )?;
         let additional_diagnostics_entries = merge_plan
             .map(|plan| {
-                vec![crate::merge::merge_execution_summary_entry(
-                    &plan.merge_execution_summary,
-                    &plan.structural_summary,
-                    history.commit_id,
-                )]
+                vec![
+                    crate::merge::execution_diagnostics::merge_execution_summary_entry(
+                        &plan.merge_execution_summary,
+                        &plan.structural_summary,
+                        history.commit_id,
+                    ),
+                ]
             })
             .unwrap_or_default();
         let mut deferred_diagnostic_artifacts = if let (Some(plan), Some(diagnostics_plan)) =
             (merge_plan, merge_diagnostics_plan.as_ref())
         {
-            vec![crate::merge::merge_execution_success_artifact(
-                &plan.merge_execution_summary,
-                diagnostics_plan,
-                history.commit_id,
-                runtime.config.diagnostics.profile.max_entries_per_artifact,
-            )]
+            vec![
+                crate::merge::execution_diagnostics::merge_execution_success_artifact(
+                    &plan.merge_execution_summary,
+                    diagnostics_plan,
+                    history.commit_id,
+                    runtime.config.diagnostics.profile.max_entries_per_artifact,
+                ),
+            ]
         } else {
             Vec::new()
         };

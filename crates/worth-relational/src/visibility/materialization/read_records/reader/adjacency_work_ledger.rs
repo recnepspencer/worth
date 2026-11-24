@@ -19,7 +19,7 @@ impl AdjacencyLeaseLedger {
     pub(crate) fn settle_read_round(
         self,
         source: &(impl crate::storage::overlay::PartitionAccess + ?Sized),
-        instrumentation: &crate::runtime::RuntimeInstrumentation,
+        instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     ) {
         if !source.has_read_misses() {
             self.settle_instrumentation(instrumentation);
@@ -57,7 +57,7 @@ impl AdjacencyLeaseLedger {
 
     pub(crate) fn settle_instrumentation(
         self,
-        instrumentation: &crate::runtime::RuntimeInstrumentation,
+        instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     ) {
         if self.kind_views_leased == 0 {
             return;

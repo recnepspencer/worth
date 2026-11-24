@@ -4,7 +4,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupDenial as Denial, BoundedEntityFieldLookupDenialKind as Kind,
     DerivedIndexId,
 };
-use crate::runtime::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
     ContractValidatedAspectValueView,
@@ -17,7 +17,7 @@ pub(super) fn borrowed_matches(
     locator: &AspectFieldLocator,
     expected: &AspectValue,
 ) -> Result<Option<(EntityId, KindId, bool)>, Denial> {
-    crate::execution::check_request(execution)
+    crate::execution::request_custody::check_request(execution)
         .map_err(|cause| Denial::new(Kind::Execution(cause), index))?;
     view.read_exact_entity_state(execution, entity, |metadata, state| {
         (
@@ -29,10 +29,10 @@ pub(super) fn borrowed_matches(
     .map_err(|denial| {
         Denial::new(
             match denial {
-                crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
                     Kind::SnapshotUnavailable
                 }
-                crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => {
                     Kind::Execution(cause)
                 }
             },

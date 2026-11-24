@@ -1,6 +1,7 @@
-use crate::validation::data::{
-    InvariantExecutionPoint, InvariantFailureEffect, InvariantReportedRule, InvariantWitnessKey,
-};
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantWitnessKey;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ValidationResultIdentity {

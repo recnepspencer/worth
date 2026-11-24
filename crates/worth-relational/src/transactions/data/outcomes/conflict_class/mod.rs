@@ -9,7 +9,7 @@ mod aspect_field_target_rejection;
 mod entity_authoritative_aspect_state_denial;
 mod entity_authoritative_aspect_state_presentation;
 mod mutation_state_inconsistency;
-mod record_allocation_denial;
+pub(crate) mod record_allocation_denial;
 mod record_aspect_patch_denial;
 pub use aspect_field_target_rejection::AspectFieldTargetRejectionReason;
 pub use entity_authoritative_aspect_state_denial::EntityAuthoritativeAspectStateDenial;

@@ -15,10 +15,10 @@ mod retirement_tests;
 
 use crate::history::data::BranchId;
 
-use super::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner,
-    RelationalBranchBasisDescriptor, RelationalBranchVersion,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::version::RelationalBranchVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct RelationalRetainedBasisKey {
@@ -127,7 +127,10 @@ impl RelationalBranchBasisRegistry {
     pub(crate) fn register(
         &self,
         basis: AdmittedRelationalBranchBasis,
-    ) -> Result<AdmittedRelationalBranchBasis, super::RelationalBranchBasisDenial> {
+    ) -> Result<
+        AdmittedRelationalBranchBasis,
+        crate::branch::basis_denial::RelationalBranchBasisDenial,
+    > {
         let key = RelationalRetainedBasisKey::from(basis.descriptor());
         let mut retained = self
             .retained
@@ -144,7 +147,7 @@ impl RelationalBranchBasisRegistry {
         let registration_id = retained
             .next_registration_id
             .checked_add(1)
-            .ok_or(super::RelationalBranchBasisDenial::OwnerFailure)?;
+            .ok_or(crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerFailure)?;
         retained.next_registration_id = registration_id;
         let lease = RelationalBasisRegistryLease {
             registry: Arc::downgrade(&self.retained),
@@ -155,7 +158,7 @@ impl RelationalBranchBasisRegistry {
         };
         if let Err(uninstalled) = basis.inner.registry_lease.set(lease) {
             std::mem::forget(uninstalled);
-            return Err(super::RelationalBranchBasisDenial::OwnerFailure);
+            return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerFailure);
         }
         let replaced = retained.entries.insert(
             key,

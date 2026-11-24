@@ -2,10 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::RelationScopeRequirement;
 use super::{PlannedRelationEdge, PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{EntityReference, MergedCommitPlan};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::EntityReference;
 
 mod candidate_sources;
 mod home_target;
@@ -16,7 +17,7 @@ mod relation_changes;
 mod scope_completion;
 mod successor_scope;
 use super::preparation_control::InvariantPreparationControl;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) struct RelationScopeState<'state> {
     pub(super) current: crate::validation::engine::state_view::InvariantStateView<'state>,
@@ -167,12 +168,13 @@ impl<'access, 'runtime, 'scope, 'authority>
 
     fn collect_intent(
         &mut self,
-        intent: &crate::transactions::data::MutationIntent,
+        intent: &crate::transactions::data::intents::MutationIntent,
     ) -> Result<(), TransactionCommitError> {
         self.check_live()?;
-        use crate::transactions::data::{
-            CreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
-        };
+        use crate::transactions::data::intents::CreateIntent;
+        use crate::transactions::data::intents::EntityMutationIntent;
+        use crate::transactions::data::intents::MaterializationMutationIntent;
+        use crate::transactions::data::intents::MutationIntent;
         match intent {
             MutationIntent::Create(CreateIntent::Entity(spec)) => {
                 self.collect_created_entity(
@@ -206,10 +208,10 @@ impl<'access, 'runtime, 'scope, 'authority>
                 }
             }
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::Delete(spec),
+                crate::transactions::data::intents::RelationMutationIntent::Delete(spec),
             ) => self.collect_relation_delete(spec.relation_id)?,
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::UpdateEndpoints(spec),
+                crate::transactions::data::intents::RelationMutationIntent::UpdateEndpoints(spec),
             ) => {
                 self.collect_relation_delete(spec.relation_id)?;
                 self.collect_planned_edge(spec.kind_id, &spec.source, &spec.target)?;
@@ -226,7 +228,7 @@ impl<'access, 'runtime, 'scope, 'authority>
                 )?;
             }
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::Revalidate(spec),
+                crate::transactions::data::intents::RelationMutationIntent::Revalidate(spec),
             ) => {
                 self.collect_revalidated_relation(spec.relation_id)?;
             }
@@ -253,7 +255,7 @@ impl<'access, 'runtime, 'scope, 'authority>
     ) -> Result<(), TransactionCommitError> {
         self.check_live()?;
         self.created_key_count += 1;
-        let created = crate::transactions::data::CreatedEntityRef {
+        let created = crate::transactions::data::primitives::CreatedEntityRef {
             partition_id,
             kind_id,
             client_key,

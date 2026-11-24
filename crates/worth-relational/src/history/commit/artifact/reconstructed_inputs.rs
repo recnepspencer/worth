@@ -5,8 +5,8 @@ impl RelationalCommitArtifact {
         &self,
         inputs: OriginalCanonicalInputs,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         let control = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .map_err(|_| Cause::ChargedBytesOverflow)?

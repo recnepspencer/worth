@@ -5,9 +5,9 @@ use crate::validation::engine::{InvariantObservation, InvariantObservationKind};
 
 use super::structural_views::{StructuralAspectStateView, StructuralRelationView};
 use super::traversal::{BoundedStructuralTraversal, CustomInvariantTraversalSummary};
-use crate::validation::data::{
-    CustomInvariantTouchedSummary, StructuralCountView, TouchedStructuralSet,
-};
+use crate::validation::data::custom_rule::touched_scope::planned_records::CustomInvariantTouchedSummary;
+use crate::validation::data::custom_rule::touched_scope::StructuralCountView;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use std::sync::Arc;
 
 pub struct CustomInvariantExecutionContext<'runtime> {
@@ -25,7 +25,8 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     committed_relations: StructuralRelationView<'runtime>,
     counts: StructuralCountView,
     traversal: BoundedStructuralTraversal<'runtime>,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     work: super::CustomInvariantWorkMeter,
 }
 
@@ -40,7 +41,8 @@ pub struct CustomInvariantProvenance {
     pub counts: StructuralCountView,
     pub traversal: CustomInvariantTraversalSummary,
     #[serde(skip)]
-    pub proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    pub proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     pub work_units: std::num::NonZeroU64,
     /// `None` when the rule evaluated the candidate. An artifact written
     /// before this field decodes as `None`: no basis, so a not-applicable
@@ -73,7 +75,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Option<Arc<TouchedStructuralSet>>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         work.try_charge(1);
         Self::from_prepared_scope(
@@ -98,7 +100,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Option<Arc<TouchedStructuralSet>>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let inputs = runtime.shared_candidate_inputs();
@@ -177,7 +179,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Arc<TouchedStructuralSet>,
         work: super::CustomInvariantWorkMeter,
-        access: Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
         basis: CustomInvariantNonApplicability,
     ) -> CustomInvariantProvenance {
         let mut provenance = Self::from_prepared_scope(

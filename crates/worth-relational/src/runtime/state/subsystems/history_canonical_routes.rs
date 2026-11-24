@@ -16,19 +16,6 @@ impl HistorySubsystem {
             .commit_for_version_in_context(version, context)
     }
 
-    pub(crate) fn retain_original_empty_birth(
-        &self,
-        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
-    ) {
-        self.canonical_publication_routes
-            .retain_original_empty_birth(super::OriginalEmptySchemaObservation {
-                generation: worth_foundational::FoundationalBranchReferenceGeneration::initial(),
-                truth_version: crate::branch::RelationalBranchVersion::initial(),
-                lifecycle: crate::branch::RelationalBranchLifecyclePosture::Live,
-                schema,
-            });
-    }
-
     pub(crate) fn discard_unobserved_construction_schema_inputs_for_recovery(&self) {
         self.canonical_publication_routes
             .discard_unobserved_construction_schema_inputs_for_recovery();
@@ -37,7 +24,10 @@ impl HistorySubsystem {
     pub(crate) fn capture_original_branch_schema_inputs(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<super::OriginalBranchSchemaInputs, super::OriginalBranchSchemaInputsDenial> {
+    ) -> Result<
+        super::canonical_publication_routes::OriginalBranchSchemaInputs,
+        super::canonical_publication_routes::OriginalBranchSchemaInputsDenial,
+    > {
         self.canonical_publication_routes
             .capture_original_branch_schema_inputs(request)
     }
@@ -79,7 +69,7 @@ impl HistorySubsystem {
     pub(crate) fn authored_write_generation(
         &self,
         commit: CommitId,
-    ) -> Option<crate::runtime::AuthoredWriteGeneration> {
+    ) -> Option<crate::history::access::relevant_writes::generation::AuthoredWriteGeneration> {
         self.canonical_publication_routes
             .authored_generation(commit)
     }
@@ -250,32 +240,53 @@ impl HistorySubsystem {
             .retained_branch_transitions()
     }
 
-    pub(crate) fn mark_publication_settled(&self, commit_id: CommitId) -> bool {
-        self.canonical_publication_routes.mark_settled(commit_id)
-    }
-
-    pub(crate) fn settlement_route_visit_count(&self) -> u64 {
-        self.canonical_publication_routes
-            .settlement_route_visit_count()
-    }
-
-    pub(crate) fn publication_requires_settlement(&self, commit_id: CommitId) -> bool {
-        self.canonical_publication_routes
-            .requires_settlement(commit_id)
-    }
-
-    pub(crate) fn canonical_publication_reservation_counters(
-        &self,
-    ) -> super::RelationalPatchPositionReservationCounters {
-        self.canonical_publication_routes.reservation_counters()
-    }
-
-    pub(crate) fn pending_canonical_publication_route_count(&self) -> usize {
-        self.canonical_publication_routes.pending_count()
-    }
-
     #[cfg(test)]
     pub(crate) fn remove_canonical_publication_route_for_test(&self, commit_id: CommitId) -> bool {
         self.canonical_publication_routes.remove_for_test(commit_id)
     }
+}
+
+pub(crate) fn mark_publication_settled(history: &HistorySubsystem, commit_id: CommitId) -> bool {
+    history.canonical_publication_routes.mark_settled(commit_id)
+}
+
+pub(crate) fn settlement_route_visit_count(history: &HistorySubsystem) -> u64 {
+    history
+        .canonical_publication_routes
+        .settlement_route_visit_count()
+}
+
+pub(crate) fn publication_requires_settlement(
+    history: &HistorySubsystem,
+    commit_id: CommitId,
+) -> bool {
+    history
+        .canonical_publication_routes
+        .requires_settlement(commit_id)
+}
+
+pub(crate) fn canonical_publication_reservation_counters(
+    history: &HistorySubsystem,
+) -> super::canonical_publication_routes::RelationalPatchPositionReservationCounters {
+    history.canonical_publication_routes.reservation_counters()
+}
+
+pub(crate) fn pending_canonical_publication_route_count(history: &HistorySubsystem) -> usize {
+    history.canonical_publication_routes.pending_count()
+}
+
+pub(crate) fn retain_original_empty_birth(
+    history: &HistorySubsystem,
+    schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+) {
+    history
+        .canonical_publication_routes
+        .retain_original_empty_birth(
+            super::canonical_publication_routes::OriginalEmptySchemaObservation {
+                generation: worth_foundational::FoundationalBranchReferenceGeneration::initial(),
+                truth_version: crate::branch::RelationalBranchVersion::initial(),
+                lifecycle: crate::branch::RelationalBranchLifecyclePosture::Live,
+                schema,
+            },
+        );
 }

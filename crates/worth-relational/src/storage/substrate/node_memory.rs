@@ -1,5 +1,5 @@
 //! Construction-time reservation for actual tree nodes and their fixed pages.
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 pub(super) fn reserve(

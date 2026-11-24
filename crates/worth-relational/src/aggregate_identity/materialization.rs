@@ -1,8 +1,8 @@
 //! Exact late storage demand keeps its original request reservation through admission.
 use super::preparation::{PlanDenial, PreparedConsequences};
-use crate::branch::SelectedRelationalBranchState;
+use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ChargedBytes, MapKernelFailure};
 
 struct Materialized {
@@ -21,15 +21,17 @@ impl PreparedConsequences {
         budget: Option<&crate::execution::RequestWorkBudget>,
         selected: &SelectedRelationalBranchState,
         working: &mut WorkingState,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Result<(), TransactionCommitError> {
         selected
             .state()
             .root()
             .demand_regions_head(execution, symbols, self.demands.partitions.iter().copied())
             .map_err(|failure| {
-                crate::authority::commit::preparation::storage_read_denial(basis, failure)
+                crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                    basis, failure,
+                )
             })?;
         let (materialized, retention) = super::funding::run(execution, budget, |work| {
             let mut admitted = 0u64;

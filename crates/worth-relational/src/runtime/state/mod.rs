@@ -13,7 +13,8 @@ pub use subsystems::{
     RelationalIndexDefinitionPreparationDenial,
 };
 mod runtime_state;
-mod subsystems;
+pub(crate) use runtime_state::indexing::RuntimeIndexDefinitionReadBinding;
+pub(crate) mod subsystems;
 
 pub use runtime_state::RelationalRuntime;
 pub(crate) use runtime_state::RelationalRuntimeState;
@@ -41,18 +42,15 @@ pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
 pub(crate) use subsystems::{
-    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
+    authored_write_commit_denial, readmit_positioned_canonical_commit,
     BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
-    DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
-    IndexingSubsystem, LineageIdentityAllocator, LineageNamingBasisBinding, LineageState,
-    LineageSubsystem,
+    CanonicalCheckpointAdmissionError, CanonicalPublicationRecordError,
+    CapturedIndexDefinitionCatalog, CommitStrategiesSubsystem, DurabilitySubsystem,
+    HistorySubsystem, IndexCatalogCoverage, IndexDefinitionReadBinding, IndexingState,
+    LineageIdentityAllocator, LineageNamingBasisBinding, LineageState, LineageSubsystem,
     MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedIndexBasisSelection,
     PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
@@ -63,8 +61,8 @@ pub(crate) use subsystems::{
     RelationalDiagnosticOperationCapture, RelationalForkMaterializationCost,
     RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
     ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,
+    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
     SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{

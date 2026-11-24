@@ -7,9 +7,11 @@ use super::HistorySubsystem;
 pub(super) fn validate_branch_target_lineage(
     history: &HistorySubsystem,
     branch_id: &BranchId,
-    target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
+    target: &FoundationalBranchTarget<crate::branch::target::RelationalBranchTarget>,
     fork_source_branch_id: Option<&BranchId>,
-    fork_provenance: Option<&crate::branch::RelationalBranchReferenceObservation>,
+    fork_provenance: Option<
+        &crate::branch::reference::observation::RelationalBranchReferenceObservation,
+    >,
 ) -> Result<(), String> {
     let FoundationalBranchTarget::Basis(target_basis) = target else {
         return Ok(());
@@ -47,7 +49,7 @@ pub(super) fn validate_branch_target_lineage(
 pub(super) fn validate_target_authoring_lineage(
     history: &HistorySubsystem,
     source_branch_id: &BranchId,
-    target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
+    target: &FoundationalBranchTarget<crate::branch::target::RelationalBranchTarget>,
 ) -> Result<(), String> {
     let FoundationalBranchTarget::Basis(target) = target else {
         return Ok(());

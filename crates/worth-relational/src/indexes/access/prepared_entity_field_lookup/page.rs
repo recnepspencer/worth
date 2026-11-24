@@ -90,7 +90,7 @@ impl PreparedEntityFieldLookup {
             Some(_) => return Err(PageStop::ForeignBoundary),
             None => 0,
         };
-        self.performance_access().count_query_index_attempt();
+        self.instrumentation.count_query_index_attempt();
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
             unreachable!(
                 /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
@@ -166,7 +166,7 @@ impl PreparedEntityFieldLookup {
             next: start + count,
             _memory: memory,
         });
-        self.performance_access().count_query_index_path();
+        self.instrumentation.count_query_index_path();
         Ok(BoundedEntityFieldPage {
             ids,
             generation: self.generation.generation_id,
@@ -179,7 +179,7 @@ impl PreparedEntityFieldLookup {
         execution: &ExecutionRequest<'_, '_>,
         check_live: &mut impl FnMut() -> Result<(), E>,
     ) -> Result<(), PageStop<E>> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(|cause| PageStop::Lookup(denied(Denial::Execution(cause), self.index_id())))?;
         check_live().map_err(PageStop::Admission)
     }

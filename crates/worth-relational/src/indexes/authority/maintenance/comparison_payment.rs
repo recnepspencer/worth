@@ -33,7 +33,7 @@ impl<'work, 'payer, 'run, 'lease> ComparisonPayment<'work, 'payer, 'run, 'lease>
                     .work_units
                     .checked_add(1)
                     .ok_or(Denial::Execution(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                     ))?;
                 *credit -= 1;
                 self.work.counts.work_units = next;

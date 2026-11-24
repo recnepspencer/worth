@@ -89,7 +89,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
 }
 #[test]
 fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_publication() {
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
@@ -139,7 +139,7 @@ fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_pub
 }
 #[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = create_entity_outcome(&execution, &runtime, "tuple-observations");
@@ -215,7 +215,7 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
 
 #[test]
 fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
@@ -342,7 +342,8 @@ enum OldBacking {
     },
 }
 struct OldState {
-    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
+    authored_writes:
+        Option<crate::history::access::relevant_writes::generation::AuthoredWriteGeneration>,
     backing: OldBacking,
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,

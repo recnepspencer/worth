@@ -8,7 +8,7 @@ impl VisibilityProjectionView {
     pub fn entities<T: EntityRecordProjection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_entity_projection_contract::<T>()?;
             self.authoritative_entity_records(execution, T::KIND)?
@@ -28,7 +28,7 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_entity_projection_contract::<T>()?;
             self.authoritative_entity_records_in(execution, partition_id, T::KIND)?
@@ -48,7 +48,7 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_entity_projection_contract::<T>()?;
             self.project_entity_record(execution, entity_id, &projection_scope, |record| {
@@ -63,7 +63,7 @@ impl VisibilityProjectionView {
         kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             self.admit_entity_projection_scope(kind_id, &projection_scope)?;
             self.authoritative_entity_records(execution, kind_id)?
@@ -85,7 +85,7 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             self.project_entity_record(execution, entity_id, &projection_scope, |record| {
                 self.admit_entity_projection_scope(record.kind_id(), &projection_scope)?;
@@ -101,7 +101,10 @@ impl VisibilityProjectionView {
         expected_kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Result<Option<T>, KindId>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Result<Option<T>, KindId>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         Ok({
             self.project_entity_record(execution, entity_id, &projection_scope, |record| {
                 Ok(Some(if record.kind_id() != expected_kind_id {
@@ -118,7 +121,7 @@ impl VisibilityProjectionView {
     pub fn relations<T: RelationRecordProjection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_relation_projection_contract::<T>()?;
             self.authoritative_relation_records(execution, T::KIND)?
@@ -134,7 +137,7 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_relation_projection_contract::<T>()?;
             self.authoritative_relation_records_in(execution, partition_id, T::KIND)?
@@ -150,7 +153,7 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_relation_projection_contract::<T>()?;
             self.authoritative_relation_record(execution, relation_id)?
@@ -166,7 +169,7 @@ impl VisibilityProjectionView {
         kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Vec<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             self.admit_relation_projection_scope(kind_id, &projection_scope)?;
             self.authoritative_relation_records(execution, kind_id)?
@@ -184,7 +187,7 @@ impl VisibilityProjectionView {
         relation_id: RelationId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok({
             let Some(record) = self.authoritative_relation_record(execution, relation_id)? else {
                 return Ok(None);

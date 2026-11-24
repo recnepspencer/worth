@@ -5,11 +5,12 @@ use worth_foundational::PartitionIdentity;
 
 use super::packet_for_definition;
 use crate::authority::commit::preparation::packets::index::IndexPreparationPacket;
-use crate::execution::{
-    PacketBudgetDenial, PacketExecutionStop, ReadOnlyPacket, RequestWorkBudget,
-};
+use crate::execution::read_only_packets::PacketBudgetDenial;
+use crate::execution::read_only_packets::PacketExecutionStop;
+use crate::execution::read_only_packets::ReadOnlyPacket;
+use crate::execution::request_work::RequestWorkBudget;
 use crate::indexes::data::DerivedIndexId;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
 
 pub(in crate::indexes::authority) struct PlannedIndexPackets {
     pub inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
@@ -35,13 +36,13 @@ impl ChargedBytes for PlannedIndexPackets {
 }
 
 pub(in crate::indexes::authority) fn plan_index_packets_checked(
-    runtime: &RelationalRuntime,
+    indexes: &IndexingSubsystem,
     index_ids: &[DerivedIndexId],
     lease: &ExecutionResourceLease<'_>,
     work_budget: &RequestWorkBudget,
 ) -> Result<PlannedIndexPackets, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
+    let scan = crate::execution::ordered_scan::admit_ordered_scan(vec![(identity, ())])?;
     let descriptor_bytes = (index_ids.len() as u64)
         .checked_mul(
             (size_of::<ReadOnlyPacket<IndexPreparationPacket>>()
@@ -49,25 +50,24 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                 + 3 * size_of::<PartitionIdentity>()) as u64,
         )
         .ok_or(PacketExecutionStop::Admission(
-            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+            crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
         ))?;
     let declared_bytes = index_ids
         .iter()
         .try_fold(descriptor_bytes, |bytes, id| {
             bytes.checked_add(
-                runtime
-                    .indexes
+                indexes
                     .definition(*id)
                     .map_or(0, |definition| definition.owned_allocation_capacity_bytes()),
             )
         })
         .ok_or(PacketExecutionStop::Admission(
-            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+            crate::execution::read_only_packets::PacketAdmissionDenial::MemoryOverflow,
         ))?;
     // Planning declares what it will hold; the lease's own memory policy
     // admits that declaration, not a fixed share of the policy.
     let ceiling = declared_bytes;
-    let outcome = crate::execution::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         Some(work_budget),
         |child| {
@@ -96,7 +96,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                     .map_err(|_| MapKernelFailure::<PacketBudgetDenial>::ResultCapacityExceeded)?;
                 for index_id in index_ids.iter().copied() {
                     context.checkpoint(1).map_err(MapKernelFailure::Stop)?;
-                    if let Some(definition) = runtime.indexes.definition(index_id) {
+                    if let Some(definition) = indexes.definition(index_id) {
                         let owned = definition.owned_allocation_capacity_bytes();
                         claimed = claimed
                             .checked_add(owned)
@@ -107,7 +107,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                         inputs.push(ReadOnlyPacket {
                             identity: PartitionIdentity::new(packet_index as u64),
                             input_bytes: owned,
-                            memory: crate::execution::PacketMemory::Declared {
+                            memory: crate::execution::packet_memory::PacketMemory::Declared {
                                 scratch: 0,
                                 result: 0,
                             },
@@ -132,7 +132,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                 // Each packet charges the lease what it actually holds.
                 for (ordinal, input) in inputs.iter_mut().enumerate() {
                     input.identity = PartitionIdentity::new(ordinal as u64);
-                    input.memory = crate::execution::PacketMemory::Tracked;
+                    input.memory = crate::execution::packet_memory::PacketMemory::Tracked;
                 }
                 Ok((
                     (),

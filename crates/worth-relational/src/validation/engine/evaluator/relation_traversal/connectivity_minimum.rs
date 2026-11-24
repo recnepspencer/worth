@@ -2,8 +2,10 @@ use std::collections::BTreeSet;
 
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredConnectivityMinimumContract;
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{contract_candidate_kind_matches, entity_reference_kind};

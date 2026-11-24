@@ -1,10 +1,11 @@
+use crate::runtime::state::subsystems::history::history_costs::RelationalBranchSharingCostCounters;
 use std::sync::{Arc, Mutex};
 
 use crate::storage::substrate::StorageAllocationOverflow;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct StoredSharingCosts {
-    counters: crate::runtime::RelationalBranchSharingCostCounters,
+    counters: RelationalBranchSharingCostCounters,
     authoritative_byte_overflow: bool,
 }
 
@@ -24,10 +25,7 @@ impl RelationalBranchSharingCostCell {
         }
     }
 
-    pub(crate) fn record(
-        &self,
-        update: impl FnOnce(&mut crate::runtime::RelationalBranchSharingCostCounters),
-    ) {
+    pub(crate) fn record(&self, update: impl FnOnce(&mut RelationalBranchSharingCostCounters)) {
         let mut state = self
             .state
             .lock()
@@ -40,7 +38,7 @@ impl RelationalBranchSharingCostCell {
     /// overflowed without mutating the byte totals to a misleading `u64::MAX`.
     pub(crate) fn record_checked_bytes(
         &self,
-        update: impl FnOnce(&mut crate::runtime::RelationalBranchSharingCostCounters) -> Option<()>,
+        update: impl FnOnce(&mut RelationalBranchSharingCostCounters) -> Option<()>,
     ) {
         let mut state = self
             .state
@@ -51,7 +49,7 @@ impl RelationalBranchSharingCostCell {
         }
     }
 
-    pub(crate) fn snapshot(&self) -> crate::runtime::RelationalBranchSharingCostCounters {
+    pub(crate) fn snapshot(&self) -> RelationalBranchSharingCostCounters {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -60,7 +58,7 @@ impl RelationalBranchSharingCostCell {
 
     pub(crate) fn try_snapshot(
         &self,
-    ) -> Result<crate::runtime::RelationalBranchSharingCostCounters, StorageAllocationOverflow> {
+    ) -> Result<RelationalBranchSharingCostCounters, StorageAllocationOverflow> {
         let state = *self
             .state
             .lock()

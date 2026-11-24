@@ -8,22 +8,21 @@ use crate::lineage::data::{
     LineageArtifactCounters, LineageDecisionLogDigestBasis, LineageDecisionRecord,
     LineageDigestBasis, LineageEventBatchDigestBasis, LineageEventRecord, PublishedLineageArtifact,
 };
-use crate::publication::patch::data::{
-    CanonicalAuthoritativePatch, PublishedAuthoritativeRecordPatch,
-};
+use crate::publication::patch::data::CanonicalAuthoritativePatch;
 use crate::schema::data::{
     DescriptorSemanticsVersion, SchemaAuthoritySnapshot, SchemaContinuationDescriptor,
     SchemaReconciliationDescriptor, SchemaTransitionArtifact, SchemaVersionId,
 };
-use crate::transactions::data::{
-    ExistingRecordTarget, MergedCommitPlan, MutationIntent, PublishedMergeExecutionAuthority,
-    RecordRef,
-};
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::transactions::data::primitives::RecordRef;
 
 mod authored_index_writes;
 mod index_catalog;
-mod live_managed_source_history;
-mod live_publication_inputs;
+pub(crate) mod live_managed_source_history;
+pub(crate) mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
@@ -38,7 +37,7 @@ mod control_allocation;
 #[cfg(test)]
 mod embedded_checkpoint;
 mod lineage_projection;
-mod owned_graph_selection;
+pub(crate) mod owned_graph_selection;
 mod payload_digest;
 mod retained_entity_selection;
 mod shared;
@@ -109,7 +108,9 @@ pub struct CanonicalCommitEnvelope {
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     body: CanonicalCommitEnvelopeBody,
-    semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+    semantic_result: std::sync::Arc<
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
+    >,
     // Intrinsic input and body admission outlive every decoded body field.
     #[allow(
         dead_code,
@@ -151,13 +152,18 @@ impl CanonicalCommitEnvelope {
         self.index_definition_delta.definitions()
     }
 
-    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+    pub fn semantic_result(
+        &self,
+    ) -> &crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult
+    {
         &self.semantic_result
     }
 
     pub(crate) fn semantic_result_arc(
         &self,
-    ) -> std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult> {
+    ) -> std::sync::Arc<
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
+    > {
         self.semantic_result.clone()
     }
 
@@ -169,7 +175,7 @@ impl CanonicalCommitEnvelope {
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelopeBody {
-    pub(crate) content: crate::content::ContentPublication,
+    pub(crate) content: crate::content::publication::ContentPublication,
     pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
@@ -200,7 +206,8 @@ pub struct CanonicalCommitEnvelopeBody {
     /// branch. It lets recovery admit a branch created after a checkpoint
     /// without rebuilding currentness from a legacy head projection.
     #[serde(default)]
-    pub(crate) branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
+    pub(crate) branch_cell_checkpoint:
+        Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub authority_kind: CanonicalCommitAuthorityKind,
     pub strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     pub merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
@@ -256,12 +263,6 @@ impl CanonicalCommitAuthorityKind {
             | Self::OwnedGraphSelection(_) => None,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct CommittedRecordChange<'a> {
-    pub commit: &'a RelationalCommitReceipt,
-    pub record: &'a PublishedAuthoritativeRecordPatch,
 }
 
 impl CanonicalCommitEnvelopeBody {
@@ -343,35 +344,9 @@ impl CanonicalCommitEnvelopeBody {
             )
     }
 
-    pub(crate) fn committed_record_changes(
-        &self,
-    ) -> impl Iterator<Item = CommittedRecordChange<'_>> {
-        self.patch
-            .authoritative_record_patches
-            .iter()
-            .map(|record| CommittedRecordChange {
-                commit: &self.commit,
-                record,
-            })
-    }
-
-    pub(crate) fn committed_record_changes_for_target<'a>(
-        &'a self,
-        target: &'a RecordRef,
-    ) -> impl Iterator<Item = CommittedRecordChange<'a>> + 'a {
-        self.committed_record_changes()
-            .filter(move |change| &change.record.target == target)
-    }
-
     #[cfg(test)]
     pub(crate) fn published_lineage_mut_for_test(&mut self) -> &mut PublishedLineageArtifact {
         &mut self.lineage
-    }
-    #[cfg(test)]
-    pub(crate) fn rebuild_lineage_basis_for_test(&mut self) {
-        let events = crate::lineage::data::FinalizedLineageEventBatch::new(self.lineage.lineage_events().to_vec());
-        let decisions = crate::lineage::data::LineageDecisionLog::new(self.lineage.lineage_decision_log().to_vec());
-        self.lineage = crate::lineage::data::LineageFinalizationArtifact::new(self.branch_context.clone(), events, decisions).publish();
     }
 }
 
@@ -381,6 +356,9 @@ fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
         ExistingRecordTarget::Relation(relation_id) => RecordRef::Relation(relation_id),
     })
 }
+
+mod committed_record_changes;
+pub(crate) use committed_record_changes::CommittedRecordChange;
 
 mod replay_record;
 pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
@@ -396,3 +374,6 @@ pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod semantic_patch_fixture;
+
+#[cfg(test)]
+mod lineage_rebuild_test;

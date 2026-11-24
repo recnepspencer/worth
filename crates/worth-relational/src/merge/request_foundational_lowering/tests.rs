@@ -2,12 +2,13 @@ use worth_foundational::{FoundationalMergeIntent, FoundationalMergeScopeFamily};
 use worth_proof::TransitionOutcome;
 
 use super::lower_merge_request_to_foundational;
-use crate::facade::history::BranchId;
-use crate::facade::merge::{
-    MergeIntent, NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
+use crate::history::data::coordinates::BranchId;
+use crate::merge::data::requests::normalized::{
+    NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
     RelationalMergeRequestFamily, RelationalMergeSchemaReconciliationPosture, RelationalMergeScope,
     RelationalMergeTopologyIntent,
 };
+use crate::merge::data::requests::raw::MergeIntent;
 
 #[test]
 fn foundational_lowering_preserves_exact_relational_request_truth() {

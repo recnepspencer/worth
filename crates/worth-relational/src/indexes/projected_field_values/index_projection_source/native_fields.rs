@@ -1,9 +1,9 @@
 //! Exact field indexes borrow native values; historical projections keep their read backing.
 use super::*;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::relation_query_locus_value;
 use crate::visibility::materialization::read_records::read_stop::ReadStop;
-use crate::visibility::materialization::read_records::{
-    authoritative_state_query_locus_value, entity_query_locus_value, relation_query_locus_value,
-};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 impl IndexProjectionSource<'_> {
@@ -15,7 +15,7 @@ impl IndexProjectionSource<'_> {
         mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(EntityId, Option<&AspectValue>) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         if !self.projection.is_exact_basis() {
             return self.try_for_each_entity(execution, kind, before, |record| {
                 visit(record.entity_id, entity_query_locus_value(record, field))
@@ -39,7 +39,7 @@ impl IndexProjectionSource<'_> {
                     .demand_regions_head(execution, [partition_id])
                     .map_err(ReadStop::Request)?;
                 serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
-                    ReadStop::Request(crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                    ReadStop::Request(crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
                 })?;
                 serving
             };
@@ -54,7 +54,8 @@ impl IndexProjectionSource<'_> {
             for slot in slots {
                 // Preserve each candidate's checkpoint. The pinned native value
                 // needs no read-record allocation, including unrelated kinds.
-                crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+                crate::execution::request_custody::check_request(execution)
+                    .map_err(ReadStop::Request)?;
                 before(
                     crate::visibility::materialization::read_records::read_prices::KEYED_RECORD,
                     navigation_bytes,
@@ -89,7 +90,7 @@ impl IndexProjectionSource<'_> {
         mut before: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(RelationId, Option<&AspectValue>) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         if !self.projection.is_exact_basis() {
             return self.try_for_each_relation(execution, kind, before, |record| {
                 visit(
@@ -116,7 +117,7 @@ impl IndexProjectionSource<'_> {
                     .demand_regions_head(execution, [partition_id])
                     .map_err(ReadStop::Request)?;
                 serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
-                    ReadStop::Request(crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                    ReadStop::Request(crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
                 })?;
                 serving
             };
@@ -129,7 +130,8 @@ impl IndexProjectionSource<'_> {
                     Ok(())
                 })?;
             for slot in slots {
-                crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+                crate::execution::request_custody::check_request(execution)
+                    .map_err(ReadStop::Request)?;
                 before(
                     crate::visibility::materialization::read_records::read_prices::KEYED_RECORD,
                     navigation_bytes,
@@ -159,3 +161,5 @@ impl IndexProjectionSource<'_> {
 
 #[cfg(test)]
 mod navigation_tests;
+#[cfg(test)]
+pub(crate) use navigation_tests::verify_native_field_navigation;

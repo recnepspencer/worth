@@ -8,7 +8,7 @@ use crate::diagnostics::data::{
 };
 use crate::identity::data::{EntityId, LineageId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::visibility::materialization::read_records::ProjectionAspectFilter;
 use worth_foundational::facade::AspectKey;
 

@@ -22,7 +22,8 @@ impl CapturedIndexDefinitionCatalog {
     pub(crate) fn introduced(
         &self,
         base: u64,
-    ) -> impl Iterator<Item = &crate::indexes::RetainedDerivedIndexDefinition> {
+    ) -> impl Iterator<Item = &crate::indexes::retained_definition::RetainedDerivedIndexDefinition>
+    {
         self.catalog
             .definitions
             .range(DerivedIndexId(base)..)

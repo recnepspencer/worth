@@ -1,8 +1,8 @@
 //! Canonical provenance of a payload selected from an actual retained root.
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchTarget, RelationalBranchVersion,
-    CANONICAL_RUNTIME_INSTANCE_ID,
-};
+use crate::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
+use crate::branch::target::RelationalBranchTarget;
+use crate::branch::version::RelationalBranchVersion;
+use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;
 use crate::identity::data::{EntityId, KindId};
 use serde::{Deserialize, Serialize};
@@ -28,14 +28,16 @@ impl CanonicalRetainedEntitySelection {
         source: &AdmittedRelationalBranchBasis,
         entity: EntityId,
         kind: KindId,
-    ) -> Result<Option<std::sync::Arc<Self>>, crate::execution::RelationalExecutionDenialCause>
-    {
+    ) -> Result<
+        Option<std::sync::Arc<Self>>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let worth_foundational::FoundationalBranchTarget::Basis(target) =
             source.reference().target()
         else {
             return Ok(None);
         };
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         let bytes = std::mem::size_of::<(usize, usize, Self)>()
             .checked_add(std::mem::size_of::<(
                 usize,

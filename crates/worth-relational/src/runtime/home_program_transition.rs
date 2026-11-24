@@ -29,8 +29,8 @@ pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
 mod target_step;
+pub(crate) use crate::branch::home_program_step::AdmittedRelationalHomeProgramStep;
 pub(crate) use coverage::RelationalHomeTargetCoverage;
-pub(crate) use step_admission::AdmittedRelationalHomeProgramStep;
 pub use step_admission::RelationalHomeProgramStepContracts;
 pub(crate) use target_step::AdmittedRelationalHomeProgramTarget;
 
@@ -48,7 +48,7 @@ pub enum RelationalHomeProgramContractDenial {
     CapacityOverflow,
     CatalogEncoding,
     UnboundHome,
-    TransitionPhase(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    TransitionPhase(crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial),
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,

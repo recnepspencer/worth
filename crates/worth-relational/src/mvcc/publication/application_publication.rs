@@ -19,16 +19,18 @@ pub use restored_producer_prior::RelationalRestoredProducerPrior;
 mod completion;
 mod coupled_assembly;
 mod coupled_owners;
-mod custody;
+pub(crate) mod custody;
+pub(crate) mod output_meaning;
 mod ownership_reach;
 pub(crate) use coupled_assembly::{BoundAuthoredCoupling, RequiredOutputInputs};
 pub use coupled_assembly::{
-    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
-    RelationalAuthoredCoupledTransaction, RelationalCoupledAppendTouches,
-    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
-    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
-    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture, RelationalRequiredOutputInput,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledChainOverlay, RelationalCoupledContribution,
+    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
+    RelationalRequiredOutputInput,
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
@@ -40,14 +42,14 @@ pub use predecessor_basis::{
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;
-pub use completion::{
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
-};
+pub use completion::RequiredOutputPublication;
 pub(crate) use custody::prepare as prepare_publications;
 pub use custody::{
     RecordedRequiredOutputRole, RelationalPerformedOutputPublications,
     RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+};
+pub use output_meaning::{
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;
@@ -139,12 +141,7 @@ impl crate::mvcc::ValidatedRelationalProposal {
     }
 }
 
-pub(crate) fn origin_denial(detail: impl Into<String>) -> TransactionCommitError {
-    TransactionCommitError::publication(crate::publication::data::PublicationError::new(
-        crate::publication::bundle::PublicationStage::BundleAssembly,
-        detail,
-    ))
-}
+pub(crate) use crate::transactions::data::outcomes::transaction_commit_error::origin_denial;
 
 #[cfg(test)]
 pub(crate) fn native_birth_fixture(

@@ -67,7 +67,7 @@ impl RelationalBranchReferenceCell {
                 fork_source_branch_id: state.fork_source_branch_id,
                 root: state.root,
             })),
-            basis_registry: crate::branch::RelationalBranchBasisRegistry::default(),
+            basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry::default(),
             coordination: crate::branch::coordination::RelationalBranchCoordinationCell::fresh(
                 runtime_instance_id,
                 self.identity.branch_id(),

@@ -1,4 +1,6 @@
-use crate::validation::data::{InvariantCostClass, InvariantExecutionPoint, InvariantGroupSet};
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroupSet;
 use crate::validation::engine::InvariantRuntimeView;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -121,7 +123,8 @@ pub(crate) const fn cost_allowed(limit: InvariantCostClass, cost: InvariantCostC
 #[cfg(test)]
 mod tests {
     use super::{cost_allowed, InvariantContext, InvariantScale, RelationalInvariantRuntime};
-    use crate::validation::data::{InvariantCostClass, InvariantExecutionPoint};
+    use crate::validation::data::execution::InvariantExecutionPoint;
+    use crate::validation::data::groups::InvariantCostClass;
     use crate::validation::engine::InvariantRequestProfile;
 
     #[test]

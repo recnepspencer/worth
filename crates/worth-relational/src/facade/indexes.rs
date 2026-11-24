@@ -1,4 +1,9 @@
 pub use crate::execution::RelationalExecutionDenialCause;
+pub use crate::indexes::access::{
+    AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
+    BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
+    PreparedEntityFieldLookup,
+};
 pub use crate::indexes::data::{
     BoundedEntityFieldBoundary, BoundedEntityFieldLookupAdmissionStop,
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
@@ -25,11 +30,7 @@ pub use crate::indexes::data::{
     RelationJoinSharedEndpoint, SelectedIndexGenerationAdmissionStop, SelectedIndexReadWork,
     MAX_BOUNDED_INDEX_CANDIDATES, MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };
-pub use crate::indexes::{
-    AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
-    BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
-    PreparedEntityFieldLookup, RetainedDerivedIndexDefinition,
-};
+pub use crate::indexes::retained_definition::RetainedDerivedIndexDefinition;
 pub use crate::runtime::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,

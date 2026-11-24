@@ -6,7 +6,7 @@ use crate::commit_strategies::data::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StrategyExecutionError {
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
     UnknownStrategyId {
         strategy_id: CommitStrategyId,
     },

@@ -12,8 +12,19 @@ impl LineageSubsystem {
         &self,
         directory: &RelationalCheckpointDirectory,
     ) -> Result<(), crate::storage::data::RelationalStorageUnavailable> {
-        let nodes = node_residency::RuntimeLineageNodeResidency::new(directory)?;
-        let events = event_residency::RuntimeLineageEventResidency::new(directory)?;
+        let nodes = node_residency::RuntimeLineageNodeResidency::new(
+            &directory.manifest.lineage,
+            &directory.source,
+        )?;
+        let events = event_residency::RuntimeLineageEventResidency::new(
+            &directory.manifest.lineage_events,
+            &directory.source,
+            directory
+                .manifest
+                .commits
+                .iter()
+                .map(|entry| entry.commit.clone()),
+        )?;
         *self.node_residency.write() = Some(Arc::new(nodes));
         *self.event_residency.write() = Some(Arc::new(events));
         self.event_admissions.write().clear();
@@ -25,7 +36,7 @@ impl LineageSubsystem {
         nodes: Option<&BTreeSet<LineageId>>,
         branches: Option<&BTreeSet<BranchId>>,
     ) -> Result<Vec<ResidentLineageEventPage>, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let Some(residency) = self.event_residency.read().clone() else {
             return Ok(Vec::new());
         };

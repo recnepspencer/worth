@@ -1,21 +1,9 @@
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
-use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::canonical_deltas::{CanonicalRecordAspectDelta, FoundationalPatchFragment};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum AdjacencyDeltaKind {
-    Created { source: EntityId, target: EntityId },
-    Deleted { source: EntityId, target: EntityId },
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct AdjacencyDelta {
-    pub(crate) relation_id: RelationId,
-    pub(crate) kind_id: crate::identity::data::KindId,
-    pub(crate) kind: AdjacencyDeltaKind,
-}
+pub(crate) use super::adjacency_delta::{AdjacencyDelta, AdjacencyDeltaKind};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct MutationPublicationEffect {

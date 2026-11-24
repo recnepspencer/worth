@@ -1,3 +1,4 @@
+use crate::runtime::state::subsystems::history::history_costs::RelationalBranchSharingCostCounters;
 use std::sync::Arc;
 
 use crate::history::data::BranchId;
@@ -11,12 +12,12 @@ use super::reference::{RelationalBranchReferenceCell, RelationalBranchReferenceM
 /// state after an exact-reference comparison succeeds.
 #[derive(Clone, Debug)]
 pub(crate) struct RelationalBranchPublicationCell {
-    identity: super::RelationalBranchIdentity,
+    identity: crate::branch::identity::RelationalBranchIdentity,
     state: Arc<std::sync::Mutex<RelationalBranchReferenceMutableState>>,
-    basis_registry: super::RelationalBranchBasisRegistry,
+    basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry,
     coordination: Arc<super::coordination::RelationalBranchCoordinationCell>,
     head_retention: Arc<crate::history::retention::RelationalBranchHeadRetentionCell>,
-    sharing_costs: super::RelationalBranchSharingCostCell,
+    sharing_costs: crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell,
 }
 
 pub(crate) struct RelationalBranchPublicationStateGuard<'cell> {
@@ -44,7 +45,7 @@ impl RelationalBranchPublicationCell {
             Err(std::sync::TryLockError::WouldBlock)
         )
     }
-    pub(crate) fn identity(&self) -> &super::RelationalBranchIdentity {
+    pub(crate) fn identity(&self) -> &crate::branch::identity::RelationalBranchIdentity {
         &self.identity
     }
 
@@ -74,7 +75,7 @@ impl RelationalBranchPublicationCell {
 
     pub(crate) fn currently_selects_root(
         &self,
-        expected: &Arc<super::RelationalBranchRoot>,
+        expected: &Arc<crate::branch::root::RelationalBranchRoot>,
     ) -> bool {
         self.state
             .lock()
@@ -90,33 +91,36 @@ impl RelationalBranchPublicationCell {
 
     pub(crate) fn register_basis(
         &self,
-        basis: super::AdmittedRelationalBranchBasis,
-    ) -> Result<super::AdmittedRelationalBranchBasis, super::RelationalBranchBasisDenial> {
+        basis: crate::branch::basis::AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::basis::AdmittedRelationalBranchBasis,
+        crate::branch::basis_denial::RelationalBranchBasisDenial,
+    > {
         self.basis_registry.register(basis)
     }
 
     pub(crate) fn record_sharing_cost(
         &self,
-        update: impl FnOnce(&mut crate::runtime::RelationalBranchSharingCostCounters),
+        update: impl FnOnce(&mut RelationalBranchSharingCostCounters),
     ) {
         self.sharing_costs.record(update);
     }
 
     pub(crate) fn record_sharing_cost_checked(
         &self,
-        update: impl FnOnce(&mut crate::runtime::RelationalBranchSharingCostCounters) -> Option<()>,
+        update: impl FnOnce(&mut RelationalBranchSharingCostCounters) -> Option<()>,
     ) {
         self.sharing_costs.record_checked_bytes(update);
     }
 
-    pub(crate) fn sharing_costs(&self) -> crate::runtime::RelationalBranchSharingCostCounters {
+    pub(crate) fn sharing_costs(&self) -> RelationalBranchSharingCostCounters {
         self.sharing_costs.snapshot()
     }
 
     pub(crate) fn try_sharing_costs(
         &self,
     ) -> Result<
-        crate::runtime::RelationalBranchSharingCostCounters,
+        RelationalBranchSharingCostCounters,
         crate::storage::substrate::StorageAllocationOverflow,
     > {
         self.sharing_costs.try_snapshot()
@@ -128,10 +132,11 @@ impl RelationalBranchPublicationStateGuard<'_> {
     /// guard is held. Do not call basis.is_current(), which reacquires it.
     pub(crate) fn matches_current_basis(
         &self,
-        basis: &super::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> bool {
         if self.cell.identity() != basis.identity()
-            || self.lifecycle_posture() != super::RelationalBranchLifecyclePosture::Live
+            || self.lifecycle_posture()
+                != crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
             || self.observation() != basis.reference()
             || self.truth_version() != basis.truth_version()
         {
@@ -147,34 +152,40 @@ impl RelationalBranchPublicationStateGuard<'_> {
             .is_ok()
         })
     }
-    pub(crate) fn selected_root(&self) -> Option<Arc<super::RelationalBranchRoot>> {
+    pub(crate) fn selected_root(&self) -> Option<Arc<crate::branch::root::RelationalBranchRoot>> {
         self.state.root.as_ref().map(Arc::clone)
     }
 
-    pub(crate) fn observation(&self) -> &super::RelationalBranchReferenceObservation {
+    pub(crate) fn observation(
+        &self,
+    ) -> &crate::branch::reference::observation::RelationalBranchReferenceObservation {
         &self.state.observation
     }
 
-    pub(crate) fn truth_version(&self) -> super::RelationalBranchVersion {
+    pub(crate) fn truth_version(&self) -> crate::branch::version::RelationalBranchVersion {
         self.state.truth_version
     }
 
-    pub(crate) fn lifecycle_posture(&self) -> super::RelationalBranchLifecyclePosture {
+    pub(crate) fn lifecycle_posture(
+        &self,
+    ) -> crate::branch::lifecycle::RelationalBranchLifecyclePosture {
         self.state.lifecycle_posture()
     }
 
     /// The observation archiving this branch would install.
     pub(crate) fn archived_observation(
         &self,
-    ) -> Result<super::RelationalBranchReferenceObservation, super::RelationalBranchCellDenial>
-    {
+    ) -> Result<
+        crate::branch::reference::observation::RelationalBranchReferenceObservation,
+        crate::branch::reference::RelationalBranchCellDenial,
+    > {
         self.state.archived_observation()
     }
 
     /// Install a prepared archive. Cannot fail.
     pub(crate) fn install_archive(
         &mut self,
-        observation: super::RelationalBranchReferenceObservation,
+        observation: crate::branch::reference::observation::RelationalBranchReferenceObservation,
     ) {
         self.state.install_archive(observation);
     }
@@ -197,7 +208,7 @@ impl RelationalBranchPublicationStateGuard<'_> {
     pub(crate) fn replace_with(
         &mut self,
         prepared: RelationalBranchReferenceMutableState,
-    ) -> Arc<super::RelationalBranchRoot> {
+    ) -> Arc<crate::branch::root::RelationalBranchRoot> {
         let previous_root = self
             .state
             .root

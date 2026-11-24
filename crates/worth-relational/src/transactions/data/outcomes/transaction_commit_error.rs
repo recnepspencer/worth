@@ -321,3 +321,12 @@ fn publication_context() -> ErrorContext {
         crate::errors::data::ErrorOperation::Publish,
     )
 }
+
+pub(crate) fn origin_denial(detail: impl Into<String>) -> TransactionCommitError {
+    TransactionCommitError::publication(
+        crate::publication::data::publication_error::PublicationError::new(
+            crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
+            detail,
+        ),
+    )
+}

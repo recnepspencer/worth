@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::change_source::RelationalRetainedObservation;
-use crate::runtime::RelationalRuntime;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::change_source::retained_observation::RelationalRetainedObservation;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
-use super::RelationalRecordHistoryDenial as Denial;
+use super::denial::RelationalRecordHistoryDenial as Denial;
 
 /// Exact generation resolved in a retained native root, including a retained tombstone.
 /// This provenance does not authorize application disclosure or product ancestry.
@@ -28,11 +28,25 @@ impl RelationalRecordHistorySubject {
         size_of::<RetainedSubject>() + 2 * size_of::<usize>()
     }
 
+    pub(super) fn from_retained(
+        record: RecordRef,
+        retained: RelationalRetainedObservation,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            owner: Arc::new(RetainedSubject {
+                record,
+                retained,
+                _memory: memory,
+            }),
+        }
+    }
+
     pub fn record(&self) -> &RecordRef {
         &self.owner.record
     }
 
-    pub fn observation(&self) -> &crate::mvcc::RelationalBranchObservation {
+    pub fn observation(&self) -> &crate::mvcc::observation::RelationalBranchObservation {
         self.owner.retained.observation()
     }
 
@@ -41,40 +55,9 @@ impl RelationalRecordHistorySubject {
     }
 }
 
-impl RelationalRuntime {
-    /// Resolve only the exact generation in this immutable root. An identifier
-    /// alone cannot recreate the returned retained subject after reclamation/reuse.
-    pub fn retain_record_history_subject(
-        &self,
-        execution: worth_execution::ExecutionRequest<'_, '_>,
-        basis: &AdmittedRelationalBranchBasis,
-        record: RecordRef,
-    ) -> Result<RelationalRecordHistorySubject, Denial> {
-        execution.check_live()?;
-        if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(Denial::ForeignOwner);
-        }
-        require_exact_subject(&execution, self, basis, &record)?;
-        let memory = execution
-            .reserve_retained_memory(RelationalRecordHistorySubject::owned_backing_bytes() as u64)
-            .map_err(Denial::Request)?;
-        let retained = self
-            .retain_observation_snapshot(basis)
-            .map_err(Denial::Retention)?;
-        execution.check_live()?;
-        Ok(RelationalRecordHistorySubject {
-            owner: Arc::new(RetainedSubject {
-                record,
-                retained,
-                _memory: memory,
-            }),
-        })
-    }
-}
-
-fn require_exact_subject(
+pub(super) fn require_exact_subject(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    symbols: &RuntimeSymbolTable,
     basis: &AdmittedRelationalBranchBasis,
     record: &RecordRef,
 ) -> Result<(), Denial> {
@@ -84,7 +67,7 @@ fn require_exact_subject(
         RecordRef::Entity(id) => id.partition_id,
         RecordRef::Relation(id) => id.partition_id,
     };
-    root.demand_regions_head(execution, &runtime.services.symbols, [partition_id])
+    root.demand_regions_head(execution, symbols, [partition_id])
         .map_err(|cause| Denial::Storage(cause.into()))?;
     let resolved = match record {
         RecordRef::Entity(id) => {

@@ -79,7 +79,7 @@ fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped(
     assert!(
         matches!(
             denial.kind,
-            crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                 crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
             )
         ),

@@ -6,11 +6,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
-    ) -> Result<Option<SnapshotInspectionSummary>, crate::execution::RelationalExecutionDenialCause>
-    {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Option<SnapshotInspectionSummary>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         let summary = resolve_snapshot_inspection(self.runtime, handle);
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         Ok(summary)
     }
 
@@ -33,12 +35,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<RelationalReadView>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
             basis
                 .root()
                 .demand_all_full(execution, &self.runtime.services.symbols)
-                .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         }
         super::super::read_work::metered_with_memory(
             execution,
@@ -77,9 +82,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
-        self.try_read_version(execution, version_id)?
-            .map_err(crate::execution::RelationalExecutionDenialCause::HistoricalVisibility)
+    ) -> Result<RelationalReadView, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
+        self.try_read_version(execution, version_id)?.map_err(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::HistoricalVisibility,
+        )
     }
 
     /// Read a retained version with request-funded Full materialization.
@@ -90,7 +97,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<
         Result<RelationalReadView, crate::visibility::snapshot_states::HistoricalVisibilityDenial>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let state = materialize_historical_visibility(execution, self.runtime, version_id, true)?;
         let Some(state) = state else {
@@ -135,12 +142,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn read_observation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        observation: &crate::mvcc::RelationalBranchObservation,
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
     ) -> Result<
-        Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial>,
-        crate::execution::RelationalExecutionDenialCause,
+        Result<RelationalReadView, crate::branch::basis_denial::RelationalBranchBasisDenial>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if let Err(denial) = self.require_local_observation(observation) {
             return Ok(Err(denial));
         }
@@ -150,13 +157,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .has_materialization_unavailable()
         {
             return Ok(Err(
-                crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable,
+                crate::branch::basis_denial::RelationalBranchBasisDenial::MaterializationUnavailable,
             ));
         }
         observation
             .selected_root()
             .demand_all_full(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         let state = build_visibility_state(
             self.runtime,
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
@@ -184,9 +191,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// Schema version carried by the observation's selected canonical root.
     pub fn observation_schema_version(
         &self,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<crate::schema::data::SchemaVersionId, crate::branch::RelationalBranchBasisDenial>
-    {
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<
+        crate::schema::data::SchemaVersionId,
+        crate::branch::basis_denial::RelationalBranchBasisDenial,
+    > {
         self.require_local_observation(observation)?;
         Ok(observation
             .selected_root()
@@ -214,13 +223,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     fn require_local_observation(
         &self,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<(), crate::branch::RelationalBranchBasisDenial> {
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<(), crate::branch::basis_denial::RelationalBranchBasisDenial> {
         if observation.identity().runtime_instance_id() != self.runtime.runtime_instance_id() {
-            return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
-                expected_runtime_instance_id: self.runtime.runtime_instance_id(),
-                actual_runtime_instance_id: observation.identity().runtime_instance_id(),
-            });
+            return Err(
+                crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
+                    expected_runtime_instance_id: self.runtime.runtime_instance_id(),
+                    actual_runtime_instance_id: observation.identity().runtime_instance_id(),
+                },
+            );
         }
         Ok(())
     }

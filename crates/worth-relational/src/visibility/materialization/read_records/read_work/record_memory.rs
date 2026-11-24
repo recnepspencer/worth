@@ -1,5 +1,5 @@
 //! Preclaim the native collector's clones and vector coexistence on its original ticket.
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionResultMemory;
 
 pub(crate) use crate::execution::result_memory::{claim, release};

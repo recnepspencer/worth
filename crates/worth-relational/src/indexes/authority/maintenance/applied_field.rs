@@ -1,18 +1,20 @@
 //! Data-only field entries qualified to one immutable Native applied image.
 //! A selected C generation remains the seed; no generation is issued at D.
 use super::{field_delta, request_payment, root_view::IndexRootView};
-use crate::{
-    branch::RelationalBranchRoot,
-    execution::{request_stage::checkpoint, RelationalExecutionDenialCause as Cause},
-    identity::data::{EntityId, VersionId},
-    indexes::data::{
-        DerivedIndexEntryMap, DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
-        DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
-        DerivedIndexMaintenanceDenialKind as Denial,
-    },
-    storage::data::AuthoritativeFieldComparisonKey,
-    transactions::data::RecordRef,
-};
+use crate::branch::root::RelationalBranchRoot;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::execution::request_stage::checkpoint;
+use crate::identity::data::EntityId;
+use crate::identity::data::VersionId;
+use crate::indexes::data::DerivedIndexEntryMap;
+use crate::indexes::data::DerivedIndexGeneration;
+use crate::indexes::data::DerivedIndexGenerationId;
+use crate::indexes::data::DerivedIndexId;
+use crate::indexes::data::DerivedIndexMaintenanceBudget;
+use crate::indexes::data::DerivedIndexMaintenanceDenial;
+use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
+use crate::storage::data::AuthoritativeFieldComparisonKey;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::{Arc, Mutex};
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest,
@@ -71,7 +73,7 @@ impl AppliedFieldImage {
             })
             .ok_or(Cause::ChargedBytesOverflow)?;
         let memory = ExecutionMemoryReservation::reserve_in_scope(
-            crate::authority::commit::pipeline::request_lease(execution),
+            crate::execution::request_custody::request_lease(execution),
             bytes as u64,
         )
         .map_err(crate::execution::denial::lease_denial)?;
@@ -179,12 +181,12 @@ impl AppliedFieldImage {
                 // Persistent snapshots let allocation and request checks run
                 // before map access, without any cache lock being held.
                 loop {
-                    crate::execution::check_request(execution).map_err(|cause| {
-                        DerivedIndexMaintenanceDenial {
+                    crate::execution::request_custody::check_request(execution).map_err(
+                        |cause| DerivedIndexMaintenanceDenial {
                             kind: Denial::Execution(cause),
                             work: counts,
-                        }
-                    })?;
+                        },
+                    )?;
                     let (epoch, mut entries) = self
                         .cache
                         .lock()

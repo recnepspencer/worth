@@ -22,7 +22,9 @@ impl HistorySubsystem {
                     )
                 })?;
             prepared
-                .push(self.prepare_recovered_source_catalog(execution, commit)?)
+                .push(source_binding::prepare_recovered_source_catalog(
+                    self, execution, commit,
+                )?)
                 .map_err(array_stop)?;
         }
         let prepared = prepared.seal().map_err(array_stop)?;

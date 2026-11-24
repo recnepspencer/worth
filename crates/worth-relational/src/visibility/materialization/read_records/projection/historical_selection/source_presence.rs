@@ -34,7 +34,10 @@ impl RelationalHistoricalSelectionRead {
         expected_kind: KindId,
     ) -> Result<RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial> {
         if basis.identity().runtime_instance_id() != native.runtime_instance_id()
-            || !self.latest().restored.is_from_runtime(native)
+            || !self
+                .latest()
+                .restored
+                .is_from_runtime(native.runtime_instance_id())
         {
             return Err(RelationalHistoricalSourceReadDenial::Selection(
                 RelationalHistoricalSelectionReadDenial::ForeignOwner,

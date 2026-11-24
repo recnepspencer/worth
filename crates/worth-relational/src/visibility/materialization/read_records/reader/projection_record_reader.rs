@@ -2,12 +2,13 @@
 mod record_access;
 pub(crate) struct ProjectionRecordReader<'a> {
     pub(crate) current_version: crate::identity::data::VersionId,
-    pub(crate) instrumentation: &'a crate::runtime::RuntimeInstrumentation,
+    pub(crate) instrumentation:
+        &'a crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
 }
 impl<'a> ProjectionRecordReader<'a> {
     pub(crate) fn new(
         current_version: crate::identity::data::VersionId,
-        instrumentation: &'a crate::runtime::RuntimeInstrumentation,
+        instrumentation: &'a crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     ) -> Self {
         Self {
             current_version,

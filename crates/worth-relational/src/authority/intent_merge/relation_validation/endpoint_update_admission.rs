@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::SchemaSource;
-use crate::runtime::RuntimeInstrumentation;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreatedEntityRef, UpdateRelationEndpointsIntent,
-};
+use crate::transactions::data::intents::mutation_intent::UpdateRelationEndpointsIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 use super::endpoint_admission::validate_relation_endpoint_primitives;
 use super::relation_identity_scan::existing_relation_targets_for_source;
@@ -14,14 +14,14 @@ use super::schema_relation_admission::require_registered_relation_kind;
 
 pub(super) fn validate_relation_endpoint_update_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     spec: &UpdateRelationEndpointsIntent,
 ) -> Result<(), CommitConflict> {
     validate_existing_relation_target(state, spec.relation_id)?;
-    let relation_registration = require_registered_relation_kind(schema_source, spec.kind_id)?;
+    let relation_registration = require_registered_relation_kind(schema, spec.kind_id)?;
     validate_relation_endpoint_primitives(
         state,
         relation_registration.cross_context_policy,
@@ -30,17 +30,17 @@ pub(super) fn validate_relation_endpoint_update_intent(
         &spec.target,
         created_entities,
     )?;
-    reject_endpoint_update_duplicate_identity(state, instrumentation, spec)
+    reject_endpoint_update_duplicate_identity(state, candidates_scanned, spec)
 }
 
 fn reject_endpoint_update_duplicate_identity(
     state: &impl CurrentPartitionAccess,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     spec: &UpdateRelationEndpointsIntent,
 ) -> Result<(), CommitConflict> {
     if existing_relation_targets_for_source(
         state,
-        instrumentation,
+        candidates_scanned,
         spec.relation_id.partition_id,
         spec.kind_id,
         &spec.source,

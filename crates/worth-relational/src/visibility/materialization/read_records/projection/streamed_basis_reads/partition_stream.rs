@@ -23,7 +23,7 @@ pub(super) fn entity<E>(
     source
         .demand_regions_full(execution, [partition_id])
         .map_err(ReadStop::Request)?;
-    crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
     let Some(_root) = source.selected_root() else {
         return Ok(());
     };
@@ -68,7 +68,7 @@ pub(super) fn entity<E>(
             .and_then(|heap| {
                 heap.checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
                     .and_then(|row| row.checked_add(iterator_bytes))
-                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                    .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
             .map_err(ReadStop::Request)?;
         before_candidate(
@@ -77,18 +77,18 @@ pub(super) fn entity<E>(
             bytes,
         )
         .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let record = preclaimed_records::entity(source, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::super::read_footprint::entity)
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .and_then(|row| row.checked_add(iterator_bytes))
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             .map_err(ReadStop::Request)?;
         if actual > bytes {
             return Err(ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
         before_candidate(0, actual).map_err(ReadStop::Admission)?;
@@ -126,7 +126,7 @@ pub(super) fn relation<E>(
     source
         .demand_regions_full(execution, [partition_id])
         .map_err(ReadStop::Request)?;
-    crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
     let Some(_root) = source.selected_root() else {
         return Ok(());
     };
@@ -171,7 +171,7 @@ pub(super) fn relation<E>(
             .and_then(|heap| {
                 heap.checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
                     .and_then(|row| row.checked_add(iterator_bytes))
-                    .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+                    .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             })
             .map_err(ReadStop::Request)?;
         before_candidate(
@@ -180,18 +180,18 @@ pub(super) fn relation<E>(
             bytes,
         )
         .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let record = preclaimed_records::relation(source, id);
         let actual = record
             .as_ref()
             .map_or(0, super::super::super::read_footprint::relation)
             .checked_add(std::mem::size_of::<RelationReadRecord>() as u64)
             .and_then(|row| row.checked_add(iterator_bytes))
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
             .map_err(ReadStop::Request)?;
         if actual > bytes {
             return Err(ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded,
             ));
         }
         before_candidate(0, actual).map_err(ReadStop::Admission)?;

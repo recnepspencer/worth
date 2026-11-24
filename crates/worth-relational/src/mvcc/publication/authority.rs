@@ -86,9 +86,11 @@ impl PreparedRecoveredRelationalPublication {
         runtime: &RelationalRuntime,
         positioned: &crate::history::data::PositionedCanonicalCommit,
     ) -> Result<(), String> {
-        runtime
-            .history
-            .install_prepared_recovered_versioned_artifact(self.publication, positioned)
+        crate::durability::authority::install_recovered_versioned_artifact(
+            &runtime.history,
+            self.publication,
+            positioned,
+        )
     }
 }
 
@@ -98,9 +100,7 @@ impl PreparedRelationalPublicationAccelerators {
         runtime: &RelationalRuntime,
         position: crate::publication::patch::data::PatchStreamPosition,
     ) {
-        runtime
-            .history
-            .install_prepared_versioned_accelerators(self.publication, position);
+        self.publication.install(&runtime.history, position);
     }
 }
 
@@ -132,7 +132,7 @@ fn prepare_versioned_publication(
     sequence: PublicationSequence,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
     original_artifact: Option<&RelationalCommitArtifact>,
-    recovered_content: Option<&crate::content::ContentPublication>,
+    recovered_content: Option<&crate::content::publication::ContentPublication>,
 ) -> Result<crate::runtime::PreparedVersionedArtifactPublication, PublicationPreparationDenial> {
     let validated = runtime.validate_publication_request(PublicationRequest {
         commit_id,

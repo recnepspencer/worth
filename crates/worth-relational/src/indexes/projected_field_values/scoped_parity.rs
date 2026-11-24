@@ -1,6 +1,6 @@
 //! Independent certification from the requested endpoints' authoritative adjacency.
 use super::{compare_related_entries, entity_aspect_field_ordering_value, IndexProjectionSource};
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingEntry, RelatedEntityOrderingField,

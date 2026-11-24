@@ -3,7 +3,7 @@ use super::RelationalRetainedObservation;
 use crate::history::retention::{
     RelationalExternalLeaseRetirement, RelationalRetentionRetirementError,
 };
-use crate::mvcc::{RelationalBranchObservation, RelationalRetainedObservationShares};
+use crate::mvcc::observation::{RelationalBranchObservation, RelationalRetainedObservationShares};
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 
 #[cfg(test)]
@@ -60,7 +60,7 @@ impl RelationalRetainedObservation {
 
 impl RelationalRetainedObservationRetirement {
     pub(crate) fn from_basis_and_lease(
-        basis: crate::branch::AdmittedRelationalBranchBasis,
+        basis: crate::branch::basis::AdmittedRelationalBranchBasis,
         lease: crate::history::retention::RelationalBranchRetentionLease,
     ) -> Self {
         assert_eq!(basis.descriptor(), lease.descriptor());

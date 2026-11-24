@@ -1,11 +1,12 @@
 //! Canonical coupled commits retain each genuine producer route and provenance.
 use super::*;
-use crate::{
-    history::data::{RequiredOutputPublicationPositions, RequiredOutputRoutePosition},
-    mvcc::RelationalCoupledAuthoredPublication,
-    storage::overlay::WorkingState,
-    transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings, RecordRef},
-};
+use crate::history::data::RequiredOutputPublicationPositions;
+use crate::history::data::RequiredOutputRoutePosition;
+use crate::mvcc::RelationalCoupledAuthoredPublication;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
@@ -353,7 +354,11 @@ fn restrict(
         // Native consequences are common to this actual candidate. Each route
         // captures only incident metadata through the existing relation owner.
         if records.contains(&patch.target)
-            || crate::aggregate_identity::guard::is_metadata_record(registry, state, &patch.target)
+            || crate::storage::overlay::record_observation::is_metadata_record(
+                registry,
+                state,
+                &patch.target,
+            )
         {
             selected.push(patch.clone());
         }

@@ -1,4 +1,9 @@
-use super::*;
+use super::{context::VisibilityReadContext, projection_record_reader::ProjectionRecordReader};
+use crate::storage::{
+    data::{EntityReadRecord, RelationReadRecord},
+    overlay::PartitionAccess,
+    partition::DenseSlotBitSet,
+};
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub(crate) fn authoritative_entity_record_for_id_from_exact_state(
@@ -102,7 +107,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
@@ -118,7 +123,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<DenseSlotBitSet>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
@@ -139,7 +147,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
@@ -155,7 +163,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<DenseSlotBitSet>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,

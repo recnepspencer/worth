@@ -1,56 +1,17 @@
 //! Structural ownership at an admitted immutable branch basis; never today's root.
 use super::{traversal::Read, *};
-use crate::{
-    branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime,
-    storage::overlay::CurrentPartitionAccess, validation::engine::state_view::InvariantStateView,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 #[path = "custody_read.rs"]
 mod custody_read;
 #[path = "graph_read.rs"]
 mod graph_read;
 
-impl RelationalRuntime {
-    pub(crate) fn observe_model_source_boundary(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        basis: &AdmittedRelationalBranchBasis,
-        ownership: &RelationalModelOwnership,
-        subject: EntityId,
-        expected_kind: KindId,
-        boundary_work: u64,
-        contains: &mut dyn FnMut(EntityId, KindId) -> bool,
-    ) -> Result<Option<(KindId, Option<EntityId>, bool)>, RelationalModelOwnershipDenial> {
-        let (observed, _memory) = observe(self, execution, basis, |read| {
-            let Some(kind) = read.kind(subject)? else {
-                return Ok(None);
-            };
-            if kind != expected_kind {
-                return Ok(Some((kind, None, false)));
-            }
-            let (owner, within) =
-                ownership.owner_with_boundary(read, subject, Some((boundary_work, contains)))?;
-            Ok(Some((kind, owner, within)))
-        })?;
-        Ok(observed)
-    }
-    pub fn observe_model_owner(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        basis: &AdmittedRelationalBranchBasis,
-        ownership: &RelationalModelOwnership,
-        subject: EntityId,
-    ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
-        let (owner, _memory) = observe(self, execution, basis, |read| {
-            ownership.owner(read, subject)
-        })?;
-        Ok(owner)
-    }
-}
-
 /// Keep result backing alongside any traversal material that escapes observation.
 pub(super) fn observe<R>(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     operation: impl FnOnce(&mut dyn Read) -> Result<R, RelationalModelOwnershipDenial>,
@@ -58,9 +19,13 @@ pub(super) fn observe<R>(
     let mut result = None;
     execution
         .run_native_with_checkpoint(|context| {
-            result = Some(read(runtime, execution, basis, context, |read| {
-                operation(read)
-            }));
+            result = Some(read(
+                runtime_instance_id,
+                execution,
+                basis,
+                context,
+                |read| operation(read),
+            ));
         })
         .map_err(RelationalModelOwnershipDenial::Request)?;
     result.expect("completed native observation")
@@ -68,13 +33,13 @@ pub(super) fn observe<R>(
 
 /// A dependent read uses its caller's original checkpoint, never a fresh meter.
 pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     context: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(&mut BasisRead<'_, '_, '_, '_, '_, '_>) -> Result<R, E>,
 ) -> Result<(R, Vec<worth_execution::ExecutionMemoryReservation>), E> {
-    if basis.identity().runtime_instance_id() != runtime.runtime_instance_id() {
+    if basis.identity().runtime_instance_id() != runtime_instance_id {
         return Err(RelationalModelOwnershipDenial::ForeignBasis.into());
     }
     let version = basis
@@ -103,7 +68,7 @@ pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request>
     context: &'a mut MapKernelContext<'context, 'kernel>,
     state: InvariantStateView<'basis>,
     basis: Option<&'basis AdmittedRelationalBranchBasis>,
-    root: &'basis crate::branch::RelationalBranchRoot,
+    root: &'basis crate::branch::root::RelationalBranchRoot,
     memory: Vec<worth_execution::ExecutionMemoryReservation>,
     /// Candidate observations only: each entity's custody, read once.
     custody:
@@ -205,7 +170,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
 
 pub(super) fn read_candidate<R>(
     execution: &ExecutionRequest<'_, '_>,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     context: &mut MapKernelContext<'_, '_>,
     operation: impl FnOnce(
         &mut BasisRead<'_, '_, '_, '_, '_, '_>,

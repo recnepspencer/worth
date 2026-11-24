@@ -1,18 +1,23 @@
 //! A receipt says why a custom rule did not run. Only a proven footprint
 //! outside the rule's declared closure is vacuous truth; deleting inside the
 //! closure still runs the rule.
-use crate::facade::{
-    identity::{EntityId, KindId, PartitionId},
-    runtime::{RelationalRuntime, RelationalRuntimeApi},
-    schema::{
-        EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry, SchemaId,
-        SchemaVersionId,
-    },
-};
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, DeleteEntityIntent, EntityMutationIntent, EntitySpec,
-    MutationIntent, WorkerIntentBatch,
-};
+use crate::facade::runtime::RelationalRuntime;
+use crate::facade::runtime::RelationalRuntimeApi;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
+use crate::schema::data::EntityKindRegistration;
+use crate::schema::data::KindAspectContractDeclarations;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::data::SchemaId;
+use crate::schema::data::SchemaVersionId;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::data::*;
 use std::{
     num::{NonZeroU64, NonZeroUsize},

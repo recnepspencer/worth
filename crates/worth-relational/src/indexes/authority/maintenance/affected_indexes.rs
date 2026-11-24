@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn select(
     routes: &crate::indexes::data::InstalledIndexRouting,
-    change: &crate::storage::substrate::maintenance::CommitChange,
+    change: &crate::branch::maintenance::CommitChange,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changes: &ChangedRecords,
     before: &IndexRootView,
@@ -53,7 +53,10 @@ pub(super) fn select(
                 } => {
                     if let [field] = path.fields() {
                         for index in routes.field(
-                            matches!(record, crate::transactions::data::RecordRef::Entity(_)),
+                            matches!(
+                                record,
+                                crate::transactions::data::primitives::RecordRef::Entity(_)
+                            ),
                             *kind,
                             aspect,
                             field,

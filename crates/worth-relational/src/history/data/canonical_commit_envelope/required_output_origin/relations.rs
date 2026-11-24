@@ -4,10 +4,10 @@ use super::payload_coverage::{validate_created_relation_payload, OutputPayloadCo
 use super::{origin_request, CanonicalCommitEnvelopeBody};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CommitCreatedEntityBindings, CommitCreatedRelationBindings, EntityReference,
-    TransactionCommitError,
-};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -29,7 +29,7 @@ pub(super) fn capture_created_relations(
     outputs: &[EntityId],
     prior_count: usize,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    contribution_records: Option<&[crate::transactions::data::RecordRef]>,
+    contribution_records: Option<&[crate::transactions::data::primitives::RecordRef]>,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalRequiredOutputRelation>, TransactionCommitError> {
@@ -69,8 +69,9 @@ pub(super) fn capture_created_relations(
                         + 1,
                 )
                 .map_err(origin_request)?;
-            if !records.contains(&crate::transactions::data::RecordRef::Relation(*id))
-                && !registry.native_private_kinds.contains(&created.kind_id)
+            if !records.contains(&crate::transactions::data::primitives::RecordRef::Relation(
+                *id,
+            )) && !registry.native_private_kinds.contains(&created.kind_id)
             {
                 continue;
             }
@@ -86,7 +87,9 @@ pub(super) fn capture_created_relations(
                     )
                     .map_err(origin_request)?;
                 entities.resolve(target).ok_or_else(|| {
-                    crate::mvcc::origin_denial("new relation lost its actual allocated endpoint")
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "new relation lost its actual allocated endpoint",
+                    )
                 })
             }
         };
@@ -102,7 +105,11 @@ pub(super) fn capture_created_relations(
             .get_current_partition(id.partition_id)
             .and_then(|partition| partition.relation_arena().get(id))
             .filter(|record| record.is_live())
-            .ok_or_else(|| crate::mvcc::origin_denial("native relation create is not present"))?;
+            .ok_or_else(|| {
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "native relation create is not present",
+                )
+            })?;
         if record.kind_id() != Some(created.kind_id)
             || !record
                 .extra()
@@ -110,9 +117,11 @@ pub(super) fn capture_created_relations(
                 .as_ref()
                 .is_some_and(|endpoints| endpoints.source == source && endpoints.target == target)
         {
-            return Err(crate::mvcc::origin_denial(
-                "native relation allocation differs from its create",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "native relation allocation differs from its create",
+                ),
+            );
         }
         match validate_created_relation_payload(
             envelope,
@@ -131,17 +140,21 @@ pub(super) fn capture_created_relations(
             }),
             Err(OutputPayloadCoverageFailure::Unsupported(reason)) => {
                 let mut error = crate::publication::data::PublicationError::new(
-                    crate::publication::bundle::PublicationStage::BundleAssembly,
+                    crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
                     reason.relation_detail(envelope, *id, created.kind_id),
                 );
-                error.context = error
-                    .context
-                    .with_records(vec![crate::transactions::data::RecordRef::Relation(*id)]);
-                return Err(crate::transactions::data::TransactionCommitError::publication(error));
+                error.context = error.context.with_records(vec![
+                    crate::transactions::data::primitives::RecordRef::Relation(*id),
+                ]);
+                return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(error));
             }
             Err(OutputPayloadCoverageFailure::Request(cause)) => return Err(origin_request(cause)),
             Err(OutputPayloadCoverageFailure::Corrupt(detail)) => {
-                return Err(crate::mvcc::origin_denial(detail))
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        detail,
+                    ),
+                )
             }
         }
     }
@@ -156,11 +169,15 @@ pub(super) fn capture_created_relations(
 }
 
 fn overflow() -> TransactionCommitError {
-    origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+    origin_request(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+    )
 }
 
 fn work_overflow() -> TransactionCommitError {
-    origin_request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
+    origin_request(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+    )
 }
 
 /// Prior edges retain native before-write fences; only actual candidate changes
@@ -176,7 +193,7 @@ pub(super) fn continue_relations(
 ) -> Result<(), TransactionCommitError> {
     use crate::publication::patch::data::RecordStructuralChange as Change;
     use crate::storage::overlay::{current_relation_partition_source_for_slot, OverlayStateView};
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
     let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
     for relation in &prior.relations {
         context
@@ -186,18 +203,28 @@ pub(super) fn continue_relations(
             .inner
             .root
             .get_current_partition(relation.id.partition_id)
-            .ok_or_else(|| crate::mvcc::origin_denial("prior relation partition absent"))?;
+            .ok_or_else(|| {
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "prior relation partition absent",
+                )
+            })?;
         let row = before
             .relation_arena()
             .get(&relation.id)
             .filter(|row| row.is_live())
             .ok_or_else(|| {
-                crate::mvcc::origin_denial("prior relation generation absent or retired")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "prior relation generation absent or retired",
+                )
             })?;
         let write = before
             .relation_arena()
             .current_metadata_at(relation.id.slot_index())
-            .ok_or_else(|| crate::mvcc::origin_denial("prior relation write position absent"))?
+            .ok_or_else(|| {
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "prior relation write position absent",
+                )
+            })?
             .effective_at;
         if (write != relation.after_write
             && !crate::history::data::output_materialization_write_matches(
@@ -217,20 +244,27 @@ pub(super) fn continue_relations(
                 ends.source == relation.source && ends.target == relation.target
             })
         {
-            return Err(crate::mvcc::origin_denial(
-                "relation write/endpoints break native producer continuity",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "relation write/endpoints break native producer continuity",
+                ),
+            );
         }
         let (_, after) = current_relation_partition_source_for_slot(
             &after_image,
             relation.id.partition_id,
             relation.id.slot_index(),
         )
-        .ok_or_else(|| crate::mvcc::origin_denial("successor relation partition absent"))?;
-        let row = after
-            .relation_arena()
-            .get(&relation.id)
-            .ok_or_else(|| crate::mvcc::origin_denial("successor relation generation absent"))?;
+        .ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "successor relation partition absent",
+            )
+        })?;
+        let row = after.relation_arena().get(&relation.id).ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "successor relation generation absent",
+            )
+        })?;
         let patch = envelope
             .patch
             .authoritative_record_patches
@@ -245,21 +279,27 @@ pub(super) fn continue_relations(
                     )
                 })
             {
-                return Err(crate::mvcc::origin_denial(
-                    "relation retirement lacks this candidate's actual native operation",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "relation retirement lacks this candidate's actual native operation",
+                    ),
+                );
             }
             continue;
         }
-        let ends = row
-            .extra()
-            .endpoints
-            .as_ref()
-            .ok_or_else(|| crate::mvcc::origin_denial("successor relation endpoints absent"))?;
+        let ends = row.extra().endpoints.as_ref().ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "successor relation endpoints absent",
+            )
+        })?;
         let after_write = after
             .relation_arena()
             .current_metadata_at(relation.id.slot_index())
-            .ok_or_else(|| crate::mvcc::origin_denial("successor relation write position absent"))?
+            .ok_or_else(|| {
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "successor relation write position absent",
+                )
+            })?
             .effective_at;
         if row.kind_id() != Some(relation.kind)
             || (after_write != write && after_write != envelope.commit.version_id)
@@ -267,9 +307,11 @@ pub(super) fn continue_relations(
                 patch.structural_change != Change::Updated || patch.contains_opaque_aspect
             })
         {
-            return Err(crate::mvcc::origin_denial(
-                "successor relation differs from its actual native mutation",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "successor relation differs from its actual native mutation",
+                ),
+            );
         }
         relations.push(CanonicalRequiredOutputRelation {
             id: relation.id,
