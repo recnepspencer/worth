@@ -11,6 +11,7 @@ use worth_query_installation::facade::ApplicationSchema;
 mod applied_outputs;
 mod authored_stages;
 mod disposal;
+mod group_reads;
 mod input_preparation;
 mod ledger;
 mod preparation;
@@ -79,6 +80,8 @@ pub struct CoupledApplicationAssembly<
     reopens: RefCell<Vec<qualification::Reopen>>,
     /// Aligned managed Source reads, marked by each later append (#310).
     alignments: RefCell<source_alignment::Alignments>,
+    /// Group schemes a decision read on the candidate's basis (#361).
+    group_reads: RefCell<group_reads::GroupReads>,
     /// Successor rounds appended: their writers took their chain's slot.
     successors: std::cell::Cell<usize>,
 }
@@ -174,6 +177,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             consumed: RefCell::new(worth_execution::ExecutionOrderedMap::default()),
             reopens: RefCell::new(Vec::new()),
             alignments: RefCell::default(),
+            group_reads: RefCell::default(),
             successors: std::cell::Cell::new(0),
         }
     }

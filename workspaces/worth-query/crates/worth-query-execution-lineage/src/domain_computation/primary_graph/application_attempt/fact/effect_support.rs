@@ -220,6 +220,33 @@ impl Fact {
                     && observation
                         .applied_support_equal(execution, runtime, before, after_own, complete)?)
             }
+            // A candidate group answer is its basis answer while no member
+            // claims the scheme (claims refuse at append) and every member
+            // record it rests on stays as it was: each compares like an
+            // entity fact (#361).
+            Self::PersistentGroup { read, answer } => {
+                let unobservable = |_| unavailable();
+                if !read
+                    .remains_equal(answer, runtime, before)
+                    .map_err(unobservable)?
+                {
+                    return Ok(false);
+                }
+                let members = read.rested_members(answer, runtime, before);
+                for entity in members.map_err(unobservable)?.unwrap_or_default() {
+                    let equal = match retired(entity)? {
+                        Some(equal) => equal,
+                        None => {
+                            left.live_kind(execution, entity).map_err(physical)?
+                                == right.live_kind(execution, entity).map_err(physical)?
+                        }
+                    };
+                    if !equal {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            }
             // Control and external publication observations retain their ordinary
             // owners. A moved unsupported observation refuses, never grants support.
             _ => Ok(

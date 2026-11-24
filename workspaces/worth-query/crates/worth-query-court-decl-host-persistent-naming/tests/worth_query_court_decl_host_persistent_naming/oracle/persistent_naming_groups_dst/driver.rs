@@ -4,7 +4,9 @@
 //! making tracked `group_name_of` / `resolve_group` reads.
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::candidate::{First, Read};
 use super::model::{Answer, Model, Op};
+use crate::persistent_naming::coupled::candidate::{edited, sculpted};
 use crate::persistent_naming::groups::{group, loops, seeded};
 use crate::persistent_naming::outputs::sculpt::{
     GroupAnswer, GroupName, GroupRead, Held, Plan, Step,
@@ -232,5 +234,93 @@ impl Driver {
             }
         }
         Ok(observed)
+    }
+
+    /// Runs `first` and then a stage making `reads` as one edit envelope on
+    /// its unpublished candidate: whether it committed, and each answer in
+    /// model labels (`Refused*` for each typed candidate refusal).
+    pub fn envelope(
+        &mut self,
+        first: &First,
+        reads: &[Read],
+        model: &Model,
+    ) -> Result<(bool, Vec<Answer>), String> {
+        let token = self.token("envelope");
+        let stage = match first {
+            First::Op(op) => sculpted(&format!("{token}-1"), self.plan(op, model)),
+            First::Edit(m) => edited(&self.keys[*m], 900 + self.step as u64),
+        };
+        let group_reads = reads
+            .iter()
+            .map(|read| match *read {
+                Read::MemberOf(m) => GroupRead::LoopOf(Held::Name(self.members[m])),
+                Read::Resolve(g, all) => GroupRead::Loop(
+                    self.names[&g],
+                    if all {
+                        NameSelection::AllDescendants
+                    } else {
+                        NameSelection::Exact
+                    },
+                ),
+            })
+            .collect();
+        let reading = format!("{token}-read");
+        let outcome = self.world.parts(
+            &token,
+            vec![
+                stage,
+                sculpted(
+                    &reading,
+                    Plan {
+                        group_reads,
+                        ..Plan::default()
+                    },
+                ),
+            ],
+        );
+        let committed =
+            matches!(
+            outcome,
+            worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome::Committed(_)
+        );
+        let answers = crate::persistent_naming::outputs::sculpt::group_answers(&reading);
+        if answers.len() != reads.len() {
+            return Err(format!("{reads:?} answered {answers:?}: {outcome:?}"));
+        }
+        let label = |name: &GroupName| {
+            self.labels
+                .get(&name.loop_name())
+                .copied()
+                .ok_or(format!("unlabelled {name:?}"))
+        };
+        let labels = |names: &[GroupName]| names.iter().map(label).collect::<Result<_, _>>();
+        let answers = answers
+            .iter()
+            .map(|answer| {
+                Ok(match answer {
+                    GroupAnswer::Of(owner) => (
+                        "member",
+                        owner.as_ref().map(label).transpose()?.into_iter().collect(),
+                    ),
+                    GroupAnswer::Exact(name) => ("exact", BTreeSet::from([label(name)?])),
+                    GroupAnswer::Plural(names) => ("plural", labels(names)?),
+                    GroupAnswer::Ambiguous(names) => ("ambiguous", labels(names)?),
+                    GroupAnswer::Retired => ("retired", BTreeSet::new()),
+                    GroupAnswer::Refused(refusal) => {
+                        let status = [
+                            ("CandidateGroupState", "RefusedClaim"),
+                            ("EndedInCandidate", "RefusedEnded"),
+                            ("CandidateNameHistory", "RefusedHistory"),
+                        ]
+                        .into_iter()
+                        .find(|(variant, _)| refusal.starts_with(variant))
+                        .map(|(_, status)| status)
+                        .ok_or(format!("untyped candidate refusal {refusal}"))?;
+                        (status, BTreeSet::new())
+                    }
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        Ok((committed, answers))
     }
 }

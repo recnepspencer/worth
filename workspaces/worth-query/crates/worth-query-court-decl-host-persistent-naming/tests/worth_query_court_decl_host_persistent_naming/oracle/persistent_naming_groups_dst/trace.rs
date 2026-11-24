@@ -4,8 +4,9 @@
 //! with their members, retired loops), and an `Observe` of every answer.
 use std::collections::BTreeSet;
 
+use super::candidate::{claims, refused, First, Read};
 use super::driver::Observed;
-use super::model::{Model, Op};
+use super::model::{Answer, Model, Op};
 
 /// Every action kind the seeds must exercise.
 pub const KINDS: [&str; 10] = [
@@ -20,6 +21,27 @@ pub const KINDS: [&str; 10] = [
     "CommitDeleteAnchor",
     "RefuseOverlap",
 ];
+
+/// Every candidate envelope outcome the seeds must exercise.
+pub const CANDIDATE_KINDS: [&str; 4] = [
+    "CandidateCommitted",
+    "RefusedClaim",
+    "RefusedEnded",
+    "RefusedHistory",
+];
+
+/// The coverage kinds one candidate envelope exercised.
+pub fn candidate_kinds(first: &First, answers: &[Answer]) -> Vec<&'static str> {
+    let mut kinds: Vec<&'static str> = answers
+        .iter()
+        .filter(|answer| refused(answer))
+        .map(|answer| answer.0)
+        .collect();
+    if kinds.is_empty() && !claims(first) {
+        kinds.push("CandidateCommitted");
+    }
+    kinds
+}
 
 #[derive(Default)]
 pub struct Trace {
@@ -161,6 +183,56 @@ impl Trace {
         self.lines.push(format!(
             "{{\"action\":\"Observe\",\"resolved\":{},{post}}}",
             set(resolved)
+        ));
+    }
+
+    /// One `CandidateEnvelope` record: the first stage's kind and the
+    /// arguments its commit takes, every read with its answer, and the
+    /// post-state after the envelope committed or refused.
+    pub fn candidate(
+        &mut self,
+        first: &First,
+        (reads, answers, _): &(Vec<Read>, Vec<Answer>, bool),
+        model: &Model,
+        observed: &Observed,
+    ) {
+        let none = || "\"none\"".to_owned();
+        let (kind, gl, ml, n, a) = match first {
+            First::Edit(_) => ("Edit", none(), none(), none(), none()),
+            First::Op(Op::DeleteFree { m: x }) => ("DeleteFree", none(), m(*x), none(), none()),
+            First::Op(Op::DeleteMember { g: l, m: x }) => {
+                ("DeleteMember", g(*l), m(*x), none(), none())
+            }
+            First::Op(Op::DeleteAnchor { g: l, successor }) => {
+                let (n, a) = successor.map_or((none(), none()), |(n, a)| (g(n), m(a)));
+                ("DeleteAnchor", g(*l), none(), n, a)
+            }
+            // A claim refuses every read of its scheme: its arguments never
+            // reach a commit under a candidate read.
+            First::Op(op) => {
+                let claim = kind(op).trim_start_matches("Commit");
+                (claim, none(), none(), none(), none())
+            }
+        };
+        let reads = reads.iter().zip(answers).map(|(read, (status, targets))| {
+            let (rk, ml, gl, sel) = match read {
+                Read::MemberOf(x) => ("MemberOf", m(*x), none(), none()),
+                Read::Resolve(l, all) => (
+                    "Resolve",
+                    none(),
+                    g(*l),
+                    format!("\"{}\"", if *all { "all" } else { "exact" }),
+                ),
+            };
+            format!(
+                "{{\"rk\":\"{rk}\",\"m\":{ml},\"g\":{gl},\"sel\":{sel},\"status\":\"{status}\",\"targets\":{}}}",
+                set(targets.iter().map(|t| g(*t)))
+            )
+        });
+        self.lines.push(format!(
+            "{{\"action\":\"CandidateEnvelope\",\"kind\":\"{kind}\",\"g\":{gl},\"m\":{ml},\"n\":{n},\"a\":{a},\"reads\":{},{}}}",
+            set(reads),
+            post(model, observed)
         ));
     }
 

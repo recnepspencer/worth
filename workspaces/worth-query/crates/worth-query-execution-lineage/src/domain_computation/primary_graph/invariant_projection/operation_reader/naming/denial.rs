@@ -49,9 +49,9 @@ pub enum WorthQueryDecisionNameDenial {
     OwnerRead(WorthQueryInvariantProjectionTraversalDenial),
     /// The name read itself refused.
     Read(ExecutionNameReadDenial),
-    /// A group read on an applied candidate: the candidate's own group
-    /// partitions are not published until its envelope commits, so no basis
-    /// answer is the candidate's answer. Read groups on a committed basis.
+    /// A group read on an applied candidate whose envelope already claims a
+    /// partition or dissolve of the group kind's scheme: commit finalization
+    /// regroups it, so no basis answer is the candidate's answer.
     CandidateGroupState,
 }
 
@@ -80,7 +80,7 @@ impl fmt::Display for WorthQueryDecisionNameDenial {
             }
             Self::Read(denial) => fmt::Display::fmt(denial, formatter),
             Self::CandidateGroupState => formatter
-                .write_str("persistent groups are read on a committed basis, not a candidate"),
+                .write_str("the unpublished candidate claims the group kind's partition"),
         }
     }
 }

@@ -317,11 +317,20 @@ schema using `worth_query_decl::facade::application_naming`:
   is one canonical frame in its envelope, so checkpoint restore, cold open
   and journal replay rebuild every branch's groups byte for byte.
   Decisions read groups with tracked `group_name_of::<Group, Member>` and
-  `resolve_group::<Group, Member>` (committed basis; a candidate-basis group
-  read refuses `CandidateGroupState`), with `Exact` / `Plural` / `Retired` /
+  `resolve_group::<Group, Member>`, with `Exact` / `Plural` / `Retired` /
   `Ambiguous` parity: each read is a decision fact re-observed at seal, so a
   commit that splits, merges, dissolves or re-members the group stales the
-  decision and an unrelated commit does not. `#[worth_query(group_name)]` on
+  decision and an unrelated commit does not. A coupled producer or a later
+  edit-envelope stage reads groups on the envelope's unpublished candidate
+  the same way, answered from the commit basis only where that is the
+  candidate's answer; otherwise the read refuses typed and the envelope
+  commits nothing: an earlier member's partition or dissolve of the scheme
+  refuses `CandidateGroupState`, an ended member name or a held group that is
+  not itself live (retired, split, merged, unborn) refuses
+  `CandidateNameHistory`, and a member the candidate ended (the one read, or
+  any member of a group the answer rests on) refuses `EndedInCandidate`. A
+  member that claims the scheme after a candidate read of it refuses the
+  envelope, so read and regroup one scheme in separate commits. `#[worth_query(group_name)]` on
   a `WorthQueryProjection` field (`WorthQueryName<Group>` or `Option<..>`)
   projects the group a row's own name belongs to in the same read.
 - **Commit-time birth minting** lowers installed schemes via
