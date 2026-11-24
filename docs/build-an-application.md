@@ -331,6 +331,81 @@ schema using `worth_query_decl::facade::application_naming`:
   A named relation that retires with a deleted or replaced endpoint (retained
   dangling for audit or cascade-deleted) retires its name the same way.
 
+#### Naming declared as Rust types
+
+Roles, discriminators and occurrences are ordinary Rust types. Import the
+traits and their derives together from
+`worth_query_decl::facade::application_naming` (also re-exported by
+`worth_query_host::facade::application_naming`).
+
+```rust
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryNameRole)]
+pub enum FaceRole {
+    Authored,
+    #[depends_on(Authored)]
+    CutPiece,
+    #[depends_on(Authored, CutPiece)]
+    Instance(u32),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "app.face.split.v1")]
+pub enum FaceSplit {
+    SidedCut { cutter: NameRef<Face>, side: CutSide, boundary: Option<NameRef<Edge>> },
+}
+
+let scheme = ApplicationNameSchemeBuilder::<Schema, Face>::from_roles::<FaceRole>("app.face.v1")
+    .split_discriminator::<FaceSplit>()
+    .require_authored_occurrence()
+    .build()?;
+let occurrence = OccurrencePath::root(feature_key)?.index("instance", 2)?.child("hole")?;
+writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, FaceRole::CutPiece))?;
+```
+
+- **`#[derive(WorthQueryNameRole)]`** makes an enum a scheme's roles. A unit
+  variant is one role; a variant carrying one `u32` is one role repeated by a
+  numeric index. `#[depends_on(Variant, ..)]` declares the roles whose
+  same-occurrence names a role's births may reference; an unknown, repeated
+  or self dependency and any cycle fail to compile at the offending name.
+  `from_roles::<R>(scheme_id)` (relations:
+  `for_relation_from_roles::<R, _, _>(scheme_id, relation)`) registers the
+  role order and the dependencies. A role's persisted name is its variant
+  name unless `#[worth_query(name = "..")]` keeps an earlier one. The derive
+  also orders the enum by role order and then by index as a number
+  (`Instance(10) > Instance(9)`), so the enum does not derive `Ord` itself.
+- **An indexed role is born under its declared name.** Relational accepts
+  only a scheme's declared roles, so `Instance(2)` and `Instance(10)` are
+  both born under `Instance`; `WorthQueryOutputBirth::of_role` writes the
+  index as the leading field of the birth's canonical discriminator, ahead of
+  any `.with_discriminator(&d)`. Sibling repetitions therefore mint distinct
+  names with no discriminator of their own. That discriminator is an
+  `IndexedRoleDiscriminator`: select such a split piece afterwards with
+  `NameSelection::keep_side(&IndexedRoleDiscriminator::new(index, d))` (or
+  `::index_alone(index)`); `keep_side(&d)` alone matches no indexed piece
+  and refuses `NoMatchingCandidate`.
+- **`#[derive(ApplicationNameDiscriminator)]`** writes a struct's or enum's
+  canonical encoding, the same bytes `worth_query_name_discriminator!` and a
+  hand-written `encode_canonical` write. `identity = ".."` is required;
+  `referenced_roles = ["..", ..]` and a variant's or named field's
+  `name = ".."` are optional. Each field is a closed value (integers,
+  `bool`, text, `[u8; 16]`, `Option`, a pair), a `WorthQueryName<K>`, a
+  `NameRef<K>`, or another `ApplicationNameDiscriminator`, which nests under
+  its own identity. A float, a record id or a raw payload fails to compile at
+  the field. Inside an `Option` or a pair, wrap a nested discriminator in
+  `NestedDiscriminator`.
+- **`NameRef<K>`** is `Committed(WorthQueryName<K>)` or
+  `InCommit(WorthQuerySameCommitName<K>)`, built from either with `.into()`.
+  A discriminator declared over it serves a referenced record born by an
+  earlier commit and one born by the same commit, and mints the same name.
+- **`OccurrencePath`** composes an occurrence from segments:
+  `root(key)`, `child(segment)` and `index(name, n)`. Paths order by segment
+  and indexes by number. Each path renders one canonical key
+  (`pattern_1/instance[2]/hole`), `parse` reads only that spelling back, and
+  a segment holding whitespace or `/`, `[` or `]` refuses
+  `OccurrencePathDenial`.
+- **`NamedTarget<K>`** pairs a held `WorthQueryName<K>` with the
+  `NameSelection` it resolves through (`exact`, `all_descendants`, `new`).
+
 #### Operation output names
 
 An installed operation's handler declares what each output means through its

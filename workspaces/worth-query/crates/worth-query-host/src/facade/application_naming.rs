@@ -176,8 +176,10 @@
 //! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ErasedWorthQueryName, NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName,
-    WorthQueryName, WorthQuerySameCommitName,
+    ApplicationNameDiscriminator, ErasedWorthQueryName, IndexedRoleDiscriminator, NameRef,
+    NameResolutionDenial, NameSelection, NameSelectionDenial, NamedTarget, OccurrencePath,
+    OccurrencePathDenial, OccurrenceSegment, ResolvedName, WorthQueryName, WorthQueryNameRole,
+    WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
     DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
@@ -186,3 +188,5 @@ pub use worth_query_execution::facade::application_naming::{
     PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
     WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };
+/// The derives of the two naming traits, beside the traits they implement.
+pub use worth_query_macros::{ApplicationNameDiscriminator, WorthQueryNameRole};

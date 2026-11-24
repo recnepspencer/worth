@@ -5,8 +5,24 @@ use super::{WorthQueryName, WorthQuerySameCommitName};
 /// other canonical byte streams.
 pub const NAME_DISCRIMINATOR_DOMAIN_TAG: &[u8] = b"worth.query.name-discriminator.v1\0";
 
-mod sealed {
+mod field;
+mod nested;
+
+pub use field::ApplicationNameDiscriminatorField;
+pub use nested::NestedDiscriminator;
+
+/// Unnameable outside this crate, so no caller can add a value type or a
+/// field form of its own.
+pub(super) mod sealed {
     pub trait Sealed {}
+    /// How a discriminator field reaches the encoder.
+    pub trait FieldForm {}
+    /// A value of the closed [`super::ApplicationNameDiscriminatorValue`] algebra.
+    pub struct ValueForm;
+    /// A nested [`super::ApplicationNameDiscriminator`].
+    pub struct NestedForm;
+    impl FieldForm for ValueForm {}
+    impl FieldForm for NestedForm {}
 }
 
 /// Deterministic, domain-tagged canonical encoder for name discriminators.
@@ -44,22 +60,26 @@ impl ApplicationNameDiscriminatorEncoder {
         self
     }
 
-    /// Writes one named field using a closed Foundational or name-reference
-    /// value type.
-    pub fn field<T: ApplicationNameDiscriminatorValue>(
-        &mut self,
-        name: &str,
-        value: &T,
-    ) -> &mut Self {
+    /// Writes one named field: a closed Foundational or name-reference value,
+    /// or a nested [`ApplicationNameDiscriminator`].
+    pub fn field<Form, T>(&mut self, name: &str, value: &T) -> &mut Self
+    where
+        Form: sealed::FieldForm,
+        T: ApplicationNameDiscriminatorField<Form>,
+    {
         self.bytes.push(TAG_FIELD);
         self.write_len_prefixed_str(name);
-        value.encode_discriminator_value(self);
+        value.encode_discriminator_field(self);
         self
     }
 
-    /// Writes a positional discriminator value without a field label.
-    pub fn value<T: ApplicationNameDiscriminatorValue>(&mut self, value: &T) -> &mut Self {
-        value.encode_discriminator_value(self);
+    /// Writes a positional field without a label.
+    pub fn value<Form, T>(&mut self, value: &T) -> &mut Self
+    where
+        Form: sealed::FieldForm,
+        T: ApplicationNameDiscriminatorField<Form>,
+    {
+        value.encode_discriminator_field(self);
         self
     }
 
@@ -319,31 +339,5 @@ pub trait ApplicationNameDiscriminator: Sized + 'static {
         let mut encoder = ApplicationNameDiscriminatorEncoder::new(Self::DISCRIMINATOR_IDENTITY);
         self.encode_canonical(&mut encoder);
         encoder.finish_with_references()
-    }
-}
-
-/// Allows nesting one [`ApplicationNameDiscriminator`] inside another through
-/// a wrapper value without opening the sealed primitive trait to arbitrary
-/// unvalidated types.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct NestedDiscriminator<D>(pub D);
-
-impl<D: ApplicationNameDiscriminator> sealed::Sealed for NestedDiscriminator<D> {}
-impl<D: ApplicationNameDiscriminator> ApplicationNameDiscriminatorValue for NestedDiscriminator<D> {
-    fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
-        let mut nested = ApplicationNameDiscriminatorEncoder::default();
-        self.0.encode_canonical(&mut nested);
-        let (body_bytes, nested_refs, nested_slots) = nested.finish_with_same_commit_names();
-        encoder.write_tag(TAG_NESTED_DISCRIMINATOR);
-        encoder.write_len_prefixed_str(D::DISCRIMINATOR_IDENTITY);
-        // The body follows its own eight-byte length prefix.
-        let body_start = encoder.bytes.len() + 8;
-        encoder.write_len_prefixed_bytes(&body_bytes);
-        for digest in nested_refs {
-            encoder.record_name_ref(digest);
-        }
-        for slot in nested_slots {
-            encoder.same_commit_names.push(slot.rebased(body_start));
-        }
     }
 }

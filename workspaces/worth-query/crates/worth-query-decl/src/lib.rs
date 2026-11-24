@@ -24,6 +24,7 @@
 
 mod derive_contract;
 pub mod facade;
+mod naming_derive_contract;
 
 #[cfg(test)]
 mod canonical_refusal_tests;

@@ -23,7 +23,8 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSubjectKind,
-    SameCommitNameSlot, WorthQueryName,
+    IndexedRoleDiscriminator, OccurrencePath, SameCommitNameSlot, WorthQueryName,
+    WorthQueryNameRole,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::lineage::PendingBirthTarget;
@@ -38,6 +39,9 @@ use worth_relational::facade::lineage::PendingBirthTarget;
 pub struct WorthQueryOutputBirth {
     occurrence_key: String,
     role_path: String,
+    /// Which repetition of an indexed role this is. It leads the canonical
+    /// discriminator, so it tells siblings of one occurrence and role apart.
+    role_index: Option<u32>,
     canonical_discriminator: Vec<u8>,
     embedded_name_digests: Vec<[u8; 32]>,
     /// Where the discriminator references names born by the same commit;
@@ -50,10 +54,27 @@ impl WorthQueryOutputBirth {
         Self {
             occurrence_key: occurrence_key.into(),
             role_path: role_path.into(),
+            role_index: None,
             canonical_discriminator: Vec::new(),
             embedded_name_digests: Vec::new(),
             same_commit_names: Vec::new(),
         }
+    }
+
+    /// A birth in `occurrence` under a typed role. The role path is the
+    /// role's declared name, which the scheme's role order always holds. An
+    /// indexed role (`Instance(3)`) is born under that same declared name,
+    /// and its index leads the birth's canonical discriminator, so sibling
+    /// repetitions mint distinct names and order by number. The birth's
+    /// discriminator is then an `IndexedRoleDiscriminator`.
+    pub fn of_role<R: WorthQueryNameRole>(occurrence: &OccurrencePath, role: R) -> Self {
+        let mut birth = Self::new(occurrence, role.role_name());
+        if let Some(index) = role.role_index() {
+            birth.role_index = Some(index);
+            birth.canonical_discriminator =
+                IndexedRoleDiscriminator::index_alone(index).canonical_bytes();
+        }
+        birth
     }
 
     /// Distinguishes siblings of one occurrence and role. Embedded
@@ -67,6 +88,9 @@ impl WorthQueryOutputBirth {
         discriminator: &D,
     ) -> Self {
         let mut encoder = ApplicationNameDiscriminatorEncoder::new(D::DISCRIMINATOR_IDENTITY);
+        if let Some(index) = self.role_index {
+            encoder.role_index(index);
+        }
         discriminator.encode_canonical(&mut encoder);
         let (bytes, references, same_commit_names) = encoder.finish_with_same_commit_names();
         self.canonical_discriminator = bytes;
@@ -83,6 +107,8 @@ impl WorthQueryOutputBirth {
         &self.role_path
     }
 
+    /// Whether siblings of this occurrence and role are told apart: by a
+    /// typed discriminator, a role index, or both.
     pub fn has_discriminator(&self) -> bool {
         !self.canonical_discriminator.is_empty()
     }

@@ -15,6 +15,10 @@
 //!   query result shape and the projection, from one result row struct.
 //! - `WorthQueryAction`: the input binding, operation, mutation binding and
 //!   optional source-completion delivery, from one input struct.
+//! - `WorthQueryNameRole`: a persistent-name scheme's roles, their
+//!   dependencies and their canonical order, from one enum.
+//! - `ApplicationNameDiscriminator`: a persistent-name discriminator's
+//!   canonical encoding, from one struct or enum.
 //!
 //! Identities derive from an `ApplicationIdentityNamespace`; its role
 //! overrides, explicit `name`, `column` and `slot` keys keep existing wire
@@ -27,6 +31,8 @@ mod action;
 mod case;
 mod facade_paths;
 mod grammar;
+mod name_discriminator;
+mod name_role;
 mod projection;
 mod record;
 mod schema;
@@ -55,6 +61,20 @@ pub fn derive_worth_query_projection(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(WorthQueryAction, attributes(worth_query))]
 pub fn derive_worth_query_action(input: TokenStream) -> TokenStream {
     expand(input, action::expand)
+}
+
+/// Declares a persistent-name scheme's roles from an enum and orders it by
+/// canonical role order, then numeric index.
+#[proc_macro_derive(WorthQueryNameRole, attributes(worth_query, depends_on))]
+pub fn derive_worth_query_name_role(input: TokenStream) -> TokenStream {
+    expand(input, name_role::expand)
+}
+
+/// Declares a persistent-name discriminator's canonical encoding from its
+/// fields or variants.
+#[proc_macro_derive(ApplicationNameDiscriminator, attributes(worth_query))]
+pub fn derive_application_name_discriminator(input: TokenStream) -> TokenStream {
+    expand(input, name_discriminator::expand)
 }
 
 fn expand(

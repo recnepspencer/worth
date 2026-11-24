@@ -12,7 +12,11 @@ mod discriminator;
 mod erased;
 mod group;
 mod name;
+mod name_ref;
+mod named_target;
+mod occurrence_path;
 mod resolution;
+mod role;
 mod same_commit;
 mod scheme;
 mod selection;
@@ -20,7 +24,13 @@ mod selection;
 #[cfg(test)]
 mod group_tests;
 #[cfg(test)]
+mod name_ref_tests;
+#[cfg(test)]
+mod occurrence_path_tests;
+#[cfg(test)]
 mod resolution_tests;
+#[cfg(test)]
+mod role_tests;
 #[cfg(test)]
 mod same_commit_tests;
 #[cfg(test)]
@@ -32,7 +42,8 @@ pub use denial::{
 };
 pub use discriminator::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
-    ApplicationNameDiscriminatorValue, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,
+    ApplicationNameDiscriminatorField, ApplicationNameDiscriminatorValue, NestedDiscriminator,
+    NAME_DISCRIMINATOR_DOMAIN_TAG,
 };
 pub use erased::ErasedWorthQueryName;
 pub(crate) use group::validate_erased_group_scheme_identifiers;
@@ -42,7 +53,13 @@ pub use group::{
     ErasedApplicationGroupNameScheme,
 };
 pub use name::WorthQueryName;
+pub use name_ref::NameRef;
+pub use named_target::NamedTarget;
+pub use occurrence_path::{OccurrencePath, OccurrencePathDenial, OccurrenceSegment};
 pub use resolution::{NameResolutionDenial, ResolvedName};
+pub use role::{
+    IndexedRoleAlone, IndexedRoleDiscriminator, WorthQueryNameRole, NAME_ROLE_INDEX_IDENTITY,
+};
 pub use same_commit::{
     SameCommitNameReference, SameCommitNameSlot, WorthQuerySameCommitName,
     SAME_COMMIT_NAME_PLACEHOLDER,
