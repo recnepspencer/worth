@@ -177,7 +177,8 @@ impl RelationalBranchRoot {
             // Reconstructed storage has no live companion association.
             content: crate::content::ContentDirectory::default(),
             execution_contracts: Default::default(),
-            managed_source_image: std::sync::OnceLock::new(),
+            managed_source_image:
+                crate::branch::projection_view::managed_source::ManagedSourceRootImages::readmitted(),
             id: root_id,
             regions,
             entity_slot_count,

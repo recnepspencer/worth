@@ -64,7 +64,7 @@ pub fn read_continuation_page<
         &plan.governance,
         &plan.parameters,
         &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
+        &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         ResultTreeCollectionSelection::Ordered(OrderedCollectionWindow {
             snapshot: plan.basis.snapshot_handle().clone(),

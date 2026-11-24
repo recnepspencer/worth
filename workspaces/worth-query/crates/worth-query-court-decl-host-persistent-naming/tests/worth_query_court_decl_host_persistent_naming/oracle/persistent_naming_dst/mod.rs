@@ -31,12 +31,13 @@ mod candidate;
 mod driver;
 mod observe;
 mod ops;
+pub(super) use ops::Rng;
 mod reference;
 mod trace;
 
 use driver::Driver;
 use observe::Observed;
-use ops::{next_op, Op, Rng};
+use ops::{next_op, Op};
 use reference::{Event, Oracle};
 use trace::Trace;
 

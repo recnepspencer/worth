@@ -73,52 +73,43 @@ impl PublicationCompanionRegistrationPort {
         let registry = self.publication.companion_registry();
         // A prepared or cutting-over publisher holds a read epoch. This must
         // never wait behind it, including an independently owned Native port.
-        let exclusion = super::registry_guard::acquire(
-            registry.state.try_write(),
-            Stop::HeadCellPublicationContended,
-        )?;
-        registry.after_guard_acquisition(super::guard_fault::Door::Head);
-        match &*exclusion {
-            CompanionRegistrationState::RequiredRebind { generation: active }
-            | CompanionRegistrationState::RequiredActive {
-                generation: active, ..
-            } if *active == generation => {}
-            _ => return Err(Stop::Superseded),
-        }
-        // Admission is this owner's own code and runs under the exclusion;
-        // only the derived installation below is isolated from it.
-        let basis = runtime
-            .admit_branch_basis(branch)
-            .map_err(|_| Stop::HeadUnavailable)?;
-        let root = &basis.owner_inner().root;
-        let observation = basis.observation();
-        let commit_id = observation.commit_id();
-        let position = match commit_id {
-            Some(commit_id) => Some(
-                runtime
-                    .history
-                    .canonical_stream_position(commit_id)
-                    .ok_or(Stop::HeadUnavailable)?,
-            ),
-            None => None,
-        };
-        let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
-            runtime_instance_id: self.runtime_instance_id,
-            branch_id: branch.branch_id().clone(),
-            root_id: root.id(),
-            version_id: observation.version_id(),
-            commit_id,
-            position,
-        });
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            install(CompanionBranchCell::new(&selected, generation, initial))
-        }));
-        // Release normally before resuming the caller's unwind: publication
-        // exclusion must not be poisoned by arbitrary derived installation.
-        drop(exclusion);
-        match result {
-            Ok(value) => Ok(value),
-            Err(payload) => std::panic::resume_unwind(payload),
-        }
+        registry.with_head_exclusion(|state| {
+            match state {
+                CompanionRegistrationState::RequiredRebind { generation: active }
+                | CompanionRegistrationState::RequiredActive {
+                    generation: active, ..
+                } if *active == generation => {}
+                _ => return Err(Stop::Superseded),
+            }
+            // Admission is this owner's own code and runs under the exclusion;
+            // only the derived installation below is isolated from it.
+            let basis = runtime
+                .admit_branch_basis(branch)
+                .map_err(|_| Stop::HeadUnavailable)?;
+            let root = &basis.owner_inner().root;
+            let observation = basis.observation();
+            let commit_id = observation.commit_id();
+            let position = match commit_id {
+                Some(commit_id) => Some(
+                    runtime
+                        .history
+                        .canonical_stream_position(commit_id)
+                        .ok_or(Stop::HeadUnavailable)?,
+                ),
+                None => None,
+            };
+            let selected =
+                assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
+                    runtime_instance_id: self.runtime_instance_id,
+                    branch_id: branch.branch_id().clone(),
+                    root_id: root.id(),
+                    version_id: observation.version_id(),
+                    commit_id,
+                    position,
+                });
+            Ok(install(CompanionBranchCell::new(
+                &selected, generation, initial,
+            )))
+        })?
     }
 }

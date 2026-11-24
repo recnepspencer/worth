@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::application_naming::WorthQueryName;
+use worth_query_declaration::facade::application_naming::{ApplicationGroupKind, WorthQueryName};
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
 use worth_relational::facade::identity::EntityId;
@@ -35,6 +35,9 @@ pub struct ObservedEntityNames {
     /// `(scheme id, installed subject name)` of each scheme a name was born
     /// under; every one governs an entity subject.
     schemes: Vec<(String, String)>,
+    /// The groups each named record's name belongs to: `(group kind, group
+    /// digest)`, one per installed group scheme that holds it.
+    groups: BTreeMap<EntityId, Vec<(String, [u8; 32])>>,
 }
 
 impl ObservedEntityNames {
@@ -66,6 +69,39 @@ impl ObservedEntityNames {
         let digest = *key.digest();
         self.records
             .insert(entity, Observed::Named { scheme, digest });
+    }
+
+    /// Records that `entity`'s name belongs to `group`, a group of kind
+    /// `group_kind`.
+    pub(crate) fn record_group(&mut self, entity: EntityId, group_kind: String, group: [u8; 32]) {
+        self.groups
+            .entry(entity)
+            .or_default()
+            .push((group_kind, group));
+    }
+
+    /// The group of kind `G` the observed `entity`'s name belongs to; `None`
+    /// when no group of `G` holds it, or when it carries no name.
+    ///
+    /// Refuses a record this read did not observe and a record whose name
+    /// no longer designates it.
+    ///
+    /// Complexity: O(log observed records + groups of the record).
+    pub fn group_name_of<G: ApplicationGroupKind>(
+        &self,
+        entity: EntityId,
+    ) -> Result<Option<WorthQueryName<G>>, ExecutionNameReadDenial> {
+        let record = LineageRecordTarget::Entity(entity);
+        match self.records.get(&entity) {
+            None => Err(ExecutionNameReadDenial::RecordNotObserved { record }),
+            Some(Observed::Ended) => Err(ExecutionNameReadDenial::RecordNoLongerNamed { record }),
+            Some(Observed::Unnamed) => Ok(None),
+            Some(Observed::Named { .. }) => Ok(self
+                .groups
+                .get(&entity)
+                .and_then(|groups| groups.iter().find(|(kind, _)| kind == G::NAME))
+                .map(|(_, group)| admit_minted_digest(*group))),
+        }
     }
 
     /// How many records the read observed.

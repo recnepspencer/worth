@@ -125,7 +125,7 @@ impl NativeManagedSourceCorrespondence<'_> {
             .owner_inner()
             .root
             .managed_source_image
-            .get()
+            .for_branch(self.selected.branch_id())
         else {
             return Ok(None);
         };

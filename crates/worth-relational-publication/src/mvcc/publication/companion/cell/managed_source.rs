@@ -79,5 +79,6 @@ impl ManagedSourceReadConditions {
     }
 }
 
+pub mod cold_source;
 pub mod rebuild;
 pub use rebuild::ManagedIndexSourceRebuild;

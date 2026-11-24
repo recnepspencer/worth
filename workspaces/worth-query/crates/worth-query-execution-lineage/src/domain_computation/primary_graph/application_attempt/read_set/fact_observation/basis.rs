@@ -25,3 +25,28 @@ impl FactObservationBasis<'_> {
         }
     }
 }
+
+impl FactObservationBasis<'_> {
+    /// A persistent group read re-observed at a committed basis; an applied
+    /// image holds no published group state, so it refuses there.
+    pub fn observe_group(
+        self,
+        read: &crate::domain_computation::primary_graph::application_attempt::fact::persistent_group::PersistentGroupRead,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    > {
+        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial;
+        use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact;
+        let Self::Committed { runtime, snapshot } = self else {
+            return Err(Denial::new(MissingAuthoritativeFact, "persistent group at an applied image"));
+        };
+        let answer = read
+            .observe_at(runtime, snapshot)
+            .map_err(|_| Denial::new(MissingAuthoritativeFact, read.group_kind.clone()))?;
+        Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact::PersistentGroup {
+            read: read.clone(),
+            answer,
+        })
+    }
+}

@@ -102,6 +102,9 @@ pub fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
             matching_relations, ..
         } => bytes(matching_relations),
         Fact::Adjacency { relations, .. } => bytes(relations),
+        Fact::PersistentGroup { read, answer } => {
+            size(read.group_kind.capacity())?.checked_add(answer.charged_bytes())
+        }
         Fact::IndexedEntitySelection {
             locator,
             value,

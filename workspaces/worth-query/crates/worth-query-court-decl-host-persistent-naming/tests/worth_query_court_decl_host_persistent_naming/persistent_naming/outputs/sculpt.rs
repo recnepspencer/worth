@@ -16,7 +16,9 @@ use worth_query_host::facade::application_naming::{
 };
 
 mod execute;
+mod groups;
 mod scoped;
+pub use groups::{GroupAnswer, GroupDecl, GroupMember, GroupName, GroupRead, Partition};
 pub use scoped::ScopeStep;
 
 /// A held member name: one read by this run's decision, or one a court holds.
@@ -93,6 +95,8 @@ pub enum Step {
     Retire(Held),
     Split(Held, Vec<(String, WorthQueryOutputBirth)>),
     Merge(Vec<Held>, Keeper),
+    /// Declares one group kind's next partition.
+    Groups(GroupDecl),
     /// Declares `steps` through a naming scope over this occurrence.
     Scoped(
         worth_query_host::facade::application_naming::OccurrencePath,
@@ -123,11 +127,14 @@ pub struct Plan {
     pub unlinks: Vec<(String, String)>,
     pub seams: Vec<(String, String, String)>,
     pub steps: Vec<Step>,
+    /// Tracked group reads the decision makes, after its member reads.
+    pub group_reads: Vec<GroupRead>,
 }
 
 #[derive(Default)]
 struct Run {
     plan: Plan,
+    group_answers: Vec<GroupAnswer>,
     names: BTreeMap<String, WorthQueryName<Member>>,
     seam_names: BTreeMap<String, WorthQueryName<Seam>>,
     refused: Option<Refusal>,
@@ -204,6 +211,22 @@ pub fn author(token: &str, plan: Plan) {
             ..Run::default()
         },
     );
+}
+
+/// The seam names the decision read for `token`, by label.
+pub fn seam_names(token: &str) -> BTreeMap<String, WorthQueryName<Seam>> {
+    runs()
+        .get(token)
+        .map(|run| run.seam_names.clone())
+        .unwrap_or_default()
+}
+
+/// What the decision's group reads answered for `token`, in plan order.
+pub fn group_answers(token: &str) -> Vec<GroupAnswer> {
+    runs()
+        .get(token)
+        .map(|run| run.group_answers.clone())
+        .unwrap_or_default()
 }
 
 /// The typed output-name refusal the handler met while authoring `token`.
@@ -289,9 +312,15 @@ impl OperationHandler<Schema, Binding> for Handler {
                     .map_err(HandlerExecutionDenial::new)?;
                 seam_names.insert(label, name);
             }
+            let answers = plan
+                .group_reads
+                .iter()
+                .map(|read| groups::read(read, &names, reader))
+                .collect();
             if let Some(run) = runs().get_mut(&input.token) {
                 run.names = names;
                 run.seam_names = seam_names;
+                run.group_answers = answers;
             }
             reader.mutation_target(&model)
         })();

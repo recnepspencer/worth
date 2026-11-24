@@ -209,11 +209,30 @@ ApplicationQueryDefinitionBuilder::declare(TaskSearch::reference())
 
 Foundation owns the language, typing and metered evaluation; there is no
 second predicate language. An optional field is an `Option` operand
-(`is_some(due) && unwrap(due) <= max_due`). Unknown names, non-Bool results,
+(`is_some(due) && unwrap(due) <= max_due`).
+
+Optional query parameters use `ApplicationQueryParameterRef::optional(name)`,
+declare `.parameter(reference)` on the query definition, bind a typed
+`Option<T>` via `ApplicationQueryParameterSet::bind_optional(reference, value)`,
+and enter a `where_filter` as `Option` operands (`!is_some(limit) || ...`).
+This lets one query combine multiple independently optional filters without
+multiplying query definitions. Structured `where_equal` predicates and
+managed-index probes still require non-optional parameters.
+
+Fixed scalar constants do not need dummy runtime parameters:
+- Use `.where_equal_value(field, ApplicationEncodedScalarValue::try_new(value)?)`
+  on `ApplicationQueryDefinitionBuilder` for index-seeking or root-path equality
+  narrowing against an equality-queryable field.
+- Use `.literal(name, ApplicationEncodedScalarValue::try_new(value)?)` on
+  `ApplicationQueryWhereFilterOperands` to bind a typed authored constant
+  (including `CanonicalDate` or domain-encoded scalars) directly inside a
+  residual `where_filter` expression.
+
+Unknown names, non-Bool results,
 type mismatches, unused operands and unit-bearing values refuse when the
-filter is admitted; undeclared parameters, parameter family mismatches and
-fields outside the root entity refuse at schema declaration with
-`ApplicationQueryDefinitionDenial::WhereFilter*`.
+filter is admitted; undeclared parameters, parameter family or optionality
+mismatches, invalid literal values and fields outside the root entity refuse at
+schema declaration with `ApplicationQueryDefinitionDenial`.
 
 At execution the filter runs after index-seeking selection and before
 ordering, cardinality and result limits. Each candidate is a safe point;

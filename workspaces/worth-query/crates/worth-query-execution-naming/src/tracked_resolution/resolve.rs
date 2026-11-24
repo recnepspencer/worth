@@ -138,7 +138,7 @@ impl ExecutionNameReader<'_> {
         Ok(infallible(candidates.resolve(|_| Ok(Vec::new())))?)
     }
 
-    fn held_candidates<K, H>(
+    pub(super) fn held_candidates<K, H>(
         &self,
         held: &WorthQueryName<K>,
         requested: RequestedSubject<'_>,

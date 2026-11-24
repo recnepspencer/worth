@@ -61,9 +61,8 @@ impl SeedSweep {
         select: &dyn Fn(&Script) -> Target,
     ) -> Self {
         let target = select(&script);
-        // Keep the first-checkpoint sweep un-warmed (no prior checkpointed
-        // symbols in the closed prefix) so it exercises cold physical frames
-        // and fresh member emission without the `dictionary_pages` warm-up.
+        // Keep the first-checkpoint sweep starting from an empty prefix so it
+        // exercises fresh member emission from WAL without a prior checkpoint.
         let prefix = match target {
             Target::Checkpoint(index)
                 if !script.steps[..index]

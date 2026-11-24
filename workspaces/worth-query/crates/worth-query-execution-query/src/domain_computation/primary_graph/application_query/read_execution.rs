@@ -161,7 +161,7 @@ pub fn read_prepared_root_rows(
         plan.governance,
         plan.parameters,
         &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
+        &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         ResultTreeCollectionSelection::Complete,
         interruption,

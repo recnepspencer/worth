@@ -6,6 +6,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::LineageId;
 use worth_relational::facade::lineage::{
     LineageEventKind, LineageEventRecord, LineageRecordTarget, PersistentNameResolutionFootprint,
+    PersistentNameTarget,
 };
 use worth_relational::facade::transactions::CommitResult;
 
@@ -19,11 +20,18 @@ pub struct NameReadDependencies {
     branches: BTreeMap<BranchId, BranchNameDependencies>,
 }
 
+mod groups;
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct BranchNameDependencies {
     live_records: BTreeMap<LineageId, LineageRecordTarget>,
     ended_lineages: BTreeSet<LineageId>,
     awaited_births: BTreeSet<[u8; 32]>,
+    /// Groups an answer rested on: a held group, every ended group its walk
+    /// passed, and every live successor, matched by the selection or not.
+    groups: BTreeSet<[u8; 32]>,
+    /// `(scheme, member)` group lookups and the group each one answered.
+    group_members: BTreeMap<(String, [u8; 32]), Option<[u8; 32]>>,
 }
 
 impl BranchNameDependencies {
@@ -31,6 +39,8 @@ impl BranchNameDependencies {
         self.live_records.is_empty()
             && self.ended_lineages.is_empty()
             && self.awaited_births.is_empty()
+            && self.groups.is_empty()
+            && self.group_members.is_empty()
     }
 
     fn rests_on(&self, lineage: &LineageId) -> bool {
@@ -55,6 +65,9 @@ pub struct NameReadStaleness {
     pub lineages: Vec<LineageId>,
     /// Digests of held names a read found unknown that the commit birthed.
     pub births: Vec<[u8; 32]>,
+    /// Groups a read rested on, or answered for a member, that the commit
+    /// retired, revived, split, merged or re-membered.
+    pub groups: Vec<[u8; 32]>,
 }
 
 impl NameReadDependencies {
@@ -110,9 +123,14 @@ impl NameReadDependencies {
             if let Some((lineage, record)) = live_record(target) {
                 deps.live_records.insert(lineage, record);
             }
+            if let PersistentNameTarget::Group { group } = target {
+                deps.groups.insert(*group.bytes());
+            }
         }
         deps.ended_lineages
             .extend(footprint.ended_lineages.iter().copied());
+        let ended_groups = footprint.ended_groups.iter();
+        deps.groups.extend(ended_groups.map(|group| *group.bytes()));
     }
 
     pub(crate) fn record_awaited_birth(&mut self, branch: &BranchId, digest: [u8; 32]) {
@@ -123,7 +141,12 @@ impl NameReadDependencies {
     ///
     /// Complexity: O(commit lineage events * log dependencies).
     pub fn currentness_after_commit(&self, commit: &CommitResult) -> NameReadCurrentness {
-        self.currentness_after_lineage_events(commit.envelope().lineage_events())
+        let events = self.currentness_after_lineage_events(commit.envelope().lineage_events());
+        let groups = self.currentness_after_group_lineage(
+            &commit.envelope().branch_context,
+            commit.group_lineage(),
+        );
+        events.join(groups)
     }
 
     /// Whether one commit's canonical lineage events stale any recorded read.
@@ -168,6 +191,7 @@ impl NameReadDependencies {
         NameReadCurrentness::Stale(NameReadStaleness {
             lineages: stale_lineages.into_iter().collect(),
             births: births.into_iter().collect(),
+            groups: Vec::new(),
         })
     }
 
@@ -176,10 +200,8 @@ impl NameReadDependencies {
     }
 }
 
-fn live_record(
-    target: &worth_relational::facade::lineage::PersistentNameTarget,
-) -> Option<(LineageId, LineageRecordTarget)> {
-    use worth_relational::facade::lineage::PersistentNameTarget as Target;
+fn live_record(target: &PersistentNameTarget) -> Option<(LineageId, LineageRecordTarget)> {
+    use PersistentNameTarget as Target;
     match target {
         Target::Entity {
             entity, lineage, ..

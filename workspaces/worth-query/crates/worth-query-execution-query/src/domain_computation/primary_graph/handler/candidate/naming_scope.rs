@@ -7,8 +7,8 @@
 //! scoped and a manual author mint byte-identical names. Roles are typed
 //! (`WorthQueryNameRole`), so no role name is spelled at a birth site.
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameSubjectKind, OccurrencePath, OccurrencePathDenial, WorthQueryName,
-    WorthQueryNameRole, WorthQuerySameCommitName,
+    ApplicationGroupKind, ApplicationNameSubjectKind, OccurrencePath, OccurrencePathDenial,
+    WorthQueryGroupPartition, WorthQueryName, WorthQueryNameRole, WorthQuerySameCommitName,
 };
 use worth_query_execution_naming::facade::{
     WorthQueryLeastMergeKeeper, WorthQueryOutputBirth, WorthQueryOutputMergeKeeper,
@@ -193,6 +193,15 @@ where
             .resolve(ApplicationNameSubjectKind::Entity, parents)
             .map_err(WorthQueryApplicationAttemptDenial::persistent_name_output)?;
         self.writer.merge_entity_names(&ordered, keeper)
+    }
+
+    /// Declares group kind `G`'s next partition from this scope; members
+    /// may be outputs this scope just named (`same_commit_entity_name`).
+    pub fn declare_groups<G: ApplicationGroupKind>(
+        &mut self,
+        partition: WorthQueryGroupPartition<G>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.writer.declare_group_partition(partition)
     }
 
     /// The same-commit reference to `created`'s name, for a later-role

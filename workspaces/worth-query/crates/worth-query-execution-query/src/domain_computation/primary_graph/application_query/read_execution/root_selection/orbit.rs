@@ -127,7 +127,7 @@ pub fn select(
         work.checkpoint(subject)?;
         Ok(BoundedRootSelection {
             candidates,
-            selected_predicate_source: None,
+            selected_predicate_sources: Vec::new(),
             root_path_source: Some(sources),
             result_set_source: Some(source),
             examined_candidates: count,

@@ -14,6 +14,21 @@ pub struct NamedMember {
     pub name: WorthQueryName<Member>,
 }
 
+/// A member with its own name and the names of the groups it belongs to,
+/// all projected in the read that returns the row.
+#[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
+#[worth_query(schema = Schema, root = Member)]
+pub struct GroupedMember {
+    #[worth_query(field = MemberKey, slot = "owned-model.grouped-member.key.v1")]
+    pub key: String,
+    #[worth_query(name)]
+    pub name: WorthQueryName<Member>,
+    #[worth_query(group_name)]
+    pub in_loop: Option<WorthQueryName<Loop>>,
+    #[worth_query(group_name)]
+    pub in_shell: Option<WorthQueryName<Shell>>,
+}
+
 /// A model, whose kind has no name scheme: its optional name is absent.
 #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
 #[worth_query(schema = Schema, root = Model)]
@@ -109,6 +124,14 @@ named_read!(
     "owned-model.named-member.v1"
 );
 named_read!(
+    grouped_member,
+    GroupedMember,
+    Member,
+    MemberKey,
+    "GroupedMember",
+    "owned-model.grouped-member.v1"
+);
+named_read!(
     model,
     MaybeNamedModel,
     Model,
@@ -135,6 +158,7 @@ impl ApplicationHistoryQueryBinding<Schema> for MemberHistory {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = grouped_member::declare(schema);
     let schema = strict_model::declare(model::declare(member::declare(schema)));
     let history = ApplicationHistoryQueryDefinition::<Schema, MemberHistory>::entity(
         Member::reference(),

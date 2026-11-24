@@ -17,6 +17,7 @@ pub mod canonical_digest;
 pub mod derived_source;
 pub mod indexed_selection;
 pub mod observation_identity;
+pub mod persistent_group;
 pub mod source_publication;
 pub mod structural_walk;
 pub mod workflow_fact;

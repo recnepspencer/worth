@@ -21,6 +21,9 @@ pub enum ApplicationQueryWhereFilterDenial {
     UnitBearingOperand,
     /// The scalar family has no lossless expression correspondence.
     UnsupportedScalar,
+    /// A literal operand value does not match its scalar family, cannot be
+    /// converted losslessly, or exceeds the filter profile bound.
+    InvalidLiteralValue,
     /// Foundation refused the draft: unknown names, type mismatches, a
     /// non-Bool result or a resource ceiling.
     Expression(ExpressionDenial),
@@ -51,6 +54,9 @@ impl std::fmt::Display for ApplicationQueryWhereFilterDenial {
             }
             Self::UnsupportedScalar => {
                 formatter.write_str("where filter operand scalar family is unsupported")
+            }
+            Self::InvalidLiteralValue => {
+                formatter.write_str("where filter literal operand value is invalid")
             }
             Self::Expression(denial) => {
                 write!(formatter, "where filter expression denied: {denial:?}")

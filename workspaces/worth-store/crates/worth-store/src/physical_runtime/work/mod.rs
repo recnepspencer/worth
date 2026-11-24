@@ -129,7 +129,9 @@ pub(in crate::physical_runtime) use signal_declaration::{
     InstalledPhysicalSignalTopology, PendingPhysicalSignalTopology,
 };
 #[cfg(feature = "certification-test-authority")]
-pub use submission::CertificationPhysicalSubmissionPauseGate;
+pub use submission::{
+    CertificationPhysicalAbandonmentWaitObserver, CertificationPhysicalSubmissionPauseGate,
+};
 pub(in crate::physical_runtime) use submission::{
     PhysicalMutationIdentityReservationError, PhysicalWorkStopKind,
     PhysicalWorkSubmissionFoundation, PhysicalWorkSubmissionOwner,

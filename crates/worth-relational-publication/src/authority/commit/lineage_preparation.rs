@@ -3,7 +3,7 @@
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalization;
 use contracts::lineage::data::postures::CommitNamingPlan;
-use contracts::lineage::data::postures::LineagePostureClaim;
+use contracts::lineage::data::postures::{GroupPartitionClaim, LineagePostureClaim};
 use contracts::transactions::data::intents::mutation_intent::MutationIntent;
 use contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
@@ -45,13 +45,14 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
                 .map_err(TransactionCommitError::lineage_name_denial)?,
             None => Vec::new(),
         };
+        let groups = naming_plan.map_or(&[][..], |plan| plan.groups.as_slice());
         self.finalize_commit_with_installed_schema(
             execution,
             staged,
             commit,
             merged_plan,
             changed_records,
-            &postures,
+            (&postures, groups),
             graph_selection,
         )
     }
@@ -67,7 +68,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         commit: &RelationalCommitReceipt,
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
-        postures: &[LineagePostureClaim],
+        (postures, groups): (&[LineagePostureClaim], &[GroupPartitionClaim]),
         graph_selection: Option<&branch::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelection>,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let schema = self.schema;
@@ -83,6 +84,12 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             &basis,
             postures,
             graph_selection,
+        )?;
+        super::group_finalization::finalize_commit_groups(
+            groups,
+            graph_selection,
+            &basis,
+            &mut prepared,
         )?;
         install_lineage_bindings(execution, staged, &mut prepared)?;
         drop(basis);

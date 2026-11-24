@@ -63,8 +63,10 @@ pub enum WorthQueryReadGraphPredicateTarget<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryReadGraphPredicateView<'a> {
     pub target: WorthQueryReadGraphPredicateTarget<'a>,
-    /// None is the declared FieldAbsent operator; Some is scalar equality.
+    /// `Some` when equality compares against a declared runtime parameter.
     pub parameter: Option<&'a str>,
+    /// `Some` when equality compares against an authored scalar constant.
+    pub literal_value: Option<&'a AspectValue>,
     pub scalar_family: ScalarAspectType,
 }
 

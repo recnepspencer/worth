@@ -12,6 +12,10 @@ pub mod format;
 pub mod frame_decoding;
 pub mod frame_encoding;
 pub mod frame_readmission;
+pub mod group_frame_decoding;
+pub mod group_frame_encoding;
+#[cfg(test)]
+mod group_frame_tests;
 pub mod log_rebuild;
 pub mod refusal;
 pub mod wire;
@@ -20,6 +24,8 @@ pub use format::FORMAT_VERSION;
 pub use frame_encoding::{
     encode_commit_frame, encode_durable_persistent_name_log, encode_log_header,
 };
+pub use group_frame_decoding::decode_group_lineage_frame;
+pub use group_frame_encoding::encode_group_lineage_frame;
 pub use log_rebuild::{admit_persisted_name, rebuild_name_index_from_durable_log};
 pub use refusal::{
     PersistentNameDurabilityError, PersistentNameReferenceRole, PersistentNameWireSection,

@@ -14,6 +14,8 @@ use crate::contracts::lineage::data::name_resolution::{
     PersistentNameResolutionFootprint, PersistentNameResolutionMetrics,
     PersistentNameResolutionOutcome, PersistentNameSelection, PersistentNameTarget,
 };
+use worth_foundational::facade::AggregateIdentity;
+
 use crate::lineage::index::{LiveName, NameEntry, NameState, PersistentNameBranchIndex};
 
 /// One live descendant and the birth side it was named with.
@@ -39,7 +41,7 @@ impl PersistentNameBranchIndex {
         selection: &PersistentNameSelection,
     ) -> PersistentNameResolutionOutcome {
         let mut metrics = PersistentNameResolutionMetrics::default();
-        let mut ended = BTreeSet::new();
+        let mut ended = Ended::default();
         let mut live = Vec::new();
         let result =
             self.resolve_counted(held, basis, selection, &mut metrics, &mut ended, &mut live);
@@ -48,7 +50,8 @@ impl PersistentNameBranchIndex {
             metrics,
             footprint: PersistentNameResolutionFootprint {
                 live,
-                ended_lineages: ended.into_iter().collect(),
+                ended_lineages: ended.lineages.into_iter().collect(),
+                ended_groups: ended.groups.into_iter().collect(),
             },
         }
     }
@@ -59,7 +62,7 @@ impl PersistentNameBranchIndex {
         basis: CommitId,
         selection: &PersistentNameSelection,
         metrics: &mut PersistentNameResolutionMetrics,
-        footprint: &mut BTreeSet<LineageId>,
+        footprint: &mut Ended,
         frontier: &mut Vec<PersistentNameTarget>,
     ) -> Resolution {
         let empty_filter = match selection {
@@ -118,10 +121,13 @@ impl PersistentNameBranchIndex {
         } = walk;
         let mut retired_at = ended_at;
         let mut visited = HashSet::from([held]);
-        let mut frontier = VecDeque::from([(entry, ended_at)]);
-        while let Some((entry, ended_at)) = frontier.pop_front() {
+        let mut frontier = VecDeque::from([(held, entry, ended_at)]);
+        while let Some((key, entry, ended_at)) = frontier.pop_front() {
             metrics.event_visits += 1;
-            footprint.extend(entry.lineage_ended_at(ended_at));
+            footprint.lineages.extend(entry.lineage_ended_at(ended_at));
+            if let PersistentNameKey::Group(group) = key {
+                footprint.groups.insert(group);
+            }
             retired_at = retired_at.max(ended_at);
             for successor in entry.edges_at(ended_at) {
                 metrics.edge_visits += 1;
@@ -136,7 +142,9 @@ impl PersistentNameBranchIndex {
                     Some((_, NameState::Live(name))) => {
                         live.insert(*successor, candidate(next, name));
                     }
-                    Some((since, NameState::Ended)) => frontier.push_back((next, since)),
+                    Some((since, NameState::Ended)) => {
+                        frontier.push_back((*successor, next, since));
+                    }
                     None => {}
                 }
             }
@@ -149,7 +157,14 @@ impl PersistentNameBranchIndex {
 struct ForwardWalk<'walk> {
     basis: CommitId,
     metrics: &'walk mut PersistentNameResolutionMetrics,
-    footprint: &'walk mut BTreeSet<LineageId>,
+    footprint: &'walk mut Ended,
+}
+
+/// What ended along a walked path: record lineages and group names.
+#[derive(Default)]
+struct Ended {
+    lineages: BTreeSet<LineageId>,
+    groups: BTreeSet<AggregateIdentity>,
 }
 
 fn candidate<'index>(entry: &'index NameEntry, live: &'index LiveName) -> LiveCandidate<'index> {

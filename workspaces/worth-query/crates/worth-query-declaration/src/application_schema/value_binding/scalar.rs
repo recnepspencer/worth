@@ -128,7 +128,9 @@ pub trait ApplicationReadableScalarValueBinding: ApplicationScalarValueBinding {
         value: &AspectValue,
         _admission: &mut super::ValueDecodeAdmission<'_>,
     ) -> Result<Self::Value, ApplicationValueDecodeDenial> {
-        if Self::canonical_contract().is_some() {
+        if (Self::SUPPORTS_ADMITTED_DECODE && Self::NATIVE_INPUT_ADMISSION.is_none())
+            || Self::canonical_contract().is_some()
+        {
             return Err(ApplicationValueDecodeDenial::CodecRejected {
                 binding_identity: Self::IDENTITY,
             });

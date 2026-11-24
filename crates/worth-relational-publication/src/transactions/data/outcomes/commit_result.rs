@@ -332,6 +332,24 @@ impl CommitResult {
         self.publication.envelope.as_ref()
     }
 
+    /// The group transitions this commit published, by installed group
+    /// scheme, decoded from its canonical group lineage frame; empty when it
+    /// touched no group.
+    pub fn group_lineage(
+        &self,
+    ) -> Result<
+        Vec<(String, contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition)>,
+        worth_relational_lineage::internal_port::durability::naming::PersistentNameDurabilityError,
+    >{
+        use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+        let frame = self.envelope().published_lineage().group_lineage();
+        let decoded = worth_relational_lineage::internal_port::durability::naming::decode_group_lineage_frame(frame)?;
+        Ok(decoded
+            .into_iter()
+            .map(|committed| (committed.scheme_id().to_owned(), committed.transition))
+            .collect())
+    }
+
     pub fn schema_transition_summary(&self) -> Option<&SchemaTransitionSummary> {
         self.schema_summary.transition.as_ref()
     }

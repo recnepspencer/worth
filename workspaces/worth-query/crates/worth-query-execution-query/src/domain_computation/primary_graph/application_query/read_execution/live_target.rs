@@ -113,7 +113,7 @@ pub fn read_live_target<
         &plan.governance,
         &plan.parameters,
         &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
+        &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         collection_selection,
         super::ReadInterruption::Query(plan.controls.request_scope()),

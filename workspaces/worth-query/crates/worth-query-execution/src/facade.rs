@@ -370,8 +370,9 @@ pub mod query_obligations;
 /// birth-plan assembly, commit wiring, and admitted name elevation.
 pub mod application_naming {
     pub use crate::domain_computation::primary_graph::{
-        NameOwnerOf, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
-        WorthQueryDecisionNameResolution,
+        NameOwnerOf, PersistentNameReadVeto, WorthQueryDecisionGroupResolution,
+        WorthQueryDecisionNameDenial, WorthQueryDecisionNameResolution,
     };
     pub use worth_query_execution_naming::facade::*;
+    pub use worth_relational::facade::aggregate_identity::AggregateGroupNamingDenial;
 }

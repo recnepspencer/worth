@@ -45,6 +45,8 @@ pub fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -
         | WorthQueryApplicationObservedFact::OptionalAspectAbsent { entity_id, .. } => {
             *entity_id == candidate
         }
+        // A group read rests on group state, which no entity record carries.
+        WorthQueryApplicationObservedFact::PersistentGroup { .. } => false,
         WorthQueryApplicationObservedFact::Relation { from, to, .. } => {
             *from == candidate || *to == candidate
         }

@@ -57,15 +57,6 @@ pub(crate) fn prepare_world_checkpoint_home(
     let lead = seed_sweep.lead();
     let (fixture, activations) = open_world_with_faults(location, schema, media, execution);
     crate::durable_run::world::apply(&fixture.home, execution, lead);
-    if seed_sweep.prefix > 0 {
-        // Deferred cold-symbol replacement coverage: tracked by the ignored test
-        // `cold_symbol_page_checkpoint_replacement_recovers_without_prewarm` until
-        // `worth-relational` `dictionary_pages::capture` carries `prior` cold pages.
-        let _ = crate::branch_lifecycle::state_of(
-            fixture.home.relational().runtime(),
-            &seed_sweep.script.records,
-        );
-    }
     let acknowledged_transitions = if lead.is_empty() {
         seed_sweep.prefix_transitions.clone()
     } else {
@@ -76,13 +67,11 @@ pub(crate) fn prepare_world_checkpoint_home(
     } else {
         crate::workload::artifacts_of(execution, fixture.home.relational().runtime())
     };
-    if seed_sweep.prefix == 0 {
-        assert_eq!(
-            fixture.home.relational().cold_storage_reads().member_reads,
-            0,
-            "cold first checkpoint must not pre-warm cold Relational members"
-        );
-    }
+    assert_eq!(
+        fixture.home.relational().cold_storage_reads().member_reads,
+        0,
+        "cold checkpoint must not pre-warm cold Relational members"
+    );
     crate::media_case::drain_world_clean_frames(&fixture);
     (fixture, activations, before, acknowledged_transitions)
 }

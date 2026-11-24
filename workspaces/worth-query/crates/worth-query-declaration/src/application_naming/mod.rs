@@ -12,6 +12,8 @@ mod denial;
 mod discriminator;
 mod erased;
 mod group;
+mod group_partition;
+mod group_roles;
 mod kind;
 mod name;
 mod name_ref;
@@ -60,6 +62,8 @@ pub use group::{
     ApplicationGroupNameSchemeBuilder, ApplicationGroupSchemeDenial,
     ErasedApplicationGroupNameScheme,
 };
+pub use group_partition::{GroupMemberName, WorthQueryGroupPartition};
+pub use group_roles::ApplicationGroupKind;
 pub use kind::{EntityNameSubject, NameSubjectRole, RelationNameSubject, WorthQueryNamedKind};
 pub use name::WorthQueryName;
 pub use name_ref::NameRef;

@@ -37,6 +37,8 @@ pub(crate) fn reopen_recovery(
     }
 }
 
+#[cfg(test)]
+mod fault_tests;
 mod outcome;
 
 fn custody_indeterminate(

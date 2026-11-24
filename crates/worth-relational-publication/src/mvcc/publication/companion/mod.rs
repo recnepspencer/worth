@@ -5,7 +5,7 @@ pub mod cell;
 pub mod managed_fork;
 pub mod preflight;
 pub mod registration;
-pub use managed_fork::ManagedIndexSourceForkPreparation;
+pub use managed_fork::ManagedIndexSourceCellPlacement;
 
 pub use cell::CompanionBranchCell;
 pub use cell::CompanionBranchCellSlot;

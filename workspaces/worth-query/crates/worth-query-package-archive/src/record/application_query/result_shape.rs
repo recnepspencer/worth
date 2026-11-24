@@ -108,12 +108,15 @@ fn write_relation_predicate(
 ) -> Result<(), Denial> {
     match predicate {
         ApplicationQueryRelationPredicate::EqualParameter(equal) => {
+            let parameter = equal
+                .parameter()
+                .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?;
             output.u8(1)?;
             let (entity, aspect, field) = equal.field();
             output.text(entity)?;
             output.text(aspect)?;
             output.text(field)?;
-            output.text(equal.parameter())?;
+            output.text(parameter)?;
             foundational_aspect::write_scalar_type(output, equal.scalar_family())
         }
         ApplicationQueryRelationPredicate::FieldAbsent {

@@ -1,15 +1,19 @@
 //! Index currency for the exact installed read that producer readmission will execute.
 
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 use super::super::WorthQueryApplicationQueryAdmissionDenial;
 use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
-use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
-use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
+use crate::domain_computation::primary_graph::index_currency::{
+    ensure_selected_field_index_slice_admitted, SelectedFieldIndexAdmissionStop,
+};
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraph;
 
@@ -73,19 +77,23 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
 
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<PreparedSelectedReadIndexes, WorthQueryApplicationQueryAdmissionDenial> {
-    let indexes = selected_indexes(graph, query, scope_index)?;
+    let (indexes, _allocation) = selected_indexes(execution, graph, query, scope_index)?;
     // The actual admitted basis pins currency; current security is still
     // selected and checked by the existing World/session owner on each read.
     let retained_basis = basis.clone();
     native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
-            ensure_selected_field_indexes_admitted(execution, runtime, basis, indexes)
+            ensure_selected_field_index_slice_admitted(execution, runtime, basis, &indexes)
         })
         .map_err(|stop| match stop {
-            SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,
-            ) => WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
-                query.name(),
-            ),
+            SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::PreparationMemoryCounterOverflow) => {
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+                    query.name(),
+                )
+            }
+            SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::Execution(cause)) => {
+                execution_denial(query.name(), cause)
+            }
             SelectedFieldIndexAdmissionStop::Admission(_) => WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
                 query.name(),
@@ -109,32 +117,56 @@ pub fn recover_recorded_query_indexes<Schema, Query, Parameters, QueryResult, Sc
     use worth_relational::facade::indexes::{
         DerivedIndexBuildRequest, DerivedIndexMaintenanceDenialKind,
     };
-    let indexes = selected_indexes(graph, query, scope_index)?;
+    let (indexes, allocation) = selected_indexes(execution, graph, query, scope_index)?;
+    allocation
+        .claim_slice::<DerivedIndexId>(execution, indexes.len())
+        .map_err(|cause| execution_denial(query.name(), cause))?;
+    let mut missing = Vec::new();
+    missing.try_reserve_exact(indexes.len()).map_err(|_| {
+        WorthQueryApplicationQueryAdmissionDenial::new(
+            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+            query.name(),
+        )
+    })?;
     super::super::ApplicationQueryNativeAccess::acquire().with_runtime(
         graph, execution, || denial(query.name()), |runtime| {
-            let mut missing = Vec::new();
-            for index in indexes.into_iter().flatten() {
-                if !missing.contains(&index) && !selected_index_is_current(execution, runtime, basis, index)
-                    .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
-                        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded, query.name()))? {
+            for index in indexes {
+                if !selected_index_is_current(execution, runtime, basis, index)
+                    .map_err(|cause| execution_denial(query.name(), cause))?
+                {
                     missing.push(index);
                 }
             }
             if missing.is_empty() { return Ok(()); }
             let observation = basis.observation();
             let source_commit_id = observation.commit_id().ok_or_else(|| denial(query.name()))?;
+            let branch = observation.identity().branch_id();
+            let branch_work = u64::try_from(branch.0.len())
+                .ok()
+                .and_then(|n| n.checked_add(1))
+                .ok_or_else(|| execution_denial(query.name(), Cause::WorkCounterOverflow))?;
+            SourceFactsAllocation::work(execution, branch_work)
+                .map_err(|cause| execution_denial(query.name(), cause))?;
+            let branch_bytes = u64::try_from(branch.0.capacity())
+                .map_err(|_| execution_denial(query.name(), Cause::ChargedBytesOverflow))?;
+            if branch_bytes > 0 {
+                allocation
+                    .claim(execution, branch_bytes)
+                    .map_err(|cause| execution_denial(query.name(), cause))?;
+            }
             runtime.index_authority().reconstruct_for_basis(
                 execution,
                 DerivedIndexBuildRequest {
                     source_commit_id,
-                    branch_id: observation.identity().branch_id().clone(),
+                    branch_id: branch.clone(),
                     index_ids: missing,
                 },
                 basis,
                 crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
             ).map_err(|stop| match stop.kind {
-                DerivedIndexMaintenanceDenialKind::Execution(_) => WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded, query.name()),
+                DerivedIndexMaintenanceDenialKind::Execution(cause) => {
+                    execution_denial(query.name(), cause)
+                }
                 _ => denial(query.name()),
             })?;
             Ok(())
@@ -143,29 +175,76 @@ pub fn recover_recorded_query_indexes<Schema, Query, Parameters, QueryResult, Sc
 }
 
 fn selected_indexes<Schema, Query, Parameters, QueryResult, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope_index: DerivedIndexId,
-) -> Result<[Option<DerivedIndexId>; 3], WorthQueryApplicationQueryAdmissionDenial> {
+) -> Result<
+    (Vec<DerivedIndexId>, Arc<SourceFactsAllocation>),
+    WorthQueryApplicationQueryAdmissionDenial,
+> {
     // Installed contract, root-selection mode, and optional live-target visits.
     let contract = query.read_family_binding().planning_contract();
-    let root = if contract.root_paths().is_empty() {
-        match contract.predicates() {
-            [] => None,
-            [predicate] => Some(selected_field_id(graph, predicate.field())?),
-            _ => return Err(denial(query.name())),
-        }
+    let predicate_count = if contract.root_paths().is_empty() {
+        contract.predicates().len()
     } else {
-        None
+        0
     };
-    let target = query
-        .live()
-        .map(|live| {
-            let field = live.target_identity();
-            selected_field_id(graph, (field.entity(), field.aspect(), field.field()))
-        })
-        .transpose()?;
-    Ok([root, target, Some(scope_index)])
+    let count = predicate_count + usize::from(query.live().is_some()) + 1;
+    let log = if count <= 1 {
+        1_u64
+    } else {
+        u64::from(usize::BITS - (count - 1).leading_zeros()) + 1
+    };
+    let work_units = (count as u64)
+        .checked_mul(log)
+        .ok_or_else(|| execution_denial(query.name(), Cause::WorkCounterOverflow))?;
+    SourceFactsAllocation::work(execution, work_units)
+        .map_err(|cause| execution_denial(query.name(), cause))?;
+    let allocation = SourceFactsAllocation::open(execution)
+        .map_err(|cause| execution_denial(query.name(), cause))?;
+    allocation
+        .claim_slice::<DerivedIndexId>(execution, count)
+        .map_err(|cause| execution_denial(query.name(), cause))?;
+    let mut indexes = Vec::new();
+    indexes.try_reserve_exact(count).map_err(|_| {
+        WorthQueryApplicationQueryAdmissionDenial::new(
+            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+            query.name(),
+        )
+    })?;
+    if contract.root_paths().is_empty() {
+        for predicate in contract.predicates() {
+            indexes.push(selected_field_id(graph, predicate.field())?);
+        }
+    }
+    if let Some(live) = query.live() {
+        let field = live.target_identity();
+        indexes.push(selected_field_id(
+            graph,
+            (field.entity(), field.aspect(), field.field()),
+        )?);
+    }
+    indexes.push(scope_index);
+    indexes.sort_unstable();
+    indexes.dedup();
+    Ok((indexes, allocation))
+}
+
+fn execution_denial(subject: &str, cause: Cause) -> WorthQueryApplicationQueryAdmissionDenial {
+    let kind = match cause {
+        Cause::PolicyMemoryExhausted { .. }
+        | Cause::ProcessMemoryExhausted { .. }
+        | Cause::DeclaredMemoryExhausted { .. }
+        | Cause::MemoryLimitExceedsParent
+        | Cause::ChargedBytesOverflow
+        | Cause::MemoryOverflow
+        | Cause::AllocationFailed => {
+            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
+        }
+        _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+    };
+    WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
 
 fn selected_field_id(

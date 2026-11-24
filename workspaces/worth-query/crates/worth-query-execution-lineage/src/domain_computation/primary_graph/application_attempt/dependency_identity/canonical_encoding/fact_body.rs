@@ -216,6 +216,9 @@ pub fn append_fact(
                 u64::from(field_kind.as_u32()),
             );
         }
+        WorthQueryApplicationObservedFact::PersistentGroup { read, answer } => {
+            super::persistent_group::append(entries, prefix, read, answer);
+        }
         WorthQueryApplicationObservedFact::Relation {
             matching_relations, ..
         } => {

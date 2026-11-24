@@ -37,13 +37,20 @@ pub fn narrow<ReadIdentity>(
         if !admitted.admits_locator(&layout.locator) {
             return Err(projection_unavailable(field));
         }
-        let expected = plan
-            .parameters
-            .bindings()
-            .iter()
-            .find(|(name, _)| name.as_ref() == predicate.parameter())
-            .map(|(_, value)| value)
-            .ok_or_else(|| plan.predicate_unavailable_denial())?;
+        let expected = match predicate.expected() {
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(
+                parameter,
+            ) => plan
+                .parameters
+                .bindings()
+                .iter()
+                .find(|(name, _)| name.as_ref() == parameter)
+                .map(|(_, value)| value)
+                .ok_or_else(|| plan.predicate_unavailable_denial())?,
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(
+                value,
+            ) => value,
+        };
         for root in &frontier {
             evidence.observe_guard_field(
                 read.execution,

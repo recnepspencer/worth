@@ -21,13 +21,12 @@ impl PublicationCellAdmission {
     }
 }
 
-/// Fork preparation has no mutation-candidate permission. Only its durable
-/// fork cutover can admit this lookup into the already-prepared target.
-pub(in crate::internal_port::mvcc::publication::companion) struct PreparedManagedForkCell {
+/// Only Native may make this prepared Source cell visible at its placement.
+pub(in crate::internal_port::mvcc::publication::companion) struct PreparedManagedSourceCell {
     cell: CompanionBranchCell<worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage>,
     admission: Arc<PublicationCellAdmission>,
 }
-impl PreparedManagedForkCell {
+impl PreparedManagedSourceCell {
     pub(in crate::internal_port::mvcc::publication::companion) fn new(
         cell: CompanionBranchCell<worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImage>,
     ) -> Self {
@@ -128,6 +127,18 @@ impl<T: Send + Sync + 'static> CompanionBranchCellSlot<T> {
                     core: Arc::clone(core),
                     _payload: std::marker::PhantomData,
                 })
+            }
+        }
+    }
+    /// True only when an unpublished preflight cutover slot has expired with
+    /// no admitted cell and no live pending candidate retaining its core.
+    pub fn is_expired_pending(&self) -> bool {
+        match &self.source {
+            SlotSource::Head(_) => false,
+            SlotSource::Cutover(admission) => {
+                admission.cell.get().is_none()
+                    && admission.pending.upgrade().is_none()
+                    && admission.cell.get().is_none()
             }
         }
     }

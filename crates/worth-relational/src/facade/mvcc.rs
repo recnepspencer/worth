@@ -9,7 +9,7 @@ pub use crate::mvcc::{
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     CustomInvariantExecutionReceipt, CustomInvariantNonApplicability,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
-    ManagedIndexSourceForkPreparation, PendingCompanionRegistration, PerformedRelationalCommit,
+    ManagedIndexSourceCellPlacement, PendingCompanionRegistration, PerformedRelationalCommit,
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalAspectScope, PreparedRelationalChangeSummary,
     PreparedRelationalChangeSummaryBudget, PreparedRelationalChangeSummaryDenial,

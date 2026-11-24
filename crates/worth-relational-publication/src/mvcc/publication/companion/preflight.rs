@@ -26,13 +26,13 @@ pub use contracts::mvcc::publication::companion::preflight_stop::CompanionPrefli
 
 /// Query-owned preparation runs here, before Relational's irreversible cutover.
 pub trait RelationalPublicationCompanion: Debug + Send + Sync {
-    /// Stage only the lookup for Native's genuine uninstalled fork target.
+    /// Stage only the lookup for Native's pending Source cell.
     /// The returned owner removes its pending metadata on refusal; it carries
     /// no permission to admit the target or to read Source rows.
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _target: &super::ManagedIndexSourceForkPreparation<'_>,
+        _placement: &super::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, CompanionPreflightStop> {
         crate::authority::commit::pipeline::consult_stage(
             execution,

@@ -37,6 +37,8 @@ struct PhysicalWorkAbandonmentQueue {
     capacity: usize,
     state: Mutex<PhysicalWorkAbandonmentQueueState>,
     settled: Condvar,
+    #[cfg(feature = "certification-test-authority")]
+    wait_observed: Condvar,
     wake: Arc<dyn PhysicalWorkAbandonmentWake>,
 }
 
@@ -44,6 +46,41 @@ struct PhysicalWorkAbandonmentQueueState {
     pending: VecDeque<PhysicalWorkAbandonment>,
     outstanding: usize,
     accepting: bool,
+    #[cfg(feature = "certification-test-authority")]
+    await_idle_observed_outstanding: usize,
+}
+
+#[cfg(feature = "certification-test-authority")]
+#[derive(Clone)]
+pub struct CertificationPhysicalAbandonmentWaitObserver {
+    shared: Arc<PhysicalWorkAbandonmentQueue>,
+}
+
+#[cfg(feature = "certification-test-authority")]
+impl CertificationPhysicalAbandonmentWaitObserver {
+    pub fn await_observed_outstanding(&self, expected: usize) -> bool {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        let mut state = self
+            .shared
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        while state.await_idle_observed_outstanding < expected {
+            let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) else {
+                return false;
+            };
+            let (next, wait) = self
+                .shared
+                .wait_observed
+                .wait_timeout(state, remaining)
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state = next;
+            if wait.timed_out() && state.await_idle_observed_outstanding < expected {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 pub(in crate::physical_runtime) fn physical_work_abandonment_channel(
@@ -59,8 +96,12 @@ pub(in crate::physical_runtime) fn physical_work_abandonment_channel(
             pending: VecDeque::with_capacity(capacity),
             outstanding: 0,
             accepting: true,
+            #[cfg(feature = "certification-test-authority")]
+            await_idle_observed_outstanding: 0,
         }),
         settled: Condvar::new(),
+        #[cfg(feature = "certification-test-authority")]
+        wait_observed: Condvar::new(),
         wake,
     });
     (
@@ -108,12 +149,24 @@ impl PhysicalWorkAbandonmentPublisher {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        #[cfg(feature = "certification-test-authority")]
+        if state.outstanding != 0 {
+            state.await_idle_observed_outstanding += 1;
+            self.shared.wait_observed.notify_all();
+        }
         while state.outstanding != 0 {
             state = self
                 .shared
                 .settled
                 .wait(state)
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(super) fn wait_observer(&self) -> CertificationPhysicalAbandonmentWaitObserver {
+        CertificationPhysicalAbandonmentWaitObserver {
+            shared: Arc::clone(&self.shared),
         }
     }
 }

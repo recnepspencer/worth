@@ -1,8 +1,10 @@
+use worth_foundational::facade::ScalarAspectType;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryContinuationTarget, ApplicationQueryLiveCauseContract,
     ApplicationQueryLiveTargetMode, ApplicationQueryOrderingDirection,
     ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
-    ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryContinuationParts,
+    ApplicationQueryPredicateExpected, ErasedApplicationQueryDefinition,
+    WorthQueryPortableApplicationQueryContinuationParts,
     WorthQueryPortableApplicationQueryLiveCauseParts,
     WorthQueryPortableApplicationQueryOrderingParts, WorthQueryPortableApplicationQueryParts,
 };
@@ -18,6 +20,7 @@ use super::application_schema::wire_vocabulary::{
 };
 use super::decode_budget::RecordDecodeAttempt;
 use super::foundational_aspect;
+use super::foundational_value;
 use super::sequence::{decode_sequence, write_sequence};
 
 mod components;
@@ -114,6 +117,11 @@ fn decode_with_shape_depth(
     let basis_support = controls::decode_basis_support(input)?;
     let lanes = controls::decode_lanes(input)?;
     let where_filter = where_filter::decode(input, budget)?;
+    if let Some(filter) = where_filter.as_ref() {
+        filter
+            .validate_against_parameters(&parameters)
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
+    }
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
         WorthQueryPortableApplicationQueryParts {
             name,
@@ -143,11 +151,18 @@ fn decode_with_shape_depth(
     ))
 }
 
+// This prefix occupies a tag outside the scalar vocabulary. Required parameter
+// records keep their original byte sequence.
+const OPTIONAL_PARAMETER_TAG: u16 = 0;
+
 fn write_parameter(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationQueryParameterDefinition,
 ) -> Result<(), Denial> {
     output.text(value.name())?;
+    if value.is_optional() {
+        output.u16(OPTIONAL_PARAMETER_TAG)?;
+    }
     foundational_aspect::write_scalar_type(output, value.scalar_family())?;
     output.text(value.value_type())?;
     write_optional(output, value.unit(), |output, unit| output.text(unit))?;
@@ -156,13 +171,29 @@ fn write_parameter(
 fn decode_parameter(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryParameterDefinition, Denial> {
-    Ok(ApplicationQueryParameterDefinition::from_untrusted_fields(
-        input.text()?.to_owned(),
-        foundational_aspect::decode_scalar_type(input)?,
+    let name = input.text()?.to_owned();
+    let tag = input.u16()?;
+    let optional = tag == OPTIONAL_PARAMETER_TAG;
+    let scalar = if optional {
+        foundational_aspect::decode_scalar_type(input)?
+    } else {
+        foundational_aspect::decode_scalar_type_tag(tag)?
+    };
+    if optional && scalar == ScalarAspectType::Null {
+        return Err(Denial::new(Kind::InvalidRecordShape));
+    }
+    let parameter = ApplicationQueryParameterDefinition::from_untrusted_fields(
+        name,
+        scalar,
         decode_type_identity(input)?,
         decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
         decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-    ))
+    );
+    Ok(if optional {
+        parameter.with_optional_presence()
+    } else {
+        parameter
+    })
 }
 
 fn write_predicate(
@@ -173,17 +204,50 @@ fn write_predicate(
     output.text(entity)?;
     output.text(aspect)?;
     output.text(field)?;
-    output.text(value.parameter())?;
-    foundational_aspect::write_scalar_type(output, value.scalar_family())
+    match value.expected() {
+        ApplicationQueryPredicateExpected::Parameter(parameter) => {
+            if parameter.is_empty() {
+                return Err(Denial::new(Kind::InvalidRecordShape));
+            }
+            output.text(parameter)?;
+            foundational_aspect::write_scalar_type(output, value.scalar_family())
+        }
+        ApplicationQueryPredicateExpected::Value(expected) => {
+            // An empty parameter name cannot represent a valid parameter;
+            // required parameter predicates keep their exact original bytes.
+            output.text("")?;
+            foundational_aspect::write_scalar_type(output, value.scalar_family())?;
+            foundational_value::write_aspect_value(output, expected)
+        }
+    }
 }
 fn decode_predicate(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryPredicate, Denial> {
-    Ok(ApplicationQueryPredicate::from_untrusted_fields(
-        input.text()?.to_owned(),
-        input.text()?.to_owned(),
-        input.text()?.to_owned(),
-        input.text()?.to_owned(),
-        foundational_aspect::decode_scalar_type(input)?,
-    ))
+    let entity = input.text()?.to_owned();
+    let aspect = input.text()?.to_owned();
+    let field = input.text()?.to_owned();
+    let parameter = input.text()?.to_owned();
+    let scalar_family = foundational_aspect::decode_scalar_type(input)?;
+    if parameter.is_empty() {
+        let expected = foundational_value::decode_aspect_value(input)?;
+        if !ApplicationQueryPredicate::literal_value_is_valid(&expected, scalar_family) {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        Ok(ApplicationQueryPredicate::from_untrusted_value(
+            entity,
+            aspect,
+            field,
+            expected,
+            scalar_family,
+        ))
+    } else {
+        Ok(ApplicationQueryPredicate::from_untrusted_fields(
+            entity,
+            aspect,
+            field,
+            parameter,
+            scalar_family,
+        ))
+    }
 }
 
 fn write_ordering(

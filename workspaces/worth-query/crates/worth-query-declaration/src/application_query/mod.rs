@@ -76,8 +76,8 @@ pub use definition::{
     ApplicationQueryAuthorizationAuthoring, ApplicationQueryBasisAuthoring,
     ApplicationQueryCardinality, ApplicationQueryCardinalityAuthoring, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureAuthoring,
-    ApplicationQueryLaneAuthoring, ApplicationQueryPredicate, ApplicationQueryResultAuthoring,
-    ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
+    ApplicationQueryLaneAuthoring, ApplicationQueryPredicate, ApplicationQueryPredicateExpected,
+    ApplicationQueryResultAuthoring, ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
 };
 pub use dependency_equivalence::ApplicationQueryDependencyEquivalence;
 pub use derived_view::{ApplicationDerivedViewDefinition, ApplicationDerivedViewLimits};
@@ -146,7 +146,9 @@ pub use root_selection::{
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };
-pub(crate) use validation::validate_portable_application_query_freshly;
+pub(crate) use validation::{
+    predicate_literal_is_valid, validate_portable_application_query_freshly,
+};
 pub use validation::ApplicationQueryDefinitionDenial;
 pub use where_filter::{
     ApplicationQueryWhereFilter, ApplicationQueryWhereFilterDenial,

@@ -4,7 +4,7 @@ use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use crate::application_schema::{ApplicationScalarValueBinding, ApplicationValueEncodeDenial};
 
-pub struct ApplicationQueryParameterRef<Query, Parameter, Binding> {
+pub struct ApplicationQueryParameterRef<Query, Parameter, Binding, const OPTIONAL: bool = false> {
     name: &'static str,
     _marker: PhantomData<fn() -> (Query, Parameter, Binding)>,
 }
@@ -17,19 +17,38 @@ impl<Query, Parameter, Binding> ApplicationQueryParameterRef<Query, Parameter, B
             _marker: PhantomData,
         }
     }
+}
 
+impl<Query, Parameter, Binding> ApplicationQueryParameterRef<Query, Parameter, Binding, true> {
+    /// Selects an optional parameter in a query definition and its request bindings.
+    pub const fn optional(name: &'static str) -> Self {
+        Self {
+            name,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<Query, Parameter, Binding, const OPTIONAL: bool>
+    ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>
+{
     pub const fn name(self) -> &'static str {
         self.name
     }
 }
 
-impl<Query, Parameter, Binding> Clone for ApplicationQueryParameterRef<Query, Parameter, Binding> {
+impl<Query, Parameter, Binding, const OPTIONAL: bool> Clone
+    for ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>
+{
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Query, Parameter, Binding> Copy for ApplicationQueryParameterRef<Query, Parameter, Binding> {}
+impl<Query, Parameter, Binding, const OPTIONAL: bool> Copy
+    for ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>
+{
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryParameterDefinition {
@@ -38,6 +57,7 @@ pub struct ApplicationQueryParameterDefinition {
     value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
     unit: Option<String>,
     frame: Option<String>,
+    optional: bool,
 }
 
 impl ApplicationQueryParameterDefinition {
@@ -54,7 +74,19 @@ impl ApplicationQueryParameterDefinition {
             value_type,
             unit,
             frame,
+            optional: false,
         }
+    }
+
+    /// Records optional presence on this portable description. Installation
+    /// still validates the complete definition against its use sites.
+    pub fn with_optional_presence(mut self) -> Self {
+        self.optional = true;
+        self
+    }
+
+    pub const fn is_optional(&self) -> bool {
+        self.optional
     }
 
     pub fn name(&self) -> &str {
@@ -77,8 +109,8 @@ impl ApplicationQueryParameterDefinition {
         self.frame.as_deref()
     }
 
-    pub(super) fn typed<Query, Parameter, Binding>(
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+    pub(super) fn typed<Query, Parameter, Binding, const OPTIONAL: bool>(
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
     ) -> Self
     where
         Binding: ApplicationScalarValueBinding,
@@ -89,6 +121,7 @@ impl ApplicationQueryParameterDefinition {
             value_type: Binding::IDENTITY,
             unit: Binding::UNIT.map(|unit| unit.as_str().to_owned()),
             frame: Binding::FRAME.map(|frame| frame.as_str().to_owned()),
+            optional: OPTIONAL,
         }
     }
 }
@@ -124,14 +157,37 @@ impl<Query> ApplicationQueryParameterSet<Query> {
     where
         Binding: ApplicationScalarValueBinding,
     {
-        Binding::validate(&value)?;
-        self.bindings
-            .push((parameter.name(), Binding::encode(&value)?));
+        let encoded = encode_non_null::<Binding>(
+            &value,
+            "a required query parameter must encode a non-null scalar value",
+        )?;
+        self.bindings.push((parameter.name(), encoded));
         Ok(self)
     }
 
     pub fn bindings(&self) -> &[(&'static str, AspectValue)] {
         &self.bindings
+    }
+
+    /// Binds either a native scalar or an explicit absence. Every declared
+    /// parameter still has one entry in the admitted request.
+    pub fn bind_optional<Parameter, Binding>(
+        mut self,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, true>,
+        value: Option<Binding::Value>,
+    ) -> Result<Self, ApplicationValueEncodeDenial>
+    where
+        Binding: ApplicationScalarValueBinding,
+    {
+        let encoded = match value {
+            Some(value) => encode_non_null::<Binding>(
+                &value,
+                "a present optional query parameter must encode a scalar value",
+            )?,
+            None => AspectValue::Null,
+        };
+        self.bindings.push((parameter.name(), encoded));
+        Ok(self)
     }
 
     /// Actual owned backing, for an owner admitting an opaque parameter producer.
@@ -149,4 +205,19 @@ impl<Query> Default for ApplicationQueryParameterSet<Query> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn encode_non_null<Binding: ApplicationScalarValueBinding>(
+    value: &Binding::Value,
+    null_reason: &'static str,
+) -> Result<AspectValue, ApplicationValueEncodeDenial> {
+    Binding::validate(value)?;
+    let encoded = Binding::encode(value)?;
+    if matches!(encoded, AspectValue::Null) {
+        return Err(ApplicationValueEncodeDenial::CodecRejected {
+            binding_identity: Binding::IDENTITY,
+            reason: null_reason,
+        });
+    }
+    Ok(encoded)
 }

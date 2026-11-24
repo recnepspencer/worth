@@ -182,7 +182,7 @@ fn select_roots<ReadIdentity>(
     }
     Ok(BoundedRootSelection {
         candidates,
-        selected_predicate_source: None,
+        selected_predicate_sources: Vec::new(),
         root_path_source: (!sources.is_empty()).then_some(sources),
         result_set_source: capture_result_set.then_some(source),
         examined_candidates,
