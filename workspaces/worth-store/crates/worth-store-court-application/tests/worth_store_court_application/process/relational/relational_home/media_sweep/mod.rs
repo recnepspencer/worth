@@ -4,11 +4,12 @@
 //!
 //! For each seed and target the sweep counts every role's operations while
 //! the target runs on a home holding the script before it, then runs one
-//! case per (role, ordinal, directive) (`media_case`): the in-flight commit
-//! is recovered exactly when the journal holds it, and then it is the
-//! artifact its unresolved fate names; a proven-no-effect commit is absent; a
-//! checkpoint fault leaves the old or the new checkpoint selected; the rest
-//! of the script, a second recovery and fresh identities follow.
+//! case per (role, ordinal, directive): the in-flight commit is recovered
+//! exactly when the journal holds it, and then it is the artifact its
+//! unresolved fate names; a proven-no-effect commit is absent; a checkpoint
+//! fault leaves the old or the new checkpoint selected; the rest of the
+//! script, a second recovery and fresh identities follow once per distinct
+//! post-recovery equivalence class.
 //!
 //! Targets: the first commit, each of fork/archive/deletion-requested/delete,
 //! the first commit on a durably forked branch, the schema-transition commit,
@@ -54,17 +55,33 @@ fn every_media_operation_of_a_branch_transition_recovers() {
 
 #[test]
 fn every_media_operation_of_archive_and_delete_transitions_recovers() {
-    for select in [
-        (|step: &Step| matches!(step, crate::workload::Step::Archive { .. })) as fn(&Step) -> bool,
-        |step| matches!(step, crate::workload::Step::RequestDeletion { .. }),
-        |step| matches!(step, crate::workload::Step::Delete { .. }),
-    ] {
-        sweep(|script| {
-            crate::media_case::Target::BranchTransition(
-                script.steps.iter().position(select).unwrap(),
-            )
-        });
-    }
+    sweep(|script| {
+        crate::media_case::Target::BranchTransition(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::Archive { .. }))
+                .unwrap(),
+        )
+    });
+    sweep(|script| {
+        crate::media_case::Target::BranchTransition(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::RequestDeletion { .. }))
+                .unwrap(),
+        )
+    });
+    sweep(|script| {
+        crate::media_case::Target::BranchTransition(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::Delete { .. }))
+                .unwrap(),
+        )
+    });
 }
 
 #[test]
@@ -92,4 +109,39 @@ fn every_media_operation_of_a_cold_region_load_recovers() {
                 + 1,
         )
     });
+}
+
+#[test]
+#[ignore = "blocked by worth-relational checkpoint_complete::metadata::members::dictionary_pages::capture dropping prior cold symbol pages; un-ignore and remove the state_of warm-up in prepare_world_checkpoint_home once fixed"]
+fn cold_symbol_page_checkpoint_replacement_recovers_without_prewarm() {
+    let request = crate::workload::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    let script = crate::workload::Script::generate(SEEDS[0], COMMITS, CHECKPOINT_EVERY);
+    let target = replacement_checkpoint(&script);
+    let prefix = &script.steps[..target.index()];
+    let prepared = crate::prepared_home::PreparedHome::prepare(prefix, &execution);
+    let schema = served_schema(prefix);
+
+    let fixture = crate::durable_run::world::open(prepared.location(), schema, false, &execution)
+        .expect("cold checkpointed World home opens");
+    assert_eq!(
+        fixture.home.relational().cold_storage_reads().member_reads,
+        0,
+        "prior symbol and region pages must remain cold before replacement checkpoint"
+    );
+    crate::media_case::drain_world_clean_frames(&fixture);
+    fixture
+        .home
+        .checkpoint(&execution)
+        .expect("cold replacement checkpoint succeeds");
+    drop(fixture);
+
+    let recovered = crate::durable_run::open_declaring(prepared.location(), schema, &execution)
+        .expect("recovered home after cold replacement checkpoint opens");
+    let commits = prefix.iter().filter(|step| step.is_commit()).count();
+    assert_eq!(
+        crate::workload::states_of(recovered.relational().runtime(), &script.records),
+        script.states[commits],
+        "cold replacement checkpoint must preserve prior cold symbol pages"
+    );
 }
