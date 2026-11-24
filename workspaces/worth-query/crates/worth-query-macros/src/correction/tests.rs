@@ -87,7 +87,7 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
         "fn source_body ()",
         "Some (complete_body ())",
         "DeclaredPreImageLocus :: from_field (TaskFacts :: done ())",
-        "RecordedInverse (__worth_correction_preimage ,)",
+        "RecordedInverse (__worth_correction_preimage)",
         "UnsupportedSourceMeaning",
         "derive_restore (__worth_correction_original , __worth_correction_preimage)",
         "__worth_correction_dispatch . conventional ()",

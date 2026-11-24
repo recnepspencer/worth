@@ -71,7 +71,10 @@ mod typed_input;
 pub use typed_builder::{
     TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
 };
-pub use typed_input::{ApplicationInputField, ApplicationOptionalInputField};
+pub use typed_input::{
+    ApplicationDeclaredInputFieldSpec, ApplicationInputField, ApplicationInputFieldSlot,
+    ApplicationInputFields, ApplicationOptionalInputField,
+};
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;

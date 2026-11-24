@@ -236,7 +236,8 @@ pub use operation_component_read::{
     WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
-    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationDeclaredInputFieldSpec, ApplicationInputField, ApplicationInputFieldSlot,
+    ApplicationInputFields, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,

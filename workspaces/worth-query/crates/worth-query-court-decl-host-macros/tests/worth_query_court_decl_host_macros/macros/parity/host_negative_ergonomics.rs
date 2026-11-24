@@ -53,6 +53,8 @@ pub struct NegativeRow {
     pub key: u64,
     #[worth_query(field = Title)]
     pub title: String,
+    #[worth_query(field = Notes)]
+    pub notes: Option<String>,
 }
 worth_query_structured_value_binding!(pub NegativeRowBinding for NegativeRow {
     identity: "macros.parity.negative-row.v1.binding"
@@ -143,7 +145,12 @@ fn guarded_search_definition(
         .where_filter(filter)
 }
 
+fn default_title() -> String {
+    String::new()
+}
+
 #[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
+#[serde(rename_all = "snake_case")]
 #[worth_query(
     schema = NegativeSchema,
     context = GenericBoardContext,
@@ -156,18 +163,27 @@ fn guarded_search_definition(
     program,
     reads(Task),
 )]
+#[allow(non_snake_case)]
 pub struct RenameWireTitle {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
-    #[serde(rename = "stored_title")]
+    #[serde(
+        alias = "legacy_title",
+        default = "default_title",
+        rename = "stored_title"
+    )]
     pub new_title: String,
+    pub fooBar: Option<String>,
+    pub foo_bar: Option<String>,
 }
 
 fn renamed_wire_definition(
 ) -> ApplicationOperationDefinition<NegativeSchema, RenamedWireTask, RenameWireTitle> {
+    let _ = default_title();
     RenamedWireTask::reference()
         .typed_body()
         .assign_input(TaskFacts::title(), RenameWireTitle::new_title_input())
+        .assign_optional_input(TaskFacts::notes(), RenameWireTitle::fooBar_input())
         .finish_pure_definition()
         .expect("renamed-wire body admits")
 }
@@ -330,12 +346,17 @@ fn derived_query_validate_and_rejecting_codec_return_typed_refusals_and_serde_re
     assert_eq!(hits.len(), 1);
     assert_eq!(hits[0].title, "Mill housing");
 
-    // Blocker 3: `#[serde(rename = "stored_title")]` commits cleanly via typed_body().
+    // Blocker 3 & Fix 1: sibling `#[serde(alias, default, rename = "stored_title")]`
+    // and Serde `rename_all = "snake_case"` preserving `fooBar` vs `foo_bar` commit cleanly!
     assert_eq!(RenameWireTitle::new_title_input().member(), "stored_title");
+    assert_eq!(RenameWireTitle::fooBar_input().member(), "fooBar");
+    assert_eq!(RenameWireTitle::foo_bar_input().member(), "foo_bar");
     let described = match request
         .mutate(RenameWireTitle {
             task: 1,
             new_title: "Milled via serde rename".into(),
+            fooBar: Some("camel-preserved".into()),
+            foo_bar: Some("snake-preserved".into()),
         })
         .without_source()
         .idempotency_owned(1_u64)
@@ -364,4 +385,5 @@ fn derived_query_validate_and_rejecting_codec_return_typed_refusals_and_serde_re
         .to_vec();
     assert_eq!(renamed.len(), 1);
     assert_eq!(renamed[0].title, "Milled via serde rename");
+    assert_eq!(renamed[0].notes.as_deref(), Some("camel-preserved"));
 }

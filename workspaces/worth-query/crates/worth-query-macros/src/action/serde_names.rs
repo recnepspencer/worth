@@ -2,10 +2,10 @@
 //!
 //! Resolves `#[serde(rename = "...")]`, `#[serde(rename(serialize = "..."))]`,
 //! `#[serde(rename_all = "...")]`, `#[serde(skip)]`, `#[serde(skip_serializing)]`,
-//! and `#[serde(flatten)]` so `<field>_input()` always matches the serialized
-//! member name captured by `RETAIN_CANONICAL_INPUT`, and refuses unsupported
-//! container layout attributes rather than silently emitting a wrong key.
-use crate::case::{pascal_case, screaming_snake_case, snake_case};
+//! and `#[serde(flatten)]` matching Serde's exact `RenameRule::apply_to_field`
+//! behavior, consumes ignored sibling attributes without swallowing subsequent
+//! items, and refuses container layout rewrites (`transparent`, `tag`, `content`,
+//! `untagged`, `into`, `from`, `try_from`).
 use crate::grammar::member_name;
 use syn::{Attribute, Field, LitStr};
 
@@ -34,28 +34,45 @@ impl RenameRule {
             "SCREAMING-KEBAB-CASE" => Ok(Self::ScreamingKebab),
             other => Err(syn::Error::new(
                 lit.span(),
-                format!("unsupported `serde(rename_all = \"{other}\")` for `#[derive(WorthQueryAction)]`"),
+                format!(
+                    "unsupported `serde(rename_all = \"{other}\")` for `#[derive(WorthQueryAction)]`"
+                ),
             )),
         }
     }
 
-    fn apply(self, name: &str) -> String {
+    /// Matches `serde_derive_internals::attr::RenameRule::apply_to_field`.
+    fn apply_to_field(self, field: &str) -> String {
         match self {
-            Self::Lower => name.to_ascii_lowercase(),
-            Self::Upper => name.to_ascii_uppercase(),
-            Self::Pascal => pascal_case(name),
+            Self::Lower => field.to_ascii_lowercase(),
+            Self::Upper => field.to_ascii_uppercase(),
+            Self::Pascal => {
+                let mut pascal = String::new();
+                let mut capitalize = true;
+                for ch in field.chars() {
+                    if ch == '_' {
+                        capitalize = true;
+                    } else if capitalize {
+                        pascal.push(ch.to_ascii_uppercase());
+                        capitalize = false;
+                    } else {
+                        pascal.push(ch);
+                    }
+                }
+                pascal
+            }
             Self::Camel => {
-                let pascal = pascal_case(name);
+                let pascal = Self::Pascal.apply_to_field(field);
                 let mut chars = pascal.chars();
                 match chars.next() {
                     Some(first) => first.to_ascii_lowercase().to_string() + chars.as_str(),
                     None => String::new(),
                 }
             }
-            Self::Snake => snake_case(name),
-            Self::ScreamingSnake => screaming_snake_case(name),
-            Self::Kebab => snake_case(name).replace('_', "-"),
-            Self::ScreamingKebab => screaming_snake_case(name).replace('_', "-"),
+            Self::Snake => field.to_owned(),
+            Self::ScreamingSnake => field.to_ascii_uppercase(),
+            Self::Kebab => field.replace('_', "-"),
+            Self::ScreamingKebab => field.to_ascii_uppercase().replace('_', "-"),
         }
     }
 }
@@ -68,8 +85,7 @@ pub(super) fn container_rename_rule(attrs: &[Attribute]) -> syn::Result<Option<R
         }
         attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("rename_all") {
-                let lit = parse_rename_value(&meta)?;
-                if let Some(lit) = lit {
+                if let Some(lit) = parse_rename_value(&meta)? {
                     rule = Some(RenameRule::parse(&lit)?);
                 }
                 return Ok(());
@@ -78,10 +94,13 @@ pub(super) fn container_rename_rule(attrs: &[Attribute]) -> syn::Result<Option<R
                 || meta.path.is_ident("tag")
                 || meta.path.is_ident("content")
                 || meta.path.is_ident("untagged")
+                || meta.path.is_ident("into")
+                || meta.path.is_ident("from")
+                || meta.path.is_ident("try_from")
             {
                 return Err(meta.error(
                     "`#[derive(WorthQueryAction)]` typed input accessors do not support \
-                     `#[serde(transparent/tag/content/untagged)]` container rewrites",
+                     `#[serde(transparent/tag/content/untagged/into/from/try_from)]` container rewrites",
                 ));
             }
             consume_ignored(&meta)
@@ -130,7 +149,7 @@ pub(super) fn field_wire_name(
         return Ok(Some(lit));
     }
     let raw = member_name(member);
-    let wire = container_rule.map_or(raw.clone(), |rule| rule.apply(&raw));
+    let wire = container_rule.map_or(raw.clone(), |rule| rule.apply_to_field(&raw));
     Ok(Some(LitStr::new(&wire, member.span())))
 }
 
@@ -150,9 +169,11 @@ fn parse_rename_value(meta: &syn::meta::ParseNestedMeta<'_>) -> syn::Result<Opti
     Ok(serialize)
 }
 
+/// Consumes only the value belonging to the current `#[serde(...)]` item so
+/// sibling attributes after `,` remain intact for `parse_nested_meta`.
 fn consume_ignored(meta: &syn::meta::ParseNestedMeta<'_>) -> syn::Result<()> {
     if meta.input.peek(syn::Token![=]) {
-        let _ = meta.value()?.parse::<proc_macro2::TokenStream>()?;
+        let _ = meta.value()?.parse::<syn::Expr>()?;
     } else if meta.input.peek(syn::token::Paren) {
         let content;
         syn::parenthesized!(content in meta.input);

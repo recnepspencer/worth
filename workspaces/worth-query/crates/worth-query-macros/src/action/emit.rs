@@ -141,30 +141,70 @@ fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenS
     })
 }
 
-/// Compile-time-typed `<field>_input()` accessors for authored body builders.
+/// Compile-time-typed `<field>_input()` accessors backed by declared field
+/// slots on `Self` (`ApplicationInputFields` + `ApplicationInputFieldSlot`).
 fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenStream> {
     if action.input_fields.is_empty() {
         return None;
     }
     let (decl, intent, vis) = (declaration(), &input.ident, &input.vis);
-    let accessors = action.input_fields.iter().map(|field| {
+    let aschema = quote!(#decl::application_schema);
+    let specs = action.input_fields.iter().map(|field| {
         let member = &field.member;
-        let accessor = format_ident!("{}_input", member.unraw());
         let wire = &field.wire_name;
         let value_ty = &field.value_ty;
-        let carrier = if field.optional {
-            quote!(#decl::application_schema::ApplicationOptionalInputField)
+        let ctor = if field.optional {
+            quote!(optional)
         } else {
-            quote!(#decl::application_schema::ApplicationInputField)
+            quote!(required)
         };
         quote_spanned! {value_ty.span()=>
-            #[allow(dead_code)]
-            #vis const fn #accessor() -> #carrier<Self, #value_ty> {
-                #carrier::__from_macro_field(#wire, |__worth_input: &Self| &__worth_input.#member)
-            }
+            #aschema::ApplicationDeclaredInputFieldSpec::#ctor::<Self, #value_ty>(
+                #wire,
+                |__worth_input: &Self| &__worth_input.#member,
+            )
         }
     });
+    let slots = action
+        .input_fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| {
+            let value_ty = &field.value_ty;
+            let optional = field.optional;
+            quote_spanned! {value_ty.span()=>
+                impl #aschema::ApplicationInputFieldSlot<#index> for #intent {
+                    type Value = #value_ty;
+                    const OPTIONAL: bool = #optional;
+                }
+            }
+        });
+    let accessors = action
+        .input_fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| {
+            let accessor = format_ident!("{}_input", field.member.unraw());
+            let value_ty = &field.value_ty;
+            let carrier = if field.optional {
+                quote!(#aschema::ApplicationOptionalInputField)
+            } else {
+                quote!(#aschema::ApplicationInputField)
+            };
+            quote_spanned! {value_ty.span()=>
+                #[allow(dead_code, non_snake_case)]
+                #vis const fn #accessor() -> #carrier<Self, #value_ty> {
+                    #carrier::from_slot::<#index>()
+                }
+            }
+        });
     Some(quote! {
+        impl #aschema::ApplicationInputFields for #intent {
+            const FIELDS: &'static [#aschema::ApplicationDeclaredInputFieldSpec] = &[
+                #(#specs,)*
+            ];
+        }
+        #(#slots)*
         impl #intent {
             #(#accessors)*
         }

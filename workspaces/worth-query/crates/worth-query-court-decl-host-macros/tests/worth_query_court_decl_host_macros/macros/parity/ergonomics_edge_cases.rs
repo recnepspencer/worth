@@ -236,6 +236,39 @@ fn demand_bytes() -> usize {
 )]
 pub struct HygienicCorrection;
 
+fn __worth_correction_original(
+    orig: &Complete,
+) -> Result<ApplicationQueryParameterSet<DetailsQuery>, ApplicationCorrectionDerivationDenial> {
+    original(orig)
+}
+
+fn __worth_correction_preimage(
+    orig: &Complete,
+    mat: &dyn ApplicationCorrectionPreImage<Schema>,
+) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
+    preimage(orig, mat)
+}
+
+fn __worth_correction_key(raw: &str) -> Result<u64, ApplicationValueEncodeDenial> {
+    key(raw)
+}
+
+#[derive(WorthQueryCorrection)]
+#[worth_query(
+    schema = Schema,
+    identity = "macros.parity.mixed-site-hygiene-correction.v1",
+    source = CompleteBinding,
+    inverse = RestoreCompletion,
+    disclosure = DetailsBinding,
+    disclosure_parameters = __worth_correction_original,
+    source_body = complete_body,
+    preimage_fields(TaskFacts::done()),
+    preimage_bytes = demand_bytes(),
+    derive = __worth_correction_preimage,
+    inverse_key = __worth_correction_key,
+)]
+pub struct ExactSpellingHygieneCorrection;
+
 struct WrongScalarPreImage(AspectValue);
 impl ApplicationCorrectionPreImage<Schema> for WrongScalarPreImage {
     fn field(&self, _locus: &DeclaredPreImageLocus<Schema>) -> Option<&AspectValue> {
@@ -260,6 +293,27 @@ fn correction_callbacks_named_original_preimage_key_and_wrong_scalar_preimage() 
     let valid_pre = WrongScalarPreImage(AspectValue::Bool(false));
     assert_eq!(
         <HygienicCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
+            &orig,
+            ApplicationCorrectionSourceMaterial::RecordedInverse(&valid_pre),
+        ),
+        Ok(RestoreCompletion {
+            task: 9,
+            expected: true,
+            done: false,
+        })
+    );
+    assert!(
+        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::disclosure_parameters(
+            &orig,
+        )
+        .is_ok()
+    );
+    assert_eq!(
+        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::inverse_key("88"),
+        Ok(88)
+    );
+    assert_eq!(
+        <ExactSpellingHygieneCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
             &orig,
             ApplicationCorrectionSourceMaterial::RecordedInverse(&valid_pre),
         ),

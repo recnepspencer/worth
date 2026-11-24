@@ -1,10 +1,40 @@
 //! Lowers `#[derive(WorthQueryCorrection)]` to one standard recorded-inverse
-//! `ApplicationCorrectionBinding` implementation.
+//! `ApplicationCorrectionBinding` implementation using def-site (`mixed_site`)
+//! hygiene for all generated locals, parameters, and visitor generics.
 use super::grammar::{CorrectionDeclaration, CorrectionIdentity, PreImageDemandSpec};
 use crate::facade_paths::declaration;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::DeriveInput;
+use syn::{DeriveInput, Ident};
+
+struct HygienicNames {
+    bytes: Ident,
+    expected: Ident,
+    bounds: Ident,
+    original: Ident,
+    material: Ident,
+    preimage: Ident,
+    key: Ident,
+    dispatch: Ident,
+    visitor: Ident,
+}
+
+impl HygienicNames {
+    fn new() -> Self {
+        let span = Span::mixed_site();
+        Self {
+            bytes: Ident::new("__worth_correction_bytes", span),
+            expected: Ident::new("__worth_correction_expected", span),
+            bounds: Ident::new("__worth_correction_bounds", span),
+            original: Ident::new("__worth_correction_original", span),
+            material: Ident::new("__worth_correction_material", span),
+            preimage: Ident::new("__worth_correction_preimage", span),
+            key: Ident::new("__worth_correction_key", span),
+            dispatch: Ident::new("__worth_correction_dispatch", span),
+            visitor: Ident::new("__WorthCorrectionVisitor", span),
+        }
+    }
+}
 
 pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> TokenStream {
     let (decl, ident) = (declaration(), &input.ident);
@@ -14,15 +44,27 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
     let op = quote!(#decl::application_operation);
     let aq = quote!(#decl::application_query);
     let aschema = quote!(#decl::application_schema);
+    let names = HygienicNames::new();
+    let HygienicNames {
+        bytes,
+        expected,
+        bounds,
+        original,
+        material,
+        preimage,
+        key,
+        dispatch,
+        visitor,
+    } = &names;
 
     let identity = identity_expr(&decl, spec);
-    let disclosure_params = disclosure_params_expr(&aq, spec);
+    let disclosure_params = disclosure_params_expr(&aq, spec, original);
     let source_definition = source_definition_expr(&aschema, &op, spec);
     let source_body = source_body_method(&aschema, &op, spec);
     let demand_expr = demand_expr(&aftermath, spec);
     let derive_fn = &spec.derive_fn;
-    let inverse_key = inverse_key_expr(&decl, &aschema, spec);
-    let visit = visit_expr(spec);
+    let inverse_key = inverse_key_expr(&decl, &aschema, spec, key);
+    let visit = visit_expr(spec, dispatch);
 
     quote! {
         impl #aftermath::ApplicationCorrectionBinding<#schema> for #ident {
@@ -32,48 +74,40 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
             type Disclosure = #disclosure;
 
             fn recover_source_input(
-                __worth_correction_bytes: &[u8],
-                __worth_correction_expected: #aschema::CanonicalDigestId,
-                __worth_correction_bounds: #aschema::ValueDecodeBounds,
+                #bytes: &[u8],
+                #expected: #aschema::CanonicalDigestId,
+                #bounds: #aschema::ValueDecodeBounds,
             ) -> ::core::result::Result<
                 #op::ApplicationEncodedInput<
                     <Self::Source as #op::ApplicationMutationBinding<#schema>>::InputBinding,
                 >,
                 #op::ApplicationRetainedInputDenial,
             > {
-                #op::ApplicationEncodedInput::decode_retained(
-                    __worth_correction_bytes,
-                    __worth_correction_expected,
-                    __worth_correction_bounds,
-                )
+                #op::ApplicationEncodedInput::decode_retained(#bytes, #expected, #bounds)
             }
 
             fn recover_inverse_input(
-                __worth_correction_bytes: &[u8],
-                __worth_correction_expected: #aschema::CanonicalDigestId,
-                __worth_correction_bounds: #aschema::ValueDecodeBounds,
+                #bytes: &[u8],
+                #expected: #aschema::CanonicalDigestId,
+                #bounds: #aschema::ValueDecodeBounds,
             ) -> ::core::result::Result<
                 #op::ApplicationEncodedInput<
                     <#aftermath::ApplicationInverseBinding<#schema, Self> as #op::ApplicationMutationBinding<#schema>>::InputBinding,
                 >,
                 #op::ApplicationRetainedInputDenial,
             > {
-                #op::ApplicationEncodedInput::decode_retained(
-                    __worth_correction_bytes,
-                    __worth_correction_expected,
-                    __worth_correction_bounds,
-                )
+                #op::ApplicationEncodedInput::decode_retained(#bytes, #expected, #bounds)
             }
 
             fn disclosure_parameters(
-                __worth_correction_original: &<Self::Source as #op::ApplicationMutationBinding<#schema>>::Input,
+                #original: &<Self::Source as #op::ApplicationMutationBinding<#schema>>::Input,
             ) -> ::core::result::Result<
                 #aq::ApplicationQueryParameterSet<
                     <Self::Disclosure as #aq::ApplicationQueryBinding<#schema>>::Query,
                 >,
                 #aftermath::ApplicationCorrectionDerivationDenial,
             > {
-                let _ = __worth_correction_original;
+                let _ = #original;
                 #disclosure_params
             }
 
@@ -96,25 +130,24 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
             }
 
             fn derive_correction(
-                __worth_correction_original: &<Self::Source as #op::ApplicationMutationBinding<#schema>>::Input,
-                __worth_correction_material: #aftermath::ApplicationCorrectionSourceMaterial<'_, #schema>,
+                #original: &<Self::Source as #op::ApplicationMutationBinding<#schema>>::Input,
+                #material: #aftermath::ApplicationCorrectionSourceMaterial<'_, #schema>,
             ) -> ::core::result::Result<
                 Self::InverseIntent,
                 #aftermath::ApplicationCorrectionDerivationDenial,
             > {
-                let #aftermath::ApplicationCorrectionSourceMaterial::RecordedInverse(
-                    __worth_correction_preimage,
-                ) = __worth_correction_material
+                let #aftermath::ApplicationCorrectionSourceMaterial::RecordedInverse(#preimage) =
+                    #material
                 else {
                     return ::core::result::Result::Err(
                         #aftermath::ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning,
                     );
                 };
-                #derive_fn(__worth_correction_original, __worth_correction_preimage)
+                #derive_fn(#original, #preimage)
             }
 
             fn inverse_key(
-                __worth_correction_key: &str,
+                #key: &str,
             ) -> ::core::result::Result<
                 <#aftermath::ApplicationInverseBinding<#schema, Self> as #op::ApplicationMutationBinding<#schema>>::IdempotencyKey,
                 #aschema::ApplicationValueEncodeDenial,
@@ -122,13 +155,9 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
                 #inverse_key
             }
 
-            fn visit<__WorthCorrectionVisitor: #aftermath::ApplicationCorrectionVisitor<#schema>>(
-                __worth_correction_dispatch: #aftermath::ApplicationCorrectionDispatch<
-                    #schema,
-                    Self,
-                    __WorthCorrectionVisitor,
-                >,
-            ) -> __WorthCorrectionVisitor::Output {
+            fn visit<#visitor: #aftermath::ApplicationCorrectionVisitor<#schema>>(
+                #dispatch: #aftermath::ApplicationCorrectionDispatch<#schema, Self, #visitor>,
+            ) -> #visitor::Output {
                 #visit
             }
         }
@@ -142,10 +171,14 @@ fn identity_expr(decl: &TokenStream, spec: &CorrectionDeclaration) -> TokenStrea
     }
 }
 
-fn disclosure_params_expr(aq: &TokenStream, spec: &CorrectionDeclaration) -> TokenStream {
+fn disclosure_params_expr(
+    aq: &TokenStream,
+    spec: &CorrectionDeclaration,
+    original: &Ident,
+) -> TokenStream {
     spec.disclosure_parameters.as_ref().map_or_else(
         || quote!(::core::result::Result::Ok(#aq::ApplicationQueryParameterSet::new())),
-        |func| quote!(#func(__worth_correction_original)),
+        |func| quote!(#func(#original)),
     )
 }
 
@@ -208,11 +241,12 @@ fn inverse_key_expr(
     decl: &TokenStream,
     aschema: &TokenStream,
     spec: &CorrectionDeclaration,
+    key: &Ident,
 ) -> TokenStream {
     spec.inverse_key.as_ref().map_or_else(
         || {
             quote! {
-                __worth_correction_key.parse().map_err(|_| {
+                #key.parse().map_err(|_| {
                     #aschema::ApplicationValueEncodeDenial::CodecRejected {
                         binding_identity: #decl::portable_identity::WorthQueryPortableTypeIdentity::declared(
                             Self::IDENTITY,
@@ -222,13 +256,13 @@ fn inverse_key_expr(
                 })
             }
         },
-        |func| quote!(#func(__worth_correction_key)),
+        |func| quote!(#func(#key)),
     )
 }
 
-fn visit_expr(spec: &CorrectionDeclaration) -> TokenStream {
+fn visit_expr(spec: &CorrectionDeclaration, dispatch: &Ident) -> TokenStream {
     spec.capability.as_ref().map_or_else(
-        || quote!(__worth_correction_dispatch.conventional()),
-        |capability| quote!(__worth_correction_dispatch.capability::<#capability>()),
+        || quote!(#dispatch.conventional()),
+        |capability| quote!(#dispatch.capability::<#capability>()),
     )
 }

@@ -181,7 +181,13 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
         "{expanded}"
     );
     assert!(
-        expanded.contains("__from_macro_field (\"title\""),
+        expanded.contains(
+            "ApplicationDeclaredInputFieldSpec :: required :: < Self , String > (\"title\""
+        ),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("ApplicationInputField :: from_slot :: < 2usize > ()"),
         "{expanded}"
     );
     assert!(
@@ -195,28 +201,69 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
           input = In, operation = Op, binding = Bind, body, reads(Task))] \
          struct RenameWire { \
              #[worth_query(scope = TaskKey)] task: u64, \
-             #[serde(rename = \"stored_title\")] new_title: String, \
+             #[serde(alias = \"legacy\", rename = \"stored_title\")] new_title: String, \
+             #[serde(default = \"default_note\", rename = \"stored_note\")] note: String, \
+             #[serde(skip_serializing_if = \"Option::is_none\", rename = \"stored_opt\")] opt: Option<String>, \
              due_window: Option<u32>, \
              #[serde(skip)] transient: u8 \
          }",
     )
     .unwrap();
     let expanded = expand(&renamed).unwrap().to_string();
-    assert!(
-        expanded.contains("__from_macro_field (\"stored_title\""),
-        "{expanded}"
-    );
-    assert!(
-        expanded.contains("__from_macro_field (\"dueWindow\""),
-        "{expanded}"
-    );
+    for needle in [
+        "(\"stored_title\"",
+        "(\"stored_note\"",
+        "(\"stored_opt\"",
+        "(\"dueWindow\"",
+    ] {
+        assert!(expanded.contains(needle), "{needle}: {expanded}");
+    }
     assert!(!expanded.contains("transient_input"), "{expanded}");
 
-    let unsupported = refusal(
-        "#[serde(transparent)] \
+    // Serde `apply_to_field` preserves `fooBar` under `snake_case` and uppercases without
+    // splitting camelCase under `SCREAMING_SNAKE_CASE`.
+    let snake_rule = syn::parse_str(
+        "#[serde(rename_all = \"snake_case\")] \
          #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
           input = In, operation = Op, binding = Bind, body, reads(Task))] \
-         struct Bad { #[worth_query(scope = TaskKey)] task: u64 }",
-    );
-    assert!(unsupported.contains("transparent"), "{unsupported}");
+         struct SnakeWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             fooBar: String, \
+             foo_bar: String, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&snake_rule).unwrap().to_string();
+    assert!(expanded.contains("(\"fooBar\""), "{expanded}");
+    assert!(expanded.contains("(\"foo_bar\""), "{expanded}");
+
+    let screaming_rule = syn::parse_str(
+        "#[serde(rename_all = \"SCREAMING_SNAKE_CASE\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct ScreamingWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             fooBar: String, \
+             foo_bar: String, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&screaming_rule).unwrap().to_string();
+    assert!(expanded.contains("(\"FOOBAR\""), "{expanded}");
+    assert!(expanded.contains("(\"FOO_BAR\""), "{expanded}");
+
+    for bad_attr in [
+        "#[serde(transparent)]",
+        "#[serde(into = \"Wire\")]",
+        "#[serde(from = \"Wire\")]",
+        "#[serde(try_from = \"Wire\")]",
+    ] {
+        let err = refusal(&format!(
+            "{bad_attr} \
+             #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+              input = In, operation = Op, binding = Bind, body, reads(Task))] \
+             struct Bad {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+        ));
+        assert!(err.contains("container rewrites"), "{bad_attr}: {err}");
+    }
 }
