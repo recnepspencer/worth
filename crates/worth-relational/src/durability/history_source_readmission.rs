@@ -43,7 +43,7 @@ pub(crate) fn readmit_original_positioned(
             })
         })
         .transpose()?;
-    let artifact = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&residency, execution, journal.as_ref().zip(protection.as_ref()))?;
+    let artifact = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(residency, execution, journal.as_ref().zip(protection.as_ref()))?;
     let result = artifact.readmit_indexed(&entry, execution);
     if let Err(stop) = &result {
         residency.remember_original_failure(stop);

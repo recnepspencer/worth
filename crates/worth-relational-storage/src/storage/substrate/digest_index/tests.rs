@@ -83,12 +83,12 @@ fn explicit_cold_reconstruction_refuses_noncanonical_keys() {
             vec![(2, [1; 32]), (1, [2; 32])],
         ] {
             assert!(matches!(
-                DigestIndex::cold(&lane, &entries),
+                DigestIndex::cold(lane, &entries),
                 Err(super::DigestIndexError::NonCanonicalKeys)
             ));
         }
         let entries = [(1, [1; 32]), (2, [2; 32])];
-        let cold = DigestIndex::cold(&lane, &entries).unwrap();
+        let cold = DigestIndex::cold(lane, &entries).unwrap();
         let mut updated = DigestIndex::default();
         for (key, value) in entries.into_iter().rev() {
             updated.set(key, Some(value)).unwrap();

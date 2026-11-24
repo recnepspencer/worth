@@ -105,7 +105,8 @@ pub(crate) fn evaluate_position(
         relations: BTreeMap::new(),
         adjacency: BTreeSet::new(),
     };
-    let endpoints = (*handle.owner_entry())
+    let endpoints = handle
+        .owner_entry()
         .endpoints
         .get(node)
         .ok_or(DefinitionDenial::InvalidExpression)?;

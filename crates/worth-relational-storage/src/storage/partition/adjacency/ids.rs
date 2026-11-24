@@ -28,11 +28,10 @@ impl<'a> AdjacencyIds<'a> {
             },
         })
     }
-    #[cfg(test)]
-    pub fn is_empty(self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.relations.is_none_or(RelationSet::is_empty)
     }
-    pub fn len(self) -> usize {
+    pub fn len(&self) -> usize {
         self.relations.map_or(0, RelationSet::len)
     }
     pub fn to_vec(self) -> Vec<RelationId> {

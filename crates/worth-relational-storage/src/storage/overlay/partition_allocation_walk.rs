@@ -178,6 +178,12 @@ pub struct ReclaimableAllocations {
     dying_refs: BTreeMap<u64, usize>,
 }
 
+impl Default for ReclaimableAllocations {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReclaimableAllocations {
     pub fn new() -> Self {
         Self {

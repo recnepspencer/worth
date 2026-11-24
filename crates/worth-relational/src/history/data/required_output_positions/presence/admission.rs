@@ -23,7 +23,7 @@ pub(crate) fn validate(
     partition: &PartitionState,
     registry: &RelationalSchemaRegistry,
 ) -> Result<(), Failure> {
-    let Some(storage) = &(*registry.owner_current_publication_storage()) else {
+    let Some(storage) = registry.owner_current_publication_storage() else {
         return Ok(());
     };
     let mut result = None;

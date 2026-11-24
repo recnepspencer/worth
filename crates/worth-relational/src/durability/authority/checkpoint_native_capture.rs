@@ -38,11 +38,8 @@ impl CapturedCheckpointBasis {
                     .is_none()
             });
             self.lineage_nodes.retain(|node| {
-                RelationalCheckpointPage::find(
-                    &prior.manifest.lineage,
-                    (*node.owner_lineage_id()).0,
-                )
-                .is_none()
+                RelationalCheckpointPage::find(&prior.manifest.lineage, node.owner_lineage_id().0)
+                    .is_none()
             });
         }
         let resident_event_rows = if placement.is_embedded() {
@@ -241,7 +238,7 @@ impl CapturedCheckpointBasis {
                     insert_member(&mut captured, member);
                 }
             }
-        } else if mirror.len() != 0 {
+        } else if !mirror.is_empty() {
             return Err(corrupt("nonempty mirror has no selected schema authority").into());
         }
         if let Some(prior) = &prior

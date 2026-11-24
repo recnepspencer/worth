@@ -131,7 +131,7 @@ impl ReadmittedRegionDirectory {
                 ))
                 .map_err(RelationalRecoveryStop::Request)?;
             (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
-                .bind_recorded(&(*configured_schema.owner_content_formats()))
+                .bind_recorded(configured_schema.owner_content_formats())
                 .map_err(RelationalRecoveryStop::from)?;
             let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
                 index as u64 + 1,

@@ -60,7 +60,7 @@ impl SourcePreparationGroup {
                 if group.programs.contains(&program) {
                     return Err(CompilationDenial::Source(
                         DerivedRelationDenial::DuplicateDefinition(
-                            (*program.owner_field_0()).path.parts().identity.clone(),
+                            program.owner_field_0().path.parts().identity.clone(),
                         ),
                     ));
                 }

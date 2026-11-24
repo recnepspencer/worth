@@ -128,7 +128,7 @@ fn funded_decode_admits_every_entry_family_in_both_tuples() {
         let expected = generations();
         let lane = fixture_lane;
         let delta = DerivedIndexCheckpointArtifacts::capture(
-            &lane,
+            lane,
             expected.iter().cloned().map(Arc::new).collect(),
             Vec::new(),
         )
@@ -149,8 +149,7 @@ fn funded_decode_admits_every_entry_family_in_both_tuples() {
         ];
         let budget = SerialMemoryBudget::new(Some(16 * 1024 * 1024));
         for payload in payloads {
-            let decoded =
-                with_budget(&budget, |work| decode_funded(&lane, &payload, work)).unwrap();
+            let decoded = with_budget(&budget, |work| decode_funded(lane, &payload, work)).unwrap();
             assert_eq!(
                 decoded
                     .generations

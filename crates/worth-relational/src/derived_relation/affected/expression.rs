@@ -136,7 +136,7 @@ pub(super) fn collect(
                     }
                     Node::CarrierLift { domain, case } => {
                         let mut roots = BTreeSet::new();
-                        let pair = &(*key.definition.owner_entry()).endpoints[key.node];
+                        let pair = &key.definition.owner_entry().endpoints[key.node];
                         lifecycle::seed_domain(
                             registry,
                             if key.reverse { &pair.1 } else { &pair.0 },
@@ -321,7 +321,7 @@ fn pullback(
     anchor: &Member,
     read: &mut impl SourceRead,
 ) -> Result<Option<crate::derived_relation::read::DerivedRelationData>, Denial> {
-    let pair = &(*first.definition.owner_entry()).endpoints[first.node];
+    let pair = &first.definition.owner_entry().endpoints[first.node];
     let input = if first.reverse { &pair.0 } else { &pair.1 };
     let expected = match input {
         Domain::Entity(kind) => *kind,

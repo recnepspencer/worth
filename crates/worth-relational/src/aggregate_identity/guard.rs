@@ -172,7 +172,7 @@ pub(crate) fn current_relation_creations(
     registry: &RelationalSchemaRegistry,
     intents: &[MutationIntent],
 ) -> Result<(), TransactionCommitError> {
-    let Some(storage) = &(*registry.owner_current_publication_storage()) else {
+    let Some(storage) = registry.owner_current_publication_storage() else {
         return Ok(());
     };
     super::funding::run(execution, budget, |work| {

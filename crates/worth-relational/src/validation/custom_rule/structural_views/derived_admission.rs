@@ -27,16 +27,14 @@ impl DerivedAdmissionCache {
             .unwrap()
             .iter()
             .flatten()
-            .any(|cached| Arc::ptr_eq(&(*cached.owner_entry()), &(*handle.owner_entry())))
+            .any(|cached| Arc::ptr_eq(cached.owner_entry(), handle.owner_entry()))
     }
     pub(crate) fn remember(&self, handle: &DerivedRelationHandle) {
         let mut slots = self.0.lock().unwrap();
         let mut empty = None;
         for (index, slot) in slots.iter().enumerate() {
             match slot {
-                Some(cached) if Arc::ptr_eq(&(*cached.owner_entry()), &(*handle.owner_entry())) => {
-                    return
-                }
+                Some(cached) if Arc::ptr_eq(cached.owner_entry(), handle.owner_entry()) => return,
                 None if empty.is_none() => empty = Some(index),
                 _ => {}
             }

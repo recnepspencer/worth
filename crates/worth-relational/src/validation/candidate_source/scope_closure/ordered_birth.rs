@@ -11,7 +11,7 @@ pub(super) fn discover(
     before: &StructuralRelationView<'_>,
     after: &StructuralRelationView<'_>,
 ) -> Result<Option<PreparedManagedIndexScopeClosure>, Denial> {
-    let Some(recipe) = (*program.owner_field_0()).ordered else {
+    let Some(recipe) = program.owner_field_0().ordered else {
         return Ok(None);
     };
     let mut old = LifecycleSource(StructuralSource {

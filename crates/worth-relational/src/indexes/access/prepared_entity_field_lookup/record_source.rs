@@ -68,7 +68,7 @@ impl crate::visibility::materialization::read_records::projection::ProjectionRec
         self.basis.root().accepted_head_region_view(partition)
     }
     fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
-        Some(self.basis.root().as_ref())
+        Some(self.basis.root())
     }
     fn is_exact_basis(&self) -> bool {
         true

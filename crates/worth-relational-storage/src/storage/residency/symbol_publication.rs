@@ -44,6 +44,12 @@ impl RelationalResidencyLease<Head> {
 /// or canonical envelope. That authority remains with the publication scope.
 #[derive(Debug, Clone)]
 pub struct SymbolPublicationKey(Arc<()>);
+impl Default for SymbolPublicationKey {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SymbolPublicationKey {
     pub fn new() -> Self {
         Self(Arc::new(()))

@@ -147,59 +147,6 @@ fn sha256_hex(digest: [u8; 32]) -> String {
     output
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::identity::data::VersionId;
-
-    #[test]
-    fn streamed_merge_basis_digest_preserves_decimal_delimiters_and_ancestor_order() {
-        let receipt = |id, branch: &str, parents| RelationalCommitReceipt {
-            commit_id: CommitId(id),
-            version_id: VersionId(id),
-            branch_id: BranchId(branch.into()),
-            parents,
-        };
-        let basis = RelationalMergeBranchBasis {
-            source_head: receipt(u64::MAX, "source-λ", vec![CommitId(9), CommitId(2)]),
-            target_head: receipt(0, "target", vec![]),
-            merge_base: ResolvedMergeBase {
-                rule: MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
-                commit: receipt(2, "base", vec![CommitId(0)]),
-                supporting_left_ancestors: Arc::<[CommitId]>::from([CommitId(9), CommitId(2)])
-                    .into(),
-                supporting_right_ancestors: Arc::<[CommitId]>::from([CommitId(2)]).into(),
-            },
-        };
-        let number = |bytes: &mut Vec<u8>, n| {
-            bytes.extend(format!("{n:020}").as_bytes());
-            bytes.push(0xfd);
-        };
-        let ids = |bytes: &mut Vec<u8>, values: &[CommitId]| {
-            number(bytes, values.len() as u64);
-            for value in values {
-                number(bytes, value.0);
-            }
-        };
-        let reference = |bytes: &mut Vec<u8>, value: &RelationalCommitReceipt| {
-            number(bytes, value.commit_id.0);
-            number(bytes, value.version_id.0);
-            bytes.extend(value.branch_id.0.as_bytes());
-            bytes.push(0xfe);
-            ids(bytes, &value.parents);
-        };
-        let mut prior = Vec::new();
-        reference(&mut prior, &basis.source_head);
-        reference(&mut prior, &basis.target_head);
-        prior.extend(b"max");
-        prior.push(0xff);
-        reference(&mut prior, &basis.merge_base.commit);
-        ids(&mut prior, &basis.merge_base.supporting_left_ancestors);
-        ids(&mut prior, &basis.merge_base.supporting_right_ancestors);
-        assert_eq!(basis.basis_digest(), format!("{:x}", Sha256::digest(prior)));
-    }
-}
-
 pub trait ResolvedMergeBaseOwnerPort {
     fn left_ancestors(&self) -> &MergeBasisAncestors;
     fn right_ancestors(&self) -> &MergeBasisAncestors;
@@ -252,5 +199,58 @@ impl RelationalMergeBranchBasisFieldsPort for RelationalMergeBranchBasis {
     }
     fn owner_target_head(&self) -> &RelationalCommitReceipt {
         &self.target_head
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::identity::data::VersionId;
+
+    #[test]
+    fn streamed_merge_basis_digest_preserves_decimal_delimiters_and_ancestor_order() {
+        let receipt = |id, branch: &str, parents| RelationalCommitReceipt {
+            commit_id: CommitId(id),
+            version_id: VersionId(id),
+            branch_id: BranchId(branch.into()),
+            parents,
+        };
+        let basis = RelationalMergeBranchBasis {
+            source_head: receipt(u64::MAX, "source-λ", vec![CommitId(9), CommitId(2)]),
+            target_head: receipt(0, "target", vec![]),
+            merge_base: ResolvedMergeBase {
+                rule: MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
+                commit: receipt(2, "base", vec![CommitId(0)]),
+                supporting_left_ancestors: Arc::<[CommitId]>::from([CommitId(9), CommitId(2)])
+                    .into(),
+                supporting_right_ancestors: Arc::<[CommitId]>::from([CommitId(2)]).into(),
+            },
+        };
+        let number = |bytes: &mut Vec<u8>, n| {
+            bytes.extend(format!("{n:020}").as_bytes());
+            bytes.push(0xfd);
+        };
+        let ids = |bytes: &mut Vec<u8>, values: &[CommitId]| {
+            number(bytes, values.len() as u64);
+            for value in values {
+                number(bytes, value.0);
+            }
+        };
+        let reference = |bytes: &mut Vec<u8>, value: &RelationalCommitReceipt| {
+            number(bytes, value.commit_id.0);
+            number(bytes, value.version_id.0);
+            bytes.extend(value.branch_id.0.as_bytes());
+            bytes.push(0xfe);
+            ids(bytes, &value.parents);
+        };
+        let mut prior = Vec::new();
+        reference(&mut prior, &basis.source_head);
+        reference(&mut prior, &basis.target_head);
+        prior.extend(b"max");
+        prior.push(0xff);
+        reference(&mut prior, &basis.merge_base.commit);
+        ids(&mut prior, &basis.merge_base.supporting_left_ancestors);
+        ids(&mut prior, &basis.merge_base.supporting_right_ancestors);
+        assert_eq!(basis.basis_digest(), format!("{:x}", Sha256::digest(prior)));
     }
 }

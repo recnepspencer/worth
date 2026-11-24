@@ -63,7 +63,7 @@ impl StructuralRelationView<'_> {
         }
         // A carrier-only recipe may have no physical relation leaves. Its
         // existence and empty-result reads still require the actual carrier.
-        for &carrier in &(*definition.owner_entry()).carriers {
+        for &carrier in &definition.owner_entry().carriers {
             self.require_entity_kind(carrier)
                 .map_err(|error| self.derived_refusal(error))?;
         }

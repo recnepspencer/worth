@@ -140,6 +140,10 @@ impl RecordSlotDirectory {
         self.logical_by_physical.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.logical_by_physical.is_empty()
+    }
+
     pub(super) fn visit_allocations(
         &self,
         unique: bool,

@@ -118,16 +118,16 @@ fn content_recorded_declarations_cannot_resolve_a_handle_until_exact_installed_b
         Err(RelationalContentDenial::FormatMismatch)
     ));
     assert!(recorded
-        .bind_recorded(&(*available.owner_content_formats()))
+        .bind_recorded(available.owner_content_formats())
         .unwrap()
         .get(id)
         .is_ok());
     assert!(matches!(
-        recorded.bind_recorded(&(*registry(2, 4096, 2).owner_content_formats())),
+        recorded.bind_recorded(registry(2, 4096, 2).owner_content_formats()),
         Err(RelationalContentDenial::UnsupportedVersion)
     ));
     assert!(matches!(
-        recorded.bind_recorded(&(*registry(1, 2048, 2).owner_content_formats())),
+        recorded.bind_recorded(registry(1, 2048, 2).owner_content_formats()),
         Err(RelationalContentDenial::FormatMismatch)
     ));
 }

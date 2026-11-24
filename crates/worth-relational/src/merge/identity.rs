@@ -39,14 +39,8 @@ pub(super) fn discover_identity_scope(
             .merge_base()
             .supporting_right_ancestors()
             .len(),
-        target: branch_delta_summary(
-            &history_plan.basis.target_head(),
-            &history_plan.target_delta,
-        ),
-        source: branch_delta_summary(
-            &history_plan.basis.source_head(),
-            &history_plan.source_delta,
-        ),
+        target: branch_delta_summary(history_plan.basis.target_head(), &history_plan.target_delta),
+        source: branch_delta_summary(history_plan.basis.source_head(), &history_plan.source_delta),
     };
 
     let source_records = source_visible_records(

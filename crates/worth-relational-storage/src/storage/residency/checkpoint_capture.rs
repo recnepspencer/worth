@@ -33,6 +33,10 @@ pub struct RelationalCheckpointRegionPublication {
 }
 
 impl RelationalCheckpointRegionPublication {
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The checkpoint selection owner maps either refusal to Busy"
+    )]
     pub fn try_acknowledge(&self) -> Result<Option<RecordedRegionCheckpoint>, ()> {
         let Some(cell) = self.cell.upgrade() else {
             return Ok(None);

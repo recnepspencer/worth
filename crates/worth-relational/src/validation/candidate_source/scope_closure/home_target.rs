@@ -8,7 +8,7 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
     records: &[RecordRef],
     after: &StructuralRelationView<'_>,
 ) -> Result<PreparedManagedIndexScopeClosure, Denial> {
-    after.require_derived_relation(&(*program.owner_field_0()).path)?;
+    after.require_derived_relation(&program.owner_field_0().path)?;
     let mut source = LifecycleSource(StructuralSource {
         view: after,
         reads: DerivedRelationReads::default(),
@@ -32,7 +32,8 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
             continue;
         }
         source.retain(size_of::<(EntityId, BTreeSet<EntityId>)>())?;
-        let position = (*program.owner_field_0())
+        let position = program
+            .owner_field_0()
             .path
             .parts()
             .nodes
@@ -41,7 +42,7 @@ pub(in crate::validation::candidate_source) fn discover_home_target(
             .ok_or(Definition::InvalidExpression)?;
         let data = evaluate_position(
             registry,
-            &(*program.owner_field_0()).path,
+            &program.owner_field_0().path,
             position,
             false,
             (*entity).into(),

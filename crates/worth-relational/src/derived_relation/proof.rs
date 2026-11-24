@@ -51,7 +51,7 @@ impl Hash for DerivedRelationReadIdentity {
         // Membership only: no ordering, serialized key or graph identity follows
         // from these opaque owners. Full equality also compares the proposal.
         self.source.observation.hash(state);
-        Arc::as_ptr(&(*self.definition.owner_entry())).hash(state);
+        Arc::as_ptr(self.definition.owner_entry()).hash(state);
         self.source.committed.hash(state);
         self.source.version.hash(state);
         self.root.hash(state);

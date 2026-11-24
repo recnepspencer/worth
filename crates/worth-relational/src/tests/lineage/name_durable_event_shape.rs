@@ -109,7 +109,7 @@ fn receipt_branch_mismatch_refuses_typed() {
     refuses_shape(
         &history,
         kind(LineageEventKind::Split),
-        |event, _| (*event.owner_commit_mut()).branch_id = BranchId("forged".to_owned()),
+        |event, _| event.owner_commit_mut().branch_id = BranchId("forged".to_owned()),
         "the receipt names a different branch than the event",
     );
 }

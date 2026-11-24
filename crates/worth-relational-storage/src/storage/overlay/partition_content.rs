@@ -184,6 +184,26 @@ impl std::io::Write for Sha256Writer<'_> {
     }
 }
 
+/// Cold reconstruction from authoritative content, independent of carried hashes.
+#[doc(hidden)]
+pub trait PartitionContentFixturePort {
+    fn authoritative_content_digest_for_test(
+        &self,
+        lane: &ReconstructionLane<'_>,
+        symbols: &StringInterner,
+    ) -> Result<[u8; 32], PartitionContentDigestError>;
+}
+impl PartitionContentFixturePort for PartitionState {
+    fn authoritative_content_digest_for_test(
+        &self,
+        lane: &ReconstructionLane<'_>,
+        symbols: &StringInterner,
+    ) -> Result<[u8; 32], PartitionContentDigestError> {
+        PartitionContentCommitment::capture_fixture(lane, self, symbols)
+            .map(|(commitment, _)| commitment.digest(self.partition_id))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::Serialize;
@@ -280,25 +300,5 @@ mod tests {
             hash_value(b"metadata", &Refused),
             Err(PartitionContentDigestError::Encoding)
         );
-    }
-}
-
-/// Cold reconstruction from authoritative content, independent of carried hashes.
-#[doc(hidden)]
-pub trait PartitionContentFixturePort {
-    fn authoritative_content_digest_for_test(
-        &self,
-        lane: &ReconstructionLane<'_>,
-        symbols: &StringInterner,
-    ) -> Result<[u8; 32], PartitionContentDigestError>;
-}
-impl PartitionContentFixturePort for PartitionState {
-    fn authoritative_content_digest_for_test(
-        &self,
-        lane: &ReconstructionLane<'_>,
-        symbols: &StringInterner,
-    ) -> Result<[u8; 32], PartitionContentDigestError> {
-        PartitionContentCommitment::capture_fixture(lane, self, symbols)
-            .map(|(commitment, _)| commitment.digest(self.partition_id))
     }
 }

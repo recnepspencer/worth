@@ -125,7 +125,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
         if self.values.get(&key, self.read)?.is_some() {
             return Ok(());
         }
-        let definition = std::sync::Arc::clone(&(*key.definition.owner_entry()));
+        let definition = std::sync::Arc::clone(key.definition.owner_entry());
         self.read.checkpoint(1)?;
         match &definition.parts.nodes[key.node] {
             Node::Stored { relation, from, to } => self.stored(key, *relation, *from, *to),

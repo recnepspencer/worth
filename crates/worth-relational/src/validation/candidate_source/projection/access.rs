@@ -94,7 +94,7 @@ impl ManagedIndexSourceProjection<'_> {
         match &self.backing {
             SourceProjectionBacking::Invariant { relations, .. } => {
                 Ok(Some(relations.derived_source_identity(
-                    &(*self.program.owner_field_0()).path,
+                    &self.program.owner_field_0().path,
                     scope,
                     DerivedRelationReadShape::Adjacency { reverse: false },
                 )?))

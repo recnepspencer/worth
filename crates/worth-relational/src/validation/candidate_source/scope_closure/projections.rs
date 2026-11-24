@@ -14,7 +14,7 @@ pub(super) fn pullback(
     for route in program.projection_routes() {
         let affected = crate::derived_relation::affected::collect(
             registry,
-            &(*route.owner_path()),
+            route.owner_path(),
             adjacency,
             records,
             old,
@@ -37,7 +37,7 @@ pub(super) fn pullback(
                 }
                 let data = evaluate_position(
                     registry,
-                    &(*route.owner_path()),
+                    route.owner_path(),
                     (*route.owner_path()).parts().nodes.len() - 1,
                     true,
                     entity.into(),
@@ -93,7 +93,7 @@ fn lift_ancestors(
                 }
                 let data = evaluate_position(
                     registry,
-                    &(*parent_route.owner_path()),
+                    parent_route.owner_path(),
                     (*parent_route.owner_path()).parts().nodes.len() - 1,
                     true,
                     entity.into(),

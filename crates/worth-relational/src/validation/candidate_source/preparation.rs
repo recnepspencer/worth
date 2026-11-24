@@ -207,7 +207,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
                     } else {
                         &self.views.after_fields
                     },
-                    audience: (*self.program.owner_field_0()).issuer.admit(),
+                    audience: self.program.owner_field_0().issuer.admit(),
                     interpretation: self.interpretation,
                     before,
                 },

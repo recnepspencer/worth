@@ -52,7 +52,7 @@ pub(super) fn region_with_history() -> RegionFixture {
             "fixture must have real committed history"
         );
         let (commitment, _) = crate::storage::overlay::PartitionContentCommitment::capture(
-            &lane, execution, &partition, &symbols,
+            lane, execution, &partition, &symbols,
         )
         .unwrap();
         let expected_digest = commitment.digest(partition.partition_id);
@@ -61,7 +61,7 @@ pub(super) fn region_with_history() -> RegionFixture {
             .carrier_digest();
         let codec = &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION;
         let members = (codec.capture_members)(
-            &lane,
+            lane,
             execution,
             &partition,
             &commitment,
@@ -82,7 +82,7 @@ pub(super) fn region_with_history() -> RegionFixture {
         symbol_authority.replace(symbols);
         let cold = RelationalColdRegion {
             readmission: codec,
-            directory: members.directory.portable(&lane, execution).unwrap(),
+            directory: members.directory.portable(lane, execution).unwrap(),
             history_members: members.history_members,
             kind_authority: members.kind_authority,
             source: Some(source.clone()),

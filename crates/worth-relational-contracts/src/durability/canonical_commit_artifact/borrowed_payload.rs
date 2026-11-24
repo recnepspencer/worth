@@ -161,6 +161,10 @@ impl Octets<'_, '_> {
     pub fn len(&self) -> usize {
         self.count
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
     pub fn byte(&mut self) -> Result<u8, Refusal> {
         self.cursor.check_live()?;
         self.remaining = self.remaining.checked_sub(1).ok_or_else(malformed)?;

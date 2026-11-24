@@ -142,39 +142,6 @@ impl InvariantRule {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::validation::data::descriptor::InvariantSemanticsClass;
-    use crate::validation::data::execution::InvariantFailureEffect;
-    use crate::validation::data::rule_id::{InvariantRuleId, NativeInvariantRuleId};
-
-    #[test]
-    fn native_rules_report_stable_rule_ids_and_descriptors() {
-        let rule = InvariantRule::LiveRecordRequiresSidecar(RecordKindTag::Entity);
-        assert_eq!(
-            rule.rule_id(),
-            InvariantRuleId::Native(NativeInvariantRuleId::LiveRecordRequiresSidecarEntity)
-        );
-
-        let descriptor = rule.descriptor_for(InvariantFailureEffect::BlockCommit);
-        assert_eq!(
-            descriptor.id,
-            InvariantRuleId::Native(NativeInvariantRuleId::LiveRecordRequiresSidecarEntity)
-        );
-        assert_eq!(
-            descriptor.semantics,
-            InvariantSemanticsClass::NativeAlwaysOn
-        );
-        assert!(descriptor
-            .execution_points
-            .supports(InvariantExecutionPoint::MutationSensitive));
-        assert!(!descriptor
-            .execution_points
-            .supports(InvariantExecutionPoint::SnapshotPublication));
-    }
-}
-
 /// Operations used by the Relational owners.
 pub trait InvariantRuleOwnerPort: Sized {
     fn metadata(&self) -> InvariantRuleMetadata;
@@ -356,5 +323,38 @@ impl InvariantRuleOwnerPort for InvariantRule {
             }
             _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::validation::data::descriptor::InvariantSemanticsClass;
+    use crate::validation::data::execution::InvariantFailureEffect;
+    use crate::validation::data::rule_id::{InvariantRuleId, NativeInvariantRuleId};
+
+    #[test]
+    fn native_rules_report_stable_rule_ids_and_descriptors() {
+        let rule = InvariantRule::LiveRecordRequiresSidecar(RecordKindTag::Entity);
+        assert_eq!(
+            rule.rule_id(),
+            InvariantRuleId::Native(NativeInvariantRuleId::LiveRecordRequiresSidecarEntity)
+        );
+
+        let descriptor = rule.descriptor_for(InvariantFailureEffect::BlockCommit);
+        assert_eq!(
+            descriptor.id,
+            InvariantRuleId::Native(NativeInvariantRuleId::LiveRecordRequiresSidecarEntity)
+        );
+        assert_eq!(
+            descriptor.semantics,
+            InvariantSemanticsClass::NativeAlwaysOn
+        );
+        assert!(descriptor
+            .execution_points
+            .supports(InvariantExecutionPoint::MutationSensitive));
+        assert!(!descriptor
+            .execution_points
+            .supports(InvariantExecutionPoint::SnapshotPublication));
     }
 }

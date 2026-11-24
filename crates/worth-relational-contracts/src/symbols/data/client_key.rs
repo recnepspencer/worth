@@ -65,6 +65,17 @@ impl From<String> for ClientKey {
     }
 }
 
+/// Operations used by the Relational owners.
+pub trait ClientKeyOwnerPort: Sized {
+    fn owned_allocation_capacity_bytes(&self) -> u64;
+}
+
+impl ClientKeyOwnerPort for ClientKey {
+    fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.0.owned_allocation_capacity_bytes()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::ClientKey;
@@ -103,16 +114,5 @@ mod tests {
 
         assert_eq!(normalized.as_raw_str(), Some("edge-a"));
         assert_eq!(interner.resolve(Symbol(1)), None);
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait ClientKeyOwnerPort: Sized {
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl ClientKeyOwnerPort for ClientKey {
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
-        self.0.owned_allocation_capacity_bytes()
     }
 }

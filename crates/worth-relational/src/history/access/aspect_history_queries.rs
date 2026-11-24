@@ -168,7 +168,7 @@ impl<'runtime> HistoryAccess<'runtime> {
             .lineage
             .shared_events()
             .iter()
-            .filter(|event| traversed_event_ids.contains(&(*event.owner_event_id())))
+            .filter(|event| traversed_event_ids.contains(event.owner_event_id()))
         {
             scope.extend((*event.owner_sources()).iter().copied());
             scope.extend((*event.owner_targets()).iter().copied());

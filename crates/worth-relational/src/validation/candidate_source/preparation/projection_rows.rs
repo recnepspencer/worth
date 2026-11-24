@@ -61,7 +61,7 @@ impl ManagedIndexSourceRows<'_> {
             return Err(Definition::InvalidExpression.into());
         }
         let prepared = self.projection.prepare(
-            &(*descriptor.owner_path()),
+            descriptor.owner_path(),
             root.row,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )?;
@@ -122,7 +122,7 @@ impl ManagedIndexSourceRows<'_> {
             _retention: retention,
         });
         let prepared = self.projection.prepare(
-            &(*descriptor.owner_path()),
+            descriptor.owner_path(),
             occurrence.entity,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )?;
@@ -159,7 +159,7 @@ impl ManagedIndexSourceRows<'_> {
             .ok_or(Definition::InvalidExpression)?;
         self.projection.read(
             &read.prepared,
-            &(*route.owner_path()),
+            route.owner_path(),
             read.anchor,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )

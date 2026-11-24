@@ -281,7 +281,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         &self,
         definition: &crate::derived_relation::DerivedRelationHandle,
     ) -> Result<(), StructuralReadError> {
-        for &kind in &(*definition.owner_entry()).carriers {
+        for &kind in &definition.owner_entry().carriers {
             if !self.work.try_charge_work(1) {
                 return Err(StructuralReadError::WorkBudgetExceeded);
             }

@@ -180,7 +180,7 @@ impl RootSchemaReadmissionCatalog {
         };
         let mut registry = registry;
         (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
-            .bind_recorded(&(*configured.owner_content_formats()))
+            .bind_recorded(configured.owner_content_formats())
             .map_err(RelationalRecoveryStop::from)?;
         let allocation_id = self.issue_authority_id()?;
         let authority =

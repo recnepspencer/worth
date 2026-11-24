@@ -148,12 +148,8 @@ impl<'runtime> MergeAccess<'runtime> {
         compile_bound_executable_plan(
             self.runtime,
             &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
-                (*execution_ready.basis.owner_target_head())
-                    .branch_id
-                    .clone(),
-                (*execution_ready.basis.owner_source_head())
-                    .branch_id
-                    .clone(),
+                execution_ready.basis.owner_target_head().branch_id.clone(),
+                execution_ready.basis.owner_source_head().branch_id.clone(),
                 crate::merge::data::MergeIntent::ReconcileIntoTarget,
                 crate::merge::data::RelationalMergeCorrespondencePosture::Advisory,
                 crate::merge::data::RelationalMergeSchemaReconciliationPosture::Participate,

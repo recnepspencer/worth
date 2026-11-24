@@ -44,6 +44,10 @@ impl RelationalPublicationRegistryCustodyOwnerPort for RelationalPublicationRegi
 pub trait RelationalPublicationCustodyHoldersOwnerPort: Sized {
     fn retained(self) -> Option<Self>;
     /// Preserve memory close's nonwaiting, first-established-holder semantics.
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The runtime maps any unavailable holder to the same nonwaiting close refusal"
+    )]
     fn memory_result(self) -> Result<Option<Self>, ()>;
 }
 

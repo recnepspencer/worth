@@ -36,7 +36,7 @@ impl ManagedIndexSourceRows<'_> {
         &self,
     ) -> Result<super::super::projection::PreparedManagedIndexRelationRead, ReadDenial> {
         self.projection.prepare(
-            &(*self.projection.program.owner_field_0()).path,
+            &self.projection.program.owner_field_0().path,
             self.scope,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )
@@ -49,7 +49,7 @@ impl ManagedIndexSourceRows<'_> {
     ) -> Result<&'a crate::derived_relation::read::DerivedRelationData, ReadDenial> {
         self.projection.read(
             read,
-            &(*self.projection.program.owner_field_0()).path,
+            &self.projection.program.owner_field_0().path,
             self.scope,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )
@@ -60,7 +60,7 @@ impl ManagedIndexSourceRows<'_> {
     ) -> Result<Vec<ManagedIndexSourceOccurrence>, ReadDenial> {
         let data = self.projection.read(
             read,
-            &(*self.projection.program.owner_field_0()).path,
+            &self.projection.program.owner_field_0().path,
             self.scope,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )?;
@@ -114,7 +114,7 @@ impl ManagedIndexSourceRows<'_> {
             Ok(_) => {}
         }
         let shape = DerivedRelationReadShape::Adjacency { reverse: true };
-        let path = &(*self.projection.program.owner_field_0()).path;
+        let path = &self.projection.program.owner_field_0().path;
         let read = self.projection.prepare(path, row, shape)?;
         let data = self.projection.read(&read, path, row, shape)?;
         Ok(data

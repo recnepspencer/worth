@@ -88,7 +88,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
-            root.as_ref(),
+            root,
             plan.plan(),
             0,
             None,
@@ -98,7 +98,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             runtime.commit_work_budget.as_ref(),
             self.prepared.schema_authority.registry(),
             &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
+                root,
                 self.identity.proposed_version_id(),
             ),
             &plan.plan().merged_intents,

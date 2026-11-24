@@ -66,7 +66,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         for _ in 0..DIGEST_SAMPLES {
             let buffered = black_box(buffered_digest(roots));
             let streamed = black_box(
-                crate::durability::data::branch_root_partition_image_digest(&lane, roots).unwrap(),
+                crate::durability::data::branch_root_partition_image_digest(lane, roots).unwrap(),
             );
             assert_eq!(streamed, buffered);
             if let Some(previous) = expected_digest {

@@ -188,7 +188,7 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
             .reverse_adjacency
             .ensure(0, &partition.adjacency_policy);
         let mut previous = PreparedResidentRegion::initial(
-            &lane,
+            lane,
             &execution,
             partition.clone(),
             &symbols.interner_snapshot(),
@@ -249,13 +249,13 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
                     }
                 );
                 let before = crate::storage::residency::required_symbols::collect_counted(
-                    &lane,
+                    lane,
                     before_region.full_view().partition(),
                     full,
                 )
                 .ids;
                 let cold = crate::storage::residency::required_symbols::collect_counted(
-                    &lane,
+                    lane,
                     current_region.full_view().partition(),
                     full,
                 )

@@ -55,7 +55,7 @@ pub(crate) fn decode_checkpoint_effect(
         rmp_serde::from_slice(semantic.0).map_err(|_| malformed())?;
     (*semantic.owner_decoded_memory_mut()) = semantic_memory;
     validation
-        .attach(&(*semantic.owner_validation()))
+        .attach(semantic.owner_validation())
         .map_err(|_| malformed())?;
     let creations = rmp_serde::from_slice(creations.0).map_err(|_| malformed())?;
     Ok(CheckpointEffectData {

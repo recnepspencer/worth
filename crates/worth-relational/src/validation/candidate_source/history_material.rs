@@ -17,7 +17,7 @@ pub(crate) fn retained_history_receipt(
     super::ManagedIndexSourcePreparationDenial,
 > {
     let roots = image.history_directory();
-    let identity = &(*program.owner_field_0()).path.parts().identity;
+    let identity = &program.owner_field_0().path.parts().identity;
     let overflow = || {
         crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(
             crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,

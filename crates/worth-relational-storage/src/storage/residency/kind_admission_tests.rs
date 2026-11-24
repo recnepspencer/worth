@@ -220,10 +220,10 @@ fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scra
         let lane = fixture_lane;
         let budget = SerialMemoryBudget::new(Some(1 << 20));
         let mut partition = peer_partition();
-        let before = kind_projection::canonical_history(&lane, &partition).unwrap();
+        let before = kind_projection::canonical_history(lane, &partition).unwrap();
         let mut scratch = None;
         let result = kind_admission::normalize_value(
-            &lane,
+            lane,
             &mut partition,
             &mut |units, bytes| {
                 if units > 0 {
@@ -247,7 +247,7 @@ fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scra
             ));
         }
         assert_eq!(
-            kind_projection::canonical_history(&lane, &partition).unwrap(),
+            kind_projection::canonical_history(lane, &partition).unwrap(),
             before
         );
         assert!(

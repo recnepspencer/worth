@@ -308,7 +308,7 @@ impl OwnedTestDurableMedium {
             .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
         let readmitted = CommitArt::readmit(&bytes, execution)
             .expect("the medium's own artifact readmits before it is rewritten");
-        let mut envelope = copy_original_for_test(&readmitted.envelope(), execution);
+        let mut envelope = copy_original_for_test(readmitted.envelope(), execution);
         edit(envelope.body_mut_for_test());
         let rewritten = CommitArt::from_positioned(
             &crate::history::data::PositionedCanonicalCommit::for_test(

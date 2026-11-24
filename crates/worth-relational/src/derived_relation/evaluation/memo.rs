@@ -97,14 +97,12 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
     /// Only actual same-registry navigation changes the retained definition.
     pub(super) fn target_key(&mut self, parent: &Key, target: Handle) -> Result<Key, Denial> {
         self.read.checkpoint(1)?;
-        let definition_scope = if std::sync::Arc::ptr_eq(
-            &(*target.owner_entry()),
-            &(*self.root_definition.owner_entry()),
-        ) {
-            DefinitionScope::Root
-        } else {
-            DefinitionScope::Named
-        };
+        let definition_scope =
+            if std::sync::Arc::ptr_eq(target.owner_entry(), self.root_definition.owner_entry()) {
+                DefinitionScope::Root
+            } else {
+                DefinitionScope::Named
+            };
         let node = target.parts().nodes.len() - 1;
         self.read.checkpoint(0)?;
         Ok(Key {

@@ -154,7 +154,7 @@ pub(super) fn recover_with_rewritten_commit_err(
                 let readmitted =
                     RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
                         .expect("original merge artifact readmits before rewrite");
-                let mut envelope = copy_original_for_test(&readmitted.envelope(), execution);
+                let mut envelope = copy_original_for_test(readmitted.envelope(), execution);
                 edit.take().expect("one matching commit")(envelope.body_mut_for_test());
                 RelationalCanonicalCommitArtifact::from_positioned(
                     &PositionedCanonicalCommit::for_test(artifact.position(), Arc::new(envelope)),

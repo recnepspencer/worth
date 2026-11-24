@@ -159,7 +159,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
         let checkpoint = plan.checkpoint.as_mut().unwrap();
         let existing = checkpoint.derived_index_checkpoint.as_ref().unwrap();
         let lane = fixture_lane;
-        let mut generations = existing.readmit(&lane).unwrap();
+        let mut generations = existing.readmit(lane).unwrap();
         assert_eq!(generations.len(), 1);
         let foreign = BranchId("unissued-checkpoint-index-scope".into());
         assert!(checkpoint
@@ -170,14 +170,14 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
         generations[0].applicability.branch_id = foreign.clone();
         let artifact =
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
-                &lane,
+                lane,
                 generations.into_iter().map(std::sync::Arc::new).collect(),
                 existing.bases().to_vec(),
             )
             .unwrap();
         // Establish that the genuine delta/digest owner admits this wire payload:
         // the requested refusal must come from joining it to native branch authority.
-        let decoded = artifact.readmit(&lane).unwrap();
+        let decoded = artifact.readmit(lane).unwrap();
         assert_eq!(decoded[0].source_branch_id, foreign);
         assert_eq!(decoded[0].applicability.branch_id, foreign);
         checkpoint.derived_index_checkpoint = Some(artifact);
@@ -285,11 +285,11 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         let checkpoint = plan.checkpoint.as_mut().unwrap();
         let existing = checkpoint.derived_index_checkpoint.as_ref().unwrap();
         let lane = fixture_lane;
-        let mut generation = existing.readmit(&lane).unwrap().pop().unwrap();
+        let mut generation = existing.readmit(lane).unwrap().pop().unwrap();
         generation.applicability.branch_id = BranchId("foreign".into());
         checkpoint.derived_index_checkpoint = Some(
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
-                &lane,
+                lane,
                 vec![std::sync::Arc::new(generation)],
                 existing.bases().to_vec(),
             )

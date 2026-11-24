@@ -199,34 +199,6 @@ fn field_refs(field: &Field) -> (&String, &RelationalDiagnosticValue) {
     (&field.0, &field.1)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn diagnostic_object_storage_bounds_cover_typed_growth_overlap_and_refuse_overflow() {
-        let empty = DiagnosticObjectFields::decode_storage_bounds(0).unwrap();
-        assert_eq!(
-            (empty.retained_fields_bytes, empty.transient_decode_bytes),
-            (0, 0)
-        );
-        for count in [1usize, 2, 3, 4, 5, 8, 9] {
-            let bounds = DiagnosticObjectFields::decode_storage_bounds(count).unwrap();
-            assert_eq!(
-                bounds.retained_fields_bytes,
-                Layout::array::<Field>(count).unwrap().size()
-            );
-            let rows = Layout::array::<DecodedField>(count.next_power_of_two())
-                .unwrap()
-                .size();
-            let peak = bounds.retained_fields_bytes + bounds.transient_decode_bytes;
-            assert!(peak >= rows + 2 * bounds.retained_fields_bytes);
-        }
-        assert!(DiagnosticObjectFields::decode_storage_bounds(usize::MAX).is_none());
-        let beyond_layout = isize::MAX as usize / std::mem::size_of::<DecodedField>() + 1;
-        assert!(DiagnosticObjectFields::decode_storage_bounds(beyond_layout).is_none());
-    }
-}
-
 /// Operations used by the Relational owners.
 pub trait DiagnosticObjectFieldsOwnerPort: Sized {
     /// Checked storage for an actual verified input entry count, including
@@ -254,5 +226,33 @@ impl DiagnosticObjectFieldsOwnerPort for DiagnosticObjectFields {
             retained_fields_bytes: fields,
             transient_decode_bytes: growth_peak.max(boxing_peak).checked_sub(fields)?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn diagnostic_object_storage_bounds_cover_typed_growth_overlap_and_refuse_overflow() {
+        let empty = DiagnosticObjectFields::decode_storage_bounds(0).unwrap();
+        assert_eq!(
+            (empty.retained_fields_bytes, empty.transient_decode_bytes),
+            (0, 0)
+        );
+        for count in [1usize, 2, 3, 4, 5, 8, 9] {
+            let bounds = DiagnosticObjectFields::decode_storage_bounds(count).unwrap();
+            assert_eq!(
+                bounds.retained_fields_bytes,
+                Layout::array::<Field>(count).unwrap().size()
+            );
+            let rows = Layout::array::<DecodedField>(count.next_power_of_two())
+                .unwrap()
+                .size();
+            let peak = bounds.retained_fields_bytes + bounds.transient_decode_bytes;
+            assert!(peak >= rows + 2 * bounds.retained_fields_bytes);
+        }
+        assert!(DiagnosticObjectFields::decode_storage_bounds(usize::MAX).is_none());
+        let beyond_layout = isize::MAX as usize / std::mem::size_of::<DecodedField>() + 1;
+        assert!(DiagnosticObjectFields::decode_storage_bounds(beyond_layout).is_none());
     }
 }

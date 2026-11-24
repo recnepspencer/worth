@@ -53,7 +53,7 @@ pub(super) fn validate(
         return Err(invalid());
     }
     let source_root = source_input.map_or(basis.inner.root.as_ref(), |input| {
-        input.resident_basis().root().as_ref()
+        input.resident_basis().root()
     });
     let row = source_root
         .get_current_partition(meaning.source_scope.partition_id)

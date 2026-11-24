@@ -123,8 +123,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let current_pin = self.pin_source(execution)?;
         let old_root = old_parent_pin.resident_basis().root();
         let new_root = current_pin.resident_basis().root();
-        let payload_equal =
-            compare::payloads_equal(execution, old_root.as_ref(), new_root.as_ref(), &rep_roles)?;
+        let payload_equal = compare::payloads_equal(execution, old_root, new_root, &rep_roles)?;
         if !payload_equal {
             return Ok(false);
         }

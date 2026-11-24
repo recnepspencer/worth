@@ -10,7 +10,7 @@ pub(super) fn compare_registries(
     target: &RelationalSchemaRegistry,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    for (kind, previous) in &(*source.owner_entity_kinds()) {
+    for (kind, previous) in source.owner_entity_kinds() {
         charge(context, lookup_work((*target.owner_entity_kinds()).len()))?;
         if let Some(next) = (*target.owner_entity_kinds()).get(kind) {
             compare_bindings(
@@ -26,7 +26,7 @@ pub(super) fn compare_registries(
             }
         }
     }
-    for (kind, previous) in &(*source.owner_relation_kinds()) {
+    for (kind, previous) in source.owner_relation_kinds() {
         charge(context, lookup_work((*target.owner_relation_kinds()).len()))?;
         if let Some(next) = (*target.owner_relation_kinds()).get(kind) {
             compare_bindings(

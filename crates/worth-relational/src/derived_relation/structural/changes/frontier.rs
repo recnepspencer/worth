@@ -70,7 +70,7 @@ fn entity(
     definition: &Handle,
 ) -> Result<bool, Denial> {
     match view.readable_entity_kind(id) {
-        Ok(Some(kind)) => Ok((*definition.owner_entry()).carriers.contains(&kind)),
+        Ok(Some(kind)) => Ok(definition.owner_entry().carriers.contains(&kind)),
         Ok(None) | Err(StructuralReadError::RecordUnavailable) => Ok(false),
         Err(cause) => Err(view.derived_refusal(cause)),
     }

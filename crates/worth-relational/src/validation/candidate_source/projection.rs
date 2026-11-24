@@ -36,7 +36,7 @@ impl<'source> ManagedIndexSourceProjection<'source> {
                 audience,
                 ..
             } => {
-                if !(*self.program.owner_field_0()).authority.admits(audience) {
+                if !self.program.owner_field_0().authority.admits(audience) {
                     return Err(Definition::OutsideDeclaredAccess.into());
                 }
                 self.checkpoint(1)?;

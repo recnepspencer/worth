@@ -80,7 +80,7 @@ fn durable_commit_data(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &crate::history::data::CanonicalCommitEnvelope,
 ) -> crate::history::data::CanonicalCommitEnvelope {
-    let mut copied = copy_original_for_test(&source, execution);
+    let mut copied = copy_original_for_test(source, execution);
     let body = copied.body_mut_for_test();
     body.diagnostics_summary.entries.clear();
     body.derived_index_artifacts = Default::default();

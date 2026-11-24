@@ -269,6 +269,10 @@ impl PartitionEdition {
         self.partitions.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.partitions.is_empty()
+    }
+
     pub fn materialize_owned_partitions(
         &self,
     ) -> Result<Vec<PartitionState>, crate::storage::data::RelationalStorageUnavailable> {

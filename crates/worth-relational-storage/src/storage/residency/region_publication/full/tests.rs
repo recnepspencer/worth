@@ -266,20 +266,16 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
             // A. Fresh externally-cloned StoredValueText scalar + pre-existing seal alias.
             let (base, slot1_stored) =
                 seed_stored_partition(&scalar_contract, population, history_depth);
-            let initial = PreparedResidentRegion::initial(
-                &lane,
-                &execution,
-                base,
-                &StringInterner::default(),
-            )
-            .unwrap();
+            let initial =
+                PreparedResidentRegion::initial(lane, &execution, base, &StringInterner::default())
+                    .unwrap();
             let region = initial.retention.capture_region().unwrap().unwrap();
             let fresh_stored = StoredValueText::new(format!("fresh-{population}-{history_depth}"));
             let external_seal_holder = fresh_stored.clone();
             publish_one_slot_and_assert(
                 &execution,
                 &initial,
-                &region,
+                region,
                 make_stored_extra(&scalar_contract, fresh_stored),
                 VersionId(history_depth + 10),
                 &symbols,
@@ -292,7 +288,7 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
                 publish_one_slot_and_assert(
                     &execution,
                     &initial,
-                    &region,
+                    region,
                     make_stored_extra(&scalar_contract, slot1_stored),
                     VersionId(history_depth + 11),
                     &symbols,
@@ -305,7 +301,7 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
             let (s_base, slot1_struct) =
                 seed_struct_partition(&struct_contract, population, history_depth);
             let s_initial = PreparedResidentRegion::initial(
-                &lane,
+                lane,
                 &execution,
                 s_base,
                 &StringInterner::default(),
@@ -317,7 +313,7 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
             publish_one_slot_and_assert(
                 &execution,
                 &s_initial,
-                &s_region,
+                s_region,
                 make_struct_extra(&struct_contract, fresh_struct),
                 VersionId(history_depth + 10),
                 &symbols,
@@ -330,7 +326,7 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
                 publish_one_slot_and_assert(
                     &execution,
                     &s_initial,
-                    &s_region,
+                    s_region,
                     make_struct_extra(&struct_contract, slot1_struct),
                     VersionId(history_depth + 11),
                     &symbols,

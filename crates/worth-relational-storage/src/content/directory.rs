@@ -66,15 +66,12 @@ impl ContentDirectory {
         version: crate::identity::data::VersionId,
         source: Option<&Self>,
     ) -> Result<Self, Denial> {
-        let staged = ContentFrameAdmission::admit(
-            execution,
-            &(*schema.owner_content_formats()),
-            attachments,
-        )?;
+        let staged =
+            ContentFrameAdmission::admit(execution, schema.owner_content_formats(), attachments)?;
         let mut next = self.clone();
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
-            &(*schema.owner_content_formats()),
+            schema.owner_content_formats(),
             &staged,
             self,
             source,

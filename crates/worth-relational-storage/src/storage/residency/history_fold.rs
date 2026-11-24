@@ -84,6 +84,10 @@ impl<M> FundedRows<M> {
     pub fn len(&self) -> usize {
         self.rows.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
     pub(super) fn allocate(
         count: usize,
         request: &ExecutionRequest<'_, '_>,

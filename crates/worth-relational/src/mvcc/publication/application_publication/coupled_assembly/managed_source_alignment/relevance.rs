@@ -56,7 +56,8 @@ impl<'p> SourceRelevance<'p> {
         let scope = program.scope_kind();
         // An ordered-events membership, compiled or behind one derived
         // relation, resolved by the same reader that binds ordered Sources.
-        let ordered = (*program.owner_field_0())
+        let ordered = program
+            .owner_field_0()
             .ordered
             .as_ref()
             .map(|recipe| (recipe.predecessor, recipe.introduced, recipe.retired))

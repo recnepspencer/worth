@@ -133,7 +133,7 @@ impl ManagedIndexSourceRead<'_> {
                     } else {
                         &self.views.after_fields
                     },
-                    audience: (*self.prepared.program.owner_field_0()).issuer.admit(),
+                    audience: self.prepared.program.owner_field_0().issuer.admit(),
                     interpretation: &self.interpretation,
                     before,
                 },

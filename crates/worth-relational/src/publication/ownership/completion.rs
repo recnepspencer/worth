@@ -30,12 +30,12 @@ pub(crate) fn complete(
     roster: &CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedOwnership, TransactionCommitError> {
-    let Some(storage) = &(*basis
+    let Some(storage) = basis
         .inner
         .root
         .schema_authority()
         .registry()
-        .owner_current_publication_storage())
+        .owner_current_publication_storage()
     else {
         return Err(
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
