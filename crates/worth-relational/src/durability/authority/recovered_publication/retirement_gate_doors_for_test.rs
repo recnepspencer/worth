@@ -16,25 +16,32 @@ pub struct RelationalRetentionGateTrialForTest {
 }
 
 impl RelationalRecoveredPublicationRetirement {
-    /// Advance once with `gate` of `basis`'s retention lane held. `None` when
-    /// that lane's retention owner is gone; the receiver is then not advanced.
+    /// Try the same receiver at each held gate, then advance normally once.
+    /// The last count is the predecessor lane's explicit releases after that advance.
     #[doc(hidden)]
-    pub(crate) fn advance_with_retention_gate_held_for_test(
+    pub fn advance_with_retention_gate_held_for_test(
         &mut self,
-        gate: RelationalRetentionGateForTest,
         basis: &AdmittedRelationalBranchBasis,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Option<RelationalRetentionGateTrialForTest> {
-        basis
-            .inner
-            .retention_binding
-            .with_gate_held_for_test(gate, basis.inner.root.id(), || self.advance(request))
-            .map(
-                |(progress, before, after)| RelationalRetentionGateTrialForTest {
-                    progress,
-                    before,
-                    after,
-                },
-            )
+    ) -> Option<([RelationalRetentionGateTrialForTest; 2], Progress, u64)> {
+        let mut trial = |gate| {
+            basis
+                .with_gate_held_for_test(gate, || self.advance(request))
+                .map(
+                    |(progress, before, after)| RelationalRetentionGateTrialForTest {
+                        progress,
+                        before,
+                        after,
+                    },
+                )
+        };
+        let cut = trial(RelationalRetentionGateForTest::ExternalCut)?;
+        let lane = trial(RelationalRetentionGateForTest::Lane)?;
+        let progress = self.advance(request);
+        let releases = basis
+            .retention_census_for_test()
+            .counters
+            .external_pin_releases;
+        Some(([cut, lane], progress, releases))
     }
 }

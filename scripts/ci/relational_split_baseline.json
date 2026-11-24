@@ -5,7 +5,6 @@
   ],
   "probe_3_live_mutation_source": "crates/worth-relational/src/authority/mutation/execution.rs",
   "subordinate_test_export_tokens": [
-    "CapturedRelationalCheckpointBasisForTest",
     "CurrentOwnershipContactsForTest",
     "CurrentOwnershipLocalityForTest",
     "RelationalCommitPhaseBackingForTest",
