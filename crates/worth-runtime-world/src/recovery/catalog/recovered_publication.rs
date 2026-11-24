@@ -93,7 +93,7 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         let state = self.locked_state();
         matches!(state.slots.get(&claim.record.identity), Some(RecoveryEntry::Recovered(record))
-            if std::ptr::eq(Arc::as_ptr(record), &*claim.record))
+            if std::ptr::eq(record.as_ref(), &*claim.record))
     }
 
     pub(crate) fn remove_recovered(&self, record: &RecoveredWorldPublicationRecord) {
@@ -101,7 +101,7 @@ impl ProductUnpublishedRecoveryCatalog {
             let mut state = self.locked_state();
             assert!(
                 matches!(state.slots.get(&record.identity), Some(RecoveryEntry::Recovered(actual))
-                if std::ptr::eq(Arc::as_ptr(actual), record))
+                if std::ptr::eq(actual.as_ref(), record))
             );
             let removed = state.slots.remove(&record.identity);
             state.metadata_bytes -= record.metadata_bytes;

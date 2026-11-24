@@ -49,7 +49,7 @@ impl WorthQueryAdmittedOperation {
         &mut self.data.graph_work
     }
 
-    pub fn graph_work(
+    pub const fn graph_work(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
         &self.data.graph_work

@@ -29,7 +29,8 @@ mod relational_change_delivery;
 mod transaction;
 
 pub(in crate::domain_computation::primary_graph) use branches::{
-    DetachedExpectedProductBranch, SharedPrimaryRuntime, WorthQueryRuntimeCustody,
+    DetachedExpectedProductBranch, DetachedOwnedProductHead, SharedPrimaryRuntime,
+    WorthQueryRuntimeCustody,
 };
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,

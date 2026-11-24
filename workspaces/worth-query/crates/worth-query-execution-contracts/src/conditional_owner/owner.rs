@@ -4,7 +4,9 @@ use std::ops::Deref;
 use std::sync::{Arc, LockResult, PoisonError, RwLock, Weak};
 use worth_runtime_bridge::facade::{BridgeReadmittedAuthoredAssembly, BridgeSealedRuntimeAssembly};
 
-trait MemoryConditionalOwnerBacking: Send + Sync {
+trait MemoryConditionalOwnerBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe
+{
     fn as_lock(&self) -> &RwLock<BridgeSealedRuntimeAssembly>;
 }
 

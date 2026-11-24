@@ -154,7 +154,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn source_slot_mut(&mut self) -> &mut Option<RuntimeBridgeRelationalSource> {
-        &mut self.fields_mut().source
+        &mut self.source
     }
 
     fn home_maintenance(&self) -> Option<&dyn HomeMaintenanceAfterAdvancement> {
@@ -162,13 +162,13 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn home_maintenance_slot_ref(&self) -> &Option<Arc<dyn HomeMaintenanceAfterAdvancement>> {
-        &self.fields().home_maintenance
+        &self.home_maintenance
     }
 
     fn home_maintenance_slot_mut(
         &mut self,
     ) -> &mut Option<Arc<dyn HomeMaintenanceAfterAdvancement>> {
-        &mut self.fields_mut().home_maintenance
+        &mut self.home_maintenance
     }
 
     fn activations_ref(&self) -> &Arc<WorthQueryProductActivationRegistry> {

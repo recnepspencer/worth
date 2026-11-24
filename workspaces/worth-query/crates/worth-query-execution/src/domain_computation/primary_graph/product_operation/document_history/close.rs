@@ -48,18 +48,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 denial: WorthQueryApplicationProductBranchCloseDenial::ForeignPhase,
             });
         }
+        let mut selection = self.selection.take();
+        let current = selection.take_head().rebind(self.application);
         let super::selection::HistorySelection {
-            head,
             journal,
             physical_source,
             navigation,
             ..
-        } = self.selection.take();
+        } = selection;
         drop(physical_source);
-        let current = crate::domain_computation::primary_graph::WorthQueryOwnedProductHead::from_created_branch(
-            self.application,
-            head,
-        );
         match WorthQueryDocumentHistoryClosing::new(current, journal, navigation).retry(phase) {
             Ok(receipt) => Ok(receipt),
             Err(closing) => match closing.into_terminal_cleanup() {

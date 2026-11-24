@@ -12,7 +12,9 @@ use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPo
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) struct NavigationCleanup {
-    head: Option<crate::basis::WorthQueryProductBranch>,
+    head: Option<
+        crate::domain_computation::primary_graph::product_operation::DetachedOwnedProductHead,
+    >,
     _head_denial: Option<WorthQueryApplicationProductBranchCloseDenial>,
     retired: Option<WorthQueryApplicationProductBranchCleanupFailure>,
     fork: Option<custody::ForkCleanup>,
@@ -67,19 +69,21 @@ impl NavigationProgress {
             | NavigationPhase::Selected(_)
             | NavigationPhase::Discarded => {}
             NavigationPhase::ForkRecovery(fork) => cleanup.fork = Some(fork),
-            NavigationPhase::Candidate(candidate) => cleanup.head = Some(candidate.into_branch()),
+            NavigationPhase::Candidate(candidate) => {
+                cleanup.head = Some(candidate.into_detached_head());
+            }
             NavigationPhase::Publication {
                 candidate,
                 publication,
             } => {
                 drop(publication);
-                cleanup.head = Some(candidate.into_branch());
+                cleanup.head = Some(candidate.into_detached_head());
             }
             NavigationPhase::Unpublished {
                 candidate,
                 recovery,
             } => {
-                cleanup.head = Some(candidate.into_branch());
+                cleanup.head = Some(candidate.into_detached_head());
                 cleanup.recovery = Some(recovery);
             }
             NavigationPhase::Selecting {
@@ -91,7 +95,7 @@ impl NavigationProgress {
                 drop(_outputs);
                 drop(exact);
                 drop(_publication);
-                cleanup.head = Some(candidate.into_branch());
+                cleanup.head = Some(candidate.into_detached_head());
             }
             NavigationPhase::AwaitingOutputs {
                 candidate,
@@ -100,7 +104,7 @@ impl NavigationProgress {
             } => {
                 drop(exact);
                 drop(_publication);
-                cleanup.head = Some(candidate.into_branch());
+                cleanup.head = Some(candidate.into_detached_head());
             }
             NavigationPhase::Discarding(pending) => cleanup = pending,
         }
@@ -164,13 +168,12 @@ impl NavigationCleanup {
                 }
             };
         }
-        if let Some(branch) = self.head.take() {
+        if let Some(head) = self.head.take() {
             self._head_denial = None;
-            let head = WorthQueryOwnedProductHead::from_created_branch(application.clone(), branch);
-            return match head.close(phase) {
+            return match head.rebind(application.clone()).close(phase) {
                 Ok(_) => Ok(1),
                 Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                    self.head = Some(head.branch());
+                    self.head = Some(head.into_detached());
                     self._head_denial = Some(denial);
                     Err(Denial::Cleanup)
                 }

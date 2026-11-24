@@ -5,7 +5,9 @@ use crate::{
         WorthQueryProductBranch, WorthQueryProductBranchReadIdentity,
         WorthQueryProductObservationLease,
     },
-    domain_computation::primary_graph::WorthQueryOwnedProductHead,
+    domain_computation::primary_graph::{
+        product_operation::DetachedOwnedProductHead, WorthQueryOwnedProductHead,
+    },
 };
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
@@ -67,7 +69,7 @@ impl WeakHistorySelectionCell {
 }
 
 pub(in crate::domain_computation::primary_graph) struct HistorySelection {
-    pub head: WorthQueryProductBranch,
+    head: Option<DetachedOwnedProductHead>,
     pub expected: WorthQueryProductBranchReadIdentity,
     pub physical_source: WorthQueryProductObservationLease,
     output_authority: Option<super::authority_lifetime::OwnedHistoryAuthorityLifetime>,
@@ -119,7 +121,7 @@ impl HistorySelectionCell {
         };
         Ok(SharedHistorySelectionCell::from_arc(Arc::new(Self {
             state: Mutex::new(Some(HistorySelection {
-                head: head.branch(),
+                head: Some(head.into_detached()),
                 expected,
                 physical_source: source,
                 output_authority: None,
@@ -163,6 +165,31 @@ impl HistorySelectionCell {
 }
 
 impl HistorySelection {
+    pub(in crate::domain_computation::primary_graph) fn head_branch(
+        &self,
+    ) -> WorthQueryProductBranch {
+        self.head
+            .as_ref()
+            .expect("live history selection retains its move-only head custody")
+            .branch()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_head(
+        &mut self,
+    ) -> DetachedOwnedProductHead {
+        self.head
+            .take()
+            .expect("live history selection retains its move-only head custody")
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn put_head(
+        &mut self,
+        head: DetachedOwnedProductHead,
+    ) {
+        let replaced = self.head.replace(head);
+        debug_assert!(replaced.is_none());
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_output_authority_lifetime(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

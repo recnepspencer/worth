@@ -6,10 +6,9 @@ use crate::{
             WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchOwnerCleanupReceipt,
         },
         primary_graph::{
-            product_operation::WorthQueryRuntimeCustody, WorthQueryAdvancementPhase,
-            WorthQueryApplicationProductBranchCleanupFailure,
-            WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHead,
-            WorthQueryOwnedProductHeadCloseFailure,
+            product_operation::{DetachedOwnedProductHead, WorthQueryRuntimeCustody},
+            WorthQueryAdvancementPhase, WorthQueryApplicationProductBranchCleanupFailure,
+            WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHeadCloseFailure,
         },
     },
 };
@@ -43,9 +42,9 @@ pub(super) enum HistoryHeadCustody {
     Reserved,
     Advancing,
     Closed(ClosedHistoryHead),
-    Live(WorthQueryProductBranch),
+    Live(DetachedOwnedProductHead),
     Refused {
-        branch: WorthQueryProductBranch,
+        head: DetachedOwnedProductHead,
         denial: WorthQueryApplicationProductBranchCloseDenial,
     },
     Retired {
@@ -67,9 +66,8 @@ impl HistoryHeadCustody {
     pub(super) fn branch(&self) -> Option<WorthQueryProductBranch> {
         match self {
             Self::Reserved | Self::Advancing | Self::Closed(_) => None,
-            Self::Live(branch) | Self::Refused { branch, .. } | Self::Retired { branch, .. } => {
-                Some(*branch)
-            }
+            Self::Live(head) | Self::Refused { head, .. } => Some(head.branch()),
+            Self::Retired { branch, .. } => Some(*branch),
         }
     }
 
@@ -82,14 +80,12 @@ impl HistoryHeadCustody {
             Self::Reserved => Ok(None),
             Self::Advancing => unreachable!("the actual slot mutex spans an entire transition"),
             Self::Closed(receipt) => Ok(Some(receipt)),
-            Self::Live(branch) | Self::Refused { branch, .. } => {
-                let head =
-                    WorthQueryOwnedProductHead::from_created_branch(application.clone(), branch);
-                match head.close(phase) {
+            Self::Live(head) | Self::Refused { head, .. } => {
+                match head.rebind(application.clone()).close(phase) {
                     Ok(receipt) => Ok(Some(ClosedHistoryHead::Direct { _receipt: receipt })),
                     Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
                         Err(Self::Refused {
-                            branch: head.branch(),
+                            head: head.into_detached(),
                             denial,
                         })
                     }

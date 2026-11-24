@@ -40,6 +40,7 @@ pub use expected_source::{
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
     WorthQueryExpectedProductBranchFork,
 };
+pub(in crate::domain_computation::primary_graph) use owned_head::DetachedOwnedProductHead;
 pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure};
 
 /// The product branch lifecycle of one application runtime: fork branches,

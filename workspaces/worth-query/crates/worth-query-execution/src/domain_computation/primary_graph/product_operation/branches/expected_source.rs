@@ -28,18 +28,37 @@ pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
     fork: WorthQueryProductBranchFork<'runtime>,
 }
 
+/// Move-only, runtime-bound expected-source candidate detached from
+/// `&'runtime Runtime<Schema>`.
+///
+/// Constructible only by consuming a genuine `WorthQueryExpectedProductBranch`
+/// and rebindable only to the exact runtime allocation that created it.
+#[must_use = "rebind the detached expected-source candidate to its original runtime"]
 pub(in crate::domain_computation::primary_graph) struct DetachedExpectedProductBranch {
-    pub(in crate::domain_computation::primary_graph) branch: WorthQueryProductBranch,
-    pub(in crate::domain_computation::primary_graph) source: WorthQueryProductBranchLease,
+    root_identity: std::sync::Arc<
+        worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRootIdentity,
+    >,
+    branch: WorthQueryProductBranch,
+    source: WorthQueryProductBranchLease,
 }
 
 impl DetachedExpectedProductBranch {
-    pub(in crate::domain_computation::primary_graph) fn into_branch(
-        self,
+    pub(in crate::domain_computation::primary_graph) const fn branch(
+        &self,
     ) -> WorthQueryProductBranch {
-        let Self { branch, source } = self;
+        self.branch
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn into_detached_head(
+        self,
+    ) -> super::DetachedOwnedProductHead {
+        let Self {
+            root_identity,
+            branch,
+            source,
+        } = self;
         drop(source);
-        branch
+        super::DetachedOwnedProductHead::from_detached_branch(root_identity, branch)
     }
 }
 
@@ -53,11 +72,18 @@ pub struct WorthQueryExpectedProductBranch<'runtime, Schema> {
     source: WorthQueryProductBranchLease,
 }
 
-impl<'runtime, Schema> WorthQueryExpectedProductBranch<'runtime, Schema> {
+impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runtime, Schema> {
     pub(in crate::domain_computation::primary_graph) fn into_detached(
         self,
     ) -> DetachedExpectedProductBranch {
+        let root_identity = self
+            .application
+            .inner
+            .runtime
+            .product_runtime_ref()
+            .root_identity();
         DetachedExpectedProductBranch {
+            root_identity,
             branch: self.branch,
             source: self.source,
         }
@@ -67,6 +93,15 @@ impl<'runtime, Schema> WorthQueryExpectedProductBranch<'runtime, Schema> {
         application: WorthQueryRuntimeCustody<'runtime, Schema>,
         detached: DetachedExpectedProductBranch,
     ) -> Self {
+        let target = application
+            .inner
+            .runtime
+            .product_runtime_ref()
+            .root_identity();
+        assert!(
+            std::sync::Arc::ptr_eq(&detached.root_identity, &target),
+            "detached expected-source candidate may only rebind to its exact original runtime allocation"
+        );
         Self {
             application,
             branch: detached.branch,

@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use super::IndexingState;
 
-trait IndexingStateBacking: Send + Sync {
+trait IndexingStateBacking: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe {
     fn lock(&self) -> &RwLock<IndexingState>;
 }
 
@@ -54,3 +54,8 @@ impl Default for SharedIndexingState {
         Self::new(IndexingState::default())
     }
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedIndexingState>();
+};

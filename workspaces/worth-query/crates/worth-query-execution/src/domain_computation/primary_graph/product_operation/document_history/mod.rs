@@ -186,7 +186,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     /// Descriptive targeting for the Publication owner; it grants no READ permission.
     pub fn branch(&self) -> crate::basis::WorthQueryProductBranch {
-        self.selection.lock().head
+        self.selection.lock().head_branch()
     }
 }
 

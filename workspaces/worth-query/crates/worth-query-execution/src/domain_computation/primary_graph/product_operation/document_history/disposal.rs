@@ -48,7 +48,9 @@ pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
             'runtime,
             S,
         >,
-    current: Option<crate::basis::WorthQueryProductBranch>,
+    current: Option<
+        crate::domain_computation::primary_graph::product_operation::DetachedOwnedProductHead,
+    >,
     past: IntoValues<u64, PastHead>,
     pending: Option<HistoryHeadCustody>,
     opening_denial: Option<WorthQueryAdvancementDenial>,
@@ -69,7 +71,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         let navigation = navigation.into_disposal();
         Self {
             application: current.custody(),
-            current: Some(current.branch()),
+            current: Some(current.into_detached()),
             past,
             pending: None,
             opening_denial: None,

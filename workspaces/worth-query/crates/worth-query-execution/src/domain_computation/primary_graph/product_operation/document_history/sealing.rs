@@ -229,15 +229,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             });
         }
         selected.invalidate_output_authority();
-        let mut current_head =
-            crate::domain_computation::primary_graph::WorthQueryOwnedProductHead::from_created_branch(
-                self.custody(),
-                selected.head,
-            );
+        let mut current_head = selected.take_head().rebind(self.custody());
         let (previous, release) =
             match current_head.adopt_at_deferred(candidate, phase, &prepared.exact) {
                 Ok(adopted) => adopted,
                 Err(failure) => {
+                    selected.put_head(current_head.into_detached());
                     drop(selected);
                     let (candidate, denial) = failure.into_parts();
                     return Err(WorthQueryDocumentHistoryAdoptionFailure {
@@ -247,7 +244,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     });
                 }
             };
-        selected.head = current_head.branch();
+        selected.put_head(current_head.into_detached());
         // Every destination slot and returned value exists before adoption.
         // Only infallible metadata moves remain while the selection is guarded.
         selected.expected = prepared.endpoint;
@@ -257,7 +254,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             prepared.node,
             prepared.source,
             prepared.discovery_recipes,
-            previous.branch(),
+            previous.into_detached(),
         );
         drop(selected);
         drop(excluded);

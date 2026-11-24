@@ -18,7 +18,7 @@ impl ProductUnpublishedRecoveryCatalog {
         let Some(RecoveryEntry::Recovered(record)) = state.slots.get(&claim.record.identity) else {
             return Err(Denial::MissingRecord);
         };
-        if !std::ptr::eq(Arc::as_ptr(record), &*claim.record) {
+        if !std::ptr::eq(record.as_ref(), &*claim.record) {
             return Err(Denial::MissingRecord);
         }
         let recovered = Arc::clone(record);

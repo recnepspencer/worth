@@ -1,6 +1,5 @@
 //! The non-generic admitted operation every typed admission brand carries.
 
-use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -17,50 +16,13 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
-trait AdmittedOperationDataBacking: Send {
-    fn as_data(&self) -> &WorthQueryAdmittedOperationData;
-    fn as_data_mut(&mut self) -> &mut WorthQueryAdmittedOperationData;
-}
-
-impl AdmittedOperationDataBacking for WorthQueryAdmittedOperationData {
-    fn as_data(&self) -> &WorthQueryAdmittedOperationData {
-        self
-    }
-
-    fn as_data_mut(&mut self) -> &mut WorthQueryAdmittedOperationData {
-        self
-    }
-}
-
-pub(super) struct ErasedAdmittedOperationData(Box<dyn AdmittedOperationDataBacking>);
-
-impl ErasedAdmittedOperationData {
-    fn new(data: WorthQueryAdmittedOperationData) -> Self {
-        Self(Box::new(data))
-    }
-}
-
-impl Deref for ErasedAdmittedOperationData {
-    type Target = WorthQueryAdmittedOperationData;
-
-    fn deref(&self) -> &Self::Target {
-        self.0.as_data()
-    }
-}
-
-impl DerefMut for ErasedAdmittedOperationData {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0.as_data_mut()
-    }
-}
-
 /// One installed operation authorized for one exact current principal and
 /// scope, with no application type. Move-only and owner-minted: it has no
 /// `Clone`, `Default`, `Deserialize` or `From`, and only the admission
 /// phases that mint a brand construct it.
 pub struct WorthQueryAdmittedOperation {
     pub(super) home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    pub(super) data: ErasedAdmittedOperationData,
+    pub(super) data: Box<WorthQueryAdmittedOperationData>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -131,7 +93,7 @@ impl WorthQueryAdmittedOperation {
             })?;
         Ok(Self {
             home_owner,
-            data: ErasedAdmittedOperationData::new(data),
+            data: Box::new(data),
             _memory: memory,
         })
     }

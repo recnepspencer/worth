@@ -96,7 +96,7 @@ impl NavigationProgress {
         let observation = publication.take_successor_observation().expect("initial and settled-adoption preparations both reserve the exact successor observation");
         debug_assert_eq!(
             observation.lifecycle_incarnation(),
-            candidate.branch.occurrence()
+            candidate.branch().occurrence()
         );
         debug_assert_eq!(
             observation.selected_commit(),
@@ -204,7 +204,7 @@ impl NavigationProgress {
                 .inner
                 .runtime
                 .product_runtime_ref()
-                .admit_product_occurrence(candidate.branch.occurrence())
+                .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
             let selected = application
                 .on_product_for_owner_recovery(&execution, product)

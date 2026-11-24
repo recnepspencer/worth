@@ -86,11 +86,8 @@ impl WorthQueryProductRuntime {
             root.lifecycle_incarnation(),
             None,
         );
-        {
-            let fields = product.fields_mut();
-            fields.branch_program_source_owner = Some(branch_program_source_owner);
-            fields.home_maintenance = Some(maintenance);
-        }
+        product.fields_mut().branch_program_source_owner = Some(branch_program_source_owner);
+        product.home_maintenance = Some(maintenance);
         Ok(product)
     }
 }

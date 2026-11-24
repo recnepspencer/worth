@@ -5,7 +5,9 @@ use std::sync::{Arc, Mutex, Weak};
 
 use super::RecoveryCatalogState;
 
-trait RecoveryCatalogStateBacking: Send + Sync + std::fmt::Debug {
+trait RecoveryCatalogStateBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe + std::fmt::Debug
+{
     fn as_lock(&self) -> &Mutex<RecoveryCatalogState>;
 }
 
@@ -52,3 +54,9 @@ impl WeakRecoveryCatalogState {
         self.0.upgrade().map(SharedRecoveryCatalogState)
     }
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedRecoveryCatalogState>();
+    assert_auto_traits::<WeakRecoveryCatalogState>();
+};

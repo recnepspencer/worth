@@ -41,3 +41,8 @@ impl Deref for SharedUnpublishedIdempotencyStore {
         UnpublishedIdempotencyStoreBacking::as_mutex(&*self.0)
     }
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedUnpublishedIdempotencyStore>();
+};

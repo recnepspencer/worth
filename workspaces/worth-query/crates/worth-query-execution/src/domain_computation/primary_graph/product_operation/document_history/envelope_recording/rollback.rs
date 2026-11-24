@@ -44,12 +44,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             phase,
         ) {
             (None, _) => None,
-            (Some(head), None) => Some(HistoryHeadCustody::Live(head.branch())),
+            (Some(head), None) => Some(HistoryHeadCustody::Live(head.into_detached())),
             (Some(head), Some(phase)) => match head.close(phase) {
                 Ok(_) => None,
                 Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
                     Some(HistoryHeadCustody::Refused {
-                        branch: head.branch(),
+                        head: head.into_detached(),
                         denial,
                     })
                 }

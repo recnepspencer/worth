@@ -1,17 +1,17 @@
 use super::WorthQueryAdmittedOperation;
 
 impl WorthQueryAdmittedOperation {
-    pub fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
+    pub const fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
         &self.data.operation_authority_identity_bytes
     }
 
     /// The admitted operation's definition identity. Unlike the authority
     /// identity it names no runtime, so idempotency intents bind it.
-    pub fn operation_definition_identity(&self) -> &[u8; 32] {
+    pub const fn operation_definition_identity(&self) -> &[u8; 32] {
         &self.data.operation_definition_identity
     }
 
-    pub fn governed_input_identity(&self) -> Option<&[u8; 32]> {
+    pub const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
         self.data.governed_input_identity.as_ref()
     }
 

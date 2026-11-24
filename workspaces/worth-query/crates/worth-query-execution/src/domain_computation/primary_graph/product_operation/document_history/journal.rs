@@ -5,9 +5,10 @@ use super::{
     step::{DocumentIncarnation, WorthQueryHistoryNodeId, WorthQueryHistoryStep},
     WorthQueryDocumentHistoryDenial as Denial, WorthQueryHistoryStepMetadata,
 };
-use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchReadIdentity};
+use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationReadObservation,
+    product_operation::DetachedOwnedProductHead, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationReadObservation,
 };
 use std::{
     collections::{BTreeMap, VecDeque},

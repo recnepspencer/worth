@@ -9,7 +9,9 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 use super::WorthQueryPendingApplicationPublication;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
-trait PendingApplicationPublicationRegistryBacking: Send + Sync {
+trait PendingApplicationPublicationRegistryBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe
+{
     fn as_mutex(&self) -> &Mutex<WorthQueryPendingApplicationPublicationRegistry>;
 }
 

@@ -51,21 +51,21 @@ impl WorthQueryAdmittedOperation {
             && &self.data.binding_identity == binding_identity
     }
 
-    pub fn runtime_authority(
+    pub const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.data.runtime_authority
     }
 
-    pub fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
+    pub const fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
         self.data.admission_identity
     }
 
-    pub fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+    pub const fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.data.scope_entity_id
     }
 
-    pub fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
+    pub const fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
         self.data.scope_entity_kind
     }
 
@@ -87,11 +87,11 @@ impl WorthQueryAdmittedOperation {
         Arc::clone(&self.data.contracts)
     }
 
-    pub fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
+    pub const fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
         &self.data.mutation_preconditions
     }
 
-    pub fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
+    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
         self.data.canonical_work
     }
 
@@ -109,7 +109,7 @@ impl WorthQueryAdmittedOperation {
         )
     }
 
-    pub fn has_elevation_lifecycle_binding(&self) -> bool {
+    pub const fn has_elevation_lifecycle_binding(&self) -> bool {
         self.data.authorization_basis.is_elevation_lifecycle()
     }
 
@@ -242,7 +242,7 @@ impl WorthQueryAdmittedOperation {
     ///
     /// Carried onto commit receipts (R8.62 / C1). Descriptive fingerprints are
     /// not a substitute for this identity.
-    pub fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
+    pub const fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
         &self.data.operation_authority_identity_bytes
     }
 
@@ -276,13 +276,13 @@ impl WorthQueryAdmittedOperation {
     ) {
         self.data.source_expectation_kind = Some(kind);
     }
-    pub fn source_expectation_kind(
+    pub const fn source_expectation_kind(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
         self.data.source_expectation_kind
     }
 
-    pub fn source_partition_identity(&self) -> Option<[u8; 32]> {
+    pub const fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.data.source_partition_identity
     }
 
@@ -301,7 +301,7 @@ impl WorthQueryAdmittedOperation {
     /// Stable identity of the authenticated runtime, installed operation,
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.
-    pub fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
+    pub const fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
         &self.data.operation_scope_binding
     }
 }

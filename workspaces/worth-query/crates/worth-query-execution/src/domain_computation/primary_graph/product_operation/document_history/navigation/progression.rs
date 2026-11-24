@@ -158,7 +158,7 @@ impl NavigationProgress {
             .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let current = application
-            .on_branch(candidate.branch)
+            .on_branch(candidate.branch())
             .select(phase)
             .map_err(Denial::ProductAdmission)?;
         let source = self

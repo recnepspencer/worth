@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use super::WorthQueryApplicationOutputLineage;
 
-trait OutputLineageBacking: Send + Sync {
+trait OutputLineageBacking: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe {
     fn as_mutex(&self) -> &Mutex<WorthQueryApplicationOutputLineage>;
 }
 
@@ -42,3 +42,8 @@ impl Deref for SharedOutputLineage {
         OutputLineageBacking::as_mutex(&*self.0)
     }
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedOutputLineage>();
+};

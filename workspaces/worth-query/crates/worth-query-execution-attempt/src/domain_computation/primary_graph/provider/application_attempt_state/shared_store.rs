@@ -9,7 +9,9 @@ use std::sync::{Arc, Mutex};
 
 use super::WorthQueryPrimaryGraphApplicationAttemptStore;
 
-trait ApplicationAttemptStoreBacking: Send + Sync {
+trait ApplicationAttemptStoreBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe
+{
     fn as_mutex(&self) -> &Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>;
 }
 
@@ -41,3 +43,8 @@ impl Deref for SharedApplicationAttemptStore {
         ApplicationAttemptStoreBacking::as_mutex(&*self.0)
     }
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<SharedApplicationAttemptStore>();
+};

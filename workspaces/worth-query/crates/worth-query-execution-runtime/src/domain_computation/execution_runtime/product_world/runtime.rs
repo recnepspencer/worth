@@ -18,11 +18,9 @@ pub struct WorthQueryProductRootIdentity {
 pub(crate) struct WorthQueryProductRuntimeFields {
     pub(super) branch_program_source_owner:
         Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
-    pub(crate) home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     pub(crate) owner: super::world_ports::WorthQueryProductWorldPorts,
-    pub(crate) source: Option<RuntimeBridgeRelationalSource>,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
     pub(crate) clock: WorthQueryProductWorldClock,
     pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
@@ -57,6 +55,8 @@ impl ProductRuntimeBacking for WorthQueryProductRuntimeFields {
 /// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
+    pub(crate) home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
+    pub(crate) source: Option<RuntimeBridgeRelationalSource>,
     inner: Arc<dyn ProductRuntimeBacking>,
 }
 
@@ -66,18 +66,13 @@ impl WorthQueryProductRuntime {
     }
 
     pub(crate) fn fields_mut(&mut self) -> &mut WorthQueryProductRuntimeFields {
-        if Arc::strong_count(&self.inner) > 1 || Arc::weak_count(&self.inner) > 0 {
-            let cloned = self.inner.as_fields().clone();
-            self.inner = Arc::new(cloned);
-        }
         Arc::get_mut(&mut self.inner)
-            .expect("unique product runtime after copy-on-write")
+            .expect("unique product runtime before sharing")
             .as_fields_mut()
     }
 
     pub(crate) fn source(&self) -> &RuntimeBridgeRelationalSource {
-        self.fields()
-            .source
+        self.source
             .as_ref()
             .expect("only serving product exposes its source")
     }
@@ -108,13 +103,13 @@ impl WorthQueryProductRuntime {
         #[cfg(not(test))]
         let _ = default_branch;
         Self {
+            home_maintenance: None,
+            source: Some(source),
             inner: Arc::new(WorthQueryProductRuntimeFields {
-                home_maintenance: None,
                 branch_program_source_owner: None,
                 owner,
                 adoption_preparation: Arc::default(),
                 named_read_probe: Arc::default(),
-                source: Some(source),
                 activations: Arc::new(activations),
                 clock,
                 relational_lifecycle,

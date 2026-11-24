@@ -180,7 +180,7 @@ impl HistoryJournal {
         completed: RecordedNode,
         source: Arc<WorthQueryApplicationReadObservation>,
         discovery_recipes: Option<Arc<super::super::discovery_recipes::HistoryDiscoveryRecipes>>,
-        previous: WorthQueryProductBranch,
+        previous: DetachedOwnedProductHead,
     ) -> Option<RetainedHistorySource> {
         self.store_previous(reserved.transition, previous);
         self.access(Access::Node);

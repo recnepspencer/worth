@@ -96,9 +96,9 @@ impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn store_previous(
         &mut self,
         slot: u64,
-        previous: WorthQueryProductBranch,
+        previous: DetachedOwnedProductHead,
     ) {
-        let canonical = self.current_step().endpoint().product_branch() == previous;
+        let canonical = self.current_step().endpoint().product_branch() == previous.branch();
         if canonical {
             let node = self
                 .nodes

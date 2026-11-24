@@ -186,11 +186,7 @@ impl NavigationProgress {
         let returned = completion.clone();
         let physical = completion.selection.physical.clone();
         selected.invalidate_output_authority();
-        let mut current_head =
-            crate::domain_computation::primary_graph::WorthQueryOwnedProductHead::from_created_branch(
-                application.clone(),
-                selected.head,
-            );
+        let mut current_head = selected.take_head().rebind(application.clone());
         let candidate =
             crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch::from_detached(
                 application.clone(),
@@ -199,6 +195,7 @@ impl NavigationProgress {
         let (previous, release) = match current_head.adopt_at_deferred(candidate, phase, &exact) {
             Ok(adopted) => adopted,
             Err(failure) => {
+                selected.put_head(current_head.into_detached());
                 selected
                     .journal
                     .cancel_navigation_source(self.requested, restoration);
@@ -213,14 +210,14 @@ impl NavigationProgress {
                 return Err(Denial::Adoption(cause));
             }
         };
-        selected.head = current_head.branch();
+        selected.put_head(current_head.into_detached());
         selected.expected = physical;
         let previous_source = std::mem::replace(&mut selected.physical_source, exact);
         selected.journal.store_previous(
             self.head_slot
                 .take()
                 .expect("original prepaid head destination"),
-            previous.branch(),
+            previous.into_detached(),
         );
         let unused_source = selected.journal.fill_navigation_source(
             self.requested,

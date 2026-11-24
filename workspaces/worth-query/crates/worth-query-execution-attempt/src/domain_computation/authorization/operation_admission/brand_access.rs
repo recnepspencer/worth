@@ -27,24 +27,24 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(crate) fn runtime_authority(
+    pub(crate) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.core.runtime_authority()
     }
 
     #[inline]
-    pub fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
+    pub const fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
         self.core.admission_identity()
     }
 
     #[inline]
-    pub fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+    pub const fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.core.scope_entity_id()
     }
 
     #[inline]
-    pub(crate) fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
+    pub(crate) const fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
         self.core.scope_entity_kind()
     }
 
@@ -69,12 +69,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
+    pub const fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
         self.core.mutation_preconditions()
     }
 
     #[inline]
-    pub fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
+    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
         self.core.canonical_work()
     }
 
@@ -89,7 +89,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(crate) fn has_elevation_lifecycle_binding(&self) -> bool {
+    pub(crate) const fn has_elevation_lifecycle_binding(&self) -> bool {
         self.core.has_elevation_lifecycle_binding()
     }
 
@@ -175,7 +175,7 @@ impl<Schema, Operation, Input, Scope>
     /// Carried onto commit receipts (R8.62 / C1). Descriptive fingerprints are
     /// not a substitute for this identity.
     #[inline]
-    pub fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
+    pub const fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
         self.core.installed_operation_identity_bytes()
     }
 
@@ -247,14 +247,14 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(crate) fn source_expectation_kind(
+    pub(crate) const fn source_expectation_kind(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
         self.core.source_expectation_kind()
     }
 
     #[inline]
-    pub(crate) fn source_partition_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) const fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.core.source_partition_identity()
     }
 
@@ -276,7 +276,7 @@ impl<Schema, Operation, Input, Scope>
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.
     #[inline]
-    pub fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
+    pub const fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
         self.core.operation_scope_binding()
     }
 
