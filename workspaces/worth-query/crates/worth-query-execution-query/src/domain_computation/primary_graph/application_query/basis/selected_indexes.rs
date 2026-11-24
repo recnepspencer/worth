@@ -1,7 +1,7 @@
 //! Index currency for the exact installed read that producer readmission will execute.
 
-use std::sync::Arc;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
@@ -140,11 +140,25 @@ pub fn recover_recorded_query_indexes<Schema, Query, Parameters, QueryResult, Sc
             if missing.is_empty() { return Ok(()); }
             let observation = basis.observation();
             let source_commit_id = observation.commit_id().ok_or_else(|| denial(query.name()))?;
+            let branch = observation.identity().branch_id();
+            let branch_work = u64::try_from(branch.0.len())
+                .ok()
+                .and_then(|n| n.checked_add(1))
+                .ok_or_else(|| execution_denial(query.name(), Cause::WorkCounterOverflow))?;
+            SourceFactsAllocation::work(execution, branch_work)
+                .map_err(|cause| execution_denial(query.name(), cause))?;
+            let branch_bytes = u64::try_from(branch.0.capacity())
+                .map_err(|_| execution_denial(query.name(), Cause::ChargedBytesOverflow))?;
+            if branch_bytes > 0 {
+                allocation
+                    .claim(execution, branch_bytes)
+                    .map_err(|cause| execution_denial(query.name(), cause))?;
+            }
             runtime.index_authority().reconstruct_for_basis(
                 execution,
                 DerivedIndexBuildRequest {
                     source_commit_id,
-                    branch_id: observation.identity().branch_id().clone(),
+                    branch_id: branch.clone(),
                     index_ids: missing,
                 },
                 basis,
@@ -165,8 +179,10 @@ fn selected_indexes<Schema, Query, Parameters, QueryResult, Scope>(
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope_index: DerivedIndexId,
-) -> Result<(Vec<DerivedIndexId>, Arc<SourceFactsAllocation>), WorthQueryApplicationQueryAdmissionDenial>
-{
+) -> Result<
+    (Vec<DerivedIndexId>, Arc<SourceFactsAllocation>),
+    WorthQueryApplicationQueryAdmissionDenial,
+> {
     // Installed contract, root-selection mode, and optional live-target visits.
     let contract = query.read_family_binding().planning_contract();
     let predicate_count = if contract.root_paths().is_empty() {
@@ -215,17 +231,15 @@ fn selected_indexes<Schema, Query, Parameters, QueryResult, Scope>(
     Ok((indexes, allocation))
 }
 
-fn execution_denial(
-    subject: &str,
-    cause: Cause,
-) -> WorthQueryApplicationQueryAdmissionDenial {
+fn execution_denial(subject: &str, cause: Cause) -> WorthQueryApplicationQueryAdmissionDenial {
     let kind = match cause {
         Cause::PolicyMemoryExhausted { .. }
         | Cause::ProcessMemoryExhausted { .. }
         | Cause::DeclaredMemoryExhausted { .. }
         | Cause::MemoryLimitExceedsParent
         | Cause::ChargedBytesOverflow
-        | Cause::MemoryOverflow => {
+        | Cause::MemoryOverflow
+        | Cause::AllocationFailed => {
             WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
         }
         _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,

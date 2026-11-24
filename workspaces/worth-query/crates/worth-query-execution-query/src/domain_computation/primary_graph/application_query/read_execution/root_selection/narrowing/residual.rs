@@ -43,16 +43,30 @@ pub fn narrow<ReadIdentity>(
     retained.try_reserve_exact(candidates.len()).map_err(|_| {
         unavailable(WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded)
     })?;
+    let builder_schema_bytes =
+        ExpressionInputs::builder_schema_and_conform_bytes(filter.program().schema())
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or_else(|| {
+                relational_read_denial(Cause::ChargedBytesOverflow, WHERE_FILTER_SUBJECT)
+            })?;
     let static_input_bytes = operands_input_bytes(&parameters)
         .and_then(|n| n.checked_add(operands_input_bytes(&literals)?))
+        .and_then(|n| n.checked_add(builder_schema_bytes))
         .ok_or_else(|| relational_read_denial(Cause::ChargedBytesOverflow, WHERE_FILTER_SUBJECT))?;
     let total_operands = parameters
         .len()
         .checked_add(literals.len())
         .and_then(|n| n.checked_add(filter.fields().len()))
         .ok_or_else(|| relational_read_denial(Cause::WorkCounterOverflow, WHERE_FILTER_SUBJECT))?;
+    let schema_len = filter.program().schema().operands().len();
+    let per_bind_work = log2_ceil(total_operands)
+        .checked_add(log2_ceil(schema_len))
+        .and_then(|n| n.checked_add(2))
+        .ok_or_else(|| relational_read_denial(Cause::WorkCounterOverflow, WHERE_FILTER_SUBJECT))?;
     let input_build_work = (total_operands as u64)
-        .checked_mul(log2_ceil(total_operands))
+        .checked_mul(per_bind_work)
+        .and_then(|n| n.checked_add(schema_len as u64))
+        .and_then(|n| n.checked_add(builder_schema_bytes))
         .ok_or_else(|| relational_read_denial(Cause::WorkCounterOverflow, WHERE_FILTER_SUBJECT))?;
     for candidate in candidates {
         work.checkpoint(WHERE_FILTER_SUBJECT)?;
@@ -64,7 +78,6 @@ pub fn narrow<ReadIdentity>(
         })?;
         let row_input_bytes = static_input_bytes
             .checked_add(field_input_bytes)
-            .and_then(|n| n.checked_add(256))
             .ok_or_else(|| {
                 relational_read_denial(Cause::ChargedBytesOverflow, WHERE_FILTER_SUBJECT)
             })?;
@@ -117,7 +130,10 @@ fn admit_filter_fields<ReadIdentity>(
     Ok(())
 }
 
-type PreparedOperands = (Vec<(String, ExpressionValue)>, Vec<(String, ExpressionValue)>);
+type PreparedOperands = (
+    Vec<(String, ExpressionValue)>,
+    Vec<(String, ExpressionValue)>,
+);
 
 /// Charges lookup and dedup work upfront, reserves scratch and payload memory
 /// before any allocation or conversion, and converts each unique parameter
@@ -152,7 +168,9 @@ fn prepare_static_operands<ReadIdentity>(
         .and_then(|n| u64::try_from(n).ok())
         .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
     if scratch_bytes > 0 {
-        allocation.claim(read.execution, scratch_bytes).map_err(stop)?;
+        allocation
+            .claim(read.execution, scratch_bytes)
+            .map_err(stop)?;
     }
     let mut resolved = try_vec_exact(param_count)?;
     let mut unique = try_vec_exact(param_count)?;
@@ -211,7 +229,9 @@ fn prepare_static_operands<ReadIdentity>(
 
     charge_work(read.execution, work, payload_work)?;
     if payload_alloc > 0 {
-        allocation.claim(read.execution, payload_alloc).map_err(stop)?;
+        allocation
+            .claim(read.execution, payload_alloc)
+            .map_err(stop)?;
     }
 
     let mut converted: Vec<(usize, ExpressionValue)> = try_vec_exact(unique.len())?;

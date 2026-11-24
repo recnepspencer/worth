@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::expression_api::ExpressionValue;
-use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::{
+    AspectKey, AspectValue, CanonicalBasisEntry, CanonicalDigestPreparationEntry,
+    CanonicalFieldPath, FieldKey,
+};
 use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
 use worth_query_installation::facade::{
     WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
@@ -22,10 +25,16 @@ use worth_relational::facade::runtime::{
 use worth_relational::facade::storage::RecordLifecycleState;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
+/// Exact byte length of `"worth.relational.visibility.projection_scope.v1"`.
+const SCOPE_CANONICAL_VERSION_BYTES: usize = 47;
+/// Exact byte length of `".projection.field."` in canonical mask loci.
+const SCOPE_CANONICAL_LOCUS_SEPARATOR_BYTES: usize = 18;
+
 pub struct RowOperandReader<'filter> {
     fields: &'filter [WorthQueryInstalledWhereFilterField],
     kind: KindId,
     scope: ProjectionAspectScope,
+    observe_work: u64,
 }
 
 impl<'filter> RowOperandReader<'filter> {
@@ -41,22 +50,27 @@ impl<'filter> RowOperandReader<'filter> {
             .entity_kind(read.plan.contract.root_entity())
             .ok_or_else(projection_unavailable)?;
         let field_count = filter.fields().len();
+        let setup_bytes = setup_scope_payload_bytes(filter.fields())
+            .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
         let scope_work = (field_count as u64)
             .checked_mul(log2_ceil(field_count))
+            .and_then(|n| n.checked_add(setup_bytes))
             .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
         charge_work(read.execution, work, scope_work)?;
         allocation
-            .claim_tree_copy::<(
-                worth_foundational::facade::AspectKey,
-                BTreeSet<worth_foundational::facade::FieldKey>,
-            )>(read.execution, field_count)
+            .claim_tree_copy::<(AspectKey, BTreeSet<FieldKey>)>(read.execution, field_count)
             .map_err(stop)?;
         allocation
-            .claim_tree_copy::<worth_foundational::facade::FieldKey>(read.execution, field_count)
+            .claim_tree_copy::<FieldKey>(read.execution, field_count)
             .map_err(stop)?;
         allocation
             .claim_slice::<ProjectionAspectRequirement>(read.execution, field_count)
             .map_err(stop)?;
+        if setup_bytes > 0 {
+            allocation
+                .claim(read.execution, setup_bytes)
+                .map_err(stop)?;
+        }
         let mut keys = BTreeMap::new();
         for field in filter.fields() {
             keys.entry(field.aspect_key().clone())
@@ -67,10 +81,21 @@ impl<'filter> RowOperandReader<'filter> {
             keys.into_iter()
                 .map(|(aspect, fields)| ProjectionAspectRequirement::fields(aspect, fields)),
         );
+        let scope_scan_steps: usize = scope
+            .requirements()
+            .iter()
+            .map(|req| req.mask().paths().len().saturating_add(1))
+            .sum();
+        let observe_work = (field_count as u64)
+            .checked_mul(scope_scan_steps.max(1) as u64)
+            .and_then(|n| n.checked_mul(2))
+            .and_then(|n| n.checked_add(scope.requirements().len() as u64))
+            .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
         Ok(Self {
             fields: filter.fields(),
             kind,
             scope,
+            observe_work,
         })
     }
 
@@ -98,10 +123,13 @@ impl<'filter> RowOperandReader<'filter> {
             )?;
         }
         let stop = |cause| relational_read_denial(cause, WHERE_FILTER_SUBJECT);
+        charge_work(read.execution, work, self.observe_work)?;
         let scope_clone_bytes = u64::try_from(self.scope.owned_allocation_capacity_bytes())
             .map_err(|_| stop(Cause::ChargedBytesOverflow))?;
         if scope_clone_bytes > 0 {
-            row_alloc.claim(read.execution, scope_clone_bytes).map_err(stop)?;
+            row_alloc
+                .claim(read.execution, scope_clone_bytes)
+                .map_err(stop)?;
         }
         let mut row_work = 0_u64;
         let values = read
@@ -115,25 +143,23 @@ impl<'filter> RowOperandReader<'filter> {
                         && record.lifecycle() == RecordLifecycleState::Live)
                         .then(|| {
                             let mut quote_work = 0_u64;
-                            let mut quote_bytes = (self.fields.len()
-                                * size_of::<(String, ExpressionValue)>())
-                                as u64;
+                            let mut quote_bytes =
+                                (self.fields.len() * size_of::<(String, ExpressionValue)>()) as u64;
                             for field in self.fields {
                                 let observed = record
                                     .observe_aspect_field(field.aspect_key(), field.field_key());
                                 let optional =
                                     field.presence() == ApplicationFieldPresence::Optional;
-                                let (present, payload) = match observed {
-                                    Some(Observation::Present(value)) => {
-                                        (true, payload_bytes(value, false))
-                                    }
-                                    Some(Observation::FieldAbsent | Observation::AspectAbsent)
-                                        if optional =>
-                                    {
-                                        (false, 0)
-                                    }
-                                    _ => return Err(projection_unavailable()),
-                                };
+                                let (present, payload) =
+                                    match observed {
+                                        Some(Observation::Present(value)) => {
+                                            (true, payload_bytes(value, false))
+                                        }
+                                        Some(
+                                            Observation::FieldAbsent | Observation::AspectAbsent,
+                                        ) if optional => (false, 0),
+                                        _ => return Err(projection_unavailable()),
+                                    };
                                 let slot_bytes = (field.operand().len()
                                     + if present {
                                         size_of::<ExpressionValue>() + 2 * size_of::<usize>()
@@ -214,4 +240,34 @@ fn scalar(
         return Err(projection_unavailable());
     }
     ExpressionValue::from_aspect_value(value).map_err(|_| projection_unavailable())
+}
+
+/// Upper-bound heap bytes for `keys` strings, `AspectMask` paths, copied
+/// `AspectMaskLocator` paths, and `prepare_projection_mask_for_canonical_basis`
+/// (including version strings, digest entries, and canonical basis sequence).
+fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> Option<u64> {
+    let mut total = 0_usize;
+    let per_field_fixed = 3_usize
+        .checked_mul(size_of::<CanonicalFieldPath>().checked_add(size_of::<FieldKey>())?)?
+        .checked_add(size_of::<CanonicalDigestPreparationEntry>())?
+        .checked_add(size_of::<CanonicalBasisEntry>().checked_mul(2)?)?
+        .checked_add(size_of::<&str>())?
+        .checked_add(SCOPE_CANONICAL_VERSION_BYTES.checked_mul(2)?)?
+        .checked_add(SCOPE_CANONICAL_LOCUS_SEPARATOR_BYTES.checked_mul(2)?)?;
+    for field in fields {
+        let aspect_len = field.aspect_key().as_str().len();
+        let field_len = field.field_key().as_str().len();
+        // Owned key copies across: keys map (1), locator (1), canonical prep
+        // aspect clone (1), digest entry (1), canonical locus (1).
+        let aspect_bytes = aspect_len.checked_mul(5)?;
+        // Owned field copies across: keys/mask (1), locator (1), canonical prep
+        // mask clone (1), digest entry (1), path_text + locus + exact_text +
+        // transient locus format (4).
+        let field_bytes = field_len.checked_mul(8)?;
+        total = total
+            .checked_add(per_field_fixed)?
+            .checked_add(aspect_bytes)?
+            .checked_add(field_bytes)?;
+    }
+    u64::try_from(total).ok()
 }

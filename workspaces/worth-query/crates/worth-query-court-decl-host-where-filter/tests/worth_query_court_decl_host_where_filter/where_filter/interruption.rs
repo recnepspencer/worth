@@ -142,16 +142,12 @@ fn retained_two_predicate_exact_root_reconstructs_both_missing_index_generations
                 .expect("Rank equality index evicts")
                 > 0
         );
-        assert!(
-            !runtime
-                .has_equality_index_generation_for_test(&phase, world, Status::at("Status"))
-                .expect("Status generation residency check succeeds")
-        );
-        assert!(
-            !runtime
-                .has_equality_index_generation_for_test(&phase, world, Rank::at("Rank"))
-                .expect("Rank generation residency check succeeds")
-        );
+        assert!(!runtime
+            .has_equality_index_generation_for_test(&phase, world, Status::at("Status"))
+            .expect("Status generation residency check succeeds"));
+        assert!(!runtime
+            .has_equality_index_generation_for_test(&phase, world, Rank::at("Rank"))
+            .expect("Rank generation residency check succeeds"));
     })
     .expect("host advancement opens for eviction");
 

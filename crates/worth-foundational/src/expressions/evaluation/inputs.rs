@@ -36,6 +36,52 @@ impl ExpressionInputs {
     pub fn value(&self, name: &str) -> Option<&ExpressionValue> {
         self.values.get(name)
     }
+
+    /// Heap bytes owned by `ExpressionInputs::builder(schema)` (cloning
+    /// `schema`'s operand table) plus the peak transient `conform` worklist
+    /// used while binding operands against `schema`.
+    pub fn builder_schema_and_conform_bytes(schema: &ExpressionSchema) -> Option<usize> {
+        let mut schema_bytes = schema
+            .operands()
+            .len()
+            .checked_mul(size_of::<(Box<str>, ExpressionType)>())?;
+        let mut peak_conform = 0_usize;
+        for (name, ty) in schema.operands() {
+            let ty_bytes = ty.clone_allocation_bytes()?;
+            schema_bytes = schema_bytes
+                .checked_add(name.len())?
+                .checked_add(ty_bytes)?;
+            let conform_bytes = conform_operand_peak_bytes(schema, ty, ty_bytes)?;
+            peak_conform = peak_conform.max(conform_bytes);
+        }
+        schema_bytes.checked_add(peak_conform)
+    }
+}
+
+fn conform_operand_peak_bytes(
+    schema: &ExpressionSchema,
+    ty: &ExpressionType,
+    ty_bytes: usize,
+) -> Option<usize> {
+    let slot = size_of::<(&ExpressionValue, ExpressionType)>();
+    match ty {
+        ExpressionType::Record(name) => {
+            let Some(decl) = schema.record(name.name()) else {
+                return slot.checked_add(ty_bytes);
+            };
+            let mut total = decl
+                .fields()
+                .len()
+                .checked_add(1)?
+                .checked_mul(slot)?
+                .checked_add(ty_bytes)?;
+            for (_, field_ty) in decl.fields() {
+                total = total.checked_add(field_ty.clone_allocation_bytes()?)?;
+            }
+            Some(total)
+        }
+        _ => slot.checked_mul(2)?.checked_add(ty_bytes.checked_mul(2)?),
+    }
 }
 
 /// Binds operand values one at a time, checking each against its declared

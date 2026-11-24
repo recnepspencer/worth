@@ -74,20 +74,16 @@ pub fn ensure_selected_field_index_slice_admitted(
     } else {
         u64::from(usize::BITS - (count - 1).leading_zeros()) + 1
     };
-    let work_units = (count as u64)
-        .checked_mul(log)
-        .ok_or(Stop::Admission(CompanionPreflightStop::Execution(
-            Cause::WorkCounterOverflow,
-        )))?;
+    let work_units = (count as u64).checked_mul(log).ok_or(Stop::Admission(
+        CompanionPreflightStop::Execution(Cause::WorkCounterOverflow),
+    ))?;
     SourceFactsAllocation::work(execution, work_units)
         .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
     let allocation = SourceFactsAllocation::open(execution)
         .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
-    let scratch_len = count
-        .checked_mul(2)
-        .ok_or(Stop::Admission(
-            CompanionPreflightStop::PreparationMemoryCounterOverflow,
-        ))?;
+    let scratch_len = count.checked_mul(2).ok_or(Stop::Admission(
+        CompanionPreflightStop::PreparationMemoryCounterOverflow,
+    ))?;
     allocation
         .claim_slice::<DerivedIndexId>(execution, scratch_len)
         .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
@@ -121,6 +117,8 @@ fn refresh_stale_indexes(
     basis: &AdmittedRelationalBranchBasis,
     selected: Vec<DerivedIndexId>,
 ) -> Result<(), SelectedFieldIndexAdmissionStop> {
+    use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     use SelectedFieldIndexAdmissionStop as Stop;
     let stale_count = selected.len();
     let observation = basis.observation();
@@ -128,6 +126,23 @@ fn refresh_stale_indexes(
         return Ok(());
     };
     let branch = observation.identity().branch_id();
+    let branch_work = u64::try_from(branch.0.len())
+        .ok()
+        .and_then(|n| n.checked_add(1))
+        .ok_or(Stop::Admission(CompanionPreflightStop::Execution(
+            Cause::WorkCounterOverflow,
+        )))?;
+    SourceFactsAllocation::work(execution, branch_work)
+        .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
+    let branch_alloc = SourceFactsAllocation::open(execution)
+        .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
+    let branch_bytes = u64::try_from(branch.0.capacity())
+        .map_err(|_| Stop::Admission(CompanionPreflightStop::PreparationMemoryCounterOverflow))?;
+    if branch_bytes > 0 {
+        branch_alloc
+            .claim(execution, branch_bytes)
+            .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?;
+    }
     let build = runtime
         .index_authority()
         .refresh_field_indexes_for_basis(

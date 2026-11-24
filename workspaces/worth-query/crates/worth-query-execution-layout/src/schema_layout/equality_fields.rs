@@ -1,6 +1,51 @@
+use std::borrow::Borrow;
+use std::cmp::Ordering;
+
 use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::{WorthQueryPrimaryFieldLayout, WorthQueryPrimaryGraphLayout};
+
+trait FieldTripleKey {
+    fn triple(&self) -> (&str, &str, &str);
+}
+
+impl FieldTripleKey for (String, String, String) {
+    fn triple(&self) -> (&str, &str, &str) {
+        (self.0.as_str(), self.1.as_str(), self.2.as_str())
+    }
+}
+
+impl FieldTripleKey for (&str, &str, &str) {
+    fn triple(&self) -> (&str, &str, &str) {
+        *self
+    }
+}
+
+impl PartialEq for dyn FieldTripleKey + '_ {
+    fn eq(&self, other: &Self) -> bool {
+        self.triple() == other.triple()
+    }
+}
+
+impl Eq for dyn FieldTripleKey + '_ {}
+
+impl PartialOrd for dyn FieldTripleKey + '_ {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for dyn FieldTripleKey + '_ {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.triple().cmp(&other.triple())
+    }
+}
+
+impl<'a> Borrow<dyn FieldTripleKey + 'a> for (String, String, String) {
+    fn borrow(&self) -> &(dyn FieldTripleKey + 'a) {
+        self
+    }
+}
 
 impl WorthQueryPrimaryGraphLayout {
     pub fn equality_field(
@@ -9,8 +54,9 @@ impl WorthQueryPrimaryGraphLayout {
         aspect: &str,
         field: &str,
     ) -> Option<&WorthQueryPrimaryFieldLayout> {
+        let key: &dyn FieldTripleKey = &(entity, aspect, field);
         self.fields
-            .get(&(entity.to_string(), aspect.to_string(), field.to_string()))
+            .get(key)
             .filter(|layout| layout.equality_queryable)
     }
 
