@@ -49,7 +49,7 @@ impl ApplicationQueryRelationPredicate {
 
     pub fn parameter(&self) -> Option<&str> {
         match self {
-            Self::EqualParameter(predicate) => Some(predicate.parameter()),
+            Self::EqualParameter(predicate) => predicate.parameter(),
             Self::FieldAbsent { .. } => None,
             Self::EntityEqualParameter { parameter, .. } => Some(parameter),
         }

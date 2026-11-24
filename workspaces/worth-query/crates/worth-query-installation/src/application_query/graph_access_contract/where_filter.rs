@@ -1,7 +1,10 @@
 //! The installed residual filter: its admitted program and exact field reads.
 use super::compilation::{admitted_aspect_key, admitted_field_key};
 use std::sync::Arc;
-use worth_foundational::facade::{AspectKey, CanonicalBasisEntry, FieldKey, ScalarAspectType};
+use worth_foundational::facade::{
+    prepare_aspect_value_identity_basis, AspectKey, AspectValue, CanonicalBasisEntry, FieldKey,
+    ScalarAspectType,
+};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource as Source,
 };
@@ -45,6 +48,7 @@ impl WorthQueryInstalledWhereFilterField {
 pub struct WorthQueryInstalledWhereFilterParameter {
     operand: String,
     parameter: String,
+    optional: bool,
 }
 
 impl WorthQueryInstalledWhereFilterParameter {
@@ -53,6 +57,29 @@ impl WorthQueryInstalledWhereFilterParameter {
     }
     pub fn parameter(&self) -> &str {
         &self.parameter
+    }
+    pub const fn is_optional(&self) -> bool {
+        self.optional
+    }
+}
+
+/// An operand bound once per query from an authored scalar constant.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct WorthQueryInstalledWhereFilterLiteral {
+    operand: String,
+    scalar_family: ScalarAspectType,
+    value: AspectValue,
+}
+
+impl WorthQueryInstalledWhereFilterLiteral {
+    pub fn operand(&self) -> &str {
+        &self.operand
+    }
+    pub const fn scalar_family(&self) -> ScalarAspectType {
+        self.scalar_family
+    }
+    pub const fn value(&self) -> &AspectValue {
+        &self.value
     }
 }
 
@@ -63,12 +90,14 @@ pub struct WorthQueryInstalledWhereFilter {
     program: Arc<ApplicationQueryWhereFilterProgram>,
     fields: Vec<WorthQueryInstalledWhereFilterField>,
     parameters: Vec<WorthQueryInstalledWhereFilterParameter>,
+    literals: Vec<WorthQueryInstalledWhereFilterLiteral>,
 }
 
 impl WorthQueryInstalledWhereFilter {
     pub(super) fn compile(program: &ApplicationQueryWhereFilterProgram) -> Self {
         let mut fields = Vec::new();
         let mut parameters = Vec::new();
+        let mut literals = Vec::new();
         for operand in program.operands() {
             match operand.source() {
                 Source::Field {
@@ -85,18 +114,29 @@ impl WorthQueryInstalledWhereFilter {
                     scalar_family: *scalar_family,
                     presence: *presence,
                 }),
-                Source::Parameter { parameter, .. } => {
+                Source::Parameter { parameter, .. }
+                | Source::OptionalParameter { parameter, .. } => {
                     parameters.push(WorthQueryInstalledWhereFilterParameter {
                         operand: operand.name().to_owned(),
                         parameter: parameter.clone(),
+                        optional: matches!(operand.source(), Source::OptionalParameter { .. }),
                     })
                 }
+                Source::Literal {
+                    scalar_family,
+                    value,
+                } => literals.push(WorthQueryInstalledWhereFilterLiteral {
+                    operand: operand.name().to_owned(),
+                    scalar_family: *scalar_family,
+                    value: value.clone(),
+                }),
             }
         }
         Self {
             program: Arc::new(program.clone()),
             fields,
             parameters,
+            literals,
         }
     }
 
@@ -108,6 +148,9 @@ impl WorthQueryInstalledWhereFilter {
     }
     pub fn parameters(&self) -> &[WorthQueryInstalledWhereFilterParameter] {
         &self.parameters
+    }
+    pub fn literals(&self) -> &[WorthQueryInstalledWhereFilterLiteral] {
+        &self.literals
     }
 
     /// Graph and planning identity material; absent filters add nothing.
@@ -145,6 +188,23 @@ impl WorthQueryInstalledWhereFilter {
             entries.extend([
                 text(format!("{path}.operand"), parameter.operand()),
                 text(format!("{path}.parameter"), parameter.parameter()),
+            ]);
+            if parameter.is_optional() {
+                entries.push(text(format!("{path}.presence"), "optional"));
+            }
+        }
+        for (index, literal) in filter.literals.iter().enumerate() {
+            let path = format!("where-filter.literal[{index}]");
+            entries.extend([
+                text(format!("{path}.operand"), literal.operand()),
+                text(
+                    format!("{path}.scalar"),
+                    literal.scalar_family().canonical_name(),
+                ),
+                text(
+                    format!("{path}.value"),
+                    prepare_aspect_value_identity_basis(literal.value()).as_str(),
+                ),
             ]);
         }
         entries.push(text(

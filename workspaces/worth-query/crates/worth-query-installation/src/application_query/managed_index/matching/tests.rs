@@ -96,7 +96,7 @@ fn predicate_field_absent_from_source_projection_cannot_claim_tracked_refinement
         old.field().0.into(),
         old.field().1.into(),
         "unprojected".into(),
-        old.parameter().into(),
+        old.parameter().unwrap().into(),
         old.scalar_family(),
     )];
     assert_eq!(

@@ -174,6 +174,9 @@ fn append_parameters(
                 |frame| text(format!("{path}.frame"), frame),
             ),
         ]);
+        if parameter.is_optional() {
+            entries.push(text(format!("{path}.presence"), "optional"));
+        }
     }
 }
 
@@ -188,7 +191,18 @@ fn append_predicates(
             text(format!("{path}.entity"), entity),
             text(format!("{path}.aspect"), aspect),
             text(format!("{path}.field"), field),
-            text(format!("{path}.parameter"), predicate.parameter()),
+            match predicate.expected() {
+                crate::application_query::ApplicationQueryPredicateExpected::Parameter(
+                    parameter,
+                ) => text(format!("{path}.parameter"), parameter),
+                crate::application_query::ApplicationQueryPredicateExpected::Value(expected) => {
+                    text(
+                        format!("{path}.expected"),
+                        worth_foundational::facade::prepare_aspect_value_identity_basis(expected)
+                            .as_str(),
+                    )
+                }
+            },
             text(
                 format!("{path}.scalar"),
                 predicate.scalar_family().canonical_name(),

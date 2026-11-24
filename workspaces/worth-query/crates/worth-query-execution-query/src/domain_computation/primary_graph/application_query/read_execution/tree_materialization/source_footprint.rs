@@ -27,7 +27,7 @@ pub fn collect_source_footprints(
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,
     roots: &[WorthQueryApplicationProjectionNode],
-    selected_predicate_source: Option<&WorthQueryObservedFieldRevision>,
+    selected_predicate_sources: &[WorthQueryObservedFieldRevision],
     root_path_source: Option<&std::collections::BTreeMap<worth_relational::facade::identity::EntityId, std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     work: &mut ResultTreeWork,
     material_source: Option<
@@ -67,7 +67,7 @@ pub fn collect_source_footprints(
             &mut footprint,
             &storage,
         )?;
-        if let Some(source) = selected_predicate_source {
+        for source in selected_predicate_sources {
             if source.entity != root.entity_id() {
                 return Err(projection_denial(root.result_path()));
             }

@@ -76,7 +76,7 @@ impl ProjectionAspectScope {
                     .mask
                     .paths()
                     .iter()
-                    .any(|path| path == &CanonicalFieldPath::single(field.clone()))
+                    .any(|path| matches!(path.fields(), [single] if single == field))
         })
     }
 

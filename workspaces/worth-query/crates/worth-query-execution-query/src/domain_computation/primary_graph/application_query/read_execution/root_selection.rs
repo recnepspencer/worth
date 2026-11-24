@@ -22,8 +22,8 @@ use evidence::RootPathSourceBuilder;
 
 pub struct BoundedRootSelection {
     pub candidates: Vec<EntityId>,
-    pub selected_predicate_source:
-        Option<super::super::observed_source::WorthQueryObservedFieldRevision>,
+    pub selected_predicate_sources:
+        Vec<super::super::observed_source::WorthQueryObservedFieldRevision>,
     pub root_path_source: Option<
         std::collections::BTreeMap<
             EntityId,
@@ -135,7 +135,7 @@ fn select_index_bounded_roots(
                 .transpose()?;
             Ok(BoundedRootSelection {
                 candidates: vec![plan.root],
-                selected_predicate_source: None,
+                selected_predicate_sources: Vec::new(),
                 root_path_source: None,
                 result_set_source,
                 examined_candidates: 1,
@@ -146,7 +146,7 @@ fn select_index_bounded_roots(
                 root_path_steps: None,
             })
         }
-        [predicate] => select_scoped_root(
+        predicates => select_scoped_root(
             runtime,
             &runtime
                 .project_snapshot(plan.snapshot)
@@ -154,15 +154,11 @@ fn select_index_bounded_roots(
             execution,
             graph,
             plan,
-            predicate,
+            predicates,
             capture_result_set,
             spent,
             interruption,
         ),
-        _ => Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            plan.name,
-        )),
     }
 }
 
@@ -172,59 +168,81 @@ fn select_scoped_root<ReadIdentity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
-    predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
-
+    predicates: &[worth_query_installation::facade::WorthQueryInstalledGraphPredicate],
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
-    let (entity, aspect, field) = predicate.field();
-    let computation = plan
-        .governance
-        .admit_internal_projection(
-            predicate.field(),
-            predicate.field_key(),
-            ApplicationQueryObservableInfluence::RowPresence,
-        )
-        .ok_or_else(|| {
+    let mut prepared = Vec::with_capacity(predicates.len());
+    for predicate in predicates {
+        let (entity, aspect, field) = predicate.field();
+        if entity != plan.contract.root_entity() {
+            return Err(read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                field,
+            ));
+        }
+        let computation = plan
+            .governance
+            .admit_internal_projection(
+                predicate.field(),
+                predicate.field_key(),
+                ApplicationQueryObservableInfluence::RowPresence,
+            )
+            .ok_or_else(|| {
+                read_execution_denial(
+                    WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                    field,
+                )
+            })?;
+        let layout = graph.equality_field(entity, aspect, field).ok_or_else(|| {
             read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
                 field,
             )
         })?;
-    let layout = graph.equality_field(entity, aspect, field).ok_or_else(|| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            field,
-        )
-    })?;
-    if !computation.admits_locator(&layout.locator) {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-            field,
-        ));
+        if !computation.admits_locator(&layout.locator) {
+            return Err(read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                field,
+            ));
+        }
+        let expected = match predicate.expected() {
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(
+                parameter,
+            ) => plan
+                .parameters
+                .bindings()
+                .iter()
+                .find(|(name, _)| name.as_ref() == parameter)
+                .map(|(_, value)| value)
+                .ok_or_else(|| {
+                    read_execution_denial(
+                        WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                        parameter,
+                    )
+                })?,
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(
+                value,
+            ) => value,
+        };
+        prepared.push((predicate, computation, layout, expected));
     }
-    let expected = plan
-        .parameters
-        .bindings()
-        .iter()
-        .find(|(name, _)| name.as_ref() == predicate.parameter())
-        .map(|(_, value)| value)
-        .ok_or_else(|| {
-            read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-                predicate.parameter(),
-            )
-        })?;
     let mut work = RootSelectionWork::new(interruption, spent);
     let mut set_source =
         RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
-    // Observe both matching and filtered subjects: a later guard change can
-    // change row presence even when the current result is empty.
-    let observed = {
-        set_source.observe_entity(execution, plan.root)?;
-        set_source.observe_guard_field(
+    set_source.observe_entity(execution, plan.root)?;
+    let mut frontier = std::collections::BTreeSet::from([plan.root]);
+    let mut observed_guards = Vec::with_capacity(prepared.len());
+    let mut examined_candidates = 0_usize;
+    for (predicate, computation, layout, expected) in prepared {
+        if frontier.is_empty() {
+            break;
+        }
+        let (entity, _, field) = predicate.field();
+        // Observe both matching and filtered subjects: a later guard change can
+        // change row presence even when the current result is empty.
+        let observed = set_source.observe_guard_field(
             execution,
             projection,
             graph,
@@ -233,35 +251,42 @@ fn select_scoped_root<ReadIdentity>(
             predicate.aspect_key(),
             predicate.field_key(),
             &mut work,
-        )?
+        )?;
+        interruption.checkpoint(field)?;
+        let lookup = path_union::read_governed_root_guard(
+            execution,
+            runtime,
+            computation,
+            &frontier,
+            layout.entity_kind,
+            &layout.locator,
+            expected,
+        )
+        .map_err(|stop| path_union::frontier_denial(stop, field))?;
+        work.charge_predicate(
+            lookup.entity_records_examined(),
+            lookup.matching_entity_ids_reserved(),
+            lookup.field_reads(),
+            field,
+        )?;
+        examined_candidates = examined_candidates.saturating_add(lookup.entity_records_examined());
+        frontier = lookup.into_matching_entity_ids().into_iter().collect();
+        if !frontier.is_empty() {
+            observed_guards.push(observed);
+        }
+    }
+    let candidates: Vec<EntityId> = frontier.into_iter().collect();
+    let selected_predicate_sources = if candidates.is_empty() {
+        Vec::new()
+    } else {
+        observed_guards
     };
-    interruption.checkpoint(field)?;
-    let frontier = std::collections::BTreeSet::from([plan.root]);
-    let lookup = path_union::read_governed_root_guard(
-        execution,
-        runtime,
-        computation,
-        &frontier,
-        layout.entity_kind,
-        &layout.locator,
-        expected,
-    )
-    .map_err(|stop| path_union::frontier_denial(stop, field))?;
-    work.charge_predicate(
-        lookup.entity_records_examined(),
-        lookup.matching_entity_ids_reserved(),
-        lookup.field_reads(),
-        field,
-    )?;
-    let examined_candidates = lookup.entity_records_examined();
-    let scoped = lookup.into_matching_entity_ids().into_iter().next();
-    let selected_predicate_source = scoped.map(|_| observed);
     let result_set_source = capture_result_set
         .then(|| set_source.finish(execution))
         .transpose()?;
     Ok(BoundedRootSelection {
-        candidates: scoped.into_iter().collect(),
-        selected_predicate_source,
+        candidates,
+        selected_predicate_sources,
         root_path_source: None,
         result_set_source,
         examined_candidates,
@@ -303,7 +328,7 @@ pub fn select_applied_source_root(
     let selection = match contract.predicates() {
         [] => Ok(BoundedRootSelection {
             candidates: vec![permission.root],
-            selected_predicate_source: None,
+            selected_predicate_sources: Vec::new(),
             root_path_source: None,
             result_set_source: Some(direct_root_source(execution, permission)?),
             examined_candidates: 1,
@@ -313,18 +338,17 @@ pub fn select_applied_source_root(
             reads: WorthQueryInvariantProjectionWork::default(),
             root_path_steps: None,
         }),
-        [predicate] => select_scoped_root(
+        predicates => select_scoped_root(
             runtime,
             &projection,
             execution,
             graph,
             permission,
-            predicate,
+            predicates,
             true,
             None,
             interruption,
         ),
-        _ => Err(permission.predicate_unavailable_denial()),
     }?;
     narrowing::narrow_selected_roots(
         &narrowing::NarrowingRead {
