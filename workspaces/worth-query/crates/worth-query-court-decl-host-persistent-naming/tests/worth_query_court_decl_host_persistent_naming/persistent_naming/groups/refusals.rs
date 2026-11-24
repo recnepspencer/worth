@@ -133,3 +133,38 @@ fn a_shell_without_its_producer_refuses_typed() {
     );
     assert!(world.live("p"), "the refused delete committed nothing");
 }
+
+/// One loop declared twice overlaps itself: it refuses typed even when the
+/// declared groups number exactly the loops a same-commit delete or dissolve
+/// would retire, and the loop that would have retired stays live.
+#[test]
+fn a_loop_declared_twice_refuses_beside_a_retiring_loop() {
+    let (world, n) = seeded("loop-twice", &["a", "b"]);
+    declare(
+        &world,
+        "loop-twice-0",
+        loops(vec![group(&[(Host, n[0])]), group(&[(Host, n[1])])], &[]),
+    );
+    let first = loop_of(&world, "loop-twice-a", n[0]).unwrap();
+    let second = loop_of(&world, "loop-twice-b", n[1]).unwrap();
+    let refused = |token: &str, plan| group_refusal(&world, token, plan, LOOP_SCHEME);
+    let twice = || vec![group(&[(Host, n[0])]), group(&[(Host, n[0])])];
+    let overlapping =
+        |denial| matches!(denial, AggregateGroupNamingDenial::OverlappingMember { .. });
+    // Deleting `b` would retire the second loop.
+    let delete = Plan {
+        reads: keys(&["b"]),
+        deletes: keys(&["b"]),
+        steps: vec![Step::Groups(loops(twice(), &[]))],
+        ..Plan::default()
+    };
+    let denial = refused("loop-twice-delete", delete);
+    assert!(overlapping(denial.clone()), "{denial:?}");
+    assert!(world.live("b"), "the refused delete committed nothing");
+    // Dissolving the second loop beside the same duplicate.
+    let dissolve = groups_only(loops(twice(), &[second]));
+    let denial = refused("loop-twice-dissolve", dissolve);
+    assert!(overlapping(denial.clone()), "{denial:?}");
+    assert_eq!(loop_of(&world, "loop-twice-a2", n[0]), Some(first));
+    assert_eq!(loop_of(&world, "loop-twice-b2", n[1]), Some(second));
+}

@@ -176,7 +176,7 @@ pub struct PersistentNameResolutionOutcome {
 /// A later commit can change the answer only by a lineage event whose source
 /// is a footprint lineage: a `Retire`, `Replace`, `Split` or `Merge` ending a
 /// live descendant, or a `Restore` reviving a name that had ended on the
-/// walked path. Groups contribute no lineage.
+/// walked path. Groups carry no lineage: a group read keys on its groups.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PersistentNameResolutionFootprint {
     /// Every live descendant found at the basis, before the selection
@@ -185,6 +185,8 @@ pub struct PersistentNameResolutionFootprint {
     /// The lineage each ended name on the walked path held until it ended,
     /// ascending.
     pub ended_lineages: Vec<LineageId>,
+    /// Every group name ended on the walked path, ascending.
+    pub ended_groups: Vec<AggregateIdentity>,
 }
 
 impl PersistentNameResolutionFootprint {

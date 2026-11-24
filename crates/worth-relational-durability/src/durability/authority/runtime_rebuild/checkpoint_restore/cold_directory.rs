@@ -208,15 +208,13 @@ pub fn readmit_lineage(
             lineage.record_relation_lineage(relation_id, lineage_id);
         }
     }
-    lineage.replace_group_lineage(
-        super::super::recovered_group_lineage::recovered_group_lineage(
-            checkpoint
-                .envelopes
-                .iter()
-                .map(|positioned| positioned.envelope()),
-            contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
-        )?,
-    );
+    super::super::recovered_group_lineage::install_recovered_group_lineage(
+        checkpoint
+            .envelopes
+            .iter()
+            .map(|positioned| positioned.envelope()),
+        |records| lineage.replace_group_lineage(records),
+    )?;
     if has_naming_schemes {
         for page in &directory.manifest.lineage {
             lineage.demand_node(

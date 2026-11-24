@@ -18,6 +18,7 @@ mod naming_execution_birth_wiring;
 mod naming_execution_fixture;
 mod naming_fork_ancestry;
 mod naming_group_durable_recovery;
+mod naming_group_soundness;
 mod naming_operation_outputs;
 mod naming_posture_agreement;
 mod naming_postures_e2e;

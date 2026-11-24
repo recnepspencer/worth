@@ -159,6 +159,7 @@ fn vector_capacity_bytes<T>(values: &Vec<T>) -> u64 {
 pub trait PublishedLineageArtifactFixturePort: Sized {
     fn lineage_decision_log_mut_for_test(&mut self) -> &mut Vec<LineageDecisionRecord>;
     fn lineage_events_mut_for_test(&mut self) -> &mut Vec<LineageEventRecord>;
+    fn group_lineage_mut_for_test(&mut self) -> &mut Vec<u8>;
 }
 
 impl PublishedLineageArtifactFixturePort for PublishedLineageArtifact {
@@ -168,5 +169,9 @@ impl PublishedLineageArtifactFixturePort for PublishedLineageArtifact {
 
     fn lineage_events_mut_for_test(&mut self) -> &mut Vec<LineageEventRecord> {
         self.lineage_events_mut()
+    }
+
+    fn group_lineage_mut_for_test(&mut self) -> &mut Vec<u8> {
+        &mut self.group_lineage
     }
 }

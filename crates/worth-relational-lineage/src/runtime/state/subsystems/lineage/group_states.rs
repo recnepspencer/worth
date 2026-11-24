@@ -62,12 +62,15 @@ impl LineageState {
         });
     }
 
-    /// Replaces the published group lineage with canonical recovered records;
-    /// derived states rebuild with the other derived indexes.
+    /// Replaces the published group lineage with canonical recovered records
+    /// and rebuilds every branch's group state along the recorded fork
+    /// ancestry, refusing the first branch whose records cannot apply.
+    ///
+    /// Complexity: O(branches * published group lineage).
     pub fn replace_group_lineage(
         &mut self,
         mut records: Vec<(BranchId, CommitId, Vec<CommittedGroupTransition>)>,
-    ) {
+    ) -> Result<(), (BranchId, GroupStateDenial)> {
         records.sort_by_key(|(_, commit, _)| *commit);
         self.published_group_lineage = records
             .into_iter()
@@ -78,6 +81,13 @@ impl LineageState {
                 transitions: transitions.into(),
             })
             .collect();
+        self.rebuild_group_states();
+        for (branch, state) in &self.group_states.by_branch {
+            if let Err(denial) = state {
+                return Err((branch.clone(), denial.clone()));
+            }
+        }
+        Ok(())
     }
 
     /// `branch`'s group state; `None` before its first group lineage.

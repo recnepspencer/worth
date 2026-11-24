@@ -13,7 +13,9 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 };
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_lineage::internal_port::durability::naming::decode_group_lineage_frame;
-use worth_relational_lineage::internal_port::lineage::groups::CommittedGroupTransition;
+use worth_relational_lineage::internal_port::lineage::groups::{
+    CommittedGroupTransition, GroupStateDenial,
+};
 use worth_relational_mutation::internal_port::aggregate_identity::AggregateGroupNaming as _;
 
 use contracts::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
@@ -70,4 +72,22 @@ pub fn recovered_group_lineage<'envelope>(
         recovered.push((envelope.branch_context.clone(), commit, transitions));
     }
     Ok(recovered)
+}
+
+/// Verifies a checkpoint's envelopes' group lineage and installs it through
+/// `install`, which rebuilds every branch's group state along the recorded
+/// fork ancestry. A frame, or a branch whose records contradict its group
+/// posture, refuses `CorruptCheckpoint`: recovery never installs a branch
+/// whose group state is unavailable.
+///
+/// Complexity: as [`recovered_group_lineage`] plus the rebuild.
+pub fn install_recovered_group_lineage<'envelope>(
+    envelopes: impl IntoIterator<Item = &'envelope CanonicalCommitEnvelope>,
+    install: impl FnOnce(Vec<RecoveredGroupLineage>) -> Result<(), (BranchId, GroupStateDenial)>,
+) -> Result<(), DurabilityError> {
+    let class = RecoveryFailureClass::CorruptCheckpoint;
+    install(recovered_group_lineage(envelopes, class.clone())?).map_err(|(branch, denial)| {
+        let detail = format!("branch {} group lineage cannot apply: {denial:?}", branch.0);
+        DurabilityError::new(class, detail)
+    })
 }

@@ -120,6 +120,9 @@ fn name_scope(
         dissolved,
         mut declared,
     } = scope;
+    if groups.is_some_and(|groups| groups.rule() != scheme.rule()) {
+        return Err(Denial::ContinuityRuleChanged);
+    }
     let live = |identity: &AggregateIdentity| groups.and_then(|groups| groups.group(identity));
     for identity in &dissolved {
         if live(identity).is_none() {
@@ -156,13 +159,6 @@ fn name_scope(
             }
         }
         prior.push(group);
-    }
-    let unchanged = declared.len() == prior.len()
-        && declared
-            .iter()
-            .all(|members| prior.iter().any(|group| group.members == *members));
-    if unchanged {
-        return Ok(None);
     }
     let empty = BTreeSet::new();
     let retired_history = groups.map_or(&empty, SchemeGroups::retired);

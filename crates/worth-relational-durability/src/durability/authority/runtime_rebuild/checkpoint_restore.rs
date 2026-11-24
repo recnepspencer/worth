@@ -189,13 +189,6 @@ fn prepare_lineage(
     mut lineage: LineageState,
     checkpoint: &DurableCheckpoint,
 ) -> Result<LineageState, DurabilityError> {
-    lineage.replace_group_lineage(super::recovered_group_lineage::recovered_group_lineage(
-        checkpoint
-            .envelopes
-            .iter()
-            .map(|positioned| positioned.envelope()),
-        contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
-    )?);
     lineage.nodes = checkpoint
         .lineage
         .nodes()
@@ -215,6 +208,13 @@ fn prepare_lineage(
             );
         }
     }
+    super::recovered_group_lineage::install_recovered_group_lineage(
+        checkpoint
+            .envelopes
+            .iter()
+            .map(|positioned| positioned.envelope()),
+        |records| lineage.replace_group_lineage(records),
+    )?;
     for &(relation_id, lineage_id) in checkpoint.lineage.relation_lineages() {
         lineage.record_relation_lineage(relation_id, lineage_id);
     }

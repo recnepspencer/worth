@@ -309,8 +309,9 @@ impl LineageSubsystem {
         self.state.write().finalize_cold_naming_basis(lane);
     }
 
-    /// Replaces the published group lineage with recovered canonical records;
-    /// the next derived-index rebuild applies them.
+    /// Replaces the published group lineage with recovered canonical records
+    /// after fork ancestry is recorded; refuses the first branch whose
+    /// records contradict its group posture.
     pub fn replace_group_lineage(
         &self,
         records: Vec<(
@@ -318,8 +319,8 @@ impl LineageSubsystem {
             CommitId,
             Vec<crate::lineage::groups::CommittedGroupTransition>,
         )>,
-    ) {
-        self.state.write().replace_group_lineage(records);
+    ) -> Result<(), (BranchId, crate::lineage::groups::GroupStateDenial)> {
+        self.state.write().replace_group_lineage(records)
     }
 
     /// The group transitions `branch` published at exactly `commit`.

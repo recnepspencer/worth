@@ -56,7 +56,8 @@ impl NameReadDependencies {
             Ok(transitions) => transitions,
             Err(_) => {
                 stale.extend(deps.groups.iter().copied());
-                stale.extend(deps.group_members.values().flatten().copied());
+                let members = deps.group_members.iter();
+                stale.extend(members.map(|((_, member), answer)| answer.unwrap_or(*member)));
                 return staleness(stale, BTreeSet::new());
             }
         };

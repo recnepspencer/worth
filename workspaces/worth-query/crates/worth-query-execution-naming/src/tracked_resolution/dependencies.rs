@@ -6,6 +6,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::LineageId;
 use worth_relational::facade::lineage::{
     LineageEventKind, LineageEventRecord, LineageRecordTarget, PersistentNameResolutionFootprint,
+    PersistentNameTarget,
 };
 use worth_relational::facade::transactions::CommitResult;
 
@@ -26,7 +27,8 @@ struct BranchNameDependencies {
     live_records: BTreeMap<LineageId, LineageRecordTarget>,
     ended_lineages: BTreeSet<LineageId>,
     awaited_births: BTreeSet<[u8; 32]>,
-    /// Groups an answer rested on: a held group and its live successors.
+    /// Groups an answer rested on: a held group, every ended group its walk
+    /// passed, and every live successor, matched by the selection or not.
     groups: BTreeSet<[u8; 32]>,
     /// `(scheme, member)` group lookups and the group each one answered.
     group_members: BTreeMap<(String, [u8; 32]), Option<[u8; 32]>>,
@@ -121,9 +123,14 @@ impl NameReadDependencies {
             if let Some((lineage, record)) = live_record(target) {
                 deps.live_records.insert(lineage, record);
             }
+            if let PersistentNameTarget::Group { group } = target {
+                deps.groups.insert(*group.bytes());
+            }
         }
         deps.ended_lineages
             .extend(footprint.ended_lineages.iter().copied());
+        let ended_groups = footprint.ended_groups.iter();
+        deps.groups.extend(ended_groups.map(|group| *group.bytes()));
     }
 
     pub(crate) fn record_awaited_birth(&mut self, branch: &BranchId, digest: [u8; 32]) {
@@ -193,10 +200,8 @@ impl NameReadDependencies {
     }
 }
 
-fn live_record(
-    target: &worth_relational::facade::lineage::PersistentNameTarget,
-) -> Option<(LineageId, LineageRecordTarget)> {
-    use worth_relational::facade::lineage::PersistentNameTarget as Target;
+fn live_record(target: &PersistentNameTarget) -> Option<(LineageId, LineageRecordTarget)> {
+    use PersistentNameTarget as Target;
     match target {
         Target::Entity {
             entity, lineage, ..
