@@ -42,7 +42,7 @@ pub(super) fn require(
                     Ok(subject.is_some())
                 },
             ),
-            current,
+            current.origins(),
             context,
         );
         answer = Some(match selected {

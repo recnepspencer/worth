@@ -34,10 +34,11 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = crate::branch::symbol_read::SymbolAdmittedRootRead::new(
-        &source.basis().inner.root,
-        &runtime.services.symbols,
-    );
+    let backing = source
+        .basis()
+        .inner
+        .root
+        .symbol_admitted_projection(&runtime.services.symbols);
     let before = InvariantStateView::new(&backing, source.basis().observation().version_id());
     for entry in manifest {
         charge(context, 8)?;

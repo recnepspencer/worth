@@ -119,7 +119,7 @@ impl AuthoredPublicationReads<'_> {
                     .collect::<Result<Vec<_>, _>>()?;
                 crate::history::data::select_owned_scope_dependent(
                     crate::history::data::OwnedScopeDependentSelection::RemovedSources(&removed),
-                    current,
+                    current.origins(),
                     context,
                 )
                 .map_err(|failure| failure.stop)

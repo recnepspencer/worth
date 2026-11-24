@@ -1,6 +1,6 @@
 //! The exact retained root and observation stay in their original allocation.
-use super::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::branch::projection_view::snapshot_head::SelectedSnapshotHead;
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
@@ -77,7 +77,7 @@ impl VisibilitySnapshotBasis {
     }
 
     pub(crate) fn projection_root(&self) -> SnapshotProjectionRoot<'_> {
-        SnapshotProjectionRoot::borrowed(&self.root)
+        self.root.project_snapshot()
     }
 
     pub(crate) fn take_observation_retirement(
@@ -90,34 +90,6 @@ impl VisibilitySnapshotBasis {
 
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
         &self.root
-    }
-
-    pub(crate) fn schema_registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
-        self.root.schema_authority().registry()
-    }
-
-    pub(crate) fn entity_ids_of_kind(
-        &self,
-        kind: crate::identity::data::KindId,
-        partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
-        self.root.entity_ids_of_kind(kind, partition)
-    }
-
-    pub(crate) fn relation_ids_of_kind(
-        &self,
-        kind: crate::identity::data::KindId,
-        partition: Option<PartitionId>,
-    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
-        self.root.relation_ids_of_kind(kind, partition)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn partition_records(
-        &self,
-    ) -> &(impl crate::storage::overlay::CurrentPartitionAccess + crate::storage::overlay::PartitionAccess)
-    {
-        self.root.as_ref()
     }
 
     pub(crate) fn root_id(&self) -> u64 {

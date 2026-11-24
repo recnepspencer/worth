@@ -23,7 +23,7 @@ impl SelectedRelationalBranchState {
         &'read self,
         symbols: &'read crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::branch::symbol_read::SymbolAdmittedRootRead<'read> {
-        crate::branch::symbol_read::SymbolAdmittedRootRead::new(self.state().root(), symbols)
+        self.state().root().symbol_admitted_projection(symbols)
     }
 
     pub(crate) fn from_owner_basis(

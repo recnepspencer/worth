@@ -1,7 +1,6 @@
 //! One ownership algorithm shared by candidate and exact-basis observations.
-use super::native_read::{
-    ModelOwnershipReadPlan, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
-};
+use super::native_read::ModelOwnershipReadPlan;
+use super::read_denial::{RelationalModelOwnershipConflict, RelationalModelOwnershipDenial};
 use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 

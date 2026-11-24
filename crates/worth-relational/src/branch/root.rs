@@ -46,6 +46,8 @@ mod owner_allocation_ledger;
 #[cfg(test)]
 #[path = "root_physical_linkage_tests.rs"]
 mod physical_linkage_tests;
+#[path = "root_projection.rs"]
+pub(crate) mod projection;
 #[path = "root_readmission.rs"]
 mod readmission;
 #[path = "root_region_access.rs"]
@@ -201,6 +203,31 @@ impl RelationalBranchRoot {
     pub(crate) fn retained_content(&self) -> &crate::content::ContentDirectory {
         &self.content
     }
+    pub(super) fn regions_for_projection(&self) -> &RelationalPersistentRegionSet {
+        &self.regions
+    }
+
+    pub(crate) fn project_snapshot(&self) -> projection::SnapshotProjectionRoot<'_> {
+        use self::projection::{SnapshotProjectionRoot, SnapshotProjectionSchema};
+
+        let (version, semantics, evidence) = self.query_schema_context();
+        SnapshotProjectionRoot {
+            regions: &self.regions,
+            id: self.id,
+            storage_version: self
+                .axes()
+                .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
+            schema: SnapshotProjectionSchema {
+                registry: self.schema_authority.registry(),
+                plans: self.schema_authority.aspect_plans(),
+                digest: self.schema_authority.authority_digest(),
+                version,
+                semantics,
+                evidence,
+            },
+        }
+    }
+
     pub(crate) const fn id(&self) -> u64 {
         self.id
     }

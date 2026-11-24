@@ -1,4 +1,5 @@
 mod active_registry;
+mod head_selection;
 mod identity;
 pub(crate) use identity::SnapshotIdentityAllocator;
 mod published_capacity;
@@ -150,15 +151,6 @@ impl SnapshotHandles {
         self.active
             .selected_branch_bytes(snapshot_id)
             .or_else(|| self.published.selected_branch_bytes(snapshot_id))
-    }
-
-    pub(crate) fn selected_head(
-        &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<crate::visibility::snapshot_states::SnapshotHeadSelection> {
-        self.active
-            .selected_head(snapshot_id)
-            .or_else(|| self.published.selected_head(snapshot_id))
     }
 
     /// Whether either registry still knows this identity, answered by one

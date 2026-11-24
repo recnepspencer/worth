@@ -138,8 +138,8 @@ impl VisibilitySubsystem {
         partition: crate::identity::data::PartitionId,
         read: impl FnOnce(crate::branch::projection_view::snapshot_head::SelectedSnapshotHead<'_>) -> R,
     ) -> Option<R> {
-        let selection = self.handles.selected_head(snapshot_id)?;
-        Some(read(selection.region(partition)))
+        self.handles
+            .with_selected_head(snapshot_id, partition, read)
     }
 
     pub(crate) fn is_known_snapshot(&self, snapshot_id: SnapshotId) -> bool {

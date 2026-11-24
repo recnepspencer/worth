@@ -16,11 +16,9 @@ mod owner;
 pub(crate) mod publication_basis;
 mod publication_basis_tree;
 mod publication_reclamation;
-mod snapshot_projection_root;
 pub(crate) use publication_basis::{
     PublicationBasisAccess, PublicationBasisImage, PublicationBasisRoute,
 };
-pub(crate) use snapshot_projection_root::SnapshotProjectionRoot;
 mod live_reclamation;
 mod reclamation;
 mod root_locators;

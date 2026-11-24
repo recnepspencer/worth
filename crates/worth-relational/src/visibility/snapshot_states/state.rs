@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::history::data::BranchId;
-use crate::history::retention::SnapshotProjectionRoot;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
 use crate::storage::overlay::SnapshotPartitionPins;
@@ -117,8 +117,7 @@ impl SnapshotStateBasis {
     }
 
     pub(crate) fn root_version(&self) -> Option<VersionId> {
-        self.root()
-            .and_then(SnapshotProjectionRoot::storage_version)
+        self.root().and_then(|root| root.storage_version())
     }
 }
 

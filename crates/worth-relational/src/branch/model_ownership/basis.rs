@@ -1,5 +1,5 @@
 //! Structural ownership at an admitted immutable branch basis; never today's root.
-use super::native_read::RelationalModelOwnershipDenial;
+use super::read_denial::RelationalModelOwnershipDenial;
 use super::traversal::Read;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::structural_state::StructuralStateView;

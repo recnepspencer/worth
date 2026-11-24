@@ -5,10 +5,9 @@ use std::collections::BTreeSet;
 mod basis;
 pub(crate) mod native_read;
 use native_read::ModelOwnershipReadPlan;
-pub use native_read::{
-    RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
-    RelationalModelOwnershipDomain,
-};
+pub use native_read::RelationalModelOwnershipDomain;
+pub(crate) mod read_denial;
+pub use read_denial::{RelationalModelOwnershipConflict, RelationalModelOwnershipDenial};
 mod custody_observation;
 pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
 pub(crate) mod current_publications;

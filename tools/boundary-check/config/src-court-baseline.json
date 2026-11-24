@@ -894,7 +894,7 @@
 {"source":"crates/worth-relational/src/validation/invariant_access/test_support.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/validation/invariant_access/tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/projection/entity_projection/tests.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
+{"source":"crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/aspect_version_read.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/aspect_versions.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/aspect_versions.rs","module":"tests","roots":["ExecutionRequest"]},

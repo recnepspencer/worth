@@ -197,11 +197,10 @@ pub use version::RelationalBranchVersion;
 #[path = "basis_admission_tests.rs"]
 pub(crate) mod basis_admission_tests;
 
-pub(crate) mod symbol_publication;
-pub(crate) mod symbol_read;
-pub(crate) use symbol_read::SymbolAdmittedRootRead;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+pub(crate) mod symbol_publication;
+pub(crate) mod symbol_read;
 
 pub(crate) use model_ownership::validate_candidate_ownership;

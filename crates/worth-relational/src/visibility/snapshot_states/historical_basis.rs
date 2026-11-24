@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::history::data::BranchId;
-use crate::history::retention::SnapshotProjectionRoot;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::visibility::branch_scope::HistoricalBasisInputs;

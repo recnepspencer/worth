@@ -1,6 +1,6 @@
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 #[cfg(test)]
 use super::read_record_identity_ordering::relation_identity_order_key;
@@ -8,7 +8,7 @@ use super::VisibilityProjectionView;
 
 pub(in crate::visibility::materialization::read_records) struct ExactProjectionReader<'view> {
     view: &'view VisibilityProjectionView,
-    basis: &'view VisibilitySnapshotBasis,
+    root: SnapshotProjectionRoot<'view>,
 }
 
 #[cfg(test)]
@@ -16,28 +16,28 @@ mod census;
 impl<'view> ExactProjectionReader<'view> {
     pub(super) const fn new(
         view: &'view VisibilityProjectionView,
-        basis: &'view VisibilitySnapshotBasis,
+        root: SnapshotProjectionRoot<'view>,
     ) -> Self {
-        Self { view, basis }
+        Self { view, root }
     }
     pub(in crate::visibility::materialization::read_records) fn registry(
         &self,
     ) -> &crate::schema::data::RelationalSchemaRegistry {
-        self.basis.schema_registry()
+        self.root.schema_authority().registry()
     }
     pub(in crate::visibility::materialization::read_records) fn entity_ids(
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
     ) -> impl Iterator<Item = EntityId> + '_ {
-        self.basis.entity_ids_of_kind(kind, partition)
+        self.root.entity_ids_of_kind(kind, partition)
     }
     pub(in crate::visibility::materialization::read_records) fn relation_ids(
         &self,
         kind: KindId,
         partition: Option<PartitionId>,
     ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
-        self.basis.relation_ids_of_kind(kind, partition)
+        self.root.relation_ids_of_kind(kind, partition)
     }
     pub(in crate::visibility::materialization::read_records) fn demand_head(
         &self,

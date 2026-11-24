@@ -2,9 +2,8 @@
 use super::*;
 use crate::identity::data::{EntityId, KindId};
 
-use crate::branch::model_ownership::native_read::{
-    ModelOwnershipReadPlan, RelationalModelOwnershipDenial,
-};
+use crate::branch::model_ownership::native_read::ModelOwnershipReadPlan;
+use crate::branch::model_ownership::read_denial::RelationalModelOwnershipDenial;
 
 /// Owner affinity for a progressed historical read. It is issued from the
 /// runtime's borrow and carries no live-state or mutation access.

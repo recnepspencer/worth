@@ -2,6 +2,7 @@
 mod aggregate_validation;
 mod associated_effects;
 mod checkpoint_capture_custody;
+mod checkpoint_field_revisions;
 mod checkpoint_transition_compaction;
 mod checkpoint_transition_gap_replay;
 mod cold_envelope_custody;

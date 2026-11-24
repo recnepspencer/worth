@@ -17,12 +17,12 @@ pub(crate) enum OwnedScopeDependentSelection<'a> {
 }
 
 /// One current-fact selection owner serves source removal and the write fence.
-pub(crate) fn select_owned_scope_dependent(
+pub(crate) fn select_owned_scope_dependent<'a>(
     mut selection: OwnedScopeDependentSelection<'_>,
-    current: &crate::publication::ownership::read::roster::CurrentPublicationRoster,
+    origins: impl Iterator<Item = &'a Arc<CanonicalRequiredOutputOrigin>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Failure> {
-    for origin in current.origins() {
+    for origin in origins {
         crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
             Failure::at_source(origin.meaning.source_scope, Stop::Request(cause.into()))
         })?;

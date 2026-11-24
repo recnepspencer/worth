@@ -1,3 +1,4 @@
+mod head_selection;
 use super::published_release::PublishedSnapshotReleaseObservation;
 mod original_cleanup;
 use std::collections::{BTreeMap, HashMap};
@@ -132,16 +133,6 @@ impl PublishedSnapshotHandleRegistry {
             .by_id
             .get(&snapshot_id)
             .map(|binding| binding.binding.basis.branch_id().0.len())
-    }
-
-    pub(super) fn selected_head(
-        &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<crate::visibility::snapshot_states::SnapshotHeadSelection> {
-        self.lock()
-            .by_id
-            .get(&snapshot_id)
-            .map(|binding| binding.binding.basis.head_selection())
     }
 
     pub(super) fn binding_for_version(

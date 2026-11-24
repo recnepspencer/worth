@@ -19,7 +19,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis).entity_records(
+                    ExactProjectionReader::new(self, basis.projection_root()).entity_records(
                         execution,
                         kind_id,
                         &mut |units| context.checkpoint(units),
@@ -56,7 +56,8 @@ impl VisibilityProjectionView {
             || super::ProjectionRecordSource::candidate_entity_heap_for_id(self, entity_id),
             || match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis).entity_record(entity_id)
+                    ExactProjectionReader::new(self, basis.projection_root())
+                        .entity_record(entity_id)
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                     HistoricalProjectionReader::new(self, basis).entity_record(entity_id)
@@ -81,7 +82,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis)
+                    ExactProjectionReader::new(self, basis.projection_root())
                         .all_entity_records(&mut |units| context.checkpoint(units), memory)
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
@@ -111,7 +112,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis).entity_records_in(
+                    ExactProjectionReader::new(self, basis.projection_root()).entity_records_in(
                         execution,
                         partition_id,
                         kind_id,
@@ -151,7 +152,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis).relation_records(
+                    ExactProjectionReader::new(self, basis.projection_root()).relation_records(
                         execution,
                         kind_id,
                         &mut |units| context.checkpoint(units),
@@ -208,7 +209,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis)
+                    ExactProjectionReader::new(self, basis.projection_root())
                         .all_relation_records(&mut |units| context.checkpoint(units), memory)
                 }
                 crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
@@ -240,7 +241,7 @@ impl VisibilityProjectionView {
             execution,
             |context, memory| match &self.basis {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                    ExactProjectionReader::new(self, basis).relation_records_in(
+                    ExactProjectionReader::new(self, basis.projection_root()).relation_records_in(
                         execution,
                         partition_id,
                         kind_id,

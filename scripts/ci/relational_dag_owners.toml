@@ -95,6 +95,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/model_ownership/custody_read.rs" = "mutation"
 "branch/model_ownership/graph_read.rs" = "mutation"
 "branch/model_ownership/native_read.rs" = "mutation"
+"branch/model_ownership/read_denial.rs" = "contracts"
 "branch/model_ownership/traversal.rs" = "mutation"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
@@ -224,7 +225,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/retention/lane/retirement/tests.rs" = "branch"
 "history/retention/selected_snapshot.rs" = "branch"
 "history/retention/snapshot_basis_retirement.rs" = "branch"
-"history/retention/snapshot_projection_root.rs" = "branch"
+"branch/root_projection.rs" = "branch"
 "visibility/snapshot_states/historical_basis_custody.rs" = "branch"
 "indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
 "indexes/authority/maintenance/retained_projection.rs" = "indexes"
@@ -866,13 +867,15 @@ root_custody = [
     "durability/authority/associated_effects/observed_memory_commit.rs",
     "durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs",
     "authority/commit/preparation/storage_denial.rs",
-    "history/retention/snapshot_projection_root.rs",
     "history/retention/selected_snapshot.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/head_selection.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/active_registry/head_selection.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/published_registry/head_selection.rs",
     "history/retention/snapshot_basis_retirement.rs",
     "visibility/snapshot_states/historical_basis_custody.rs",
 ]
 envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/record_payload.rs", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
-projection_view = ["branch/projection_view", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+projection_view = ["branch/projection_view", "branch/root_projection.rs", "branch/root_region/backing.rs", "branch/root_regions/backing.rs", "branch/root_regions/selected_access.rs", "branch/root_regions/partition_visitation.rs", "branch/symbol_read.rs", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
 owner = "mutation"
@@ -929,6 +932,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/model_ownership/custody_read.rs" = "mutation"
 "branch/model_ownership/graph_read.rs" = "mutation"
 "branch/model_ownership/native_read.rs" = "mutation"
+"branch/model_ownership/read_denial.rs" = "contracts"
 "branch/model_ownership/traversal.rs" = "mutation"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
@@ -1405,7 +1409,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Retained snapshots lend native projection reads while raw custody stays with roots.
 "branch/root_snapshot_custody.rs" = "branch"
-"history/retention/snapshot_projection_root.rs" = "branch"
+"branch/root_projection.rs" = "branch"
 
 # Interruption counter values are shared observation data.
 "runtime/interruption_counters.rs" = "contracts"

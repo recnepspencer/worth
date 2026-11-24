@@ -62,7 +62,7 @@ impl AuthoredPublicationReads<'_> {
                             Ok(false)
                         },
                     ),
-                    current,
+                    current.origins(),
                     context,
                 )
             })
