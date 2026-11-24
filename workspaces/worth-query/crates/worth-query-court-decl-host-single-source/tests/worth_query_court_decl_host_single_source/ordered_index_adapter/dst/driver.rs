@@ -1,14 +1,16 @@
 //! Real Decl+Host + Directory Home DST driver paired with the sorted-scan oracle.
-use super::super::queries::*;
-use super::super::schema::*;
+use super::super::schema::{DaymarkSchema, FocusIntervalIndex, TitlePrefixIndex};
 use super::super::{
-    create_task, delete_task, home_lease, install, keys, open_directory_home, rename_task,
-    reschedule_task, Home, Host,
+    create_task, delete_task, home_lease, install, limits, open_directory_home_with_limits,
+    rename_task, reschedule_task, Home, Host,
 };
-use super::model::{verify_tight_budget_refusal, SortedScanOracle};
+use super::checks::{
+    focus_q, post_state, prefix_q, read_observed_rows, verify_query_both,
+    verify_same_host_budget_refusal,
+};
+use super::model::{title_probe_id, OracleTask, SortedScanOracle};
 use super::trace::Trace;
 use super::watches::WatchPair;
-use std::collections::BTreeSet;
 use std::path::PathBuf;
 use worth_execution::{ExecutionRequest, ExecutionResourceLease};
 use worth_query_host::facade::application_entry::*;
@@ -21,6 +23,7 @@ enum Backend {
     Directory {
         dir: PathBuf,
         lease: ExecutionResourceLease<'static>,
+        work_ceiling: Option<u64>,
         home: Option<Home>,
     },
     Memory(Host),
@@ -38,7 +41,10 @@ pub struct DstDriver {
 impl Drop for DstDriver {
     fn drop(&mut self) {
         self.close_handles();
-        if let Backend::Directory { dir, lease, home } = &mut self.backend {
+        if let Backend::Directory {
+            dir, lease, home, ..
+        } = &mut self.backend
+        {
             if let Some(home) = home.take() {
                 let execution = ExecutionRequest::leased(lease);
                 if let Ok(closed) = home.close(&execution) {
@@ -50,23 +56,9 @@ impl Drop for DstDriver {
     }
 }
 
-fn prefix_q(prefix: &str) -> FindTitlePrefix {
-    FindTitlePrefix {
-        workspace: "main".into(),
-        prefix: prefix.to_owned(),
-    }
-}
-
-fn focus_q(lo: i64, hi: i64) -> FindFocusOverlap {
-    FindFocusOverlap {
-        workspace: "main".into(),
-        window: FocusWindow::new(lo, hi + 1),
-    }
-}
-
 impl DstDriver {
-    pub fn new(seed: u64, durable_directory: bool, tracing: bool) -> Self {
-        let backend = if durable_directory {
+    pub fn new(seed: u64, durable_work_ceiling: Option<Option<u64>>, tracing: bool) -> Self {
+        let backend = if let Some(work_ceiling) = durable_work_ceiling {
             let dir = std::env::temp_dir().join(format!(
                 "worth-ordered-dst-{}-{seed}-{}",
                 std::process::id(),
@@ -77,10 +69,17 @@ impl DstDriver {
             ));
             let lease = home_lease();
             let execution = ExecutionRequest::leased(&lease);
-            let home = open_directory_home(&dir, &execution, true, &[]);
+            let home = open_directory_home_with_limits(
+                &dir,
+                &execution,
+                true,
+                &[],
+                limits(None, work_ceiling),
+            );
             Backend::Directory {
                 dir,
                 lease,
+                work_ceiling,
                 home: Some(home),
             }
         } else {
@@ -98,10 +97,6 @@ impl DstDriver {
         driver
     }
 
-    pub fn is_durable(&self) -> bool {
-        matches!(self.backend, Backend::Directory { .. })
-    }
-
     pub fn set_tracing(&mut self, tracing: bool) {
         self.tracing = tracing;
     }
@@ -113,7 +108,7 @@ impl DstDriver {
             self.next_idem += 1;
             delete_task(self.host(), key, idem);
         }
-        debug_assert!(self.observed_live_rows().is_empty());
+        debug_assert!(read_observed_rows(self.host()).unwrap().is_empty());
     }
 
     fn host(&self) -> &Host {
@@ -163,92 +158,129 @@ impl DstDriver {
         }
     }
 
-    pub fn observed_live_rows(&self) -> BTreeSet<u64> {
-        let scope = request_scope();
-        let principal = authenticate_operator(self.host().installed_schema(), &scope);
-        let req = self.host().runtime().request(&principal, &scope);
-        req.query(ReadTasks {
-            workspace: "main".into(),
-        })
-        .execute()
-        .unwrap()
-        .rows()
-        .iter()
-        .map(|r| r.key)
-        .collect()
+    fn check_traced_rows(
+        &self,
+        label: &str,
+        oracle: &SortedScanOracle,
+    ) -> Result<Option<std::collections::BTreeMap<u64, OracleTask>>, String> {
+        if !self.tracing {
+            return Ok(None);
+        }
+        let obs = read_observed_rows(self.host())?;
+        if obs != oracle.rows {
+            return Err(format!(
+                "post-{label} rows {obs:?} != oracle {:?}",
+                oracle.rows
+            ));
+        }
+        Ok(Some(obs))
     }
 
     pub fn has_watch(&self) -> bool {
         self.watches.is_open()
     }
 
-    pub fn rebuild(&mut self, trace: &mut Trace) {
+    pub fn rebuild(&mut self, oracle: &SortedScanOracle, trace: &mut Trace) -> Result<(), String> {
         let scope = request_scope();
         let principal = authenticate_operator(self.host().installed_schema(), &scope);
         let req = self.host().runtime().request(&principal, &scope);
         req.query(prefix_q(""))
             .rebuild_index(self.title_idx.as_ref().unwrap())
-            .unwrap();
+            .map_err(|e| format!("title rebuild: {e:?}"))?;
         req.query(focus_q(0, 0))
             .rebuild_index(self.focus_idx.as_ref().unwrap())
-            .unwrap();
-        if self.tracing {
-            trace.record_rebuild(self.lifecycle_str(), &self.observed_live_rows());
+            .map_err(|e| format!("focus rebuild: {e:?}"))?;
+        if let Some(obs) = self.check_traced_rows("rebuild", oracle)? {
+            trace.record_rebuild(&post_state(self.lifecycle_str(), &obs, oracle));
         }
+        Ok(())
     }
 
-    pub fn cold_reopen(&mut self, trace: &mut Trace) {
+    pub fn cold_reopen(
+        &mut self,
+        oracle: &mut SortedScanOracle,
+        trace: &mut Trace,
+    ) -> Result<(), String> {
         self.close_handles();
-        if let Backend::Directory { dir, lease, home } = &mut self.backend {
+        oracle.on_close_watches();
+        if let Backend::Directory {
+            dir,
+            lease,
+            work_ceiling,
+            home,
+        } = &mut self.backend
+        {
             let execution = ExecutionRequest::leased(lease);
             home.take().unwrap().close(&execution).unwrap().reclaim();
-            *home = Some(open_directory_home(dir, &execution, false, &[]));
+            *home = Some(open_directory_home_with_limits(
+                dir,
+                &execution,
+                false,
+                &[],
+                limits(None, *work_ceiling),
+            ));
         }
         self.open_indexes();
-        if self.tracing {
-            trace.record_cold_reopen(self.lifecycle_str(), &self.observed_live_rows());
+        if let Some(obs) = self.check_traced_rows("reopen", oracle)? {
+            trace.record_cold_reopen(&post_state(self.lifecycle_str(), &obs, oracle));
         }
+        Ok(())
     }
 
-    pub fn insert(&mut self, key: u64, title: &str, lo: i64, hi: i64, trace: &mut Trace) {
+    pub fn insert(
+        &mut self,
+        key: u64,
+        task: OracleTask,
+        oracle: &mut SortedScanOracle,
+        trace: &mut Trace,
+    ) -> Result<(), String> {
         let idem = self.next_idem;
         self.next_idem += 1;
-        create_task(self.host(), key, title, lo, hi + 1, idem);
-        if self.tracing {
-            trace.record_insert(
-                key,
-                lo,
-                hi,
-                self.lifecycle_str(),
-                &self.observed_live_rows(),
-            );
+        create_task(self.host(), key, &task.title, task.lo, task.hi + 1, idem);
+        oracle.on_mutation(None, Some(&task));
+        oracle.rows.insert(key, task.clone());
+        if let Some(obs) = self.check_traced_rows("insert", oracle)? {
+            trace.record_insert(key, &task, &post_state(self.lifecycle_str(), &obs, oracle));
         }
+        Ok(())
     }
 
-    pub fn update(&mut self, key: u64, title: &str, lo: i64, hi: i64, trace: &mut Trace) {
+    pub fn update(
+        &mut self,
+        key: u64,
+        task: OracleTask,
+        oracle: &mut SortedScanOracle,
+        trace: &mut Trace,
+    ) -> Result<(), String> {
         let i1 = self.next_idem;
         let i2 = self.next_idem + 1;
         self.next_idem += 2;
-        rename_task(self.host(), key, title, i1);
-        reschedule_task(self.host(), key, lo, hi + 1, i2);
-        if self.tracing {
-            trace.record_update(
-                key,
-                lo,
-                hi,
-                self.lifecycle_str(),
-                &self.observed_live_rows(),
-            );
+        rename_task(self.host(), key, &task.title, i1);
+        reschedule_task(self.host(), key, task.lo, task.hi + 1, i2);
+        let before = oracle.rows.get(&key).cloned();
+        oracle.on_mutation(before.as_ref(), Some(&task));
+        oracle.rows.insert(key, task.clone());
+        if let Some(obs) = self.check_traced_rows("update", oracle)? {
+            trace.record_update(key, &task, &post_state(self.lifecycle_str(), &obs, oracle));
         }
+        Ok(())
     }
 
-    pub fn delete(&mut self, key: u64, trace: &mut Trace) {
+    pub fn delete(
+        &mut self,
+        key: u64,
+        oracle: &mut SortedScanOracle,
+        trace: &mut Trace,
+    ) -> Result<(), String> {
         let idem = self.next_idem;
         self.next_idem += 1;
         delete_task(self.host(), key, idem);
-        if self.tracing {
-            trace.record_delete(key, self.lifecycle_str(), &self.observed_live_rows());
+        let before = oracle.rows.remove(&key);
+        oracle.on_mutation(before.as_ref(), None);
+        if let Some(obs) = self.check_traced_rows("delete", oracle)? {
+            trace.record_delete(key, &post_state(self.lifecycle_str(), &obs, oracle));
         }
+        Ok(())
     }
 
     pub fn query_both(
@@ -259,56 +291,16 @@ impl DstDriver {
         oracle: &SortedScanOracle,
         trace: &mut Trace,
     ) -> Result<(), String> {
-        let scope = request_scope();
-        let principal = authenticate_operator(self.host().installed_schema(), &scope);
-        let req = self.host().runtime().request(&principal, &scope);
-        let t_res = req.query(prefix_q(prefix)).execute();
-        let f_res = req.query(focus_q(lo, hi)).execute();
-        let live: BTreeSet<u64> = req
-            .query(ReadTasks {
-                workspace: "main".into(),
-            })
-            .execute()
-            .unwrap()
-            .rows()
-            .iter()
-            .map(|r| r.key)
-            .collect();
-        if live != oracle.live_ids() {
-            return Err(format!(
-                "live rows {live:?} != oracle {:?}",
-                oracle.live_ids()
-            ));
-        }
-        if self.lifecycle_str() == "Created" {
-            for (label, ok) in [("title", t_res.is_ok()), ("focus", f_res.is_ok())] {
-                if ok {
-                    return Err(format!("cold {label} query succeeded before rebuild"));
-                }
-            }
-            if self.tracing {
-                trace.record_refuse_not_ready(lo, hi, "Created", &live);
-            }
-            return Ok(());
-        }
-        let got_t = keys(t_res.map_err(|e| format!("title query err: {e:?}"))?.rows());
-        let exp_t = oracle.prefix_matches(prefix);
-        if got_t != exp_t {
-            return Err(format!(
-                "title prefix {prefix:?}: got {got_t:?}, oracle {exp_t:?}"
-            ));
-        }
-        let got_f = keys(f_res.map_err(|e| format!("focus query err: {e:?}"))?.rows());
-        let exp_f = oracle.focus_matches(lo, hi);
-        if got_f != exp_f {
-            return Err(format!(
-                "focus [{lo},{hi}]: got {got_f:?}, oracle {exp_f:?}"
-            ));
-        }
-        if self.tracing {
-            trace.record_query(lo, hi, &got_f, "Ready", &live);
-        }
-        Ok(())
+        verify_query_both(
+            self.host(),
+            self.lifecycle_str(),
+            self.tracing,
+            prefix,
+            lo,
+            hi,
+            oracle,
+            trace,
+        )
     }
 
     pub fn open_watches(
@@ -316,48 +308,84 @@ impl DstDriver {
         prefix: &str,
         lo: i64,
         hi: i64,
-        oracle: &SortedScanOracle,
+        oracle: &mut SortedScanOracle,
         trace: &mut Trace,
     ) -> Result<(), String> {
         let host = match &self.backend {
             Backend::Directory { home, .. } => home.as_ref().expect("home live").runtime(),
             Backend::Memory(host) => host,
         };
-        let got_f = self.watches.open(host, prefix, lo, hi, oracle)?;
+        let (got_t, got_f) = self.watches.open(host, prefix, lo, hi, oracle)?;
         if self.tracing {
-            trace.record_watch_open(lo, hi, &got_f, "Ready", &self.observed_live_rows());
+            let obs = read_observed_rows(self.host())?;
+            trace.record_watch_open(
+                title_probe_id(prefix),
+                &got_t,
+                (lo, hi),
+                &got_f,
+                &post_state(self.lifecycle_str(), &obs, oracle),
+            );
         }
         Ok(())
     }
 
     pub fn poll_watches(
         &mut self,
-        oracle: &SortedScanOracle,
+        oracle: &mut SortedScanOracle,
         trace: &mut Trace,
-    ) -> Result<bool, String> {
-        let live = self.tracing.then(|| self.observed_live_rows());
+    ) -> Result<usize, String> {
+        let obs = if self.tracing {
+            Some(read_observed_rows(self.host())?)
+        } else {
+            None
+        };
         let host = match &self.backend {
             Backend::Directory { home, .. } => home.as_ref().expect("home live").runtime(),
             Backend::Memory(host) => host,
         };
-        self.watches.poll(host, oracle, live.as_ref(), trace)
+        self.watches.poll(host, oracle, obs.as_ref(), trace)
     }
 
-    pub fn close_watches(&mut self, trace: &mut Trace) {
-        if self.watches.close() && self.tracing {
-            trace.record_watch_close(self.lifecycle_str(), &self.observed_live_rows());
+    pub fn close_watches(
+        &mut self,
+        oracle: &mut SortedScanOracle,
+        trace: &mut Trace,
+    ) -> Result<(), String> {
+        if self.watches.close() {
+            oracle.on_close_watches();
+            if self.tracing {
+                let obs = read_observed_rows(self.host())?;
+                trace.record_watch_close(&post_state(self.lifecycle_str(), &obs, oracle));
+            }
         }
+        Ok(())
     }
 
-    pub fn probe_budget_refusal(
-        &self,
+    #[allow(clippy::too_many_arguments)]
+    pub fn probe_same_host_budget_refusal(
+        &mut self,
+        row: u64,
+        attempted: &OracleTask,
+        prefix: &str,
+        lo: i64,
+        hi: i64,
         oracle: &SortedScanOracle,
         trace: &mut Trace,
     ) -> Result<(), String> {
-        verify_tight_budget_refusal(oracle)?;
-        if self.tracing {
-            trace.record_budget_refusal(self.lifecycle_str(), &self.observed_live_rows());
-        }
-        Ok(())
+        let idem = self.next_idem;
+        self.next_idem += 1;
+        verify_same_host_budget_refusal(
+            self.host(),
+            self.lifecycle_str(),
+            self.tracing,
+            idem,
+            row,
+            attempted,
+            prefix,
+            lo,
+            hi,
+            oracle,
+            trace,
+        )
     }
 }

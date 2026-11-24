@@ -1,6 +1,7 @@
 //! Public Decl+Host courts & 64-seed DST for `WorthQueryOrderedIndexAdapter`.
 mod courts;
 mod courts_edges;
+mod courts_rollback;
 mod dst;
 mod focus_interval;
 mod harness;
@@ -78,7 +79,13 @@ impl Registration<DaymarkSchema> for Contracts {
             .application_mutation_binding::<CreateTaskBinding>()
             .operation(rename_task_definition())
             .application_mutation_binding::<RenameTaskBinding>()
-            .operation(reschedule_task_definition())
+            .declared_operation::<RescheduleTaskOp>(
+                RescheduleTaskOp::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
             .application_mutation_binding::<RescheduleTaskBinding>()
             .declared_operation::<DeleteTaskOp>(
                 DeleteTaskOp::reference()
@@ -98,17 +105,26 @@ impl ApplicationSchemaContribution<DaymarkSchema> for Contribution {
     type Members = (Daymark, Contracts);
 }
 impl WorthQueryApplicationContribution<DaymarkSchema> for Contribution {
-    type Configuration = ();
+    type Configuration = Option<courts_rollback::TitlePassObserver>;
     fn configure(
-        _: (),
+        observer: Option<courts_rollback::TitlePassObserver>,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DaymarkSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup
-            .managed_index_provider::<TitlePrefixIndex, _>(WorthQueryOrderedIndexAdapter::new(
-                TitlePrefixDomain,
-            ))
-            .with_predicate_routing()
-            .install()?;
+        if let Some(observer) = observer {
+            setup
+                .managed_index_provider::<TitlePrefixIndex, _>(WorthQueryOrderedIndexAdapter::new(
+                    courts_rollback::ObservedTitlePrefixDomain::new(observer),
+                ))
+                .with_predicate_routing()
+                .install()?;
+        } else {
+            setup
+                .managed_index_provider::<TitlePrefixIndex, _>(WorthQueryOrderedIndexAdapter::new(
+                    TitlePrefixDomain,
+                ))
+                .with_predicate_routing()
+                .install()?;
+        }
         setup
             .managed_index_provider::<FocusIntervalIndex, _>(WorthQueryOrderedIndexAdapter::new(
                 FocusIntervalDomain,
@@ -117,7 +133,7 @@ impl WorthQueryApplicationContribution<DaymarkSchema> for Contribution {
             .install()?;
         setup.handler::<CreateTaskBinding, _>(CreateTaskHandler)?;
         setup.operation_body::<RenameTaskBinding>()?;
-        setup.operation_body::<RescheduleTaskBinding>()?;
+        setup.handler::<RescheduleTaskBinding, _>(RescheduleTaskHandler)?;
         setup.handler::<DeleteTaskBinding, _>(DeleteTaskHandler)
     }
 }
@@ -258,7 +274,7 @@ pub(super) fn install(
             .validated_program()
             .unwrap(),
         declaration,
-        ((),),
+        (None,),
         ApplicationBuildIdentity::parse("7b7b7b7b-7b7b-7b7b-7b7b-7b7b7b7b7b7b").unwrap(),
         limits(memory_bytes, work_ceiling),
         move |_, graph, installed| {

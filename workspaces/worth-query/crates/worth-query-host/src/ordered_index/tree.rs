@@ -41,7 +41,7 @@ where
     for part in parts.into_iter().flatten() {
         control.checkpoint(1)?;
         combined = Some(match combined {
-            None => part.clone(),
+            None => *part,
             Some(ref current) => domain.combine_summaries(current, part, sources, control)?,
         });
     }
@@ -146,14 +146,14 @@ where
         let Some(id) = root else {
             return Ok(self.nodes.push(WorthQueryOrderedIndexNode {
                 source: slot,
-                summary: own_summary.clone(),
+                summary: own_summary,
                 own_summary,
                 left: None,
                 right: None,
                 height: 1,
             })?);
         };
-        let mut node = self.nodes.get(id)?.clone();
+        let mut node = *self.nodes.get(id)?;
         match self.compare_slots(slot, node.source)? {
             Ordering::Less => {
                 node.left = Some(self.insert_at(node.left, slot, own_summary, depth + 1)?);
@@ -195,13 +195,13 @@ where
         };
         match self.compare_slots(slot, node_source)? {
             Ordering::Less => {
-                let mut node = self.nodes.get(id)?.clone();
+                let mut node = *self.nodes.get(id)?;
                 node.left = self.remove_at(node_left, slot, depth + 1)?;
                 self.refresh_node(id, node)?;
                 self.balance(id).map(Some)
             }
             Ordering::Greater => {
-                let mut node = self.nodes.get(id)?.clone();
+                let mut node = *self.nodes.get(id)?;
                 node.right = self.remove_at(node_right, slot, depth + 1)?;
                 self.refresh_node(id, node)?;
                 self.balance(id).map(Some)
@@ -212,7 +212,7 @@ where
                     Ok(child)
                 }
                 (Some(_), Some(right)) => {
-                    let mut node = self.nodes.get(id)?.clone();
+                    let mut node = *self.nodes.get(id)?;
                     let (succ_slot, succ_summary, right) = self.remove_minimum(right, depth + 1)?;
                     node.source = succ_slot;
                     node.own_summary = succ_summary;
@@ -247,12 +247,12 @@ where
         let Some(left) = left else {
             let (source, own_summary, right) = {
                 let guard = self.nodes.get(id)?;
-                (guard.source, guard.own_summary.clone(), guard.right)
+                (guard.source, guard.own_summary, guard.right)
             };
             self.nodes.remove(id)?;
             return Ok((source, own_summary, right));
         };
-        let mut node = self.nodes.get(id)?.clone();
+        let mut node = *self.nodes.get(id)?;
         let (source, own_summary, left) = self.remove_minimum(left, depth + 1)?;
         node.left = left;
         self.refresh_node(id, node)?;
@@ -320,7 +320,7 @@ where
             };
             if self.height(child_left)? < self.height(child_right)? {
                 let rotated = self.rotate_left(child_id)?;
-                let mut node = self.nodes.get(id)?.clone();
+                let mut node = *self.nodes.get(id)?;
                 node.left = Some(rotated);
                 self.refresh_node(id, node)?;
             }
@@ -336,7 +336,7 @@ where
             };
             if self.height(child_right)? < self.height(child_left)? {
                 let rotated = self.rotate_right(child_id)?;
-                let mut node = self.nodes.get(id)?.clone();
+                let mut node = *self.nodes.get(id)?;
                 node.right = Some(rotated);
                 self.refresh_node(id, node)?;
             }
@@ -351,12 +351,12 @@ where
         id: WorthQueryManagedIndexNodeId,
     ) -> Result<WorthQueryManagedIndexNodeId, Stop<D::Denial>> {
         self.control.checkpoint(1)?;
-        let mut node = self.nodes.get(id)?.clone();
+        let mut node = *self.nodes.get(id)?;
         let pivot_id = node.right.ok_or_else(|| {
             self.control
                 .refuse(WorthQueryManagedIndexStop::SourceStructureIncomplete)
         })?;
-        let mut pivot = self.nodes.get(pivot_id)?.clone();
+        let mut pivot = *self.nodes.get(pivot_id)?;
         node.right = pivot.left;
         self.refresh_node(id, node)?;
         pivot.left = Some(id);
@@ -369,12 +369,12 @@ where
         id: WorthQueryManagedIndexNodeId,
     ) -> Result<WorthQueryManagedIndexNodeId, Stop<D::Denial>> {
         self.control.checkpoint(1)?;
-        let mut node = self.nodes.get(id)?.clone();
+        let mut node = *self.nodes.get(id)?;
         let pivot_id = node.left.ok_or_else(|| {
             self.control
                 .refuse(WorthQueryManagedIndexStop::SourceStructureIncomplete)
         })?;
-        let mut pivot = self.nodes.get(pivot_id)?.clone();
+        let mut pivot = *self.nodes.get(pivot_id)?;
         node.left = pivot.right;
         self.refresh_node(id, node)?;
         pivot.right = Some(id);

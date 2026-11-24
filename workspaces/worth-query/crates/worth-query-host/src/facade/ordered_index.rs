@@ -17,6 +17,81 @@
 //! }
 //! ```
 //!
+//! Heap-backed (`!Copy`) summaries cannot satisfy [`WorthQueryOrderedIndexDomain::Summary`],
+//! preventing uncharged heap copies during tree maintenance:
+//!
+//! ```compile_fail,E0277
+//! use std::{cmp::Ordering, convert::Infallible};
+//! use worth_query_host::facade::declaration::{
+//!     application_query::ApplicationManagedIndexBinding,
+//!     application_schema::ApplicationSchema,
+//! };
+//! use worth_query_host::facade::ordered_index::{
+//!     WorthQueryOrderedIndexDomain, WorthQueryOrderedIndexSources,
+//! };
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryManagedIndexControl, WorthQueryManagedIndexProbeValue,
+//!     WorthQueryManagedIndexProviderStop, WorthQueryManagedIndexSourceRow,
+//!     WorthQueryManagedIndexSourceSlot,
+//! };
+//!
+//! struct HeapSummaryDomain;
+//!
+//! impl<S, I> WorthQueryOrderedIndexDomain<S, I> for HeapSummaryDomain
+//! where
+//!     S: ApplicationSchema,
+//!     I: ApplicationManagedIndexBinding<S>,
+//! {
+//!     type Summary = String;
+//!     type Denial = Infallible;
+//!     const IDENTITY: &'static str = "heap_summary";
+//!     const VERSION: u32 = 1;
+//!
+//!     fn compare_rows(
+//!         &self,
+//!         _: WorthQueryManagedIndexSourceRow<'_, S, I>,
+//!         _: WorthQueryManagedIndexSourceRow<'_, S, I>,
+//!         _: &WorthQueryManagedIndexControl<'_>,
+//!     ) -> Result<Ordering, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+//!         todo!()
+//!     }
+//!     fn source_summary(
+//!         &self,
+//!         _: WorthQueryManagedIndexSourceSlot,
+//!         _: WorthQueryManagedIndexSourceRow<'_, S, I>,
+//!         _: &WorthQueryManagedIndexControl<'_>,
+//!     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+//!         todo!()
+//!     }
+//!     fn combine_summaries(
+//!         &self,
+//!         _: &Self::Summary,
+//!         _: &Self::Summary,
+//!         _: &WorthQueryOrderedIndexSources<'_, '_, S, I>,
+//!         _: &WorthQueryManagedIndexControl<'_>,
+//!     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+//!         todo!()
+//!     }
+//!     fn summary_may_match(
+//!         &self,
+//!         _: &Self::Summary,
+//!         _: &WorthQueryOrderedIndexSources<'_, '_, S, I>,
+//!         _: &WorthQueryManagedIndexProbeValue<S, I>,
+//!         _: &WorthQueryManagedIndexControl<'_>,
+//!     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+//!         todo!()
+//!     }
+//!     fn matches_source(
+//!         &self,
+//!         _: WorthQueryManagedIndexSourceRow<'_, S, I>,
+//!         _: &WorthQueryManagedIndexProbeValue<S, I>,
+//!         _: &WorthQueryManagedIndexControl<'_>,
+//!     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+//!         todo!()
+//!     }
+//! }
+//! ```
+//!
 //! The valid counterpart wraps a domain implementation in [`WorthQueryOrderedIndexAdapter`]:
 //!
 //! ```

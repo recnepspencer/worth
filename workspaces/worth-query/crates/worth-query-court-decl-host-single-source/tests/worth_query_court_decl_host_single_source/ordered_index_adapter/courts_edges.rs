@@ -3,7 +3,7 @@ use super::queries::*;
 use super::schema::*;
 use super::{
     delete_task, home_lease, install, keys, limits, open_directory_home,
-    open_directory_home_with_limits,
+    open_directory_home_with_limits, try_create_task, try_reschedule_task,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::application_entry::*;
@@ -257,4 +257,95 @@ fn unicode_mixed_case_and_duplicate_keys_preserve_exact_prefix_and_interval_resu
 
     title_idx.close();
     focus_idx.close();
+}
+
+#[test]
+fn empty_and_reversed_intervals_are_refused_on_write_and_never_match_focus_index() {
+    // 1. CreateTask and RescheduleTask refuse empty [15, 15) and reversed [20, 10) spans
+    //    with InputMismatch, leaving rows and both checked indexes untouched.
+    let host = install(&[(1, "Alpha", 10, 30)], None, None);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let title_idx = request
+        .query(prefix_q("al"))
+        .open_index::<TitlePrefixIndex>()
+        .unwrap();
+    let focus_idx = request
+        .query(focus_q(10, 20))
+        .open_index::<FocusIntervalIndex>()
+        .unwrap();
+    request
+        .query(prefix_q("al"))
+        .rebuild_index(&title_idx)
+        .unwrap();
+    request
+        .query(focus_q(10, 20))
+        .rebuild_index(&focus_idx)
+        .unwrap();
+
+    for (idem, start, end) in [(1, 15, 15), (2, 20, 10)] {
+        let create = try_create_task(&host, 2, "BadSpan", start, end, idem).unwrap();
+        assert!(
+            matches!(
+                create,
+                WorthQueryApplicationMutationOutcome::DomainDenied(
+                    WorthQueryOperationBodyDenial::InputMismatch { .. }
+                )
+            ),
+            "CreateTask([{start}, {end})) must refuse with InputMismatch, got {create:?}"
+        );
+        let resched = try_reschedule_task(&host, 1, start, end, idem + 10).unwrap();
+        assert!(
+            matches!(
+                resched,
+                WorthQueryApplicationMutationOutcome::DomainDenied(
+                    WorthQueryOperationBodyDenial::InputMismatch { .. }
+                )
+            ),
+            "RescheduleTask([{start}, {end})) must refuse with InputMismatch, got {resched:?}"
+        );
+    }
+    assert_eq!(
+        keys(request.query(prefix_q("")).execute().unwrap().rows()),
+        [1]
+    );
+    assert_eq!(
+        keys(request.query(focus_q(10, 20)).execute().unwrap().rows()),
+        [1]
+    );
+    title_idx.close();
+    focus_idx.close();
+
+    // 2. Non-match invariant: even if malformed empty/reversed intervals exist in Source,
+    //    FocusIntervalDomain never admits [15, 15) or [20, 10) as hits for [10, 20).
+    let malformed = install(
+        &[
+            (1, "Empty", 15, 15),
+            (2, "Reversed", 20, 10),
+            (3, "Valid", 12, 18),
+        ],
+        None,
+        None,
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(malformed.installed_schema(), &scope);
+    let request = malformed.runtime().request(&principal, &scope);
+    let idx = request
+        .query(focus_q(10, 20))
+        .open_index::<FocusIntervalIndex>()
+        .unwrap();
+    request.query(focus_q(10, 20)).rebuild_index(&idx).unwrap();
+    assert_eq!(
+        keys(request.query(focus_q(10, 20)).execute().unwrap().rows()),
+        [3]
+    );
+    assert!(request
+        .query(focus_q(14, 16))
+        .execute()
+        .unwrap()
+        .rows()
+        .iter()
+        .all(|r| r.key == 3));
+    idx.close();
 }

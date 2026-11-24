@@ -58,6 +58,11 @@ impl OperationHandler<DaymarkSchema, CreateTaskBinding> for CreateTaskHandler {
         WorthQueryInvariantMutationTarget<DaymarkSchema, Workspace>,
         WorthQueryOperationBodyDenial,
     > {
+        if input.start_min >= input.end_min {
+            return HandlerResult::DomainDenied(WorthQueryOperationBodyDenial::InputMismatch {
+                member: "end_min".to_owned(),
+            });
+        }
         let result = reader
             .resolve_entity(
                 WorkspaceKeyField::at("WorkspaceKey"),
@@ -152,8 +157,15 @@ worth_query_structured_value_binding!(pub RescheduleTaskInput for RescheduleTask
     capture_input: true
 });
 worth_query_operation!(pub RescheduleTaskOp for DaymarkSchema, input RescheduleTaskInput;
-    access { read_fields: [TaskKeyField::at("TaskKey")]; };
-    reads [TaskItem]
+    access {
+        read_entities: [TaskItem];
+        read_fields: [
+            TaskKeyField::at("TaskKey"),
+            StartMinField::at("StartMin"),
+            EndMinField::at("EndMin")
+        ];
+        writes: [StartMinField::at("StartMin"), EndMinField::at("EndMin")];
+    }
 );
 fn reschedule_scope(input: &RescheduleTask) -> u64 {
     input.key
@@ -161,28 +173,58 @@ fn reschedule_scope(input: &RescheduleTask) -> u64 {
 worth_query_mutation_binding!(pub RescheduleTaskBinding for RescheduleTask, schema DaymarkSchema, context DaymarkContext,
     identity "ordered-index-adapter.reschedule-task-binding.v1", input RescheduleTaskInput,
     operation RescheduleTaskOp, result BodyResultBinding,
-    decision WorthQueryOperationBodyDecision<DaymarkSchema, TaskItem>,
-    handler identity "ordered-index-adapter.reschedule-task-body.v1", program required,
+    decision WorthQueryInvariantMutationTarget<DaymarkSchema, TaskItem>,
+    handler identity "ordered-index-adapter.reschedule-task-handler.v1", program required,
     outputs NoApplicationMutationOutputs,
     scope TaskKeyField, field TaskKeyField::at("TaskKey"), value reschedule_scope,
 );
-pub fn reschedule_task_definition(
-) -> ApplicationOperationDefinition<DaymarkSchema, RescheduleTaskOp, RescheduleTask> {
-    let body = RescheduleTaskOp::reference()
-        .body()
-        .assign_input(StartMinField::at("StartMin"), "start_min")
-        .unwrap()
-        .assign_input(EndMinField::at("EndMin"), "end_min")
-        .unwrap()
-        .finish()
-        .unwrap();
-    RescheduleTaskOp::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .unwrap()
+pub struct RescheduleTaskHandler;
+impl OperationHandler<DaymarkSchema, RescheduleTaskBinding> for RescheduleTaskHandler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[])
+    }
+    fn decide(
+        &self,
+        input: &RescheduleTask,
+        reader: &mut DecisionReader<'_, '_, '_, DaymarkSchema, RescheduleTaskBinding>,
+    ) -> HandlerResult<
+        WorthQueryInvariantMutationTarget<DaymarkSchema, TaskItem>,
+        WorthQueryOperationBodyDenial,
+    > {
+        if input.start_min >= input.end_min {
+            return HandlerResult::DomainDenied(WorthQueryOperationBodyDenial::InputMismatch {
+                member: "end_min".to_owned(),
+            });
+        }
+        let result = reader
+            .resolve_entity(TaskKeyField::at("TaskKey"), input.key)
+            .and_then(|task| {
+                reader.entity(&task, TaskItem::reference())?;
+                reader.field(&task, StartMinField::at("StartMin"))?;
+                reader.field(&task, EndMinField::at("EndMin"))?;
+                reader.mutation_target(&task)
+            });
+        match result {
+            Ok(target) => HandlerResult::Completed(target),
+            Err(cause) => HandlerResult::ExecutionDenied(cause),
+        }
+    }
+    fn build_candidate(
+        &self,
+        input: &RescheduleTask,
+        target: WorthQueryInvariantMutationTarget<DaymarkSchema, TaskItem>,
+        writer: &mut CandidateWriter<'_, DaymarkSchema, RescheduleTaskBinding>,
+    ) -> HandlerResult<(), WorthQueryOperationBodyDenial> {
+        let result = (|| {
+            let task = writer.projected_entity(&target)?;
+            writer.write_field(&task, StartMinField::at("StartMin"), input.start_min)?;
+            writer.write_field(&task, EndMinField::at("EndMin"), input.end_min)
+        })();
+        match result {
+            Ok(()) => HandlerResult::Completed(()),
+            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, WorthValue)]

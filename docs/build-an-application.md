@@ -8734,7 +8734,7 @@ let index = request.query(q).ensure_index_ready::<EquipmentBoxIndex>()?;
 For custom ordered domains beyond the four stock families, wrap a pure
 `WorthQueryOrderedIndexDomain` (plus `WorthQueryOrderedIndexPredicateDomain`
 when live watches are needed) in `host::ordered_index::WorthQueryOrderedIndexAdapter`.
-Your domain supplies only metered row ordering, a `Copy + Eq` source summary
+Your domain supplies only metered row ordering, a bounded `Copy + Eq` source summary
 with associative summary combination, and the exact metered probe predicate
 (with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and the metered
 text/prefix helpers in `host::ordered_index` for string keys). The adapter owns
