@@ -20,7 +20,7 @@
 //! }
 //! ```
 
-pub use crate::admission::AdmittedCommitNames;
+pub use crate::admission::{same_commit_name_of, AdmittedCommitNames};
 pub use crate::birth_plan::{
     ExecutionNameBirthPlan, ExecutionNameBirthPlanBuilder, ExecutionNamedMergeKeeper,
     ExecutionPendingEntityBirth, ExecutionPendingRelationBirth, ExecutionSplitChildSpec,
@@ -29,7 +29,8 @@ pub use crate::commit_wiring::{CommittedNamedTransaction, ExecutionNamingCommitA
 pub use crate::denial::ExecutionNamingDenial;
 pub use crate::lowering::{LoweredExecutionGroupScheme, LoweredExecutionNameSchemeCatalog};
 pub use crate::operation_outputs::{
-    admit_output_birth, AuthoredOperationNaming, BoundOperationNaming, OperationMergeKeeper,
+    admit_output_birth, admit_same_commit_names, AuthoredOperationNaming, BoundOperationNaming,
+    OperationMergeKeeper,
     OperationNamedOutput, OperationNamingEntry, OperationNamingProgram, OperationOutputKey,
     OutputBirthPosture,
     WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,

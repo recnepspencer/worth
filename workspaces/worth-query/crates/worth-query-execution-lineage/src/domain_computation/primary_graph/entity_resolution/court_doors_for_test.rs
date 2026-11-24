@@ -56,7 +56,7 @@ impl WorthQueryInstalledEntityResolutionContext {
     where
         Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
     {
-        self.resolve_applied_field(execution, before, candidate, field, value)
+        self.resolve_applied_field(execution, before, candidate, None, field, value)
     }
     #[doc(hidden)]
     pub fn validate_applied_identity_for_test<Schema, Entity>(

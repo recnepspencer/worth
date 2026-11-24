@@ -15,6 +15,19 @@ pub trait AppliedOutputParticipants {
             crate::domain_computation::WorthQueryProviderSessionView<'_>,
         ) -> Result<(), WorthQueryCurrentOutputDenial>,
     ) -> Result<(), WorthQueryCurrentOutputDenial>;
+    /// Retain a managed Source read a decision of this assembly took from
+    /// its committed basis at candidate image `observed`: the assembly marks
+    /// every later append that changes it, which is the read's whole
+    /// candidate support.
+    fn retain_source_alignment(
+        &self,
+        alignment: std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::AppliedSourceAlignment,
+        >,
+        observed: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    );
 }
 pub struct AppliedFamilyOutputs {
     pub outputs: Vec<ConsumedOutputEvidence>,

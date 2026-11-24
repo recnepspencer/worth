@@ -7,7 +7,7 @@ use worth_relational::facade::{
     runtime::RelationalAdjacencyDirection,
 };
 
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum SourceFactLocator {
     SourceAuthorization(
         crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,

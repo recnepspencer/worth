@@ -11,8 +11,8 @@ use worth_query_declaration::facade::application_naming::{
 };
 use worth_query_execution_lineage::facade::ports::CreatedRelationInternalPort as _;
 use worth_query_execution_lineage::facade::persistent_naming::{
-    admit_output_birth, OperationMergeKeeper, OperationNamedOutput, OperationNamingEntry,
-    OperationOutputKey, OutputBirthPosture as Posture, WorthQueryOutputBirth,
+    admit_output_birth, admit_same_commit_names, OperationMergeKeeper, OperationNamedOutput,
+    OperationNamingEntry, OperationOutputKey, OutputBirthPosture as Posture, WorthQueryOutputBirth,
     WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };
 
@@ -25,7 +25,7 @@ use worth_relational::facade::transactions::EntityReference;
 
 type Refused = WorthQueryApplicationAttemptDenial;
 
-fn refused(denial: WorthQueryOutputNameDenial) -> Refused {
+pub(super) fn refused(denial: WorthQueryOutputNameDenial) -> Refused {
     WorthQueryApplicationAttemptDenial::persistent_name_output(denial)
 }
 
@@ -206,6 +206,8 @@ impl<Schema, Operation, Input, Scope>
         })?;
         let scheme_id = admit_output_birth(catalog, subject, &subject_name, &birth, posture)
             .map_err(refused)?;
+        admit_same_commit_names(catalog, &self.persistent_names, &scheme_id, &birth)
+            .map_err(refused)?;
         Ok(OperationNamedOutput {
             target,
             scheme_id,
@@ -235,7 +237,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// The stable key of an entity this program created; existing and
     /// foreign targets refuse.
-    fn created_entity_key<Entity>(
+    pub(super) fn created_entity_key<Entity>(
         &self,
         created: &WorthQueryApplicationEffectEntity<Schema, Entity>,
     ) -> Result<(OperationOutputKey, String), Refused> {
@@ -265,7 +267,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// The stable key of a relation this program linked.
-    fn created_relation_key<Relation, From, To>(
+    pub(super) fn created_relation_key<Relation, From, To>(
         &self,
         created: &WorthQueryApplicationCreatedRelation<Schema, Relation, From, To>,
     ) -> Result<(OperationOutputKey, String), Refused> {

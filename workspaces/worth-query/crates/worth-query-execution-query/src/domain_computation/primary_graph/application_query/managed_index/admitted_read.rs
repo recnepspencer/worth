@@ -30,9 +30,9 @@ fn read<S, B>(
     execution: &ExecutionRequest<'_, '_>,
     access: &SourceQueryReaderAccess<'_, S>,
     plan: BoundPlan<'_, S, B>,
+    association: worth_query_installation::facade::WorthQueryInstalledManagedIndexParent,
     native: &mut ApplicationQueryNativeAccess<'_>,
     allocation: &Arc<SourceFactsAllocation>,
-    applied: Option<super::AppliedManagedIndexRead<'_>>,
 ) -> Result<CompletedOneShotRead<B::Query, ResultValue<S, B>>, Denial>
 where
     S: ApplicationSchema + 'static,
@@ -40,20 +40,6 @@ where
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
     let application = access.application;
-    let storage = MaterialCompletion::new(execution, allocation);
-    let association = admit_parent::<S, B>(execution, access, &plan, native, allocation)?;
-    // An applied candidate's own unpublished Source change refuses before
-    // the provider sees the admitted before basis.
-    if let Some(applied) = applied {
-        applied.require_aligned(
-            execution,
-            application,
-            &association,
-            plan.scope.entity_id(),
-            plan.query.read_graph(),
-            &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<S, B>(),
-        )?;
-    }
     let selector = retain_scope(execution, plan.scope, plan.query.name()).map_err(|cause| {
         SourceQueryObservationStop::Read(super::super::WorthQueryAdmittedOneShotStop::Execution(
             cause,
@@ -63,24 +49,7 @@ where
         .managed_indexes
         .executor(execution, &association, allocation)?
         .ok_or(Denial::ForeignAssociation)?;
-    let parameter = &association
-        .access_contract()
-        .meaning()
-        .parent_graph()
-        .managed_index_selection()
-        .ok_or(Denial::ForeignAssociation)?
-        .parts()
-        .probe_parameter;
-    storage.work(u64::try_from(plan.parameters.bindings().len())
-        .ok().and_then(|count| count.checked_mul(parameter.len() as u64 + 1))
-        .ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)?)?;
-    let probe = plan
-        .parameters
-        .bindings()
-        .iter()
-        .find(|(name, _)| name.as_ref() == parameter.as_str())
-        .map(|(_, value)| value)
-        .ok_or(Denial::ForeignAssociation)?;
+    let probe = parent_probe::<S, B>(execution, &plan, &association, allocation)?;
     let lease = adapter.select_admitted(
         execution,
         application,
@@ -130,6 +99,46 @@ where
         complete_one_shot(execution, application, plan, raw, authorization, proof),
     )
     .map_err(|cause| Denial::SourceRead(SourceQueryObservationStop::Read(cause)))
+}
+
+pub(super) fn parent_probe<'p, S, B>(
+    execution: &ExecutionRequest<'_, '_>,
+    plan: &'p BoundPlan<'_, S, B>,
+    association: &worth_query_installation::facade::WorthQueryInstalledManagedIndexParent,
+    allocation: &Arc<SourceFactsAllocation>,
+) -> Result<&'p worth_foundational::facade::AspectValue, Denial>
+where
+    S: ApplicationSchema,
+    B: ApplicationQueryBinding<S>,
+{
+    let parameter = &association
+        .access_contract()
+        .meaning()
+        .parent_graph()
+        .managed_index_selection()
+        .ok_or(Denial::ForeignAssociation)?
+        .parts()
+        .probe_parameter;
+    let units = parameter.len().checked_add(1)
+        .and_then(|width| width.checked_mul(plan.parameters.bindings().len()))
+        .and_then(|units| u64::try_from(units).ok())
+        .ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)?;
+    MaterialCompletion::new(execution, allocation).work(units)?;
+    plan.parameters
+        .bindings()
+        .iter()
+        .find(|(name, _)| name.as_ref() == parameter.as_str())
+        .map(|(_, value)| value)
+        .ok_or(Denial::ForeignAssociation)
+}
+
+pub enum DecisionSource {
+    Committed(Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>),
+    Applied {
+        facts: Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact>,
+        authorization: Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
+        allocation: Arc<SourceFactsAllocation>,
+    },
 }
 
 pub fn admit_parent<S, B>(
@@ -195,13 +204,7 @@ pub fn read_decision<S, B>(
     ) -> bool,
     native: &mut ApplicationQueryNativeAccess<'_>,
     applied: Option<super::AppliedManagedIndexRead<'_>>,
-) -> Result<
-    (
-        Vec<ResultValue<S, B>>,
-        Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
-    ),
-    super::WorthQueryManagedIndexDenial,
->
+) -> Result<(Vec<ResultValue<S, B>>, DecisionSource), super::WorthQueryManagedIndexDenial>
 where
     S: ApplicationSchema,
     B: ApplicationQueryBinding<S>,
@@ -217,24 +220,60 @@ where
     use super::denial::{managed_index_denial, ReceiverCause};
     let allocation = SourceFactsAllocation::open(execution)
         .map_err(|cause| managed_index_denial(ReceiverCause::Execution(cause), None))?;
-    let result =
-        access.with_plan::<B, _, Denial>(execution, intent, context, native, |plan, native| {
-            // The resolved scope and principal are admitted by the operation's
-            // declared authority before any Parent or provider work.
-            if !admit_scope(plan.scope.entity_id(), plan.graph_work.principal()) {
-                return Err(Denial::ForeignAssociation);
+    let consume = |plan: BoundPlan<'_, S, B>, native: &mut ApplicationQueryNativeAccess<'_>| {
+        // The resolved scope and principal are admitted by the operation's
+        // declared authority before any Parent or provider work.
+        if !admit_scope(plan.scope.entity_id(), plan.graph_work.principal()) {
+            return Err(Denial::ForeignAssociation);
+        }
+        let association = admit_parent::<S, B>(execution, access, &plan, native, &allocation)?;
+        // An aligned applied read keeps the committed index probe; its claim
+        // is the read's candidate support. Anything else reads the candidate.
+        let alignment = match applied {
+            None => None,
+            Some(applied) => match applied.aligned(
+                execution, access.application, &association, plan.scope.entity_id(),
+                plan.query.read_graph(),
+                &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<S, B>(),
+            )? {
+                Some(alignment) => Some(alignment),
+                None => return super::applied_read::read_decision::<S, B>(
+                    execution, access, plan, applied, association, &allocation, native,
+                ),
+            },
+        };
+        let completed = read::<S, B>(execution, access, plan, association, native, &allocation)?;
+        let dependency = completed
+            .read
+            .result_set_observation()
+            .source()
+            .invocation_managed_source()
+            .map_err(|_| Denial::ForeignAssociation)?
+            .ok_or(Denial::ForeignAssociation)?;
+        let dependency = DecisionSource::Committed(match alignment {
+            Some(alignment) => {
+                allocation.claim_arc::<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>(execution)?;
+                Arc::new(dependency.as_ref().clone().with_applied_alignment(alignment))
             }
-            let completed = read::<S, B>(execution, access, plan, native, &allocation, applied)?;
-            let dependency = completed
-                .read
-                .result_set_observation()
-                .source()
-                .invocation_managed_source()
-                .map_err(|_| Denial::ForeignAssociation)?
-                .ok_or(Denial::ForeignAssociation)?;
-            let dependency = Arc::clone(dependency);
-            Ok((completed.read.into_rows(), dependency))
+            None => Arc::clone(dependency),
         });
+        Ok((completed.read.into_rows(), dependency))
+    };
+    let result = match applied {
+        Some(applied) => {
+            context.set(context.get().source_query_permission());
+            access.with_applied_plan::<B, _, Denial>(
+                execution,
+                intent,
+                applied.before,
+                applied.candidate,
+                applied.own,
+                native,
+                consume,
+            )
+        }
+        None => access.with_plan::<B, _, Denial>(execution, intent, context, native, consume),
+    };
     result.map_err(|cause| managed_index_denial(ReceiverCause::Provider(cause), Some(allocation)))
 }
 
@@ -256,7 +295,10 @@ where
             SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
         };
     let allocation = SourceFactsAllocation::open(execution).map_err(storage_stop)?;
-    read::<S, B>(execution, access, plan, native, &allocation, None).map_err(|cause| {
+    let result = admit_parent::<S, B>(execution, access, &plan, native, &allocation).and_then(
+        |association| read::<S, B>(execution, access, plan, association, native, &allocation),
+    );
+    result.map_err(|cause| {
         match managed_index_denial(ReceiverCause::Provider(cause), Some(allocation))
             .retain(execution)
         {

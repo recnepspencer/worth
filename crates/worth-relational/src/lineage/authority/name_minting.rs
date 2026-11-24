@@ -9,6 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::lineage::data::birth_digest::canonical_birth_digest;
 use crate::lineage::data::{
     DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageNameDenial, PersistentNameBirthParts, PersistentNameBirthRecord,
@@ -302,12 +303,6 @@ fn mint_identity_digest(
     ))
 }
 
-/// The one canonical persistent-name hash: minting and persisted-birth
-/// readmission both derive identity bytes only here.
-///
-/// Complexity: O(parts bytes + parents).
-pub(super) use crate::lineage::data::birth_digest::canonical_birth_digest;
-
 pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
     basis: &dyn LineageBasisView,
@@ -331,40 +326,7 @@ pub(super) fn mint_target_births(
             });
         }
     }
-    // Order by canonical meaning parts (scheme, occurrence, role topological
-    // rank, role path, canonical discriminator) rather than native record
-    // allocation order so same-occurrence dependencies mint in rank order and
-    // `DuplicateBirth` `first`/`second` reporting is allocation-independent.
-    let mut ordered: Vec<(
-        crate::lineage::data::LineageRecordTarget,
-        &PersistentNameBirthRequest,
-    )> = named_births.iter().map(|(&id, req)| (id, req)).collect();
-    ordered.sort_by(|(_, a), (_, b)| {
-        let rank_a = scheme_registry
-            .get(&a.scheme_id)
-            .and_then(|scheme| scheme.role_rank(&a.role_path))
-            .unwrap_or(u32::MAX);
-        let rank_b = scheme_registry
-            .get(&b.scheme_id)
-            .and_then(|scheme| scheme.role_rank(&b.role_path))
-            .unwrap_or(u32::MAX);
-        (
-            &a.scheme_id,
-            &a.occurrence_key,
-            rank_a,
-            &a.role_path,
-            &a.canonical_discriminator,
-            &a.holder,
-        )
-            .cmp(&(
-                &b.scheme_id,
-                &b.occurrence_key,
-                rank_b,
-                &b.role_path,
-                &b.canonical_discriminator,
-                &b.holder,
-            ))
-    });
+    let ordered = super::mint_order::dependency_order(scheme_registry, named_births);
     let targets: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
     let requests: Vec<_> = ordered.into_iter().map(|(_, req)| req.clone()).collect();
     let records = PersistentNameMintingAuthority::mint_commit_births_with_basis(

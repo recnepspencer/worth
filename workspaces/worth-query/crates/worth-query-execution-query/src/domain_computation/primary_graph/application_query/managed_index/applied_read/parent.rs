@@ -1,8 +1,7 @@
 //! Resolve the installed Parent and independently admitted Source on one real prefix.
 use super::*;
 use crate::domain_computation::primary_graph::application_query::{
-    one_shot::outcome::material::{retain_scope, MaterialCompletion},
-    output_source_observation::SourceReadPlan,
+    one_shot::outcome::material::retain_scope, output_source_observation::SourceReadPlan,
     WorthQueryApplicationProjection,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -14,8 +13,7 @@ use worth_relational::facade::{
 
 pub fn prepare<'a, 'request, 'authority, S, B>(
     execution: &ExecutionRequest<'request, 'authority>,
-    access: &SourceQueryReaderAccess<'_, S>,
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    access: &SourceQueryReaderAccess<'a, S>,
     plan: &'a SourceReadPlan<'_, S, B>,
     before: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
@@ -33,6 +31,35 @@ where
     let association = super::super::admitted_read::admit_parent::<S, B>(
         execution, access, plan, native, allocation,
     )?;
+    select_parent::<S, B>(
+        execution,
+        access,
+        plan,
+        before,
+        candidate,
+        assembly,
+        association,
+        allocation,
+        native,
+    )
+}
+
+pub(super) fn select_parent<'a, 'request, 'authority, S, B>(
+    execution: &ExecutionRequest<'request, 'authority>,
+    access: &SourceQueryReaderAccess<'a, S>,
+    plan: &'a SourceReadPlan<'_, S, B>,
+    before: &RelationalPinnedRead,
+    candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    assembly: &RelationalAuthoredCoupledCandidate<'_>,
+    association: WorthQueryInstalledManagedIndexParent,
+    allocation: &Arc<SourceFactsAllocation>,
+    native: &mut ApplicationQueryNativeAccess<'_>,
+) -> Result<AppliedManagedSelectionLease<'a, 'request, 'authority>, Denial>
+where
+    S: ApplicationSchema,
+    B: ApplicationQueryBinding<S>,
+{
+    let application = access.application;
     let selector = retain_scope(execution, plan.scope, plan.query.name()).map_err(|cause| {
         crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryObservationStop::Read(
             crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(cause),
@@ -53,26 +80,12 @@ where
     let loan = assembly
         .read_managed_source_at(execution, program, selector.subject(), candidate)
         .map_err(Denial::NativeSource)?;
-    let parameter = &association
-        .access_contract()
-        .meaning()
-        .parent_graph()
-        .managed_index_selection()
-        .ok_or(Denial::ForeignAssociation)?
-        .parts()
-        .probe_parameter;
-    let units = plan.parameters.bindings().len().checked_mul(parameter.len().checked_add(1)
-        .ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)?)
-        .and_then(|n| u64::try_from(n).ok())
-        .ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)?;
-    MaterialCompletion::new(execution, allocation).work(units)?;
-    let probe = plan
-        .parameters
-        .bindings()
-        .iter()
-        .find(|(name, _)| name.as_ref() == parameter.as_str())
-        .map(|(_, value)| value)
-        .ok_or(Denial::ForeignAssociation)?;
+    let probe = super::super::admitted_read::parent_probe::<S, B>(
+        execution,
+        plan,
+        &association,
+        allocation,
+    )?;
     adapter.select_applied(
         execution,
         application,

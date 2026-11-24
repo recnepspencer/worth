@@ -103,6 +103,7 @@ pub enum ExecutionNamedMergeKeeper {
         role_path: String,
         canonical_discriminator: Vec<u8>,
         embedded_name_digests: Vec<[u8; 32]>,
+        same_occurrence_roles: BTreeMap<[u8; 32], String>,
     },
 }
 
@@ -120,6 +121,7 @@ impl ExecutionNamedMergeKeeper {
             role_path: role_path.into(),
             canonical_discriminator: bytes,
             embedded_name_digests: refs,
+            same_occurrence_roles: BTreeMap::new(),
         }
     }
 }
@@ -228,6 +230,7 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                 role_path,
                 canonical_discriminator,
                 embedded_name_digests,
+                same_occurrence_roles,
             } => {
                 let layout = self.require_scheme(expected_kind, &scheme_id, &role_path)?;
                 if layout.require_authored_occurrence() && occurrence_key.trim().is_empty() {
@@ -239,7 +242,7 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                     &role_path,
                     role_rank,
                     &embedded_name_digests,
-                    &BTreeMap::new(),
+                    &same_occurrence_roles,
                 )?;
                 PendingMergeKeeper::MintNew {
                     scheme_id,
