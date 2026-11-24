@@ -26,11 +26,16 @@ use super::{
     },
 };
 
-/// Declarative hook implemented by an installed conditional contribution so
+mod sealed {
+    pub trait Sealed {}
+}
+
+/// Sealed declarative hook implemented exclusively by installer-paired desktop
+/// temporal bindings so
 /// [`crate::application_home::WorthQueryApplicationHome::catch_up_temporal`]
 /// can resolve the runtime clock handle and caller-pumped desktop clock handle
-/// without requiring callers to re-specify runtime, branch, or clock arguments.
-pub trait WorthQueryDesktopTemporalHomeBinding<Schema: ApplicationSchema> {
+/// with a guaranteed shared clock source state.
+pub trait WorthQueryDesktopTemporalHomeBinding<Schema: ApplicationSchema>: sealed::Sealed {
     type Node: 'static;
     type Clock: WorthQueryNamedClock;
 
@@ -48,6 +53,11 @@ pub trait WorthQueryDesktopTemporalHomeBinding<Schema: ApplicationSchema> {
 pub struct WorthQueryInstalledDesktopTemporalClock<Schema, Node, Clock> {
     temporal: WorthQueryInstalledDesktopTemporal<Schema, Node, Clock>,
     desktop_clock: WorthQueryDesktopClockHandle<Clock>,
+}
+
+impl<Schema, Node, Clock> sealed::Sealed
+    for WorthQueryInstalledDesktopTemporalClock<Schema, Node, Clock>
+{
 }
 
 impl<Schema, Node, Clock> WorthQueryInstalledDesktopTemporalClock<Schema, Node, Clock> {

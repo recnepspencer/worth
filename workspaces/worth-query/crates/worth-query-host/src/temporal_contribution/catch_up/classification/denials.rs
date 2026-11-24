@@ -84,8 +84,13 @@ pub(in super::super) fn classify_branch_stop(
 pub(in super::super) fn classify_clock_port_denial(
     denial: &WorthQueryConditionalClockObservationDenial,
 ) -> Option<WorthQueryTemporalCatchUpStatus> {
-    let WorthQueryConditionalClockObservationDenialKind::ProductAdmission(kind) = denial.kind()
-    else {
+    classify_clock_port_denial_kind(&denial.kind())
+}
+
+pub(super) fn classify_clock_port_denial_kind(
+    kind: &WorthQueryConditionalClockObservationDenialKind,
+) -> Option<WorthQueryTemporalCatchUpStatus> {
+    let WorthQueryConditionalClockObservationDenialKind::ProductAdmission(kind) = kind else {
         return None;
     };
     match kind {
@@ -104,9 +109,11 @@ pub(in super::super) fn classify_clock_port_denial(
         WorthQueryConditionalRuntimeInstallationDenialKind::ActiveSnapshotCapacityExhausted {
             ..
         }
-        | WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted => {
-            Some(WorthQueryTemporalCatchUpStatus::Backpressured)
-        }
+        | WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted
+        | WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(
+            worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind::RetentionCapacityExhausted
+            | worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind::IntentCapacityExhausted,
+        ) => Some(WorthQueryTemporalCatchUpStatus::Backpressured),
         _ => None,
     }
 }
@@ -114,17 +121,31 @@ pub(in super::super) fn classify_clock_port_denial(
 pub(in super::super) fn classify_observation_failure(
     failure: WorthQueryConditionalClockObservationFailure,
 ) -> WorthQueryTemporalCatchUpStatus {
-    match failure.kind() {
-        WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(ref denial) => {
+    classify_observation_failure_kind(&failure.kind())
+        .unwrap_or(WorthQueryTemporalCatchUpStatus::ObservationFailed(failure))
+}
+
+pub(super) fn classify_observation_failure_kind(
+    kind: &WorthQueryConditionalClockObservationFailureKind,
+) -> Option<WorthQueryTemporalCatchUpStatus> {
+    match kind {
+        WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(denial) => {
             classify_advancement_stop(denial)
-                .unwrap_or(WorthQueryTemporalCatchUpStatus::ObservationFailed(failure))
         }
         WorthQueryConditionalClockObservationFailureKind::ActiveSnapshotCapacityExhausted {
             ..
         }
-        | WorthQueryConditionalClockObservationFailureKind::RetentionCapacityExhausted => {
-            WorthQueryTemporalCatchUpStatus::Backpressured
-        }
-        _ => WorthQueryTemporalCatchUpStatus::ObservationFailed(failure),
+        | WorthQueryConditionalClockObservationFailureKind::RetentionCapacityExhausted
+        | WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ActiveSnapshotCapacityExhausted {
+                ..
+            }
+            | WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted
+            | WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(
+                worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind::RetentionCapacityExhausted
+                | worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind::IntentCapacityExhausted,
+            ),
+        ) => Some(WorthQueryTemporalCatchUpStatus::Backpressured),
+        _ => None,
     }
 }

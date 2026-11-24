@@ -142,5 +142,8 @@ where
                 QueryConditionalDecisionRecord::Finish { key, intent },
             );
         }
+        self.operation
+            .lock_operation()
+            .settle_resolved_continuation(key, intent);
     }
 }

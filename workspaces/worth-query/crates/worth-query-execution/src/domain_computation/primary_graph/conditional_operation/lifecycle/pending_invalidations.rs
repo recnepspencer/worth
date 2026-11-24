@@ -129,6 +129,16 @@ impl WorthQueryPendingGranularInvalidations {
         }
     }
 
+    /// Restores released invalidations when an accepted observation cannot
+    /// complete persistence and therefore cannot return a receipt to the caller.
+    pub(super) fn restore_released(&mut self, released: WorthQueryReleasedGranularInvalidations) {
+        if released.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll {
+            self.refresh_all();
+            return;
+        }
+        self.owe(released.deliveries);
+    }
+
     pub(super) fn retained_delivery_count(&self) -> usize {
         usize::from(self.direct.is_some()) + self.owed.len()
     }

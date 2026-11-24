@@ -86,10 +86,14 @@ pub enum WorthQueryTemporalCatchUpStatus {
     BlockedByRetainedDecision,
     /// The underlying clock observation port failed.
     ObservationFailed(WorthQueryConditionalClockObservationFailure),
+    /// A subsequent step after earlier progress or granular invalidation
+    /// deliveries was refused before clock observation; earlier progress and
+    /// owed granular invalidation batches are preserved on the returned report.
+    StepRefused(Box<WorthQueryTemporalCatchUpDenial>),
 }
 
 /// Pre-loop or port-opening refusal before catch-up could observe the clock.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryTemporalCatchUpDenial {
     InvalidMaxSteps { requested: usize, maximum: usize },
     TemporalBindingNotInstalled,

@@ -28,6 +28,7 @@ pub(super) fn exercise_cancelled_pump(
     st: &mut SeedState,
     trace: &mut TraceEmitter,
 ) {
+    let mut accepted_now = st.last_accepted_clock;
     with_cancelled_request(|c_exec| {
         let report = h
             .pump_temporal::<DesktopReminderConditional>(
@@ -37,13 +38,17 @@ pub(super) fn exercise_cancelled_pump(
             .unwrap();
         assert_eq!(report.status(), &WorthQueryTemporalCatchUpStatus::Cancelled);
         assert_eq!(report.fired(), 0);
+        if let Some(observed) = report.last_observed_time() {
+            accepted_now = observed.nanoseconds();
+        }
     });
+    st.last_accepted_clock = accepted_now;
     let rows = read_reminders(h);
     st.oracle.verify_against_rows(&rows);
     st.last_status = "Cancelled";
     trace.push(
         "PumpCancelled",
-        serde_json::json!({}),
+        serde_json::json!({ "targetNow": accepted_now }),
         "Open",
         st.clock,
         st.last_accepted_clock,
@@ -65,6 +70,7 @@ pub(super) fn exercise_budget_pump(
     if passive_due_active_count(&pre_rows, st.last_accepted_clock) == 0 {
         return;
     }
+    let mut accepted_now = st.last_accepted_clock;
     with_leased_request(128 * 1024 * 1024, Some(1), |tiny_exec| {
         let report = h
             .pump_temporal::<DesktopReminderConditional>(
@@ -77,13 +83,17 @@ pub(super) fn exercise_budget_pump(
             &WorthQueryTemporalCatchUpStatus::BudgetExhausted
         );
         assert_eq!(report.fired(), 0);
+        if let Some(observed) = report.last_observed_time() {
+            accepted_now = observed.nanoseconds();
+        }
     });
+    st.last_accepted_clock = accepted_now;
     let rows = read_reminders(h);
     st.oracle.verify_against_rows(&rows);
     st.last_status = "BudgetExhausted";
     trace.push(
         "PumpBudgetExhausted",
-        serde_json::json!({}),
+        serde_json::json!({ "targetNow": accepted_now }),
         "Open",
         st.clock,
         st.last_accepted_clock,
@@ -129,12 +139,15 @@ pub(super) fn exercise_auth_refusal(
         &WorthQueryTemporalCatchUpStatus::AuthorizationRefused
     );
     assert_eq!(report.fired(), 0);
+    if let Some(observed) = report.last_observed_time() {
+        st.last_accepted_clock = observed.nanoseconds();
+    }
     let rows = read_reminders(h);
     st.oracle.verify_against_rows(&rows);
     st.last_status = "AuthorizationRefused";
     trace.push(
         "PumpUnauthorized",
-        serde_json::json!({}),
+        serde_json::json!({ "targetNow": st.last_accepted_clock }),
         "Open",
         st.clock,
         st.last_accepted_clock,

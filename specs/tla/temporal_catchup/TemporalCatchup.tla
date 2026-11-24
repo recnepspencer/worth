@@ -247,24 +247,31 @@ PumpStepLimit(targetNow) ==
     /\ UNCHANGED <<appState, clock, authValid, durableVars>>
 
 \* Pump stopped due to Work/Memory budget exhaustion; durable state stays untouched.
-PumpBudgetExhausted ==
+\* If the clock observation was accepted before reentry stopped, observedClock advances monotonically.
+PumpBudgetExhausted(targetNow) ==
     /\ appState = "Open"
+    /\ targetNow \in observedClock..clock
+    /\ observedClock' = targetNow
     /\ lastPumpStatus' = "BudgetExhausted"
-    /\ UNCHANGED <<appState, clock, observedClock, authValid, durableVars>>
+    /\ UNCHANGED <<appState, clock, authValid, durableVars>>
 
 \* Pump stopped due to caller cancellation; durable state stays untouched.
-PumpCancelled ==
+PumpCancelled(targetNow) ==
     /\ appState = "Open"
+    /\ targetNow \in observedClock..clock
+    /\ observedClock' = targetNow
     /\ lastPumpStatus' = "Cancelled"
-    /\ UNCHANGED <<appState, clock, observedClock, authValid, durableVars>>
+    /\ UNCHANGED <<appState, clock, authValid, durableVars>>
 
 \* Pump refused because execution authority / principal is expired or rejected;
 \* durable state stays untouched.
-PumpUnauthorized ==
+PumpUnauthorized(targetNow) ==
     /\ appState = "Open"
     /\ ~authValid
+    /\ targetNow \in observedClock..clock
+    /\ observedClock' = targetNow
     /\ lastPumpStatus' = "AuthorizationRefused"
-    /\ UNCHANGED <<appState, clock, observedClock, authValid, durableVars>>
+    /\ UNCHANGED <<appState, clock, authValid, durableVars>>
 
 Next ==
     \/ \E i \in Intents, d \in 1..MaxTime, iv \in 0..MaxTime, mf \in 1..MaxFiresLimit :
@@ -279,9 +286,9 @@ Next ==
     \/ \E i \in Intents, t \in 0..MaxTime : PumpFire(i, t)
     \/ \E t \in 0..MaxTime : PumpCatchUpComplete(t)
     \/ \E t \in 0..MaxTime : PumpStepLimit(t)
-    \/ PumpBudgetExhausted
-    \/ PumpCancelled
-    \/ PumpUnauthorized
+    \/ \E t \in 0..MaxTime : PumpBudgetExhausted(t)
+    \/ \E t \in 0..MaxTime : PumpCancelled(t)
+    \/ \E t \in 0..MaxTime : PumpUnauthorized(t)
 
 PumpFireProgress == \E i \in Intents : PumpFire(i, clock)
 PumpCompleteProgress == PumpCatchUpComplete(clock)

@@ -19,6 +19,10 @@ impl<'authority> QueryRequestExecution<'authority> {
                     .map_err(|denial| *denial),
                 policy: *policy,
             },
+            Form::BorrowedSerial { request, policy } => Form::BorrowedSerial {
+                request: *request,
+                policy: *policy,
+            },
         };
         Self {
             cancellation: self.cancellation.clone(),

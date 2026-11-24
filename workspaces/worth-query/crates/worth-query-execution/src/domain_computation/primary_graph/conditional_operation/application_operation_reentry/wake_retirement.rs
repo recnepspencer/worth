@@ -76,9 +76,7 @@ pub(super) fn complete_wake<Clock, Input>(
                     .saturating_add(next_input_identity.as_str().len())
                     .saturating_add(next_idempotency.as_str().len()) as u64;
             if request_execution.consult().is_ok()
-                && request_execution
-                    .reserve_retained_memory(successor_bytes)
-                    .is_ok()
+                && let Ok(reservation) = request_execution.reserve_retained_memory(successor_bytes)
             {
                 let successor_candidate = existing.candidate().rescheduled_successor(
                     revision,
@@ -87,7 +85,8 @@ pub(super) fn complete_wake<Clock, Input>(
                     next_input_identity,
                     next_idempotency,
                 );
-                let successor = existing.rescheduled(successor_candidate, scheduled_due);
+                let successor =
+                    existing.rescheduled(successor_candidate, scheduled_due, reservation);
                 candidates.insert(identity, successor);
             } else {
                 candidates.remove(&identity);

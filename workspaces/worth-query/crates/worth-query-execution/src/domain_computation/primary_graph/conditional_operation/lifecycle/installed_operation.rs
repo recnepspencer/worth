@@ -138,6 +138,8 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         unreachable!("continuation replay is only defined for installed temporal operations")
     }
 
+    fn settle_resolved_continuation(&mut self, _key: [u8; 32], _intent: [u8; 32]) {}
+
     fn temporal_original_key(
         &self,
         _product: &crate::basis::WorthQueryProductBranchLease,

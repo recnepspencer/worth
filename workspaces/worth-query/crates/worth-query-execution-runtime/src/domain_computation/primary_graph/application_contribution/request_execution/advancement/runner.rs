@@ -21,6 +21,7 @@ pub fn run_advancement(
             .as_ref()
             .map(|lease| lease.resolved_posture())
             .unwrap_or(policy.posture()),
+        Form::BorrowedSerial { policy, .. } => policy.posture(),
     };
     observation::begin(posture, execution.has_accounting());
     let result = run_admitted_advancement(

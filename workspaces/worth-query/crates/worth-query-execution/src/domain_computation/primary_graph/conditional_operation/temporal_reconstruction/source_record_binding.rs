@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
     candidate: WorthQueryTemporalIntentCandidate<Clock, Input>,
     scheduled_due_coordinate: u64,
     source_record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+    _retained_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl<Clock, Input> WorthQueryReconstructedTemporalIntent<Clock, Input> {
@@ -48,12 +49,14 @@ impl<Clock, Input> WorthQueryReconstructedTemporalIntent<Clock, Input> {
         &self,
         candidate: WorthQueryTemporalIntentCandidate<Clock, Input>,
         scheduled_due_coordinate: u64,
+        retained_memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Self {
         Self {
             lifecycle_token: Default::default(),
             candidate,
             scheduled_due_coordinate,
             source_record: self.source_record,
+            _retained_memory: retained_memory,
         }
     }
 }
@@ -142,6 +145,7 @@ where
                     candidate,
                     scheduled_due_coordinate,
                     source_record,
+                    _retained_memory: None,
                 },
             ))
         })

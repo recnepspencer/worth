@@ -170,6 +170,7 @@ struct InvokerBehavior {
     cancel_on_project: Option<worth_execution::CancellationSource>,
     force_unobserved_write: bool,
     next_gate_write: Option<String>,
+    expire_auth_after_apply: Option<AuthControl>,
 }
 
 impl InvokerControls {
@@ -194,12 +195,31 @@ impl InvokerControls {
             .next_gate_write = gate;
     }
 
+    pub fn set_expire_auth_after_apply(&self, auth: Option<AuthControl>) {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .expire_auth_after_apply = auth;
+    }
+
     pub(super) fn next_gate_write(&self) -> Option<String> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .next_gate_write
             .clone()
+    }
+
+    fn trigger_post_apply_auth_expire(&self) {
+        let auth = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .expire_auth_after_apply
+            .take();
+        if let Some(auth) = auth {
+            auth.set_valid(false);
+        }
     }
 
     fn trigger_project_cancel(&self) {
@@ -348,6 +368,7 @@ impl
             due: input.due,
             fired_count_after: next_count,
         });
+        self.controls.trigger_post_apply_auth_expire();
         Ok(())
     }
 }

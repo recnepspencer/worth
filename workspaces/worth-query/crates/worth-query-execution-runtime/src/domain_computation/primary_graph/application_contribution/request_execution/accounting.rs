@@ -9,6 +9,7 @@ impl QueryRequestExecution<'_> {
                 .map_or(policy.accounting().is_some(), |lease| {
                     lease.has_accounting()
                 }),
+            Form::BorrowedSerial { request, .. } => request.has_accounting(),
         }
     }
 }

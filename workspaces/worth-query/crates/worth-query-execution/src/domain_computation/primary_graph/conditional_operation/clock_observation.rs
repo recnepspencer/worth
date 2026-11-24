@@ -374,7 +374,7 @@ where
             );
         }
         self.runtime
-            .with_funded_host_advancement(execution.allocation_policy(), |active_phase| {
+            .with_execution_request_advancement(*execution, |active_phase| {
                 let granular_invalidation_installation = self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
                 let bridge_root = self.runtime.inner.runtime.bridge_ref().conditional_operations();

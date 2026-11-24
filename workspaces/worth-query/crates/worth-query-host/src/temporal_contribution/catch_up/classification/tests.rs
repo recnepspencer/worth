@@ -14,6 +14,9 @@ fn capacity_deferrals_classify_as_backpressure() {
         },
         WorthQueryConditionalExecutionCause::RetentionCapacityExhausted,
         WorthQueryConditionalExecutionCause::PatchPositionReservationContended,
+        WorthQueryConditionalExecutionCause::NoEffect(
+            WorthQueryApplicationNoEffectCause::CapacityExhausted,
+        ),
     ] {
         assert!(is_backpressure_cause(Some(&cause)), "{cause:?}");
     }
@@ -56,4 +59,65 @@ fn non_auth_terminal_causes_never_classify_as_authorization_refused() {
     );
     assert!(a);
     assert!(!o);
+}
+
+#[test]
+fn bridge_managed_temporal_retention_capacity_classifies_as_backpressured() {
+    use worth_query_execution::facade::primary_graph::{
+        WorthQueryConditionalClockObservationDenialKind,
+        WorthQueryConditionalClockObservationFailureKind,
+        WorthQueryConditionalRuntimeInstallationDenialKind,
+    };
+    use worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind;
+
+    for kind in [
+        BridgeManagedTemporalDenialKind::RetentionCapacityExhausted,
+        BridgeManagedTemporalDenialKind::IntentCapacityExhausted,
+    ] {
+        let clock_denial = WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(kind),
+        );
+        assert_eq!(
+            denials::classify_clock_port_denial_kind(&clock_denial),
+            Some(WorthQueryTemporalCatchUpStatus::Backpressured)
+        );
+
+        let recon_failure = WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ManagedTemporal(kind),
+        );
+        assert_eq!(
+            denials::classify_observation_failure_kind(&recon_failure),
+            Some(WorthQueryTemporalCatchUpStatus::Backpressured)
+        );
+    }
+
+    assert_eq!(
+        denials::classify_observation_failure_kind(
+            &WorthQueryConditionalClockObservationFailureKind::RetentionCapacityExhausted,
+        ),
+        Some(WorthQueryTemporalCatchUpStatus::Backpressured)
+    );
+}
+
+#[test]
+fn accumulator_tracks_progress_for_post_progress_step_refusal() {
+    use super::super::WorthQueryTemporalCatchUpDenial;
+
+    let mut acc = CatchUpAccumulator::<()>::new();
+    assert!(!acc.has_progress_or_batches());
+    acc.steps_executed = 1;
+    assert!(acc.has_progress_or_batches());
+    let report = acc.finish(
+        WorthQueryTemporalCatchUpStatus::StepRefused(Box::new(
+            WorthQueryTemporalCatchUpDenial::ForeignClockHandle,
+        )),
+        true,
+    );
+    assert!(matches!(
+        report.status(),
+        WorthQueryTemporalCatchUpStatus::StepRefused(denial)
+            if matches!(denial.as_ref(), WorthQueryTemporalCatchUpDenial::ForeignClockHandle)
+    ));
+    assert!(report.remaining());
+    assert_eq!(report.steps_executed(), 1);
 }

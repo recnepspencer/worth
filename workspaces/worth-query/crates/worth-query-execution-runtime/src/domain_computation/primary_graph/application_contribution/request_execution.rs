@@ -69,6 +69,13 @@ enum Form<'a> {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
         policy: ExecutionRequestPolicy,
     },
+    /// Original lease-free `ExecutionRequest::serial` borrowed directly from
+    /// the caller so its work ceiling, memory budget, deadline, and
+    /// cancellation govern selection, observation, and commit end-to-end.
+    BorrowedSerial {
+        request: worth_execution::ExecutionRequest<'a, 'a>,
+        policy: ExecutionRequestPolicy,
+    },
 }
 
 impl<'a> QueryRequestExecution<'a> {
@@ -82,6 +89,9 @@ impl<'a> QueryRequestExecution<'a> {
                 .as_ref()
                 .map(worth_execution::ExecutionAllocationPolicy::Execution)
                 .map_err(|e| lease_denial(*e)),
+            Form::BorrowedSerial { .. } => {
+                Ok(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            }
         }
     }
     /// The request's execution under `placement`. The request's cancellation
@@ -101,7 +111,14 @@ impl<'a> QueryRequestExecution<'a> {
         cancellation: worth_execution::CancellationToken,
         deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
-        let placement = test_placement::placed(placement);
+        Self::open_placed(test_placement::placed(placement), cancellation, deadline)
+    }
+
+    fn open_placed(
+        placement: RuntimeWorldExecutionPlacement<'a>,
+        cancellation: worth_execution::CancellationToken,
+        deadline: Option<worth_execution::MonotonicDeadline>,
+    ) -> Self {
         let declared_work = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy)
             | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy.work_ceiling(),
@@ -136,18 +153,28 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
-        let lease = match &self.form {
+        match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => {
-                lease.as_ref().map_err(|denial| lease_denial(*denial))?
+                let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
+                lease
+                    .reserve_memory(bytes)
+                    .map(|held| QueryMemoryReservation {
+                        held: Some(held),
+                        bytes,
+                    })
+                    .map_err(memory_denial)
             }
-        };
-        lease
-            .reserve_memory(bytes)
-            .map(|held| QueryMemoryReservation {
-                held: Some(held),
-                bytes,
-            })
-            .map_err(memory_denial)
+            Form::BorrowedSerial { request, .. } => request
+                .reserve_retained_memory(bytes)
+                .map(|held| QueryMemoryReservation {
+                    bytes: if held.is_some() { bytes } else { 0 },
+                    held,
+                })
+                .map_err(|denial| match advancement_denial(denial) {
+                    WorthQueryAdvancementDenial::Resource(resource) => resource,
+                    _ => Resource::NoActiveExecutionScope,
+                }),
+        }
     }
 
     /// Every run, including serial placement, descends from the request's lease.
@@ -165,6 +192,7 @@ impl<'a> QueryRequestExecution<'a> {
                         .map_err(lease_denial)?,
                 )
             }
+            Form::BorrowedSerial { .. } => return Err(Resource::NoActiveExecutionScope),
         };
         Ok(QueryDispatch {
             form,

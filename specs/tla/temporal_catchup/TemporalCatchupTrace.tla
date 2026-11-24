@@ -66,11 +66,11 @@ StepAction(step) ==
       [] step.action = "PumpStepLimit" ->
             PumpStepLimit(step.targetNow)
       [] step.action = "PumpBudgetExhausted" ->
-            PumpBudgetExhausted
+            PumpBudgetExhausted(step.targetNow)
       [] step.action = "PumpCancelled" ->
-            PumpCancelled
+            PumpCancelled(step.targetNow)
       [] step.action = "PumpUnauthorized" ->
-            PumpUnauthorized
+            PumpUnauthorized(step.targetNow)
       [] step.action = "Reset" ->
             ResetForNextSeed
 

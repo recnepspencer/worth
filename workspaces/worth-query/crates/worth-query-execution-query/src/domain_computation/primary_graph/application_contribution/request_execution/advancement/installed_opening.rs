@@ -34,8 +34,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     worth_execution::CancellationToken::new(),
                     None,
                     false,
-                    |phase| body(phase),
+                    body,
                 )
+        })
+    }
+
+    /// Runs one host call carrying the caller's exact original
+    /// [`worth_execution::ExecutionRequest`] (leased or lease-free serial),
+    /// preserving its work ceiling, memory limit, deadline, and cancellation.
+    pub fn with_execution_request_advancement<R>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.runtime
+                .product_runtime
+                .with_execution_request_advancement(execution, body)
         })
     }
 

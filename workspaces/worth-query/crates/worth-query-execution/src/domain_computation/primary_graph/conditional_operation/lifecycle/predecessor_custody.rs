@@ -44,25 +44,35 @@ pub(super) fn wakes_disposable_metered(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     wakes: &[WorthQueryRetainedConditionalWake],
 ) -> bool {
-    for wake in wakes {
-        if execution.consult().is_err() {
-            return false;
-        }
-        if wake.continuation_identity.is_some() {
-            return false;
-        }
-        if !matches!(
-            wake.decision,
-            WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
-                | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
-                | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
-                | WorthQueryRetainedConditionalDecision::OperationProductStale(_, _)
-                | WorthQueryRetainedConditionalDecision::Eligible(_)
-        ) {
-            return false;
-        }
+    if wakes.is_empty() {
+        return execution.consult().is_ok();
     }
-    true
+    execution
+        .run_native_with_checkpoint(|context| {
+            for wake in wakes {
+                let stop = if context.has_accounting() {
+                    context.checkpoint(1)
+                } else {
+                    context.poll()
+                };
+                if stop.is_err() || wake.continuation_identity.is_some() {
+                    return false;
+                }
+                if !matches!(
+                    wake.decision,
+                    WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+                        | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                        | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
+                        | WorthQueryRetainedConditionalDecision::OperationProductStale(_, _)
+                        | WorthQueryRetainedConditionalDecision::Eligible(_)
+                ) {
+                    return false;
+                }
+            }
+            true
+        })
+        .map(|(disposable, _)| disposable)
+        .unwrap_or(false)
 }
 
 impl<Binding, Reconstruction, Execution, Clock, Input>
@@ -90,6 +100,16 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         Ok(phase_exec)
     }
 
+    pub(super) fn settle_resolved_continuation_wakes(&mut self, key: [u8; 32], intent: [u8; 32]) {
+        // Active-binding wakes remain until the next active observation reports
+        // their `AlreadyCommitted` provenance; superseded predecessor bindings
+        // in `inactive_bindings` are never observed again and settle
+        // immediately so they cannot re-record `Retain` on a later pump.
+        for binding in self.inactive_bindings.values_mut() {
+            settle_matching_wakes(&mut binding.retained_wakes, key, intent);
+        }
+    }
+
     pub(super) fn flush_and_reclaim_inactive_continuations<
         Schema: worth_query_installation::facade::ApplicationSchema,
     >(
@@ -104,7 +124,35 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         for binding in self.inactive_bindings.values_mut() {
             let mut binding_flushed = false;
             for wake in &mut binding.retained_wakes {
-                if wake.continuation_identity.is_some() {
+                if let Some(cont) = wake.continuation_identity {
+                    if matches!(
+                        wake.decision,
+                        WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _)
+                    ) && runtime
+                        .installed_program_support()
+                        .is_some_and(|support| !support.lifecycle().is_indeterminate(&cont.key))
+                    {
+                        wake.continuation_identity = None;
+                        let prev = std::mem::replace(
+                            &mut wake.decision,
+                            WorthQueryRetainedConditionalDecision::InterruptedDuringReentry,
+                        );
+                        if let WorthQueryRetainedConditionalDecision::OperationIndeterminate(
+                            evidence,
+                            _,
+                        ) = prev
+                        {
+                            wake.decision =
+                                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(
+                                    evidence, None,
+                                );
+                        } else {
+                            wake.decision = prev;
+                        }
+                        binding_flushed = true;
+                        any_flushed = true;
+                        continue;
+                    }
                     super::super::application_operation_reentry::durable_decision::flush_record(
                         runtime, execution, wake,
                     )?;
@@ -148,4 +196,38 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         });
         Ok(())
     }
+}
+
+fn settle_matching_wakes(
+    wakes: &mut Vec<WorthQueryRetainedConditionalWake>,
+    key: [u8; 32],
+    intent: [u8; 32],
+) {
+    for wake in wakes.iter_mut() {
+        if wake
+            .continuation_identity
+            .is_some_and(|cont| cont.key == key && cont.intent == intent)
+        {
+            wake.continuation_identity = None;
+            let prev = std::mem::replace(
+                &mut wake.decision,
+                WorthQueryRetainedConditionalDecision::InterruptedDuringReentry,
+            );
+            wake.decision = match prev {
+                WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
+                    WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, None)
+                }
+                other => other,
+            };
+        }
+    }
+    wakes.retain(|wake| {
+        wake.continuation_identity.is_some()
+            || !matches!(
+                wake.decision,
+                WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
+            )
+    });
 }

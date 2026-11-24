@@ -92,6 +92,7 @@ impl QueryRequestExecution<'_> {
                 .as_ref()
                 .map(ExecutionRequest::leased)
                 .map_err(|denial| execution_denial::lease_denial(*denial)),
+            Form::BorrowedSerial { request, .. } => Ok(*request),
         }
     }
 

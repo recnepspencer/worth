@@ -128,91 +128,52 @@ impl WorthQueryApplicationConditionalBinding<DesktopReminderSchema> for DesktopR
             .conditional_binding(declaration.erased(), FireReminder::reference())
             .expect("desktop temporal node spec binds");
         let adapter = Arc::new(admit_local_adapter(installation.installed_schema()));
-        let temporal = if config.use_mismatched_due_field {
-            install_desktop_temporal_clock_operation(
-                installation,
-                WorthQueryDesktopTemporalBindingSpec {
-                    operation: FireReminder::reference(),
-                    conditional_binding,
-                    node: DesktopReminderNode::reference(),
-                    predicate: WorthQueryAlwaysReadyTemporalPredicate,
-                    clock_source: config.clock_source,
-                    parameters: ApplicationQueryParameterSet::new(),
-                    projector: ReminderProjector,
-                    bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-                    principal_binding: ReminderPrincipalBinding::reference(),
-                    principal_source: DesktopPrincipalSource {
-                        adapter,
-                        auth: config.auth.clone(),
-                    },
-                    scope_field: identity_field(),
-                    scope_value: "hub".to_owned(),
-                    invoker: ReminderInvoker {
-                        fire_log: config.fire_log.clone(),
-                        controls: config.controls.clone(),
-                    },
-                    identity_field: identity_field(),
-                    revision_field: revision_field(),
-                    lifecycle_field: lifecycle_field(),
-                    active_lifecycle: "active".to_owned(),
-                    completed_lifecycle: "completed".to_owned(),
-                    due_field: primary_graph::WorthQueryTemporalDueField::new(interval_field()),
-                    authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
-                    query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
-                    _marker: PhantomData::<
-                        fn() -> (
-                            DesktopReminderClock,
-                            ReminderTargetsReadBinding,
-                            ReminderIntent,
-                            ReminderIntent,
-                        ),
-                    >,
-                },
-            )
-            .expect("mismatched due field desktop temporal installs")
+        let due_field = if config.use_mismatched_due_field {
+            interval_field()
         } else {
-            install_desktop_temporal_clock_operation(
-                installation,
-                WorthQueryDesktopTemporalBindingSpec {
-                    operation: FireReminder::reference(),
-                    conditional_binding,
-                    node: DesktopReminderNode::reference(),
-                    predicate: WorthQueryAlwaysReadyTemporalPredicate,
-                    clock_source: config.clock_source,
-                    parameters: ApplicationQueryParameterSet::new(),
-                    projector: ReminderProjector,
-                    bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-                    principal_binding: ReminderPrincipalBinding::reference(),
-                    principal_source: DesktopPrincipalSource {
-                        adapter,
-                        auth: config.auth.clone(),
-                    },
-                    scope_field: identity_field(),
-                    scope_value: "hub".to_owned(),
-                    invoker: ReminderInvoker {
-                        fire_log: config.fire_log.clone(),
-                        controls: config.controls.clone(),
-                    },
-                    identity_field: identity_field(),
-                    revision_field: revision_field(),
-                    lifecycle_field: lifecycle_field(),
-                    active_lifecycle: "active".to_owned(),
-                    completed_lifecycle: "completed".to_owned(),
-                    due_field: primary_graph::WorthQueryTemporalDueField::new(due_field()),
-                    authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
-                    query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
-                    _marker: PhantomData::<
-                        fn() -> (
-                            DesktopReminderClock,
-                            ReminderTargetsReadBinding,
-                            ReminderIntent,
-                            ReminderIntent,
-                        ),
-                    >,
-                },
-            )
-            .expect("desktop temporal operation installs cleanly")
+            due_field()
         };
+        let temporal = install_desktop_temporal_clock_operation(
+            installation,
+            WorthQueryDesktopTemporalBindingSpec {
+                operation: FireReminder::reference(),
+                conditional_binding,
+                node: DesktopReminderNode::reference(),
+                predicate: WorthQueryAlwaysReadyTemporalPredicate,
+                clock_source: config.clock_source,
+                parameters: ApplicationQueryParameterSet::new(),
+                projector: ReminderProjector,
+                bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                principal_binding: ReminderPrincipalBinding::reference(),
+                principal_source: DesktopPrincipalSource {
+                    adapter,
+                    auth: config.auth.clone(),
+                },
+                scope_field: identity_field(),
+                scope_value: "hub".to_owned(),
+                invoker: ReminderInvoker {
+                    fire_log: config.fire_log.clone(),
+                    controls: config.controls.clone(),
+                },
+                identity_field: identity_field(),
+                revision_field: revision_field(),
+                lifecycle_field: lifecycle_field(),
+                active_lifecycle: "active".to_owned(),
+                completed_lifecycle: "completed".to_owned(),
+                due_field: primary_graph::WorthQueryTemporalDueField::new(due_field),
+                authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
+                query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
+                _marker: PhantomData::<
+                    fn() -> (
+                        DesktopReminderClock,
+                        ReminderTargetsReadBinding,
+                        ReminderIntent,
+                        ReminderIntent,
+                    ),
+                >,
+            },
+        )
+        .expect("desktop temporal operation installs cleanly");
         Ok(temporal)
     }
 }

@@ -316,41 +316,23 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let retain_and_reenter = |accepted| {
             let mut released = self.pending_invalidations.release();
             let receipt = due_wake_retention::retain_due(
-                phase,
-                accepted,
-                bridge,
-                truth,
-                &released.deliveries,
-                signal_basis,
-                &self.runtime_binding_identity,
-                self.runtime_capability_identity,
+                phase, accepted, bridge, truth, &released.deliveries, signal_basis,
+                &self.runtime_binding_identity, self.runtime_capability_identity,
                 &mut self.retained_wakes,
             );
-            let operation = self
-                .definition
-                .binding
-                .clocked_node()
-                .provider()
-                .node()
-                .operation()
-                .application_operation();
+            let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
             let counts = match super::super::application_operation_reentry::reenter_retained_wakes(
-                &phase_exec,
-                phase,
-                runtime,
-                truth.product(),
-                bridge,
-                managed_clock,
-                operation,
-                &self.definition.reconstruction,
-                &self.definition.execution,
-                &mut self.reconstructed_intents,
-                &mut self.retained_wakes,
-                &self.runtime_canonical_identity,
-                coordinate,
+                &phase_exec, phase, runtime, truth.product(), bridge, managed_clock, operation,
+                &self.definition.reconstruction, &self.definition.execution,
+                &mut self.reconstructed_intents, &mut self.retained_wakes,
+                &self.runtime_canonical_identity, coordinate,
             ) {
                 Ok(counts) => counts,
-                Err(cause) => { persistence_denial = Some(cause); Default::default() }
+                Err(cause) => {
+                    self.pending_invalidations.restore_released(released);
+                    persistence_denial = Some(cause);
+                    return receipt;
+                }
             };
             released.deliveries =
                 super::super::authoritative_reconsideration::promote_performed_signal_deliveries(
@@ -358,12 +340,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     &mut self.retained_wakes,
                 );
             let mut receipt = due_wake_retention::complete_clock_receipt(
-                receipt,
-                counts,
-                authoritative,
-                released,
-                &mut self.retained_wakes,
-                &mut self.operation_totals,
+                receipt, counts, authoritative, released,
+                &mut self.retained_wakes, &mut self.operation_totals,
             );
             super::super::retained_managed_cleanup::include_retained_cleanup(&mut receipt,
                 self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()));
@@ -377,6 +355,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             },
             None => outcome,
         }
+    }
+
+    fn settle_resolved_continuation(&mut self, key: [u8; 32], intent: [u8; 32]) {
+        self.settle_resolved_continuation_wakes(key, intent);
     }
 
     fn retained_resource_counts(&self) -> WorthQueryConditionalRetainedResourceCounts {

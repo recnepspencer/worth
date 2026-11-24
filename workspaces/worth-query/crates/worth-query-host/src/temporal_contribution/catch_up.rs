@@ -164,22 +164,35 @@ where
         if let Err(denial) = execution.consult() {
             return Ok(state.finish(classify_work_ceiling_denial(&denial), true));
         }
-        let selected = match runtime
-            .with_funded_host_advancement(execution.allocation_policy(), |phase| {
-                runtime.on_branch(branch).select(&phase)
-            }) {
+        let selected = match runtime.with_execution_request_advancement(*execution, |phase| {
+            runtime.on_branch(branch).select(&phase)
+        }) {
             Ok(Ok(selected)) => selected,
             Ok(Err(denial)) => {
                 if let Some(status) = classify_branch_stop(&denial) {
                     return Ok(state.finish(status, true));
                 }
-                return Err(WorthQueryTemporalCatchUpDenial::BranchSelection(denial));
+                let refusal = WorthQueryTemporalCatchUpDenial::BranchSelection(denial);
+                if state.has_progress_or_batches() {
+                    return Ok(state.finish(
+                        WorthQueryTemporalCatchUpStatus::StepRefused(Box::new(refusal)),
+                        true,
+                    ));
+                }
+                return Err(refusal);
             }
             Err(denial) => {
                 if let Some(status) = classify_advancement_stop(&denial) {
                     return Ok(state.finish(status, true));
                 }
-                return Err(WorthQueryTemporalCatchUpDenial::Advancement(denial));
+                let refusal = WorthQueryTemporalCatchUpDenial::Advancement(denial);
+                if state.has_progress_or_batches() {
+                    return Ok(state.finish(
+                        WorthQueryTemporalCatchUpStatus::StepRefused(Box::new(refusal)),
+                        true,
+                    ));
+                }
+                return Err(refusal);
             }
         };
         let mut port = match selected.conditional_clock(execution, clock_handle) {
@@ -188,7 +201,14 @@ where
                 if let Some(status) = classify_clock_port_denial(&denial) {
                     return Ok(state.finish(status, true));
                 }
-                return Err(WorthQueryTemporalCatchUpDenial::ClockPort(denial));
+                let refusal = WorthQueryTemporalCatchUpDenial::ClockPort(denial);
+                if state.has_progress_or_batches() {
+                    return Ok(state.finish(
+                        WorthQueryTemporalCatchUpStatus::StepRefused(Box::new(refusal)),
+                        true,
+                    ));
+                }
+                return Err(refusal);
             }
         };
         match port.observe(execution) {

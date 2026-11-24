@@ -9,6 +9,7 @@ use worth_query_execution::facade::{
         WorthQueryConditionalExecutionTerminal, WorthQueryConditionalReentryFailure,
         WorthQueryGranularInvalidationDeliveryBatch,
     },
+    product::WorthQueryApplicationNoEffectCause,
 };
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 use worth_runtime_bridge::facade::{BridgeConditionalDenialKind, BridgeExecutionDenial};
@@ -58,6 +59,10 @@ impl<Clock> CatchUpAccumulator<Clock> {
         if !batch.is_empty() {
             self.granular_invalidation_batches.push(batch);
         }
+    }
+
+    pub(super) fn has_progress_or_batches(&self) -> bool {
+        self.steps_executed > 0 || !self.granular_invalidation_batches.is_empty()
     }
 
     pub(super) fn record_receipt(
@@ -126,10 +131,21 @@ impl<Clock> CatchUpAccumulator<Clock> {
                         saw_blocked = true;
                     }
                 }
-                WorthQueryConditionalExecutionTerminal::ProductUnpublished
-                | WorthQueryConditionalExecutionTerminal::NoEffect => {
+                WorthQueryConditionalExecutionTerminal::ProductUnpublished => {
                     self.failed_occurrences = self.failed_occurrences.saturating_add(1);
                     saw_blocked = true;
+                }
+                WorthQueryConditionalExecutionTerminal::NoEffect => {
+                    self.failed_occurrences = self.failed_occurrences.saturating_add(1);
+                    classify_failure_cause(
+                        provenance.cause().as_ref(),
+                        &mut saw_cancelled,
+                        &mut saw_budget,
+                        &mut saw_auth,
+                        &mut saw_operation_refused,
+                        &mut saw_backpressure,
+                        &mut saw_blocked,
+                    );
                 }
                 WorthQueryConditionalExecutionTerminal::EligibleRetained
                 | WorthQueryConditionalExecutionTerminal::SuppressedRetained => {}
@@ -210,6 +226,10 @@ fn is_backpressure_cause(cause: Option<&WorthQueryConditionalExecutionCause>) ->
                 | WorthQueryConditionalExecutionCause::RelationalDeferred(_)
                 | WorthQueryConditionalExecutionCause::SourceCurrentnessRaced(_)
                 | WorthQueryConditionalExecutionCause::RequiredPrerequisitePending(_)
+                | WorthQueryConditionalExecutionCause::NoEffect(
+                    WorthQueryApplicationNoEffectCause::CapacityExhausted
+                        | WorthQueryApplicationNoEffectCause::RelationalDeferred(_),
+                )
         )
     )
 }
@@ -308,6 +328,12 @@ fn classify_failure_cause(
         Some(WorthQueryConditionalExecutionCause::BridgeConditional(
             BridgeConditionalDenialKind::ConditionalRetentionCapacity,
         )) => *saw_backpressure = true,
+        Some(WorthQueryConditionalExecutionCause::NoEffect(
+            WorthQueryApplicationNoEffectCause::ExecutionRequest(denial),
+        )) => match classify_work_ceiling_denial(denial) {
+            WorthQueryTemporalCatchUpStatus::Cancelled => *saw_cancelled = true,
+            _ => *saw_budget = true,
+        },
         other if is_backpressure_cause(other) => *saw_backpressure = true,
         _ => *saw_blocked = true,
     }
