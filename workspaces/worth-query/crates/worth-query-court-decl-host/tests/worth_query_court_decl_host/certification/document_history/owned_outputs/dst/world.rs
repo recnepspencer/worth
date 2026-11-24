@@ -1,6 +1,7 @@
 //! The real document as a DST system: each oracle action goes through the
 //! public entry point it names, each return is classified into the model's
 //! outcome, and each observation is read with fresh requests.
+mod coupled;
 mod observation;
 mod writer;
 

@@ -49,6 +49,7 @@ mod correction;
 mod death;
 #[macro_use]
 mod set;
+pub mod coupled;
 pub mod envelope;
 pub mod program;
 pub mod reads;

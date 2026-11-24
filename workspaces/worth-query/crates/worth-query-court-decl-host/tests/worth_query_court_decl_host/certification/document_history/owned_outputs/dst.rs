@@ -15,6 +15,7 @@
 //!   today's route, outside the document, and the oracle disagrees.
 //! - A disagreement prints the seed and its shrunk choices; a panic in the
 //!   real system names its seed.
+mod corrective_cascade;
 mod driver;
 pub(super) mod fixture;
 mod reference;
