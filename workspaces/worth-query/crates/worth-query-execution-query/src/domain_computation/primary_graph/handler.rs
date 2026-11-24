@@ -6,7 +6,7 @@ mod decision_reads;
 mod invariant;
 pub mod registry;
 
-pub use candidate::CandidateWriter;
+pub use candidate::{CandidateWriter, NamingScope};
 pub use invariant::DecisionReader;
 pub use registry::{
     HandlerRetirementCursor, InstalledMutationHandlerRegistry, PendingMutationHandlerRegistry,

@@ -45,6 +45,7 @@ fn action(op: &Op) -> String {
         Op::Duplicate { name: n } => {
             format!("\"action\":\"RefuseDuplicateBirth\",\"name\":{}", name(*n))
         }
+        Op::Unnamed { at, .. } => format!("\"action\":\"RefuseUnnamedBirth\",{}", placed(*at)),
         Op::Preserve { name: n, at } => format!(
             "\"action\":\"CommitRegeneratePreserve\",\"name\":{},{}",
             name(*n),
@@ -59,7 +60,8 @@ fn action(op: &Op) -> String {
             text(owner_name(at[1].owner())),
             text(at[0].part())
         ),
-        Op::MergeKeep { keeper, other } => format!(
+        // A settled least merge is a keeper merge; an unsettled one never runs.
+        Op::MergeKeep { keeper, other, .. } | Op::MergeLeast { parents: [keeper, other] } => format!(
             "\"action\":\"CommitMergeKeepParentInPlace\",\"keeper\":{},\"other\":{}",
             name(*keeper),
             name(*other)

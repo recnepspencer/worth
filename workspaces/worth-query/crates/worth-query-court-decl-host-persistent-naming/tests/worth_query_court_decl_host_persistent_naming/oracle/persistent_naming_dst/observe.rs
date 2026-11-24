@@ -121,7 +121,7 @@ impl Driver {
                 .collect()
         };
         let named = |names: &mut dyn Iterator<Item = &WorthQueryName<Member>>| -> Result<BTreeSet<usize>, String> {
-            names.map(|name| model(name)).collect()
+            names.map(&model).collect()
         };
         let mut answers = BTreeMap::new();
         for &name in self.names.keys() {

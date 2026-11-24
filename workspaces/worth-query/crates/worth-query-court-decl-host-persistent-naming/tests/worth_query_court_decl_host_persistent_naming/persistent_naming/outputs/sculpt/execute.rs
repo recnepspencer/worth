@@ -200,6 +200,15 @@ pub(super) fn execute(
                 };
                 writer.merge_entity_names(&parents, keeper)?
             }
+            Step::Scoped(occurrence, steps) => {
+                let mut scoped = super::scoped::Scoped {
+                    members: &members,
+                    seams: &mut seams,
+                    names: &held,
+                    seam_names: &held_seam,
+                };
+                super::scoped::execute(occurrence, steps, &mut scoped, writer)?
+            }
         }
     }
     Ok(())

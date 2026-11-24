@@ -106,6 +106,15 @@ and `retire_*_name`, `split_*_name` and `merge_*_names`
 (`WorthQueryOutputMergeKeeper`) declare what its deletions do to held names;
 re-minting a retired name in the same operation is `Preserve` continuity
 ([operation output names](build-an-application.md#operation-output-names)).
+The recommended entry is `writer.naming_scope(occurrence)` (`host::primary_graph::NamingScope`):
+it binds one `OccurrencePath` (with `sub_scope` / `index` children), takes
+typed roles through `birth(role)`, creates and names in one call
+(`create_entity`, `link_named`), forwards every posture, and adds
+`merge_least_entity` / `merge_least_relation`
+(`host::application_naming::WorthQueryLeastMergeKeeper`), which keep the
+least parent name whatever order the parents are listed in. Every scheme is
+complete (`require_all_births_named` is fixed, not opt-in): a commit leaving
+any created record of a schemed kind unnamed refuses `MissingBirth`.
 A later-role output may tell itself apart by an output the same candidate
 named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
@@ -128,7 +137,8 @@ The persistent-naming protocol is specified in
 and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
 `worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
 `WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
-oracle of that model and emits traces for `run_tlc.py trace`.
+oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`)
+and least-keeper merges, and emits traces for `run_tlc.py trace`.
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
 declare a kind once with `decl::application_naming::WorthQueryNamedKind`

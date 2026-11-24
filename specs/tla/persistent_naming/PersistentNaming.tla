@@ -19,6 +19,10 @@ EXTENDS Integers, Sequences, FiniteSets
     partition need not be touched by the merging commit (#314).
   - Re-minting a live name refuses typed (`DuplicateBirth`) with zero
     effects; re-minting a retired name restores it on a fresh generation.
+  - Every installed scheme is complete (`require_all_births_named`): a
+    commit creating a record of a schemed kind without naming it refuses
+    typed (Relational `MissingBirth`) with zero effects, so no record of a
+    schemed kind is ever live unnamed.
 *)
 
 CONSTANTS
@@ -175,6 +179,14 @@ RefuseDuplicateBirth(n) ==
     /\ n \in Names /\ live[n].alive
     /\ UNCHANGED vars
 
+\* 2b. A commit creating a record of a schemed kind (in `part`, held by
+\*     `owner`) without naming it, beside any number of named births. The
+\*     completeness guard refuses the whole commit typed (`MissingBirth`):
+\*     no generation is issued, no event recorded, nothing goes live.
+RefuseUnnamedBirth(owner, part) ==
+    /\ owner \in HolderOwners /\ part \in Partitions
+    /\ UNCHANGED vars
+
 \* 3. In-commit regeneration: the holder is retired and the same name is
 \*    re-minted onto a fresh record in one commit (Preserve).
 CommitRegeneratePreserve(n, owner, part) ==
@@ -277,6 +289,7 @@ DestroyAndRebuildIndex ==
 Next ==
     \/ \E n \in Names, o \in HolderOwners, p \in Partitions: CommitCreate(n, o, p)
     \/ \E n \in Names: RefuseDuplicateBirth(n)
+    \/ \E o \in HolderOwners, p \in Partitions: RefuseUnnamedBirth(o, p)
     \/ \E n \in Names, o \in HolderOwners, p \in Partitions: CommitRegeneratePreserve(n, o, p)
     \/ \E par, c1, c2 \in Names, o1, o2 \in HolderOwners, p \in Partitions:
             CommitSplit(par, c1, c2, o1, o2, p)
@@ -295,7 +308,7 @@ Spec == Init /\ [][Next]_vars
 
 TypeOK ==
     /\ nextGen >= 1
-    /\ unnamedLive = 0
+    /\ unnamedLive \in Nat
     /\ Len(events) <= MaxEvents
     /\ everBorn \subseteq Names
     /\ retired \subseteq everBorn

@@ -2,10 +2,13 @@
 //! (`milestones/persistent-naming.md`, formal model, DST & trace contract).
 //!
 //! Each `u64` seed drives real installed commits: first births (and typed
-//! `DuplicateBirth` refusals of live re-mints), in-commit regeneration
-//! (`Preserve`), splits whose pieces two distinct models own (#133), merges
-//! keeping a parent in place whose partition the commit never touches
-//! (#314), merges minting a new name, retirement, cross-commit `Restore` on a
+//! `DuplicateBirth` refusals of live re-mints), commits leaving a created
+//! record of the schemed kind unnamed (typed `MissingBirth` refusals of the
+//! completeness guard), in-commit regeneration (`Preserve`), splits whose
+//! pieces two distinct models own (#133), merges keeping a parent in place
+//! whose partition the commit never touches (#314), the same merges through
+//! a naming scope's `merge_least` with the parents in seeded order, merges
+//! minting a new name, retirement, cross-commit `Restore` on a
 //! strictly fresh native identity, and destruction of the derived name index
 //! (a fresh world rebuilt from the same canonical commits). After every step
 //! every ever-minted name is resolved `Exact` and `AllDescendants`, unscoped
@@ -43,11 +46,19 @@ struct Coverage {
     restores: usize,
     rebuilds: usize,
     duplicates: usize,
+    unnamed: usize,
+    least_merges: usize,
     minted_merges: usize,
 }
 
 impl Coverage {
     fn count(&mut self, op: &Op, untouched_keeper: bool) {
+        if let Op::MergeKeep {
+            listed: Some(_), ..
+        } = op
+        {
+            self.least_merges += 1;
+        }
         match op {
             Op::Split { at, .. } if at[0] != at[1] => self.multi_owner_splits += 1,
             Op::MergeKeep { .. } if untouched_keeper => self.untouched_keepers += 1,
@@ -55,6 +66,7 @@ impl Coverage {
             Op::Restore { .. } => self.restores += 1,
             Op::Rebuild => self.rebuilds += 1,
             Op::Duplicate { .. } => self.duplicates += 1,
+            Op::Unnamed { .. } => self.unnamed += 1,
             Op::MergeMint { .. } => self.minted_merges += 1,
             _ => {}
         }
@@ -67,6 +79,8 @@ impl Coverage {
         self.restores += other.restores;
         self.rebuilds += other.rebuilds;
         self.duplicates += other.duplicates;
+        self.unnamed += other.unnamed;
+        self.least_merges += other.least_merges;
         self.minted_merges += other.minted_merges;
     }
 }
@@ -84,7 +98,7 @@ fn apply(model: &mut Oracle, op: &Op) {
             },
             at.iter().map(|placement| placement.owner()).collect(),
         )),
-        Op::MergeKeep { keeper, other } => Some((
+        Op::MergeKeep { keeper, other, .. } => Some((
             Event::MergeKeep {
                 keeper: *keeper,
                 other: *other,
@@ -103,7 +117,7 @@ fn apply(model: &mut Oracle, op: &Op) {
             vec![at.owner()],
         )),
         Op::Retire { name } => Some((Event::Retire(*name), Vec::new())),
-        Op::Duplicate { .. } | Op::Rebuild => None,
+        Op::Duplicate { .. } | Op::Unnamed { .. } | Op::MergeLeast { .. } | Op::Rebuild => None,
     };
     if let Some((event, owners)) = event {
         model.apply(event, &owners);
@@ -153,10 +167,11 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
     let mut ops = Vec::new();
     for step in 0..STEPS {
         let op = next_op(&mut rng, &model, &authored, minted, coverage.rebuilds > 0);
+        let op = driver.settle(op);
         ops.push(op.clone());
         let fail = |cause: String| format!("seed {seed} step {step}: {cause}\n  ops: {ops:?}");
         let untouched = match &op {
-            Op::MergeKeep { keeper, other } => {
+            Op::MergeKeep { keeper, other, .. } => {
                 driver.partitions_differ(*keeper, *other) == Some(true)
             }
             _ => false,
@@ -238,6 +253,8 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             restores,
             rebuilds,
             duplicates,
+            unnamed,
+            least_merges,
             minted_merges,
         } = total;
         for (case, runs) in [
@@ -247,6 +264,8 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             ("Restore", restores),
             ("index rebuilds", rebuilds),
             ("DuplicateBirth refusals", duplicates),
+            ("unnamed-birth refusals", unnamed),
+            ("merge_least merges", least_merges),
             ("MintNew merges", minted_merges),
         ] {
             assert!(runs > 0, "the seeds never exercised {case}");
