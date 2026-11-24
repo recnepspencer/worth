@@ -53,6 +53,10 @@ impl RelationalPersistentRegionSet {
     pub fn len(&self) -> usize {
         self.count
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
     pub fn materialization_unavailable_records(&self) -> usize {
         self.materialization_unavailable_records
     }

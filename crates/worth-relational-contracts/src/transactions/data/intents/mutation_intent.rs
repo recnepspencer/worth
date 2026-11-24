@@ -2,7 +2,7 @@ use crate::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 use crate::internal_port::transactions::data::aspect_field_patch::AspectFieldPatchOwnerPort as _;
 use serde::{Deserialize, Serialize};
 
-use crate::identity::data::{KindId, PartitionId, RelationId};
+use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 use worth_foundational::facade::PortableRecordAspectPatch;
 
@@ -269,9 +269,27 @@ fn field_patch_vector_bytes(values: &[AspectFieldPatch], capacity: usize) -> u64
 /// Operations used by the Relational owners.
 pub trait MutationIntentOwnerPort: Sized {
     fn owned_allocation_capacity_bytes(&self) -> u64;
+    /// The entity a delete intent removes.
+    fn deleted_entity(&self) -> Option<EntityId>;
+    /// The relation a delete intent removes.
+    fn deleted_relation(&self) -> Option<RelationId>;
 }
 
 impl MutationIntentOwnerPort for MutationIntent {
+    fn deleted_entity(&self) -> Option<EntityId> {
+        match self {
+            Self::Entity(EntityMutationIntent::Delete(delete)) => Some(delete.entity_id),
+            _ => None,
+        }
+    }
+
+    fn deleted_relation(&self) -> Option<RelationId> {
+        match self {
+            Self::Relation(RelationMutationIntent::Delete(delete)) => Some(delete.relation_id),
+            _ => None,
+        }
+    }
+
     fn owned_allocation_capacity_bytes(&self) -> u64 {
         match self {
             Self::Create(intent) => intent.owned_allocation_capacity_bytes(),

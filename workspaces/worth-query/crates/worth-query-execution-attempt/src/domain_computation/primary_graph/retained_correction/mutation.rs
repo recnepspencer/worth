@@ -61,6 +61,50 @@ impl CorrectionMaterialOwner {
                 request,
             )?;
         }
+        self.release_published_pins(originals, request)
+    }
+    fn release_published_pins(
+        &self,
+        originals: &worth_runtime_world::facade::WorldProgramActivationHistory,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        let published_pins = {
+            let state = self.state();
+            state
+                .catalog
+                .pins
+                .iter()
+                .filter_map(|(identity, row)| match row.owner {
+                    worth_foundational::facade::CorrectionMaterialPinOwner::Publication {
+                        original,
+                    } if originals.original_state(original).is_some_and(|orig| {
+                        matches!(
+                            orig.fate(),
+                            worth_foundational::facade::WorldOriginalFate::Published
+                                | worth_foundational::facade::WorldOriginalFate::Continued
+                        ) && originals
+                            .original_observations()
+                            .any(|obs| obs.identity() == orig.reserved_commit())
+                    }) =>
+                    {
+                        Some((*identity, original))
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for (identity, original) in published_pins {
+            self.publish(
+                MaterialRecord::Release {
+                    identity,
+                    owner: worth_foundational::facade::CorrectionMaterialPinOwner::Publication {
+                        original,
+                    },
+                    class: worth_foundational::facade::RetentionClass::OptionalRetainedMaterial,
+                },
+                request,
+            )?;
+        }
         Ok(())
     }
     pub fn ensure_capture(

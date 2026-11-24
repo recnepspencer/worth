@@ -1,3 +1,4 @@
+use crate::history::retention::RetentionBusy;
 pub mod active_registry;
 pub mod head_selection;
 pub mod identity;
@@ -17,6 +18,7 @@ use crate::snapshots::data::SnapshotId;
 use super::SnapshotHandleBinding;
 use active_registry::ActiveSnapshotHandleRegistry;
 use published_registry::PublishedSnapshotHandleRegistry;
+pub use published_registry::PublishedSnapshotRegistrationMismatch;
 
 pub use published_capacity::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
@@ -83,25 +85,17 @@ pub struct SnapshotHandleRegistryCostCounters {
 }
 
 impl SnapshotHandles {
-    pub fn try_retained_registrations(&self) -> Result<(bool, bool), ()> {
+    pub fn try_retained_registrations(&self) -> Result<(bool, bool), RetentionBusy> {
         Ok((!self.active.try_empty()?, !self.published.try_empty()?))
     }
     pub fn snapshot_identity_binding(&self) -> Arc<SnapshotIdentityAllocator> {
         Arc::clone(&self.next_snapshot_id)
     }
 
-    pub fn new() -> Self {
-        Self {
-            active: ActiveSnapshotHandleRegistry::new(),
-            published: Arc::new(PublishedSnapshotHandleRegistry::new()),
-            next_snapshot_id: Arc::new(SnapshotIdentityAllocator::new()),
-        }
-    }
-
     /// A forked runtime starts from empty registries and its own identity
     /// allocator; it shares no snapshot authority with the runtime it came from.
     pub fn fork(&self) -> Self {
-        Self::new()
+        Self::default()
     }
 
     pub fn active_count(&self) -> usize {
@@ -185,7 +179,7 @@ impl SnapshotHandles {
         &self,
         original: &Arc<PublishedSnapshotReleaseObservation>,
         capacity: &PublishedSnapshotCapacityOwner,
-    ) -> Result<Option<bool>, ()> {
+    ) -> Result<Option<bool>, PublishedSnapshotRegistrationMismatch> {
         self.published.try_remove_original(original, capacity)
     }
 
@@ -278,5 +272,15 @@ impl SnapshotHandlesFixturePort for SnapshotHandles {
         action: impl FnOnce() -> R,
     ) -> R {
         self.while_published_registry_locked(expected, action)
+    }
+}
+
+impl Default for SnapshotHandles {
+    fn default() -> Self {
+        Self {
+            active: ActiveSnapshotHandleRegistry::new(),
+            published: Arc::new(PublishedSnapshotHandleRegistry::new()),
+            next_snapshot_id: Arc::new(SnapshotIdentityAllocator::new()),
+        }
     }
 }

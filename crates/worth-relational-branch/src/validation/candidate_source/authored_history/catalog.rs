@@ -24,11 +24,15 @@ impl SourceHistoryCatalog {
     pub fn len(&self) -> usize {
         self.programs.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.programs.is_empty()
+    }
     pub fn program(&self, slot: usize) -> Option<&ManagedIndexSourceProgram> {
         self.programs.get(slot)
     }
     pub fn has_programs(&self) -> bool {
-        !self.programs.is_empty()
+        !self.is_empty()
     }
     pub fn slot(&self, program: &ManagedIndexSourceProgram) -> Result<usize, Denial> {
         let slot = self

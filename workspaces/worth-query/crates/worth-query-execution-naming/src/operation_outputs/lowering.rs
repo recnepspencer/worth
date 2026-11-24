@@ -11,6 +11,7 @@ use worth_relational::facade::lineage::{
     PersistentNameTarget,
 };
 
+use super::same_commit::{resolve_same_commit_names, ResolvedOutputName};
 use super::{
     BoundOperationNaming, OperationMergeKeeper, OperationNamedOutput, OperationNamingEntry,
     WorthQueryOutputBirth, WorthQueryOutputNameDenial,
@@ -93,12 +94,15 @@ impl BoundOperationNaming {
     /// Every held name must be born at the basis and designate exactly one
     /// live record there: that record is the subject of its retirement,
     /// split or merge, so the record and the name can never disagree.
-    /// Discriminator references resolve to identities born at the basis.
-    /// Relational then validates every posture against the commit's
-    /// performed effects and mints every birth.
+    /// Discriminator references resolve to identities born at the basis, or
+    /// to the identity of an earlier-role output this commit births in the
+    /// same occurrence. Relational then validates every posture against the
+    /// commit's performed effects and mints every birth.
     ///
     /// Complexity: O(E log E + N) for E named outputs and N held names, each
-    /// held name one O(1) expected index probe plus its O(1) live check.
+    /// held name one O(1) expected index probe plus its O(1) live check, and
+    /// O(R + B) per output of R same-commit references and B discriminator
+    /// bytes.
     pub fn lower(
         &self,
         catalog: &LoweredExecutionNameSchemeCatalog,
@@ -112,7 +116,7 @@ impl BoundOperationNaming {
                 identities.push(name.0);
                 held.insert(digest, name);
             }
-            for output in outputs(entry) {
+            for output in entry.named_outputs() {
                 for digest in &output.birth.embedded_name_digests {
                     if let Some(identity) = recorded_identity(&view, digest) {
                         identities.push(identity);
@@ -120,11 +124,21 @@ impl BoundOperationNaming {
                 }
             }
         }
+        let outputs = self.entries().iter().flat_map(|entry| {
+            let parents = parent_identities(entry, &held);
+            let outputs = entry.named_outputs().iter();
+            outputs.map(move |output| (output, parents.clone()))
+        });
+        let resolved = resolve_same_commit_names(catalog, self.candidate(), outputs)?;
+        identities.extend(resolved.iter().map(|name| name.identity));
+        // Consumed in the declaration order the outputs were resolved in.
+        let mut resolved = resolved.into_iter();
+        let mut next = || resolved.next().expect("one resolved name per named output");
         let mut plan = ExecutionNameBirthPlanBuilder::new(catalog, identities);
         let assembly = WorthQueryOutputNameDenial::Assembly;
         for entry in self.entries() {
             match entry {
-                OperationNamingEntry::Birth(output) => add_birth(&mut plan, output)?,
+                OperationNamingEntry::Birth(output) => add_birth(&mut plan, output, next())?,
                 OperationNamingEntry::Retire { name, .. } => {
                     let (identity, target) = held[name];
                     match target {
@@ -136,7 +150,10 @@ impl BoundOperationNaming {
                     parent, children, ..
                 } => {
                     let (identity, target) = held[parent];
-                    let children = children.iter().map(split_child).collect();
+                    let children = children
+                        .iter()
+                        .map(|child| split_child(child, next()))
+                        .collect();
                     plan.add_split_posture(target, identity, children)
                         .map_err(assembly)?;
                 }
@@ -153,19 +170,20 @@ impl BoundOperationNaming {
                             PendingMergeTarget::Created(target.clone()),
                             ExecutionNamedMergeKeeper::KeepParent(held[keeper].0),
                         ),
-                        OperationMergeKeeper::MintNew(output) => (
-                            PendingMergeTarget::Created(output.target.clone()),
-                            ExecutionNamedMergeKeeper::MintNew {
-                                scheme_id: output.scheme_id.clone(),
-                                occurrence_key: output.birth.occurrence_key.clone(),
-                                role_path: output.birth.role_path.clone(),
-                                canonical_discriminator: output
-                                    .birth
-                                    .canonical_discriminator
-                                    .clone(),
-                                embedded_name_digests: output.birth.embedded_name_digests.clone(),
-                            },
-                        ),
+                        OperationMergeKeeper::MintNew(output) => {
+                            let name = next();
+                            (
+                                PendingMergeTarget::Created(output.target.clone()),
+                                ExecutionNamedMergeKeeper::MintNew {
+                                    scheme_id: output.scheme_id.clone(),
+                                    occurrence_key: output.birth.occurrence_key.clone(),
+                                    role_path: output.birth.role_path.clone(),
+                                    canonical_discriminator: name.canonical_discriminator,
+                                    embedded_name_digests: name.embedded_name_digests,
+                                    same_occurrence_roles: name.same_occurrence_roles,
+                                },
+                            )
+                        }
                     };
                     plan.add_merge_posture(parents, target, keeper)
                         .map_err(assembly)?;
@@ -201,17 +219,18 @@ fn held_names(
     }
 }
 
-fn outputs(
+/// The parent identities every output `entry` names is born over: none for
+/// a plain birth, the split parent, or every merge parent.
+fn parent_identities(
     entry: &OperationNamingEntry<PendingBirthTarget>,
-) -> Vec<&OperationNamedOutput<PendingBirthTarget>> {
+    held: &BTreeMap<[u8; 32], HeldName>,
+) -> Vec<PersistentNameIdentity> {
     match entry {
-        OperationNamingEntry::Birth(output)
-        | OperationNamingEntry::Merge {
-            keeper: OperationMergeKeeper::MintNew(output),
-            ..
-        } => vec![output],
-        OperationNamingEntry::Split { children, .. } => children.iter().collect(),
-        OperationNamingEntry::Retire { .. } | OperationNamingEntry::Merge { .. } => Vec::new(),
+        OperationNamingEntry::Birth(_) | OperationNamingEntry::Retire { .. } => Vec::new(),
+        OperationNamingEntry::Split { parent, .. } => vec![held[parent].0],
+        OperationNamingEntry::Merge { parents, .. } => {
+            parents.iter().map(|parent| held[parent].0).collect()
+        }
     }
 }
 
@@ -272,6 +291,7 @@ fn resolve_held(
 fn add_birth(
     plan: &mut ExecutionNameBirthPlanBuilder<'_>,
     output: &OperationNamedOutput<PendingBirthTarget>,
+    name: ResolvedOutputName,
 ) -> Result<(), WorthQueryOutputNameDenial> {
     let birth = &output.birth;
     let result = match &output.target {
@@ -282,8 +302,9 @@ fn add_birth(
                 birth.occurrence_key.clone(),
                 birth.role_path.clone(),
             );
-            pending.canonical_discriminator = birth.canonical_discriminator.clone();
-            pending.embedded_name_digests = birth.embedded_name_digests.clone();
+            pending.canonical_discriminator = name.canonical_discriminator;
+            pending.embedded_name_digests = name.embedded_name_digests;
+            pending.same_occurrence_roles = name.same_occurrence_roles;
             plan.add_entity_birth(pending).map(|_| ())
         }
         PendingBirthTarget::CreatedRelation(created) => {
@@ -293,22 +314,26 @@ fn add_birth(
                 birth.occurrence_key.clone(),
                 birth.role_path.clone(),
             );
-            pending.canonical_discriminator = birth.canonical_discriminator.clone();
-            pending.embedded_name_digests = birth.embedded_name_digests.clone();
+            pending.canonical_discriminator = name.canonical_discriminator;
+            pending.embedded_name_digests = name.embedded_name_digests;
+            pending.same_occurrence_roles = name.same_occurrence_roles;
             plan.add_relation_birth(pending).map(|_| ())
         }
     };
     result.map_err(WorthQueryOutputNameDenial::Assembly)
 }
 
-fn split_child(output: &OperationNamedOutput<PendingBirthTarget>) -> ExecutionSplitChildSpec {
+fn split_child(
+    output: &OperationNamedOutput<PendingBirthTarget>,
+    name: ResolvedOutputName,
+) -> ExecutionSplitChildSpec {
     ExecutionSplitChildSpec {
         target: output.target.clone(),
         scheme_id: output.scheme_id.clone(),
         occurrence_key: output.birth.occurrence_key.clone(),
         role_path: output.birth.role_path.clone(),
-        canonical_discriminator: output.birth.canonical_discriminator.clone(),
-        embedded_name_digests: output.birth.embedded_name_digests.clone(),
-        same_occurrence_roles: BTreeMap::new(),
+        canonical_discriminator: name.canonical_discriminator,
+        embedded_name_digests: name.embedded_name_digests,
+        same_occurrence_roles: name.same_occurrence_roles,
     }
 }

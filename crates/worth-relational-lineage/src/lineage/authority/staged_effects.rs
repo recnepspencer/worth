@@ -82,6 +82,19 @@ pub(super) fn is_created_in_commit(
     }
 }
 
+/// Whether this commit staged `target`'s partition. A partition it never
+/// staged is exactly as the commit basis left it, so its records are neither
+/// created, retired nor mutated by this commit.
+///
+/// Complexity: O(1) expected partition probe.
+pub(super) fn is_partition_staged(staged: &WorkingState, target: LineageRecordTarget) -> bool {
+    let partition = match target {
+        LineageRecordTarget::Entity(id) => id.partition_id,
+        LineageRecordTarget::Relation(id) => id.partition_id,
+    };
+    staged.get_current_partition(partition).is_some()
+}
+
 pub(super) fn existed_at_basis(
     staged: &WorkingState,
     target: LineageRecordTarget,

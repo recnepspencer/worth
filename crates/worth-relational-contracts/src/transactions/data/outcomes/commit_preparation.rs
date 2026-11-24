@@ -115,33 +115,6 @@ impl CommitPreparationError {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::CommitPreparationErrorOwnerPort as _;
-    use crate::history::data::coordinates::BranchId;
-    use crate::identity::data::VersionId;
-    use crate::transactions::data::outcomes::commit_preparation::{
-        CommitPreparationError, CommitPreparationReason,
-    };
-
-    #[test]
-    fn proposal_ordinal_exhaustion_has_a_dedicated_typed_reason() {
-        let error = CommitPreparationError::proposal_identity_exhausted(
-            BranchId("typed-exhaustion".to_owned()),
-            VersionId(9),
-        );
-
-        assert_eq!(
-            error.reason(),
-            CommitPreparationReason::ProposalIdentityOrdinalExhausted
-        );
-        assert_eq!(error.expected_commit_id(), None);
-        assert!(error
-            .detail()
-            .contains("proposal identity ordinal exhausted"));
-    }
-}
-
 /// Operations used by the Relational owners.
 pub trait CommitPreparationErrorOwnerPort: Sized {
     fn selected_branch_root_reference_mismatch(
@@ -249,5 +222,32 @@ impl CommitPreparationErrorOwnerPort for CommitPreparationError {
         error.reason = CommitPreparationReason::ManagedIndexSource;
         error.managed_source = Some(cause);
         error
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CommitPreparationErrorOwnerPort as _;
+    use crate::history::data::coordinates::BranchId;
+    use crate::identity::data::VersionId;
+    use crate::transactions::data::outcomes::commit_preparation::{
+        CommitPreparationError, CommitPreparationReason,
+    };
+
+    #[test]
+    fn proposal_ordinal_exhaustion_has_a_dedicated_typed_reason() {
+        let error = CommitPreparationError::proposal_identity_exhausted(
+            BranchId("typed-exhaustion".to_owned()),
+            VersionId(9),
+        );
+
+        assert_eq!(
+            error.reason(),
+            CommitPreparationReason::ProposalIdentityOrdinalExhausted
+        );
+        assert_eq!(error.expected_commit_id(), None);
+        assert!(error
+            .detail()
+            .contains("proposal identity ordinal exhausted"));
     }
 }

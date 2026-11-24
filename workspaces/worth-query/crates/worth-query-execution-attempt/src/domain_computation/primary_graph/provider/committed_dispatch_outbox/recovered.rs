@@ -18,11 +18,13 @@ pub(super) struct RecoveredDispatchCandidate {
     pub(super) expected: WorthQueryDispatchOutboxRecord,
 }
 
+pub use super::pending_recovered::PendingRecoveredDispatch;
+
 #[derive(Clone)]
 pub struct RecoveredDispatchSelector {
-    subject: RelationalAssociatedEffectSubject,
-    entity: EntityId,
-    record: WorthQueryDispatchOutboxRecord,
+    pub(super) subject: RelationalAssociatedEffectSubject,
+    pub(super) entity: EntityId,
+    pub(super) record: WorthQueryDispatchOutboxRecord,
 }
 impl RecoveredDispatchSelector {
     pub fn same_source(&self, other: &Self) -> bool {
@@ -41,17 +43,25 @@ impl WorthQueryPrimaryGraphProvider {
         observation: &RuntimeWorldObservationPort,
         inspection: &RuntimeWorldInspectionPort,
         candidates: Vec<RecoveredDispatchCandidate>,
+        unpublished: (
+            &BTreeMap<
+                worth_relational::facade::history::CommitId,
+                worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+            >,
+            &std::collections::BTreeSet<worth_relational::facade::history::CommitId>,
+        ),
     ) -> Result<(), Denial> {
+        let (continuable_native, unpublished_native) = unpublished;
         // A Home without outboxes needs no artifact discovery or source-body reads.
         if candidates.is_empty() {
             return self
                 .completed_commit_evidence
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .readmit_dispatch_correlations(BTreeMap::new())
+                .readmit_dispatch_correlations(BTreeMap::new(), BTreeMap::new())
                 .map_err(|()| Denial::AmbiguousCorrelation);
         }
-        let sources = self.graph.with_runtime(execution, |runtime| {
+        let (sources, pending) = self.graph.with_runtime(execution, |runtime| {
             let authority = runtime.durability_authority();
             let subjects = authority
                 .discover_all_associated_effects(execution)
@@ -66,10 +76,32 @@ impl WorthQueryPrimaryGraphProvider {
                 }
             }
             let mut sources = BTreeMap::new();
+            let mut pending = BTreeMap::new();
             for candidate in candidates {
                 let subject = by_version
                     .get(&candidate.version)
                     .ok_or(Denial::NotAuthoritative)?;
+                let correlation = *candidate.expected.correlation();
+                if let Some(&attempt) = continuable_native.get(&subject.receipt().commit_id) {
+                    let entry = PendingRecoveredDispatch {
+                        selector: RecoveredDispatchSelector {
+                            subject: subject.clone(),
+                            entity: candidate.entity,
+                            record: candidate.expected,
+                        },
+                        attempt,
+                    };
+                    if sources.contains_key(&correlation)
+                        || pending.insert(correlation, entry).is_some()
+                    {
+                        return Err(Denial::AmbiguousCorrelation);
+                    }
+                    continue;
+                }
+                if unpublished_native.contains(&subject.receipt().commit_id) {
+                    // Released original: terminal and can never publish.
+                    continue;
+                }
                 let native = authority
                     .readmit_associated_effect(execution, subject)
                     .map_err(native_denial)?;
@@ -94,19 +126,18 @@ impl WorthQueryPrimaryGraphProvider {
                     &original,
                     description,
                 )?;
-                if sources
-                    .insert(*selector.record.correlation(), selector)
-                    .is_some()
+                if pending.contains_key(&correlation)
+                    || sources.insert(correlation, selector).is_some()
                 {
                     return Err(Denial::AmbiguousCorrelation);
                 }
             }
-            Ok(sources)
+            Ok((sources, pending))
         })?;
         self.completed_commit_evidence
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .readmit_dispatch_correlations(sources)
+            .readmit_dispatch_correlations(sources, pending)
             .map_err(|()| Denial::AmbiguousCorrelation)
     }
 
@@ -117,17 +148,34 @@ impl WorthQueryPrimaryGraphProvider {
         observation: &RuntimeWorldObservationPort,
         inspection: &RuntimeWorldInspectionPort,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
-        let selector = self
-            .completed_commit_evidence
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .recovered_dispatch_correlation(correlation)
-            .map_err(|()| Denial::AmbiguousCorrelation)?;
-        let Some(selector) = selector else {
+        let (selector, pending) = {
+            let store = self
+                .completed_commit_evidence
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            (
+                store
+                    .recovered_dispatch_correlation(correlation)
+                    .map_err(|()| Denial::AmbiguousCorrelation)?,
+                store
+                    .pending_recovered_dispatch_correlation(correlation)
+                    .map_err(|()| Denial::AmbiguousCorrelation)?,
+            )
+        };
+        if let Some(selector) = selector {
+            return self
+                .read_recovered_dispatch_source(execution, &selector, observation, inspection)
+                .map(|(owner, _source)| Some(owner));
+        }
+        let Some(pending) = pending else {
             return Ok(None);
         };
-        self.read_recovered_dispatch_source(execution, &selector, observation, inspection)
-            .map(|(owner, _source)| Some(owner))
+        self.resolve_pending_recovered_dispatch(
+            execution,
+            correlation,
+            pending,
+            (observation, inspection),
+        )
     }
 
     pub fn read_recovered_dispatch_source(
@@ -162,7 +210,7 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 
-    fn original_record(
+    pub(super) fn original_record(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         original: &WorldReadmittedPublication,
@@ -224,7 +272,7 @@ impl WorthQueryPrimaryGraphProvider {
         .readmitted_record()
     }
 
-    fn read_recovered_with_original(
+    pub(super) fn read_recovered_with_original(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -256,7 +304,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
-fn describe(
+pub(super) fn describe(
     original: &WorldReadmittedPublication,
     inspection: &RuntimeWorldInspectionPort,
 ) -> Result<WorthQueryCommittedProductPublication, Denial> {

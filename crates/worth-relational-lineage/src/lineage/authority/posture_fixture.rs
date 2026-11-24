@@ -37,3 +37,6 @@ impl LineageBasisView for LineageCommitPostureInput {
             .find_map(|(name, live)| (live == holder).then_some(*name))
     }
 }
+
+#[doc(hidden)]
+pub mod records;

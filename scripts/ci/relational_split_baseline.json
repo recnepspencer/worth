@@ -1038,6 +1038,8 @@
     "facade::mvcc::RelationalCoupledAuthoredSourceEffects",
     "facade::mvcc::RelationalCoupledChainOverlay",
     "facade::mvcc::RelationalCoupledContribution",
+    "facade::mvcc::RelationalCoupledOverlayEndpoints",
+    "facade::mvcc::RelationalCoupledOverlayRelation",
     "facade::mvcc::RelationalCoupledProducerContinuation",
     "facade::mvcc::RelationalCoupledProducerPosture",
     "facade::mvcc::RelationalCurrentOutputAdoption",

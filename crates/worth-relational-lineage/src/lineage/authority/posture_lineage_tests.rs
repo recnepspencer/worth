@@ -1,19 +1,20 @@
 use std::collections::BTreeMap;
 use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
-use crate::facade::identity::VersionId;
-use crate::facade::lineage::{
+use super::finalize_postures_in_working_state_for_test;
+use super::posture_fixture::LineageCommitPostureInput;
+use crate::contracts::identity::data::primitives::VersionId;
+use crate::contracts::lineage::data::{
     LineageDecisionKind, LineageEventKind, LineageMergeKeeper, LineagePostureClaim,
     LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameHolder,
 };
-use crate::facade::transactions::{
-    DeleteRelationIntent, MutationIntent, RecordRef, RelationMutationIntent,
+use crate::contracts::transactions::data::intents::mutation_intent::{
+    DeleteRelationIntent, MutationIntent, RelationMutationIntent,
 };
-use crate::lineage::authority::finalize_postures_in_working_state_for_test;
-use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
-use crate::runtime::LineageIdentityAllocator;
+use crate::contracts::transactions::data::primitives::RecordRef;
+use crate::runtime::state::subsystems::lineage_identity::LineageIdentityAllocator;
 
-use super::posture_fixtures::{
+use super::posture_fixture::records::{
     cad_scheme_registry, empty_working_state, face_birth, push_entity, push_relation, receipt_at,
     retire_entity, retire_relation, seam_birth, staged_entity_lineage,
 };
@@ -88,15 +89,16 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
     let s1_lin = c1.relation_lineages_for_test()[&s1];
     let s2_lin = c1.relation_lineages_for_test()[&s2];
 
-    let name_for_lineage = |events: &[crate::facade::lineage::LineageEventRecord],
-                            lin: crate::facade::identity::LineageId| {
-        events
-            .iter()
-            .find(|e| e.kind() == LineageEventKind::Create && e.targets() == [lin])
-            .and_then(|e| e.name_birth())
-            .expect("create event carries birth")
-            .identity()
-    };
+    let name_for_lineage =
+        |events: &[crate::contracts::lineage::data::LineageEventRecord],
+         lin: crate::contracts::identity::data::primitives::LineageId| {
+            events
+                .iter()
+                .find(|e| e.kind() == LineageEventKind::Create && e.targets() == [lin])
+                .and_then(|e| e.name_birth())
+                .expect("create event carries birth")
+                .identity()
+        };
     let f_a_name = name_for_lineage(c1_events, f_a_lin);
     let f_b_name = name_for_lineage(c1_events, f_b_lin);
     let s1_name = name_for_lineage(c1_events, s1_lin);

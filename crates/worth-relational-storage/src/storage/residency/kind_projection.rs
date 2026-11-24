@@ -74,8 +74,6 @@ pub fn capture_controlled(
 
 pub mod full;
 pub mod reconstruction;
-#[cfg(test)]
-pub(super) use reconstruction::rebuild;
 pub use reconstruction::{rebuild_for_request, rebuild_head_history_for_request};
 
 #[cfg(test)]

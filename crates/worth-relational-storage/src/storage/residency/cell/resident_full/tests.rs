@@ -6,8 +6,7 @@ use crate::identity::data::{KindId, VersionId};
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::PartitionMutationJournal;
 use crate::storage::residency::{PreparedResidentRegion, RegionCaptureBasis};
-use crate::storage::substrate::{maintenance::ReconstructionLane, EntityExtra, SlotInit};
-use crate::storage::substrate::{EntityArena, RelationArena};
+use crate::storage::substrate::{EntityArena, EntityExtra, RelationArena, SlotInit};
 use crate::symbols::data::StringInterner;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::{
@@ -189,7 +188,7 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
             .reverse_adjacency
             .ensure(0, &partition.adjacency_policy);
         let mut previous = PreparedResidentRegion::initial(
-            &lane,
+            lane,
             &execution,
             partition.clone(),
             &symbols.interner_snapshot(),
@@ -250,13 +249,13 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
                     }
                 );
                 let before = crate::storage::residency::required_symbols::collect_counted(
-                    &lane,
+                    lane,
                     before_region.full_view().partition(),
                     full,
                 )
                 .ids;
                 let cold = crate::storage::residency::required_symbols::collect_counted(
-                    &lane,
+                    lane,
                     current_region.full_view().partition(),
                     full,
                 )

@@ -113,5 +113,6 @@ pub fn read_continuation_page<
             has_more: progress.has_more,
             actual_work,
         },
+        persistent_names: None,
     })
 }

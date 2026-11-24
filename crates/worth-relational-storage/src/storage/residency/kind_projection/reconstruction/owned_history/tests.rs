@@ -32,10 +32,10 @@ fn assert_owned_history(
             project_suffix(partial, slot, &mut actual, &mut |_, _| Ok(())).unwrap();
         }
         let lane = fixture_lane;
-        let expected = super::super::canonical_history(&lane, full).unwrap();
+        let expected = super::super::canonical_history(lane, full).unwrap();
         assert_eq!(actual.values().cloned().collect::<Vec<_>>(), expected);
         super::super::installation::install(
-            &lane,
+            lane,
             partial,
             &actual,
             AdjacencyKindBasis::Historical,
@@ -44,12 +44,11 @@ fn assert_owned_history(
             &mut |_, _| Ok(None),
         )
         .unwrap();
-        crate::storage::residency::rebuild_region_history_kind_buckets(&lane, full).unwrap();
+        crate::storage::residency::rebuild_region_history_kind_buckets(lane, full).unwrap();
         assert_eq!(
-            crate::storage::residency::RelationalRegionKindCommitment::capture(&lane, partial)
+            crate::storage::residency::RelationalRegionKindCommitment::capture(lane, partial)
                 .unwrap(),
-            crate::storage::residency::RelationalRegionKindCommitment::capture(&lane, full)
-                .unwrap()
+            crate::storage::residency::RelationalRegionKindCommitment::capture(lane, full).unwrap()
         );
     })
 }

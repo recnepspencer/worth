@@ -215,15 +215,15 @@ fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
 fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scratch() {
     crate::storage::residency::resident_history::with_reconstruction_fixture(|fixture_lane| {
         use crate::execution::RelationalExecutionDenialCause as Stop;
-        use crate::storage::substrate::maintenance::{MaintenanceRefusal, ReconstructionLane};
+        use crate::storage::substrate::maintenance::MaintenanceRefusal;
         use kind_admission::maintained::{preserve_original_stop, KindMaintenanceError};
         let lane = fixture_lane;
         let budget = SerialMemoryBudget::new(Some(1 << 20));
         let mut partition = peer_partition();
-        let before = kind_projection::canonical_history(&lane, &partition).unwrap();
+        let before = kind_projection::canonical_history(lane, &partition).unwrap();
         let mut scratch = None;
         let result = kind_admission::normalize_value(
-            &lane,
+            lane,
             &mut partition,
             &mut |units, bytes| {
                 if units > 0 {
@@ -247,7 +247,7 @@ fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scra
             ));
         }
         assert_eq!(
-            kind_projection::canonical_history(&lane, &partition).unwrap(),
+            kind_projection::canonical_history(lane, &partition).unwrap(),
             before
         );
         assert!(

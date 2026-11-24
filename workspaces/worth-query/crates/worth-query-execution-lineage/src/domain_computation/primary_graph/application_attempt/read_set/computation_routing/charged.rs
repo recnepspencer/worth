@@ -29,6 +29,7 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
             // The native read retains its own actual backing and custody.
             Self::ComponentSelection(_)
             | Self::ManagedIndexSource(_)
+            | Self::AppliedSource(_)
             | Self::SourceReadAuthorization(_)
             | Self::SourcePublication(_)
             | Self::StructuralWalk(_)

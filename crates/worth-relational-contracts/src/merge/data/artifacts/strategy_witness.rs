@@ -146,6 +146,108 @@ fn digest_is_lowercase_sha256_hex(value: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
+/// Operations used by the Relational owners.
+pub trait RelationalMergeStrategyWitnessOwnerPort: Sized {
+    fn retain_aspect_policy_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
+    fn retain_topology_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
+    fn retain_deletion_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
+    fn retained(
+        request_digest: String,
+        branch_basis_digest: String,
+        execution_authority_contract: MergeExecutionAuthorityContract,
+        aspect_policy_rows: Arc<[RelationalMergeAspectPolicyWitnessRow]>,
+        topology_rows: Arc<[RelationalMergeTopologyStrategyWitnessRow]>,
+        deletion_rows: Arc<[RelationalMergeDeletionStrategyWitnessRow]>,
+    ) -> Self;
+    fn retains_honest_truth(&self) -> bool;
+}
+
+impl RelationalMergeStrategyWitnessOwnerPort for RelationalMergeStrategyWitness {
+    fn retain_aspect_policy_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.aspect_policy_rows.retain_decoded_memory(memory)
+    }
+
+    fn retain_topology_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.topology_rows.retain_decoded_memory(memory)
+    }
+
+    fn retain_deletion_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.deletion_rows.retain_decoded_memory(memory)
+    }
+
+    fn retained(
+        request_digest: String,
+        branch_basis_digest: String,
+        execution_authority_contract: MergeExecutionAuthorityContract,
+        aspect_policy_rows: Arc<[RelationalMergeAspectPolicyWitnessRow]>,
+        topology_rows: Arc<[RelationalMergeTopologyStrategyWitnessRow]>,
+        deletion_rows: Arc<[RelationalMergeDeletionStrategyWitnessRow]>,
+    ) -> Self {
+        let witness_digest = strategy_witness_digest(
+            &request_digest,
+            &branch_basis_digest,
+            &execution_authority_contract,
+            &aspect_policy_rows,
+            &topology_rows,
+            &deletion_rows,
+        );
+        Self {
+            request_digest,
+            branch_basis_digest,
+            execution_authority_contract,
+            aspect_policy_rows: aspect_policy_rows.into(),
+            topology_rows: topology_rows.into(),
+            deletion_rows: deletion_rows.into(),
+            witness_digest,
+        }
+    }
+
+    fn retains_honest_truth(&self) -> bool {
+        digest_is_lowercase_sha256_hex(&self.request_digest)
+            && digest_is_lowercase_sha256_hex(&self.branch_basis_digest)
+            && execution_authority_contract_is_honest(&self.execution_authority_contract)
+            && self
+                .aspect_policy_rows
+                .iter()
+                .all(RelationalMergeAspectPolicyWitnessRow::retains_honest_truth)
+            && self
+                .topology_rows
+                .iter()
+                .all(RelationalMergeTopologyStrategyWitnessRow::retains_honest_truth)
+            && self
+                .deletion_rows
+                .iter()
+                .all(RelationalMergeDeletionStrategyWitnessRow::retains_honest_truth)
+            && self.witness_digest
+                == strategy_witness_digest(
+                    &self.request_digest,
+                    &self.branch_basis_digest,
+                    &self.execution_authority_contract,
+                    &self.aspect_policy_rows,
+                    &self.topology_rows,
+                    &self.deletion_rows,
+                )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,107 +362,5 @@ mod tests {
             rmp_serde::from_slice::<RelationalMergeStrategyWitness>(&wire).unwrap(),
             witness
         );
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait RelationalMergeStrategyWitnessOwnerPort: Sized {
-    fn retain_aspect_policy_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
-    fn retain_topology_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
-    fn retain_deletion_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
-    fn retained(
-        request_digest: String,
-        branch_basis_digest: String,
-        execution_authority_contract: MergeExecutionAuthorityContract,
-        aspect_policy_rows: Arc<[RelationalMergeAspectPolicyWitnessRow]>,
-        topology_rows: Arc<[RelationalMergeTopologyStrategyWitnessRow]>,
-        deletion_rows: Arc<[RelationalMergeDeletionStrategyWitnessRow]>,
-    ) -> Self;
-    fn retains_honest_truth(&self) -> bool;
-}
-
-impl RelationalMergeStrategyWitnessOwnerPort for RelationalMergeStrategyWitness {
-    fn retain_aspect_policy_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
-        self.aspect_policy_rows.retain_decoded_memory(memory)
-    }
-
-    fn retain_topology_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
-        self.topology_rows.retain_decoded_memory(memory)
-    }
-
-    fn retain_deletion_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
-        self.deletion_rows.retain_decoded_memory(memory)
-    }
-
-    fn retained(
-        request_digest: String,
-        branch_basis_digest: String,
-        execution_authority_contract: MergeExecutionAuthorityContract,
-        aspect_policy_rows: Arc<[RelationalMergeAspectPolicyWitnessRow]>,
-        topology_rows: Arc<[RelationalMergeTopologyStrategyWitnessRow]>,
-        deletion_rows: Arc<[RelationalMergeDeletionStrategyWitnessRow]>,
-    ) -> Self {
-        let witness_digest = strategy_witness_digest(
-            &request_digest,
-            &branch_basis_digest,
-            &execution_authority_contract,
-            &aspect_policy_rows,
-            &topology_rows,
-            &deletion_rows,
-        );
-        Self {
-            request_digest,
-            branch_basis_digest,
-            execution_authority_contract,
-            aspect_policy_rows: aspect_policy_rows.into(),
-            topology_rows: topology_rows.into(),
-            deletion_rows: deletion_rows.into(),
-            witness_digest,
-        }
-    }
-
-    fn retains_honest_truth(&self) -> bool {
-        digest_is_lowercase_sha256_hex(&self.request_digest)
-            && digest_is_lowercase_sha256_hex(&self.branch_basis_digest)
-            && execution_authority_contract_is_honest(&self.execution_authority_contract)
-            && self
-                .aspect_policy_rows
-                .iter()
-                .all(RelationalMergeAspectPolicyWitnessRow::retains_honest_truth)
-            && self
-                .topology_rows
-                .iter()
-                .all(RelationalMergeTopologyStrategyWitnessRow::retains_honest_truth)
-            && self
-                .deletion_rows
-                .iter()
-                .all(RelationalMergeDeletionStrategyWitnessRow::retains_honest_truth)
-            && self.witness_digest
-                == strategy_witness_digest(
-                    &self.request_digest,
-                    &self.branch_basis_digest,
-                    &self.execution_authority_contract,
-                    &self.aspect_policy_rows,
-                    &self.topology_rows,
-                    &self.deletion_rows,
-                )
     }
 }

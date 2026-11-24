@@ -22,6 +22,15 @@ impl Session {
         seed: u64,
         build: Option<&str>,
     ) -> (Self, Response) {
+        Self::start_with_build_and_wal(path, channel, seed, build, None)
+    }
+    pub fn start_with_build_and_wal(
+        path: &Path,
+        channel: &Path,
+        seed: u64,
+        build: Option<&str>,
+        wal_bytes: Option<u64>,
+    ) -> (Self, Response) {
         std::fs::create_dir_all(channel).unwrap();
         let mut command = Command::new(std::env::current_exe().unwrap());
         command
@@ -37,6 +46,9 @@ impl Session {
             ));
         if let Some(build) = build {
             command.env("WORTH_HOST_ORACLE_BUILD", build);
+        }
+        if let Some(bytes) = wal_bytes {
+            command.env("WORTH_HOST_ORACLE_WAL_BYTES", bytes.to_string());
         }
         let child = command.spawn().unwrap();
         let mut session = Self {
@@ -66,6 +78,9 @@ impl Session {
                 return serde_json::from_slice(&bytes).unwrap();
             }
             let ended = self.child.try_wait().unwrap();
+            if ended.is_some() && file.is_file() {
+                continue;
+            }
             assert!(
                 ended.is_none() && Instant::now() < deadline,
                 "Host child stopped or did not respond: {ended:?}\n{}\n{}",
@@ -81,6 +96,26 @@ impl Session {
         }
         self.child.wait().unwrap();
     }
+    /// Explicitly terminate a STILL-LIVE child process with a real OS kill,
+    /// carrying the caller's replay context on every failure assertion.
+    pub fn kill_live_with_ctx(&mut self, ctx: &str) {
+        let exited = self
+            .child
+            .try_wait()
+            .unwrap_or_else(|e| panic!("{ctx}: poll Host child before OS kill: {e:?}"));
+        assert!(
+            exited.is_none(),
+            "{ctx}: Host child exited before parent-induced OS kill: {exited:?}"
+        );
+        self.child
+            .kill()
+            .unwrap_or_else(|e| panic!("{ctx}: parent OS kill of live Host child failed: {e:?}"));
+        let status = self
+            .child
+            .wait()
+            .unwrap_or_else(|e| panic!("{ctx}: reap OS-killed Host child: {e:?}"));
+        crate::killed_child::assert_os_killed(status, ctx);
+    }
     pub fn finish(&mut self) {
         assert!(self.child.wait().unwrap().success(), "graceful child exit");
     }
@@ -95,6 +130,22 @@ fn host_oracle_service_child() {
     let Some(channel) = std::env::var_os("WORTH_HOST_ORACLE_CHANNEL").map(PathBuf::from) else {
         return;
     };
+    let wal_profile = std::env::var_os("WORTH_HOST_ORACLE_WAL_BYTES").map(|raw| {
+        let bytes = raw
+            .to_str()
+            .unwrap()
+            .parse::<std::num::NonZeroU64>()
+            .unwrap();
+        worth_store_application::ApplicationHomeCertificationProfile::with_wal_segment_bytes(bytes)
+    });
+    let run = || run_host_oracle_service_child(channel);
+    match wal_profile {
+        Some(profile) => profile.run(run),
+        None => run(),
+    }
+}
+
+fn run_host_oracle_service_child(channel: PathBuf) {
     let path = PathBuf::from(std::env::var_os("WORTH_HOST_ORACLE_HOME").unwrap());
     let seed = std::env::var("WORTH_HOST_ORACLE_SEED")
         .unwrap()
@@ -174,8 +225,13 @@ fn host_oracle_service_child() {
                 };
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation,
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation });
+            }
+            Request::Checkpoint => {
+                let checkpoint = home.as_ref().unwrap().checkpoint(&execution).unwrap();
+                disposition = Some(super::protocol::Disposition::Checkpointed {
+                    generation: checkpoint.generation(),
                 });
             }
             Request::CheckpointAndDiscard => {
@@ -205,12 +261,15 @@ fn host_oracle_service_child() {
                 ));
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation: None,
-                });
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation: None });
             }
             Request::InspectCadence => {
-                let inspection = home.as_ref().unwrap().inspect_checkpoint(&execution).unwrap();
+                let inspection = home
+                    .as_ref()
+                    .unwrap()
+                    .inspect_checkpoint(&execution)
+                    .unwrap();
                 let journals = inspection
                     .journals
                     .iter()

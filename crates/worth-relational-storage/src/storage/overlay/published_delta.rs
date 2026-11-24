@@ -51,6 +51,10 @@ impl RelationalPublishedPartitionDelta {
         self.partition_ids.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.partition_ids.is_empty()
+    }
+
     pub fn publication(
         &self,
         partition_id: crate::identity::data::PartitionId,

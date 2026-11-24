@@ -59,9 +59,18 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
     pub(in crate::application_entry::history::outputs) fn with_recording_owner<T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
+        candidate: WorthQueryProductBranch,
         consume: impl FnOnce(Option<&mut RecordingForest<S>>) -> (T, bool),
     ) -> Result<T, WorthQueryHistoryOutputDenial> {
         let mut owner = self.recording_owner()?;
+        if let Some(forest) = &mut *owner
+            && let Some(bound) = forest.left_by_another_recording(candidate)
+        {
+            // An earlier request ended before it could release these trees.
+            // Close them where they were opened and record on a new forest.
+            forest.close(phase, bound)?;
+            *owner = None;
+        }
         if owner.is_none() {
             *owner = Some(self.prepare_recording(phase)?);
         }
@@ -80,11 +89,36 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
         let Some(forest) = &mut *owner else {
             return Ok(());
         };
+        // The trees close on the candidate they were opened on, which is an
+        // earlier recording's when this one never reached them.
+        let branch = forest
+            .origin
+            .as_ref()
+            .map_or(branch, |origin| origin.candidate());
         request
             .application
             .with_application_advancement(request.scope, |phase| forest.close(&phase, branch))
             .map_err(WorthQueryHistoryOutputDenial::Execution)??;
         *owner = None;
+        Ok(())
+    }
+    /// Close the forest an ended request left bound to `branch`, so that
+    /// branch can close.
+    pub(in crate::application_entry::history::outputs) fn release_recording_owner_for_branch(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        branch: WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryHistoryOutputDenial> {
+        let mut owner = self.recording_owner()?;
+        if let Some(forest) = &mut *owner
+            && forest
+                .origin
+                .as_ref()
+                .is_some_and(|origin| origin.candidate() == branch)
+        {
+            forest.close(phase, branch)?;
+            *owner = None;
+        }
         Ok(())
     }
     pub(in crate::application_entry::history::outputs) fn close_recording_owner(
@@ -149,6 +183,19 @@ impl<S: ApplicationSchema + 'static> RecordingForest<S> {
     }
     pub(in crate::application_entry::history) fn needs_origin(&self) -> bool {
         !self.disposing && self.origin.is_none()
+    }
+    /// The branch to close this forest on when the recording on `candidate`
+    /// cannot use it: it is bound to another candidate, or it is disposing
+    /// with nothing bound. A disposing forest bound to `candidate` stays, so
+    /// its own recording still refuses `NeedsDisposal`.
+    fn left_by_another_recording(
+        &self,
+        candidate: WorthQueryProductBranch,
+    ) -> Option<WorthQueryProductBranch> {
+        match &self.origin {
+            Some(origin) => Some(origin.candidate()).filter(|bound| *bound != candidate),
+            None => self.disposing.then_some(candidate),
+        }
     }
     pub(in crate::application_entry::history) fn bind_origin(
         &mut self,

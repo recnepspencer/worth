@@ -99,7 +99,7 @@ impl RelationalRootRegion {
             partition: self.partition.clone(),
             allocation_inventory: Some(inventory),
             content_digest: self.content_digest,
-            kind_commitment: self.kind_commitment.clone(),
+            kind_commitment: self.kind_commitment,
             directory: std::sync::Arc::clone(&self.directory),
             live_counts: self.live_counts,
             entity_slots: self.entity_slots,

@@ -1,5 +1,6 @@
 //! The removed binding keeps its real observation until owner retirement.
 use super::selected_snapshot::{SelectedSnapshotSource, VisibilitySnapshotBasis};
+use crate::history::retention::RetentionBusy;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ impl VisibilitySnapshotBasis {
 }
 
 impl VisibilitySnapshotBasisRetirement {
-    pub fn advance(&mut self) -> Result<bool, ()> {
+    pub fn advance(&mut self) -> Result<bool, RetentionBusy> {
         match self.observation.as_mut() {
             Some(observation) => observation.advance(),
             None => Ok(true),

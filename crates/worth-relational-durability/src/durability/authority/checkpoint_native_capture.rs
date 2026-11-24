@@ -239,7 +239,7 @@ impl CapturedCheckpointBasis {
                     insert_member(&mut captured, member);
                 }
             }
-        } else if mirror.len() != 0 {
+        } else if !mirror.is_empty() {
             return Err(corrupt("nonempty mirror has no selected schema authority").into());
         }
         if let Some(prior) = &prior

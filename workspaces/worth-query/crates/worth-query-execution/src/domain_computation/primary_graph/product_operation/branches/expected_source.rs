@@ -33,7 +33,7 @@ pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
 /// adoption as an application model's head.
 #[must_use = "retain the expected-source continuation or explicitly close the candidate"]
 pub struct WorthQueryExpectedProductBranch<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: WorthQueryRuntimeCustody<'runtime, Schema>,
     branch: WorthQueryProductBranch,
     source: WorthQueryProductBranchLease,
 }
@@ -103,9 +103,22 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranchFork<'r
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryExpectedProductBranch<'runtime, Schema>, WorthQueryProductBranchCreateError>
     {
+        let custody = WorthQueryRuntimeCustody::Borrowed(self.application);
+        self.create_in(custody, phase)
+    }
+
+    /// Create the candidate for an owner that reaches this fork's runtime
+    /// through its own custody. The fork itself never outlives this call.
+    pub(in crate::domain_computation::primary_graph) fn create_in<'owner>(
+        self,
+        custody: WorthQueryRuntimeCustody<'owner, Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<WorthQueryExpectedProductBranch<'owner, Schema>, WorthQueryProductBranchCreateError>
+    {
+        assert!(custody.same_runtime(self.application));
         let (branch, source) = self.fork.create_retaining_source(phase)?;
         Ok(WorthQueryExpectedProductBranch {
-            application: self.application,
+            application: custody,
             branch,
             source,
         })
@@ -138,8 +151,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
 
     pub(in crate::domain_computation::primary_graph) fn application(
         &self,
-    ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        self.application
+    ) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        &self.application
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_expected_source(
@@ -155,7 +168,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryProductBranchCloseReceipt,
         WorthQueryExpectedProductBranchCloseFailure<'runtime, Schema>,
     > {
-        match self.application.on_branch(self.branch).close(phase) {
+        let closed = self.application.on_branch(self.branch).close(phase);
+        match closed {
             Ok(receipt) => Ok(receipt),
             Err(denial) => Err(WorthQueryExpectedProductBranchCloseFailure {
                 candidate: self,

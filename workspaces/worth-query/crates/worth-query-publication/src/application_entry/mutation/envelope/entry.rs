@@ -83,6 +83,9 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K> CaptureEditSta
 pub trait EditEntry<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K> {
     fn binding(&self) -> &'static str;
     fn intent(&self) -> ApplicationEditStageIntent;
+    fn descriptor(
+        &self,
+    ) -> worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
     fn secondary(
         &self,
         context: &EnvelopeContext<'_, S>,

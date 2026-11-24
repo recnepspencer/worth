@@ -105,3 +105,6 @@ pub fn delete_membership(
     );
     Ok(())
 }
+
+mod recorded_predecessor;
+pub use recorded_predecessor::corrupt_predecessor_for_test;

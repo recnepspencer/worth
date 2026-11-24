@@ -2,6 +2,7 @@ pub mod commit_births;
 pub mod commit_finalization;
 pub mod committed_allocations;
 use worth_relational_contracts::internal_port::lineage::data::discriminator_scan;
+mod mint_order;
 pub mod name_minting;
 pub mod name_readmission;
 pub mod posture_allocation_drafts;
@@ -16,7 +17,11 @@ pub mod selection_continuity;
 pub mod staged_effects;
 
 #[cfg(test)]
+mod mint_order_tests;
+#[cfg(test)]
 pub mod name_minting_tests;
+#[cfg(test)]
+mod pending_birth_identity;
 
 pub use commit_births::extract_committed_name_births;
 pub use commit_finalization::resolve_commit_naming_plan;
@@ -36,3 +41,9 @@ pub(crate) use name_readmission::VerifiedBirthDigest;
 
 #[doc(hidden)]
 pub mod posture_fixture;
+
+#[cfg(test)]
+mod untouched_keeper_merge;
+
+#[cfg(test)]
+mod posture_lineage_tests;

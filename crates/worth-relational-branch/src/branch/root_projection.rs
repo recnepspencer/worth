@@ -173,7 +173,7 @@ impl<'a> SnapshotProjectionRoot<'a> {
     pub fn symbol_admitted_projection(
         &self,
         symbols: &'a RuntimeSymbolTable,
-    ) -> impl CurrentPartitionAccess + PartitionAccess + 'a + use<'a> {
+    ) -> impl PartitionAccess + 'a + use<'a> {
         SymbolAdmittedRootRead::new(self.regions, symbols)
     }
 }

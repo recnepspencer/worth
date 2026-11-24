@@ -23,7 +23,7 @@ pub struct NonLiveKernelReceiptEvidence {
 pub fn project_non_live_kernel_roots(
     kernel: RawNonLiveKernelOutcome,
 ) -> ProjectedNonLiveKernelOutcome<worth_relational::facade::identity::EntityId> {
-    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let RawNonLiveKernelOutcome { mut raw, .. } = kernel;
     let rows: Vec<_> = raw.rows.iter().map(|node| node.entity_id()).collect();
     raw.rows.clear();
     let result_count = rows.len();
@@ -70,12 +70,16 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
-    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let RawNonLiveKernelOutcome {
+        mut raw,
+        persistent_names,
+    } = kernel;
     let rows = decode_projection_tree::<Schema, Query, QueryResult, Denial>(
         execution,
         decode,
         &raw.rows,
         governance,
+        persistent_names.as_ref(),
         validate,
         map_projection_denial,
     )?;
@@ -99,6 +103,7 @@ pub fn decode_projection_tree<Schema, Query, QueryResult, Denial>(
     decode: &ValueDecodeState,
     tree: &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    names: Option<&worth_query_execution_naming::facade::ObservedEntityNames>,
     mut validate: impl FnMut() -> Result<(), Denial>,
     map_projection_denial: impl Fn(WorthQueryApplicationProjectionDenial) -> Denial,
 ) -> Result<Vec<QueryResult>, Denial>
@@ -110,9 +115,10 @@ where
         let mut rows = Vec::with_capacity(tree.raw_rows().len());
         for node in tree.iter() {
             validate()?;
-            let value = QueryResult::project(&WorthQueryApplicationProjectionRow::new(
-                node, governance, session,
-            ));
+            let value = QueryResult::project(
+                &WorthQueryApplicationProjectionRow::new(node, governance, session)
+                    .with_persistent_names(names),
+            );
             // The native owner checks its latched refusal before accepting a
             // projector's substituted value or unrelated domain error.
             if session.stopped() {
@@ -148,7 +154,7 @@ pub fn project_non_live_kernel_source(
     ),
     super::super::WorthQueryApplicationOneShotDenial,
 > {
-    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let RawNonLiveKernelOutcome { mut raw, .. } = kernel;
     let result_count = raw.rows.raw_rows().len();
     work(result_count)?;
     let rows = vec![(); result_count];

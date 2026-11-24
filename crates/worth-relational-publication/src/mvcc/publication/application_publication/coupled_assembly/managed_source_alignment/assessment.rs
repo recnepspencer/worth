@@ -1,5 +1,6 @@
 //! Judge a selected Source against the exact native effects and the applied image.
 use super::super::parent_read_footprint::ManagedIndexParentReadFootprint;
+use super::reach::Reach;
 use super::relevance::SourceRelevance;
 use contracts::execution::request_stage::checkpoint;
 use contracts::identity::data::primitives::KindId;
@@ -16,7 +17,118 @@ use worth_relational_mutation::internal_port::authority::mutation::effect::Mutat
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
-pub fn source_is_unchanged(
+use crate::visibility::materialization::read_records::reader::pinned_read::{
+    RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
+};
+use std::cell::RefCell;
+
+type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
+
+/// Live inputs to both managed Source stability judgments.
+pub struct Assessment<'a> {
+    pub current: &'a RefCell<Option<Read>>,
+    pub registry: &'a RelationalSchemaRegistry,
+    pub state: &'a WorkingState,
+    pub effect: &'a MutationEffect,
+}
+
+impl Assessment<'_> {
+    pub fn unchanged_at(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &ManagedIndexSourceProgram,
+        pin: &Read,
+        scope: EntityId,
+        footprint: &ManagedIndexParentReadFootprint,
+    ) -> Result<bool, Denial> {
+        self.unchanged(execution, program, pin, scope, footprint, None, None)
+    }
+
+    /// Use the kind-level proof first. A relevant member is narrowed against
+    /// the membership read in its exact preceding image. Requests may stop
+    /// the judgment, while an unreadable membership leaves the kind-level answer.
+    pub fn unchanged_by(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &ManagedIndexSourceProgram,
+        pin: &Read,
+        earlier: &Read,
+        scope: EntityId,
+        footprint: &ManagedIndexParentReadFootprint,
+        records: &[RecordRef],
+        prior_reach: impl FnOnce() -> Result<Reach, Denial>,
+    ) -> Result<bool, Denial> {
+        if self.unchanged(
+            execution,
+            program,
+            pin,
+            scope,
+            footprint,
+            Some(records),
+            None,
+        )? {
+            return Ok(true);
+        }
+        if !pin
+            .candidate_identity()
+            .includes_assembly_prefix(earlier.candidate_identity())
+        {
+            return Err(Denial::ForeignSource);
+        }
+        match prior_reach() {
+            Ok(reach) => self.unchanged(
+                execution,
+                program,
+                pin,
+                scope,
+                footprint,
+                Some(records),
+                Some(reach),
+            ),
+            Err(
+                cause @ Denial::Source(
+                    contracts::derived_relation::read_denial::DerivedRelationReadDenial::Request(_),
+                ),
+            ) => Err(cause),
+            Err(_) => Ok(false),
+        }
+    }
+
+    fn unchanged(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &ManagedIndexSourceProgram,
+        pin: &Read,
+        scope: EntityId,
+        footprint: &ManagedIndexParentReadFootprint,
+        only: Option<&[RecordRef]>,
+        reach: Option<Reach>,
+    ) -> Result<bool, Denial> {
+        let current = self.current.borrow();
+        let Some(current) = current.as_ref() else {
+            return Err(Denial::ForeignSource);
+        };
+        if !current
+            .candidate_identity()
+            .includes_assembly_prefix(pin.candidate_identity())
+        {
+            return Err(Denial::ForeignSource);
+        }
+        source_is_unchanged(
+            execution,
+            program,
+            scope,
+            footprint,
+            self.registry,
+            self.state,
+            self.effect,
+            only,
+            reach,
+        )
+    }
+}
+
+fn source_is_unchanged(
     execution: &ExecutionRequest<'_, '_>,
     program: &ManagedIndexSourceProgram,
     scope: EntityId,
@@ -24,28 +136,40 @@ pub fn source_is_unchanged(
     registry: &RelationalSchemaRegistry,
     state: &WorkingState,
     effect: &MutationEffect,
+    only: Option<&[RecordRef]>,
+    reach: Option<Reach>,
 ) -> Result<bool, Denial> {
     let key_of = |entity: EntityId| scope_key_value(state, footprint.scope_key.as_ref()?, entity);
-    let relevance = SourceRelevance::of(registry, program, scope, footprint, effect, &key_of);
+    let relevance =
+        SourceRelevance::of(registry, program, scope, footprint, effect, &key_of).reached_by(reach);
     let (unchanged, _) = execution
         .run_native_with_checkpoint(|context| {
+            let only = match only {
+                Some(records) => {
+                    checkpoint(context, records.len() as u64 + 1)?;
+                    Some(records.iter().collect::<BTreeSet<_>>())
+                }
+                None => None,
+            };
+            let judged =
+                |record: &RecordRef| only.as_ref().is_none_or(|only| only.contains(record));
             for delta in &effect.adjacency.deltas {
                 checkpoint(context, 1)?;
-                if relevance.adjacency(delta) {
+                if judged(&RecordRef::Relation(delta.relation_id)) && relevance.adjacency(delta) {
                     return Ok(false);
                 }
             }
             let mut described = BTreeSet::new();
             for delta in &effect.publication.canonical_deltas {
                 checkpoint(context, 1)?;
-                if relevance.delta(delta) {
+                if judged(&delta.target) && relevance.delta(delta) {
                     return Ok(false);
                 }
                 described.insert(&delta.target);
             }
             for record in &effect.publication.changed_records {
                 checkpoint(context, 1)?;
-                if described.contains(record) {
+                if described.contains(record) || !judged(record) {
                     continue;
                 }
                 let kind = match record {

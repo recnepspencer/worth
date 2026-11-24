@@ -10,10 +10,10 @@ pub fn selectors(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let root = &basis.inner.root;
-    let Some(storage) = &(*root
+    let Some(storage) = root
         .schema_authority()
         .registry()
-        .owner_current_publication_storage())
+        .owner_current_publication_storage()
     else {
         return Ok(Vec::new());
     };

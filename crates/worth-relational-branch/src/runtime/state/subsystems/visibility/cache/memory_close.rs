@@ -1,5 +1,6 @@
 //! Sealed owner traversal, retaining the original table and state allocations.
 use super::*;
+use crate::history::retention::RetentionBusy;
 
 #[derive(Debug)]
 pub(super) struct CachedSnapshotState {
@@ -18,22 +19,22 @@ impl CachedSnapshotState {
 
 impl VisibilityCache {
     /// Observe the actual original table under its nonwaiting owner gate.
-    pub fn try_has_memory_states(&self) -> Result<bool, ()> {
+    pub fn try_has_memory_states(&self) -> Result<bool, RetentionBusy> {
         let states = match self.states.try_read() {
             Ok(states) => states,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         Ok(!states.is_empty())
     }
 
     /// No allocation, rehash, shrink or ordinary payload Drop. Called only
     /// after authentic owner admission is stopped and all operations returned.
-    pub fn try_retire_memory_state(&self, index: usize) -> Result<Option<bool>, ()> {
+    pub fn try_retire_memory_state(&self, index: usize) -> Result<Option<bool>, RetentionBusy> {
         let mut states = match self.states.try_write() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
         };
         let Some((_, entry)) = states.get_index_mut(index) else {
             return Ok(None);
@@ -55,6 +56,10 @@ impl VisibilityCache {
         self.states.read().unwrap().len()
     }
 
+    #[expect(
+        clippy::readonly_write_lock,
+        reason = "Exclusive custody lets the fixture hold both read and write contenders busy"
+    )]
     pub(crate) fn while_live_entries_locked(&self, count: usize, action: impl FnOnce()) {
         let locked = self.states.write().unwrap();
         action();

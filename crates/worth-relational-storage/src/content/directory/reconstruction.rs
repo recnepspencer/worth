@@ -44,14 +44,14 @@ impl ContentDirectory {
         }
         let frames = ContentFrameAdmission::readmit_closure(
             execution,
-            &(*schema.owner_content_formats()),
+            schema.owner_content_formats(),
             records,
         )?;
         let empty = Self::default();
         let mut directory = Self::default();
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
-            &(*schema.owner_content_formats()),
+            schema.owner_content_formats(),
             &frames,
             &empty,
             None,
@@ -80,15 +80,12 @@ impl ContentDirectory {
         version: crate::identity::data::VersionId,
         source: Option<&Self>,
     ) -> Result<Self, Denial> {
-        let staged = ContentFrameAdmission::admit(
-            execution,
-            &(*schema.owner_content_formats()),
-            attachments,
-        )?;
+        let staged =
+            ContentFrameAdmission::admit(execution, schema.owner_content_formats(), attachments)?;
         let mut next = Self::default();
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
-            &(*schema.owner_content_formats()),
+            schema.owner_content_formats(),
             &staged,
             self,
             source,
@@ -108,7 +105,7 @@ impl ContentDirectory {
         records: &crate::content::RelationalContentAttachments,
     ) -> Result<(), Denial> {
         let frames =
-            ContentFrameAdmission::admit(execution, &(*schema.owner_content_formats()), records)?;
+            ContentFrameAdmission::admit(execution, schema.owner_content_formats(), records)?;
         for record in records.records() {
             let current = self
                 .find(execution, record.identity())?

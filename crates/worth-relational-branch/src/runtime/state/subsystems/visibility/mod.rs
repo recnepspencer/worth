@@ -1,3 +1,4 @@
+use crate::history::retention::RetentionBusy;
 pub mod cache;
 pub mod replay_retention;
 pub mod snapshot_handle_binding;
@@ -27,13 +28,13 @@ pub struct VisibilitySubsystem {
 }
 
 impl VisibilitySubsystem {
-    pub fn try_memory_read_registrations(&self) -> Result<(bool, bool, bool, bool), ()> {
+    pub fn try_memory_read_registrations(&self) -> Result<(bool, bool, bool, bool), RetentionBusy> {
         let (active, published) = self.handles.try_retained_registrations()?;
         let capacity = self.published_snapshot_capacity.occupied_handles() != 0;
         let replay = !self
             .replay_retention
             .try_read()
-            .ok_or(())?
+            .ok_or(RetentionBusy)?
             .entries
             .is_empty();
         Ok((active, published, capacity, replay))
@@ -49,7 +50,7 @@ impl VisibilitySubsystem {
     }
     pub fn new(config: &RelationalRuntimeConfig) -> Self {
         Self {
-            handles: SnapshotHandles::new(),
+            handles: SnapshotHandles::default(),
             cache: std::sync::Arc::new(VisibilityCache::new(config)),
             replay_retention: crate::storage::substrate::owned_state::RuntimeOwnedState::new(
                 ReplayRetentionIndex::new(),
@@ -167,7 +168,7 @@ impl VisibilitySubsystem {
     pub fn try_remove_original_result(
         &self,
         original: &std::sync::Arc<PublishedSnapshotReleaseObservation>,
-    ) -> Result<Option<bool>, ()> {
+    ) -> Result<Option<bool>, snapshot_handles::PublishedSnapshotRegistrationMismatch> {
         self.handles
             .try_remove_original(original, &self.published_snapshot_capacity)
     }

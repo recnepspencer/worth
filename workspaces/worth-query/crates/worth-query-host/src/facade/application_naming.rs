@@ -77,15 +77,172 @@
 //!     let _ = writer.merge_entity_names(&faces, WorthQueryOutputMergeKeeper::KeepParentInPlace(faces[0]));
 //! }
 //! ```
+//!
+//! An operation's decision reader reads a live relation's name with
+//! `relation_name_of` and resolves a held one with `resolve_relation`; both
+//! key the relation between its endpoints as a decision fact. A held name of
+//! another relation kind, or of an entity kind, cannot be resolved as one:
+//!
+//! ```compile_fail,E0308
+//! use worth_query_declaration::facade::application_schema::fragment;
+//! use worth_query_host::facade::application_naming::{NameSelection, WorthQueryName};
+//! use worth_query_host::facade::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader as Reader;
+//! use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema, OperationReads};
+//!
+//! fn misuse<S, O, Seam, Other, From, To>(
+//!     reader: &mut Reader<'_, '_, S, O>,
+//!     seam: ApplicationRelationRef<S, Seam, From, To>,
+//!     held: &WorthQueryName<Other>,
+//! ) where
+//!     S: ApplicationSchema,
+//!     Seam: fragment::Relation + OperationReads<O>,
+//! {
+//!     let _ = reader.resolve_relation(seam, held, &NameSelection::Exact);
+//! }
+//! ```
+//!
+//! The same-kind counterpart compiles:
+//!
+//! ```
+//! use worth_query_declaration::facade::application_schema::fragment;
+//! use worth_query_host::facade::application_naming::{NameSelection, WorthQueryName};
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryApplicationOperationInvariantProjectionReader as Reader, WorthQueryInvariantRelation,
+//! };
+//! use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema, OperationReads};
+//!
+//! fn resolve<S, O, Seam, From, To>(
+//!     reader: &mut Reader<'_, '_, S, O>,
+//!     seam: ApplicationRelationRef<S, Seam, From, To>,
+//!     live: &WorthQueryInvariantRelation<S, Seam, From, To>,
+//! ) where
+//!     S: ApplicationSchema,
+//!     Seam: fragment::Relation + OperationReads<O>,
+//! {
+//!     let held: Option<WorthQueryName<Seam>> = reader.relation_name_of(live).ok();
+//!     if let Some(held) = held {
+//!         let _ = reader.resolve_relation(seam, &held, &NameSelection::Exact);
+//!     }
+//! }
+//! ```
+//!
+//! A later-role output may tell itself apart by an output the same candidate
+//! named earlier in the same occurrence: `same_commit_entity_name` /
+//! `same_commit_relation_name` on the candidate writer return a
+//! [`WorthQuerySameCommitName`], which is only a discriminator value. One of
+//! another kind does not fit a discriminator field:
+//!
+//! ```compile_fail,E0308
+//! use worth_query_host::facade::application_naming::WorthQuerySameCommitName;
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectProgramBuilder,
+//! };
+//!
+//! struct Face;
+//! struct Seam;
+//!
+//! struct CutBy {
+//!     cutter: WorthQuerySameCommitName<Face>,
+//! }
+//!
+//! fn misuse<S, O, I, Sc, From, To>(
+//!     writer: &WorthQueryApplicationEffectProgramBuilder<S, O, I, Sc>,
+//!     seam: &WorthQueryApplicationCreatedRelation<S, Seam, From, To>,
+//! ) -> Option<CutBy> {
+//!     Some(CutBy { cutter: writer.same_commit_relation_name(seam).ok()? })
+//! }
+//! ```
+//!
+//! The same-kind counterpart compiles:
+//!
+//! ```
+//! use worth_query_host::facade::application_naming::WorthQuerySameCommitName;
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
+//! };
+//!
+//! struct Face;
+//!
+//! struct CutBy {
+//!     cutter: WorthQuerySameCommitName<Face>,
+//! }
+//!
+//! fn reference<S, O, I, Sc>(
+//!     writer: &WorthQueryApplicationEffectProgramBuilder<S, O, I, Sc>,
+//!     cutter: &WorthQueryApplicationEffectEntity<S, Face>,
+//! ) -> Option<CutBy> {
+//!     Some(CutBy { cutter: writer.same_commit_entity_name(cutter).ok()? })
+//! }
+//! ```
+//!
+//! A naming scope binds one authored occurrence for every declaration under
+//! it, takes typed roles, and merges keeping the least parent name:
+//!
+//! ```
+//! use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+//! use worth_query_host::facade::application_naming::{
+//!     OccurrencePath, WorthQueryLeastMergeKeeper, WorthQueryName, WorthQueryNameRole,
+//! };
+//! use worth_query_host::facade::primary_graph::{
+//!     CandidateWriter, WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
+//! };
+//! use worth_query_installation::facade::ApplicationSchema;
+//!
+//! fn arrange<S: ApplicationSchema, B: ApplicationMutationBinding<S>, Face, R: WorthQueryNameRole>(
+//!     writer: &mut CandidateWriter<'_, S, B>,
+//!     feature: OccurrencePath,
+//!     role: R,
+//!     piece: &WorthQueryApplicationEffectEntity<S, Face>,
+//!     coplanar: [WorthQueryName<Face>; 2],
+//!     merged: &WorthQueryApplicationEffectEntity<S, Face>,
+//! ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+//!     let mut names = writer.naming_scope(feature);
+//!     let mut instance = names.index("instance", 2).expect("a valid segment");
+//!     let birth = instance.birth(role);
+//!     instance.name_entity(piece, birth)?;
+//!     names.merge_least_entity(&coplanar, WorthQueryLeastMergeKeeper::Onto(merged))
+//! }
+//! ```
+//!
+//! A least-keeper target of another kind does not compile:
+//!
+//! ```compile_fail,E0308
+//! use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+//! use worth_query_host::facade::application_naming::{
+//!     OccurrencePath, WorthQueryLeastMergeKeeper, WorthQueryName,
+//! };
+//! use worth_query_host::facade::primary_graph::{CandidateWriter, WorthQueryApplicationEffectEntity};
+//! use worth_query_installation::facade::ApplicationSchema;
+//!
+//! struct Face;
+//! struct Edge;
+//!
+//! fn misuse<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
+//!     writer: &mut CandidateWriter<'_, S, B>,
+//!     coplanar: [WorthQueryName<Face>; 2],
+//!     edge: &WorthQueryApplicationEffectEntity<S, Edge>,
+//! ) {
+//!     let mut names = writer.naming_scope(OccurrencePath::root("f").unwrap());
+//!     let _ = names.merge_least_entity(&coplanar, WorthQueryLeastMergeKeeper::Onto(edge));
+//! }
+//! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ErasedWorthQueryName, NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName,
-    WorthQueryName,
+    ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
+    IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection, NameOwnerPath,
+    NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
+    NameSelectionDenial, NameSubjectRole, NamedTarget, NamedTargetDelegate, NoNameOwner,
+    OccurrencePath, OccurrencePathDenial, OccurrenceSegment, OwnedThrough, OwnerVia,
+    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned, WorthQueryName,
+    WorthQueryNameDelegate, WorthQueryNameRole, WorthQueryNamedKind, WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
     DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
     ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial, LineagePostureKind,
-    LineageRecordTarget, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
-    PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
+    LineageRecordTarget, NameOwnerOf, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
+    NameResolutionCandidates, ObservedEntityNames, PersistentNameHolder, PersistentNameReadVeto,
+    WorthQueryDecisionNameDenial, WorthQueryDecisionNameResolution, WorthQueryLeastMergeKeeper,
     WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };
+/// The derives of the two naming traits, beside the traits they implement.
+pub use worth_query_macros::{ApplicationNameDiscriminator, WorthQueryNameRole};

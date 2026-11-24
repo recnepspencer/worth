@@ -5,6 +5,7 @@
 //! that could change its comparison; a fact Native cannot key that way is
 //! conservative and every write marks it. Keys only select which derivations
 //! are compared exactly: a key never accepts a change.
+use super::WorthQueryApplicationFactKey as Key;
 use super::WorthQueryApplicationObservedFact as Fact;
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::KindId;
@@ -54,7 +55,13 @@ pub fn fact_keys(
         }
         Fact::SourceAspectRevision { aspect, .. } => vec![AnyKindAspect(aspect.clone())],
         Fact::SourceEntity { .. } => vec![AnyKindPresence],
-        // Observations over many records, managed sources, publications,
+        // A walk reads which records of its entity kind are live and the
+        // edges of its relation kind. A deletion marks it like every fact.
+        Fact::StructuralWalk { observation } => vec![
+            Kind(observation.key().entity_kind()),
+            Relation(observation.key().relation_kind()),
+        ],
+        // Other observations over many records, managed sources, publications,
         // authorization and workflow state: Native certifies no narrower key.
         _ => return None,
     })
@@ -106,15 +113,43 @@ pub fn fact_record(
     }
 }
 
-/// Whether a successor round's own-output view serves `fact` (§1.5): a field
-/// read of one record, which it reads at the chain head's pre-pin when the
-/// chain wrote that record. Every other single-record fact (presence,
-/// entity, source revisions) is read at the current image.
+/// Whether a successor round's own-output view serves `fact` (§1.5): a
+/// field, aspect-presence or presence read of one record, which it reads at
+/// the chain head's pre-pin when the chain wrote that record (#277). Every
+/// other single-record fact (source revisions, a retired output) is read at
+/// the current image. `head_served_record` states the same rule for keys.
 pub fn overlay_served(fact: &Fact) -> bool {
     matches!(
         fact,
-        Fact::Field { .. } | Fact::AbsentField { .. } | Fact::OptionalAspectAbsent { .. }
+        Fact::Field { .. }
+            | Fact::AbsentField { .. }
+            | Fact::OptionalAspectAbsent { .. }
+            | Fact::AspectPresence { .. }
+            | Fact::Entity { .. }
     )
+}
+
+/// The one record `key` reads, when a successor round's own-output view
+/// serves that key at the chain head's pre-pin for a record its chain wrote:
+/// a field, an aspect's presence, or the record's own presence (#277). The
+/// read set's completion and a carried computation read both ask here, so a
+/// covered record is never seen with its fields at the head and its presence
+/// at the current image.
+pub fn head_served_record(key: &Key) -> Option<worth_relational::facade::identity::EntityId> {
+    match key {
+        Key::Field { entity_id, .. }
+        | Key::AspectPresence { entity_id, .. }
+        | Key::Entity { entity_id, .. } => Some(*entity_id),
+        _ => None,
+    }
+}
+
+/// Whether the own-output view serves `fact` as a relation list (#277): the
+/// current list minus the chain's own links plus the links it removed. Every
+/// relation or adjacency fact a successor records is served or untouched by
+/// the chain, so its links and unlinks cannot have changed what it read.
+pub fn relation_served(fact: &Fact) -> bool {
+    matches!(fact, Fact::Relation { .. } | Fact::Adjacency { .. })
 }
 
 /// Whether a certified touch could change what `fact` read. Field reads and

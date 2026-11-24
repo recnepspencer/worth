@@ -20,6 +20,7 @@ use worth_relational_contracts::internal_port as contracts;
 use worth_relational_mutation::internal_port::authority::mutation::effect::MutationEffect;
 
 pub mod footprint;
+mod reach;
 
 const SCOPE: KindId = KindId(1);
 const MEMBER: KindId = KindId(3);

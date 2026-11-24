@@ -122,23 +122,6 @@ impl<R: Clone> std::ops::IndexMut<usize> for DerivedIndexRows<R> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn persistent_entries_preserve_canonical_map_sequence_wire_shape() {
-        let legacy = BTreeMap::from([(2_u64, vec![3_u64, 5]), (7, vec![11])]);
-        let persistent = DerivedIndexEntryMap::from(legacy.clone());
-        let legacy_bytes = rmp_serde::to_vec_named(&legacy).unwrap();
-        let persistent_bytes = rmp_serde::to_vec_named(&persistent).unwrap();
-        assert_eq!(persistent_bytes, legacy_bytes);
-        let restored: DerivedIndexEntryMap<u64, u64> =
-            rmp_serde::from_slice(&legacy_bytes).unwrap();
-        assert_eq!(restored, persistent);
-    }
-}
-
 /// Operations used by the Relational owners.
 pub trait DerivedIndexEntryMapOwnerPort<K: Ord + Clone, R: Clone>: Sized {
     fn replace(&mut self, key: K, rows: DerivedIndexRows<R>);
@@ -197,5 +180,22 @@ impl<R> DerivedIndexRowsOwnerPort<R> for DerivedIndexRows<R> {
 
     fn remove(&mut self, index: usize) {
         self.0.remove(index);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn persistent_entries_preserve_canonical_map_sequence_wire_shape() {
+        let legacy = BTreeMap::from([(2_u64, vec![3_u64, 5]), (7, vec![11])]);
+        let persistent = DerivedIndexEntryMap::from(legacy.clone());
+        let legacy_bytes = rmp_serde::to_vec_named(&legacy).unwrap();
+        let persistent_bytes = rmp_serde::to_vec_named(&persistent).unwrap();
+        assert_eq!(persistent_bytes, legacy_bytes);
+        let restored: DerivedIndexEntryMap<u64, u64> =
+            rmp_serde::from_slice(&legacy_bytes).unwrap();
+        assert_eq!(restored, persistent);
     }
 }

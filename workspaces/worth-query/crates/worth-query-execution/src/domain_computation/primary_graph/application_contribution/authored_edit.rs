@@ -204,6 +204,15 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
             .map(Self)
     }
 
+    /// Refuse a stage whose outputs can reach a producer document history
+    /// cannot record. Call it after the stage's output dependencies are captured.
+    pub fn require_history_recordable_producers(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial> {
+        self.0.require_history_recordable_producers(application)
+    }
+
     pub fn with_required_output_dependencies<B, D, E>(
         self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,

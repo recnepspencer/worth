@@ -26,7 +26,6 @@ impl<K: RecordKind> RecordArena<K> {
         self.suspend_using(slot, extra, Some(request))
     }
     /// Existing ordinary fixture/maintenance construction is unqualified.
-
     pub(crate) fn suspend_materialization_with_extra(
         &mut self,
         slot: usize,

@@ -44,7 +44,10 @@ mod succession;
 mod touches;
 pub(crate) use completion::CoupledAppliedCandidate;
 pub use completion::RelationalCoupledAuthoredPublication;
-pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
+pub use touches::{
+    RelationalCoupledAppendTouches, RelationalCoupledChainOverlay,
+    RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation,
+};
 
 /// Installed producer dispatch over the real unpublished authored candidate.
 /// It may append only the Native-admitted owners' own successor publications.

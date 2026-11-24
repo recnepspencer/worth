@@ -67,3 +67,7 @@ pub mod selected_snapshot_custody;
 pub mod snapshot_basis_retirement;
 pub use selected_snapshot::{SnapshotHeadSelection, VisibilitySnapshotBasis};
 pub use snapshot_basis_retirement::VisibilitySnapshotBasisRetirement;
+
+/// Retention custody is temporarily busy. The same operation may be retried.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RetentionBusy;

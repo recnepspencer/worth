@@ -44,7 +44,6 @@ where
     let lease = prepare::<S, B>(
         execution,
         access,
-        access.application,
         plan,
         before,
         candidate,

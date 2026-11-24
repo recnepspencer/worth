@@ -24,6 +24,7 @@ pub(super) fn execute(
     context: &mut MapKernelContext<'_, '_>,
     reads: &mut PinnedStructuralWalkReads,
     work: &mut usize,
+    unavailable: &mut Option<EntityId>,
     mut memory: memory::WalkMemory,
 ) -> Result<PinnedStructuralWalk, Denial> {
     let mut frontier = BreadthFirstFrontier::new();
@@ -50,6 +51,7 @@ pub(super) fn execute(
             context,
             reads,
             work,
+            unavailable,
             &mut memory,
         )?;
     }
@@ -149,6 +151,7 @@ pub(super) fn execute(
                                 context,
                                 reads,
                                 work,
+                                unavailable,
                                 &mut memory,
                             )?;
                         }
@@ -201,6 +204,7 @@ fn discover(
     context: &mut MapKernelContext<'_, '_>,
     reads: &mut PinnedStructuralWalkReads,
     work: &mut usize,
+    unavailable: &mut Option<EntityId>,
     memory: &mut memory::WalkMemory,
 ) -> Result<(), Denial> {
     if frontier.contains(&id) {
@@ -223,11 +227,16 @@ fn discover(
         observe(scope, super::PinnedWalkEventForTest::Entity(id));
     }
     checkpoint(context, scope, work, 0)?;
-    let entity = entity.ok_or(Denial::EndpointUnavailable)?;
+    // The refusal names the record: its caller may know why it is gone.
+    let Some(entity) = entity else {
+        *unavailable = Some(id);
+        return Err(Denial::EndpointUnavailable);
+    };
     if entity.kind_id != scope.entity_kind {
         return Err(Denial::WrongEntityKind);
     }
     if entity.lifecycle != RecordLifecycleState::Live {
+        *unavailable = Some(id);
         return Err(Denial::EndpointUnavailable);
     }
     frontier.enqueue(entity.entity_id, (entity, distance, root), || {

@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
     WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,
-    WorthQueryApplicationProductBranchCloseDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationProductBranchCloseDenial,
 };
 use std::collections::btree_map::IntoValues;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
@@ -43,7 +43,11 @@ pub enum WorthQueryDocumentHistoryClosingDenial<'a> {
 /// A closing document cannot become a live document again.
 #[must_use = "retain and retry every refused document cleanup owner"]
 pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application:
+        crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<
+            'runtime,
+            S,
+        >,
     current: Option<WorthQueryOwnedProductHead<'runtime, S>>,
     past: IntoValues<u64, PastHead<'runtime, S>>,
     pending: Option<HistoryHeadCustody<'runtime, S>>,
@@ -64,7 +68,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         let (closed, past) = journal.into_disposal();
         let navigation = navigation.into_disposal();
         Self {
-            application: current.application(),
+            application: current.custody(),
             current: Some(current),
             past,
             pending: None,

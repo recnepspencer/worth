@@ -140,6 +140,53 @@ impl<'de> Deserialize<'de> for StoredSymbolText {
     }
 }
 
+/// Operations used by the Relational owners.
+pub trait StoredSymbolTextOwnerPort: Sized {
+    fn copy_from_str(execution: &ExecutionRequest<'_, '_>, text: &str) -> Result<Self, Denial>;
+    fn admit(
+        execution: &ExecutionRequest<'_, '_>,
+        text: &ExecutionImmutableBytes,
+    ) -> Result<Self, Denial>;
+}
+
+impl StoredSymbolTextOwnerPort for StoredSymbolText {
+    fn copy_from_str(execution: &ExecutionRequest<'_, '_>, text: &str) -> Result<Self, Denial> {
+        execution.check_live().map_err(Denial::Stopped)?;
+        let mut bytes = ExecutionRequestArrayBuilder::<u8>::allocate(*execution, text.len())
+            .map_err(array_denial)?;
+        bytes
+            .extend_from_slice(text.as_bytes())
+            .map_err(array_denial)?;
+        let backing = bytes.seal().map_err(array_denial)?.into_immutable_bytes();
+        execution.check_live().map_err(Denial::Stopped)?;
+        Ok(Self {
+            backing: Backing::Managed(backing),
+        })
+    }
+
+    fn admit(
+        execution: &ExecutionRequest<'_, '_>,
+        text: &ExecutionImmutableBytes,
+    ) -> Result<Self, Denial> {
+        execution.check_live().map_err(Denial::Stopped)?;
+        std::str::from_utf8(text.bytes()).map_err(|_| Denial::InvalidUtf8)?;
+        let bytes = if text.charged_payload_bytes().is_some() {
+            text.clone()
+        } else {
+            // None is not admission: import through this SAME request rather
+            // than allocation_policy(), which is System for a serial request.
+            return Self::copy_from_str(
+                execution,
+                std::str::from_utf8(text.bytes()).map_err(|_| Denial::InvalidUtf8)?,
+            );
+        };
+        execution.check_live().map_err(Denial::Stopped)?;
+        Ok(Self {
+            backing: Backing::Managed(bytes),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,52 +250,5 @@ mod tests {
                 crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
             ))
         ));
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait StoredSymbolTextOwnerPort: Sized {
-    fn copy_from_str(execution: &ExecutionRequest<'_, '_>, text: &str) -> Result<Self, Denial>;
-    fn admit(
-        execution: &ExecutionRequest<'_, '_>,
-        text: &ExecutionImmutableBytes,
-    ) -> Result<Self, Denial>;
-}
-
-impl StoredSymbolTextOwnerPort for StoredSymbolText {
-    fn copy_from_str(execution: &ExecutionRequest<'_, '_>, text: &str) -> Result<Self, Denial> {
-        execution.check_live().map_err(Denial::Stopped)?;
-        let mut bytes = ExecutionRequestArrayBuilder::<u8>::allocate(*execution, text.len())
-            .map_err(array_denial)?;
-        bytes
-            .extend_from_slice(text.as_bytes())
-            .map_err(array_denial)?;
-        let backing = bytes.seal().map_err(array_denial)?.into_immutable_bytes();
-        execution.check_live().map_err(Denial::Stopped)?;
-        Ok(Self {
-            backing: Backing::Managed(backing),
-        })
-    }
-
-    fn admit(
-        execution: &ExecutionRequest<'_, '_>,
-        text: &ExecutionImmutableBytes,
-    ) -> Result<Self, Denial> {
-        execution.check_live().map_err(Denial::Stopped)?;
-        std::str::from_utf8(text.bytes()).map_err(|_| Denial::InvalidUtf8)?;
-        let bytes = if text.charged_payload_bytes().is_some() {
-            text.clone()
-        } else {
-            // None is not admission: import through this SAME request rather
-            // than allocation_policy(), which is System for a serial request.
-            return Self::copy_from_str(
-                execution,
-                std::str::from_utf8(text.bytes()).map_err(|_| Denial::InvalidUtf8)?,
-            );
-        };
-        execution.check_live().map_err(Denial::Stopped)?;
-        Ok(Self {
-            backing: Backing::Managed(bytes),
-        })
     }
 }

@@ -1,20 +1,30 @@
-//! Slice 5C: installed operations name their own outputs. Births, in-commit
-//! regeneration, splits, merges and retirements declared through the
-//! candidate writer reach Relational's commit finalization, which mints and
-//! validates them against the performed effects.
+//! Slices 5C and 5D: installed operations name their own outputs. Births,
+//! in-commit regeneration, splits, merges and retirements declared through
+//! the candidate writer reach Relational's commit finalization, which mints
+//! and validates them against the performed effects. Seams are read, split,
+//! merged and retired by the names the decision reader holds, and a
+//! later-role output may reference a name born by the same commit.
 use super::*;
+use probe::seams::SeamObservation;
+use worth_query_decl::facade::application_naming::{ApplicationNameDiscriminator, NameSelection};
 use worth_query_host::facade::application_naming::{
-    LineageNameDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
+    LineageNameDenial, NameRef, NamedTarget, WorthQueryName, WorthQueryOutputBirth,
+    WorthQueryOutputNameDenial, WorthQuerySameCommitName,
 };
 
 pub mod sculpt;
-use sculpt::{Held, Keeper, Plan, Step};
+use sculpt::{Held, HeldSeam, Keeper, Plan, SeamKeeper, Step};
 
+mod ergonomics;
 mod history;
 mod invalidation;
 mod lifecycle;
 mod refusals;
 mod relations;
+mod same_commit;
+mod seam_history;
+mod seam_invalidation;
+pub(crate) mod seam_names;
 
 /// A member piece's side of a cut, optionally naming the cutting member.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,6 +41,49 @@ worth_query_name_discriminator! {
     }
 }
 
+/// The same cut as [`MemberCut`], by a member born in the same commit. The
+/// two share one identity and wire form, so a piece's name does not depend
+/// on when its cutter was born.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FreshMemberCut {
+    Side {
+        side: u64,
+        cutter: Option<WorthQuerySameCommitName<Member>>,
+    },
+}
+worth_query_name_discriminator! {
+    enum FreshMemberCut {
+        identity: "worth.tests.persistent-naming.member-cut.v1",
+        variants: { Side { side, cutter } }
+    }
+}
+
+/// A piece cut along a seam linked in the same commit.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CutAlong {
+    pub side: u64,
+    pub seam: WorthQuerySameCommitName<Seam>,
+}
+worth_query_name_discriminator! {
+    struct CutAlong {
+        identity: "worth.tests.persistent-naming.cut-along.v1",
+        fields: [side, seam]
+    }
+}
+
+/// Which seam of a member authored in the same commit this is.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SeamOf {
+    pub index: u64,
+    pub member: WorthQuerySameCommitName<Member>,
+}
+worth_query_name_discriminator! {
+    struct SeamOf {
+        identity: "worth.tests.persistent-naming.seam-of.v1",
+        fields: [index, member]
+    }
+}
+
 /// Which of several parallel seams between one pair of members this is.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SeamSide {
@@ -41,6 +94,27 @@ worth_query_name_discriminator! {
         identity: "worth.tests.persistent-naming.seam-side.v1",
         fields: [index]
     }
+}
+
+/// Which side of a cut a piece lies on.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.cut-side.v1")]
+pub enum CutSide {
+    Positive,
+    Negative,
+}
+
+/// A piece's side of a cut by another member, optionally along a seam.
+/// Declared once: the cutter and the seam may each have been named by an
+/// earlier commit or be named by this one.
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.sided-cut.v1")]
+pub enum SidedCut {
+    By {
+        cutter: NameRef<Member>,
+        side: CutSide,
+        along: Option<NameRef<Seam>>,
+    },
 }
 
 pub type Outcome = WorthQueryApplicationMutationOutcome<edit::Denial, edit::Edited>;
@@ -140,6 +214,52 @@ impl World {
         probe::take(token)
     }
 
+    /// Runs a probe over `keys` and returns what it observed of seams,
+    /// with the debug form of how the run ended (sealed or refused).
+    pub fn probe_seams(
+        &self,
+        token: &str,
+        keys: &[&str],
+        ordinal: u64,
+    ) -> (Vec<SeamObservation>, String) {
+        let ended = self
+            .request()
+            .advanced()
+            .mutate(probe::Intent {
+                token: token.to_owned(),
+                keys: self::keys(keys),
+                value: 300 + ordinal,
+            })
+            .without_source()
+            .idempotency(&format!("seam-probe:{token}:{ordinal}"))
+            .execute_in_program(
+                &self.host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+        (probe::seams::take(token), format!("{ended:?}"))
+    }
+
+    /// Has model `a` hold `target` in its record from now on.
+    pub fn hold(&self, token: &str, target: NamedTarget<Member>) {
+        let outcome = self
+            .request()
+            .advanced()
+            .mutate(stored::Intent {
+                target,
+                anchor: None,
+            })
+            .without_source()
+            .idempotency(&format!("hold:{token}"))
+            .execute_in_program(
+                &self.host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+        assert!(
+            matches!(outcome, Ok(Outcome::Committed { .. })),
+            "{token}: {outcome:?}"
+        );
+    }
+
     pub fn live(&self, key: &str) -> bool {
         world::member_identity(&self.host, self.host.current_world(), key).is_some()
     }
@@ -164,6 +284,43 @@ pub fn output_refusal(outcome: &Outcome) -> Option<&WorthQueryOutputNameDenial> 
         }
         _ => None,
     }
+}
+
+/// The name `relation_name_of` read for the seam labelled `label`.
+pub fn seam_named(observed: &[SeamObservation], label: &str) -> WorthQueryName<Seam> {
+    observed
+        .iter()
+        .find_map(|observation| match observation {
+            SeamObservation::Named { label: l, name } if l == label => Some(*name),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("seam `{label}` must carry its name: {observed:?}"))
+}
+
+/// What a held seam name labelled `label` resolved to.
+pub fn seam_resolution<'o>(observed: &'o [SeamObservation], label: &str) -> &'o SeamObservation {
+    observed
+        .iter()
+        .find(|observation| match observation {
+            SeamObservation::ResolvedTo { label: l, .. }
+            | SeamObservation::Plural { label: l, .. }
+            | SeamObservation::Retired { label: l }
+            | SeamObservation::Ambiguous { label: l, .. }
+            | SeamObservation::ResolveRefused { label: l, .. } => l == label,
+            _ => false,
+        })
+        .unwrap_or_else(|| panic!("seam `{label}` must be resolved: {observed:?}"))
+}
+
+pub fn seam_between(label: &str, from: &str, to: &str) -> SeamObservation {
+    SeamObservation::ResolvedTo {
+        label: label.to_owned(),
+        ends: (from.to_owned(), to.to_owned()),
+    }
+}
+
+pub fn exact() -> NameSelection {
+    NameSelection::Exact
 }
 
 pub fn named(observed: &[probe::Observation], key: &str) -> WorthQueryName<Member> {

@@ -78,7 +78,7 @@ pub fn common_ancestor(
     right_ancestors: &BTreeSet<CommitId>,
 ) -> Option<CommitId> {
     left_ancestors
-        .intersection(&right_ancestors)
+        .intersection(right_ancestors)
         .copied()
         .max_by_key(|commit_id| commit_id.0)
 }

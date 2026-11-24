@@ -1,5 +1,6 @@
 //! A sealed cache entry keeps its allocation payload at its original owner.
 use super::{SnapshotState, SnapshotStateBasis};
+use crate::history::retention::RetentionBusy;
 
 #[derive(Debug)]
 pub struct SnapshotStateRetirement {
@@ -21,7 +22,7 @@ impl SnapshotStateRetirement {
         }
     }
 
-    pub fn advance(&mut self) -> Result<bool, ()> {
+    pub fn advance(&mut self) -> Result<bool, RetentionBusy> {
         if let Some(value) = self.exact.as_mut() {
             return value.advance_retaining_allocation();
         }

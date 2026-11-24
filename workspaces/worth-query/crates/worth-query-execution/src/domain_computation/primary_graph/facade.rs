@@ -127,7 +127,7 @@ pub use super::application_contribution::{
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerFailure, HandlerInterruption,
-    HandlerResult, MutationHandlerExecutionDenial, OperationHandler,
+    HandlerResult, MutationHandlerExecutionDenial, NamingScope, OperationHandler,
     WorthQueryCompletedMutationCandidate, WorthQueryDecisionPlan,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
     WorthQueryMutationHandlerWork, WorthQueryOperationDurableCapability,

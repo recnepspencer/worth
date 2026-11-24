@@ -52,7 +52,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &mut batches,
             publication.roles_mut(),
         )?;
-        proof::prove_succession(
+        let redeleted = proof::prove_succession(
             execution,
             &self.parts[index],
             &self.mutation.outcome,
@@ -82,6 +82,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 index,
                 source,
                 predecessor: predecessor.as_deref(),
+                redeleted: &redeleted,
             },
             content,
             batches,
@@ -98,6 +99,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             },
             first_fragment,
             &applied.plan,
+            &redeleted,
             &applied.read,
             &mut applied.delta_state,
         )?;

@@ -16,6 +16,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
@@ -74,7 +75,23 @@ impl<
                         "original workflow intent belongs to another admitted subject",
                     ));
                 }
+                let basis = self.lease.product().relational_basis();
                 let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
+                    crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted(
+                        execution,
+                        runtime,
+                        basis,
+                        [Some(self.lease.layout.workflow().instance.identity_index_id)],
+                    )
+                    .map_err(|stop| match stop {
+                        crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop::Admission(
+                            worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                        ) => WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                            cause,
+                            "original predecessor identity lookup",
+                        ),
+                        _ => super::super::mismatch("original workflow predecessor index unavailable"),
+                    })?;
                     original::observe::<Schema, Spec>(
                         execution,
                         runtime,

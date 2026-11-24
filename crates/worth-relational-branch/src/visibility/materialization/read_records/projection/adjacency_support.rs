@@ -22,6 +22,12 @@ pub enum RelationalAdjacencySupportDenial {
 }
 use RelationalAdjacencySupportDenial as Denial;
 
+#[derive(Clone, Copy)]
+enum Visibility {
+    Strict,
+    LiveSource,
+}
+
 impl VisibilityProjectionView {
     /// Compare complete live relation identity, multiplicity and both full-GEN
     /// endpoints. Equal tuples preserve the ordinary deterministic observation
@@ -38,6 +44,45 @@ impl VisibilityProjectionView {
         anchor: EntityId,
         kind: KindId,
         direction: Direction,
+    ) -> Result<bool, Denial> {
+        self.compare_adjacency_population(
+            execution,
+            target,
+            anchor,
+            kind,
+            direction,
+            Visibility::Strict,
+        )
+    }
+
+    /// Compare a Source's live adjacency. Retained audit-only links do not
+    /// supply members to a Native Source and are excluded on both images.
+    pub fn compare_live_source_adjacency_support(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        target: &Self,
+        anchor: EntityId,
+        kind: KindId,
+        direction: Direction,
+    ) -> Result<bool, Denial> {
+        self.compare_adjacency_population(
+            execution,
+            target,
+            anchor,
+            kind,
+            direction,
+            Visibility::LiveSource,
+        )
+    }
+
+    fn compare_adjacency_population(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        target: &Self,
+        anchor: EntityId,
+        kind: KindId,
+        direction: Direction,
+        visibility: Visibility,
     ) -> Result<bool, Denial> {
         optional_stage(
             execution,
@@ -56,9 +101,12 @@ impl VisibilityProjectionView {
                     return Err(Denial::IncompatibleMeaning);
                 }
                 entity_pair(self, target, execution, context, anchor)?;
-                let original = membership::read(self, execution, anchor, kind, direction, context)?;
-                let current =
-                    membership::read(target, execution, anchor, kind, direction, context)?;
+                let original = membership::read(
+                    self, execution, anchor, kind, direction, visibility, context,
+                )?;
+                let current = membership::read(
+                    target, execution, anchor, kind, direction, visibility, context,
+                )?;
                 // The substrate supplies unique relation IDs in deterministic order.
                 // Preserve identities and cardinality, including parallel edges.
                 let mut left = original.iter().flatten();

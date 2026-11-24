@@ -45,6 +45,30 @@ fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recov
     assert_eq!(before.compare_adjacency_support(&execution, &after, a, KindId(2), ReadDirection::Outgoing),
         Err(RelationalAdjacencySupportDenial::UnsupportedVisibility),
         "complete authored history does not turn retained audit visibility into a readable live list");
+    assert!(
+        !before
+            .compare_live_source_adjacency_support(
+                &execution,
+                &after,
+                a,
+                KindId(2),
+                ReadDirection::Outgoing,
+            )
+            .unwrap(),
+        "retiring the endpoint removes the live Source member"
+    );
+    assert!(
+        after
+            .compare_live_source_adjacency_support(
+                &execution,
+                &after,
+                a,
+                KindId(2),
+                ReadDirection::Outgoing,
+            )
+            .unwrap(),
+        "retained audit links do not obstruct exact live Source equality"
+    );
     let canonical = runtime
         .replay()
         .canonical_commit_envelope(&execution, retired.commit.commit_id)

@@ -1,25 +1,33 @@
+//! Shared staged-record fixtures for persistent-name posture tests.
+
 use worth_relational_contracts::internal_port::lineage::data::naming::InstalledPersistentNameSchemeOwnerPort as _;
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use std::collections::BTreeMap;
 
-use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
-use crate::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
-use crate::facade::identity::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
-use crate::facade::lineage::{
+use crate::contracts::config::data::policies::{AdjacencyBackend, AdjacencyPolicy};
+use crate::contracts::history::data::{
+    commit_receipt::RelationalCommitReceipt,
+    coordinates::{BranchId, CommitId},
+};
+use crate::contracts::identity::data::{
+    primitives::{KindId, LineageId, PartitionId, VersionId},
+    record_ids::{EntityId, RelationId},
+};
+use crate::contracts::lineage::data::{
     InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
     PersistentNameBirthRequest, PersistentNameHolder, PersistentNameIdentity,
     PersistentNameSubjectKind,
 };
-use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
-use crate::storage::substrate::{
+use crate::storage::storage::overlay::{CurrentPartitionAccess, WorkingState};
+use crate::storage::storage::substrate::{
     EntityRecordKind, RelationEndpoints, RelationExtra, RelationRecordKind, SlotInit,
 };
 
-pub(super) const FACE_SCHEME_ID: &str = "worth.cad.face.v1";
-pub(super) const SEAM_SCHEME_ID: &str = "worth.cad.seam.v1";
+pub const FACE_SCHEME_ID: &str = "worth.cad.face.v1";
+pub const SEAM_SCHEME_ID: &str = "worth.cad.seam.v1";
 
-pub(super) fn cad_scheme_registry() -> InstalledPersistentNameSchemeRegistry {
+pub fn cad_scheme_registry() -> InstalledPersistentNameSchemeRegistry {
     let mut registry = InstalledPersistentNameSchemeRegistry::new();
     registry
         .register(
@@ -46,7 +54,7 @@ pub(super) fn cad_scheme_registry() -> InstalledPersistentNameSchemeRegistry {
     registry
 }
 
-pub(super) fn empty_working_state() -> WorkingState {
+pub fn empty_working_state() -> WorkingState {
     WorkingState::working_state_for_test(
         BTreeMap::new(),
         AdjacencyPolicy {
@@ -56,7 +64,7 @@ pub(super) fn empty_working_state() -> WorkingState {
     )
 }
 
-pub(super) fn push_entity(staged: &mut WorkingState, version_id: VersionId) -> EntityId {
+pub fn push_entity(staged: &mut WorkingState, version_id: VersionId) -> EntityId {
     let part = staged.get_partition_mut(PartitionId::main());
     let (slot, generation, _) =
         part.entity_arena
@@ -69,7 +77,7 @@ pub(super) fn push_entity(staged: &mut WorkingState, version_id: VersionId) -> E
     EntityId::new(PartitionId::main(), slot as u64, generation)
 }
 
-pub(super) fn push_relation(
+pub fn push_relation(
     staged: &mut WorkingState,
     version_id: VersionId,
     source: EntityId,
@@ -91,25 +99,21 @@ pub(super) fn push_relation(
     RelationId::new(PartitionId::main(), slot as u64, generation)
 }
 
-pub(super) fn retire_entity(staged: &mut WorkingState, entity: EntityId, version_id: VersionId) {
+pub fn retire_entity(staged: &mut WorkingState, entity: EntityId, version_id: VersionId) {
     let part = staged.get_partition_mut(entity.partition_id);
     part.entity_arena
         .retire_record_for_test(entity.slot_index(), version_id)
         .expect("entity slot exists to retire");
 }
 
-pub(super) fn retire_relation(
-    staged: &mut WorkingState,
-    relation: RelationId,
-    version_id: VersionId,
-) {
+pub fn retire_relation(staged: &mut WorkingState, relation: RelationId, version_id: VersionId) {
     let part = staged.get_partition_mut(relation.partition_id);
     part.relation_arena
         .retire_record_for_test(relation.slot_index(), version_id)
         .expect("relation slot exists to retire");
 }
 
-pub(super) fn receipt_at(commit: u64, version: u64) -> RelationalCommitReceipt {
+pub fn receipt_at(commit: u64, version: u64) -> RelationalCommitReceipt {
     RelationalCommitReceipt {
         commit_id: CommitId(commit),
         version_id: VersionId(version),
@@ -122,7 +126,7 @@ pub(super) fn receipt_at(commit: u64, version: u64) -> RelationalCommitReceipt {
     }
 }
 
-pub(super) fn canonical_label_discriminator(label: &str) -> Vec<u8> {
+pub fn canonical_label_discriminator(label: &str) -> Vec<u8> {
     if label.is_empty() {
         return Vec::new();
     }
@@ -137,7 +141,7 @@ pub(super) fn canonical_label_discriminator(label: &str) -> Vec<u8> {
     bytes
 }
 
-pub(super) fn face_birth(
+pub fn face_birth(
     occurrence_key: &str,
     role_path: &str,
     parents: Vec<PersistentNameIdentity>,
@@ -155,7 +159,7 @@ pub(super) fn face_birth(
     }
 }
 
-pub(super) fn seam_birth(
+pub fn seam_birth(
     occurrence_key: &str,
     role_path: &str,
     parents: Vec<PersistentNameIdentity>,
@@ -173,7 +177,7 @@ pub(super) fn seam_birth(
     }
 }
 
-pub(super) fn staged_entity_lineage(state: &WorkingState, entity: EntityId) -> Option<LineageId> {
+pub fn staged_entity_lineage(state: &WorkingState, entity: EntityId) -> Option<LineageId> {
     state
         .get_current_partition(entity.partition_id)
         .unwrap()
@@ -184,17 +188,17 @@ pub(super) fn staged_entity_lineage(state: &WorkingState, entity: EntityId) -> O
         .lineage_id
 }
 
-pub(super) fn seed_two_faces_and_parallel_seams() -> (
+pub fn seed_two_faces_and_parallel_seams() -> (
     WorkingState,
     EntityId,
     EntityId,
     RelationId,
     RelationId,
-    Vec<crate::facade::transactions::RecordRef>,
+    Vec<crate::contracts::transactions::data::primitives::RecordRef>,
     crate::lineage::authority::posture_fixture::LineageCommitPostureInput,
 ) {
-    use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget};
-    use crate::facade::transactions::RecordRef;
+    use crate::contracts::lineage::data::{LineagePostureClaim, LineageRecordTarget};
+    use crate::contracts::transactions::data::primitives::RecordRef;
     use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 
     let mut staged = empty_working_state();
@@ -235,19 +239,19 @@ pub(super) fn seed_two_faces_and_parallel_seams() -> (
     (staged, f1, f2, s1, s2, changed, input)
 }
 
-pub(super) fn merge_and_split_postures(
-    scheme_registry: crate::facade::lineage::InstalledPersistentNameSchemeRegistry,
+pub fn merge_and_split_postures(
+    scheme_registry: crate::contracts::lineage::data::InstalledPersistentNameSchemeRegistry,
     faces: [(
-        crate::facade::identity::EntityId,
-        crate::facade::lineage::PersistentNameIdentity,
+        crate::contracts::identity::data::record_ids::EntityId,
+        crate::contracts::lineage::data::PersistentNameIdentity,
     ); 2],
     seam: (
-        crate::facade::identity::RelationId,
-        crate::facade::lineage::PersistentNameIdentity,
+        crate::contracts::identity::data::record_ids::RelationId,
+        crate::contracts::lineage::data::PersistentNameIdentity,
     ),
-    children: [crate::facade::identity::RelationId; 2],
+    children: [crate::contracts::identity::data::record_ids::RelationId; 2],
 ) -> crate::lineage::authority::posture_fixture::LineageCommitPostureInput {
-    use crate::facade::lineage::{
+    use crate::contracts::lineage::data::{
         LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
     };
     use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;

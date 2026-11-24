@@ -2,6 +2,8 @@ use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod records;
 pub use records::*;
+mod roles;
+pub use roles::{MemberRole, SeamRole};
 #[derive(Clone, Copy, Debug)]
 pub struct Schema;
 impl Fragment for Schema {
@@ -57,17 +59,18 @@ impl Registration<Schema> for Registrations {
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
         use worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder;
-        let scheme = ApplicationNameSchemeBuilder::<Schema, Member>::new(MEMBER_SCHEME)
-            .role_order(&["authored", "piece", "merged"])
-            .split_discriminator::<outputs::MemberCut>()
-            .require_authored_occurrence()
-            .build()
-            .expect("the member scheme is well-formed");
-        let seam = ApplicationNameSchemeBuilder::<Schema, Seam>::for_relation(
-            SEAM_SCHEME,
-            Seam::reference(),
-        )
-        .role_order(&["seam", "seam_piece"])
+        // Role order and dependencies come from the role types.
+        let scheme =
+            ApplicationNameSchemeBuilder::<Schema, Member>::from_roles::<MemberRole>(MEMBER_SCHEME)
+                .split_discriminator::<outputs::MemberCut>()
+                .require_authored_occurrence()
+                .build()
+                .expect("the member scheme is well-formed");
+        let seam = ApplicationNameSchemeBuilder::<Schema, Seam>::for_relation_from_roles::<
+            SeamRole,
+            _,
+            _,
+        >(SEAM_SCHEME, Seam::reference())
         .split_discriminator::<outputs::SeamSide>()
         .require_authored_occurrence()
         .build()
@@ -118,9 +121,11 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(query::member::declare(
-        query::model::declare(edit::declare(navigation::declare(schema))),
-    )))))
+    stored::declare(named_read::declare(outputs::sculpt::declare(
+        refusals::declare(probe::declare(delete::declare(query::member::declare(
+            query::model::declare(edit::declare(navigation::declare(schema))),
+        )))),
+    )))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -133,6 +138,7 @@ fn declare(
         .operation::<delete::Binding>("Delete member")
         .operation::<probe::Binding>("Probe names")
         .operation::<outputs::sculpt::Binding>("Sculpt members")
+        .operation::<stored::Binding>("Hold name")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )
 }

@@ -238,6 +238,43 @@ fn digest_is_lowercase_sha256_hex(value: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
+/// Operations used by the Relational owners.
+pub trait RelationalMergeCorrespondenceWitnessOwnerPort: Sized {
+    fn retain_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
+    fn retained(
+        request_digest: String,
+        branch_basis_digest: String,
+        rows: Arc<[RelationalMergeCorrespondenceWitnessRow]>,
+    ) -> Self;
+}
+
+impl RelationalMergeCorrespondenceWitnessOwnerPort for RelationalMergeCorrespondenceWitness {
+    fn retain_rows_memory(
+        &self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
+        self.rows.retain_decoded_memory(memory)
+    }
+
+    fn retained(
+        request_digest: String,
+        branch_basis_digest: String,
+        rows: Arc<[RelationalMergeCorrespondenceWitnessRow]>,
+    ) -> Self {
+        let witness_digest =
+            merge_correspondence_witness_digest(&request_digest, &branch_basis_digest, &rows);
+        Self {
+            request_digest,
+            branch_basis_digest,
+            rows: rows.into(),
+            witness_digest,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -291,42 +328,5 @@ mod tests {
             rmp_serde::from_slice::<RelationalMergeCorrespondenceWitness>(&bytes).unwrap(),
             witness
         );
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait RelationalMergeCorrespondenceWitnessOwnerPort: Sized {
-    fn retain_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>>;
-    fn retained(
-        request_digest: String,
-        branch_basis_digest: String,
-        rows: Arc<[RelationalMergeCorrespondenceWitnessRow]>,
-    ) -> Self;
-}
-
-impl RelationalMergeCorrespondenceWitnessOwnerPort for RelationalMergeCorrespondenceWitness {
-    fn retain_rows_memory(
-        &self,
-        memory: Option<worth_execution::ExecutionMemoryReservation>,
-    ) -> Result<(), Option<worth_execution::ExecutionMemoryReservation>> {
-        self.rows.retain_decoded_memory(memory)
-    }
-
-    fn retained(
-        request_digest: String,
-        branch_basis_digest: String,
-        rows: Arc<[RelationalMergeCorrespondenceWitnessRow]>,
-    ) -> Self {
-        let witness_digest =
-            merge_correspondence_witness_digest(&request_digest, &branch_basis_digest, &rows);
-        Self {
-            request_digest,
-            branch_basis_digest,
-            rows: rows.into(),
-            witness_digest,
-        }
     }
 }

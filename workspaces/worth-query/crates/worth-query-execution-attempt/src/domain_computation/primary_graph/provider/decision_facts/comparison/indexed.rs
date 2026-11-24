@@ -60,6 +60,15 @@ impl PreparedSelections {
             candidates,
         } = fact
         else {
+            // A relation list the successor's view served (#277) compares as
+            // served: current minus the chain's links plus the links it removed.
+            if let (Some(own), Some(current)) = (own_outputs, applied)
+                && let Some(equal) = own
+                    .served_fact_equal(runtime, execution, snapshot, current, fact)
+                    .map_err(super::super::fact_read_set_failure)?
+            {
+                return Ok(equal);
+            }
             // A record the successor's own chain wrote exclusively is read as
             // it was before the chain (§1.5), so it compares there.
             let applied = crate::domain_computation::primary_graph::application_attempt::fact::touch_key::overlay_served(fact)

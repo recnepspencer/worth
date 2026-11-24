@@ -49,7 +49,7 @@ impl RelationalSourceClose {
                     .visibility
                     .cache
                     .try_has_memory_states()
-                    .map_err(|()| Denial::Busy)?
+                    .map_err(|_| Denial::Busy)?
                     && state.runtime.history.has_detached_retention_obligations()
                 {
                     return Err(Denial::Native(
@@ -107,7 +107,7 @@ impl RelationalSourceClose {
                     .visibility
                     .cache
                     .try_retire_memory_state(state.cache)
-                    .map_err(|()| Denial::Busy)?
+                    .map_err(|_| Denial::Busy)?
                 {
                     Some(true) => {
                         state.cache_retired = true;

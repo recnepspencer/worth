@@ -1130,12 +1130,13 @@ exclude_paths = [
 forbidden_identifiers = [
   "persistent_name_admission_authority",
   "admit_minted_digest",
+  "issue_same_commit_name",
   "admit_minted_birth_record",
   "admit_group_assignment",
   "admit_resolved_name_key",
 ]
 forbidden_identifier_fragments = []
-guidance = "Milestone 11 (D2726): only worth-query-execution-naming's admission boundary may elevate Relational-minted persistent name digests into WorthQueryName<K>"
+guidance = "Milestone 11 (D2726): only worth-query-execution-naming's admission boundary may elevate Relational-minted persistent name digests into WorthQueryName<K> or issue a same-commit name reference"
 
 # Shared court-fixture orchestration; exact sites remain shrink/growth checked.
 

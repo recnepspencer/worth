@@ -57,7 +57,7 @@ impl crate::runtime::RelationalRuntime {
     ) -> Result<RelationalBranchDeletionOutcome, Failure<S::Stop>> {
         let denied = BranchTransitionRecordError::Denied;
         require_local_identity(self.runtime_instance_id(), identity)
-            .map_err(|()| denied(RelationalBranchDeleteDenial::ForeignRuntime))?;
+            .map_err(|_| denied(RelationalBranchDeleteDenial::ForeignRuntime))?;
         if identity.branch_id() == &self.config.history.main_branch {
             return Err(denied(RelationalBranchDeleteDenial::MainBranch));
         }

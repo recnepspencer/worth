@@ -23,6 +23,10 @@ impl PublicationBasisRoutes {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
     pub fn get(&self, key: &PublicationBasisRoute) -> Option<&Arc<RetainedPublicationBasis>> {
         self.find_by(|node| key.cmp(node))
     }

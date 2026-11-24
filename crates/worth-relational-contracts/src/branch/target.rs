@@ -89,6 +89,88 @@ fn write_u64(bytes: &mut Vec<u8>, value: u64) {
     bytes.extend_from_slice(&value.to_be_bytes());
 }
 
+/// Operations used by the Relational owners.
+pub trait RelationalBranchTargetOwnerPort: Sized {
+    fn new(
+        runtime_instance_id: u64,
+        selected_commit_id: u64,
+        version_id: u64,
+        parent_commit_ids: Vec<u64>,
+        roots: RelationalBranchRootDescriptor,
+    ) -> Self;
+    fn rebind_runtime_instance_id(&self, runtime_instance_id: u64) -> Self;
+    fn roots_for_commit(
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
+    ) -> RelationalBranchRootDescriptor;
+    fn from_commit_receipt(
+        runtime_instance_id: u64,
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
+        roots: RelationalBranchRootDescriptor,
+    ) -> Self;
+}
+
+impl RelationalBranchTargetOwnerPort for RelationalBranchTarget {
+    fn new(
+        runtime_instance_id: u64,
+        selected_commit_id: u64,
+        version_id: u64,
+        parent_commit_ids: Vec<u64>,
+        roots: RelationalBranchRootDescriptor,
+    ) -> Self {
+        Self {
+            runtime_instance_id,
+            selected_commit_id,
+            version_id,
+            parent_commit_ids,
+            roots,
+        }
+    }
+
+    fn rebind_runtime_instance_id(&self, runtime_instance_id: u64) -> Self {
+        Self {
+            runtime_instance_id,
+            selected_commit_id: self.selected_commit_id,
+            version_id: self.version_id,
+            parent_commit_ids: self.parent_commit_ids.clone(),
+            roots: self.roots.clone(),
+        }
+    }
+
+    fn roots_for_commit(
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
+    ) -> RelationalBranchRootDescriptor {
+        let mut bytes = Vec::with_capacity(24 + reference.parents.len() * 8);
+        bytes.extend_from_slice(&reference.commit_id.0.to_be_bytes());
+        bytes.extend_from_slice(&reference.version_id.0.to_be_bytes());
+        bytes.extend_from_slice(&(reference.parents.len() as u64).to_be_bytes());
+        for parent in &reference.parents {
+            bytes.extend_from_slice(&parent.0.to_be_bytes());
+        }
+        let mut truth_input = b"worth.relational.phase4.truth-root\0".to_vec();
+        truth_input.extend_from_slice(&bytes);
+        let mut schema_input = b"worth.relational.phase4.schema-root\0".to_vec();
+        schema_input.extend_from_slice(&bytes);
+        RelationalBranchRootDescriptor::new(
+            Sha256::digest(truth_input).into(),
+            Sha256::digest(schema_input).into(),
+        )
+    }
+
+    fn from_commit_receipt(
+        runtime_instance_id: u64,
+        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
+        roots: RelationalBranchRootDescriptor,
+    ) -> Self {
+        Self::new(
+            runtime_instance_id,
+            reference.commit_id.0,
+            reference.version_id.0,
+            reference.parents.iter().map(|parent| parent.0).collect(),
+            roots,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,87 +331,5 @@ mod tests {
                     .expect("valid hex")
             })
             .collect()
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait RelationalBranchTargetOwnerPort: Sized {
-    fn new(
-        runtime_instance_id: u64,
-        selected_commit_id: u64,
-        version_id: u64,
-        parent_commit_ids: Vec<u64>,
-        roots: RelationalBranchRootDescriptor,
-    ) -> Self;
-    fn rebind_runtime_instance_id(&self, runtime_instance_id: u64) -> Self;
-    fn roots_for_commit(
-        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
-    ) -> RelationalBranchRootDescriptor;
-    fn from_commit_receipt(
-        runtime_instance_id: u64,
-        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
-        roots: RelationalBranchRootDescriptor,
-    ) -> Self;
-}
-
-impl RelationalBranchTargetOwnerPort for RelationalBranchTarget {
-    fn new(
-        runtime_instance_id: u64,
-        selected_commit_id: u64,
-        version_id: u64,
-        parent_commit_ids: Vec<u64>,
-        roots: RelationalBranchRootDescriptor,
-    ) -> Self {
-        Self {
-            runtime_instance_id,
-            selected_commit_id,
-            version_id,
-            parent_commit_ids,
-            roots,
-        }
-    }
-
-    fn rebind_runtime_instance_id(&self, runtime_instance_id: u64) -> Self {
-        Self {
-            runtime_instance_id,
-            selected_commit_id: self.selected_commit_id,
-            version_id: self.version_id,
-            parent_commit_ids: self.parent_commit_ids.clone(),
-            roots: self.roots.clone(),
-        }
-    }
-
-    fn roots_for_commit(
-        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
-    ) -> RelationalBranchRootDescriptor {
-        let mut bytes = Vec::with_capacity(24 + reference.parents.len() * 8);
-        bytes.extend_from_slice(&reference.commit_id.0.to_be_bytes());
-        bytes.extend_from_slice(&reference.version_id.0.to_be_bytes());
-        bytes.extend_from_slice(&(reference.parents.len() as u64).to_be_bytes());
-        for parent in &reference.parents {
-            bytes.extend_from_slice(&parent.0.to_be_bytes());
-        }
-        let mut truth_input = b"worth.relational.phase4.truth-root\0".to_vec();
-        truth_input.extend_from_slice(&bytes);
-        let mut schema_input = b"worth.relational.phase4.schema-root\0".to_vec();
-        schema_input.extend_from_slice(&bytes);
-        RelationalBranchRootDescriptor::new(
-            Sha256::digest(truth_input).into(),
-            Sha256::digest(schema_input).into(),
-        )
-    }
-
-    fn from_commit_receipt(
-        runtime_instance_id: u64,
-        reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
-        roots: RelationalBranchRootDescriptor,
-    ) -> Self {
-        Self::new(
-            runtime_instance_id,
-            reference.commit_id.0,
-            reference.version_id.0,
-            reference.parents.iter().map(|parent| parent.0).collect(),
-            roots,
-        )
     }
 }

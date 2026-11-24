@@ -1,10 +1,10 @@
 //! Signal is a separate owner dimension of the graceful public Home oracle.
 mod derived;
-mod derived_discard;
+pub(in super::super) mod derived_discard;
 mod derived_quiescent;
 mod mixed_kill;
 mod opening;
-mod operations;
+pub(in super::super) mod operations;
 mod protocol;
 mod readmission_refusals;
 mod session;

@@ -156,7 +156,7 @@ impl RelationalMemoryClose {
                 .cache
                 .try_retire_memory_state(self.cache_cursor)
             {
-                Err(()) => O::Busy,
+                Err(_) => O::Busy,
                 Ok(None) => {
                     self.cache_complete = true;
                     O::Advanced
@@ -179,7 +179,7 @@ impl RelationalMemoryClose {
             .history
             .try_retire_stopped_head(self.head_cursor)
         {
-            Err(()) => return O::Busy,
+            Err(_) => return O::Busy,
             Ok(None) => {
                 return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained(
                     Holders::BranchHead {

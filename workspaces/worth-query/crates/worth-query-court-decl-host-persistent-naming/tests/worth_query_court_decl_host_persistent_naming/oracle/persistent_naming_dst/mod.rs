@@ -1,0 +1,274 @@
+//! The single-harness seeded deterministic simulation of persistent naming
+//! (`milestones/persistent-naming.md`, formal model, DST & trace contract).
+//!
+//! Each `u64` seed drives real installed commits: first births (and typed
+//! `DuplicateBirth` refusals of live re-mints), commits leaving a created
+//! record of the schemed kind unnamed (typed `MissingBirth` refusals of the
+//! completeness guard), in-commit regeneration (`Preserve`), splits whose
+//! pieces two distinct models own (#133), merges keeping a parent in place
+//! whose partition the commit never touches (#314), the same merges through
+//! a naming scope's `merge_least` with the parents in seeded order, merges
+//! minting a new name, retirement, cross-commit `Restore` on a
+//! strictly fresh native identity, and destruction of the derived name index
+//! (a fresh world rebuilt from the same canonical commits). After every step
+//! every ever-minted name is resolved `Exact` and `AllDescendants`, unscoped
+//! and within each owner model, and must agree 100% with the reference
+//! oracle transcribed from `specs/tla/persistent_naming/PersistentNaming.tla`.
+//!
+//! `WORTH_DST_SEEDS` (default 64) sets how many seeds run, `WORTH_DST_SEED`
+//! runs one seed, and `WORTH_DST_TRACE_DIR` writes each seed's NDJSON trace
+//! for `tools/tla/run_tlc.py trace`.
+use std::collections::BTreeSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
+
+mod driver;
+mod observe;
+mod ops;
+mod reference;
+mod trace;
+
+use driver::Driver;
+use observe::Observed;
+use ops::{next_op, Op, Rng};
+use reference::{Event, Oracle};
+use trace::Trace;
+
+/// Actions per seed.
+const STEPS: usize = 10;
+
+/// How often each protocol case ran.
+#[derive(Clone, Copy, Debug, Default)]
+struct Coverage {
+    multi_owner_splits: usize,
+    untouched_keepers: usize,
+    preserves: usize,
+    restores: usize,
+    rebuilds: usize,
+    duplicates: usize,
+    unnamed: usize,
+    least_merges: usize,
+    minted_merges: usize,
+}
+
+impl Coverage {
+    fn count(&mut self, op: &Op, untouched_keeper: bool) {
+        if let Op::MergeKeep {
+            listed: Some(_), ..
+        } = op
+        {
+            self.least_merges += 1;
+        }
+        match op {
+            Op::Split { at, .. } if at[0] != at[1] => self.multi_owner_splits += 1,
+            Op::MergeKeep { .. } if untouched_keeper => self.untouched_keepers += 1,
+            Op::Preserve { .. } => self.preserves += 1,
+            Op::Restore { .. } => self.restores += 1,
+            Op::Rebuild => self.rebuilds += 1,
+            Op::Duplicate { .. } => self.duplicates += 1,
+            Op::Unnamed { .. } => self.unnamed += 1,
+            Op::MergeMint { .. } => self.minted_merges += 1,
+            _ => {}
+        }
+    }
+
+    fn add(&mut self, other: Self) {
+        self.multi_owner_splits += other.multi_owner_splits;
+        self.untouched_keepers += other.untouched_keepers;
+        self.preserves += other.preserves;
+        self.restores += other.restores;
+        self.rebuilds += other.rebuilds;
+        self.duplicates += other.duplicates;
+        self.unnamed += other.unnamed;
+        self.least_merges += other.least_merges;
+        self.minted_merges += other.minted_merges;
+    }
+}
+
+/// Applies a committed action to the reference model.
+fn apply(model: &mut Oracle, op: &Op) {
+    let event = match op {
+        Op::Create { name, at } => Some((Event::Create(*name), vec![at.owner()])),
+        Op::Preserve { name, at } => Some((Event::Preserve(*name), vec![at.owner()])),
+        Op::Restore { name, at } => Some((Event::Restore(*name), vec![at.owner()])),
+        Op::Split { parent, pieces, at } => Some((
+            Event::Split {
+                parent: *parent,
+                pieces: *pieces,
+            },
+            at.iter().map(|placement| placement.owner()).collect(),
+        )),
+        Op::MergeKeep { keeper, other, .. } => Some((
+            Event::MergeKeep {
+                keeper: *keeper,
+                other: *other,
+            },
+            Vec::new(),
+        )),
+        Op::MergeMint {
+            parents,
+            minted,
+            at,
+        } => Some((
+            Event::MergeMint {
+                parents: *parents,
+                minted: *minted,
+            },
+            vec![at.owner()],
+        )),
+        Op::Retire { name } => Some((Event::Retire(*name), Vec::new())),
+        Op::Duplicate { .. } | Op::Unnamed { .. } | Op::MergeLeast { .. } | Op::Rebuild => None,
+    };
+    if let Some((event, owners)) = event {
+        model.apply(event, &owners);
+    }
+}
+
+/// Every observed answer must equal the oracle's, for every born name.
+fn agree(model: &Oracle, observed: &Observed, minted: &BTreeSet<usize>) -> Result<(), String> {
+    let born: BTreeSet<usize> = model.born().collect();
+    if &born != minted {
+        return Err(format!("the world minted {minted:?}, the model {born:?}"));
+    }
+    if observed.live != model.live() {
+        return Err(format!(
+            "live {:?}, model {:?}",
+            observed.live,
+            model.live()
+        ));
+    }
+    let expected = born.len() * reference::SCOPES.len() * reference::SELECTIONS.len();
+    if observed.answers.len() != expected {
+        return Err(format!(
+            "{} answers, {expected} expected",
+            observed.answers.len()
+        ));
+    }
+    for (&(name, scope, all), answer) in &observed.answers {
+        let modelled = model.resolve(name, scope, all);
+        if *answer != modelled {
+            return Err(format!(
+                "n{} in {scope:?} (all: {all}) answered {answer:?}, model {modelled:?}",
+                name + 1
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, String> {
+    let mut rng = Rng::new(seed);
+    let mut model = Oracle::default();
+    let mut driver = Driver::new(seed);
+    let mut authored = BTreeSet::new();
+    let mut minted = 0;
+    let mut trace = Trace::default();
+    let mut coverage = Coverage::default();
+    let mut ops = Vec::new();
+    for step in 0..STEPS {
+        let op = next_op(&mut rng, &model, &authored, minted, coverage.rebuilds > 0);
+        let op = driver.settle(op);
+        ops.push(op.clone());
+        let fail = |cause: String| format!("seed {seed} step {step}: {cause}\n  ops: {ops:?}");
+        let untouched = match &op {
+            Op::MergeKeep { keeper, other, .. } => {
+                driver.partitions_differ(*keeper, *other) == Some(true)
+            }
+            _ => false,
+        };
+        coverage.count(&op, untouched);
+        let created = driver.execute(&op, step).map_err(fail)?;
+        driver.learn(step, &created).map_err(fail)?;
+        apply(&mut model, &op);
+        match &op {
+            Op::Create { name, .. } => {
+                authored.insert(*name);
+                minted += 1;
+            }
+            Op::Split { .. } => minted += 2,
+            Op::MergeMint { .. } => minted += 1,
+            _ => {}
+        }
+        let observed = driver.observe(step).map_err(fail)?;
+        let born: BTreeSet<usize> = driver.names.keys().copied().collect();
+        agree(&model, &observed, &born).map_err(fail)?;
+        trace.step(&op, &observed, &born, driver.naming_commits);
+    }
+    if let Some(dir) = trace_dir {
+        trace
+            .write(dir, seed)
+            .map_err(|cause| format!("trace: {cause}"))?;
+    }
+    Ok(coverage)
+}
+
+fn seeds() -> Vec<u64> {
+    let var = |name: &str| std::env::var(name).ok().and_then(|v| v.parse::<u64>().ok());
+    match var("WORTH_DST_SEED") {
+        Some(seed) => vec![seed],
+        None => (0..var("WORTH_DST_SEEDS").unwrap_or(64)).collect(),
+    }
+}
+
+#[test]
+fn seeded_walks_agree_with_the_reference_oracle() {
+    let seeds = seeds();
+    let trace_dir = std::env::var_os("WORTH_DST_TRACE_DIR").map(std::path::PathBuf::from);
+    let workers = std::thread::available_parallelism()
+        .map_or(4, usize::from)
+        .min(8)
+        .min(seeds.len());
+    let next = AtomicUsize::new(0);
+    let failures = Mutex::new(Vec::new());
+    let total = Mutex::new(Coverage::default());
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| {
+                while let Some(&seed) = seeds.get(next.fetch_add(1, Ordering::Relaxed)) {
+                    match run_seed(seed, trace_dir.as_deref()) {
+                        Ok(coverage) => total.lock().unwrap().add(coverage),
+                        Err(failure) => failures.lock().unwrap().push(failure),
+                    }
+                }
+            });
+        }
+    });
+    let failures = failures.into_inner().unwrap();
+    assert!(
+        failures.is_empty(),
+        "{} seeds failed:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    let total = total.into_inner().unwrap();
+    eprintln!(
+        "persistent-naming DST: {} seeds x {STEPS} steps, {total:?}",
+        seeds.len()
+    );
+    if seeds.len() >= 64 {
+        let Coverage {
+            multi_owner_splits,
+            untouched_keepers,
+            preserves,
+            restores,
+            rebuilds,
+            duplicates,
+            unnamed,
+            least_merges,
+            minted_merges,
+        } = total;
+        for (case, runs) in [
+            ("#133 multi-owner splits", multi_owner_splits),
+            ("#314 untouched keepers", untouched_keepers),
+            ("Preserve", preserves),
+            ("Restore", restores),
+            ("index rebuilds", rebuilds),
+            ("DuplicateBirth refusals", duplicates),
+            ("unnamed-birth refusals", unnamed),
+            ("merge_least merges", least_merges),
+            ("MintNew merges", minted_merges),
+        ] {
+            assert!(runs > 0, "the seeds never exercised {case}");
+        }
+    }
+}

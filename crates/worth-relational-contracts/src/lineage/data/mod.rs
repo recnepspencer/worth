@@ -10,6 +10,7 @@ pub mod metrics;
 pub mod name_resolution;
 pub mod naming;
 pub mod naming_denial;
+mod pending_birth_identity;
 pub mod postures;
 pub mod resolution;
 

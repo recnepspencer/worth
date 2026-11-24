@@ -5,6 +5,10 @@ use crate::storage::residency::RelationalRegionResidency;
 use std::sync::Arc;
 
 impl StorageSubsystem {
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The close owner treats lock contention and a retained source edition as the same retry"
+    )]
     pub fn preflight_source_retirement(&self) -> Result<(), ()> {
         self.partitions
             .try_write()
@@ -12,6 +16,10 @@ impl StorageSubsystem {
             .edition
             .exclude_source_capable_editions()
     }
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The close owner treats a missed read lock as one retry outcome"
+    )]
     pub fn source_retirement_edition_cell(
         &self,
         after: Option<PartitionId>,
@@ -24,6 +32,10 @@ impl StorageSubsystem {
             .edition
             .source_retirement_cell(after, retire_native))
     }
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The close owner treats unavailable custody as one retry outcome"
+    )]
     pub fn source_retirement_target(
         &self,
         after: Option<PartitionId>,

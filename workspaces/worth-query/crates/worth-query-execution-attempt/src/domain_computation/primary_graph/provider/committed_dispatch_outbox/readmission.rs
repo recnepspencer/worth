@@ -16,6 +16,13 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &ExecutionRequest<'_, '_>,
         observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
         inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        continuable_native: &std::collections::BTreeMap<
+            worth_relational::facade::history::CommitId,
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        >,
+        unpublished_native: &std::collections::BTreeSet<
+            worth_relational::facade::history::CommitId,
+        >,
     ) -> Result<bool, Denial> {
         let (inbound, candidates) = self.graph.with_runtime(execution, |runtime| {
             let (_, basis) = runtime
@@ -27,7 +34,13 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(|_| Denial::ExactCommitUnavailable)?;
             self.readmit_outbox_view(execution, &view)
         })?;
-        self.readmit_dispatch_correlation_index(execution, observation, inspection, candidates)?;
+        self.readmit_dispatch_correlation_index(
+            execution,
+            observation,
+            inspection,
+            candidates,
+            (continuable_native, unpublished_native),
+        )?;
         Ok(inbound)
     }
 

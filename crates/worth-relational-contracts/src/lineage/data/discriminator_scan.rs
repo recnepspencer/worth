@@ -41,6 +41,10 @@ struct Scope<'a> {
 /// Empty slices indicate no discriminator (`Ok(Vec::new())`). Any non-empty
 /// slice MUST begin with `worth.query.name-discriminator.v1\0` and parse
 /// completely to EOF; otherwise returns `Err(())`.
+#[allow(
+    clippy::result_unit_err,
+    reason = "Callers classify malformed discriminators at their owning boundary"
+)]
 pub fn extract_embedded_name_refs(bytes: &[u8]) -> Result<Vec<[u8; 32]>, ()> {
     if bytes.is_empty() {
         return Ok(Vec::new());

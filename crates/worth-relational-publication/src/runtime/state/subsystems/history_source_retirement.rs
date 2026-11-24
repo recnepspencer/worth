@@ -55,7 +55,7 @@ impl RelationalSourceHistoryBinding {
     >{
         self.catalog
             .source_retirement_checkpoint_envelope(after)
-            .map_err(|()| SourceHistoryContended)
+            .map_err(|_| SourceHistoryContended)
     }
     pub fn ledger_envelope(
         &self,
@@ -79,7 +79,7 @@ impl RelationalSourceHistoryBinding {
     ) -> Result<RelationalSourceRootSlot, SourceHistoryContended> {
         self.branches
             .source_retirement_root(index)
-            .map_err(|()| SourceHistoryContended)
+            .map_err(|_| SourceHistoryContended)
     }
     pub fn retired_root(
         &self,
@@ -87,12 +87,12 @@ impl RelationalSourceHistoryBinding {
     ) -> Result<Option<(usize, Arc<RelationalBranchRoot>)>, SourceHistoryContended> {
         self.retention
             .next_source_retirement_root(after)
-            .map_err(|()| SourceHistoryContended)
+            .map_err(|_| SourceHistoryContended)
     }
     pub fn retire_head(&self, index: usize) -> Result<Option<bool>, SourceHistoryContended> {
         self.branches
             .try_retire_stopped_head(index)
-            .map_err(|()| SourceHistoryContended)
+            .map_err(|_| SourceHistoryContended)
     }
     pub fn retained_close_holders(
         &self,

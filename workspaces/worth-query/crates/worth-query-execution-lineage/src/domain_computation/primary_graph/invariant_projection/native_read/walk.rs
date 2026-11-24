@@ -4,6 +4,7 @@ use super::super::{
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
 use super::*;
+mod guard;
 use crate::domain_computation::primary_graph::structural_walk::{
     memory, StructuralWalkObservation, StructuralWalkQuery,
 };
@@ -160,14 +161,25 @@ impl NativeRead<'_, '_> {
         if !self.budget.consume(work) {
             return Err(Denial::new(Kind::WorkBudgetExceeded, relation));
         }
-        observed.map_err(|denial| match denial.kind {
-            PinnedStructuralWalkDenialKind::Read(cause) => self.walk_stop(cause, relation),
-            PinnedStructuralWalkDenialKind::WorkLimitExceeded => {
-                self.budget.mark_exceeded();
-                Denial::new(Kind::WorkBudgetExceeded, relation)
+        let walk = match observed {
+            Ok(walk) => walk,
+            Err(denial) => {
+                return Err(match denial.kind {
+                    PinnedStructuralWalkDenialKind::Read(cause) => self.walk_stop(cause, relation),
+                    PinnedStructuralWalkDenialKind::WorkLimitExceeded => {
+                        self.budget.mark_exceeded();
+                        Denial::new(Kind::WorkBudgetExceeded, relation)
+                    }
+                    PinnedStructuralWalkDenialKind::EndpointUnavailable => {
+                        self.guard_failed_walk(denial.endpoint, &seeds, layout.kind, relation)?;
+                        Denial::new(Kind::EndpointUnavailable, relation)
+                    }
+                    _ => Denial::new(Kind::EndpointUnavailable, relation),
+                });
             }
-            _ => Denial::new(Kind::EndpointUnavailable, relation),
-        })
+        };
+        self.guard_walk(&walk, layout.kind, direction, relation, context)?;
+        Ok(walk)
     }
     fn record_walk_reads(&mut self, reads: PinnedStructuralWalkReads) {
         self.work

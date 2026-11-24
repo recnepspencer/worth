@@ -5,7 +5,7 @@ use super::super::{
     producer_posture::RelationalCoupledProducerPosture, retained_assembly::CoupledPublicationPart,
 };
 use super::coverage::{covered, entity_write, roles, units, Unit};
-use super::relations;
+use super::{redelete, relations};
 use contracts::execution::request_stage::checkpoint;
 use contracts::identity::data::record_ids::EntityId;
 use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
@@ -25,6 +25,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
 
 /// Native judgment of the rescoped round against what its chain wrote.
+/// Returns the entities the round provably deletes again.
 /// O(chain commands + round intents + roles + records applied since the chain).
 pub fn prove_succession(
     execution: &ExecutionRequest<'_, '_>,
@@ -34,7 +35,7 @@ pub fn prove_succession(
     content: &worth_relational_storage::internal_port::content::attachments::RelationalContentAttachments,
     publication: &RelationalCoupledProducerPosture,
     batches: &[WorkerIntentBatch],
-) -> Result<(), TransactionCommitError> {
+) -> Result<BTreeSet<EntityId>, TransactionCommitError> {
     let source = part
         .publication
         .producing_meaning()
@@ -64,28 +65,24 @@ pub fn prove_succession(
                 ));
             }
             let created = part.chain.created.iter().copied().collect::<BTreeSet<_>>();
-            // Identity: each head relation is re-created over the same endpoints.
-            let mut links = BTreeSet::new();
-            for intent in &part.commands.plan().merged_intents {
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
-                {
-                    links.insert(link);
-                }
-            }
-            let mut relinked = BTreeSet::new();
+            let latest = &part.commands.plan().merged_intents;
+            let mut relation_identity = relations::RelationIdentity::of_chain(
+                bindings,
+                symbols,
+                latest,
+                source,
+                &mut charge,
+            )?;
+            let mut redeletes = redelete::Redeletes::of_chain(latest, &created, &mut charge)?;
             let mut written = BTreeSet::<Unit>::new();
             let mut recreated = BTreeSet::new();
             // One write per record: a chain record folds as one round's one write.
             let mut targets = BTreeSet::new();
             for intent in batches.iter().flat_map(|batch| &batch.intents) {
                 charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
+                if relation_identity.admit(bindings, symbols, intent, source, &mut charge)?
+                    || redeletes.admit(intent, &mut targets)?
                 {
-                    if !links.contains(&link) || !relinked.insert(link) {
-                        return Err(postponed(Reason::StructuralEffect, source));
-                    }
                     continue;
                 }
                 let id = match intent {
@@ -126,14 +123,11 @@ pub fn prove_succession(
                     return Err(postponed(Reason::UncoveredWrite, *id));
                 }
             }
-            for intent in &part.commands.plan().merged_intents {
+            for intent in latest {
                 charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
+                if relation_identity.covers(bindings, symbols, intent, source, &mut charge)?
+                    || redeletes.covers(intent)?
                 {
-                    if !relinked.contains(&link) {
-                        return Err(postponed(Reason::UncoveredWrite, source));
-                    }
                     continue;
                 }
                 let id = match intent {
@@ -158,7 +152,7 @@ pub fn prove_succession(
                     }
                 }
             }
-            Ok(())
+            Ok(redeletes.into_proved())
         })
         .map_err(custody::execution_stop)?
         .0

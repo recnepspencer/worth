@@ -80,6 +80,20 @@ impl From<String> for InternedString {
     }
 }
 
+/// Operations used by the Relational owners.
+pub trait InternedStringOwnerPort: Sized {
+    fn owned_allocation_capacity_bytes(&self) -> u64;
+}
+
+impl InternedStringOwnerPort for InternedString {
+    fn owned_allocation_capacity_bytes(&self) -> u64 {
+        match self {
+            Self::Raw(raw) => raw.capacity() as u64,
+            Self::Symbol(_) => 0,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::InternedString;
@@ -132,19 +146,5 @@ mod tests {
             .expect("symbol fixture has identity capacity");
 
         assert_eq!(interner.resolve(symbol), Some("name"));
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait InternedStringOwnerPort: Sized {
-    fn owned_allocation_capacity_bytes(&self) -> u64;
-}
-
-impl InternedStringOwnerPort for InternedString {
-    fn owned_allocation_capacity_bytes(&self) -> u64 {
-        match self {
-            Self::Raw(raw) => raw.capacity() as u64,
-            Self::Symbol(_) => 0,
-        }
     }
 }

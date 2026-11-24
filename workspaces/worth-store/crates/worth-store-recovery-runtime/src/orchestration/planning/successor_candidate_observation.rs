@@ -15,6 +15,7 @@ mod charge_pins;
 mod denial;
 mod free_space;
 mod materialization;
+mod release_head;
 mod resident;
 mod root_manifest;
 mod root_routing;
@@ -30,6 +31,7 @@ fn observe_bounded(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     selected: &DurablePhysicalRootManifest,
     format: PhysicalRecordFormatDeclaration,
+    release_head_replay: Option<&worth_store_recovery_physics::VerifiedSelectedReleaseHeadReplayV14>,
     budget: &mut ManifestEntryBudget,
     materialization: &mut CandidateMaterialization,
     root_protocol_counters: &mut crate::entry::PhysicalRecoveryRootProtocolCounters,
@@ -86,6 +88,17 @@ fn observe_bounded(
         integrity_trace,
         allowance,
     )?;
+    release_head::read(
+        discovery,
+        &root,
+        format,
+        &charge,
+        release_head_replay,
+        &mut artifacts,
+        &mut referenced_artifacts,
+        materialization,
+        allowance,
+    )?;
     let (free_space, free_entries) = free_space::read(
         discovery,
         &root,
@@ -137,6 +150,7 @@ pub(super) const fn artifact_generation(artifact: RecordArtifactFile) -> u64 {
     match artifact {
         RecordArtifactFile::RootManifest { generation }
         | RecordArtifactFile::RootRoutingBlock { generation, .. }
+        | RecordArtifactFile::ReleaseCustodyHeadBlock { generation, .. }
         | RecordArtifactFile::SegmentMembershipBlock { generation, .. }
         | RecordArtifactFile::FreeSpaceManifest { generation }
         | RecordArtifactFile::FreeSpaceMembershipBlock { generation, .. } => generation,

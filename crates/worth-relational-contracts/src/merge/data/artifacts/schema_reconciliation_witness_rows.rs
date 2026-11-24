@@ -252,6 +252,37 @@ fn schema_reconciliation_row_digest(
     lowercase_sha256(digest.finalize().into())
 }
 
+/// Operations used by the Relational owners.
+pub trait RelationalSchemaReconciliationWitnessRowOwnerPort: Sized {
+    fn retained(input: RelationalSchemaReconciliationWitnessRowInput) -> Self;
+}
+
+impl RelationalSchemaReconciliationWitnessRowOwnerPort
+    for RelationalSchemaReconciliationWitnessRow
+{
+    fn retained(input: RelationalSchemaReconciliationWitnessRowInput) -> Self {
+        let derived = derive_schema_reconciliation_truth(&input);
+        let row_digest = schema_reconciliation_row_digest(&input, &derived);
+        Self {
+            record: input.record,
+            target_record: input.target_record,
+            basis: input.basis,
+            source_only_aspect_count: input.source_only_aspect_count,
+            target_only_aspect_count: input.target_only_aspect_count,
+            divergent_aspect_count: input.divergent_aspect_count,
+            unavailable_aspect_count: input.unavailable_aspect_count,
+            decision_boundary: input.decision_boundary,
+            relation_endpoint_divergence: input.relation_endpoint_divergence,
+            correspondence_linkage: input.correspondence_linkage,
+            classification: derived.classification,
+            policy: derived.policy,
+            denial: derived.denial,
+            posture: derived.posture,
+            row_digest,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::schema_reconciliation_witness::RelationalSchemaReconciliationWitness;
@@ -338,36 +369,5 @@ mod tests {
             )
             .is_err()
         );
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait RelationalSchemaReconciliationWitnessRowOwnerPort: Sized {
-    fn retained(input: RelationalSchemaReconciliationWitnessRowInput) -> Self;
-}
-
-impl RelationalSchemaReconciliationWitnessRowOwnerPort
-    for RelationalSchemaReconciliationWitnessRow
-{
-    fn retained(input: RelationalSchemaReconciliationWitnessRowInput) -> Self {
-        let derived = derive_schema_reconciliation_truth(&input);
-        let row_digest = schema_reconciliation_row_digest(&input, &derived);
-        Self {
-            record: input.record,
-            target_record: input.target_record,
-            basis: input.basis,
-            source_only_aspect_count: input.source_only_aspect_count,
-            target_only_aspect_count: input.target_only_aspect_count,
-            divergent_aspect_count: input.divergent_aspect_count,
-            unavailable_aspect_count: input.unavailable_aspect_count,
-            decision_boundary: input.decision_boundary,
-            relation_endpoint_divergence: input.relation_endpoint_divergence,
-            correspondence_linkage: input.correspondence_linkage,
-            classification: derived.classification,
-            policy: derived.policy,
-            denial: derived.denial,
-            posture: derived.posture,
-            row_digest,
-        }
     }
 }

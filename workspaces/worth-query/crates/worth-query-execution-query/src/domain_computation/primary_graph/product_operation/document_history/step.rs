@@ -1,4 +1,5 @@
 //! Sealed document occurrences describe completed bindings without retaining source custody.
+use super::step_metadata::WorthQueryHistoryStepMetadata;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
@@ -57,6 +58,7 @@ pub struct WorthQueryHistoryStep {
     id: WorthQueryHistoryNodeId,
     parent: Option<WorthQueryHistoryNodeId>,
     label: Option<Arc<str>>,
+    metadata: WorthQueryHistoryStepMetadata,
     endpoint: WorthQueryProductBranchReadIdentity,
 }
 
@@ -65,12 +67,14 @@ impl crate::ports::HistoryStepConstructionPort for WorthQueryHistoryStep {
         id: WorthQueryHistoryNodeId,
         parent: Option<WorthQueryHistoryNodeId>,
         label: Option<Arc<str>>,
+        metadata: WorthQueryHistoryStepMetadata,
         endpoint: WorthQueryProductBranchReadIdentity,
     ) -> Self {
         Self {
             id,
             parent,
             label,
+            metadata,
             endpoint,
         }
     }
@@ -89,6 +93,10 @@ impl WorthQueryHistoryStep {
     }
     pub fn label(&self) -> Option<&str> {
         self.label.as_deref()
+    }
+    /// Application bytes recorded with this step; empty when none were given.
+    pub fn metadata(&self) -> &WorthQueryHistoryStepMetadata {
+        &self.metadata
     }
     pub fn endpoint(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.endpoint

@@ -18,7 +18,7 @@ pub(super) fn retained(
         &mut bytes,
         tree::<KindId, ()>((*registry.owner_native_private_kinds()).len())?,
     )?;
-    if let Some(storage) = &(*registry.owner_current_publication_storage()) {
+    if let Some(storage) = registry.owner_current_publication_storage() {
         control.checkpoint().map_err(Denial::Request)?;
         add(
             &mut bytes,

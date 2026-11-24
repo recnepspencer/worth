@@ -91,6 +91,16 @@ pub(super) fn changed(
     final_locator: String,
     detail: impl Fn(&str) -> String,
 ) -> Result<(), CoupledSupportPreparationDenial> {
+    // If support is already broken at the reader's own observed image (e.g.
+    // an earlier member or the reader itself revoked a before-basis Source
+    // READ permission), no later round can settle that break.
+    match compare(observed, observed) {
+        Ok(None) => {}
+        Err(cause) => return require_answer(Err(cause), source, String::new),
+        Ok(Some(locator)) => {
+            return require_answer(Ok(false), source, || detail(&locator));
+        }
+    }
     let mut settled = false;
     let mut earlier = observed;
     for round in rounds(members)
