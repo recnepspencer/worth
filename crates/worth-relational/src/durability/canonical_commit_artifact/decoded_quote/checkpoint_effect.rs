@@ -1,16 +1,10 @@
 //! Image effect DATA uses the original semantic and creation allocation owners.
 use super::*;
+use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
 use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
-
-#[derive(Debug)]
-pub(crate) struct CheckpointEffectData {
-    pub(crate) semantic: Arc<RelationalCommitSemanticResult>,
-    pub(crate) creations: Vec<PublishedAuthoritativeRecordPatch>,
-    _memory: Option<ExecutionMemoryReservation>,
-}
 
 pub(crate) fn decode_checkpoint_effect(
     semantic: &[u8],

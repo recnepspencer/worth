@@ -59,38 +59,6 @@ impl CheckpointAdmittedCommit {
     pub(crate) fn scope(&self) -> &worth_foundational::facade::CheckpointAdmissionScope {
         self.0.image.cut().scope()
     }
-    pub(crate) fn effect_data(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        crate::durability::canonical_commit_artifact::decoded_quote::CheckpointEffectData,
-        Refusal,
-    > {
-        let row = self
-            .0
-            .image
-            .row(self.0.index.commit.commit_id)
-            .ok_or(Refusal::InvalidProjectedMeaning)?;
-        let data =
-            crate::durability::canonical_commit_artifact::decoded_quote::decode_checkpoint_effect(
-                self.0.image.group(&row.groups[0]),
-                self.0.image.group(&row.groups[6]),
-                request,
-            )
-            .map_err(projected_stop)?;
-        if data.semantic.receipt() != &self.index().commit
-            || data.semantic.structural().descriptor_semantics_version
-                != self.0.schema.descriptor_semantics_version()
-            || data.creations.iter().any(|patch| {
-                patch.structural_change
-                    != crate::publication::patch::data::RecordStructuralChange::Created
-            })
-        {
-            return Err(Refusal::InvalidProjectedMeaning);
-        }
-        Ok(data)
-    }
-
     pub(crate) fn require_publication_axes(
         &self,
         predecessor: &crate::branch::basis::RelationalBranchBasisDescriptor,

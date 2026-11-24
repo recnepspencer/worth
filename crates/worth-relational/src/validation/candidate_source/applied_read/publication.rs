@@ -1,6 +1,7 @@
 //! A genuine applied Source loan may join only its own actual publication.
 use super::AppliedSourceAffinity;
 use super::Denial;
+use crate::branch::projection_view::managed_source::ManagedIndexSourceObservation;
 use crate::{runtime::RelationalRuntime, snapshots::data::SnapshotHandle};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -19,7 +20,7 @@ impl ManagedIndexAppliedSourcePublication {
         execution: &ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         after: &SnapshotHandle,
-    ) -> Result<crate::mvcc::ManagedIndexSourceObservation, Denial> {
+    ) -> Result<ManagedIndexSourceObservation, Denial> {
         if runtime.runtime_instance_id() != self.affinity.proposal.runtime_instance_id() {
             return Err(Denial::ForeignSource);
         }

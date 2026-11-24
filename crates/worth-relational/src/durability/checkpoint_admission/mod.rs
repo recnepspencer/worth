@@ -2,6 +2,7 @@
 mod admit_row;
 pub(crate) mod admitted_commit;
 mod capture_base;
+pub(crate) mod effect;
 pub(crate) use capture_base::{
     FrozenSelectedCaptureBase, PreparedCheckpointCaptureBase, SelectedCheckpointCaptureBase,
 };

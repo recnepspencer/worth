@@ -128,6 +128,14 @@ impl<'a> CheckpointOriginalRow<'a> {
         self.index
     }
 
+    pub(super) fn effect_groups(&self) -> Option<(&'a [u8], &'a [u8])> {
+        let row = self.image.row(self.index.commit.commit_id)?;
+        Some((
+            self.image.group(&row.groups[0]),
+            self.image.group(&row.groups[6]),
+        ))
+    }
+
     pub(crate) fn scope(&self) -> &'a worth_foundational::facade::CheckpointAdmissionScope {
         self.image.cut().scope()
     }

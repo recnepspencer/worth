@@ -57,11 +57,12 @@ impl DurabilityAuthority<'_> {
             {
                 return Err(Refusal::SubjectMismatch);
             }
-            let data = row.effect_data(execution).map_err(|cause| {
-                Refusal::Recovery(
-                    crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                )
-            })?;
+            let data = crate::durability::checkpoint_admission::effect::read(&row, execution)
+                .map_err(|cause| {
+                    Refusal::Recovery(
+                        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
+                    )
+                })?;
             return Ok(ObservedRelationalMemoryCommit::from_interim(
                 self.runtime.services.origin_identity(),
                 row,

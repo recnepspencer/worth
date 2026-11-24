@@ -2,8 +2,9 @@
 use super::{ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram};
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
-use crate::runtime::{PositionedRelationalSnapshot, RelationalPreparationRuntime};
+use crate::runtime::RelationalPreparationRuntime;
 use crate::validation::engine::state_view::InvariantStateView;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_proof::{
     AdmittedManagedIndexSourceCorrespondence, ManagedIndexSourceCorrespondenceAuthority,

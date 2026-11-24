@@ -104,7 +104,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
 "durability/canonical_commit_artifact/payload_wire" = "durability"
 "durability/canonical_commit_artifact/verified_frame.rs" = "durability"
-"durability/checkpoint_admission/admitted_commit" = "durability"
+"durability/checkpoint_admission/admitted_commit" = "branch"
+"durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs" = "branch"
 "durability/checkpoint_selection_denial.rs" = "durability"
 "durability/cold_residency_census.rs" = "durability"
 "durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
@@ -861,7 +862,9 @@ root_custody = [
     "branch",
     "durability/checkpoint_admission/recorded_reference.rs",
     "durability/checkpoint_admission/row_custody.rs",
+    "durability/checkpoint_admission/admitted_commit",
     "durability/authority/associated_effects/observed_memory_commit.rs",
+    "durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs",
     "authority/commit/preparation/storage_denial.rs",
     "history/retention/snapshot_projection_root.rs",
     "history/retention/selected_snapshot.rs",
@@ -935,7 +938,8 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
 "durability/canonical_commit_artifact/payload_wire" = "durability"
 "durability/canonical_commit_artifact/verified_frame.rs" = "durability"
-"durability/checkpoint_admission/admitted_commit" = "durability"
+"durability/checkpoint_admission/admitted_commit" = "branch"
+"durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs" = "branch"
 "durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
 "indexes/authority/maintenance/applied_field.rs" = "indexes"
 "indexes/authority/maintenance/charge_rendezvous.rs" = "indexes"

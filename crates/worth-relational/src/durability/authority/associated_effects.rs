@@ -79,7 +79,7 @@ pub(super) enum ReadmittedEffectOrigin {
     Original(crate::history::data::PositionedCanonicalCommit),
     Checkpoint {
         commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
-        data: crate::durability::canonical_commit_artifact::CheckpointEffectData,
+        data: crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData,
     },
 }
 

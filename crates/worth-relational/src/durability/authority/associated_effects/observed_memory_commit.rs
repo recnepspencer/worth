@@ -1,7 +1,7 @@
 //! Evidence retained from the exact memory-owned canonical commit.
 use super::created_row_read::{read_created_entity, ReadmittedRelationalCreatedEntity};
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
-use crate::durability::canonical_commit_artifact::decoded_quote::CheckpointEffectData;
+use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
 use crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
 use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;

@@ -1741,7 +1741,7 @@
   ],
   "ceilings": {
     "production_explicit": {
-      "branch -> durability": 15,
+      "branch -> durability": 7,
       "branch -> indexes": 0,
       "branch -> lineage": 0,
       "branch -> merge": 0,
@@ -1775,7 +1775,7 @@
       "merge -> runtime": 0,
       "mutation -> merge": 0,
       "mutation -> publication": 45,
-      "mutation -> runtime": 178,
+      "mutation -> runtime": 176,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 0,
       "publication -> runtime": 155,
@@ -1790,7 +1790,7 @@
       "storage -> runtime": 24
     },
     "production_resolved": {
-      "branch -> durability": 16,
+      "branch -> durability": 9,
       "branch -> indexes": 0,
       "branch -> lineage": 0,
       "branch -> merge": 0,
@@ -1961,20 +1961,13 @@
   "references": {
     "production_explicit": {
       "branch -> durability": [
-        ["crates/worth-relational/src/branch/recorded_basis/memory_component.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 2],
-        ["crates/worth-relational/src/branch/root_commit_evidence.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/branch/root_readmission/checkpoint.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/durability/authority/associated_effects/observed_memory_commit.rs", "durability::canonical_commit_artifact::decoded_quote::CheckpointEffectData", 1],
-        ["crates/worth-relational/src/durability/authority/associated_effects/observed_memory_commit.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/durability/checkpoint_admission/row_custody.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency.rs", "durability::data::NativeCheckpointDirectoryEdge", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/artifact_export.rs", "durability::canonical_commit_artifact::frame_encoding::encode_canonical_frame_for_request", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/artifact_export.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/selected_checkpoint.rs", "durability::data::NativeCheckpointDirectoryEdge::new", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/selected_checkpoint.rs", "durability::data::RelationalCheckpointDirectory", 1],
-        ["crates/worth-relational/src/history/commit/envelope_residency/source_retirement.rs", "durability::data::NativeDirectoryRetirementHandoff", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_root_capture.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1]
+        ["crates/worth-relational/src/history/commit/envelope_residency/source_retirement.rs", "durability::data::NativeDirectoryRetirementHandoff", 1]
       ],
       "branch -> mutation": [
         ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::model_ownership::native_read::ModelOwnershipReadPlan", 1],
@@ -2327,9 +2320,7 @@
         ["crates/worth-relational/src/validation/candidate_source/applied.rs", "runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "runtime::RelationalAppliedCandidateReadIdentity", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "runtime::RelationalPinnedRead", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "mvcc::ManagedIndexSourceObservation", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "runtime::RelationalRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "runtime::PositionedRelationalSnapshot", 1],
         ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "mvcc::RelationalTransactionValidationInput", 1],
         ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::AdmittedRelationalHomeProgramTarget", 1],
@@ -2568,12 +2559,6 @@
     },
     "production_resolved": {
       "branch -> durability": [
-        ["crates/worth-relational/src/branch/recorded_basis/memory_component.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/branch/root_commit_evidence.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/branch/root_readmission/checkpoint.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/durability/authority/associated_effects/observed_memory_commit.rs", "durability::canonical_commit_artifact::decoded_quote::checkpoint_effect::CheckpointEffectData", 1],
-        ["crates/worth-relational/src/durability/authority/associated_effects/observed_memory_commit.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
-        ["crates/worth-relational/src/durability/checkpoint_admission/row_custody.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency.rs", "durability::data::checkpoint_directory::source_edge::NativeCheckpointDirectoryEdge", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/artifact_export.rs", "durability::canonical_commit_artifact::frame_encoding::encode_canonical_frame_for_request", 1],
@@ -2582,8 +2567,7 @@
         ["crates/worth-relational/src/history/commit/envelope_residency/selected_checkpoint.rs", "durability::data::checkpoint_directory::RelationalCheckpointDirectory", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/selected_checkpoint.rs", "durability::data::checkpoint_directory::source_edge::NativeCheckpointDirectoryEdge", 1],
         ["crates/worth-relational/src/history/commit/envelope_residency/source_readmission.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame", 1],
-        ["crates/worth-relational/src/history/commit/envelope_residency/source_retirement.rs", "durability::data::checkpoint_directory::source_edge::NativeDirectoryRetirementHandoff", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_root_capture.rs", "durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit", 1]
+        ["crates/worth-relational/src/history/commit/envelope_residency/source_retirement.rs", "durability::data::checkpoint_directory::source_edge::NativeDirectoryRetirementHandoff", 1]
       ],
       "branch -> mutation": [
         ["crates/worth-relational/src/branch/historical_selection/source_presence.rs", "branch::model_ownership::native_read::ModelOwnershipReadPlan", 1],

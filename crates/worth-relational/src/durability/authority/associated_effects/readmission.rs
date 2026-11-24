@@ -66,9 +66,11 @@ impl DurabilityAuthority<'_> {
                 {
                     return Err(Refusal::CatalogSubjectChanged);
                 }
-                let data = commit.effect_data(execution).map_err(|cause| {
-                    Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
-                })?;
+                let data =
+                    crate::durability::checkpoint_admission::effect::read(&commit, execution)
+                        .map_err(|cause| {
+                            Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
+                        })?;
                 let semantic = RecoveredRelationalSemanticResult {
                     semantic: data.semantic.clone(),
                 };
