@@ -27,7 +27,8 @@ use crate::domain_computation::primary_graph::application_query::{
     basis::WorthQueryApplicationQueryBasisCustody,
     controls::WorthQueryApplicationQueryBasis,
     disclosure::{
-        compile_disclosure_contract, WorthQueryAdmittedApplicationDisclosureContract,
+        compile_funded_disclosure_contract, FundedDisclosureCompilationDenial,
+        WorthQueryAdmittedApplicationDisclosureContract,
         WorthQueryPendingApplicationQueryGovernance,
     },
     execution_shape::validate_one_shot_shape,
@@ -122,8 +123,13 @@ where
                 query.name(),
             )
         })?;
-        let prepared =
-            self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
+        let prepared = self.prepare_application_query_graph_work(
+            execution,
+            query,
+            &parameters,
+            &controls,
+            graph,
+        )?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let (basis, index_posture) = admit_basis(basis_selection, &security_product)?;
@@ -188,6 +194,7 @@ where
 
     fn prepare_application_query_graph_work<Query, Parameters, QueryResult, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         parameters: &WorthQueryAdmittedApplicationQueryParameters,
         controls: &WorthQueryApplicationQueryControls<'_, Schema>,
@@ -216,12 +223,31 @@ where
                 .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
         let disclosure =
-            compile_disclosure_contract(query, graph.layout_ref()).map_err(|denial| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
-                    denial.subject(),
-                )
-            })?;
+            compile_funded_disclosure_contract(query, graph.layout_ref(), execution).map_err(
+                |cause| match cause {
+                    FundedDisclosureCompilationDenial::Contract(denial) => {
+                        WorthQueryApplicationQueryAdmissionDenial::new(
+                            WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
+                            denial.subject(),
+                        )
+                    }
+                    FundedDisclosureCompilationDenial::Cancelled => {
+                        denial(WorthQueryApplicationQueryAdmissionDenialKind::Cancelled, query.name())
+                    }
+                    FundedDisclosureCompilationDenial::DeadlineExceeded => denial(
+                        WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
+                        query.name(),
+                    ),
+                    FundedDisclosureCompilationDenial::WorkExhausted => denial(
+                        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                        query.name(),
+                    ),
+                    FundedDisclosureCompilationDenial::MemoryExhausted => denial(
+                        WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
+                        query.name(),
+                    ),
+                },
+            )?;
         let continuation_index_id = continuation_index_id(query, controls, graph)?;
         Ok(PreparedApplicationQueryGraphWork {
             plan,

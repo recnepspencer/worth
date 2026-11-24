@@ -77,7 +77,7 @@ pub fn merge(
         merge_tagged_aspects(&base.aspects, &narrowing.aspects, total_aspects)?;
     let mut tagged_adjacencies =
         merge_tagged_adjacencies(&base.adjacencies, &narrowing.adjacencies, total_adjacencies)?;
-    let mut entities = merge_entities(&base.entities, &narrowing.entities, total_entities)?;
+    let mut scratch_entities = merge_entities(&base.entities, &narrowing.entities, total_entities)?;
 
     // Shrink/materialize exact-capacity output vectors under the retained
     // allocation (or scratch when unattached) so retained claims match actual
@@ -96,7 +96,7 @@ pub fn merge(
         })
         .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
 
-    let entities = exact_copy_entities(execution, target_alloc, &mut entities, subject)?;
+    let entities = exact_copy_entities(execution, target_alloc, &mut scratch_entities, subject)?;
     let aspects = drain_exact(
         execution,
         target_alloc,
@@ -111,6 +111,7 @@ pub fn merge(
         kept_adj_bytes,
         subject,
     )?;
+    drop(scratch_entities);
     drop(tagged_aspects);
     drop(tagged_adjacencies);
     drop(scratch);

@@ -30,6 +30,7 @@ pub fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> Result<
         return Err(Denial::InvalidCanonicalOrdering);
     }
     reject_contradictory_related_clauses(predicates)?;
+    let lookup = where_filter::validation::ParameterLookup::new(definition.parameters());
     for predicate in predicates {
         if !predicate
             .target_predicates()
@@ -38,7 +39,7 @@ pub fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> Result<
         {
             return Err(Denial::InvalidCanonicalOrdering);
         }
-        validate_one(predicate, definition.root_entity(), definition.parameters())?;
+        validate_one_with_lookup(predicate, definition.root_entity(), &lookup)?;
     }
     Ok(())
 }
@@ -116,6 +117,15 @@ pub(super) fn validate_one(
     root_entity: &str,
     parameters: &[ApplicationQueryParameterDefinition],
 ) -> Result<(), Denial> {
+    let lookup = where_filter::validation::ParameterLookup::new(parameters);
+    validate_one_with_lookup(predicate, root_entity, &lookup)
+}
+
+fn validate_one_with_lookup(
+    predicate: &ApplicationQueryRelatedPredicateMeaning,
+    root_entity: &str,
+    lookup: &where_filter::validation::ParameterLookup<'_>,
+) -> Result<(), Denial> {
     if !identifier_is_clean(predicate.relation())
         || !identifier_is_clean(predicate.from())
         || !identifier_is_clean(predicate.to())
@@ -128,7 +138,7 @@ pub(super) fn validate_one(
     reject_contradictory_target_literals(predicate.target_predicates())?;
     let target_entity = predicate.target_entity();
     for target in predicate.target_predicates() {
-        validate_target_predicate(target, target_entity, parameters)?;
+        validate_target_predicate(target, target_entity, lookup)?;
     }
     if let Some(filter) = predicate.target_where_filter() {
         for operand in filter.operands() {
@@ -150,7 +160,7 @@ pub(super) fn validate_one(
                 }
             }
         }
-        where_filter::validation::validate_parameter_operands(parameters, filter)?;
+        where_filter::validation::validate_parameter_operands_with_lookup(lookup, filter)?;
     }
     Ok(())
 }
@@ -158,7 +168,7 @@ pub(super) fn validate_one(
 fn validate_target_predicate(
     target: &ApplicationQueryRelatedTargetPredicate,
     target_entity: &str,
-    parameters: &[ApplicationQueryParameterDefinition],
+    lookup: &where_filter::validation::ParameterLookup<'_>,
 ) -> Result<(), Denial> {
     let (entity, aspect, field) = target.field();
     if !identifier_is_clean(entity) || !identifier_is_clean(aspect) || !identifier_is_clean(field) {
@@ -172,7 +182,7 @@ fn validate_target_predicate(
             if !identifier_is_clean(name) {
                 return Err(Denial::EmptyIdentifier);
             }
-            let Some(declared) = parameters.iter().find(|p| p.name() == name) else {
+            let Some(declared) = lookup.get(name) else {
                 return Err(Denial::UnknownPredicateParameter);
             };
             if declared.scalar_family() != target.scalar_family()

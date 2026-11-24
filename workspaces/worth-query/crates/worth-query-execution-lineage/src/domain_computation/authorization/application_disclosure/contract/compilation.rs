@@ -85,6 +85,10 @@ fn finalize_internal_groups<K, E>(
     groups: BTreeMap<K, Vec<AdmittedDisclosureRule>>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<Vec<(K, GovernedInternalRuleGroup)>, CompilationStop<E>> {
+    let table_bytes = groups
+        .len()
+        .saturating_mul(std::mem::size_of::<(K, GovernedInternalRuleGroup)>());
+    pay(admit, CompilationWork::Copy(table_bytes))?;
     let mut out = Vec::with_capacity(groups.len());
     for (key, rules) in groups {
         pay(admit, CompilationWork::Visit)?;

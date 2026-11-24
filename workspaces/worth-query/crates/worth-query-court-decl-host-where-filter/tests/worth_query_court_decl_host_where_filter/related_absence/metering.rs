@@ -5,8 +5,11 @@ use super::world::{funded_ready, funded_unlinked, install};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial;
-use worth_query_host::facade::primary_graph::WorthQueryApplicationOneShotDenialKind;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOneShotDenialKind, WorthQueryProviderSessionDenialKind,
+};
 
 fn fresh_scope() -> (WorthQueryCancellationSource, WorthQueryRequestScope) {
     let source = WorthQueryCancellationSource::new();
@@ -127,7 +130,7 @@ fn minimal_unlinked_memory_budget(
     lo
 }
 
-fn assert_blocked_by_refusal(
+fn assert_blocked_by_work_refusal(
     label: &str,
     result: Result<(Vec<u64>, usize), Box<WorthQueryApplicationRequestQueryDenial>>,
 ) {
@@ -136,18 +139,52 @@ fn assert_blocked_by_refusal(
             assert!(
                 matches!(
                     denial.kind(),
-                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(_)
-                        | WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded
+                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
+                        WorthQueryProviderSessionDenialKind::ExecutionResource {
+                            denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                            ..
+                        }
+                    ) | WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded
                 ),
-                "{label}: unexpected denial kind: {denial:?}"
+                "{label}: expected WorkExhausted/WorkLimitExceeded, got: {denial:?}"
             );
             assert_eq!(
                 denial.subject(),
                 "BlockedBy",
-                "{label}: early refusal must occur during BlockedBy frontier traversal: {denial:?}"
+                "{label}: work refusal must occur during BlockedBy frontier traversal: {denial:?}"
             );
         }
-        other => panic!("{label}: must refuse early inside BlockedBy: {other:?}"),
+        other => panic!("{label}: must refuse on work inside BlockedBy: {other:?}"),
+    }
+}
+
+fn assert_blocked_by_memory_refusal(
+    label: &str,
+    result: Result<(Vec<u64>, usize), Box<WorthQueryApplicationRequestQueryDenial>>,
+) {
+    match result.map_err(|e| *e) {
+        Err(WorthQueryApplicationRequestQueryDenial::Execution(denial)) => {
+            assert!(
+                matches!(
+                    denial.kind(),
+                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
+                        WorthQueryProviderSessionDenialKind::ExecutionResource {
+                            denial: WorthQueryManagedComputationResourceDenial::MemoryLimit { .. },
+                            ..
+                        }
+                    )
+                ),
+                "{label}: expected exact MemoryLimit refusal at collector boundary, got: {denial:?}"
+            );
+            assert_eq!(
+                denial.subject(),
+                "BlockedBy",
+                "{label}: memory refusal must occur during BlockedBy collector pass: {denial:?}"
+            );
+        }
+        other => {
+            panic!("{label}: must refuse on MemoryLimit inside BlockedBy collector: {other:?}")
+        }
     }
 }
 
@@ -218,15 +255,15 @@ fn high_fanout_single_root_stops_native_frontier_scan_early_when_budget_exhausts
     assert!(base_mem < mid_collector_mem && mid_collector_mem < mem_400);
 
     for (label, host) in [("400-edge", &host_400), ("800-edge", &host_800)] {
-        assert_blocked_by_refusal(
+        assert_blocked_by_work_refusal(
             &format!("{label} early-work"),
             funded_unlinked(host, &scope, 64 * 1024 * 1024, tight_work, 1),
         );
-        assert_blocked_by_refusal(
+        assert_blocked_by_work_refusal(
             &format!("{label} collector-mid-work"),
             funded_unlinked(host, &scope, 64 * 1024 * 1024, mid_collector_work, 1),
         );
-        assert_blocked_by_refusal(
+        assert_blocked_by_memory_refusal(
             &format!("{label} collector-memory"),
             funded_unlinked(host, &scope, mid_collector_mem, 1 << 22, 1),
         );

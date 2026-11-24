@@ -19,8 +19,10 @@ use super::influence_validation::{
 pub mod admission;
 pub mod compilation;
 pub mod field_masks;
+pub mod funded;
 pub mod result_rules;
 pub use compilation::compile_disclosure_contract;
+pub use funded::{compile_funded_disclosure_contract, FundedDisclosureCompilationDenial};
 pub use result_rules::selector_parts;
 pub mod diagnostic;
 pub mod history;

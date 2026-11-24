@@ -105,7 +105,7 @@ impl VisibilityProjectionView {
         use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
         use super::super::read_work::record_memory;
 
-        super::super::read_work::scan_with_memory(
+        let settled = super::super::read_work::scan_with_retained_memory(
             execution,
             |context, memory| {
                 let Some(root) = self.basis.root() else {
@@ -121,6 +121,7 @@ impl VisibilityProjectionView {
                         records: Vec::new(),
                         adjacency_lists_read: lists,
                         relation_records_examined: 0,
+                        memory: None,
                     });
                 };
                 let adjacency_basis = AdjacencyKindBasis::of_current_version(
@@ -255,13 +256,18 @@ impl VisibilityProjectionView {
                         records,
                         adjacency_lists_read: lists,
                         relation_records_examined: examined,
+                        memory: None,
                     })
                 })();
                 ledger.settle_instrumentation(&self.instrumentation);
                 answer
             },
             |read| read.owned_bytes(),
-        )
+        )?;
+        Ok(settled.map(|(mut read, reservation)| {
+            read.memory = Some(reservation);
+            read
+        }))
     }
     fn relation_matches_frontier(
         &self,
