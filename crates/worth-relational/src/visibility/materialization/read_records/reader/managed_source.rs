@@ -1,4 +1,5 @@
 //! Source material follows the real pinned Native root, including pending World custody.
+use crate::mvcc::ManagedIndexSourceRebuild;
 use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
@@ -13,7 +14,8 @@ impl VisibilityReadContext<'_> {
         handle: &SnapshotHandle,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
-    ) -> Result<crate::mvcc::ManagedIndexSourceObservation, Denial> {
+    ) -> Result<crate::branch::projection_view::managed_source::ManagedIndexSourceObservation, Denial>
+    {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
@@ -75,7 +77,7 @@ impl VisibilityReadContext<'_> {
         handle: &SnapshotHandle,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
-    ) -> Result<crate::mvcc::ManagedIndexSourceRebuild, Denial> {
+    ) -> Result<ManagedIndexSourceRebuild, Denial> {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
         let projection = self
             .project_snapshot_in_request(handle, execution)
@@ -96,12 +98,14 @@ impl VisibilityReadContext<'_> {
             .active()
             .map_err(Denial::Registration)?
             .ok_or(Denial::MissingParticipant)?;
-        basis
+        let image = basis
             .root()
             .managed_source_image
             .get()
-            .ok_or(Denial::RootUnavailable)?
-            .prepare_rebuild(projection, selected, program, scope, memory, generation)
+            .ok_or(Denial::RootUnavailable)?;
+        ManagedIndexSourceRebuild::prepare(
+            image, projection, selected, program, scope, memory, generation,
+        )
     }
 
     /// Install only into the same selected entry under the current registration.
@@ -109,11 +113,11 @@ impl VisibilityReadContext<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
-        loan: &crate::mvcc::ManagedIndexSourceRebuild,
+        loan: &ManagedIndexSourceRebuild,
         payload: &std::sync::Arc<dyn std::any::Any + Send + Sync>,
     ) -> Result<
         (
-            crate::mvcc::ManagedIndexSourceObservation,
+            crate::branch::projection_view::managed_source::ManagedIndexSourceObservation,
             crate::validation::candidate_source::image::ManagedIndexSourceCacheRetirement,
         ),
         Denial,
@@ -143,7 +147,7 @@ impl VisibilityReadContext<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
-        observation: &crate::mvcc::ManagedIndexSourceObservation,
+        observation: &crate::branch::projection_view::managed_source::ManagedIndexSourceObservation,
     ) -> Result<bool, Denial> {
         let (selected, _memory) = self.managed_source_position(execution, handle)?;
         let publication = self.runtime.publication_binding();

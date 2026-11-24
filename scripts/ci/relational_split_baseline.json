@@ -1747,7 +1747,7 @@
       "branch -> merge": 0,
       "branch -> mutation": 0,
       "branch -> publication": 2,
-      "branch -> runtime": 10,
+      "branch -> runtime": 4,
       "branch/envelope -> branch/root_custody": 0,
       "branch/projection_view -> branch/envelope": 0,
       "branch/projection_view -> branch/root_custody": 0,
@@ -1795,7 +1795,7 @@
       "branch -> lineage": 0,
       "branch -> merge": 0,
       "branch -> mutation": 0,
-      "branch -> publication": 7,
+      "branch -> publication": 4,
       "branch -> runtime": 2,
       "branch/envelope -> branch/root_custody": 0,
       "branch/projection_view -> branch/envelope": 0,
@@ -1823,7 +1823,7 @@
       "merge -> publication": 0,
       "merge -> runtime": 0,
       "mutation -> merge": 0,
-      "mutation -> publication": 40,
+      "mutation -> publication": 39,
       "mutation -> runtime": 43,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 37,
@@ -1975,12 +1975,9 @@
         ["crates/worth-relational/src/runtime/state/subsystems/history.rs", "runtime::state::subsystems::history::canonical_publication_routes::RelationalCanonicalPublicationRoutes", 1]
       ],
       "branch -> runtime": [
-        ["crates/worth-relational/src/branch/root.rs", "mvcc::ManagedSourceRootImage", 1],
         ["crates/worth-relational/src/branch/root.rs", "runtime::RelationalRootExecutionContracts", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/context.rs", "runtime::RelationalRuntime", 1],
-        ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "mvcc::ManagedIndexSourceObservation", 3],
-        ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "mvcc::ManagedIndexSourceRebuild", 2],
-        ["crates/worth-relational/src/visibility/materialization/read_records/reader/public_managed_cache.rs", "mvcc::ManagedIndexPublicCache", 1],
+        ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "mvcc::ManagedIndexSourceRebuild", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/pinned_walk.rs", "visibility::materialization::read_records::reader::RelationalPinnedRead", 1]
       ],
       "branch/envelope -> branch/root_custody": [],
@@ -3076,12 +3073,9 @@
       "branch -> merge": [],
       "branch -> mutation": [],
       "branch -> publication": [
-        ["crates/worth-relational/src/branch/root.rs", "mvcc::publication::companion::cell::managed_source::ManagedSourceRootImage", 1],
         ["crates/worth-relational/src/history/retention/publication_basis.rs", "publication::live_publication_inputs::AppliedPublicationInputAccess", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/history.rs", "runtime::state::subsystems::history::canonical_publication_routes::RelationalCanonicalPublicationRoutes", 1],
-        ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "mvcc::publication::companion::cell::managed_source::ManagedIndexSourceObservation", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/managed_source.rs", "mvcc::publication::companion::cell::managed_source::rebuild::ManagedIndexSourceRebuild", 1],
-        ["crates/worth-relational/src/visibility/materialization/read_records/reader/public_managed_cache.rs", "mvcc::publication::companion::cell::public_cache::ManagedIndexPublicCache", 1],
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/pinned_walk.rs", "visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead", 1]
       ],
       "branch -> runtime": [
@@ -3311,7 +3305,6 @@
         ["crates/worth-relational/src/validation/candidate_source/applied/context.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "visibility::materialization::read_records::reader::pinned_read::candidate::RelationalAppliedCandidateReadIdentity", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "mvcc::publication::companion::cell::managed_source::ManagedIndexSourceObservation", 1],
         ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/correspondence/records.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding", 1],

@@ -85,7 +85,7 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     let image = basis.inner.root.managed_source_image.get().unwrap();
     let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
     let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
-    let generation = image.core.upgrade().unwrap().registration_generation;
+    let generation = image.serving_cell().unwrap().registration_generation();
     let payload = image
         .corresponding_payload(&selected, generation, &program, scope)
         .unwrap()

@@ -6,8 +6,7 @@ pub use managed_source::{ManagedIndexSourceObservation, ManagedIndexSourceRebuil
 pub(in crate::mvcc) use read_condition::CompanionReadCondition;
 use std::any::Any;
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::history::data::{BranchId, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -25,41 +24,12 @@ pub use derived_replacement::{
 };
 pub use public_cache::{ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement};
 
-pub(in crate::mvcc) struct CompanionRootImage {
-    pub(super) root_id: u64,
-    pub(super) commit_id: Option<CommitId>,
-    pub(super) position: AtomicU64,
-    pub(super) payload: Arc<dyn Any + Send + Sync>,
-}
+pub(in crate::mvcc) use crate::branch::projection_view::companion_slot::{
+    CompanionBranchCellCore, CompanionRootImage,
+};
 
-impl CompanionRootImage {
-    pub(super) fn position(&self) -> Option<PatchStreamPosition> {
-        match self.position.load(Ordering::Acquire) {
-            0 => None,
-            value => Some(PatchStreamPosition(value)),
-        }
-    }
-}
-
-pub(in crate::mvcc) struct CompanionBranchCellCore {
-    pub(super) runtime_instance_id: u64,
-    pub(super) registration_generation: u64,
-    pub(super) branch_id: BranchId,
-    pub(super) current: Mutex<Arc<CompanionRootImage>>,
-    pub(super) reservation_live: AtomicBool,
-    pub(super) topology_generation: AtomicU64,
-    pub(super) source_affinity:
-        std::sync::OnceLock<Arc<managed_source::affinity::ManagedSourceCellAffinity>>,
-    pub(super) _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
-}
-
-struct DerivedCellEdit<'a>(&'a CompanionBranchCellCore);
-
-impl Drop for DerivedCellEdit<'_> {
-    fn drop(&mut self) {
-        self.0.reservation_live.store(false, Ordering::Release);
-    }
-}
+pub use crate::branch::projection_view::companion_slot::CompanionCellEditStop;
+use crate::branch::projection_view::companion_slot::CompanionSlotReservation;
 
 /// Typed read and derived-edit access to one registered branch companion root.
 pub struct CompanionBranchCell<T: Send + Sync + 'static> {
@@ -74,13 +44,6 @@ impl<T: Send + Sync + 'static> Clone for CompanionBranchCell<T> {
             _payload: PhantomData,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompanionCellEditStop {
-    PreflightPending,
-    TopologyGenerationChanged,
-    TopologyGenerationExhausted,
 }
 
 pub struct CompanionBranchImage<T: Send + Sync + 'static> {
@@ -112,10 +75,9 @@ impl<T: Send + Sync + 'static> CompanionBranchImage<T> {
 
 /// The sole live topology pin for a candidate's branch companion cell.
 pub struct ReservedCompanionBranchCell<T: Send + Sync + 'static> {
-    pub(super) core: Arc<CompanionBranchCellCore>,
+    reservation: CompanionSlotReservation,
     pub(super) observed: CompanionBranchImage<T>,
     pub(super) candidate_id: u64,
-    armed: bool,
     pub(super) publication_admission: Option<Arc<publication_admission::PublicationCellAdmission>>,
 }
 
@@ -124,17 +86,12 @@ impl<T: Send + Sync + 'static> ReservedCompanionBranchCell<T> {
         &self.observed
     }
 
-    pub(super) fn into_core(mut self) -> Arc<CompanionBranchCellCore> {
-        self.armed = false;
-        Arc::clone(&self.core)
+    pub(super) fn core(&self) -> &Arc<CompanionBranchCellCore> {
+        self.reservation.cell()
     }
-}
 
-impl<T: Send + Sync + 'static> Drop for ReservedCompanionBranchCell<T> {
-    fn drop(&mut self) {
-        if self.armed {
-            self.core.reservation_live.store(false, Ordering::Release);
-        }
+    pub(super) fn into_reservation(self) -> CompanionSlotReservation {
+        self.reservation
     }
 }
 
@@ -179,43 +136,34 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         registration_generation: u64,
         payload: Arc<T>,
     ) -> Self {
-        let image = Arc::new(CompanionRootImage {
-            root_id,
-            commit_id,
-            position: AtomicU64::new(position.map_or(0, |position| position.0)),
-            payload,
-        });
+        let image = CompanionRootImage::new(root_id, commit_id, position, payload);
         Self {
-            core: Arc::new(CompanionBranchCellCore {
+            core: CompanionBranchCellCore::new(
                 runtime_instance_id,
-                registration_generation,
                 branch_id,
-                current: Mutex::new(image),
-                reservation_live: AtomicBool::new(false),
-                topology_generation: AtomicU64::new(1),
-                source_affinity: std::sync::OnceLock::new(),
-                _fork_memory: None,
-            }),
+                registration_generation,
+                image,
+            ),
             _payload: PhantomData,
         }
     }
 
     pub fn branch_id(&self) -> &BranchId {
-        &self.core.branch_id
+        self.core.branch_id()
     }
 
     pub fn read_image(&self) -> CompanionBranchImage<T> {
-        let current = self.core.current.lock().unwrap_or_else(|p| p.into_inner());
-        let image = Arc::clone(&*current);
-        let topology_generation = self.core.topology_generation.load(Ordering::Acquire);
+        let current = self.core.read_image();
+        let image = Arc::clone(current.image());
+        let topology_generation = self.core.generation();
         drop(current);
-        let payload = Arc::downcast::<T>(Arc::clone(&image.payload))
+        let payload = image.retain_payload::<T>()
             .expect(/* Proof: Registration binds this cell to T and stores only Arc<T> through that typed handle; no untyped payload replacement door exists. */ "registered companion cell retains its original payload type");
         CompanionBranchImage {
             image: Arc::clone(&image),
             payload,
-            root_id: image.root_id,
-            commit_id: image.commit_id,
+            root_id: image.root_id(),
+            commit_id: image.commit_id(),
             position: image.position(),
             topology_generation,
         }
@@ -239,23 +187,22 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         context: &PublicationCompanionPreflight<'_>,
     ) -> Result<ReservedCompanionBranchCell<T>, CompanionPreflightStop> {
         context.validate_cell(&self.core)?;
-        self.core
-            .reservation_live
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .map_err(|_| CompanionPreflightStop::TopologyPending)?;
+        let reservation = self
+            .core
+            .reserve_for_publication()
+            .ok_or(CompanionPreflightStop::TopologyPending)?;
         let observed = self.read_image();
         if observed.root_id != context.expected_root_id()
             || observed.commit_id != context.expected_commit_id()
         {
-            self.core.reservation_live.store(false, Ordering::Release);
+            drop(reservation);
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
         Ok(ReservedCompanionBranchCell {
-            core: Arc::clone(&self.core),
+            reservation,
             observed,
             candidate_id: context.candidate_id(),
             publication_admission: None,
-            armed: true,
         })
     }
 }

@@ -728,7 +728,7 @@ allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["
 [boundaries.paths]
 root_custody = ["branch", "durability/checkpoint_admission/admitted_commit", "durability/checkpoint_admission/recorded_reference.rs", "durability/checkpoint_admission/row_custody.rs", "durability/authority/associated_effects/observed_memory_commit.rs", "publication/ownership/read", "publication/ownership/observation.rs", "authority/commit/preparation/storage_denial.rs"]
 envelope = ["branch/envelope", "durability/canonical_commit_artifact/checkpoint_body.rs", "durability/canonical_commit_artifact/body_read.rs", "durability/canonical_commit_artifact/frame_encoding.rs", "durability/canonical_commit_artifact/verified_frame.rs", "durability/canonical_commit_artifact/payload_wire", "durability/canonical_commit_artifact/decoded_quote", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/read/payload.rs", "publication/ownership/evidence.rs", "publication/ownership/read/roster", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
-projection_view = ["branch/projection_view", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+projection_view = ["branch/projection_view", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
 owner = "mutation"
@@ -745,6 +745,7 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"branch/projection_view" = "branch"
 "durability/data/recovery_verification.rs" = "contracts"
 "branch/result_snapshot_outcome.rs" = "contracts"
 "visibility/snapshot_release.rs" = "contracts"

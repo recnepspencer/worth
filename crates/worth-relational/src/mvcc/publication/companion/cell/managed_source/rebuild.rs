@@ -48,32 +48,18 @@ impl ManagedIndexSourceRebuild {
         if self.selected != selected || self.generation != generation {
             return Err(Denial::ForeignSource);
         }
-        self.image.admit_selected(&selected, generation)?;
-        let image = self
-            .image
-            .image
-            .payload
-            .downcast_ref::<ManagedIndexBranchImage>()
-            .ok_or(Denial::ForeignSource)?;
-        let retirement = image
-            .refill_source(execution, &self.expected, payload)
-            .map_err(Denial::Publication)?;
-        Ok((
-            ManagedIndexSourceObservation {
-                core: self.image.core.clone(),
-                affinity: Arc::clone(&self.image.affinity),
-                record: Arc::clone(&self.expected.association),
-                payload: Arc::clone(payload),
-                selected,
-                _metadata_memory: memory,
-            },
-            retirement,
-        ))
+        self.image.refill_selected(
+            execution,
+            selected,
+            generation,
+            &self.expected,
+            payload,
+            memory,
+        )
     }
-}
-impl ManagedSourceRootImage {
-    pub(crate) fn prepare_rebuild(
-        &self,
+
+    pub(crate) fn prepare(
+        image: &ManagedSourceRootImage,
         projection: VisibilityProjectionView,
         selected: PositionedRelationalSnapshot,
         program: &ManagedIndexSourceProgram,
@@ -81,13 +67,9 @@ impl ManagedSourceRootImage {
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         generation: u64,
     ) -> Result<ManagedIndexSourceRebuild, Denial> {
-        self.admit_selected(&selected, generation)?;
-        let image = self
-            .image
-            .payload
-            .downcast_ref::<ManagedIndexBranchImage>()
-            .ok_or(Denial::ForeignSource)?;
+        image.admit_selected(&selected, generation)?;
         let expected = image
+            .selected_source_image()?
             .retained(program, scope)?
             .ok_or(Denial::RootUnavailable)?;
         if expected.physical_availability() != ManagedIndexSourceAvailability::Available {
@@ -96,7 +78,7 @@ impl ManagedSourceRootImage {
         Ok(ManagedIndexSourceRebuild {
             projection,
             expected,
-            image: self.clone(),
+            image: image.clone(),
             selected,
             generation,
             _memory: memory,

@@ -1,9 +1,9 @@
-//! Retained Source identity owns no live cell, newer image or execution request.
-use super::*;
+//! Fund and bind the single affinity occurrence of this exact native cell.
+use super::{Arc, CompanionBranchCellCore, ManagedSourceCellAffinity};
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
 
-pub(in crate::mvcc::publication::companion) use crate::branch::managed_source_affinity::ManagedSourceCellAffinity;
 impl CompanionBranchCellCore {
-    pub(in crate::mvcc::publication::companion) fn retain_source_affinity(
+    pub(crate) fn retain_source_affinity(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<ManagedSourceCellAffinity>, CompanionPreflightStop> {
@@ -31,39 +31,5 @@ impl CompanionBranchCellCore {
         Ok(Arc::clone(
             self.source_affinity.get().expect("installed cell affinity"),
         ))
-    }
-}
-pub(in crate::mvcc::publication::companion) fn admit_affinity(
-    affinity: &ManagedSourceCellAffinity,
-    selected: &PositionedRelationalSnapshot,
-    generation: u64,
-) -> Result<(), Denial> {
-    if affinity.generation != generation {
-        return Err(Denial::Publication(
-            CompanionPreflightStop::RegistrationChanged,
-        ));
-    }
-    if affinity.runtime != selected.runtime_instance_id()
-        || affinity.branch != *selected.branch_id()
-    {
-        return Err(Denial::ForeignSource);
-    }
-    Ok(())
-}
-
-impl ManagedSourceRootImage {
-    pub(in crate::mvcc::publication::companion) fn admit_selected(
-        &self,
-        selected: &PositionedRelationalSnapshot,
-        generation: u64,
-    ) -> Result<(), Denial> {
-        admit_affinity(&self.affinity, selected, generation)?;
-        if self.image.root_id != selected.root_id()
-            || self.image.commit_id != selected.commit_id()
-            || self.image.position() != selected.position()
-        {
-            return Err(Denial::ForeignSource);
-        }
-        Ok(())
     }
 }

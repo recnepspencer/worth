@@ -136,7 +136,8 @@ pub(crate) struct RelationalBranchRoot {
         std::sync::OnceLock<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
-    pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
+    pub(crate) managed_source_image:
+        std::sync::OnceLock<crate::branch::projection_view::managed_source::ManagedSourceRootImage>,
 }
 
 #[path = "root_managed_fork.rs"]

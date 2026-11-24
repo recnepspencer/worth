@@ -26,10 +26,10 @@ impl CompanionReadCondition {
         root_id: u64,
         commit_id: Option<CommitId>,
     ) -> bool {
-        self.core.runtime_instance_id == runtime_instance_id
-            && self.core.branch_id == *branch
-            && self.image.root_id == root_id
-            && self.image.commit_id == commit_id
+        self.core.runtime_instance_id() == runtime_instance_id
+            && self.core.branch_id() == branch
+            && self.image.root_id() == root_id
+            && self.image.commit_id() == commit_id
     }
 
     pub(in crate::mvcc::publication::companion) fn matches_reserved(

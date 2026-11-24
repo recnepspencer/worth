@@ -61,7 +61,9 @@ impl ManagedIndexSourceScope<'_> {
             .get()
             .ok_or(Denial::RootUnavailable)?;
         image.admit_predecessor_material(
-            basis,
+            basis.identity().runtime_instance_id(),
+            basis.identity().branch_id(),
+            basis.descriptor().root_identity(),
             self.program,
             parent,
             predecessor,

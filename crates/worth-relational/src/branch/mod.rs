@@ -77,6 +77,7 @@ pub(crate) mod reference_publication_cell;
 mod reference_state;
 pub(crate) mod registry;
 pub(crate) use registry::RelationalSourceRootSlot;
+pub(crate) mod projection_view;
 pub(crate) mod root;
 pub(crate) mod root_checkpoint;
 mod root_partition_access;

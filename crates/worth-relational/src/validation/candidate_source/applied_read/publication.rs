@@ -48,7 +48,12 @@ impl ManagedIndexAppliedSourcePublication {
             &self.affinity.program,
             self.affinity.scope,
         )?;
-        if !observed.matches_applied_publication(&self.affinity.proposal) {
+        let proposal = &self.affinity.proposal;
+        if !observed.matches_publication_at(
+            proposal.runtime_instance_id(),
+            proposal.commit_id(),
+            proposal.proposed_version_id(),
+        ) {
             return Err(Denial::ForeignSource);
         }
         Ok(observed)

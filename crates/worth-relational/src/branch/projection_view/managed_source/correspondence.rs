@@ -1,7 +1,11 @@
 //! Logical correspondence cannot select a payload outside its physical basis.
-use super::*;
-#[cfg(test)]
-mod tests;
+use super::ManagedSourceRootImage;
+use crate::identity::data::EntityId;
+use crate::validation::candidate_source::availability::ManagedIndexSourceAvailability;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
+use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
+use std::{any::Any, sync::Arc};
 
 impl ManagedSourceRootImage {
     pub(crate) fn corresponding_payload(
@@ -12,11 +16,7 @@ impl ManagedSourceRootImage {
         scope: EntityId,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Denial> {
         self.admit_selected(selected, generation)?;
-        let image = self
-            .image
-            .payload
-            .downcast_ref::<ManagedIndexBranchImage>()
-            .ok_or(Denial::ForeignSource)?;
+        let image = self.selected_source_image()?;
         let Some(record) = image.retained(program, scope)? else {
             return Ok(None);
         };

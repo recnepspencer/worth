@@ -73,9 +73,9 @@ pub use publication::{
     RequiredOutputRoleTarget,
 };
 pub(crate) use publication::{
-    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
-    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
+    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
+    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+    PublicationPreparationDenial,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,

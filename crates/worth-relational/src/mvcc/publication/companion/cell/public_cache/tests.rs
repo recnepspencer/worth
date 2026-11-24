@@ -1,6 +1,10 @@
 //! Opaque cache destruction must run beyond the exact owner guards.
-use super::*;
+use super::super::*;
 use crate::identity::data::VersionId;
+use crate::validation::candidate_source::image::ManagedIndexBranchImage;
+use std::sync::Weak;
+
+type Payload = Arc<dyn Any + Send + Sync>;
 use crate::mvcc::publication::companion::registration::CompanionRegistry;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -13,7 +17,12 @@ struct Probe {
 }
 impl Drop for Probe {
     fn drop(&mut self) {
-        assert!(self.core.upgrade().unwrap().current.try_lock().is_ok());
+        assert!(self
+            .core
+            .upgrade()
+            .unwrap()
+            .try_lock_unpoisoned_image()
+            .is_some());
         assert!(self
             .image
             .upgrade()
@@ -47,12 +56,8 @@ fn public_cache_retirement_defers_opaque_drop_and_releases_original_backing() {
     };
     let image = Arc::new(ManagedIndexBranchImage::default());
     let cell = CompanionBranchCell::new(&selected, generation, Arc::clone(&image));
-    let root = ManagedSourceRootImage {
-        core: Arc::downgrade(&cell.core),
-        affinity: cell.core.retain_source_affinity(&execution).unwrap(),
-        image: Arc::clone(&cell.core.current.lock().unwrap()),
-        _fork_memory: None,
-    };
+    cell.core.retain_source_affinity(&execution).unwrap();
+    let root = ManagedSourceRootImage::capture_current(&cell.core).unwrap();
     let drops = Arc::new(AtomicUsize::new(0));
     let payload: Payload = Arc::new(Probe {
         core: Arc::downgrade(&cell.core),
@@ -65,7 +70,7 @@ fn public_cache_retirement_defers_opaque_drop_and_releases_original_backing() {
         .unwrap();
     drop(payload);
     let epoch = registry.enter().unwrap();
-    let current = cell.core.current.lock().unwrap();
+    let current = cell.core.lock_unpoisoned_image();
     let retired = cache.retire();
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop((current, epoch));

@@ -54,7 +54,7 @@ pub use candidate::{
 };
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,

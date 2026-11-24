@@ -65,35 +65,3 @@ impl ManagedIndexSourceObservation {
         reads.select(execution, &self.record.program, self.record.scope)
     }
 }
-
-impl super::ManagedSourceRootImage {
-    pub(crate) fn history_owner(
-        &self,
-    ) -> Option<std::sync::Arc<super::affinity::ManagedSourceCellAffinity>> {
-        self.image
-            .payload
-            .is::<super::ManagedIndexBranchImage>()
-            .then(|| std::sync::Arc::clone(&self.affinity))
-    }
-    /// The directory receiver creates only funded weak metadata, not a strong
-    /// temporary that could be destroyed after concurrent cache eviction.
-    pub(crate) fn history_payload_receipt(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        program: &super::ManagedIndexSourceProgram,
-        scope: crate::identity::data::EntityId,
-        budget: &crate::validation::custom_rule::work_meter::CustomPreparationBudget,
-    ) -> Result<
-        Option<crate::validation::candidate_source::opaque_custody::FundedSourceMaterialReceipt>,
-        super::Denial,
-    > {
-        let image = self
-            .image
-            .payload
-            .downcast_ref::<super::ManagedIndexBranchImage>()
-            .ok_or(super::Denial::ForeignSource)?;
-        crate::validation::candidate_source::history_material::retained_history_receipt(
-            image, execution, program, scope, budget,
-        )
-    }
-}

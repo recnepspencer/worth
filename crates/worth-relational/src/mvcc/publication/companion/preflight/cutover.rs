@@ -28,18 +28,12 @@ impl PreparedPublicationCompanionEffect {
         }
         if let Some(managed) = &self.managed {
             root.managed_source_image
-                .set(super::super::cell::ManagedSourceRootImage {
-                    core: std::sync::Arc::downgrade(&managed.cell),
-                    affinity: std::sync::Arc::clone(
-                        managed
-                            .cell
-                            .source_affinity
-                            .get()
-                            .expect("compound sealing prepared source affinity"),
-                    ),
-                    image: std::sync::Arc::clone(&managed.next),
-                    _fork_memory: None,
-                })
+                .set(
+                    managed
+                        .native
+                        .retain_source_root()
+                        .expect("compound sealing prepared source affinity"),
+                )
                 .map_err(|_| CompanionPreflightStop::SelectedSourceMismatch)?;
         }
         Ok(())
@@ -52,16 +46,18 @@ impl PreparedPublicationCompanionEffect {
             .managed
             .as_ref()
             .ok_or(CompanionPreflightStop::ManagedSourceNotPrepared)?;
-        condition.matches_reserved(&managed.cell, &managed.pinned_image)
+        condition.matches_reserved(managed.native.cell(), managed.native.pinned())
     }
     pub(in crate::mvcc) fn matches_read_condition(
         &self,
         condition: &super::super::cell::CompanionReadCondition,
     ) -> Result<(), super::CompanionPreflightStop> {
         let primary = self.primary.as_ref().expect("sealed primary swap");
-        match condition.matches_reserved(&primary.cell, &primary.pinned_image) {
+        match condition.matches_reserved(primary.native.cell(), primary.native.pinned()) {
             Err(CompanionPreflightStop::ForeignCell) => match &self.managed {
-                Some(managed) => condition.matches_reserved(&managed.cell, &managed.pinned_image),
+                Some(managed) => {
+                    condition.matches_reserved(managed.native.cell(), managed.native.pinned())
+                }
                 None => Err(CompanionPreflightStop::ForeignCell),
             },
             result => result,

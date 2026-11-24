@@ -20,7 +20,7 @@ impl Drop for Probe {
     fn drop(&mut self) {
         let core = self.core.lock().unwrap().upgrade().unwrap();
         assert!(
-            core.current.try_lock().is_ok(),
+            core.try_lock_unpoisoned_image().is_some(),
             "opaque Drop is outside current-image coordination"
         );
         let _new_registration = self
