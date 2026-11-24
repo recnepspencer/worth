@@ -30,6 +30,14 @@ EXTENDS Integers, Sequences, FiniteSets
   that key: the full-generation ID. A recorded restore creates a fresh
   occurrence. Undo, redo and checkout select a recorded snapshot, so they
   bring back the original occurrence.
+
+  A recorded correction also posts a reversal fact on the branch: "step c
+  reversed source s on entity e" (the aftermath-causality fact). The
+  candidate pass refuses SourceAlreadyReversed on an active fact. Navigation
+  retires the facts of the steps it leaves and restores the facts of the
+  steps it enters, so a fact is active exactly on the lines where its step is
+  an ancestor of the selected step (spec-owner ruling (u)). FactBug restores
+  the defect found in plan review r1: navigation leaves the facts alone.
 *)
 
 CONSTANTS
@@ -37,10 +45,14 @@ CONSTANTS
     Values,         \* e.g. {1, 2}
     Keys,           \* idempotency keys
     MaxNodes,       \* root = 0, up to MaxNodes - 1 recorded steps
-    MaxStops        \* stopped requests explored per behaviour
+    MaxStops,       \* stopped requests explored per behaviour
+    WedgeBug,       \* TRUE re-introduces Phase 1's stale-forest wedge
+    FactBug         \* TRUE re-introduces r1's facts that ignore navigation
 
 ASSUME Entities = {"e1", "e2"}
 ASSUME MaxNodes >= 2 /\ MaxStops >= 0
+ASSUME WedgeBug \in BOOLEAN
+ASSUME FactBug \in BOOLEAN
 ASSUME Values \subseteq (Nat \ {0})
 
 NodeIds == 0..(MaxNodes - 1)
@@ -92,23 +104,32 @@ VARIABLES
     gen,             \* [Entities -> Nat]: live occurrence, 0 when not live
     val,             \* [Entities -> ValOrNone]
     outA, outB,      \* generated output trees on the branch
+    facts,           \* active reversal facts on the branch:
+                     \*   [step |-> c, src |-> s, ent |-> e]
     idem,            \* [Keys -> journal record]
     headDiverged,    \* the branch moved outside the document
     closed,          \* the document was closed
     nextCand,        \* next stopped candidate to allocate
     parked,          \* stopped candidates awaiting the document's disposal
     forestOrigin,    \* candidate the recording trees are bound to, 0 if none
-    forestDisposing  \* a release of those trees was itself stopped
+    forestDisposing, \* a release of those trees was itself stopped
+    writer           \* an open .edit / .gesture holding the move-only document
 
 treeVars == <<nextNode, parent, snapshots, ops, current>>
-branchVars == <<live, gen, val, outA, outB>>
+branchVars == <<live, gen, val, outA, outB, facts>>
 stopVars == <<nextCand, parked, forestOrigin, forestDisposing>>
-vars == <<treeVars, nextGen, branchVars, idem, headDiverged, closed, stopVars>>
+vars == <<treeVars, nextGen, branchVars, idem, headDiverged, closed, stopVars,
+          writer>>
+
+WriterClasses == {"edit", "gesture"}
 
 NoIntent == [kind |-> "none", st |-> NoStages, src |-> 0, ent |-> "none"]
 EditIntent(st) == [kind |-> "edit", st |-> st, src |-> 0, ent |-> "none"]
 CorrectionIntent(src, e, st) ==
     [kind |-> "correction", st |-> st, src |-> src, ent |-> e]
+\* A journal record is "unseen" or "recorded"; there is no in-flight status.
+\* The document handle is move-only, so no second envelope can run while one
+\* is in flight, and AttemptInFlight cannot be observed (review note 7).
 Unseen == [status |-> "unseen", intent |-> NoIntent, node |-> NullNode]
 
 Init ==
@@ -123,6 +144,7 @@ Init ==
     /\ val = [e \in Entities |-> 0]
     /\ outA = EmptySnapshot.outA
     /\ outB = EmptySnapshot.outB
+    /\ facts = {}
     /\ idem = [k \in Keys |-> Unseen]
     /\ headDiverged = FALSE
     /\ closed = FALSE
@@ -130,6 +152,7 @@ Init ==
     /\ parked = {}
     /\ forestOrigin = 0
     /\ forestDisposing = FALSE
+    /\ writer = "none"
 
 ApplySnapshot(s) ==
     /\ live' = s.live
@@ -138,8 +161,11 @@ ApplySnapshot(s) ==
     /\ outA' = s.outA
     /\ outB' = s.outB
 
-\* The document accepts work: it is open and its head has not diverged.
-Writable == ~closed /\ ~headDiverged
+\* The caller holds the document: it is open and no writer holds it.
+Held == ~closed /\ writer = "none"
+
+\* The document accepts work: it is held and its head has not diverged.
+Writable == Held /\ ~headDiverged
 
 RECURSIVE Line(_)
 \* The selected line of a step: the step and all its ancestors.
@@ -147,6 +173,18 @@ Line(n) == IF n = 0 THEN {0} ELSE {n} \cup Line(parent[n])
 
 \* Steps of the selected line from `src` to the current step.
 Since(src) == {n \in Line(current) : src \in Line(n)}
+
+\* A reversal fact: step `c` reversed source `s` on entity `e`.
+Fact(c, s, e) == [step |-> c, src |-> s, ent |-> e]
+
+\* Every fact a recorded correction step posted, active or not.
+PostedFacts ==
+    {Fact(idem[k].node, idem[k].intent.src, idem[k].intent.ent) :
+        k \in {x \in Keys : idem[x].status = "recorded"
+                            /\ idem[x].intent.kind = "correction"}}
+
+\* reverse_lineage: an active fact says the source is already reversed.
+ReversedByFact(src, e) == \E f \in facts : f.src = src /\ f.ent = e
 
 \* ---------------------------------------------------------------------------
 \* Stage semantics shared by edit and correction envelopes
@@ -199,10 +237,14 @@ RecordStep(st, restored, k, intent) ==
     /\ ops' = [ops EXCEPT ![nextNode] = StepOpsOf(st, restored)]
     /\ current' = nextNode
     /\ ApplySnapshot(snap)
+    /\ facts' = IF intent.kind = "correction"
+                THEN facts \cup {Fact(nextNode, intent.src, intent.ent)}
+                ELSE facts
     /\ idem' = [idem EXCEPT ![k] =
                     [status |-> "recorded", intent |-> intent, node |-> nextNode]]
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
+    /\ writer' = "none"
     /\ UNCHANGED <<headDiverged, closed, nextCand, parked>>
 
 \* ---------------------------------------------------------------------------
@@ -233,8 +275,17 @@ ReversesRetirement(src, e) ==
     /\ ops[src][e] = "retired"
     /\ \A n \in Since(src) : e \notin snapshots[n].live
 
-SourceReversible(src, e) ==
+\* The head pass (plan r2, 2.3): the source is a step this document recorded
+\* on its selected line and its stage on `e` has a corrective binding. Only
+\* then can the document derive the correction's meaning and consult its
+\* journal. It reads nothing else of the branch.
+MeaningDerivable(src, e) ==
     /\ src \in Line(current) \ {0}
+    /\ ops[src][e] \in {"born", "retired"}
+
+\* The candidate pass, after the journal found the key unseen.
+SourceReversible(src, e) ==
+    /\ MeaningDerivable(src, e)
     /\ ReversesCreation(src, e) \/ ReversesRetirement(src, e)
 
 \* The corrective stage: retire what was created, or restore the value the
@@ -242,7 +293,23 @@ SourceReversible(src, e) ==
 CorrectiveOp(src, e) ==
     IF ops[src][e] = "born" THEN Retire ELSE snapshots[parent[src]].val[e]
 
-WithCorrective(src, e, st) == [st EXCEPT ![e] = CorrectiveOp(src, e)]
+\* Reversing the creation of "e1" also retires the owned child the same
+\* source created, while that occurrence is still live (co_retire_created,
+\* the owned-subgraph cascade). A child born in a later step is not part of
+\* the source and stays, so the correction is a refused partial retirement
+\* unless the caller retires it in a coupled stage.
+CoRetired(src, e) ==
+    /\ e = "e1"
+    /\ ops[src]["e1"] = "born"
+    /\ ops[src]["e2"] = "born"
+    /\ "e2" \in live
+    /\ gen["e2"] = snapshots[src].gen["e2"]
+
+WithCorrective(src, e, st) ==
+    [x \in Entities |->
+        IF x = e THEN CorrectiveOp(src, e)
+        ELSE IF x = "e2" /\ CoRetired(src, e) /\ st[x] = Skip THEN Retire
+        ELSE st[x]]
 
 RestoredBy(src, e) == IF ops[src][e] = "retired" THEN {e} ELSE {}
 
@@ -253,6 +320,7 @@ CorrectionEnvelope(src, e, st, k) ==
     /\ idem[k].status = "unseen"
     /\ nextNode < MaxNodes
     /\ SourceReversible(src, e)
+    /\ ~ReversedByFact(src, e)
     /\ StagesAdmissible(WithCorrective(src, e, st))
     /\ RecordStep(WithCorrective(src, e, st), RestoredBy(src, e), k,
                   CorrectionIntent(src, e, st))
@@ -261,13 +329,13 @@ CorrectionEnvelope(src, e, st, k) ==
 \* Replay and typed refusals. None of them changes any state.
 \* ---------------------------------------------------------------------------
 
-\* A correction's intent is read from its source, so its replay needs the
-\* recorded step, or a still reversible source, on the selected line.
+\* A correction's meaning is derived from its source before the journal is
+\* consulted, so its replay needs the source on the selected line. Whether
+\* the source is still reversible is not consulted (it is not, once the
+\* correction is recorded on the line).
 ReplayDisclosed(k) ==
     LET i == idem[k].intent IN
-    \/ i.kind = "edit"
-    \/ idem[k].node \in Line(current)
-    \/ SourceReversible(i.src, i.ent)
+    i.kind = "edit" \/ MeaningDerivable(i.src, i.ent)
 
 \* AlreadyRecorded { document, step }: the step is idem[k].node.
 AlreadyRecorded(k, intent) ==
@@ -282,7 +350,7 @@ RefuseIntentDrift(k, intent) ==
     /\ Writable
     /\ idem[k].status = "recorded"
     /\ idem[k].intent /= intent
-    /\ (intent.kind = "correction" => SourceReversible(intent.src, intent.ent))
+    /\ (intent.kind = "correction" => MeaningDerivable(intent.src, intent.ent))
     /\ UNCHANGED vars
 
 \* A stage refuses in its domain, or the envelope would leave a dependent
@@ -293,11 +361,17 @@ RefuseStages(st, k) ==
     /\ ~StagesAdmissible(st)
     /\ UNCHANGED vars
 
-\* The source is off the selected line, is not a correctable stage, or is no
-\* longer current.
-RefuseCorrectionSource(src, e) ==
+\* The head pass refuses a source off the selected line or a stage with no
+\* corrective binding, whatever the key. With an unseen key, the candidate
+\* pass refuses a source that is no longer current, or one an active reversal
+\* fact says is already reversed (SourceAlreadyReversed).
+RefuseCorrectionSource(src, e, k) ==
     /\ Writable
-    /\ ~SourceReversible(src, e)
+    /\ k \in Keys
+    /\ \/ ~MeaningDerivable(src, e)
+       \/ /\ idem[k].status = "unseen"
+          /\ \/ ~SourceReversible(src, e)
+             \/ ReversedByFact(src, e)
     /\ UNCHANGED vars
 
 \* A correction whose source is reversible but whose stages are refused: the
@@ -306,6 +380,7 @@ RefuseCorrectionStages(src, e, st, k) ==
     /\ Writable
     /\ idem[k].status = "unseen"
     /\ SourceReversible(src, e)
+    /\ ~ReversedByFact(src, e)
     /\ ~StagesAdmissible(WithCorrective(src, e, st))
     /\ UNCHANGED vars
 
@@ -322,10 +397,10 @@ RefuseEnvironment(reason) ==
     /\ UNCHANGED vars
 
 \* An envelope with no stage refuses before the head is read.
-RefuseEmpty == ~closed /\ UNCHANGED vars
+RefuseEmpty == Held /\ UNCHANGED vars
 
 \* Every document entry on a diverged head.
-RefuseHeadDiverged == ~closed /\ headDiverged /\ UNCHANGED vars
+RefuseHeadDiverged == Held /\ headDiverged /\ UNCHANGED vars
 
 RefuseUndoAtRoot == Writable /\ current = 0 /\ UNCHANGED vars
 RefuseRedo(child) ==
@@ -341,11 +416,19 @@ RefuseCheckout(target) ==
 \* Navigation: select a recorded snapshot. Crossing a recorded retirement
 \* brings the retired entities back at their original generations.
 \* ---------------------------------------------------------------------------
+\* The move retires the facts of the steps it leaves and restores the facts
+\* of the steps it enters, at their original IDs.
 Select(target) ==
+    LET leaving == Line(current) \ Line(target)
+        entering == Line(target) \ Line(current)
+    IN
     /\ current' = target
     /\ ApplySnapshot(snapshots[target])
+    /\ facts' = IF FactBug THEN facts
+                ELSE {f \in facts : f.step \notin leaving}
+                        \cup {f \in PostedFacts : f.step \in entering}
     /\ UNCHANGED <<nextNode, nextGen, parent, snapshots, ops, idem,
-                   headDiverged, closed, stopVars>>
+                   headDiverged, closed, stopVars, writer>>
 
 UndoStep == Writable /\ current /= 0 /\ Select(parent[current])
 
@@ -364,16 +447,18 @@ Checkout(target) ==
 \* ---------------------------------------------------------------------------
 \* A write or correction on the document branch outside the document
 \* ---------------------------------------------------------------------------
-OutOfBandMutation(S) ==
-    /\ Writable
-    /\ S \subseteq live
-    /\ DepsSatisfied(live \ S)
+\* Any admissible change, through request.mutation(..) or
+\* request.corrections(..): create, update, retire, or restore (a fresh
+\* occurrence, as a recorded restore makes). It needs no document, so it can
+\* happen while a writer holds the document.
+OutOfBandMutation(st) ==
+    /\ ~closed /\ ~headDiverged
+    /\ st \in StageMaps
+    /\ StagesAdmissible(st)
     /\ headDiverged' = TRUE
-    /\ ApplySnapshot(MakeSnapshot(
-            live \ S,
-            [e \in Entities |-> IF e \in S THEN 0 ELSE gen[e]],
-            [e \in Entities |-> IF e \in S THEN 0 ELSE val[e]]))
-    /\ UNCHANGED <<treeVars, nextGen, idem, closed, stopVars>>
+    /\ nextGen' = nextGen + Cardinality(Births(st))
+    /\ ApplySnapshot(MakeSnapshot(NewLive(st), StepGen(st), StepVal(st)))
+    /\ UNCHANGED <<treeVars, idem, closed, stopVars, writer, facts>>
 
 \* ---------------------------------------------------------------------------
 \* Stopped requests, parked candidates and the recording trees
@@ -400,13 +485,46 @@ WriterStopped(point) ==
           /\ forestOrigin /= 0
           /\ forestDisposing' = TRUE
           /\ UNCHANGED forestOrigin
-    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed>>
+    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
+                   writer>>
 
-\* A writer that is discarded or aborted with a live request releases trees
-\* an earlier stop left bound, and closes its own candidate.
-WriterDiscarded ==
+\* ---------------------------------------------------------------------------
+\* Writers that hold the move-only document across advances: .edit and
+\* .gesture. (An envelope runs in one call; its stops are WriterStopped.)
+\* Phase 1 as fixed: the one recording owner releases trees an earlier stop
+\* left bound when any writer begins, and discard / abort close the trees
+\* against the candidate they are bound to. WedgeBug restores Phase 1's
+\* defect: begin leaves them bound, and discard closes against the writer's
+\* own candidate, which refuses ForeignDemand and keeps the document.
+\* ---------------------------------------------------------------------------
+WriterBegin(class) ==
     /\ Writable
-    /\ forestOrigin /= 0
+    /\ class \in WriterClasses
+    /\ writer' = class
+    /\ IF WedgeBug
+       THEN UNCHANGED <<forestOrigin, forestDisposing>>
+       ELSE forestOrigin' = 0 /\ forestDisposing' = FALSE
+    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
+                   nextCand, parked>>
+
+\* The writer records its step. Trees bound to another candidate refuse
+\* (ForeignDocument / NeedsDisposal) and the writer can only be discarded.
+WriterCommit(st, k) ==
+    /\ writer \in WriterClasses
+    /\ ~closed /\ ~headDiverged
+    /\ st \in StageMaps /\ k \in Keys
+    /\ idem[k].status = "unseen"
+    /\ nextNode < MaxNodes
+    /\ StagesAdmissible(st)
+    /\ forestOrigin = 0 /\ ~forestDisposing
+    /\ RecordStep(st, {}, k, EditIntent(st))
+
+\* discard / abort return the document, releasing any trees.
+WriterDiscard ==
+    /\ writer \in WriterClasses
+    /\ ~closed
+    /\ WedgeBug => (forestOrigin = 0 /\ ~forestDisposing)
+    /\ writer' = "none"
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
@@ -414,27 +532,28 @@ WriterDiscarded ==
 
 \* maintain_history: one parked candidate per call, trees first.
 MaintainHistory(c) ==
-    /\ ~closed
+    /\ Held
     /\ c \in parked
     /\ parked' = parked \ {c}
     /\ IF forestOrigin = c
        THEN forestOrigin' = 0 /\ forestDisposing' = FALSE
        ELSE UNCHANGED <<forestOrigin, forestDisposing>>
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
-                   nextCand>>
+                   nextCand, writer>>
 
 \* maintain_history with nothing parked reports NoPendingRelease.
-MaintainIdle == ~closed /\ parked = {} /\ UNCHANGED vars
+MaintainIdle == Held /\ parked = {} /\ UNCHANGED vars
 
 \* close: drains every parked candidate and the trees. It also succeeds on a
 \* diverged head, and is the only document entry that does.
 Close ==
-    /\ ~closed
+    /\ Held
     /\ closed' = TRUE
     /\ parked' = {}
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
-    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, nextCand>>
+    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, nextCand,
+                   writer>>
 
 ClosedStutter == closed /\ UNCHANGED vars
 
@@ -450,7 +569,8 @@ Next ==
     \/ \E k \in Keys, i \in Intents : AlreadyRecorded(k, i)
     \/ \E k \in Keys, i \in Intents : RefuseIntentDrift(k, i)
     \/ \E st \in StageMaps, k \in Keys : RefuseStages(st, k)
-    \/ \E n \in NodeIds, e \in Entities : RefuseCorrectionSource(n, e)
+    \/ \E n \in NodeIds, e \in Entities, k \in Keys :
+            RefuseCorrectionSource(n, e, k)
     \/ \E n \in NodeIds, e \in Entities, st \in StageMaps, k \in Keys :
             RefuseCorrectionStages(n, e, st, k)
     \/ \E r \in EnvironmentRefusals : RefuseEnvironment(r)
@@ -462,9 +582,11 @@ Next ==
     \/ UndoStep
     \/ \E c \in NodeIds : RedoTo(c)
     \/ \E n \in NodeIds : Checkout(n)
-    \/ \E S \in SUBSET Entities : OutOfBandMutation(S)
+    \/ \E st \in StageMaps : OutOfBandMutation(st)
     \/ \E p \in {"Stages", "Recording", "Release"} : WriterStopped(p)
-    \/ WriterDiscarded
+    \/ \E c \in WriterClasses : WriterBegin(c)
+    \/ \E st \in StageMaps, k \in Keys : WriterCommit(st, k)
+    \/ WriterDiscard
     \/ \E c \in Candidates : MaintainHistory(c)
     \/ MaintainIdle
     \/ Close
@@ -480,11 +602,12 @@ Recorded == 1..(nextNode - 1)
 
 TypeOK ==
     /\ nextNode \in 1..MaxNodes
-    /\ nextGen \in 1..(1 + Cardinality(Entities) * MaxNodes)
+    /\ nextGen \in 1..(1 + Cardinality(Entities) * (MaxNodes + 1))
     /\ current \in 0..(nextNode - 1)
     /\ live \subseteq Entities
     /\ gen \in [Entities -> 0..(nextGen - 1)]
     /\ val \in [Entities -> ValOrNone]
+    /\ facts \subseteq [step : NodeIds, src : NodeIds, ent : Entities]
     /\ \A n \in NodeIds : ops[n] \in [Entities -> StepOps]
     /\ \A k \in Keys : idem[k].status \in {"unseen", "recorded"}
     /\ headDiverged \in BOOLEAN /\ closed \in BOOLEAN
@@ -492,6 +615,7 @@ TypeOK ==
     /\ parked \subseteq Candidates
     /\ forestOrigin \in 0..MaxStops
     /\ forestDisposing \in BOOLEAN
+    /\ writer \in {"none"} \cup WriterClasses
 
 \* 1. While the document owns the head, the branch is exactly the selected
 \*    step's snapshot: entities, generations, values and both output trees.
@@ -563,14 +687,33 @@ StoppedCustody ==
     /\ parked \subseteq 1..(nextCand - 1)
     /\ forestOrigin /= 0 => forestOrigin \in parked
     /\ forestDisposing => forestOrigin /= 0
-    /\ closed => (parked = {} /\ forestOrigin = 0)
+    /\ closed => (parked = {} /\ forestOrigin = 0 /\ writer = "none")
 
-\* 7. Nothing a stopped request leaves behind wedges the document: with a
-\*    free key and room for a step, a writer can always record.
+\* 7. Nothing a stopped request leaves behind wedges the document. A writer
+\*    that holds it can always give it back, and, on a head the document
+\*    still owns with a free key and room for a step, can record. With
+\*    WedgeBug = TRUE (TreeBasedUndoWedgeBug.cfg) TLC finds Phase 1's wedge:
+\*    an envelope stops while recording its trees, then .edit begins.
 NoWedge ==
-    (Writable /\ nextNode < MaxNodes
-        /\ \E k \in Keys : idem[k].status = "unseen")
-    => ENABLED (\E st \in StageMaps, k \in Keys : EditEnvelope(st, k))
+    /\ (writer \in WriterClasses /\ ~closed) => ENABLED WriterDiscard
+    /\ (writer \in WriterClasses /\ ~closed /\ ~headDiverged
+            /\ nextNode < MaxNodes /\ \E k \in Keys : idem[k].status = "unseen")
+        => ENABLED (\E st \in StageMaps, k \in Keys : WriterCommit(st, k))
+
+\* 8. Reversal facts follow navigation (spec-owner ruling (u)). A reversal's
+\*    "already reversed" fact is active exactly on the lines where its step
+\*    is an ancestor of the selected step, or the selected step itself. With
+\*    FactBug = TRUE (TreeBasedUndoFactBug.cfg) TLC finds the r1 defect:
+\*    delete by correction, undo, and the fact is still active.
+FactsFollowLine == facts = {f \in PostedFacts : f.step \in Line(current)}
+
+\* 9. Where a fact is active the snapshots agree the source is already
+\*    reversed, so the fact never refuses what the selected line allows,
+\*    and never allows what it refuses.
+FactsAgreeWithSnapshots ==
+    \A f \in facts :
+        /\ MeaningDerivable(f.src, f.ent)
+        /\ ~SourceReversible(f.src, f.ent)
 
 \* ===========================================================================
 \* Action properties

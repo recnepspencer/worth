@@ -12,17 +12,22 @@ EXTENDS TreeBasedUndo, TraceData
 
   Record fields.
     action   "Envelope" | "Undo" | "Redo" | "Checkout" | "OutOfBand"
-             | "Maintain" | "Discard" | "Close"
+             | "Begin" | "Commit" | "Discard" | "Maintain" | "Close"
     outcome  what the entry returned (see StepAction)
     Envelope: kind ("edit" | "correction"), stages ([e1 |-> op, e2 |-> op],
              op is a value, 0 to retire, -1 for no stage), src and ent (the
              correction's source step and entity; 0 and "none" for an edit),
              key, and for outcome "AlreadyRecorded" the returned step, for
              outcome "Stopped" the point when the harness can tell it.
-    Redo, Checkout: node.   OutOfBand: retireSet.
+    Redo, Checkout: node.   OutOfBand: stages (as an edit's).
+    Begin: class ("edit" | "gesture").   Commit: stages, key.
     Post-state: postCurrent, postNextNode, postLive, postGen, postVal,
-             postOutA, postOutB, postHeadDiverged, postClosed, and
-             optionally postParked (the number of parked candidates).
+             postOutA, postOutB, postClosed, and optionally
+             postHeadDiverged (left out while a writer holds the document,
+             when no read can tell), postParked (the number of parked
+             candidates) and postReversals (the active reversal facts on the
+             document branch, a set of [step, src, ent], each attributed to
+             its step through the fact IDs the journal records with it).
 
   Generations are the dense first-seen numbering of the real
   full-generation IDs, so equal numbers mean the same real ID.
@@ -57,7 +62,7 @@ EnvelopeStep(step) ==
             ELSE RefuseCorrectionStages(step.src, step.ent, step.stages, step.key)
       [] step.outcome = "SourceRefused" ->
             /\ step.kind = "correction"
-            /\ RefuseCorrectionSource(step.src, step.ent)
+            /\ RefuseCorrectionSource(step.src, step.ent, step.key)
       [] step.outcome = "HeadDiverged" -> RefuseHeadDiverged
       [] step.outcome = "Empty" -> RefuseEmpty
       [] step.outcome = "Stopped" ->
@@ -79,12 +84,14 @@ NavigationStep(step) ==
 StepAction(step) ==
     CASE step.action = "Envelope" -> EnvelopeStep(step)
       [] step.action \in {"Undo", "Redo", "Checkout"} -> NavigationStep(step)
-      [] step.action = "OutOfBand" -> OutOfBandMutation(step.retireSet)
+      [] step.action = "OutOfBand" -> OutOfBandMutation(step.stages)
+      [] step.action = "Begin" -> WriterBegin(step.class)
+      [] step.action = "Commit" -> WriterCommit(step.stages, step.key)
       [] step.action = "Maintain" ->
             IF step.outcome = "NoPendingRelease"
             THEN MaintainIdle
             ELSE \E c \in Candidates : MaintainHistory(c)
-      [] step.action = "Discard" -> WriterDiscarded
+      [] step.action = "Discard" -> WriterDiscard
       [] step.action = "Close" -> Close
 
 MatchesPost(step) ==
@@ -95,9 +102,12 @@ MatchesPost(step) ==
     /\ val' = step.postVal
     /\ outA' = step.postOutA
     /\ outB' = step.postOutB
-    /\ headDiverged' = step.postHeadDiverged
+    /\ ("postHeadDiverged" \in DOMAIN step => headDiverged' = step.postHeadDiverged)
+    \* Only a held document may leave it out (review r2, note 4).
+    /\ (writer' = "none" /\ ~closed') => "postHeadDiverged" \in DOMAIN step
     /\ closed' = step.postClosed
     /\ ("postParked" \in DOMAIN step => Cardinality(parked') = step.postParked)
+    /\ ("postReversals" \in DOMAIN step => facts' = step.postReversals)
 
 TraceStep ==
     /\ pc <= Len(Trace)
