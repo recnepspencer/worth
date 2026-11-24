@@ -28,6 +28,10 @@ pub(crate) fn load_orientations(
                 .collect::<Result<Vec<_>, String>>()?,
         );
     }
+    orientations.extend(super::relational_owners::orientations(
+        root,
+        &contract.machine_constitution,
+    )?);
     orientations.extend(framework_audience_orientations(
         root,
         &contract.query_audience,

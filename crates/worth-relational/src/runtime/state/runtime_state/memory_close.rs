@@ -1,6 +1,7 @@
 //! Only the authentic memory owner may establish business quiescence.
 use super::RelationalReadCustodyHolders as Holders;
 use super::{RelationalRuntime, RelationalRuntimeCloseDenial};
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn has_memory_close_source_affinity(&self) -> bool {
@@ -27,14 +28,20 @@ impl RelationalRuntime {
     }
 
     fn memory_close_business_preflight(&self) -> Result<Option<RelationalRuntimeCloseDenial>, ()> {
-        if let Some(holders) = self.publication_owner.try_memory_close_custody()? {
+        if let Some(holders) = self
+            .publication_owner
+            .try_memory_close_custody()
+            .map_err(|_| ())?
+        {
             return Ok(Some(
                 RelationalRuntimeCloseDenial::PublicationCustodyRetained(holders),
             ));
         }
-        let (active, published, capacity, replay) =
-            self.visibility.try_memory_read_registrations()?;
-        let targets = !self.history.try_memory_targets_empty()?;
+        let (active, published, capacity, replay) = self
+            .visibility
+            .try_memory_read_registrations()
+            .map_err(|_| ())?;
+        let targets = !self.history.try_memory_targets_empty().map_err(|_| ())?;
         if active || published || capacity || replay || targets {
             return Ok(Some(RelationalRuntimeCloseDenial::ReadCustodyRetained(
                 Holders::Registrations {

@@ -3,6 +3,8 @@ use crate::branch::{
 };
 use crate::facade::history::BranchId;
 use crate::tests::support::{create_entity, install_empty_test_branch, runtime_with_test_schema};
+use worth_relational_branch::internal_port::branch::reference::root_access::RelationalBranchReferenceCellFixturePort as _;
+use worth_relational_branch::internal_port::branch::root::empty::RelationalBranchRootFixturePort as _;
 
 fn committed_child(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -62,7 +64,7 @@ fn committed_root_reference_mismatch_denies_before_transaction_admission() {
         .history
         .branch_cell_mut(&child)
         .expect("child remains registered")
-        .install_root(RelationalBranchRoot::empty());
+        .install_root(RelationalBranchRoot::empty_for_test());
     let commit_count = runtime.history().immutable_commit_count();
     let child_identity = runtime
         .branch_identity(&child)

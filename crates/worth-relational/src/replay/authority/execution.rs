@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_durability::internal_port::replay::data::verification::RelationalReplayOutcomeOwnerPort as _;
 mod completed_comparison;
 
 use crate::durability::data::RelationalRecoveryStop;
@@ -89,6 +91,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         &self,
         request: &RelationalReplayRequest,
     ) -> Result<ReplayAdmission, RelationalReplayOutcome> {
+        #[cfg(test)]
+        replay_contacts::observe();
         let Some(envelope) =
             load_replay_envelope(self.runtime.history.canonical_read(), request.commit_id)
         else {
@@ -293,6 +297,18 @@ impl<'runtime> ReplayAuthority<'runtime> {
             ReplayFailureClass::ObservableMismatch,
             Some(mismatch),
         )
+    }
+}
+
+#[cfg(test)]
+mod replay_contacts {
+    use std::cell::Cell;
+    thread_local! { static CONTACTS: Cell<usize> = const { Cell::new(0) }; }
+    pub(super) fn observe() {
+        CONTACTS.with(|count| count.set(count.get() + 1));
+    }
+    pub(super) fn count() -> usize {
+        CONTACTS.with(Cell::get)
     }
 }
 

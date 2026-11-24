@@ -1,7 +1,7 @@
 //! Source-contract staging and exact target installation for native recovery.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 #[path = "field_comparison_request.rs"]
 mod physical_field_basis;
-pub(crate) use crate::schema::codec_field_comparison::CodecFieldLocus;
 pub(crate) use physical_field_basis::codec_field_changes;
 
 use crate::runtime::RelationalRuntime;
@@ -33,8 +33,8 @@ impl RelationalRuntime {
             custom_invariant_inventory_digest: super::custom_invariant_inventory_digest(
                 &registrations,
             ),
-            retained_entity_kind_count: registry.entity_kinds.len(),
-            retained_relation_kind_count: registry.relation_kinds.len(),
+            retained_entity_kind_count: (*registry.owner_entity_kinds()).len(),
+            retained_relation_kind_count: (*registry.owner_relation_kinds()).len(),
             retained_schema_authority_digest:
                 crate::schema::data::schema_authority_snapshot_digest_bytes(
                     &registry.authority_snapshot(),

@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::commit_strategies::data::execution::observation_context::StrategyObservationContextOwnerPort as _;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 use std::sync::Arc;
 
 use crate::capabilities::{AspectPlanSource, SchemaSource};
@@ -39,7 +41,7 @@ pub(crate) fn bind_execution<'runtime>(
 
     let visibility = runtime.read_truth().project_snapshot(snapshot).ok_or(
         StrategyExecutionError::UnknownSnapshot {
-            snapshot_id: snapshot.snapshot_id,
+            snapshot_id: (*snapshot.owner_snapshot_id()),
         },
     )?;
 
@@ -74,9 +76,9 @@ fn reject_foreign_runtime_snapshot(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
 ) -> Result<(), StrategyExecutionError> {
-    if snapshot.runtime_instance_id != runtime.runtime_instance_id() {
+    if (*snapshot.owner_runtime_instance_id()) != runtime.runtime_instance_id() {
         return Err(StrategyExecutionError::UnknownSnapshot {
-            snapshot_id: snapshot.snapshot_id,
+            snapshot_id: (*snapshot.owner_snapshot_id()),
         });
     }
     Ok(())

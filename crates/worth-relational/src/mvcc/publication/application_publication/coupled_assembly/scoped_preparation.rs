@@ -1,4 +1,5 @@
 //! Scoped Query dispatch completes the real Native draft before final judging.
+
 use super::*;
 use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
@@ -46,7 +47,7 @@ impl RelationalPreparationPort {
                     .as_ref()
                     .expect("bound assembly")
                     .owners
-                    .source
+                    .source()
                     .subject(),
             )
         })?;

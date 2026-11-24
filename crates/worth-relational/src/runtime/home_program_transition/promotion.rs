@@ -49,7 +49,7 @@ impl RelationalRuntime {
         {
             return Err(Refusal::Preparation(Denial::ForeignRuntime));
         }
-        if !super::retain_root_execution_contracts(&source.inner.root)
+        if !super::retain_root_execution_contracts(&source.owner_inner().root)
             .is_some_and(|meaning| Arc::ptr_eq(&meaning, &target.meaning))
         {
             return Err(Refusal::Preparation(Denial::TargetCatalogMismatch));
@@ -75,8 +75,8 @@ impl RelationalRuntime {
         if !epoch.same_epoch(&target.receiver_epoch) {
             return Err(Refusal::Preparation(Denial::SourceContractChanged));
         }
-        let _coordination = source.inner.publication_cell.coordination().enter();
-        let state = source.inner.publication_cell.enter_state();
+        let _coordination = source.owner_inner().publication_cell.coordination().enter();
+        let state = source.owner_inner().publication_cell.enter_state();
         if !state.matches_current_basis(source) {
             return Err(Refusal::Preparation(Denial::SourceBasisMismatch));
         }

@@ -78,7 +78,7 @@ impl crate::runtime::RelationalRuntime {
         self.unshared_state_mut()
             .expect("retention capacity test support requires the only handle to this runtime")
             .history
-            .reset_retention_owner_with_test_limits(
+            .reset_retention_owner_with_test_limits_for_test(
                 max_live_root_obligations,
                 max_retired_branch_roots,
             );

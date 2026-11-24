@@ -4,6 +4,7 @@ use crate::change_source::RelationalReadCustodyHolders as Holders;
 use crate::runtime::{RelationalRuntime, RelationalRuntimeCloseDenial};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 #[cfg(test)]
 mod tests;
 
@@ -155,7 +156,7 @@ impl RelationalMemoryClose {
                 .cache
                 .try_retire_memory_state(self.cache_cursor)
             {
-                Err(()) => O::Busy,
+                Err(_) => O::Busy,
                 Ok(None) => {
                     self.cache_complete = true;
                     O::Advanced
@@ -178,7 +179,7 @@ impl RelationalMemoryClose {
             .history
             .try_retire_stopped_head(self.head_cursor)
         {
-            Err(()) => return O::Busy,
+            Err(_) => return O::Busy,
             Ok(None) => {
                 return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained(
                     Holders::BranchHead {

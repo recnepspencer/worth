@@ -1,0 +1,140 @@
+//! Preparation correspondence borrows the immutable original intent keys.
+use super::*;
+use crate::contracts::identity::data::primitives::KindId;
+use crate::contracts::symbols::data::client_key::ClientKey;
+use crate::contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::contracts::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, EntityReference,
+};
+
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub(super) struct CreatedEntityKey<'a> {
+    partition: crate::contracts::identity::data::primitives::PartitionId,
+    kind: KindId,
+    client: &'a ClientKey,
+}
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub(super) struct CreatedRelationKey<'a> {
+    partition: crate::contracts::identity::data::primitives::PartitionId,
+    kind: KindId,
+    client: &'a ClientKey,
+    source: &'a EntityReference,
+    target: &'a EntityReference,
+}
+impl CreatedEntityKey<'_> {
+    fn owned(self) -> CreatedEntityRef {
+        CreatedEntityRef {
+            partition_id: self.partition,
+            kind_id: self.kind,
+            client_key: self.client.clone(),
+        }
+    }
+}
+impl CreatedRelationKey<'_> {
+    fn owned(self) -> CreatedRelationRef {
+        CreatedRelationRef {
+            partition_id: self.partition,
+            kind_id: self.kind,
+            client_key: self.client.clone(),
+            source: self.source.clone(),
+            target: self.target.clone(),
+        }
+    }
+}
+impl<'a> MutationWorkspace<'a> {
+    /// Existing live public-result construction remains an ordinary owned copy.
+    /// The Complete fold never calls this conversion.
+    pub(crate) fn into_created_bindings(
+        self,
+    ) -> (
+        crate::contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        crate::contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
+    ){
+        let entity = self
+            .created_entities
+            .iter()
+            .map(|(key, id)| (key.owned(), *id))
+            .collect();
+        let relation = self
+            .created_relations
+            .iter()
+            .map(|(key, id)| (key.owned(), *id))
+            .collect();
+        (
+            crate::contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings::from_owner_map(
+                entity,
+                self.symbols.lookup(),
+            ),
+            crate::contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings::from_owner_map(
+                relation,
+                self.symbols.lookup(),
+            ),
+        )
+    }
+    pub(crate) fn register_created_entity(
+        &mut self,
+        partition: crate::contracts::identity::data::primitives::PartitionId,
+        kind: KindId,
+        client: &'a ClientKey,
+        id: EntityId,
+    ) -> Result<(), TransactionCommitError> {
+        self.created_entities
+            .insert_cloned_native_for_request(
+                &CreatedEntityKey {
+                    partition,
+                    kind,
+                    client,
+                },
+                &id,
+                self.execution,
+            )
+            .map_err(map_stop)
+    }
+    pub(crate) fn register_created_relation(
+        &mut self,
+        partition: crate::contracts::identity::data::primitives::PartitionId,
+        kind: KindId,
+        client: &'a ClientKey,
+        source: &'a EntityReference,
+        target: &'a EntityReference,
+        id: RelationId,
+    ) -> Result<(), TransactionCommitError> {
+        self.created_relations
+            .insert_cloned_native_for_request(
+                &CreatedRelationKey {
+                    partition,
+                    kind,
+                    client,
+                    source,
+                    target,
+                },
+                &id,
+                self.execution,
+            )
+            .map_err(map_stop)
+    }
+    pub(crate) fn resolve_entity_reference(&self, reference: &EntityReference) -> Option<EntityId> {
+        match reference {
+            EntityReference::Existing(id) => Some(*id),
+            EntityReference::Created(created) => self
+                .created_entities
+                .get(&CreatedEntityKey {
+                    partition: created.partition_id,
+                    kind: created.kind_id,
+                    client: &created.client_key,
+                })
+                .copied(),
+        }
+    }
+}
+fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> TransactionCommitError {
+    use worth_execution::ExecutionOrderedMapDenial as Denial;
+    let cause = match cause {
+        Denial::Request(cause) => cause.into(),
+        Denial::Allocation(_) => crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+        Denial::CapacityOverflow => {
+            crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow
+        }
+    };
+    TransactionCommitError::execution(cause.into())
+}

@@ -1,3 +1,7 @@
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_encoding::CanonicalCommitEnvelopeFixturePort as _;
 use super::*;
 use crate::facade::durability::RelationalCanonicalCommitArtifact as Artifact;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
@@ -89,13 +93,18 @@ fn every_retained_commit_readmits_from_its_artifact_unchanged() {
         assert_eq!(readmitted.position(), original.position());
         assert_eq!(readmitted.commit_id(), original_envelope.commit.commit_id);
         assert_eq!(
-            envelope.encode_authoritative_payload().unwrap(),
-            original_envelope.encode_authoritative_payload().unwrap()
+            envelope.encode_authoritative_payload_for_test().unwrap(),
+            original_envelope
+                .encode_authoritative_payload_for_test()
+                .unwrap()
         );
-        assert_eq!(envelope.symbol_texts, original_envelope.symbol_texts);
         assert_eq!(
-            envelope.required_output_codec_retirements,
-            original_envelope.required_output_codec_retirements
+            (*envelope.owner_symbol_texts()),
+            (*original_envelope.owner_symbol_texts())
+        );
+        assert_eq!(
+            (*envelope.owner_required_output_codec_retirements()),
+            (*original_envelope.owner_required_output_codec_retirements())
         );
     }
 }
@@ -107,16 +116,20 @@ fn encoding_a_commit_is_deterministic_across_encodes_and_readmission() {
     let runtime = memory_runtime_with_mixed_history(execution);
 
     for original in runtime.history.positioned_canonical_commits_snapshot() {
-        let first =
-            Artifact::from_positioned(&original, ExecutionAllocationPolicy::SystemAllocation)
-                .unwrap();
-        let second =
-            Artifact::from_positioned(&original, ExecutionAllocationPolicy::SystemAllocation)
-                .unwrap();
+        let first = Artifact::from_positioned_for_test(
+            &original,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+        let second = Artifact::from_positioned_for_test(
+            &original,
+            ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
         assert_eq!(first.as_bytes(), second.as_bytes());
 
         let readmitted = Artifact::readmit(first.as_bytes(), execution).unwrap();
-        let reencoded = Artifact::from_positioned(
+        let reencoded = Artifact::from_positioned_for_test(
             readmitted.positioned(),
             ExecutionAllocationPolicy::SystemAllocation,
         )

@@ -1,4 +1,12 @@
 //! Real Memory publication owns one original frame; tuple observations stay scalar.
+use std::sync::{Arc, Mutex};
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::commit::RelationalCommitIndexEntry;
+use crate::durability::medium::RelationalDurableColdSource;
+use worth_relational_branch::internal_port::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition;
+use crate::storage::data::RelationalStorageUnavailable;
+use worth_relational_branch::internal_port::history::commit::artifact::RelationalCommitArtifactFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_encoding::CanonicalCommitEnvelopeFixturePort as _;
 use super::*;
 use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -17,17 +25,9 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
         .commit_artifact(result.commit.commit_id)
         .unwrap()
         .envelope_residency();
-    let original = {
-        let state = cell.state.lock().unwrap();
-        let EnvelopeBacking::Memory {
-            original: Some(bytes),
-            ..
-        } = &state.backing
-        else {
-            panic!("real Memory publication owns original bytes")
-        };
-        bytes.clone()
-    };
+    let original = cell
+        .resident_original_frame_for_test()
+        .expect("real Memory publication owns original bytes");
     assert_eq!(
         original.charged_payload_bytes(),
         Some(original.len() as u64)
@@ -36,7 +36,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     let bill = retained_byte_owner_bill(original.bytes());
     let positioned = cell.demand_positioned(&execution, 1 << 30).unwrap();
     // Independent existing encoder is a fixture reference, outside the export claim.
-    let reference = VerifiedCanonicalCommitFrame::reference_encode(
+    let reference = VerifiedCanonicalCommitFrame::reference_encode_for_test(
         &positioned,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -91,7 +91,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
 }
 #[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = create_entity_outcome(&execution, &runtime, "tuple-observations");
@@ -100,8 +100,11 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
         .commit_artifact(result.commit.commit_id)
         .unwrap();
     let envelope = artifact.resident_envelope().unwrap();
-    let bytes = envelope.encode_authoritative_payload().unwrap();
-    assert_eq!(artifact.canonical_payload_bytes(), bytes.len() as u64);
+    let bytes = envelope.encode_authoritative_payload_for_test().unwrap();
+    assert_eq!(
+        artifact.canonical_payload_bytes_for_test(),
+        bytes.len() as u64
+    );
     assert_eq!(
         artifact.canonical_payload_digest().unwrap(),
         <[u8; 32]>::from(Sha256::digest(&bytes))
@@ -153,7 +156,7 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
         std::mem::size_of::<OldBacking>(),
         std::mem::size_of::<EnvelopeBacking>(),
         std::mem::size_of::<OldState>(),
-        std::mem::size_of::<EnvelopeState>(),
+        envelope_state_inline_size_for_test(),
         std::mem::size_of::<OldCell>(),
         std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
         std::mem::size_of::<worth_execution::ExecutionImmutableBytes>()
@@ -200,7 +203,7 @@ struct OldCell {
 // using case-owned `OwnedTestDurableMedium` (no runtime_attachment).
 #[test]
 fn journal_publication_keeps_journal_placement_without_memory_frame() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
@@ -230,7 +233,7 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
 
 #[test]
 fn recovered_nonhead_tail_envelopes_release_demanded_journal_body_on_drop() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);

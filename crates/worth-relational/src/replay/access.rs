@@ -2,6 +2,7 @@ use crate::history::data::CommitId;
 use crate::history::data::SharedCanonicalCommitEnvelope;
 use crate::replay::data::RelationalReplayOutcome;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 
 pub struct ReplayAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,

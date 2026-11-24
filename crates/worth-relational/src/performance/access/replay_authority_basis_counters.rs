@@ -1,5 +1,6 @@
 use super::PerformanceAccess;
 use crate::replay::data::{ReplayAuthorityBasisKind, ReplayVerificationLayer};
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ReplayLineageAuthorityIndexedSource {

@@ -1,18 +1,17 @@
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::CanonicalCommitAuthorityKind;
 use crate::runtime::RelationalRuntime;
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{CanonicalCommitEnvelopeBodyFieldsPort as _, CanonicalCommitEnvelopeBodyOwnerPort as _};
 
 use super::root_inventory::RecoveredRootInventory;
 
-pub(in crate::durability::authority) mod commit_stop;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::runtime_rebuild::envelope_replay::{commit_stop, naming_recovery, path, preparation};
 mod committed_artifacts;
 mod effect;
-mod naming_recovery;
 mod owner_bindings;
-mod path;
-mod preparation;
 
 #[cfg(test)]
 mod interruption_tests;
@@ -44,7 +43,7 @@ pub(super) fn replay_readmitted_envelope(
                     .recover_installed_index_routing(execution)
             },
         )?;
-        for (_, text) in &envelope.symbol_texts.entries {
+        for (_, text) in &envelope.owner_symbol_texts().entries {
             restored
                 .services
                 .symbols
@@ -53,7 +52,7 @@ pub(super) fn replay_readmitted_envelope(
         restored
             .services
             .symbols
-            .import_canonical_snapshot(&envelope.symbol_texts)
+            .import_canonical_snapshot(envelope.owner_symbol_texts())
             .map_err(|detail| {
                 DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
             })?;

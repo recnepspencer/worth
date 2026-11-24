@@ -32,10 +32,10 @@ mod posture_conservation_ops;
 mod posture_conservation_proptest;
 mod posture_corruption;
 mod posture_corruption_fixtures;
-mod posture_fixtures;
-mod posture_lineage;
+mod posture_fixtures {
+    pub(super) use worth_relational_lineage::internal_port::lineage::authority::posture_fixture::records::*;
+}
 mod posture_replay;
 mod resolution;
 mod scheme_composition;
 mod self_derived_basis;
-mod untouched_keeper_merge;

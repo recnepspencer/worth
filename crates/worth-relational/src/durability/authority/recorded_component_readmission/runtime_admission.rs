@@ -1,3 +1,5 @@
+use worth_relational_durability::internal_port::durability::authority::recorded_component_readmission::RefusedRelationalRecordedComponentOwnerPort as _;
+use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasisOwnerPort as _;
 use super::{RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause};
 use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
@@ -16,10 +18,7 @@ impl RecoveredRelationalRuntimeAuthority {
         recorded: &Recorded,
     ) -> Result<RecoveredRelationalBranchBasis, RefusedRelationalRecordedComponent> {
         use RelationalRecordedComponentAdmissionCause as Cause;
-        let refused = |cause| RefusedRelationalRecordedComponent {
-            cause,
-            acquired: None,
-        };
+        let refused = |cause| RefusedRelationalRecordedComponent::from_refusal(cause, None);
         crate::execution::check_request(execution)
             .map_err(|cause| refused(Cause::Request(cause)))?;
         if self.runtime_instance_id != runtime.runtime_instance_id() {
@@ -120,11 +119,11 @@ impl RecoveredRelationalRuntimeAuthority {
         )
         .map_err(|cause| refused(Cause::Basis(cause)))?;
         match cell.register_basis(basis.clone()) {
-            Ok(basis) => Ok(RecoveredRelationalBranchBasis { basis }),
-            Err(cause) => Err(RefusedRelationalRecordedComponent {
-                cause: Cause::Basis(cause),
-                acquired: Some(basis),
-            }),
+            Ok(basis) => Ok(RecoveredRelationalBranchBasis::from_readmission(basis)),
+            Err(cause) => Err(RefusedRelationalRecordedComponent::from_refusal(
+                Cause::Basis(cause),
+                Some(basis),
+            )),
         }
     }
 }

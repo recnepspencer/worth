@@ -8,6 +8,7 @@ use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{InvariantExecutionResult, InvariantPreparationControl};
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 
 // This provisional result can still be discarded by the outer head probe.
 // It is not PreparedAuthorityScope until that probe and mirror admission finish.
@@ -61,7 +62,7 @@ pub(crate) fn prepare_merge_draft(
                 basis.identity().branch_id(),
                 accepted
                     .structural_summary
-                    .touched_partitions
+                    .touched_partitions()
                     .iter()
                     .copied(),
             )

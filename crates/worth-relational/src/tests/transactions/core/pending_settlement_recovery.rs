@@ -24,12 +24,14 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
     drop(performed);
 
     assert_eq!(
-        record.abandoned_capability_count(),
+        record.abandoned_capability_count_for_test(),
         1,
         "abandoning the witness is observable"
     );
     assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
         1,
         "abandoning the witness may not release the obligation"
     );
@@ -50,7 +52,12 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
         .repair_pending_publication_settlement(commit_id)
         .expect("the runtime still owns the work its lost witness only reported");
     assert_eq!(repaired.commit_id, commit_id);
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+    assert_eq!(
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
+        0
+    );
     drop(record);
     assert_eq!(
         runtime.visibility.published_snapshot_handle_count(),
@@ -90,7 +97,12 @@ fn repeated_terminal_settlement_returns_one_receipt_and_one_durable_append() {
         1,
         "asking again performs no second durable effect"
     );
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+    assert_eq!(
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
+        0
+    );
     release_test_commit_snapshot(&runtime, &settled);
 }
 
@@ -110,7 +122,12 @@ fn repair_and_witness_settlement_execute_exactly_once() {
         .repair_pending_publication_settlement(commit_id)
         .expect("repair runs the one terminal effect while the witness is still held");
     assert_eq!(repaired.commit_id, commit_id);
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+    assert_eq!(
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
+        0
+    );
 
     let settled = runtime
         .settle_performed_publication(performed)
@@ -142,7 +159,7 @@ fn owner_loss_retires_every_pending_settlement_exactly_once() {
     drop(performed);
     let binding = runtime.publication_binding();
     assert!(!binding.settlement_admission_is_closed());
-    assert_eq!(binding.pending_settlement_count(), 1);
+    assert_eq!(binding.pending_settlement_count_for_test(), 1);
 
     drop(runtime);
 
@@ -151,12 +168,12 @@ fn owner_loss_retires_every_pending_settlement_exactly_once() {
         "a lost owner admits no further settlement"
     );
     assert_eq!(
-        binding.pending_settlement_count(),
+        binding.pending_settlement_count_for_test(),
         0,
         "owner loss drains its pending registry"
     );
     assert_eq!(
-        binding.pending_settlement_owner_loss_count(),
+        binding.pending_settlement_owner_loss_count_for_test(),
         1,
         "each retired pending settlement is accounted exactly once"
     );
@@ -224,14 +241,21 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             interruption
         );
         assert_eq!(
-            runtime.publication_binding().pending_settlement_count(),
+            runtime
+                .publication_binding()
+                .pending_settlement_count_for_test(),
             1,
             "movement that happened keeps its recoverable settlement record"
         );
         let settled = runtime
             .settle_performed_publication(performed)
             .expect("a late-interrupted movement remains settleable");
-        assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+        assert_eq!(
+            runtime
+                .publication_binding()
+                .pending_settlement_count_for_test(),
+            0
+        );
         release_test_commit_snapshot(&runtime, &settled);
     }
 }

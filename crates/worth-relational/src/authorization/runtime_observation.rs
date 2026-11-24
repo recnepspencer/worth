@@ -1,5 +1,7 @@
 //! Admit the selected snapshot and bind its authorization evaluation operands.
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
+use worth_relational_mutation::internal_port::authorization::evidence::RelationalAuthorizationObservationEvidenceOwnerPort as _;
 
 use super::admission::{self, ObservationResult, UnrestrictedObservation};
 use super::observation_identity::mint_observation_identity;
@@ -56,11 +58,11 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> ObservationResult<RelationalAuthorizationEvaluation, A> {
         admission::prepare(admission, 1, 0)?;
-        if plan.snapshot().runtime_instance_id != self.runtime_instance_id() {
+        if (*plan.snapshot().owner_runtime_instance_id()) != self.runtime_instance_id() {
             return Err(Stop::Native(
                 RelationalAuthorizationObservationDenial::ForeignRuntime {
                     expected_runtime_instance_id: self.runtime_instance_id(),
-                    actual_runtime_instance_id: plan.snapshot().runtime_instance_id,
+                    actual_runtime_instance_id: (*plan.snapshot().owner_runtime_instance_id()),
                 },
             ));
         }

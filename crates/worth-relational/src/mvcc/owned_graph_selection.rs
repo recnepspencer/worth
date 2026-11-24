@@ -1,8 +1,8 @@
 //! Retained graph selection enters the original Native proposal lifecycle.
 use crate::mvcc::BranchBoundRelationalTransaction;
 
-pub(crate) mod prepared;
 pub(crate) use prepared::PreparedOwnedGraphSelection;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::owned_graph_selection::prepared;
 
 #[derive(Debug)]
 pub struct RelationalOwnedGraphSelection {

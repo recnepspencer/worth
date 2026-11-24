@@ -56,7 +56,7 @@ class LibraryModel:
             return self._references[names]
         view, result = self.views[names], set()
         words = {t.value for t in tokens(view.own_text()) if t.kind == 'ident'}
-        for reference in references(view, self.index):
+        for reference in references(view, self.index, resolver=self.surface.resolve):
             for target in self.expand(reference, words):
                 found = self.surface.origin(target.module, target.item)[0] if target.item \
                     else (target.module, None)

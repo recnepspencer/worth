@@ -1,0 +1,215 @@
+//! Native envelope association checks; reconstructive succession lives in history.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementationOwnerPort as _;
+use super::payload_coverage::OutputPayloadCoverageFailure as Failure;
+use super::*;
+use crate::history::data::CodecRetirementClosureStop as Stop;
+
+pub fn validate_created_output_for_commit(
+    envelope: &CanonicalCommitEnvelopeBody,
+    id: EntityId,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    payload: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+    member_ordinal: usize,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+) -> Result<(), TransactionCommitError> {
+    payload_coverage::validate_created_output_payload(envelope, id, plan, payload, context)
+        .map_err(|failure| coverage_commit_stop(failure, envelope, id, plan, member_ordinal))
+}
+
+pub(super) fn coverage_commit_stop(
+    failure: Failure,
+    envelope: &CanonicalCommitEnvelopeBody,
+    id: crate::identity::data::EntityId,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    member_ordinal: usize,
+) -> TransactionCommitError {
+    match failure {
+        Failure::Request(cause) => origin_request(cause),
+        Failure::Unsupported(reason) => {
+            let mut error = crate::publication::data::PublicationError::new(
+                crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
+                reason.entity_detail(
+                    "output has unsupported or unclassified present cells",
+                    envelope,
+                    id,
+                    plan,
+                    Some(member_ordinal),
+                ),
+            );
+            error.context = error.context.with_records(vec![
+                crate::transactions::data::primitives::RecordRef::Entity(id),
+            ]);
+            TransactionCommitError::publication(error)
+        }
+        Failure::Corrupt(detail) => {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail)
+        }
+    }
+}
+
+impl CanonicalCommitEnvelopeBody {
+    /// Reconstructive callers validate the actual birth payload before any
+    /// later Preserve patches, using the same native coverage rule as capture.
+    pub(in crate::internal_port::history::data) fn validate_required_output_entity_create(
+        &self,
+        id: crate::identity::data::EntityId,
+        plan: &crate::schema::data::LoweredAspectContractPlan,
+        payload: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        payload_coverage::validate_created_output_payload(self, id, plan, payload, context).map_err(
+            |failure| match failure {
+                Failure::Request(cause) => Stop::Request(cause),
+                Failure::Unsupported(reason) => Stop::Payload(reason.entity_detail(
+                    "output has unsupported or unclassified birth cells",
+                    self,
+                    id,
+                    plan,
+                    None,
+                )),
+                Failure::Corrupt(detail) => Stop::Payload(detail),
+            },
+        )
+    }
+
+    pub(in crate::internal_port::history::data) fn validate_required_output_relation_create(
+        &self,
+        id: crate::identity::data::RelationId,
+        kind: crate::identity::data::KindId,
+        payload: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        payload_coverage::validate_created_relation_payload(self, id, payload, context).map_err(
+            |failure| match failure {
+                Failure::Request(cause) => Stop::Request(cause),
+                Failure::Unsupported(reason) => {
+                    Stop::Payload(reason.relation_detail(self, id, kind))
+                }
+                Failure::Corrupt(detail) => Stop::Payload(detail),
+            },
+        )
+    }
+
+    pub(crate) fn is_unmerged_output_publication_step(&self) -> bool {
+        self.commit.parents.len() <= 1
+            && self.merge_execution_authority.is_none()
+            && self.merge_parent_branches.is_empty()
+            && self.merge_base_commits.is_empty()
+    }
+
+    pub(super) fn validate_output_origin_header(
+        &self,
+        origin: &CanonicalRequiredOutputOrigin,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        origin.validate_inputs(context)?;
+        if origin.commit != self.commit
+            || !origin.meaning.implementation.valid()
+            || (matches!(
+                origin.publication,
+                CanonicalOutputPublication::AuthoredRetirement { .. }
+                    | CanonicalOutputPublication::ProducerRetirement { .. }
+            ) && !origin.relations.is_empty())
+            || origin.producer.is_empty()
+            || origin.basis.branch_id() != &self.branch_context
+            || self
+                .branch_cell_checkpoint
+                .as_ref()
+                .map(|cell| &cell.observation)
+                != Some(origin.basis.reference())
+            || origin.members.is_empty()
+            || origin.members.len() != origin.outputs.len()
+            || origin
+                .members
+                .iter()
+                .zip(&origin.outputs)
+                .any(|(member, id)| member.id != *id)
+            || origin.members.iter().any(|member| {
+                use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+                member.role.is_empty()
+                    || member.entity_name.is_empty()
+                    || member.birth_producer.is_empty()
+                    || match origin.publication {
+                        CanonicalOutputPublication::Birth
+                        | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+                        | CanonicalOutputPublication::AuthoredRestoration { .. } => {
+                            member.posture != Posture::Create
+                                || member.before_write.is_some()
+                                || member.birth != self.commit.commit_id
+                                || member.birth_producer != origin.producer
+                                || member.birth_dependency != origin.dependency_identity
+                        }
+                        CanonicalOutputPublication::AuthoredRetirement { .. }
+                        | CanonicalOutputPublication::ProducerRetirement { .. } => {
+                            member.posture != Posture::Retire || member.before_write.is_none()
+                        }
+                        CanonicalOutputPublication::HistoricalSelection {
+                            selected,
+                            generation,
+                            ..
+                        } => {
+                            member.posture != Posture::Preserve
+                                || member.after_write != self.commit.version_id
+                                || selected == self.commit.commit_id
+                                || generation.0 == 0
+                        }
+                        CanonicalOutputPublication::Preserve { .. } => {
+                            (member.posture == Posture::Create) != member.before_write.is_none()
+                        }
+                    }
+            })
+            || origin.outputs.windows(2).any(|pair| pair[0] >= pair[1])
+        {
+            return Err("copied or incomplete native output publication membership".into());
+        }
+        Ok(())
+    }
+}
+
+impl<'a> ValidatedOutputOrigins<'a> {
+    pub fn materialization_origin_for_record(
+        &self,
+        record: &crate::transactions::data::primitives::RecordRef,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        use crate::transactions::data::primitives::RecordRef;
+        let origin = match record {
+            RecordRef::Entity(id) => self.output_origin_for_entity(*id, context)?,
+            RecordRef::Relation(id) => self.output_origin_for_relation(*id, context)?,
+        };
+        require_materialization_posture(origin)?;
+        Ok(origin)
+    }
+
+    pub fn materialization_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        let origin = self.output_origin_for_route(meaning, context)?;
+        require_materialization_posture(origin)?;
+        Ok(origin)
+    }
+}
+
+fn require_materialization_posture(origin: &CanonicalRequiredOutputOrigin) -> Result<(), Stop> {
+    if matches!(
+        origin.publication,
+        CanonicalOutputPublication::ProducerRetirement { .. }
+            | CanonicalOutputPublication::HistoricalSelection { .. }
+    ) {
+        return Err("producer retirement cannot be a standalone publication".into());
+    }
+    Ok(())
+}
+
+#[doc(hidden)]
+pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
+    fn is_unmerged_output_publication_step(&self) -> bool;
+}
+
+impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
+    fn is_unmerged_output_publication_step(&self) -> bool {
+        self.is_unmerged_output_publication_step()
+    }
+}

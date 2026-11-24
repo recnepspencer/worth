@@ -1,4 +1,5 @@
 use super::super::support::*;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 fn relation_integrity_registry(
     relation_integrity: crate::schema::data::RelationIntegrityDeclarations,
@@ -201,8 +202,7 @@ fn schema_authority_recomputes_mutated_integrity_and_binds_map_key() {
         ));
     let baseline_digest = registry.authority_digest_bytes();
     let mut mutated = registry.clone();
-    let registration = mutated
-        .relation_kinds
+    let registration = (*mutated.owner_relation_kinds_mut())
         .get_mut(&KindId(2))
         .expect("relation kind is installed under its map key");
     registration.kind_id = KindId(999);

@@ -4,6 +4,7 @@ use crate::execution::RelationalExecutionDenialCause;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, CommittedVersionSummary};
 use crate::identity::data::VersionId;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::committed_version::CommittedVersionSummaryOwnerPort as _;
 
 impl HistoryAccess<'_> {
     pub(crate) fn demand_commit_envelope(

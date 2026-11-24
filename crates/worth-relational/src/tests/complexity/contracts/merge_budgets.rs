@@ -113,11 +113,11 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge execution");
 

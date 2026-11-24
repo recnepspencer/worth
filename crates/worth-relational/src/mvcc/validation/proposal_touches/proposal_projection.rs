@@ -1,4 +1,5 @@
 //! Proposal-owned projection of exact applied commands.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::completion::RelationalCoupledAuthoredPublicationFieldsPort as _;
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
@@ -27,7 +28,7 @@ impl ValidatedRelationalProposal {
             .map(|p| &p.publication)
         {
             Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
-                Some(group.authored_commands.plan().merged_intents.as_slice())
+                Some(group.authored_commands().plan().merged_intents.as_slice())
             }
             _ => None,
         };
@@ -50,7 +51,7 @@ impl ValidatedRelationalProposal {
             .map(|p| &p.publication)
         {
             Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
-                group.stages.get(stage)?
+                group.stages().get(stage)?
             }
             _ => return None,
         };
@@ -75,7 +76,7 @@ impl ValidatedRelationalProposal {
                 crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => Some(group),
                 _ => None,
             })
-            .flat_map(|group| group.parts.iter())
+            .flat_map(|group| group.parts().iter())
             .rfind(|part| part.publication.producing_meaning() == Some(meaning))?;
         Some(self.project_touches(execution, false, Some(&part.commands.plan().merged_intents)))
     }

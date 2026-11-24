@@ -59,11 +59,11 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            )
             .into(),
         )
         .expect("live planning artifact");
@@ -97,11 +97,11 @@ fn built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recov
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared counter merge");
     let merge = runtime

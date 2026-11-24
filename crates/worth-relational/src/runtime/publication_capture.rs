@@ -1,5 +1,4 @@
 //! Bind a candidate's native publication inputs and its exact Home inventory.
-use std::sync::Arc;
 
 use super::RelationalPreparationRuntime;
 use crate::authority::commit::pipeline::publication_execution::{
@@ -91,3 +90,6 @@ impl<'a> From<&'a super::RelationalRuntime>
         }
     }
 }
+
+#[cfg(test)]
+use std::sync::Arc;

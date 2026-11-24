@@ -6,6 +6,7 @@ use crate::identity::data::EntityId;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 impl RelationalRuntime {
     /// Both bases and all publication facts come from real installed Query branches.
     /// The merged fork is private to this court; the application branch is untouched.

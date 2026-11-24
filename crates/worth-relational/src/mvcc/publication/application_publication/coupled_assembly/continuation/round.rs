@@ -1,13 +1,15 @@
 //! Judge one continued round by what it would actually apply, before it can publish.
-use super::super::{writer_custody, RelationalCoupledAssemblyFailure, RequiredOutputPublication};
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
+use super::super::{RelationalCoupledAssemblyFailure, RequiredOutputPublication};
 use super::{
     application, postponed, ExecutionRequest, RelationalAuthoredCoupledCandidate,
     RelationalCoupledProducerContinuation,
 };
-use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::Arc;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::continuation::round;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Consume next-round custody and judge the continued round's body on a
@@ -60,7 +62,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         }
         let predecessor = match self.parts[index].publication.owned() {
             Some(RequiredOutputPublication::Preserve { predecessor, .. }) => {
-                Some(Arc::clone(&predecessor.origin))
+                Some(Arc::clone(predecessor.origin()))
             }
             _ => None,
         };
@@ -80,66 +82,18 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             intents,
             execution,
         )?;
-        let deferred_edges = writer_custody::require(
+        round::verify(
             execution,
+            root,
+            plan.plan(),
             &self.binding.owners,
-            writer_custody::Writer::Producer(predecessor.as_deref()),
-            plan.plan(),
-        )?;
-        let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
-            &runtime,
-            root.as_ref(),
-            plan.plan(),
-            0,
-            None,
-        );
-        crate::aggregate_identity::guard::ordinary_plan(
-            execution,
+            predecessor.as_deref(),
+            runtime.config.as_ref(),
+            (&runtime).into(),
             runtime.commit_work_budget.as_ref(),
-            self.prepared.schema_authority.registry(),
-            &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
-                self.identity.proposed_version_id(),
-            ),
-            &plan.plan().merged_intents,
-            None,
-        )?;
-        let mut symbols = self
-            .mutation
-            .candidate_symbols()
-            .discardable_copy()
-            .map_err(|cause| RelationalCoupledAssemblyFailure::from_apply(cause.into()))?;
-        let reserved = symbols.reserved_meaning_count();
-        let config = crate::config::data::MutationConfig {
-            cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-            adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-            cross_context_policy: runtime.config.storage.cross_context_policy,
-        };
-        let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.plan().transaction_id,
-            version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.plan().merged_intents.clone(),
-        };
-        let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
-            execution,
-            &mut state,
-            &apply,
-            &config,
-            self.prepared.schema_authority.registry(),
-            self.prepared.schema_authority.aspect_plans(),
-            &mut symbols,
-            crate::authority::mutation::BranchLocalDeleteAllowance::default(),
-            &mut self.mutation.identities.records,
-            crate::authority::commit::pipeline::request_lease(execution),
-            runtime.commit_work_budget.clone(),
-            Some(&deferred_edges),
+            &self.prepared.schema_authority,
+            self.identity.proposed_version_id(),
+            &mut self.mutation.identities,
         )
-        .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        Ok(application::preserves_applied_records(
-            execution,
-            &outcome,
-            reserved,
-            symbols.reserved_meaning_count(),
-        )?)
     }
 }

@@ -1,6 +1,9 @@
 //! Compose authentic selections without rebasing any producer observation.
 use super::*;
 use crate::runtime::VisibilityReadContext;
+use worth_relational_branch::internal_port::branch::historical_selection::assemble_historical_selection_read;
+use worth_relational_branch::internal_port::branch::historical_selection::RelationalHistoricalSelectionReadFieldsPort as _;
+use worth_relational_branch::internal_port::branch::historical_selection::RelationalHistoricalSelectionReadParts;
 
 use crate::execution::request_stage::checkpoint;
 
@@ -32,8 +35,9 @@ impl VisibilityReadContext<'_> {
             .map_err(|stop| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(stop)))?;
         let mut stages: Vec<HistoricalSelectionStage> = Vec::with_capacity(count);
         for (selected, restored) in selections {
-            let mut read = self.read_historical_selection(execution, selected, restored)?;
-            let stage = read.stages.pop().expect("one authenticated selection");
+            let stage = self
+                .read_historical_selection(execution, selected, restored)?
+                .into_stage();
             if stages
                 .last()
                 .is_some_and(|prior| prior.restored.version_id() > stage.selected.version_id())
@@ -44,10 +48,12 @@ impl VisibilityReadContext<'_> {
             }
             stages.push(stage);
         }
-        Ok(RelationalHistoricalSelectionRead {
-            stages,
-            routes: std::sync::OnceLock::new(),
-            _memory: memory,
-        })
+        Ok(assemble_historical_selection_read(
+            RelationalHistoricalSelectionReadParts {
+                stages,
+                routes: std::sync::OnceLock::new(),
+                _memory: memory,
+            },
+        ))
     }
 }

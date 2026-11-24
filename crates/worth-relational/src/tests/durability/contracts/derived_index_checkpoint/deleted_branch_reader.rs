@@ -55,7 +55,10 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         Some(0)
     );
     assert!(runtime.indexes.generation(generation).is_some());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
@@ -124,7 +127,7 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
             .read_latest_generation(execution, index.index_id, &branch)
             .unwrap()
             .is_none());
-        assert_eq!(runtime.history.retired_branch_binding_count(), 0);
+        assert_eq!(runtime.history.retired_branch_binding_count_for_test(), 0);
     }
     assert!(runtime.index_access().generations_snapshot().is_empty());
 }

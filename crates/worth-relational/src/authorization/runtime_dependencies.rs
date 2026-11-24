@@ -15,7 +15,8 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationDurableDependencies, Denial> {
         let view =
-            RelationalAuthorizationDependencySnapshots::from(self).project(evidence.snapshot())?;
+            <RelationalAuthorizationDependencySnapshots as From<&RelationalRuntime>>::from(self)
+                .project(evidence.snapshot())?;
         capture(&view, execution, evidence)
     }
 }
@@ -31,13 +32,6 @@ impl<'a> From<&'a RelationalRuntime> for RelationalAuthorizationDependencySnapsh
 impl<'a> From<&'a mut RelationalRuntime> for RelationalAuthorizationDependencySnapshots<'a> {
     fn from(runtime: &'a mut RelationalRuntime) -> Self {
         (&*runtime).into()
-    }
-}
-impl<'a> From<&'a std::sync::Arc<RelationalRuntime>>
-    for RelationalAuthorizationDependencySnapshots<'a>
-{
-    fn from(runtime: &'a std::sync::Arc<RelationalRuntime>) -> Self {
-        runtime.as_ref().into()
     }
 }
 impl<'a> From<&'a Box<RelationalRuntime>> for RelationalAuthorizationDependencySnapshots<'a> {

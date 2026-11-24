@@ -7,7 +7,6 @@
 //! the spine cost and the partition cost apart, and pair every positive witness
 //! with the unobserved run that must charge nothing.
 
-use crate::storage::substrate::PinClass;
 use crate::tests::support::*;
 
 #[test]
@@ -73,7 +72,7 @@ fn complexity_budget_observed_substrate_wide_pass_copies_every_partition_it_hold
     runtime.performance_access().reset_counters();
     runtime
         .storage_authority()
-        .clear_named_pins(PinClass::Branch);
+        .clear_named_pins(worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::branch_pin_class_for_test());
     let counters = runtime.performance_access().counters();
     drop(observer);
 
@@ -97,7 +96,7 @@ fn complexity_budget_unobserved_substrate_wide_pass_copies_nothing() {
     runtime.performance_access().reset_counters();
     runtime
         .storage_authority()
-        .clear_named_pins(PinClass::Branch);
+        .clear_named_pins(worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::branch_pin_class_for_test());
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.full_state_clones, 0);

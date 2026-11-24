@@ -1,4 +1,5 @@
 use crate::transactions::data::{TransactionId, WorkerIntentBatch};
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 use super::{
     DetachedRelationalTransactionOverlay, RelationalTransactionFootprint,

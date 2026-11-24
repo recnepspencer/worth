@@ -1,4 +1,7 @@
 //! Admit the actual predecessor publications before assembling their inverse.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::failure;
 use super::inverse::{InverseRestoration, RestorationSelection};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -14,6 +17,7 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{CreatedEntityRef, TransactionCommitError};
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 impl RelationalRuntime {
     pub fn prepare_authored_source_restoration(
@@ -46,7 +50,7 @@ impl RelationalRuntime {
         co_anchors: &[(EntityId, CreatedEntityRef)],
     ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
         let (original, anchor) = anchor;
-        if installed.runtime_instance_id != self.runtime_instance_id() || !basis.is_current() {
+        if installed.runtime_instance_id() != self.runtime_instance_id() || !basis.is_current() {
             return Err(reject(Cause::InvalidAuthoredAnchor, original));
         }
         let history = closure::history_request::RuntimeHistoryRequest::new(self, execution);
@@ -122,9 +126,9 @@ impl RelationalRuntime {
                     .map_err(|cause| failure(closure::request(cause)))?
                     .map_err(|cause| failure(closure::request(cause)))?
                     .0?;
-                Ok(Some(RelationalAuthoredRestoration {
-                    before: basis.clone(),
-                    retirement: envelope,
+                Ok(Some(RelationalAuthoredRestoration::from_inverse(
+                    basis.clone(),
+                    envelope,
                     anchor,
                     entities,
                     relations,
@@ -132,7 +136,7 @@ impl RelationalRuntime {
                     inverse,
                     content,
                     aggregate_memberships,
-                }))
+                )))
             })
             .map_err(|cause| failure(closure::request(cause)))?
     }

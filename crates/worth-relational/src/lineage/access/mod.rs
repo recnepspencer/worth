@@ -7,13 +7,11 @@ pub use observation::RelationalLineageNodeRead;
 mod aspect_history;
 #[cfg(test)]
 mod divergence;
-mod event_demand;
+pub(crate) use worth_relational_lineage::internal_port::lineage::access::{
+    event_demand, historical_walk, name_observation_view,
+};
 #[cfg(test)]
 mod graph;
-mod historical_walk;
-mod name_observation_view;
-mod name_of_record;
-mod name_resolution;
 mod records;
 mod resolution;
 mod selected_root_resolution;

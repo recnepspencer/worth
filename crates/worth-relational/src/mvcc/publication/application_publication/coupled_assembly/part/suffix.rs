@@ -1,8 +1,13 @@
 //! Apply one writer's suffix over the current candidate pin. Producers and
 //! authored stages share this one apply owner; only their custody differs.
+
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailureOwnerPort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
+
 use super::super::suffix_scope::{self, AppliedSuffix, SuffixWriter};
 use super::*;
 use crate::storage::overlay::WorkingState;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn apply_suffix(
@@ -91,7 +96,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
-            root.as_ref(),
+            root,
             plan.plan(),
             0,
             None,
@@ -101,7 +106,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             runtime.commit_work_budget.as_ref(),
             self.prepared.schema_authority.registry(),
             &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
+                root,
                 self.identity.proposed_version_id(),
             ),
             &plan.plan().merged_intents,
@@ -145,7 +150,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let content = crate::authority::commit::phases::applied_mutation::content::prepare(
             execution,
             &runtime,
-            root.as_ref(),
+            root,
             &self.prepared.schema_authority,
             content,
             &state,
@@ -207,7 +212,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let successor = RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
-            &self.binding.owners.before,
+            self.binding.owners.before(),
             self.identity,
             self.applied_parts() as u64,
             delta_state,

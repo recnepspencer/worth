@@ -1,3 +1,8 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::identity::data::{KindId, PartitionId};
@@ -60,15 +65,13 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     else {
         panic!("genuine native output publication must perform");
     };
-    let origin = performed
-        .canonical_commit()
-        .required_output_origin
+    let origin = (*performed.canonical_commit().owner_required_output_origin())
         .as_ref()
         .unwrap();
     assert_eq!(origin.producer, "installed-producer");
     assert_eq!(*origin.dependency_identity.bytes(), [3; 32]);
     let entity = origin.outputs[0];
-    let mut copied = copy_original_for_test(&performed.canonical_commit(), execution);
+    let mut copied = copy_original_for_test(performed.canonical_commit(), execution);
     copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = execution
         .run_native_with_checkpoint(|context| {
@@ -90,7 +93,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .read_truth()
         .project_snapshot(&result.snapshot)
         .unwrap()
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .unwrap()
         .into_iter()
         .find(|record| record.entity_id == entity)
@@ -126,7 +129,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     );
     let original_basis = basis;
     let original_partition = original_basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -169,7 +172,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     release_test_commit_snapshot(&runtime, &changed);
     let current_basis = test_owner_main_basis(&runtime).unwrap();
     let current_partition = current_basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -204,7 +207,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
 
 #[test]
 fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -251,7 +254,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
 
 #[test]
 fn producer_publication_preserves_unclassified_rows_without_granting_retirement() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -296,9 +299,7 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
         panic!("ordinary producer publication must preserve its unclassified system rows");
     };
     assert_eq!(
-        performed
-            .canonical_commit()
-            .required_output_origin
+        (*performed.canonical_commit().owner_required_output_origin())
             .as_ref()
             .unwrap()
             .outputs

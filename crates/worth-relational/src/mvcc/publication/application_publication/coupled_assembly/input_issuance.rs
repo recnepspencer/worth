@@ -1,7 +1,8 @@
 //! Issue and resolve exact prerequisite loans from the live coupled candidate.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::inputs::RelationalRequiredOutputInputOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
 use super::*;
-#[path = "inputs/admission.rs"]
-mod admission;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::input_issuance::admission;
 #[path = "inputs/settlement.rs"]
 mod settlement;
 use super::inputs::{InputIssuance, InputOrigin};
@@ -26,11 +27,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             source,
             partition,
         )?;
-        Ok(RelationalRequiredOutputInput {
-            proposal: self.identity.clone(),
-            issuance: self.input_issuance(execution)?,
-            origin: InputOrigin::Restored { index, source },
-        })
+        Ok(RelationalRequiredOutputInput::from_issued_input(
+            self.identity.clone(),
+            self.input_issuance(execution)?,
+            InputOrigin::Restored { index, source },
+        ))
     }
 
     fn input_issuance(
@@ -57,11 +58,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         publication: &RelationalRequiredOutputPublication,
     ) -> Result<RelationalRequiredOutputInput, TransactionCommitError> {
         admission::require_current(self.binding, execution, publication)?;
-        Ok(RelationalRequiredOutputInput {
-            proposal: self.identity.clone(),
-            issuance: self.input_issuance(execution)?,
-            origin: InputOrigin::Current(publication.clone()),
-        })
+        Ok(RelationalRequiredOutputInput::from_issued_input(
+            self.identity.clone(),
+            self.input_issuance(execution)?,
+            InputOrigin::Current(publication.clone()),
+        ))
     }
 
     /// Only an actual earlier appended owned publication can supply this input.
@@ -78,11 +79,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                         .map_err(custody::execution_stop)?;
                     if part.publication.producing_meaning() == Some(meaning) {
                         return if part.publication.owned().is_some() {
-                            Ok(Some(RelationalRequiredOutputInput {
-                                proposal: self.identity.clone(),
-                                issuance: self.input_issuance(execution)?,
-                                origin: InputOrigin::Applied(index),
-                            }))
+                            Ok(Some(RelationalRequiredOutputInput::from_issued_input(
+                                self.identity.clone(),
+                                self.input_issuance(execution)?,
+                                InputOrigin::Applied(index),
+                            )))
                         } else {
                             Ok(None)
                         };

@@ -2,6 +2,12 @@
 use super::*;
 use crate::runtime::RelationalRuntime;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::assemble_observed_relational_memory_component;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentFieldsPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentOwnerPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn observe_memory_component(
@@ -17,7 +23,7 @@ impl RelationalRuntime {
         )
         .map_err(Refusal::Basis)?;
         let descriptor = basis.descriptor();
-        if basis.inner.root.canonical_envelope().is_none()
+        if basis.owner_inner().root.canonical_envelope().is_none()
             && let Some(target) = descriptor.reference().target().as_basis()
         {
             let commit_id = crate::history::data::CommitId(target.selected_commit_id());
@@ -71,7 +77,7 @@ impl RelationalRuntime {
         funding: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<ObservedRelationalMemoryComponent, Refusal> {
         let descriptor = basis.descriptor();
-        let canonical = basis.inner.root.canonical_envelope();
+        let canonical = basis.owner_inner().root.canonical_envelope();
         if descriptor.reference().target().as_basis().is_some() && canonical.is_none() {
             return Err(Refusal::CanonicalMismatch {
                 commit_id: crate::history::data::CommitId(
@@ -84,14 +90,14 @@ impl RelationalRuntime {
                 ),
             });
         }
-        Ok(ObservedRelationalMemoryComponent {
-            original: Arc::new(MemoryComponentOrigin::Live(MemoryComponentMeaning {
+        Ok(assemble_observed_relational_memory_component(Arc::new(
+            MemoryComponentOrigin::Live(MemoryComponentMeaning {
                 owner: self.services.origin_identity(),
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
                 _funding: funding,
-            })),
-        })
+            }),
+        )))
     }
     pub(crate) fn export_memory_component(
         &self,
@@ -100,7 +106,7 @@ impl RelationalRuntime {
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
         let origin = self.services.origin_identity();
-        let meaning = match component.original.as_ref() {
+        let meaning = match (*component.owner_original()).as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning,
             MemoryComponentOrigin::Interim(meaning) => {
                 return meaning.export(&origin, &self.history)

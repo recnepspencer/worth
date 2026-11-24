@@ -1,6 +1,7 @@
 use super::HistoryAuthority;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 impl<'runtime> HistoryAuthority<'runtime> {
     pub(crate) fn remove_commit_envelope_for_test(

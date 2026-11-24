@@ -1,0 +1,169 @@
+//! A live head cell lends checked custody before a retirement can have effects.
+use super::owner::RelationalBranchRetentionOwnerInner;
+use super::{RelationalHeadRetentionObligation, RelationalRetentionAcquisitionDenial};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::retention::RetentionBusy;
+use std::sync::{Arc, Mutex};
+
+#[derive(Debug)]
+pub struct RelationalBranchHeadRetentionCell {
+    obligation: Mutex<Option<Arc<Mutex<RelationalHeadRetentionObligation>>>>,
+}
+/// Pinned owner/identity custody; root binding is checked at coordinated cutover.
+#[derive(Debug)]
+pub(super) struct CheckedHeadObligation {
+    obligation: Arc<Mutex<RelationalHeadRetentionObligation>>,
+    owner: Arc<RelationalBranchRetentionOwnerInner>,
+}
+impl RelationalBranchHeadRetentionCell {
+    /// Retire this exact live-head obligation without releasing its root data.
+    /// The stopped authentic owner keeps the branch cell and root inventory.
+    pub fn try_retire_stopped_head(&self) -> Result<(), RetentionBusy> {
+        let slot = match self.obligation.try_lock() {
+            Ok(value) => value,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
+        };
+        if let Some(obligation) = slot.as_ref() {
+            let mut obligation = match obligation.try_lock() {
+                Ok(value) => value,
+                Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+                Err(std::sync::TryLockError::WouldBlock) => return Err(RetentionBusy),
+            };
+            obligation.consume();
+        }
+        Ok(())
+    }
+    pub fn fresh() -> Arc<Self> {
+        Arc::new(Self {
+            obligation: Mutex::new(None),
+        })
+    }
+    pub fn install(
+        &self,
+        obligation: RelationalHeadRetentionObligation,
+    ) -> Result<(), RelationalHeadRetentionObligation> {
+        let mut slot = self
+            .obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if slot.is_some() {
+            return Err(obligation);
+        }
+        *slot = Some(Arc::new(Mutex::new(obligation)));
+        Ok(())
+    }
+    pub fn binding(
+        &self,
+    ) -> Result<super::RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial> {
+        let slot = self
+            .obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let obligation = slot
+            .as_ref()
+            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if !obligation.is_live() {
+            return Err(RelationalRetentionAcquisitionDenial::OwnerUnavailable);
+        }
+        Ok(obligation.binding())
+    }
+    pub fn publication_bases(&self) -> Option<Arc<dyn super::PublicationBasisAccess>> {
+        let slot = self.obligation.lock().unwrap_or_else(|e| e.into_inner());
+        slot.as_ref()?
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .publication_bases()
+    }
+    pub fn reset(&self, obligation: RelationalHeadRetentionObligation) {
+        let previous = self
+            .obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .replace(Arc::new(Mutex::new(obligation)));
+        drop(previous);
+    }
+    pub(super) fn reserve(
+        &self,
+        owner: &Arc<RelationalBranchRetentionOwnerInner>,
+        identity: &RelationalBranchIdentity,
+    ) -> Result<CheckedHeadObligation, RelationalRetentionAcquisitionDenial> {
+        let obligation = self
+            .obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .as_ref()
+            .cloned()
+            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
+        obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .validate_binding(owner, identity)?;
+        Ok(CheckedHeadObligation {
+            obligation,
+            owner: owner.clone(),
+        })
+    }
+}
+impl CheckedHeadObligation {
+    pub(super) fn validate_root(
+        &self,
+        root: &Arc<RelationalBranchRoot>,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        self.obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .validate_root(root)
+    }
+    pub(super) fn transfer(self, next_root: &Arc<RelationalBranchRoot>) {
+        self.obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .transfer(&self.owner, next_root);
+    }
+    pub(super) fn consume(self) {
+        self.obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .consume();
+    }
+}
+
+pub struct HeadObligationObservation(Arc<Mutex<RelationalHeadRetentionObligation>>);
+
+impl HeadObligationObservation {
+    pub fn is_live(&self) -> bool {
+        self.0.lock().unwrap().is_live()
+    }
+}
+
+impl RelationalBranchHeadRetentionCell {
+    pub(crate) fn while_obligation_locked<R>(
+        &self,
+        action: impl FnOnce(HeadObligationObservation) -> R,
+    ) -> R {
+        let locked = self.obligation.lock().unwrap();
+        action(HeadObligationObservation(locked.as_ref().unwrap().clone()))
+    }
+}
+
+/// Receiver-scoped fixtures for the Relational unit courts.
+#[doc(hidden)]
+pub trait RelationalBranchHeadRetentionCellFixturePort: Sized {
+    fn while_obligation_locked_for_test<R>(
+        &self,
+        action: impl FnOnce(HeadObligationObservation) -> R,
+    ) -> R;
+}
+
+impl RelationalBranchHeadRetentionCellFixturePort for RelationalBranchHeadRetentionCell {
+    fn while_obligation_locked_for_test<R>(
+        &self,
+        action: impl FnOnce(HeadObligationObservation) -> R,
+    ) -> R {
+        self.while_obligation_locked(action)
+    }
+}

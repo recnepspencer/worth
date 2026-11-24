@@ -9,6 +9,8 @@ use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
 use crate::{
     durability::data::RecoveryOutcome as RuntimeRecoveryOutcome, runtime::RelationalRuntime,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 use super::super::diagnostics::{recovery_checkpoint_selected, recovery_range_replayed};
 use super::super::runtime_rebuild::rebuild_runtime_from_plan;
@@ -62,7 +64,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         native_bytes_read: usize,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
-        let native_envelopes_readmitted = checkpoint.envelopes.len();
+        let native_envelopes_readmitted = checkpoint.envelopes().len();
         let plan = crate::runtime::durability_access::native_checkpoint_recovery_plan(
             self.runtime,
             checkpoint,
@@ -248,9 +250,8 @@ pub(super) fn publish_recovered_runtime(
         .as_ref()
         .map(|checkpoint| {
             checkpoint
-                .directory
-                .as_ref()
-                .map_or(checkpoint.envelopes.len(), |directory| {
+                .selected_directory()
+                .map_or(checkpoint.envelopes().len(), |directory| {
                     directory.manifest.commits.len()
                 })
         })
@@ -313,10 +314,12 @@ fn admit_selected_home_recovery(
     runtime: &RelationalRuntime,
     mut plan: RecoveryPlan,
 ) -> Result<admission::AdmittedRecoveryPlan, admission::RecoveryRejection> {
-    plan.home_world_selection = runtime
-        .durability
-        .medium()
-        .and_then(|medium| medium.home_world_selection());
+    plan.select_home_world(
+        runtime
+            .durability
+            .medium()
+            .and_then(|medium| medium.home_world_selection()),
+    );
     admission::admit_recovery(&runtime.config, plan)
 }
 

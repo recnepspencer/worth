@@ -3,6 +3,7 @@ use super::CapturedCheckpointBasis;
 use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
 use crate::runtime::RelationalRuntime;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 /// Select one immutable recovery basis while publication handoff is
 /// excluded. Expensive checkpoint reconstruction, encoding, and I/O occur

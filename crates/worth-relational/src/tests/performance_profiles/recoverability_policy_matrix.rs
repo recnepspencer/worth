@@ -121,12 +121,8 @@ fn perf_recoverability_policy_matrix() {
             profile.max_entries_per_artifact = 0;
         });
 
-        let source = create_entity_in_partition(
-            execution,
-            &runtime,
-            "policy-chip-source",
-            PartitionId(7),
-        );
+        let source =
+            create_entity_in_partition(execution, &runtime, "policy-chip-source", PartitionId(7));
         let sinks = (0..4)
             .map(|index| {
                 create_entity_in_partition(

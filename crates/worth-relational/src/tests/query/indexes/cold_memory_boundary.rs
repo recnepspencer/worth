@@ -57,20 +57,22 @@ fn reconstruct(n: usize, memory: u64, succeeds: bool) -> u64 {
         worth_execution::CancellationToken::new(),
         None,
     );
-    let result = runtime.index_authority().reconstruct_for_commit(
-        &ExecutionRequest::serial(&reconstruction_host),
-        DerivedIndexBuildRequest {
-            source_commit_id: committed.commit.commit_id,
-            branch_id: BranchId("main".into()),
-            index_ids: vec![index],
-        },
-        DerivedIndexMaintenanceBudget {
-            maximum_work_units: Some(100_000_000),
-            maximum_cold_record_slots: Some(1_000_000),
-            maximum_derived_rows: Some(1_000_000),
-        },
-    );
-    let charged = crate::indexes::last_allocation_bytes();
+    use worth_relational_indexes::internal_port::indexes::authority::maintenance::request_payment::allocation_observation::record_allocation_for_test;
+    let (result, charged) = record_allocation_for_test(|| {
+        runtime.index_authority().reconstruct_for_commit(
+            &ExecutionRequest::serial(&reconstruction_host),
+            DerivedIndexBuildRequest {
+                source_commit_id: committed.commit.commit_id,
+                branch_id: BranchId("main".into()),
+                index_ids: vec![index],
+            },
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: Some(100_000_000),
+                maximum_cold_record_slots: Some(1_000_000),
+                maximum_derived_rows: Some(1_000_000),
+            },
+        )
+    });
     if succeeds {
         let result = result.unwrap();
         let crate::facade::indexes::DerivedIndexEntries::EntityField(entries) =

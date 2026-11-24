@@ -1,6 +1,7 @@
 //! Canonical equality-predicate writes, not just changed current candidates.
 use super::*;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 fn register(runtime: &RelationalRuntime, locator: AspectFieldLocator) -> DerivedIndexDefinition {
     runtime
@@ -49,8 +50,7 @@ fn authored_index_retirement_preserves_verified_entity_generation_and_old_kind()
         .history
         .canonical_envelope(retired.commit.commit_id)
         .unwrap();
-    assert!(entries
-        .authored_index_writes
+    assert!((*entries.owner_authored_index_writes())
         .verified_entries()
         .unwrap()
         .iter()

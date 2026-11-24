@@ -1,7 +1,11 @@
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use super::*;
 use worth_foundational::{
     FoundationalBranchId, FoundationalBranchReferenceObservation, FoundationalBranchTarget,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 fn fork_checkpoint_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -27,7 +31,7 @@ fn fork_checkpoint_plan(
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint is selected");
     let cell = checkpoint
-        .branch_cells
+        .branch_cells_mut_for_test()
         .iter_mut()
         .find(|cell| cell.branch_id == BranchId("storm".to_owned()))
         .expect("forked branch cell is checkpointed");
@@ -64,14 +68,13 @@ fn fork_tail_plan(
         )
         .unwrap();
     let envelope = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.branch_context == BranchId("storm".to_owned()))
         .expect("fork tail envelope is selected");
     mutate(
-        envelope
-            .branch_cell_checkpoint
+        (*envelope.owner_branch_cell_checkpoint_mut())
             .as_mut()
             .expect("tail carries an exact fork checkpoint"),
     );

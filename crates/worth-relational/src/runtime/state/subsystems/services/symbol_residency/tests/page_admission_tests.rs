@@ -1,5 +1,8 @@
 //! Cold dictionary page admission, sticky damage and retryable source failures.
 use super::*;
+use crate::storage::data::RelationalStorageSubject;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 
 #[test]
 fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {

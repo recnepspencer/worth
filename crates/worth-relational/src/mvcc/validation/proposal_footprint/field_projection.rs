@@ -1,6 +1,7 @@
 //! Demand for field projection is selected on a live validated proposal.
 use super::ValidatedMutationFootprintProjection;
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::ValidatedMutationFootprintProjectionOwnerPort as _;
 
 impl ValidatedRelationalProposal {
     /// Projects field mutation truth only when the consumer supplies demand.

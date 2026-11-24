@@ -55,7 +55,7 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
         .expect("read request remains live")
         .unwrap();
     let relation_record = historical
-        .relations
+        .relations()
         .iter()
         .find(|record| record.relation_id == relation)
         .expect("retained relation aspect record");

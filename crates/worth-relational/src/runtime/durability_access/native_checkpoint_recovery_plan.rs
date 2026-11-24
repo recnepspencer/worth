@@ -8,6 +8,8 @@ use crate::runtime::durability_access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 pub(crate) fn native_checkpoint_recovery_plan(
     runtime: &RelationalRuntime,
@@ -15,9 +17,8 @@ pub(crate) fn native_checkpoint_recovery_plan(
     verification_mode: RecoveryVerificationMode,
 ) -> RecoveryPlan {
     let descriptor_semantics_version =
-        descriptor_semantics_version_for_envelopes(checkpoint.envelopes.as_slice(), &[]);
-    let mut continuity =
-        authority_continuity_for_envelopes(runtime, checkpoint.envelopes.as_slice(), &[]);
+        descriptor_semantics_version_for_envelopes(checkpoint.envelopes(), &[]);
+    let mut continuity = authority_continuity_for_envelopes(runtime, checkpoint.envelopes(), &[]);
     bind_source_runtime_identity(runtime, &checkpoint, &mut continuity);
     RecoveryPlan::new(
         runtime.runtime_config().clone(),

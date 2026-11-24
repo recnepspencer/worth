@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
     /// Bind opaque caller meaning before the one canonical preparation.
     /// Consuming the proposal prevents a sealed candidate from being rebound.

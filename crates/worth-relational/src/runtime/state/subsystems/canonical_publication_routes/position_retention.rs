@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+
     use super::super::position_admission::CanonicalPositionAdmission;
-    use super::super::retained_position::RetainedCanonicalPosition;
+    use worth_relational_branch::internal_port::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition;
     use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
     use crate::history::data::PositionedCanonicalCommit;
     use crate::tests::support::*;

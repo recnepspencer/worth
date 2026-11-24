@@ -1,4 +1,6 @@
 //! Read the selected artifact through both original immutable Native roots.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::retained_entity_selection::CanonicalRetainedEntitySelectionOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial as Denial,
     RelationalRetainedEntitySelectionPreparationError as Error,

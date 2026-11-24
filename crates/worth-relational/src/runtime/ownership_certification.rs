@@ -7,6 +7,7 @@ use crate::transactions::data::{
     outcomes::transaction_commit_error::TransactionCommitError, primitives::WorkerIntentBatch,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl RelationalRuntime {
     /// Remove both current fact families from the real selected read image. The

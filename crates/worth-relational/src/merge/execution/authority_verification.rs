@@ -1,6 +1,7 @@
 use crate::merge::data::{
     MergeExecutionCompilationError, MergeExecutionError, PreparedMergeExecution, RuntimeInstanceId,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 use super::super::planning_artifact::selected_basis::merge_schema_snapshot_for_execution_ready;
 
@@ -178,23 +179,23 @@ fn verify_execution_ready_proof(
     prepared: &PreparedMergeExecution,
 ) -> Result<(), MergeExecutionError> {
     let execution_ready = prepared.execution_ready_plan();
-    if binding.target_head_commit_id != execution_ready.basis.target_head.commit_id {
+    if binding.target_head_commit_id != execution_ready.basis.target_head().commit_id {
         return authority_binding_mismatch(
             "binding target head does not match execution-ready proof",
         );
     }
-    if binding.source_head_commit_id != execution_ready.basis.source_head.commit_id {
+    if binding.source_head_commit_id != execution_ready.basis.source_head().commit_id {
         return authority_binding_mismatch(
             "binding source head does not match execution-ready proof",
         );
     }
-    if binding.merge_base_commit_id != execution_ready.basis.merge_base.commit.commit_id {
+    if binding.merge_base_commit_id != execution_ready.basis.merge_base().commit().commit_id {
         return authority_binding_mismatch(
             "binding merge base does not match execution-ready proof",
         );
     }
     let prepared_schema_digest =
-        crate::merge::data::schema_snapshot_digest(&execution_ready.schema_snapshot);
+        worth_relational_contracts::internal_port::merge::data::execution::canonical_digest::schema_snapshot_digest(&execution_ready.schema_snapshot);
     if binding.schema_snapshot_digest != prepared_schema_digest {
         return authority_binding_mismatch(
             "binding schema digest does not match execution-ready proof",
@@ -213,7 +214,7 @@ fn verify_schema_snapshot(
     let current_schema_snapshot = merge_schema_snapshot_for_execution_ready(
         execution,
         runtime,
-        execution_ready.basis.target_head.version_id,
+        execution_ready.basis.target_head().version_id,
         execution_ready.source_records.as_ref(),
         execution_ready.target_touched_records.as_ref(),
     )
@@ -221,7 +222,7 @@ fn verify_schema_snapshot(
     runtime
         .performance_access()
         .count_merge_execution_schema_snapshot_kinds(current_schema_snapshot.touched_kinds.len());
-    let current_digest = crate::merge::data::schema_snapshot_digest(&current_schema_snapshot);
+    let current_digest = worth_relational_contracts::internal_port::merge::data::execution::canonical_digest::schema_snapshot_digest(&current_schema_snapshot);
     if current_digest != binding.schema_snapshot_digest {
         return Err(MergeExecutionError::SchemaSemanticDrift {
             planned_digest: binding.schema_snapshot_digest.clone(),
@@ -237,7 +238,7 @@ fn verify_compiled_plan_digest(
     prepared: &PreparedMergeExecution,
 ) -> Result<(), MergeExecutionError> {
     let compiled = prepared.bound_executable_plan();
-    let current_compiled_digest = crate::merge::data::compiled_executable_plan_digest(
+    let current_compiled_digest = worth_relational_contracts::internal_port::merge::data::execution::canonical_digest::compiled_executable_plan_digest(
         &binding.request,
         compiled.parent_order.as_ref(),
         compiled.record_plans.as_ref(),

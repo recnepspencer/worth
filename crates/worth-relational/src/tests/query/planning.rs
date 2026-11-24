@@ -14,8 +14,8 @@ fn query_planning_context_binds_snapshot_runtime_and_schema_identity() {
         .expect("query plan context");
 
     assert_eq!(context.runtime_instance_id, runtime.runtime_instance_id());
-    assert_eq!(context.snapshot_id, committed.snapshot.snapshot_id);
-    assert_eq!(context.version_id, committed.snapshot.version_id);
+    assert_eq!(context.snapshot_id, committed.snapshot.snapshot_id());
+    assert_eq!(context.version_id, committed.snapshot.version_id());
     assert_eq!(context.schema_version, committed.envelope().schema_version);
     assert_eq!(
         context.descriptor_semantics_version,

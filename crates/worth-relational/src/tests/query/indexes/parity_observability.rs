@@ -168,8 +168,8 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
         .query_plan_context(&snapshot)
         .expect("query plan context");
     let generation_id = build.generations[0].generation_id;
-    let sampled_key = sampled_plan_key_for(generation_id, snapshot.version_id, true);
-    let unsampled_key = sampled_plan_key_for(generation_id, snapshot.version_id, false);
+    let sampled_key = sampled_plan_key_for(generation_id, snapshot.version_id(), true);
+    let unsampled_key = sampled_plan_key_for(generation_id, snapshot.version_id(), false);
 
     let sampled_packet = crate::facade::query::PlannedQueryPacket {
         label: "entity-name-sampled".to_string(),

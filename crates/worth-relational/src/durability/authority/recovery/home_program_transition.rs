@@ -12,6 +12,7 @@ use crate::durability::data::{
 use crate::runtime::{RelationalHomeProgramCatalogReadmissionSource, RelationalRuntime};
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
+use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasisOwnerPort as _;
 
 pub(crate) mod refusal;
 pub use refusal::RelationalHomeProgramTransitionSourceRefusal;
@@ -132,7 +133,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 .retain_home_predecessor_catalog(
                     execution,
                     recorded,
-                    &predecessor.basis,
+                    predecessor.readmitted_basis(),
                     original.schema_contract_runtime,
                 )
                 .map_err(|cause| Refusal::Contracts(Box::new(cause)))?,

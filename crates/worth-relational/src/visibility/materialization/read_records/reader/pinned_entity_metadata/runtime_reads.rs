@@ -1,4 +1,6 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::pinned_entity_metadata::assemble_pinned_entity_metadata;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
@@ -12,12 +14,12 @@ impl VisibilityReadContext<'_> {
         handle: &SnapshotHandle,
         entity: EntityId,
     ) -> Result<Option<RelationalPinnedEntityMetadata>, RelationalEntityMetadataPinDenial> {
-        if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
+        if (*handle.owner_runtime_instance_id()) != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
         self.runtime
             .visibility
-            .with_selected_snapshot_head(handle.snapshot_id, entity.partition_id, |head| {
+            .with_selected_snapshot_head(*handle.owner_snapshot_id(), entity.partition_id, |head| {
                 let region = head
                     .witness()
                     .map_err(RelationalEntityMetadataPinDenial::RegionNotResident)?;
@@ -37,12 +39,12 @@ impl VisibilityReadContext<'_> {
                     }
                     Ok(symbols.clone())
                 })?;
-                Ok(RelationalPinnedEntityMetadata {
+                Ok(assemble_pinned_entity_metadata(
                     entity,
-                    version: handle.version_id,
+                    *handle.owner_version_id(),
                     region,
                     symbols,
-                })
+                ))
             })
             .transpose()
     }

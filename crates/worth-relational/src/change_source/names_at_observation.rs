@@ -19,6 +19,7 @@ use crate::lineage::access::PersistentNameObservationView;
 use crate::lineage::index::PersistentNameIndexDenial;
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
+use worth_relational_lineage::internal_port::lineage::access::name_observation_view::PersistentNameObservationViewOwnerPort as _;
 
 /// Why a runtime refuses a persistent-name read at an observation.
 #[derive(Clone, Debug, Eq, PartialEq)]

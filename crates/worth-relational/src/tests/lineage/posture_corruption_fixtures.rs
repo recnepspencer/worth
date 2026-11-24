@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::facade::identity::{EntityId, LineageId, RelationId, VersionId};
 use crate::facade::lineage::{
-    LineageEventKind, LineagePostureClaim, LineageRecordTarget,
-    PersistentNameHolder, PersistentNameIdentity,
+    LineageEventKind, LineagePostureClaim, LineageRecordTarget, PersistentNameHolder,
+    PersistentNameIdentity,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 use crate::storage::overlay::WorkingState;
 
@@ -88,7 +89,7 @@ pub(super) fn setup_corruption_base(allocator: &LineageIdentityAllocator) -> Cor
             },
         ],
     };
-    let prepared = finalize_postures_in_working_state(
+    let prepared = finalize_postures_in_working_state_for_test(
         allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -109,9 +110,9 @@ pub(super) fn setup_corruption_base(allocator: &LineageIdentityAllocator) -> Cor
     let f1_lin = staged_entity_lineage(&staged, f1).unwrap();
     let f2_lin = staged_entity_lineage(&staged, f2).unwrap();
     let f3_lin = staged_entity_lineage(&staged, f3).unwrap();
-    let r1_lin = prepared.relation_lineages()[&r1];
-    let r2_lin = prepared.relation_lineages()[&r2];
-    let r3_lin = prepared.relation_lineages()[&r3];
+    let r1_lin = prepared.relation_lineages_for_test()[&r1];
+    let r2_lin = prepared.relation_lineages_for_test()[&r2];
+    let r3_lin = prepared.relation_lineages_for_test()[&r3];
     let name_of = |lin: LineageId| {
         events
             .iter()

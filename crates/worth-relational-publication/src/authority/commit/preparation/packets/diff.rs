@@ -1,0 +1,40 @@
+#[cfg(test)]
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatch;
+use worth_relational_contracts::internal_port::publication::patch::data::record_structural_change::RecordStructuralChange;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum DiffFragmentKind {
+    Created,
+    Updated,
+    Deleted,
+    RetainedForAudit,
+    MaterializationSuspended,
+    Rematerialized,
+}
+
+impl From<RecordStructuralChange> for DiffFragmentKind {
+    fn from(value: RecordStructuralChange) -> Self {
+        match value {
+            RecordStructuralChange::Created => Self::Created,
+            RecordStructuralChange::Updated => Self::Updated,
+            RecordStructuralChange::Deleted => Self::Deleted,
+            RecordStructuralChange::RetainedForAudit => Self::RetainedForAudit,
+            RecordStructuralChange::MaterializationSuspended => Self::MaterializationSuspended,
+            RecordStructuralChange::Rematerialized => Self::Rematerialized,
+            _ => unreachable!("unhandled Relational contract variant"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
+pub(crate) struct DiffPreparationHeader {
+    pub(crate) packet_index_floor: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
+pub(crate) struct DiffPreparationPacket {
+    pub(crate) header: DiffPreparationHeader,
+    pub(crate) authoritative_record_patches: Vec<PublishedAuthoritativeRecordPatch>,
+}

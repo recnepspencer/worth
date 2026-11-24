@@ -3,6 +3,7 @@ use super::retained_fork_source::{
     require_retained_fork_cell, AdmittedRelationalRetainedForkSource,
 };
 use super::{AdmittedRelationalBranchBasis, RelationalForkDenial, RelationalForkPort};
+use worth_relational_branch::internal_port::branch::retained_fork_source::assemble_admitted_relational_retained_fork_source;
 
 impl RelationalForkPort {
     pub fn admit_retained_fork_source(
@@ -15,9 +16,9 @@ impl RelationalForkPort {
             .admit()
             .ok_or(RelationalForkDenial::OwnerUnavailable)?;
         self.validate_retained_basis(source)?;
-        Ok(AdmittedRelationalRetainedForkSource {
-            basis: source.clone(),
-        })
+        Ok(assemble_admitted_relational_retained_fork_source(
+            source.clone(),
+        ))
     }
 
     pub(super) fn validate_retained_fork_profile(&self) -> Result<(), RelationalForkDenial> {

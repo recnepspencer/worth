@@ -102,8 +102,8 @@ fn native_dependency_deep_parse_refusal_preserves_original_wire_and_head_for_ret
             .visibility_authority()
             .snapshot()
             .expect("current snapshot fixture is admitted")
-            .version_id,
-        before.version_id
+            .version_id(),
+        before.version_id()
     );
     let retry = lease(64 * 1024);
     let execution = worth_execution::ExecutionRequest::leased(&retry);

@@ -25,11 +25,11 @@ fn native_branch_merge_readiness_blocks_unsupported_private_membership_changes()
     let before = runtime.history().branch_head(&BranchId("main".into()));
     let attempt = runtime.prepare_merge_execution(
         execution,
-        MergeExecutionRequest {
-            target_branch: BranchId("main".into()),
-            source_branch: BranchId("aggregate-source".into()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        },
+        MergeExecutionRequest::new(
+            BranchId("main".into()),
+            BranchId("aggregate-source".into()),
+            MergeIntent::ReconcileIntoTarget,
+        ),
     );
     let Err(MergeExecutionPreparationError::NotExecutionReady(readiness)) = attempt else {
         panic!("unsupported Native aggregate branch reconciliation remains a typed refusal")

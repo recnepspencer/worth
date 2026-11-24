@@ -6,6 +6,7 @@ use super::{
 use crate::history::data::CommitId;
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
 
 #[derive(Debug)]
 pub struct RelationalMaterializationSuspension {

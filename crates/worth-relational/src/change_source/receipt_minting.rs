@@ -1,11 +1,14 @@
+use worth_relational_branch::internal_port::change_source::receipt::RelationalChangeReceiptParts;
+use worth_relational_branch::internal_port::change_source::receipt::assemble_change_receipt;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_proof::TransitionOutcome;
 
 use super::commit_selection::RelationalSelectedCommit;
 use super::partition_projection::project_patch_partition;
 use super::receipt::{
-    RelationalChangeReceipt, RelationalChangeReceiptDeferred, RelationalChangeReceiptOutcome,
-    RelationalChangeReceiptStale,
+    RelationalChangeReceiptDeferred, RelationalChangeReceiptOutcome, RelationalChangeReceiptStale,
 };
 use super::receipt_witness::{
     admit_consistent_change, begin_change_receipt, resolve_change_receipt, ChangeReceiptBasis,
@@ -107,7 +110,7 @@ impl RelationalRuntime {
             Ok(work) => work,
             Err(denial) => return TransitionOutcome::Denied(denial),
         };
-        TransitionOutcome::Success(RelationalChangeReceipt {
+        TransitionOutcome::Success(assemble_change_receipt(RelationalChangeReceiptParts {
             patch,
             records_examined: projection.records_examined,
             records_filtered_out: projection.records_filtered_out,
@@ -117,6 +120,6 @@ impl RelationalRuntime {
                 commit_id.0,
                 relational_source_truth_authority(),
             ),
-        })
+        }))
     }
 }

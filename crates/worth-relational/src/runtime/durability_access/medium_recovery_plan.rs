@@ -5,6 +5,8 @@ use crate::runtime::durability_access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 pub(super) fn medium_recovery_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,7 +24,7 @@ pub(super) fn medium_recovery_plan(
     } = crate::durability::medium_recovery_readmission::readmit_medium_recovery(execution, source)?;
     let checkpoint_envelopes = checkpoint
         .as_ref()
-        .map(|checkpoint| checkpoint.envelopes.as_slice())
+        .map(|checkpoint| checkpoint.envelopes())
         .unwrap_or(&[]);
     let descriptor_semantics_version =
         descriptor_semantics_version_for_envelopes(checkpoint_envelopes, &tail);
@@ -50,6 +52,6 @@ pub(super) fn medium_recovery_plan(
         Some(cold_source),
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
-    plan.original_source = original_source;
+    plan.attach_original_source(original_source);
     Ok(plan)
 }

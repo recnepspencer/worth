@@ -1,4 +1,7 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::completion::RequiredOutputPublicationOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::RelationalAuthoredRestoration;
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
@@ -6,6 +9,7 @@ use crate::transactions::data::{
     intents::mutation_intent::MutationIntent,
     outcomes::transaction_commit_error::TransactionCommitError, primitives::RecordRef,
 };
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
     proposal
@@ -65,7 +69,7 @@ fn validate_candidate(
                     crate::publication::data::AuthoredRetirementRefusal::IncompleteRestoration,
                     RecordRef::Entity(
                         restoration
-                            .retirement
+                            .retirement()
                             .authored_source_retirement()
                             .expect("Native retirement")
                             .anchor,
@@ -90,15 +94,15 @@ pub(super) fn owns_create(
             non_anchor_entities: || {
                 // Every anchor remains authored by its own inverse Create.
                 let anchors = restoration
-                    .retirement
+                    .retirement()
                     .authored_source_retirement()
                     .expect("Native restoration has its retirement")
                     .co_anchors
                     .len()
                     + 1;
-                restoration.entities.get(anchors..).unwrap_or_default()
+                restoration.entities().get(anchors..).unwrap_or_default()
             },
-            relations: &restoration.relations,
+            relations: restoration.relations(),
         },
         intent,
         checkpoint,

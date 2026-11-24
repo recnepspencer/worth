@@ -1,4 +1,10 @@
 //! Query supplies producer execution; Native owns the applied image and writer roster.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::candidate::RelationalPinnedReadOwnerPort as _;
 use self::retained_assembly::{
     BoundAuthoredCoupling, CoupledAuthoredStagePart, CoupledPublicationPart,
 };
@@ -14,60 +20,34 @@ use crate::visibility::materialization::read_records::reader::pinned_read::candi
 use crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
-mod adoption;
-pub(crate) mod assembly_failure;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::{assembly_failure, authored_writes, chain, completion, contribution, corruption_commands, disjoint_field_patches, fresh_references, inputs, local_keys, net_plan, parent_read_footprint, part_naming, participant_admission, producer_posture, refusals, retained_assembly, roster_completion, route_selection, source_effects, suffix_scope, touch_projection, writer_custody};
 mod input_issuance;
-pub(crate) mod inputs;
-mod patch_target;
-mod refusals;
 pub use inputs::RelationalRequiredOutputInput;
-pub(crate) use inputs::RequiredOutputInputs;
 mod aggregate_read;
-mod authored_writes;
 mod candidate_completion;
-mod chain;
-pub(crate) mod completion;
 mod continuation;
-mod corruption_commands;
 mod managed_source;
 mod managed_source_alignment;
-mod parent_read_footprint;
-pub(crate) mod retained_assembly;
-mod roster_completion;
-mod route_selection;
 pub use continuation::RelationalCoupledProducerContinuation;
 pub use managed_source_alignment::ManagedIndexParentReadFootprint;
-pub(crate) mod contribution;
 mod proposal_contribution;
-pub(crate) mod source_effects;
 pub use contribution::RelationalCoupledContribution;
-pub use source_effects::RelationalCoupledAuthoredSourceEffects;
-mod disjoint_aspect_patches;
-mod disjoint_field_patches;
-mod fresh_references;
-mod local_keys;
-mod net_plan;
 mod ordinary_roles;
 mod part;
 mod part_corruption;
-mod part_naming;
-mod participant_admission;
 mod prepared_route;
-pub(crate) mod producer_posture;
 mod stage;
-mod suffix_scope;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod succession;
-mod touch_projection;
 mod touches;
+pub(crate) use completion::CoupledAppliedCandidate;
+pub use completion::RelationalCoupledAuthoredPublication;
 pub use touches::{
     RelationalCoupledAppendTouches, RelationalCoupledChainOverlay,
     RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation,
 };
-mod writer_custody;
-pub(crate) use completion::CoupledAppliedCandidate;
-pub use completion::RelationalCoupledAuthoredPublication;
 
 /// Installed producer dispatch over the real unpublished authored candidate.
 /// It may append only the Native-admitted owners' own successor publications.
@@ -119,7 +99,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     /// The full-generation source admitted by Native for this authored prefix.
     /// Descriptive identity only; reading D still requires its applied read pin.
     pub fn authored_source(&self) -> crate::identity::data::EntityId {
-        self.binding.owners.source.subject()
+        self.binding.owners.source().subject()
     }
 
     /// Classify a parent read through the canonical roster. An absent entry
@@ -172,7 +152,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         };
         if matches!(owner, RelationalDeclaredCoupledOwner::Retiring)
             && original != source
-            && self.binding.owners.source.restoration().is_some()
+            && self.binding.owners.source().restoration().is_some()
         {
             return self
                 .restored_output_input(execution, family, original, source, partition)
@@ -187,7 +167,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     participant_admission::require_unseen_route(
                         context,
                         &self.parts,
-                        &previous.origin.meaning,
+                        &previous.origin().meaning,
                     )
                 })
                 .map_err(custody::execution_stop)?
@@ -202,8 +182,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         source: crate::identity::data::EntityId,
     ) -> Result<crate::identity::data::EntityId, TransactionCommitError> {
         execution.run_native_with_checkpoint(|context| {
-            if let Some(restoration) = self.binding.owners.source.restoration() {
-                for (old, created) in &restoration.entities {
+            if let Some(restoration) = self.binding.owners.source().restoration() {
+                for (old, created) in restoration.entities() {
                     checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
                     if self.mutation.outcome.created_entities.resolve(created) == Some(source) {
                         return Ok::<_, TransactionCommitError>(*old);
@@ -223,7 +203,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
     ) -> Result<(), TransactionCommitError> {
-        if self.binding.owners.source.is_edit() {
+        if self.binding.owners.source().is_edit() {
             return Ok(());
         }
         let original = self.catalog_source(execution, source)?;
@@ -249,7 +229,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let read = RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
-            &self.binding.owners.before,
+            self.binding.owners.before(),
             self.identity,
             self.applied_parts() as u64,
             self.mutation.state(),
@@ -274,24 +254,24 @@ impl BranchBoundRelationalTransaction {
         retirement_admission: Option<worth_proof::AdmittedAuthoredOutputRetirement>,
     ) -> Result<RelationalAuthoredCoupledTransaction, TransactionCommitError> {
         if self.authored_coupling.is_some()
-            || installed.runtime_instance_id != self.basis.identity().runtime_instance_id()
-            || owners.before != self.basis
+            || installed.runtime_instance_id() != self.basis.identity().runtime_instance_id()
+            || owners.before() != &self.basis
             || self.intent.materialization_mode().is_some()
             || !self.merge_parent_bases.is_empty()
             || retirement_admission
                 .as_ref()
-                .map_or(!owners.retirements.is_empty(), |admission| {
-                    admission.publication_count() != owners.retirements.len()
-                        || owners.retirements.iter().any(|prior| {
+                .map_or(!owners.retirements().is_empty(), |admission| {
+                    admission.publication_count() != owners.retirements().len()
+                        || owners.retirements().iter().any(|prior| {
                             !installed
-                                .authority
+                                .authority()
                                 .admits_authored_output_retirement(admission, prior.authority())
                         })
                 })
         {
             return Err(part::reject(
                 crate::publication::data::AuthoredRetirementRefusal::ForeignCoupledOwner,
-                owners.source.subject(),
+                owners.source().subject(),
             ));
         }
         self.authored_coupling = Some(Arc::new(BoundAuthoredCoupling {

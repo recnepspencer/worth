@@ -196,11 +196,11 @@ fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
     let prepared = runtime
         .prepare_merge_execution(
             &source_request,
-            crate::merge::data::MergeExecutionRequest {
-                target_branch: BranchId("main".into()),
-                source_branch: BranchId("feature".into()),
-                merge_intent: crate::merge::data::MergeIntent::ReconcileIntoTarget,
-            },
+            crate::merge::data::MergeExecutionRequest::new(
+                BranchId("main".into()),
+                BranchId("feature".into()),
+                crate::merge::data::MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .unwrap();
     let outcome = runtime

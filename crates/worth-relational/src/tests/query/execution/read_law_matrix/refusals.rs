@@ -179,7 +179,9 @@ fn native_field_navigation_boundary(relations: bool) {
         .read_truth()
         .project_snapshot(&created.snapshot)
         .unwrap();
-    crate::indexes::verify_native_field_navigation(&view, left, right, relation, relations);
+    worth_relational_indexes::internal_port::indexes::projected_field_values::index_projection_source::native_fields::navigation_tests::verify_native_field_navigation_for_test(
+        test_execution_authority(), &view, left, right, relation, relations,
+    );
     release_test_commit_snapshot(&runtime, &created);
 }
 

@@ -1,4 +1,6 @@
 //! Test the Runtime pin against its actual installed index and symbol owners.
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadFixturePort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
 use super::super::*;
 use crate::config::data::CascadeDeletePolicy;
 use crate::history::data::coordinates::BranchId;
@@ -13,7 +15,7 @@ use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, Locator
 fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
     fn send_sync<T: Send + Sync>() {}
     send_sync::<RelationalPinnedRead>();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&request, &runtime, "before");
@@ -58,19 +60,24 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
         crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(&runtime, &snapshot)
             .unwrap();
     assert!(Arc::ptr_eq(
-        &read.basis.basis().retain_root(),
+        &read.resident_basis().basis().retain_root(),
         &basis.retain_root()
     ));
     assert!(std::ptr::eq(
-        read.indexes[&index].definition.as_ref(),
+        read.indexes_for_test()[&index].definition.as_ref(),
         runtime.indexes.definition(index).unwrap().as_ref()
     ));
     let generation = runtime
         .indexes
-        .exact_generation(index, None, basis.version_id(), read.context.schema_version)
+        .exact_generation(
+            index,
+            None,
+            basis.version_id(),
+            read.query_context().schema_version,
+        )
         .unwrap();
     assert!(Arc::ptr_eq(
-        read.indexes[&index].generation.as_ref().unwrap(),
+        read.indexes_for_test()[&index].generation.as_ref().unwrap(),
         &generation
     ));
     let old_symbol = read.symbols().symbol("name");
@@ -97,6 +104,6 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
     );
     assert!(std::ptr::eq(
         read.schema(),
-        read.basis.root().schema_authority().registry()
+        read.resident_basis().root().schema_authority().registry()
     ));
 }

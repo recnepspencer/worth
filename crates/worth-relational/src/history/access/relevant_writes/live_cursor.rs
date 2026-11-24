@@ -9,6 +9,9 @@ use super::{
 use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::access::relevant_writes::page::assemble_prepared_authored_write_page;
+use worth_relational_branch::internal_port::history::access::relevant_writes::page::RelationalAuthoredWritePageFieldsPort as _;
+use worth_relational_branch::internal_port::history::access::relevant_writes::page::RelationalPreparedAuthoredWritePageFieldsPort as _;
 
 /// A finite continuation over one owner-selected canonical single-parent prefix.
 #[derive(Debug)]
@@ -39,12 +42,12 @@ impl RelationalAuthoredWriteCursor {
                         .ok_or(Denial::CanonicalEvidenceUnavailable)
                 })
         })?;
-        Ok(RelationalPreparedAuthoredWritePage {
-            source: Arc::clone(&self.source),
-            expected: self.next,
+        Ok(assemble_prepared_authored_write_page(
+            Arc::clone(&self.source),
+            self.next,
             page,
             execution,
-        })
+        ))
     }
 
     /// Final handoff polls the same original request retained by the preparation.
@@ -52,15 +55,19 @@ impl RelationalAuthoredWriteCursor {
         &self,
         prepared: RelationalPreparedAuthoredWritePage<'_, '_>,
     ) -> Result<(RelationalAuthoredWritePage, Self), Denial> {
-        if !Arc::ptr_eq(&self.source, &prepared.source) || self.next != prepared.expected {
+        if !Arc::ptr_eq(&self.source, prepared.owner_source())
+            || self.next != (*prepared.owner_expected())
+        {
             return Err(Denial::InvalidContinuation);
         }
-        prepared.execution.consult().map_err(Denial::Request)?;
+        (*prepared.owner_execution())
+            .consult()
+            .map_err(Denial::Request)?;
         let successor = Self {
             source: Arc::clone(&self.source),
-            next: prepared.page.next,
+            next: (*prepared.page().owner_next()),
         };
-        Ok((prepared.page, successor))
+        Ok((prepared.into_page(), successor))
     }
 
     pub fn next_page(

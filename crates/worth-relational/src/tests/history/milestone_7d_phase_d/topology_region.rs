@@ -54,11 +54,11 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            )
             .into(),
         )
         .expect("topology-region planning artifact");

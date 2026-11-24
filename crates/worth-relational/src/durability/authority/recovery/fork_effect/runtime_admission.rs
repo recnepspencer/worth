@@ -12,6 +12,10 @@ use crate::history::data::RelationalCallerAssociation;
 use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_durability::internal_port::durability::authority::recovery::fork_effect::{
+    ReadmittedRelationalAssociatedForkOwnerPort as _,
+    RefusedRelationalForkReadmissionOwnerPort as _,
+};
 
 impl RecoveredRelationalRuntimeAuthority {
     /// No branch-name fallback or replay constructs the requested effect.
@@ -26,10 +30,7 @@ impl RecoveredRelationalRuntimeAuthority {
         target: &RecordedRelationalComponentReference,
     ) -> Result<ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission> {
         use RelationalForkReadmissionCause as Cause;
-        let refused = |cause| RefusedRelationalForkReadmission {
-            cause,
-            source: None,
-        };
+        let refused = |cause| RefusedRelationalForkReadmission::from_refusal(cause, None);
         let original = self.validate_recorded_fork(
             execution,
             runtime,
@@ -43,15 +44,13 @@ impl RecoveredRelationalRuntimeAuthority {
             .admit_recorded_component(execution, runtime, source)
             .map_err(|cause| refused(Cause::Component(Box::new(cause))))?;
         match self.admit_recorded_component(execution, runtime, target) {
-            Ok(target) => Ok(ReadmittedRelationalAssociatedFork {
-                source,
-                target,
-                original,
-            }),
-            Err(cause) => Err(RefusedRelationalForkReadmission {
-                cause: Cause::Component(Box::new(cause)),
-                source: Some(source),
-            }),
+            Ok(target) => Ok(ReadmittedRelationalAssociatedFork::from_readmission(
+                source, target, original,
+            )),
+            Err(cause) => Err(RefusedRelationalForkReadmission::from_refusal(
+                Cause::Component(Box::new(cause)),
+                Some(source),
+            )),
         }
     }
 
@@ -68,10 +67,7 @@ impl RecoveredRelationalRuntimeAuthority {
         target: &RecordedRelationalComponentReference,
     ) -> Result<RecoveredRelationalBranchBasis, RefusedRelationalForkReadmission> {
         use RelationalForkReadmissionCause as Cause;
-        let refused = |cause| RefusedRelationalForkReadmission {
-            cause,
-            source: None,
-        };
+        let refused = |cause| RefusedRelationalForkReadmission::from_refusal(cause, None);
         let _original = self.validate_recorded_fork(
             execution,
             runtime,
@@ -97,10 +93,7 @@ impl RecoveredRelationalRuntimeAuthority {
         target: &RecordedRelationalComponentReference,
     ) -> Result<Arc<PositionedBranchTransition>, RefusedRelationalForkReadmission> {
         use RelationalForkReadmissionCause as Cause;
-        let refused = |cause| RefusedRelationalForkReadmission {
-            cause,
-            source: None,
-        };
+        let refused = |cause| RefusedRelationalForkReadmission::from_refusal(cause, None);
         crate::execution::check_request(execution)
             .map_err(|cause| refused(Cause::Request(cause)))?;
         if self.runtime_instance_id != runtime.runtime_instance_id() {

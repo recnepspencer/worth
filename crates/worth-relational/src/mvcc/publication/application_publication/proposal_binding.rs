@@ -1,4 +1,8 @@
 //! Bind required output publication to a live validated proposal.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::completion::RequiredOutputPublicationOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::ownership_reach::RequiredOutputPublicationOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::scope_ownership::RelationalInstalledApplicationPublicationAuthorityOwnerPort as _;
 use super::*;
 
 impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
@@ -32,14 +36,14 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 .basis()
                 .descriptor()
                 .runtime_instance_id()
-                != installed.runtime_instance_id
-            || self.state.custom_invariant_generation != installed.custom_invariant_generation
+                != installed.runtime_instance_id()
+            || self.state.custom_invariant_generation != installed.custom_invariant_generation()
         {
             return Err(origin_denial(
                 "required-output publication has a foreign or repeated installed owner",
             ));
         }
-        if !installed.source_scope_ownership.is_empty()
+        if !installed.source_scope_ownership().is_empty()
             && let Some(source) = publication.ownership_subject(installed)
         {
             installed

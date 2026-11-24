@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_durability::internal_port::durability::initial_schema_installation_denial::RelationalInitialSchemaInstallationDenialOwnerPort as _;
 mod readmission;
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -16,8 +18,8 @@ pub use receipt::RelationalInitialSchemaInstallationReceipt;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
 pub(crate) use inventory_digest::custom_invariant_inventory_digest_for_compilation;
+pub(crate) use recovered_codec_transition::codec_field_changes;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use recovered_codec_transition::{codec_field_changes, CodecFieldLocus};
 
 /// Move-only authority to extend an uncommitted runtime's initial schema.
 #[derive(Debug)]
@@ -201,8 +203,8 @@ impl RelationalInitialSchemaInstallation<'_> {
             .clone()
             .extend(additions)
             .map_err(schema_denial)?;
-        let retained_entity_kind_count = merged.entity_kinds.len();
-        let retained_relation_kind_count = merged.relation_kinds.len();
+        let retained_entity_kind_count = (*merged.owner_entity_kinds()).len();
+        let retained_relation_kind_count = (*merged.owner_relation_kinds()).len();
         let retained_schema_authority_digest =
             crate::schema::data::schema_authority_snapshot_digest_bytes(
                 &merged.authority_snapshot(),

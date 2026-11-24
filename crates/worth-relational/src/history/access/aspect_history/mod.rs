@@ -1,12 +1,12 @@
 //! Native finite change pages. Product ancestry remains the composition owner's job.
 
-mod cursor;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::cursor;
 mod live_admission;
 mod live_cursor;
-mod page;
-mod request_stage;
-mod retained_selection;
-mod selection;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::page;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::request_stage;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::retained_selection;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::selection;
 
 pub use live_cursor::RelationalCanonicalRecordHistoryCursor;
 pub use page::{
@@ -18,5 +18,5 @@ pub use retained_selection::{
 };
 pub use selection::RelationalRecordHistorySubject;
 
-mod denial;
 pub use denial::RelationalRecordHistoryDenial;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history::denial;

@@ -1,5 +1,6 @@
 //! A pin refusal reaches the installed join door by value.
 use super::*;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupDenialOwnerPort as _;
 #[test]
 fn relation_join_pin_keeps_the_cancelled_request_cause() {
     let host = crate::test_execution_policy::serial_request();

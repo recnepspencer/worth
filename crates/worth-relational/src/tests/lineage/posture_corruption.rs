@@ -1,11 +1,11 @@
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageMergeKeeper, LineageNameDenial, LineagePostureClaim,
-    LineagePostureKind, LineageRecordTarget, LineageSplitChild, LineageSubject,
+    LineageMergeKeeper, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
+    LineageRecordTarget, LineageSplitChild, LineageSubject,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::posture_corruption_fixtures::setup_corruption_base;
@@ -21,7 +21,7 @@ fn run_refused(
     input: &LineageCommitPostureInput,
 ) -> LineageNameDenial {
     let before = allocator.frontiers();
-    let err = finalize_postures_in_working_state(
+    let err = finalize_postures_in_working_state_for_test(
         allocator,
         staged,
         &receipt_at(2, 2),
@@ -318,7 +318,7 @@ fn corruption_court_6_unpostured_replace_blocked_by_posture_claimed_target_refus
     }]);
 
     let before = allocator.frontiers();
-    let err = finalize_postures_in_working_state(
+    let err = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut base.staged,
         &receipt_at(2, 2),

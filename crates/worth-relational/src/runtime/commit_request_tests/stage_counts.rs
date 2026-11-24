@@ -30,7 +30,7 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
     let visits = Arc::new(Mutex::new(Vec::new()));
     let counted = Arc::clone(&visits);
     let strategy_fixture = strategy.then(crate::commit_strategies::facade::lowered_commit_fixture);
-    observation::with_observer(
+    observation::with_stage_observer_for_test(
         Box::new(move |stage| counted.lock().unwrap().push(stage)),
         || {
             if let Some((runtime, lowered)) = strategy_fixture {

@@ -1,0 +1,150 @@
+use std::collections::BTreeMap;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+
+use crate::branch::root::PreparedRelationalBranchRootCapture;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRootCaptureDenial;
+use crate::history::data::CanonicalCommitEnvelope;
+
+use super::HistorySubsystem;
+
+impl HistorySubsystem {
+    pub fn readmit_checkpoint_region_directory(
+        &self,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        commit: crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
+        content_records: &crate::content::RelationalContentAttachments,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
+        RelationalBranchRoot::readmit_checkpoint_region_directory(
+            &self.root_identity_issuer,
+            regions,
+            commit,
+            content_records,
+            request,
+        )
+    }
+    pub fn readmit_branch_region_directory(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        content_records: &crate::content::RelationalContentAttachments,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        descriptor: crate::branch::target::RelationalBranchRootDescriptor,
+        schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
+        RelationalBranchRoot::readmit_region_directory(
+            &self.root_identity_issuer,
+            execution,
+            content_records,
+            regions,
+            original,
+            descriptor,
+            schema,
+        )
+    }
+    pub fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: &P,
+        published_delta: &crate::storage::RelationalPublishedPartitionDelta,
+        previous: Option<&Arc<RelationalBranchRoot>>,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::publication::ContentPublication,
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
+    ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
+        if self.root_capture_sabotage.load(Ordering::Relaxed)
+            && self.root_capture_sabotage.swap(false, Ordering::Relaxed)
+        {
+            return Err(RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(
+                crate::symbols::data::Symbol(u32::MAX),
+            ));
+        }
+        RelationalBranchRoot::prepare_capture(
+            execution,
+            &self.root_identity_issuer,
+            partitions,
+            published_delta,
+            previous,
+            envelope,
+            content,
+            registry,
+            symbols,
+            planned_schema,
+        )
+    }
+
+    #[doc(hidden)]
+    pub fn sabotage_next_root_capture_for_test(&self) {
+        self.root_capture_sabotage.store(true, Ordering::Relaxed);
+    }
+
+    pub fn readmit_branch_root(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        content_records: &crate::content::RelationalContentAttachments,
+        partitions: BTreeMap<
+            crate::identity::data::PartitionId,
+            crate::storage::overlay::PartitionState,
+        >,
+        original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        descriptor: crate::branch::target::RelationalBranchRootDescriptor,
+        schema_authority: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
+        RelationalBranchRoot::readmit(
+            &self.root_identity_issuer,
+            execution,
+            content_records,
+            partitions,
+            original,
+            descriptor,
+            schema_authority,
+            symbols,
+        )
+    }
+}
+
+impl HistorySubsystem {
+    /// Initial image binding uses the actual catalog owner before considering encoding.
+    /// Source-backed rows demand their admitted original once on this caller's request.
+    pub fn original_root_evidence_for_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: crate::history::data::CommitId,
+    ) -> Result<
+        Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        super::history_recovery_denial::RelationalHistoryRecoveryDenial,
+    > {
+        use super::history_recovery_denial::RelationalHistoryRecoveryDenial as Denial;
+        let artifact = self
+            .commit_artifact(commit)
+            .ok_or_else(|| Denial::Invalid("root has no actual admitted catalog entry".into()))?;
+        let residency = artifact.envelope_residency();
+        if let Some(original) = residency.original_owner() {
+            return Ok(original);
+        }
+        let positioned = residency
+            .demand_positioned(execution, 1 << 30)
+            .map_err(Denial::Source)?;
+        crate::branch::root::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            positioned.canonical_arc().clone(),
+        )
+        .map_err(Denial::Root)
+    }
+}
+
+impl HistorySubsystem {
+    #[doc(hidden)]
+    pub fn root_capture_switch_for_test(&self) -> Arc<std::sync::atomic::AtomicBool> {
+        Arc::clone(&self.root_capture_sabotage)
+    }
+}

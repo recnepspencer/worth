@@ -17,7 +17,7 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::runtime::RelationalRuntime;
 
 use super::root_inventory::RecoveredRootInventory;
-mod refusal;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::runtime_rebuild::transition_replay::refusal;
 use refusal::{refused, replay_stop};
 
 /// Apply `recorded` to `restored`.

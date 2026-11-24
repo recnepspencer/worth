@@ -18,7 +18,7 @@ impl RelationalRuntime {
         // Exclusive recovery authenticated A; affinity is issued for this
         // receiver independently of A's retained execution meaning.
         let receiver_epoch = self.configuration_binding().snapshot();
-        let schema = basis.inner.root.retained_schema_authority();
+        let schema = basis.owner_inner().root.retained_schema_authority();
         let digest = catalog_digest::digest_frozen(
             schema.authority_digest(),
             &contracts.custom_invariant_registries,
@@ -31,7 +31,7 @@ impl RelationalRuntime {
             .map_err(RelationalHomeProgramContractDenial::Request)?;
         // Recovery is still exclusive here. The exact source root was admitted
         // against declared A; no current B registry or execution is substituted.
-        super::install_root_execution_contracts(&basis.inner.root, &contracts.meaning)
+        super::install_root_execution_contracts(&basis.owner_inner().root, &contracts.meaning)
             .map_err(|_| RelationalHomeProgramContractDenial::SourceContractChanged)?;
         Ok(RelationalHomeProgramPredecessorCatalog {
             source: source.clone(),

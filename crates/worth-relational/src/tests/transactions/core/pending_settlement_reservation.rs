@@ -26,21 +26,28 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
         panic!("the first publisher from a shared basis performs");
     };
     assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
         1,
         "movement is reported only after its settlement record exists"
     );
     let settled = runtime
         .settle_performed_publication(performed)
         .expect("the winner settles");
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+    assert_eq!(
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
+        0
+    );
 
     let reference_before = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
     let contacts_before = runtime
         .publication_binding()
-        .pending_settlement_contact_count();
+        .pending_settlement_contact_count_for_test();
     let crate::mvcc::RelationalPublicationOutcome::Stale(_) = runtime
         .publication_port()
         .compare_and_publish(execution, loser)
@@ -56,14 +63,16 @@ fn stale_publication_releases_its_pending_settlement_reservation() {
         "a stale attempt performs no movement"
     );
     assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
         0,
         "a stale attempt releases the exact reservation it installed"
     );
     assert!(
         runtime
             .publication_binding()
-            .pending_settlement_contact_count()
+            .pending_settlement_contact_count_for_test()
             > contacts_before,
         "the stale attempt did reach the registry before releasing"
     );
@@ -130,7 +139,9 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             reference_before,
         );
         assert_eq!(
-            runtime.publication_binding().pending_settlement_count(),
+            runtime
+                .publication_binding()
+                .pending_settlement_count_for_test(),
             0,
             "an interrupted attempt leaks no pre-effect settlement reservation"
         );
@@ -163,7 +174,7 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
     let before = test_owner_main_basis(&runtime).unwrap();
     let contacts_before = runtime
         .publication_binding()
-        .pending_settlement_contact_count();
+        .pending_settlement_contact_count_for_test();
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -188,12 +199,14 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
     assert_eq!(
         runtime
             .publication_binding()
-            .pending_settlement_contact_count(),
+            .pending_settlement_contact_count_for_test(),
         contacts_before,
         "capacity is refused at preparation, so settlement admission is never contacted"
     );
     assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
         0,
         "a candidate that never existed retains no settlement reservation"
     );
@@ -257,7 +270,7 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
     let reference_at_pause = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
-    let pending_at_pause = binding.pending_settlement_count();
+    let pending_at_pause = binding.pending_settlement_count_for_test();
     release.wait();
 
     assert_ne!(
@@ -276,7 +289,12 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
     let settled = runtime
         .settle_performed_publication(performed)
         .expect("the paused movement settles through its installed record");
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
+    assert_eq!(
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
+        0
+    );
     release_test_commit_snapshot(&runtime, &settled);
 }
 

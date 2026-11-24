@@ -6,6 +6,8 @@ use crate::replay::planning::{
     authoritative_replay_envelopes, replay_fork_transitions, replay_tail_log,
     select_replay_checkpoint, target_descriptor_semantics_version,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 pub(in crate::replay) fn replay_recovery_plan_for_chain(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -28,7 +30,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         authoritative_replay_envelopes(source.history.canonical_read(), chain);
     let checkpoint_envelopes = checkpoint
         .as_ref()
-        .map(|checkpoint| checkpoint.envelopes.as_slice())
+        .map(|checkpoint| checkpoint.envelopes())
         .unwrap_or(&[]);
     let authority_continuity =
         crate::runtime::durability_access::authority_continuity_for_envelopes(

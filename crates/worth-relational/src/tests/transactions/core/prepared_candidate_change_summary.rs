@@ -10,6 +10,7 @@ use crate::facade::transactions::{
 use crate::tests::support::*;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 const GENEROUS: Budget = Budget {
     max_records: 16,

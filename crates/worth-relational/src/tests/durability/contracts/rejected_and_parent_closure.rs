@@ -1,5 +1,9 @@
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 #[test]
 fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
@@ -157,8 +161,8 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         runtime.config().clone(),
         None,
         vec![
-            crate::durability::migration::ReadmittedCanonicalCommit::exact(
-                crate::history::data::PositionedCanonicalCommit::for_test(
+            crate::durability::migration::ReadmittedCanonicalCommit::exact_for_test(
+                crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
                     child.patch_position(),
                     child_envelope.into_arc(),
                 ),

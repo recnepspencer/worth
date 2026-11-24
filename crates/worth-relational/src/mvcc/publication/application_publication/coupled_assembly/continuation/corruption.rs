@@ -1,4 +1,5 @@
 //! Duplicate only a real issued phase at the closed corruption receiver.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::continuation::custody::RelationalCoupledProducerContinuationOwnerPort as _;
 use super::{ExecutionRequest, RelationalAuthoredCoupledCandidate, TransactionCommitError};
 impl RelationalAuthoredCoupledCandidate<'_> {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn replay_continuation_probe(

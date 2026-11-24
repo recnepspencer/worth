@@ -1,4 +1,5 @@
 //! Immutable successor execution meaning, prepared on the actual Native owner.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedIndexCatalogOwnerPort as _;
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -7,12 +8,14 @@ use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariant
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
-mod body_digest;
 mod body_validation;
 mod planning_request;
-pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
 pub use planning_request::RelationalHomeProgramPlanningSource;
+pub use worth_relational_durability::internal_port::durability::home_program_body_digest::{
+    home_program_transition_body_digest, RelationalHomeProgramBodyDenial,
+};
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;
@@ -80,7 +83,7 @@ impl PreparedRelationalHomeProgramContracts {
         mut self,
         definitions: crate::runtime::PreparedRelationalIndexDefinitions,
     ) -> Result<Self, RelationalHomeProgramContractDenial> {
-        if definitions.runtime != self.meaning.runtime {
+        if definitions.runtime_identity() != self.meaning.runtime {
             return Err(RelationalHomeProgramContractDenial::ForeignRuntime);
         }
         self.index_definitions = Some(Arc::new(definitions));
@@ -172,10 +175,11 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let snapshot = self.configuration_binding().snapshot();
-        let source_generation = retain_root_execution_contracts(&predecessor.inner.root).map_or(
-            snapshot.schema_contract_runtime.custom_invariant_generation,
-            |source| source.contracts.custom_invariant_generation,
-        );
+        let source_generation = retain_root_execution_contracts(&predecessor.owner_inner().root)
+            .map_or(
+                snapshot.schema_contract_runtime.custom_invariant_generation,
+                |source| source.contracts.custom_invariant_generation,
+            );
         let generation = source_generation
             .checked_add(1)
             .ok_or(Denial::GenerationExhausted)?;
@@ -188,7 +192,7 @@ impl RelationalRuntime {
                 .schema
                 .descriptor_semantics_policy
                 .current_write_version(),
-            predecessor.inner.root.schema_authority(),
+            predecessor.owner_inner().root.schema_authority(),
         )
         .map_err(schema_compilation_denial::translate)?;
         let digest =

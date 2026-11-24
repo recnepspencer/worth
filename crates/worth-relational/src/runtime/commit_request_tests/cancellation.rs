@@ -1,3 +1,5 @@
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use crate::authority::commit::pipeline::request_checkpoints::{observation, CommitStage};
 use crate::tests::support::{
     batch_create, create_entity_outcome, release_test_commit_snapshot, runtime_with_test_schema,
@@ -47,17 +49,20 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
     let cancel_at_publication = Arc::clone(&cancellation);
     let publication = runtime.publication_binding();
     let preparation = runtime.preparation_runtime_snapshot();
-    let before_candidates = publication.prepared_candidate_count();
+    let before_candidates = publication.prepared_candidate_count_for_test();
     let before_slots = preparation.published_snapshot_count();
     let candidates_at_stage = Arc::new(AtomicUsize::new(0));
     let candidates_seen = Arc::clone(&candidates_at_stage);
     let slots_at_stage = Arc::new(AtomicUsize::new(0));
     let slots_seen = Arc::clone(&slots_at_stage);
-    let result = observation::with_observer(
+    let result = observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 seen.fetch_add(1, Ordering::Relaxed);
-                candidates_seen.store(publication.prepared_candidate_count(), Ordering::Relaxed);
+                candidates_seen.store(
+                    publication.prepared_candidate_count_for_test(),
+                    Ordering::Relaxed,
+                );
                 slots_seen.store(preparation.published_snapshot_count(), Ordering::Relaxed);
                 cancel_at_publication.cancel();
             }
@@ -76,7 +81,9 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
     );
     assert_eq!(slots_at_stage.load(Ordering::Relaxed), before_slots + 1);
     assert_eq!(
-        runtime.publication_binding().prepared_candidate_count(),
+        runtime
+            .publication_binding()
+            .prepared_candidate_count_for_test(),
         before_candidates
     );
     assert_eq!(
@@ -102,7 +109,7 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
 // Observe the actual Runtime prepared root and prior canonical position.
 #[test]
 fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime

@@ -1,0 +1,15 @@
+#[path = "validation/custom_invariant_execution_receipt.rs"]
+pub mod custom_invariant_execution_receipt;
+#[path = "validation/invariant_evidence.rs"]
+pub mod invariant_evidence;
+#[path = "validation/proposal_footprint/mod.rs"]
+pub mod proposal_footprint;
+#[path = "validation/proposal_identity.rs"]
+pub mod proposal_identity;
+#[path = "validation/proposal_invariants.rs"]
+pub mod proposal_invariants;
+pub mod proposal_source;
+#[path = "validation/proposal_touches.rs"]
+pub mod proposal_touches;
+#[path = "validation/proposal_validation.rs"]
+pub mod proposal_validation;
