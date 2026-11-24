@@ -9,6 +9,7 @@ use super::super::{authoring::Edit, host as world_host};
 use super::*;
 
 mod authored_stage;
+mod branch_history;
 mod later_append;
 mod overlay;
 mod scope_resolution;
@@ -33,18 +34,30 @@ fn fresh_world() -> (world_host::Host, Arc<prefix_observation::Calls>) {
 
 /// Authors one Item into `directory` through the ordinary program.
 fn author(world: &world_host::Host, directory: &str, identity: &str, key: u64) {
+    let item = Edit::Item {
+        directory: directory.into(),
+        identity: identity.into(),
+        name: identity.into(),
+    };
+    edit_on(world, world.current_world(), item, key);
+}
+
+/// Commits one authored `edit` on `branch` through the ordinary program.
+fn edit_on(
+    world: &world_host::Host,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    edit: Edit,
+    key: u64,
+) {
     let scope = authentication::request_scope();
     let principal = principal(world, &scope);
+    let seeded = format!("{edit:?}");
     let outcome = world
         .runtime()
         .request(&principal, &scope)
-        .on_branch(world.current_world())
+        .on_branch(branch)
         .advanced()
-        .mutate(Edit::Item {
-            directory: directory.into(),
-            identity: identity.into(),
-            name: identity.into(),
-        })
+        .mutate(edit)
         .idempotency(&key)
         .execute_in_program(world, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
@@ -53,7 +66,7 @@ fn author(world: &world_host::Host, directory: &str, identity: &str, key: u64) {
             outcome,
             WorthQueryApplicationMutationOutcome::Committed { .. }
         ),
-        "seed {directory}/{identity}: {outcome:?}"
+        "seed {seeded}: {outcome:?}"
     );
 }
 
