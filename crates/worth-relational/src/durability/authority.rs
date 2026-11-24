@@ -7,7 +7,7 @@ pub use associated_effects::{
     ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
-mod checkpoint_capture;
+pub(crate) mod checkpoint_capture;
 pub(crate) mod checkpoint_complete;
 pub use checkpoint_complete::{
     CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
@@ -25,11 +25,8 @@ mod checkpoint_memory_demand;
 mod checkpoint_native_capture;
 mod checkpoint_region_consistency;
 mod checkpoint_runtime;
-mod checkpoint_split_doors_for_test;
 pub(crate) mod checkpoint_transition;
 mod checkpointing;
-#[doc(hidden)]
-pub use checkpoint_split_doors_for_test::CapturedRelationalCheckpointBasisForTest;
 mod diagnostics;
 pub(crate) mod lineage_allocation;
 #[cfg(test)]

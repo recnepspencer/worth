@@ -78,7 +78,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         self.finalize_captured_checkpoint(captured, execution)
     }
 
-    pub(super) fn capture_checkpoint_basis(
+    pub(crate) fn capture_checkpoint_basis(
         &self,
     ) -> Result<super::checkpoint_capture::CapturedCheckpointBasis, DurabilityError> {
         let checkpoint_routes = self.runtime.history.canonical_checkpoint_gate();
@@ -92,7 +92,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         )
     }
 
-    pub(super) fn finalize_captured_checkpoint(
+    pub(crate) fn finalize_captured_checkpoint(
         &self,
         captured: super::checkpoint_capture::CapturedCheckpointBasis,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

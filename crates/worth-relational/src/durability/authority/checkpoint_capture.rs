@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 pub(super) mod runtime_selection;
 
-pub(super) struct CapturedCheckpointBasis {
+pub struct CapturedCheckpointBasis {
     pub(super) recorded_components: std::collections::BTreeMap<
         crate::history::data::CommitId,
         Vec<crate::branch::basis_descriptor::RelationalBranchBasisDescriptor>,

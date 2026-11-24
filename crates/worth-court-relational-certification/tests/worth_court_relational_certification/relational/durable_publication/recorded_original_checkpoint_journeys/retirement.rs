@@ -1,9 +1,8 @@
-//! Both original lease tasks survive contention and cancellation.
+//! Original lease retirement resumes after cancellation on the same receiver.
+mod gate_contention;
+
 use super::*;
-use worth_relational::facade::{
-    change_source::RelationalRetainedObservationRetirementProgress as Progress,
-    durability::RelationalRecoveredPublicationRetirement,
-};
+use worth_relational::facade::change_source::RelationalRetainedObservationRetirementProgress as Progress;
 
 #[test]
 fn recorded_original_retirement_preserves_both_leases_across_busy_and_stop() {
@@ -15,7 +14,7 @@ fn recorded_original_retirement_preserves_both_leases_across_busy_and_stop() {
     let basis = proof.custody().predecessor().clone();
     let before = runtime.external_retention_terminal_counts_for_test();
     let mut task = proof.consume(|original| original.into_retirement());
-    assert_recovered_cut_and_lane_busy(&runtime, &mut task, &basis, request);
+    gate_contention::assert_busy_and_first_release(&mut task, &basis, request);
     drop(basis);
     stop.cancel();
     assert!(matches!(task.advance(request), Progress::Stopped(_)));
@@ -37,27 +36,4 @@ fn recorded_original_retirement_preserves_both_leases_across_busy_and_stop() {
     assert_eq!(terminal.dropped_releases, before.dropped_releases);
     runtime.prepare_close().unwrap().finish();
     retired.reclaim();
-}
-
-/// The aggregate must preserve its two original lease tasks on either gate.
-fn assert_recovered_cut_and_lane_busy(
-    runtime: &RelationalRuntime,
-    task: &mut RelationalRecoveredPublicationRetirement,
-    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    request: &ExecutionRequest<'_, '_>,
-) {
-    let [cut, lane] = runtime
-        .recovered_retirement_busy_trials_for_test(task, basis, request)
-        .unwrap();
-    assert_eq!(cut.progress, Progress::Busy);
-    assert_eq!(cut.after.counters, cut.before.counters);
-    assert_eq!(lane.progress, Progress::Busy);
-    assert!(lane.before.root_obligations.is_some());
-    assert_eq!(lane.after.lane_obligations, lane.before.lane_obligations);
-    assert_eq!(lane.after.root_obligations, lane.before.root_obligations);
-    assert_eq!(task.advance(request), Progress::Advanced);
-    assert_eq!(
-        runtime.recovered_retirement_lane_releases_for_test(basis),
-        Some(cut.before.counters.external_pin_releases + 1)
-    );
 }

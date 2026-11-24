@@ -38,6 +38,7 @@ pub(crate) use home_program_transition::{
     RelationalHomeProgramPredecessorCatalog, RelationalHomeTargetCoverage,
     RelationalRootExecutionContracts,
 };
+pub(crate) mod checkpoint_split_doors_for_test;
 pub(crate) mod commit_strategy_validation;
 pub(crate) mod interruption_counters;
 mod invariant_view;
