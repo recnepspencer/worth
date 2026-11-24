@@ -13,7 +13,7 @@ use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, Locator
 fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
     fn send_sync<T: Send + Sync>() {}
     send_sync::<RelationalPinnedRead>();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&request, &runtime, "before");

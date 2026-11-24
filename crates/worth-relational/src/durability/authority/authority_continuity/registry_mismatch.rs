@@ -1,6 +1,7 @@
 use crate::durability::data::{
     RecoveryAuthorityContinuityMismatch, RelationIntegrityContractFamily,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn schema_registry_mismatch(
     expected: &crate::schema::data::RelationalSchemaRegistry,
@@ -8,8 +9,8 @@ pub(super) fn schema_registry_mismatch(
     expected_primary_schema_version: crate::schema::data::SchemaVersionId,
     found_primary_schema_version: crate::schema::data::SchemaVersionId,
 ) -> RecoveryAuthorityContinuityMismatch {
-    for (kind_id, expected_registration) in &expected.entity_kinds {
-        let Some(found_registration) = found.entity_kinds.get(kind_id) else {
+    for (kind_id, expected_registration) in &(*expected.owner_entity_kinds()) {
+        let Some(found_registration) = (*found.owner_entity_kinds()).get(kind_id) else {
             break;
         };
         if expected_registration.kind_name == found_registration.kind_name
@@ -36,8 +37,8 @@ pub(super) fn schema_registry_mismatch(
             };
         }
     }
-    for (kind_id, expected_registration) in &expected.relation_kinds {
-        let Some(found_registration) = found.relation_kinds.get(kind_id) else {
+    for (kind_id, expected_registration) in &(*expected.owner_relation_kinds()) {
+        let Some(found_registration) = (*found.owner_relation_kinds()).get(kind_id) else {
             break;
         };
         if expected_registration.kind_name == found_registration.kind_name
@@ -88,10 +89,10 @@ pub(super) fn schema_registry_mismatch(
     RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
         expected_primary_schema_version,
         found_primary_schema_version,
-        expected_entity_kind_count: expected.entity_kinds.len(),
-        found_entity_kind_count: found.entity_kinds.len(),
-        expected_relation_kind_count: expected.relation_kinds.len(),
-        found_relation_kind_count: found.relation_kinds.len(),
+        expected_entity_kind_count: (*expected.owner_entity_kinds()).len(),
+        found_entity_kind_count: (*found.owner_entity_kinds()).len(),
+        expected_relation_kind_count: (*expected.owner_relation_kinds()).len(),
+        found_relation_kind_count: (*found.owner_relation_kinds()).len(),
     }
 }
 

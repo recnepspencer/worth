@@ -1,5 +1,6 @@
 //! Exact-basis single-entity projection borrows the selected root's values.
 
+use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::projection_records::EntityProjectionRecordOwnerPort as _;
 use crate::identity::data::EntityId;
 use crate::visibility::snapshot_states::SnapshotStateBasis;
 

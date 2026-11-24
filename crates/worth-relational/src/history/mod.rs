@@ -5,10 +5,6 @@ pub mod data;
 pub(crate) mod envelope_demand;
 pub mod retention;
 
-pub(crate) use access::relevant_writes::{
-    admit_work as admit_authored_write_work, ordered_visit as visit_authored_write_lookup,
-    run as run_authored_write_stage, visit as visit_authored_write,
-};
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};
 pub(crate) use access::{CommitAncestryInspection, CommitAncestryPosture};
 pub use access::{
@@ -37,7 +33,6 @@ pub use commit::{
     RelationalRetainedSelectionArtifactDenial,
 };
 
-pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;
 pub(crate) use commit::{
     RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
     RetiredCanonicalPlacement,

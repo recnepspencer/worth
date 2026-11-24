@@ -35,7 +35,7 @@ mod region_demand;
 mod relation_value;
 mod request_custody;
 mod savepoint;
-pub(crate) mod staging;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::transaction::staging;
 mod staging_storage;
 
 pub use admission::RelationalBranchTransactionAdmissionDenial;

@@ -1,5 +1,6 @@
 //! Validate decoded index data against the admitted definition and history basis.
 use crate::durability::data::recovery_errors::DurabilityError;
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 pub(crate) fn validate_checkpoint_generation(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,

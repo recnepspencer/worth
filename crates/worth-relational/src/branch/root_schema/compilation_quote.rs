@@ -7,6 +7,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 type ContractBasis = (AspectKey, AspectIdentity, AspectContractRevision);
 
@@ -34,13 +35,11 @@ impl SchemaCompilationQuote {
             )?;
             add(&mut keys, size(contract.key().as_str().len())?)?;
         }
-        for declarations in registry
-            .entity_kinds
+        for declarations in (*registry.owner_entity_kinds())
             .values()
             .map(|kind| &kind.aspect_contract_declarations)
             .chain(
-                registry
-                    .relation_kinds
+                (*registry.owner_relation_kinds())
                     .values()
                     .map(|kind| &kind.aspect_contract_declarations),
             )
@@ -71,7 +70,7 @@ impl SchemaCompilationQuote {
         // Arc collection materializes its fixed descriptor roster before the final Arc.
         add(
             &mut temporary,
-            array::<RelationIntegrityPlanRevision>(registry.relation_kinds.len())?,
+            array::<RelationIntegrityPlanRevision>((*registry.owner_relation_kinds()).len())?,
         )?;
         Ok(Self {
             retained,
@@ -104,7 +103,7 @@ impl SchemaCompilationQuote {
         let mut temporary = array::<usize>(contracts.len())?;
         add(
             &mut temporary,
-            array::<RelationIntegrityPlanRevision>(registry.relation_kinds.len())?,
+            array::<RelationIntegrityPlanRevision>((*registry.owner_relation_kinds()).len())?,
         )?;
         Ok(Self {
             retained,
@@ -150,7 +149,7 @@ fn retained_base(
     // Arc<[Revision]> includes its counts before the fixed element payload.
     add(
         &mut retained,
-        array_arc::<RelationIntegrityPlanRevision>(registry.relation_kinds.len())?,
+        array_arc::<RelationIntegrityPlanRevision>((*registry.owner_relation_kinds()).len())?,
     )?;
     Ok(retained)
 }

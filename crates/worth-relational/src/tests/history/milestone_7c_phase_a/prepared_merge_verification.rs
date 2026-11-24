@@ -30,11 +30,11 @@ fn verify_prepared_merge_execution_rejects_schema_semantic_drift() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
 
@@ -98,11 +98,11 @@ fn verify_prepared_merge_execution_rejects_merge_base_drift() {
     let mut prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
     prepared

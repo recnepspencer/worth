@@ -8,7 +8,7 @@ use crate::runtime::state::subsystems::{
     services::instrumentation::RuntimeInstrumentation,
     storage::{PartitionEditionCopyLane, StorageSubsystem},
 };
-use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
 use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 use crate::validation::engine::InvariantExecutionResult;
 use std::cell::Cell;
@@ -48,7 +48,7 @@ impl StructuralWorld {
         config.schema.registry = schema;
         let rules = rules.into_iter().collect();
         let partition_id = PartitionId::main();
-        let (partition, entities, _) = relation_partition(partition_id, 2, &[]);
+        let (partition, entities, _) = relation_partition_for_test(partition_id, 2, &[]);
         let [source, target] = entities[..] else {
             unreachable!("the lower owner admitted two entity slots");
         };
@@ -116,7 +116,7 @@ impl StructuralWorld {
 
     pub(super) fn install_committed_edge(&self) {
         let partition_id = PartitionId::main();
-        let (partition, _, _) = relation_partition(partition_id, 2, &[(0, 1, KindId(2))]);
+        let (partition, _, _) = relation_partition_for_test(partition_id, 2, &[(0, 1, KindId(2))]);
         self.storage.install_owned(
             &Default::default(),
             PartitionEditionCopyLane::Ordinary,

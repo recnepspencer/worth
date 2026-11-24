@@ -1,5 +1,6 @@
 //! One complete coverage check over the actual source-issued member universe.
 use super::*;
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
 
 pub(super) fn read<Projection>(
     port: &AggregateReadPort<'_, '_>,

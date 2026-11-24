@@ -1,4 +1,5 @@
 //! Assemble canonical authority for the checked complete semantic plan.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::CommitPhaseBacking;
 use super::{
     CanonicalAuthoritativePatch, PublishedMergeExecutionAuthority, RecordRef,

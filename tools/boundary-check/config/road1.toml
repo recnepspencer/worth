@@ -132,6 +132,72 @@ guidance = "C.10: scheduled maintenance media effects (retirement deletes, recla
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage"]
+forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
+guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage"]
+forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
+guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage"]
+forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
+guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage"]
+forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
+guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
+
+[[source_identifier_denials]]
+root = "crates"
+exclude_paths = [
+  "crates/worth-relational/src",
+  "crates/worth-relational-contracts/src",
+  "crates/worth-relational-storage/src",
+]
+forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage"]
+guidance = "Direct Relational owner paths are sealed to Relational source"
+
+[[source_identifier_denials]]
+root = "workspaces"
+forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage"]
+guidance = "Workspaces consume Relational through its public facade"
+
+# UI still references the Query monolith retired by b24dce87c3. Its source seal
+# does not require loading the unresolved UI workspace graph.
+[[source_identifier_denials]]
+root = "workspaces/worth-ui"
+forbidden_identifiers = ["internal_port"]
+guidance = "UI must not use a Relational implementation port"
+
+[[source_identifier_denials]]
+root = "crates/worth-relational/src/facade"
+forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage"]
+forbidden_identifier_fragments = ["OwnerPort", "FieldsPort", "FixturePort"]
+guidance = "The Relational facade cannot expose a physical owner port"
+
+[[source_identifier_denials]]
+root = "crates/worth-relational/src/facade.rs"
+forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage"]
+forbidden_identifier_fragments = ["OwnerPort", "FieldsPort", "FixturePort"]
+guidance = "The Relational facade cannot expose a physical owner port"
+
+[[dependency_denials]]
+workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-bridge"]
 forbidden_targets = ["worth-runtime-world"]
 forbidden_target_prefixes = ["worth-query"]
@@ -139,7 +205,7 @@ guidance = "Runtime Bridge owns neutral crossing contracts and must not import Q
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-relational", "worth-signal"]
+sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-signal"]
 forbidden_targets = ["worth-runtime-world"]
 forbidden_target_prefixes = []
 guidance = "Runtime World is the composition owner above the component runtimes; lower owners cannot acquire a reverse dependency"
@@ -153,7 +219,7 @@ guidance = "Runtime World is memory-resident composition authority and cannot de
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-relational"]
+sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage"]
 forbidden_targets = ["worth-runtime-bridge"]
 forbidden_target_prefixes = []
 guidance = "The Bridge owns the Relational adapter and depends on Relational; Relational never names the Bridge"

@@ -11,6 +11,8 @@ use super::visible_record::VisibleMergeRecord;
 use crate::history::data::coordinates::CommitId;
 use crate::history::data::merge_branch_basis::RelationalMergeBranchBasis;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::assemble_merge_commit_mutation_plan;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlanParts;
 
 #[cfg(test)]
 #[path = "execution/test_support.rs"]
@@ -47,7 +49,7 @@ impl PreparedMergeMutationPlan {
         &self,
         transaction_id: crate::transactions::data::primitives::TransactionId,
     ) -> crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan {
-        crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan {
+        assemble_merge_commit_mutation_plan(MergeCommitMutationPlanParts {
             transaction_id,
             target_branch: self.target_branch.clone(),
             source_branch: self.source_branch.clone(),
@@ -62,7 +64,7 @@ impl PreparedMergeMutationPlan {
             structural_summary: self.structural_summary.clone(),
             merge_execution_summary: self.merge_execution_summary.clone(),
             proof_token: crate::transactions::data::outcomes::plan_artifacts::merge_commit_mutation_plan_token(),
-        }
+        })
     }
 }
 

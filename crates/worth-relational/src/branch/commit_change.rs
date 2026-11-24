@@ -12,6 +12,8 @@ use crate::storage::RelationalPublishedPartitionDelta;
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use worth_relational_storage::internal_port::storage::substrate::maintenance::partition_change::assemble_partition_change;
+use worth_relational_storage::internal_port::storage::substrate::maintenance::partition_change::ChangedRecordOwnerPort as _;
 
 /// Cost: changed slots times region/slot lookup paths, plus commit symbols.
 pub(crate) fn build_commit_change(
@@ -56,13 +58,7 @@ fn build(
             retired.extend(record.retired_identity().cloned());
         }
         routes.insert(MaintenanceRoute::Partition(id));
-        partitions.insert(
-            id,
-            PartitionChange {
-                journal: journal.clone(),
-                records,
-            },
-        );
+        partitions.insert(id, assemble_partition_change(journal.clone(), records));
     }
     if schema_changed {
         routes.insert(MaintenanceRoute::Schema);
@@ -157,15 +153,4 @@ fn add_touch_routes(
         routes.insert(route);
     }
     Ok(())
-}
-
-impl From<MaintenanceRefusal> for Denial {
-    fn from(cause: MaintenanceRefusal) -> Self {
-        match cause {
-            MaintenanceRefusal::Execution(cause) => Self::Execution(cause),
-            MaintenanceRefusal::MissingPredecessor | MaintenanceRefusal::UnavailableChange => {
-                Self::CanonicalEnvelopeMismatch
-            }
-        }
-    }
 }

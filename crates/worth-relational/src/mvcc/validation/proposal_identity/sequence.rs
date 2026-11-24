@@ -4,6 +4,7 @@ use crate::identity::data::VersionId;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
 impl RelationalPreparationRuntime {
     pub(in crate::mvcc) fn reserve_proposal_sequence(
         &self,

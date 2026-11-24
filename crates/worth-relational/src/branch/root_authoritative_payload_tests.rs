@@ -17,7 +17,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         content::*, mvcc::RelationalTransactionIntent, schema::data::*, transactions::data::*,
     };
     use worth_foundational::facade::*;
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let format = CanonicalDigestId::new([3; 32]);
     let contract = AspectContract::struct_aspect(
@@ -94,8 +94,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     let (root, mut envelope) =
         committed_root_and_envelope(&execution, &runtime, committed.commit.commit_id);
     let mut changed = root.schema_authority().registry().clone();
-    changed
-        .entity_kinds
+    (*changed.owner_entity_kinds_mut())
         .get_mut(&crate::identity::data::KindId(1))
         .unwrap()
         .aspect_contract_declarations = KindAspectContractDeclarations::default();
@@ -156,7 +155,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
 
 #[test]
 fn strategy_artifacts_are_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
@@ -179,7 +178,7 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
 
 #[test]
 fn merge_execution_authority_is_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -230,7 +229,7 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
 
 #[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();

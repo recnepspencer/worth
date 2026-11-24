@@ -2,6 +2,7 @@
 //! verification order is cost-ordered and version-first so bytes from any
 //! other format version refuse as unknown rather than as malformed.
 
+use worth_relational_contracts::internal_port::durability::branch_transition_artifact::payload_digest::RelationalBranchTransitionArtifactDigestOwnerPort as _;
 use super::payload_digest::RelationalBranchTransitionArtifactDigest as Digest;
 use super::RelationalBranchTransitionArtifactFrameRefusal as Refusal;
 use crate::branch::transition::sequence::RelationalBranchTransitionSequence;

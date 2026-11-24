@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::durability::data::{
     DurabilityError, DurableBranchRootImage, DurableBranchRootSchemaImage, DurableCheckpoint,
@@ -178,9 +179,8 @@ impl RootSchemaReadmissionCatalog {
             registry
         };
         let mut registry = registry;
-        registry.content_formats = registry
-            .content_formats
-            .bind_recorded(&configured.content_formats)
+        (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
+            .bind_recorded(&(*configured.owner_content_formats()))
             .map_err(RelationalRecoveryStop::from)?;
         let allocation_id = self.issue_authority_id()?;
         let authority =

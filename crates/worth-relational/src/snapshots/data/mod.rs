@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::history::data::BranchId;
 use crate::identity::data::VersionId;
 
-pub(crate) mod coordinates;
 pub use coordinates::{SnapshotId, SnapshotReadPolicy};
+pub(crate) use worth_relational_contracts::internal_port::snapshots::data::coordinates;
 
 /// Owner-issued operational capability for one retained snapshot binding.
 ///

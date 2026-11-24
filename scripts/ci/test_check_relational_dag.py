@@ -242,6 +242,63 @@ class RelationalDagTests(unittest.TestCase):
         self.assertEqual(totals(audit.ledger['production_explicit']), expected)
         self.assertEqual(totals(audit.ledger['production_resolved']), expected)
 
+    def extract_low_owner(self):
+        self.config['owners']['low']['physical'] = True
+        self.config['paths'].pop('low')
+        (self.root / SOURCE / 'low.rs').unlink()
+        self.write('lib.rs', '''
+            use worth_relational_contracts::internal_port::low;
+            mod high;
+            mod runtime;
+            pub mod facade { pub use crate::low::Low; }
+        ''')
+        source = self.root / 'crates/worth-relational-contracts/src'
+        source.mkdir(parents=True)
+        (source / 'lib.rs').write_text('pub mod internal_port { pub mod low; }')
+        (source / 'internal_port').mkdir()
+        (source / 'internal_port/low.rs').write_text('pub struct Low;')
+        (source.parent / 'Cargo.toml').write_text('[dependencies]\n')
+        (self.root / SOURCE.parent / 'Cargo.toml').write_text(
+            '[dependencies]\nworth-relational-contracts.workspace = true\n')
+        return source
+
+    def test_facade_resolves_export_to_the_physical_owner(self):
+        self.extract_low_owner()
+        audit = self.audit()
+        self.assertEqual(audit.exports(), ['facade::Low'])
+        location = ('worth_relational_contracts', 'internal_port', 'low')
+        self.assertEqual(audit.locations[location], ('low', None))
+
+    def test_physical_glob_preserves_the_item_export_kind(self):
+        self.extract_low_owner()
+        self.write('lib.rs', """
+            mod bridge { pub use worth_relational_contracts::internal_port::*; }
+            mod high;
+            mod runtime;
+            pub mod facade { pub use crate::bridge::low::Low; }
+        """)
+        self.assertEqual(self.audit().exports(), ['facade::Low'])
+
+    def test_physical_budget_cannot_include_remaining_runtime_paths(self):
+        self.extract_low_owner()
+        self.config['paths']['runtime.rs'] = 'low'
+        with self.assertRaisesRegex(ValueError, 'physical owner low cannot own Runtime path'):
+            self.audit()
+
+    def test_module_mount_into_a_sibling_package_is_rejected(self):
+        source = self.extract_low_owner()
+        (source / 'lib.rs').write_text(
+            '#[path = "../../worth-relational/src/high.rs"] mod escaped;')
+        with self.assertRaisesRegex(ValueError, 'module escapes its package'):
+            self.audit()
+
+    def test_physical_owner_cannot_add_a_relational_dev_dependency(self):
+        source = self.extract_low_owner()
+        (source.parent / 'Cargo.toml').write_text(
+            '[dev-dependencies]\nfixture = { package = "worth-relational", path = "../worth-relational" }\n')
+        with self.assertRaisesRegex(ValueError, 'worth-relational must be an ordinary dependency'):
+            self.audit()
+
 
 if __name__ == '__main__':
     unittest.main()

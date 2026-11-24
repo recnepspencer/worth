@@ -8,6 +8,12 @@ use crate::facade::lineage::{
     PersistentNameSubjectKind,
 };
 use crate::lineage::data::{PersistentNameBirthParts, PersistentNameBirthRecord};
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthPartsOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthRecordOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use super::posture_fixtures::receipt_at;
 
@@ -31,7 +37,7 @@ fn event(
     targets: Vec<LineageId>,
 ) -> LineageEventRecord {
     let receipt = receipt_at(commit, commit);
-    LineageEventRecord {
+    assemble_lineage_event_record(LineageEventRecordParts {
         event_id,
         branch_id: receipt.branch_id.clone(),
         commit: receipt,
@@ -43,7 +49,7 @@ fn event(
         kept_name: None,
         relation_id: None,
         entity_id: None,
-    }
+    })
 }
 
 /// A named entity `Create` carrying its canonical birth record.
@@ -67,7 +73,7 @@ pub(super) fn named_create(
         vec![],
         vec![lineage],
     );
-    create.name_birth = Some(PersistentNameBirthRecord::new(
+    (*create.owner_name_birth_mut()) = Some(PersistentNameBirthRecord::new(
         name,
         PersistentNameSubjectKind::Entity,
         parts,

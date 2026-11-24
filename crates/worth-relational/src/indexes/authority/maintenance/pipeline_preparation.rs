@@ -13,6 +13,8 @@ use crate::runtime::state::subsystems::indexing::{
     IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions,
 };
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::storage::substrate::maintenance::reconstruction::ReconstructionWorkOwnerPort as _;
+use worth_relational_contracts::internal_port::storage::substrate::maintenance::work::ChangeWorkOwnerPort as _;
 
 impl IndexDefinitionReadBinding {
     /// Cost: the sealed change and reached installed indexes, plus keyed selection paths.

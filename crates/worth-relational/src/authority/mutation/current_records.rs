@@ -22,6 +22,7 @@ use crate::transactions::data::primitives::{
     CreatedEntityRef, EntityReference, EntitySpec, RelationSpec,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 const LINK: &str = crate::schema::current_publication_ownership::LINK;
 mod fields;
 pub(crate) struct CompletedCurrentRecords {

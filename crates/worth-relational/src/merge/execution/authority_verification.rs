@@ -178,17 +178,17 @@ fn verify_execution_ready_proof(
     prepared: &PreparedMergeExecution,
 ) -> Result<(), MergeExecutionError> {
     let execution_ready = prepared.execution_ready_plan();
-    if binding.target_head_commit_id != execution_ready.basis.target_head.commit_id {
+    if binding.target_head_commit_id != execution_ready.basis.target_head().commit_id {
         return authority_binding_mismatch(
             "binding target head does not match execution-ready proof",
         );
     }
-    if binding.source_head_commit_id != execution_ready.basis.source_head.commit_id {
+    if binding.source_head_commit_id != execution_ready.basis.source_head().commit_id {
         return authority_binding_mismatch(
             "binding source head does not match execution-ready proof",
         );
     }
-    if binding.merge_base_commit_id != execution_ready.basis.merge_base.commit.commit_id {
+    if binding.merge_base_commit_id != execution_ready.basis.merge_base().commit().commit_id {
         return authority_binding_mismatch(
             "binding merge base does not match execution-ready proof",
         );
@@ -213,7 +213,7 @@ fn verify_schema_snapshot(
     let current_schema_snapshot = merge_schema_snapshot_for_execution_ready(
         execution,
         runtime,
-        execution_ready.basis.target_head.version_id,
+        execution_ready.basis.target_head().version_id,
         execution_ready.source_records.as_ref(),
         execution_ready.target_touched_records.as_ref(),
     )

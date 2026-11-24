@@ -1,6 +1,7 @@
 //! Business-neighbour selectors belong only to removal and linked-owner preflights.
 use super::*;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
 
 pub(crate) fn selectors(
     execution: &ExecutionRequest<'_, '_>,
@@ -9,10 +10,10 @@ pub(crate) fn selectors(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let root = &basis.inner.root;
-    let Some(storage) = &root
+    let Some(storage) = &(*root
         .schema_authority()
         .registry()
-        .current_publication_storage
+        .owner_current_publication_storage())
     else {
         return Ok(Vec::new());
     };

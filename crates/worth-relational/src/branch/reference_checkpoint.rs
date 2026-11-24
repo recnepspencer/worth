@@ -1,4 +1,5 @@
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::identity::RelationalBranchIdentityOwnerPort as _;
 
 use super::{
     BranchId, RelationalBranchCellDenial, RelationalBranchIdentity,

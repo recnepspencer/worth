@@ -8,9 +8,6 @@ pub(crate) mod read_work;
 pub(crate) mod reader;
 mod visibility;
 
-pub(crate) use projection::{
-    authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
-};
 #[cfg(test)]
 pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,

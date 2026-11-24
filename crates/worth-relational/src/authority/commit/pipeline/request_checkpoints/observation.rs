@@ -1,6 +1,7 @@
 //! Test-local stage rendezvous and consult counting; no production hook.
 use super::CommitStage;
 use std::cell::RefCell;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 type Observer = Box<dyn FnMut(CommitStage)>;
 thread_local! {
     static OBSERVER: RefCell<Option<Observer>> = const { RefCell::new(None) };

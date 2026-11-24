@@ -1,4 +1,5 @@
 //! Original-request backing keeps consumed candidate stages off deeper frames.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
 use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

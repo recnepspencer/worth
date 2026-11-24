@@ -65,7 +65,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
             ]
         })
     {
-        let lease = crate::execution::test_authority::test_execution_authority()
+        let lease = worth_harness::facade::execution_fixture::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     posture,

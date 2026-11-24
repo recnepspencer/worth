@@ -66,7 +66,7 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
     let denial = InvariantEngine::from_view(&view)
         .execute(
             &worth_execution::ExecutionRequest::leased(
-                &crate::execution::test_authority::test_execution_lease(),
+                &worth_harness::facade::execution_fixture::test_execution_lease(),
             ),
             request,
         )

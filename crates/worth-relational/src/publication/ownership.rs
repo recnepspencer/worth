@@ -1,4 +1,6 @@
 //! Durable current publication custody; historical payload selection stays in History.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 pub(crate) mod authored_retirement;
 pub(crate) mod certification;
 mod observation;
@@ -43,7 +45,7 @@ pub(crate) fn reserve_symbols(
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &mut crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings,
 ) -> Result<(), crate::authority::mutation::MutationApplyDenial> {
-    if registry.current_publication_storage.is_some() {
+    if (*registry.owner_current_publication_storage()).is_some() {
         use crate::schema::current_publication_ownership::{
             CATALOG, EDGE, LINK, POSITION, PUBLICATION,
         };
@@ -65,8 +67,8 @@ pub(crate) fn reserve_symbols(
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 
-pub(crate) mod read_request;
 use read_request::corrupt;
 pub(crate) use read_request::{checkpoint, request};
+pub(crate) use worth_relational_contracts::internal_port::publication::ownership::read_request;
 
 pub(crate) mod route_selection;

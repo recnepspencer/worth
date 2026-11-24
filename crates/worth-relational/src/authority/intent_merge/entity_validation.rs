@@ -5,6 +5,7 @@ use crate::transactions::data::intents::mutation_intent::{
 };
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use super::record_lookup::entity_exists_in_state;
 use super::schema_conflicts::schema_error_to_commit_conflict;

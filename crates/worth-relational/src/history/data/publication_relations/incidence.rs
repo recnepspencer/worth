@@ -8,6 +8,8 @@ use crate::storage::overlay::{current_relation_partition_source_for_slot, Curren
 use crate::storage::partition::AdjacencyDirection;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate(
@@ -75,11 +77,12 @@ pub(super) fn validate(
                 // protected and authenticated by that storage owner; they are
                 // not business edges created by the producer.
                 if row.kind_id().is_some_and(|kind| {
-                    root.schema_authority()
+                    (*root
+                        .schema_authority()
                         .registry()
-                        .current_publication_storage
-                        .as_ref()
-                        .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+                        .owner_current_publication_storage())
+                    .as_ref()
+                    .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
                 }) {
                     continue;
                 }

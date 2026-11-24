@@ -1,4 +1,5 @@
 //! Projection of Native-admitted complete codec publications.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 impl OwnedCodecRetirementClosure {
     pub(crate) fn complete_publications(

@@ -85,6 +85,9 @@ fn relation_candidate_matches_target_identity(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+
     use std::collections::{BTreeMap, BTreeSet};
 
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
@@ -106,19 +109,19 @@ mod tests {
         };
         let partition_id = PartitionId(1);
         let mut entity_arena = EntityArena::with_capacity(3);
-        let (source_slot, source_generation, _) = entity_arena.push_slot(SlotInit {
+        let (source_slot, source_generation, _) = entity_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(1),
             version_id: VersionId(1),
             extra: EntityRecordKind::empty_extra(),
         });
-        let (left_slot, left_generation, _) = entity_arena.push_slot(SlotInit {
+        let (left_slot, left_generation, _) = entity_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(1),
             version_id: VersionId(1),
             extra: EntityRecordKind::empty_extra(),
         });
-        let (right_slot, right_generation, _) = entity_arena.push_slot(SlotInit {
+        let (right_slot, right_generation, _) = entity_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(1),
             version_id: VersionId(1),
@@ -129,7 +132,7 @@ mod tests {
         let right = EntityId::new(partition_id, right_slot as u64, right_generation);
 
         let mut relation_arena = RelationArena::with_capacity(4);
-        let (relation_slot, relation_generation, _) = relation_arena.push_slot(SlotInit {
+        let (relation_slot, relation_generation, _) = relation_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
@@ -142,7 +145,7 @@ mod tests {
             ),
         });
         let relation_id = RelationId::new(partition_id, relation_slot as u64, relation_generation);
-        let (decoy_slot, decoy_generation, _) = relation_arena.push_slot(SlotInit {
+        let (decoy_slot, decoy_generation, _) = relation_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
@@ -158,7 +161,7 @@ mod tests {
         let other_source_ids = (0..2)
             .map(|offset| {
                 let kind = KindId(7 + offset);
-                let (slot, generation, _) = relation_arena.push_slot(SlotInit {
+                let (slot, generation, _) = relation_arena.push_slot_for_test(SlotInit {
                     partition_id,
                     kind_id: kind,
                     version_id: VersionId(1),
@@ -177,29 +180,29 @@ mod tests {
         adjacency
             .get_mut(source_slot)
             .expect("fixture adjacency is materialized")
-            .insert(KindId(9), relation_id);
+            .insert_adjacent_id_for_test(KindId(9), relation_id);
         adjacency
             .get_mut(source_slot)
             .expect("fixture adjacency is materialized")
-            .insert(KindId(9), decoy_id);
+            .insert_adjacent_id_for_test(KindId(9), decoy_id);
         let mut reverse_adjacency = vec![AdjacencySet::new(&adjacency_policy); 3];
         reverse_adjacency
             .get_mut(left_slot)
             .expect("fixture adjacency is materialized")
-            .insert(KindId(9), relation_id);
+            .insert_adjacent_id_for_test(KindId(9), relation_id);
         reverse_adjacency
             .get_mut(right_slot)
             .expect("fixture adjacency is materialized")
-            .insert(KindId(9), decoy_id);
+            .insert_adjacent_id_for_test(KindId(9), decoy_id);
         for (kind, other_source_id) in other_source_ids {
             adjacency
                 .get_mut(right_slot)
                 .expect("fixture adjacency is materialized")
-                .insert(kind, other_source_id);
+                .insert_adjacent_id_for_test(kind, other_source_id);
             reverse_adjacency
                 .get_mut(left_slot)
                 .expect("fixture adjacency is materialized")
-                .insert(kind, other_source_id);
+                .insert_adjacent_id_for_test(kind, other_source_id);
         }
 
         let mut partitions = BTreeMap::new();
@@ -215,7 +218,7 @@ mod tests {
                 reverse_adjacency: reverse_adjacency.into(),
             },
         );
-        let state = WorkingState::new(
+        let state = WorkingState::working_state_for_test(
             partitions,
             AdjacencyPolicy {
                 backend: AdjacencyBackend::InlineSmallDegreeAdjacency,

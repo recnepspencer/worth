@@ -13,7 +13,7 @@ mod readmission;
 pub use created_row_read::ReadmittedRelationalCreatedEntity;
 mod memory_original;
 pub(crate) mod observed_memory_commit;
-mod refusal;
+pub(crate) use worth_relational_contracts::internal_port::durability::authority::associated_effects::refusal;
 pub use observed_memory_commit::ObservedRelationalMemoryCommit;
 pub use refusal::RelationalAssociatedEffectRefusal;
 

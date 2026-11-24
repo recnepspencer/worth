@@ -1,4 +1,6 @@
 //! Discardable per-selected-prefix acceleration. No canonical envelope is retained here.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 #[path = "authored_writes/adjacency.rs"]
 mod adjacency;
 #[path = "authored_writes/indexed.rs"]

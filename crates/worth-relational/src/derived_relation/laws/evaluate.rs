@@ -17,6 +17,7 @@ use crate::derived_relation::{
 use crate::graph_member::NativeMemberKey as Member;
 use crate::schema::data::RelationalSchemaRegistry;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::graph_member::domain::NativeMemberDomainOwnerPort as _;
 
 pub(crate) fn validate(
     registry: &RelationalSchemaRegistry,

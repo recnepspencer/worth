@@ -7,8 +7,8 @@ pub(super) fn quote(
     memory: &mut Quote<'_, '_, '_>,
     registry: &RelationalSchemaRegistry,
 ) -> Result<(), RelationalRecoveryStop> {
-    memory.array::<DerivedRelationDefinitionParts>(registry.derived_relations.len())?;
-    for registered in registry.derived_relations.values() {
+    memory.array::<DerivedRelationDefinitionParts>((*registry.owner_derived_relations()).len())?;
+    for registered in (*registry.owner_derived_relations()).values() {
         let parts = &registered.parts;
         memory.text(&parts.identity.schema.0)?;
         memory.text(&parts.identity.name)?;
@@ -43,8 +43,9 @@ pub(super) fn quote(
             }
         }
     }
-    memory.array::<ProjectedMemberDomainParts>(registry.projected_member_domains.len())?;
-    for registered in registry.projected_member_domains.values() {
+    memory
+        .array::<ProjectedMemberDomainParts>((*registry.owner_projected_member_domains()).len())?;
+    for registered in (*registry.owner_projected_member_domains()).values() {
         let parts = &registered.parts;
         memory.text(&parts.identity.schema.0)?;
         memory.text(&parts.identity.name)?;
@@ -53,11 +54,11 @@ pub(super) fn quote(
             memory.text(case)?;
         }
     }
-    if !registry.persistent_name_schemes.is_empty() {
+    if !(*registry.owner_persistent_name_schemes()).is_empty() {
         memory.array::<crate::schema::data::SchemaAuthorityNamingSchemeSnapshot>(
-            registry.persistent_name_schemes.len(),
+            (*registry.owner_persistent_name_schemes()).len(),
         )?;
-        for scheme in registry.persistent_name_schemes.iter() {
+        for scheme in (*registry.owner_persistent_name_schemes()).iter() {
             memory.text(scheme.scheme_id())?;
             memory.text(scheme.subject_name())?;
             let roles = scheme.ordered_roles();
@@ -67,11 +68,11 @@ pub(super) fn quote(
             }
         }
     }
-    if !registry.kind_name_schemes.is_empty() {
+    if !(*registry.owner_kind_name_schemes()).is_empty() {
         memory.array::<crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot>(
-            registry.kind_name_schemes.len(),
+            (*registry.owner_kind_name_schemes()).len(),
         )?;
-        for scheme_id in registry.kind_name_schemes.values() {
+        for scheme_id in (*registry.owner_kind_name_schemes()).values() {
             memory.text(scheme_id)?;
         }
     }

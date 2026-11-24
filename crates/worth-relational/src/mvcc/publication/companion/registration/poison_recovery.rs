@@ -1,4 +1,5 @@
 //! A fault at each registry door leaves typed state usable by the next publisher.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::{
     CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
 };
@@ -129,14 +130,14 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
 }
 #[test]
 fn fork_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Fork);
 }
 #[test]
 fn enter_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Enter);
@@ -188,28 +189,28 @@ fn close_ignores_dropped_companion_client_without_weakening_rebind() {
 }
 #[test]
 fn begin_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Begin);
 }
 #[test]
 fn remove_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Remove);
 }
 #[test]
 fn activate_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Activate);
 }
 #[test]
 fn head_selection_recovers_registry_poison() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     recover(execution, Door::Head);

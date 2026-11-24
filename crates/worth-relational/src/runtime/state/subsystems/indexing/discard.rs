@@ -1,6 +1,7 @@
 use crate::indexes::data::{
     DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
 };
+use worth_relational_contracts::internal_port::indexes::data::discard::DerivedIndexDiscardOutcomeOwnerPort as _;
 
 use super::IndexingSubsystem;
 

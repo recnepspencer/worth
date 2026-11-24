@@ -4,6 +4,7 @@ use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::identity::data::KindId;
 use crate::schema::{data::*, SchemaCompilationControl};
 use std::alloc::Layout;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn retained_bytes(
     registry: &RelationalSchemaRegistry,
@@ -13,26 +14,28 @@ pub(super) fn retained_bytes(
     add(
         &mut bytes,
         usize::try_from(
-            retained_tree_bytes::<KindId, LoweredAspectContractPlan>(registry.entity_kinds.len())
-                .map_err(|_| Denial::MemoryOverflow)?,
+            retained_tree_bytes::<KindId, LoweredAspectContractPlan>(
+                (*registry.owner_entity_kinds()).len(),
+            )
+            .map_err(|_| Denial::MemoryOverflow)?,
         )
         .map_err(|_| Denial::MemoryOverflow)?,
     )?;
     add(
         &mut bytes,
         usize::try_from(
-            retained_tree_bytes::<KindId, LoweredAspectContractPlan>(registry.relation_kinds.len())
-                .map_err(|_| Denial::MemoryOverflow)?,
+            retained_tree_bytes::<KindId, LoweredAspectContractPlan>(
+                (*registry.owner_relation_kinds()).len(),
+            )
+            .map_err(|_| Denial::MemoryOverflow)?,
         )
         .map_err(|_| Denial::MemoryOverflow)?,
     )?;
-    for declarations in registry
-        .entity_kinds
+    for declarations in (*registry.owner_entity_kinds())
         .values()
         .map(|kind| &kind.aspect_contract_declarations)
         .chain(
-            registry
-                .relation_kinds
+            (*registry.owner_relation_kinds())
                 .values()
                 .map(|kind| &kind.aspect_contract_declarations),
         )

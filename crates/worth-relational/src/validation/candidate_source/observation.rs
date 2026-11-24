@@ -1,5 +1,7 @@
 //! Reborrow staged roots through the actual rule observation, never proposal numbers.
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 use crate::derived_relation::definition::DerivedRelationDenial as Definition;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial;
@@ -131,7 +133,7 @@ impl ManagedIndexSourceRead<'_> {
                     } else {
                         &self.views.after_fields
                     },
-                    audience: self.prepared.program.0.issuer.admit(),
+                    audience: (*self.prepared.program.owner_field_0()).issuer.admit(),
                     interpretation: &self.interpretation,
                     before,
                 },

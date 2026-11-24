@@ -1,4 +1,11 @@
 use super::*;
+use crate::durability::medium::RelationalDurableColdSource;
+use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 #[path = "tests/page_admission_tests.rs"]
 mod page_admission_tests;
 #[path = "routing_tests.rs"]
@@ -274,61 +281,61 @@ fn checkpoint_dictionary(
     Arc<PageSource>,
     crate::symbols::data::SymbolTableSnapshot,
 ) {
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    #[derive(serde::Deserialize)]
-    struct DirectoryInput {
-        manifest: RelationalCheckpointManifest,
-    }
-    let input: DirectoryInput = rmp_serde::from_slice(
-        native
-            .bytes()
-            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-            .unwrap(),
-    )
-    .unwrap();
-    let source = Arc::new(PageSource::with_members(
-        native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                RelationalCheckpointMember::Carried { .. } => {
-                    panic!("unpublished memory source has inline member bytes")
-                }
-            })
-            .collect(),
-    ));
-    let directory = crate::durability::data::PreparedCheckpointDirectory {
-        history_members: input
-            .manifest
-            .readmit_history_members(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let native = runtime
+            .durability_authority()
+            .native_checkpoint(
+                execution,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .unwrap(),
-        manifest: input.manifest,
-        source: source.clone(),
-    }
-    .readmit(execution)
-    .unwrap();
-    let table = RuntimeSymbolTable::default();
-    table
-        .install_cold_symbol_pages(
-            directory.manifest.symbol_page_roster(),
-            directory.source.clone(),
+            .unwrap();
+        #[derive(serde::Deserialize)]
+        struct DirectoryInput {
+            manifest: RelationalCheckpointManifest,
+        }
+        let input: DirectoryInput = rmp_serde::from_slice(
+            native
+                .bytes()
+                .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+                .unwrap(),
         )
         .unwrap();
-    (
-        table,
-        directory,
-        source,
-        runtime.services.symbols.snapshot(),
-    )
+        let source = Arc::new(PageSource::with_members(
+            native
+                .members()
+                .iter()
+                .map(|member| match member {
+                    RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                    RelationalCheckpointMember::Carried { .. } => {
+                        panic!("unpublished memory source has inline member bytes")
+                    }
+                })
+                .collect(),
+        ));
+        let directory = crate::durability::data::PreparedCheckpointDirectory {
+            history_members: input
+                .manifest
+                .readmit_history_members(fixture_lane)
+                .unwrap(),
+            manifest: input.manifest,
+            source: source.clone(),
+        }
+        .readmit(execution)
+        .unwrap();
+        let table = RuntimeSymbolTable::default();
+        table
+            .install_cold_symbol_pages(
+                directory.manifest.symbol_page_roster(),
+                directory.source.clone(),
+            )
+            .unwrap();
+        (
+            table,
+            directory,
+            source,
+            runtime.services.symbols.snapshot(),
+        )
+    })
 }
 
 #[path = "placement_tests.rs"]

@@ -9,6 +9,9 @@ use crate::lineage::data::{
 };
 use crate::runtime::state::subsystems::lineage::LineageSubsystem;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::resolution::HistoricalLineageResolutionDigestBasisOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::resolution::HistoricalLineageResolutionOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::resolution::HistoricalResolutionTraceOwnerPort as _;
 
 #[derive(Debug, Clone)]
 pub(super) struct BranchScopedHistoricalResolutionRequest {

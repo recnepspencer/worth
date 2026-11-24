@@ -5,6 +5,7 @@ use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchDenial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{PortableAspectPatchOperation, PortablePatchReadmissionPurpose};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 mod allocation;
 mod selection;
 #[cfg(test)]

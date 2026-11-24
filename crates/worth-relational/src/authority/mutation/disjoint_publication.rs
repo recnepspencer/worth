@@ -1,4 +1,7 @@
 //! One canonical record patch for actual disjoint coupled updates, never sequential netting.
+use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::effect::MutationPublicationEffect;
 use super::FoundationalPatchFragment as Fragment;
 use crate::execution::request_stage::checkpoint;

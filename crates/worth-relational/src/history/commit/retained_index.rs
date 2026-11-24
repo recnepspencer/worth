@@ -4,6 +4,7 @@ use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
 use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_storage::internal_port::storage::substrate::allocation_witness::RelationalAllocationWitnessOwnerPort as _;
 #[derive(Debug)]
 struct Backing {
     entry: RelationalCommitIndexEntry,

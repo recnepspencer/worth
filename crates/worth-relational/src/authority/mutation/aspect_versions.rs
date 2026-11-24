@@ -90,6 +90,7 @@ fn write_using(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
     use std::collections::BTreeMap;
 
     use crate::authority::mutation::canonical_deltas::CanonicalRecordAspectDelta;
@@ -106,7 +107,7 @@ mod tests {
     use super::write_aspect_versions_for_delta;
     #[test]
     fn foundational_aspect_keys_are_interned_for_version_storage() {
-        let mut state = WorkingState::new(
+        let mut state = WorkingState::working_state_for_test(
             BTreeMap::new(),
             AdjacencyPolicy {
                 backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -117,7 +118,7 @@ mod tests {
             let partition = state.get_partition_mut(PartitionId(1));
             partition
                 .entity_arena
-                .push_slot(SlotInit::<EntityRecordKind> {
+                .push_slot_for_test(SlotInit::<EntityRecordKind> {
                     partition_id: PartitionId(1),
                     kind_id: KindId(1),
                     version_id: VersionId(1),

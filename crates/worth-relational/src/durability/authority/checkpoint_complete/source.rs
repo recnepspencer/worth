@@ -307,6 +307,7 @@ pub(super) fn canonical_readmission_stop(
                 format!("original complete canonical frame refused: {cause:?}"),
             ))
         }
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

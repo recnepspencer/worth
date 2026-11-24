@@ -22,7 +22,7 @@ mod completion;
 pub(crate) mod coupled_assembly;
 mod coupled_owners;
 pub(crate) mod custody;
-pub(crate) mod output_meaning;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning;
 mod ownership_reach;
 pub use coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailure;
 pub use coupled_assembly::completion::RelationalCoupledAuthoredPublication;
@@ -42,7 +42,7 @@ mod proposal_predecessor;
 pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
 };
-pub(crate) mod producing_implementation;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::application_publication::producing_implementation;
 pub(crate) mod route_absence;
 mod scope_ownership;
 pub use completion::RequiredOutputPublication;
@@ -105,7 +105,7 @@ pub(crate) fn native_birth_fixture(
     RequiredOutputPublication::Birth {
         admission,
         absence: None,
-        meaning: output_meaning::native_meaning_fixture(&family),
+        meaning: meaning_fixture::native_meaning_fixture(&family),
         roles: targets
             .into_iter()
             .enumerate()
@@ -125,3 +125,6 @@ pub(crate) fn native_birth_fixture(
 pub(crate) mod inline_type_budget;
 
 pub(crate) use publication_appendix::prepare_publication_appendix;
+
+#[cfg(test)]
+pub(crate) mod meaning_fixture;

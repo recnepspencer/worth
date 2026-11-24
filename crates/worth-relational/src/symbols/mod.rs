@@ -1,1 +1,1 @@
-pub mod data;
+pub(crate) mod data;

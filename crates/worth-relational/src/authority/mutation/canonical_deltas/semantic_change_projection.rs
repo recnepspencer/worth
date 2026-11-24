@@ -1,4 +1,5 @@
 use crate::publication::patch::data::{PublishedAuthoritativeAspectChange, RecordStructuralChange};
+use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
 
 use super::data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
@@ -88,6 +89,7 @@ fn append_semantic_changes(
                     Kind::StructuralMaterializationSuspended
                 }
                 RecordStructuralChange::Rematerialized => Kind::StructuralRematerialized,
+                &_ => unreachable!("unhandled Relational contract variant"),
             };
             push(kind, None, changes);
         }

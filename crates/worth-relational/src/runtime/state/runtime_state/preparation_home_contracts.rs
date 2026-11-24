@@ -1,4 +1,5 @@
 //! Carry the exact root or Home target inventory through one preparation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::RelationalPreparationRuntime;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::runtime::AdmittedRelationalHomeProgramTarget;

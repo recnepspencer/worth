@@ -1,7 +1,6 @@
 //! Bind continuation custody to an admitted runtime candidate.
 use super::{part, RelationalAuthoredCoupledCandidate};
 use crate::execution::request_stage::checkpoint;
-use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 

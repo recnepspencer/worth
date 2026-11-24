@@ -5,6 +5,8 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Cursor, Read},
 };
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(crate) fn inspect<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -62,7 +64,7 @@ pub(crate) fn inspect<'a>(
     let mut roster_kinds = BTreeSet::new();
     for schema in &decoded.branch_root_schema_images {
         let (registry, _) = schema.readmit_registry().map_err(invalid)?;
-        if let Some(storage) = registry.current_publication_storage {
+        if let Some(storage) = registry.owner_current_publication_storage().as_ref() {
             roster_kinds.extend(storage.metadata_kinds());
         }
     }

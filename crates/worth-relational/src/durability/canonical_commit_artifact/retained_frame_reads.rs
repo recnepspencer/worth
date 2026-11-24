@@ -199,6 +199,7 @@ fn frame_proves_damage(
         | Frame::TruncatedPayload { .. }
         | Frame::TrailingBytes { .. }
         | Frame::DigestMismatch { .. } => true,
+        &_ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

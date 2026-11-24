@@ -1,5 +1,6 @@
 //! Select and retain the successor that this prepared movement may install.
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 
 use super::{
     PreparedCanonicalBranchMovement, RelationalPublicationDeferred, RelationalPublicationDenial,

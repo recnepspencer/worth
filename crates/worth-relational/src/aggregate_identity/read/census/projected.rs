@@ -1,6 +1,8 @@
 //! A real finite carrier/case universe; empty censuses still admit all source access.
 use super::*;
 use crate::graph_member::NativeMemberDomain;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl AggregateReadPort<'_, '_> {
     pub fn all_projected_of_definition(
@@ -28,9 +30,7 @@ impl AggregateReadPort<'_, '_> {
             .ok_or(AggregateReadDenial::PreparationRefused)?;
         let levels = u64::from(
             usize::BITS
-                - source
-                    .registry(committed)
-                    .projected_member_domains
+                - (*source.registry(committed).owner_projected_member_domains())
                     .len()
                     .max(1)
                     .leading_zeros(),

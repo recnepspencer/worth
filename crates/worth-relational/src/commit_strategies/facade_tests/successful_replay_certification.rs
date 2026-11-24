@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::native_strategy_fixtures::*;
 use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 
@@ -218,12 +220,12 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
         .build()
         .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
-    let original_lineage = runtime
+    let original_lineage = (*runtime
         .lineage_access()
         .for_record(request_execution, entity)
         .unwrap()
         .expect("original lineage")
-        .lineage_id;
+        .owner_lineage_id());
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -275,12 +277,12 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).cloned())
         .expect("replacement entity visible");
-    let replacement_lineage = runtime
+    let replacement_lineage = (*runtime
         .lineage_access()
         .for_record(request_execution, replacement_record.entity_id)
         .unwrap()
         .expect("replacement lineage")
-        .lineage_id;
+        .owner_lineage_id());
     let strategy_artifacts = commit
         .publication()
         .strategy_artifacts

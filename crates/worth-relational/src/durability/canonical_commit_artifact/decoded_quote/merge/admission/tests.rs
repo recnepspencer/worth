@@ -1,4 +1,13 @@
 //! Pure merge wire owners, original finite request, and final backing release.
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::assemble_merge_branch_basis;
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::assemble_resolved_merge_base;
+use worth_relational_contracts::internal_port::merge::data::identity::declared_keys::DeclaredIdentityKeysOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::identity::custom_name::IdentityBasisNameOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness::RelationalMergeCorrespondenceWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::schema_reconciliation_witness::RelationalSchemaReconciliationWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness::RelationalMergeStrategyWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_policy_rows::RelationalMergeAspectPolicyWitnessRowOwnerPort as _;
 use super::*;
 mod optional_fields;
 use crate::history::data::{
@@ -52,7 +61,7 @@ fn decoded_identity_name_keeps_only_its_own_original_grant() {
         panic!("fixture carries a custom identity name")
     };
     let name = custom.name.clone();
-    let expected = IdentityBasisName::storage_bytes(name.len()).unwrap();
+    let expected = IdentityBasisName::custom_name_storage_bytes_for_test(name.len()).unwrap();
     drop(decoded);
     assert_eq!(budget.charged_memory_bytes(), expected);
     assert!(expected < total);
@@ -79,7 +88,7 @@ fn decoded_identity_keys_keep_only_their_original_grant() {
         panic!("fixture carries declared keys")
     };
     let keys = keys.clone();
-    let expected = DeclaredIdentityKeys::storage_bytes(keys.len()).unwrap()
+    let expected = DeclaredIdentityKeys::declared_keys_storage_bytes_for_test(keys.len()).unwrap()
         + keys
             .iter()
             .map(|key| key.owned_allocation_capacity_bytes() as u64)
@@ -128,7 +137,7 @@ fn decoded_witness_and_basis_clones_keep_original_backings_funded() {
     let before = rmp_serde::to_vec_named(&source).unwrap();
     let after = optional_fields::omit(&source);
     let omitted_payload =
-        crate::durability::canonical_commit_artifact::borrowed_payload::replace_record(
+        crate::durability::canonical_commit_artifact::decoded_quote::omission_for_test::replace_record(
             &payload(&source),
             &source,
             &after,
@@ -212,16 +221,16 @@ fn fixture_with_options(with_link: bool) -> PublishedMergeExecutionAuthority {
         branch_id: BranchId("source".into()),
         parents: vec![CommitId(1)],
     };
-    let basis = RelationalMergeBranchBasis {
-        source_head: receipt.clone(),
-        target_head: receipt.clone(),
-        merge_base: ResolvedMergeBase {
-            rule: MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
-            commit: receipt,
-            supporting_left_ancestors: vec![CommitId(1), CommitId(2)].into(),
-            supporting_right_ancestors: Vec::new().into(),
-        },
-    };
+    let basis = assemble_merge_branch_basis(
+        receipt.clone(),
+        receipt.clone(),
+        assemble_resolved_merge_base(
+            MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
+            receipt,
+            vec![CommitId(1), CommitId(2)].into(),
+            Vec::new().into(),
+        ),
+    );
     let request_digest = request.request_digest().to_owned();
     let basis_digest = basis.basis_digest();
     let correspondence = RelationalMergeCorrespondenceWitness::retained(

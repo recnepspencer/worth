@@ -7,6 +7,7 @@ use crate::branch::{
 use crate::durability::data::RelationalCheckpointManifest;
 use crate::history::data::BranchId;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 mod axes;
 use axes::{Axes, ObservationKey};

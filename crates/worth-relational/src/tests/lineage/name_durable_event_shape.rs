@@ -7,6 +7,7 @@ use crate::facade::lineage::{
     LineageEventKind, LineageEventRecord, PersistentNameCommittedBatch,
     PersistentNameDurabilityError,
 };
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 use super::name_durable_world::{durable_naming_history, DurableNamingHistory};
 
@@ -61,43 +62,43 @@ fn non_canonical_arity_for_each_kind_refuses_typed() {
     refuses_shape(
         &history,
         kind(LineageEventKind::Retire),
-        |event, commits| event.targets = vec![any_created_lineage(commits)],
+        |event, commits| (*event.owner_targets_mut()) = vec![any_created_lineage(commits)],
         "a Retire has exactly one source and no targets",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Create),
-        |event, commits| event.sources = vec![any_created_lineage(commits)],
+        |event, commits| (*event.owner_sources_mut()) = vec![any_created_lineage(commits)],
         "a Create has no sources and exactly one target",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Split),
-        |event, _| event.targets.truncate(1),
+        |event, _| (*event.owner_targets_mut()).truncate(1),
         "a Split has one source and at least two distinct other targets",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Split),
-        |event, _| event.targets[1] = event.sources[0],
+        |event, _| (*event.owner_targets_mut())[1] = (*event.owner_sources())[0],
         "a Split has one source and at least two distinct other targets",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Merge),
-        |event, _| event.sources.truncate(1),
+        |event, _| (*event.owner_sources_mut()).truncate(1),
         "a Merge has at least two distinct sources and exactly one target",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Merge),
-        |event, _| event.sources[1] = event.sources[0],
+        |event, _| (*event.owner_sources_mut())[1] = (*event.owner_sources())[0],
         "a Merge has at least two distinct sources and exactly one target",
     );
     refuses_shape(
         &history,
         kind(LineageEventKind::Restore),
-        |event, _| event.targets = event.sources.clone(),
+        |event, _| (*event.owner_targets_mut()) = (*event.owner_sources()).clone(),
         "a Restore or Replace has one source and one different target",
     );
 }
@@ -108,7 +109,7 @@ fn receipt_branch_mismatch_refuses_typed() {
     refuses_shape(
         &history,
         kind(LineageEventKind::Split),
-        |event, _| event.commit.branch_id = BranchId("forged".to_owned()),
+        |event, _| (*event.owner_commit_mut()).branch_id = BranchId("forged".to_owned()),
         "the receipt names a different branch than the event",
     );
 }
@@ -131,14 +132,14 @@ fn births_and_kept_names_on_kinds_that_cannot_carry_them_refuse_typed() {
     refuses_shape(
         &history,
         kind(LineageEventKind::Retire),
-        |event, _| event.name_birth = Some(birth),
+        |event, _| (*event.owner_name_birth_mut()) = Some(birth),
         "only a Create can carry a name birth",
     );
     for carrier in [LineageEventKind::Retire, LineageEventKind::Split] {
         refuses_shape(
             &history,
             kind(carrier),
-            |event, _| event.kept_name = Some(kept),
+            |event, _| (*event.owner_kept_name_mut()) = Some(kept),
             "only Create, Replace, Merge, or Restore can keep a name",
         );
     }

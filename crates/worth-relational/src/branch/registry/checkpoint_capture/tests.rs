@@ -6,6 +6,7 @@ use crate::branch::target::RelationalBranchTarget;
 use std::alloc::Layout;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 fn source() -> RelationalBranchReferenceRegistry {
     let main = RelationalBranchReferenceCell::empty(7, BranchId("main".to_owned())).unwrap();
@@ -139,7 +140,7 @@ fn branch_metadata_clone_retains_exact_data_after_original_cells_die() {
 #[test]
 fn branch_metadata_refuses_exact_data_bill_before_any_metadata_copy() {
     let registry = source();
-    let ordinary = crate::execution::test_policy::serial_request();
+    let ordinary = worth_harness::facade::execution_fixture::serial_request();
     let baseline = registry
         .capture_checkpoint_metadata(&ExecutionRequest::serial(&ordinary), "runtime")
         .unwrap();

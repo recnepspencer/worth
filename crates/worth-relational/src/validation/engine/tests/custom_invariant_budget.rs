@@ -171,7 +171,11 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
         .unwrap();
     let partition_id = PartitionId::main();
     let (partition, entities, _) =
-        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 2, &[]);
+        crate::storage::overlay::small_relation_partition::relation_partition_for_test(
+            partition_id,
+            2,
+            &[],
+        );
     let partitions = std::collections::BTreeMap::from([(partition_id, partition)]);
     let source = entities[0];
     let target = entities[1];

@@ -27,20 +27,26 @@ pub(super) fn discover_identity_scope(
     history_plan: HistoryScopedMergePlan,
 ) -> (IdentityScopedMergePlan, usize, usize) {
     let ancestry = MergeAncestrySummary {
-        merge_base_rule: history_plan.basis.merge_base.rule,
-        merge_base_commit_id: history_plan.basis.merge_base.commit.commit_id,
+        merge_base_rule: history_plan.basis.merge_base().rule(),
+        merge_base_commit_id: history_plan.basis.merge_base().commit().commit_id,
         supporting_left_ancestor_count: history_plan
             .basis
-            .merge_base
-            .supporting_left_ancestors
+            .merge_base()
+            .supporting_left_ancestors()
             .len(),
         supporting_right_ancestor_count: history_plan
             .basis
-            .merge_base
-            .supporting_right_ancestors
+            .merge_base()
+            .supporting_right_ancestors()
             .len(),
-        target: branch_delta_summary(&history_plan.basis.target_head, &history_plan.target_delta),
-        source: branch_delta_summary(&history_plan.basis.source_head, &history_plan.source_delta),
+        target: branch_delta_summary(
+            &history_plan.basis.target_head(),
+            &history_plan.target_delta,
+        ),
+        source: branch_delta_summary(
+            &history_plan.basis.source_head(),
+            &history_plan.source_delta,
+        ),
     };
 
     let source_records = source_visible_records(

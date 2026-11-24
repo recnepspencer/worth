@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 #[cfg(test)]
 mod tests {
     use super::super::aspect_version_read::read_versions;
@@ -31,7 +33,7 @@ mod tests {
     fn assert_native_budget_denials(first: &str, second: &str, sort: bool) {
         let (symbols, versions) = versions(first, second);
         for (memory, work, expected_work) in [(64 * 1024 * 1024, 1, true), (0, 100, false)] {
-            let lease = crate::execution::test_authority::test_execution_authority()
+            let lease = worth_harness::facade::execution_fixture::test_execution_authority()
                 .request_lease(LeaseRequest {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,
@@ -75,7 +77,7 @@ mod tests {
 
     #[test]
     fn unresolved_symbolic_aspect_versions_are_not_exposed_as_foundational_keys() {
-        let host_request = crate::execution::test_policy::serial_request();
+        let host_request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &ExecutionRequest::serial(&host_request);
         let symbols = RuntimeSymbolTable::default();
         let mut symbolic = AspectVersions::default();

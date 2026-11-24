@@ -29,14 +29,13 @@ pub(crate) use crate::storage::data::history_member_directory::{
 };
 pub(crate) use lineage_event_pages::*;
 mod native_checkpoint;
-mod native_checkpoint_capture_conversion;
-pub(crate) mod native_checkpoint_capture_denial;
+pub(crate) use worth_relational_contracts::internal_port::durability::data::native_checkpoint_capture_denial;
 mod recovery_branch_transitions;
-pub(crate) mod recovery_errors;
+pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
-pub(crate) mod recovery_stop;
-pub(crate) mod recovery_verification;
+pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_stop;
+pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_verification;
 
 pub use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 pub use crate::storage::data::partition_checkpoint_image::{
@@ -85,8 +84,6 @@ pub use checkpoint_inspection::{
     CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
     RelationalCheckpointInspection,
 };
-
-pub(crate) use branch_root_schema_images::DurableSchemaDeclarationMemory;
 
 mod checkpoint_index_definitions;
 pub(crate) use checkpoint_index_definitions::CheckpointIndexDefinitions;

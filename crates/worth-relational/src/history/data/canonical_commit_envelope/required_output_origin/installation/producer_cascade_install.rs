@@ -11,6 +11,7 @@ use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 #[path = "producer_cascade/roster.rs"]
 mod roster;
 use super::producer_cascade::CanonicalProducerRetirement;

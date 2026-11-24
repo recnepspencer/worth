@@ -18,6 +18,8 @@ use std::{
     sync::Arc,
 };
 use worth_execution::ExecutionMemoryReservation;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 
 pub(super) struct CustomInvariantCompilationQuote {
     pub(super) groups: usize,

@@ -1,12 +1,13 @@
 //! One real succession replaces a dynamic member and retains its complete roster.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
-use crate::mvcc::publication::application_publication::output_meaning::{
+use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,
 };
 
 #[test]
 fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_coverage() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime

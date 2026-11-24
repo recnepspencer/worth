@@ -5,6 +5,7 @@ use crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial;
 use crate::branch::target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
 use crate::durability::data::*;
 use worth_foundational::facade::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 pub(super) fn rebind(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,

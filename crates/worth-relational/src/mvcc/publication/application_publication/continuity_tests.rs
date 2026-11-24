@@ -1,7 +1,7 @@
 //! Real native partial/no-data completion and intervening-writer refusal.
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId};
-use crate::mvcc::publication::application_publication::output_meaning::{
+use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,
 };
 use crate::tests::support::*;
@@ -67,7 +67,7 @@ fn preserve(
 #[test]
 fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and_refuse_intervening_equal_write(
 ) {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime

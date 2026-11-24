@@ -1,3 +1,6 @@
+use worth_relational_contracts::internal_port::branch::identity::RelationalBranchIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 #[path = "reference_world_selection.rs"]
 pub(crate) mod world_selection;
 use std::sync::{Arc, Mutex};
@@ -9,12 +12,11 @@ use super::target::RelationalBranchTarget;
 use crate::branch::version::RelationalBranchVersion;
 use crate::history::data::BranchId;
 
-#[path = "reference_observation.rs"]
-pub(crate) mod observation;
 pub use observation::{
     relational_branch_observation, RelationalBranchComparisonBasis, RelationalBranchForkBasis,
     RelationalBranchObservationConstructionDenial, RelationalBranchReferenceObservation,
 };
+pub(crate) use worth_relational_contracts::internal_port::branch::reference::observation;
 
 /// Mutable owner cell for one branch reference. The exact Foundational observation
 /// owns target/generation; owner-local truth movement stays in the version counter.

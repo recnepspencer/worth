@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 mod caller_association;
 mod changed_records;
 mod coupled_read;

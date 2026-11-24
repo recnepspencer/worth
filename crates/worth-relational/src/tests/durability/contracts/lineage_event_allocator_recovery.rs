@@ -1,6 +1,8 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::publication::patch::data::PatchStreamPosition;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 #[test]
 fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
@@ -40,10 +42,10 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         .find(|envelope| envelope.commit.commit_id == allocator_exhausted.commit.commit_id)
         .expect("later tail envelope")
         .published_lineage_mut_for_test()
-        .lineage_events_mut()
+        .lineage_events_mut_for_test()
         .first_mut()
         .expect("later tail lineage event");
-    event.event_id = u64::MAX - 1;
+    *event.event_id_mut_for_test() = u64::MAX - 1;
     let exhausted_envelope = plan
         .tail_log
         .iter_mut()

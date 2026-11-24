@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::content::registry::RelationalContentFormatRegistryOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::authority_snapshot::carried_projection::SchemaAuthoritySnapshotOwnerPort as _;
 #[path = "root_schema/contract_directory.rs"]
 mod contract_directory;
 use contract_directory::RetainedContracts;
@@ -36,8 +38,7 @@ mod continuity;
 mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
-#[path = "root_schema/quote_denial.rs"]
-pub(crate) mod quote_denial;
+pub(crate) use worth_relational_contracts::internal_port::branch::root::schema::quote_denial;
 #[path = "root_schema/readmission.rs"]
 mod readmission;
 #[path = "root_schema/recorded_image.rs"]
@@ -46,12 +47,11 @@ mod recorded_image;
 mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
-#[path = "root_schema/standard_tree_quote.rs"]
-pub(crate) mod standard_tree_quote;
 pub(crate) use compiled_retention::{
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
 };
 pub(crate) use standard_tree_quote::retained_tree_bytes as retained_compilation_tree_bytes;
+pub(crate) use worth_relational_contracts::internal_port::branch::root::schema::standard_tree_quote;
 #[path = "root_schema/allocation_observation.rs"]
 mod allocation_observation;
 

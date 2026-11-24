@@ -7,6 +7,8 @@
 //! for discarding: callers abandon the whole rebuild.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -101,7 +103,7 @@ fn bind_event(
         Some(raw) => Some(readmitted.require(raw, PersistentNameReferenceRole::KeptName)?),
         None => None,
     };
-    Ok(LineageEventRecord {
+    Ok(assemble_lineage_event_record(LineageEventRecordParts {
         event_id: event.event_id,
         commit: event.commit,
         branch_id: event.branch_id,
@@ -113,7 +115,7 @@ fn bind_event(
         kept_name,
         relation_id: None,
         entity_id: None,
-    })
+    }))
 }
 
 fn bind_carriers(

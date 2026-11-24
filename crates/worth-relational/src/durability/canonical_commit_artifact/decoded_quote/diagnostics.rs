@@ -4,6 +4,7 @@ use crate::diagnostics::data::{
     DiagnosticObjectFields, RelationalDiagnosticValue, RelationalDiagnosticsEntry,
 };
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
+use worth_relational_contracts::internal_port::diagnostics::data::fields::object_fields::DiagnosticObjectFieldsOwnerPort as _;
 mod basis;
 
 pub(super) fn quote(

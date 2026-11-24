@@ -1,5 +1,5 @@
 //! Actual typed record omission twins; these selected field rosters grant no authority.
-use crate::durability::canonical_commit_artifact::borrowed_payload::{
+use crate::durability::canonical_commit_artifact::decoded_quote::omission_for_test::{
     omit_nil_record_field, replace_record,
 };
 use crate::schema::data::*;
@@ -14,6 +14,7 @@ use crate::validation::data::{
     rules::InvariantRule,
 };
 use serde::Serialize;
+use worth_relational_contracts::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
 
 pub(super) fn schema() -> (Vec<u8>, Vec<u8>) {
     let detail = SchemaDiffDetail::AddedField {

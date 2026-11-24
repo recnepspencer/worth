@@ -1,6 +1,7 @@
 //! Receiving frozen codecs bind without replacing registered Source issuers.
 use super::*;
 use crate::branch::root::RelationalBranchRootCaptureDenial as Denial;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn bind_home_executables(
         self: &Arc<Self>,
@@ -9,15 +10,14 @@ impl RelationalBranchRootSchemaAuthority {
     ) -> Result<Arc<Self>, Denial> {
         let control = crate::schema::SchemaCompilationControl::Request(*request);
         control.checkpoint().map_err(Denial::Request)?;
-        if self.registry.content_formats.is_bound_to(available) {
+        if (*self.registry.owner_content_formats()).is_bound_to(available) {
             return Ok(self.clone());
         }
         let quote =
             compilation_quote::SchemaCompilationQuote::for_target(&self.registry, self, control)?;
         let (memory, temporary) = quote.reserve(request)?;
         let mut registry = self.registry.as_ref().clone();
-        registry.content_formats = registry
-            .content_formats
+        (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
             .bind_recorded(available)
             .map_err(Denial::Content)?;
         let expected = self.continuity_authority.clone();

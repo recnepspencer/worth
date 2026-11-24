@@ -1,4 +1,5 @@
 //! Evidence retained from the exact memory-owned canonical commit.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::created_row_read::{read_created_entity, ReadmittedRelationalCreatedEntity};
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
 use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
@@ -28,9 +29,9 @@ enum MemoryCommitOrigin {
 impl ObservedRelationalMemoryCommit {
     pub(super) fn from_live(positioned: PositionedCanonicalCommit, digest: [u8; 32]) -> Self {
         Self {
-            semantic: RecoveredRelationalSemanticResult {
-                semantic: positioned.envelope().semantic_result_arc(),
-            },
+            semantic: assemble_recovered_relational_semantic_result(
+                positioned.envelope().semantic_result_arc(),
+            ),
             origin: MemoryCommitOrigin::Live(positioned),
             digest,
         }
@@ -43,9 +44,7 @@ impl ObservedRelationalMemoryCommit {
         digest: [u8; 32],
     ) -> Self {
         Self {
-            semantic: RecoveredRelationalSemanticResult {
-                semantic: data.semantic.clone(),
-            },
+            semantic: assemble_recovered_relational_semantic_result(data.semantic.clone()),
             origin: MemoryCommitOrigin::Interim {
                 owner,
                 admitted,

@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
@@ -9,7 +10,7 @@ use worth_foundational::facade::{AspectBinding, ContractValidatedAspectValueView
 
 #[test]
 fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for derived in [false, true] {
         let fixture = AspectSchemaFixture {

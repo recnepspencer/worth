@@ -1,4 +1,6 @@
 use std::{collections::BTreeMap, mem::size_of, sync::Arc};
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 use worth_execution::MapKernelFailure;
 

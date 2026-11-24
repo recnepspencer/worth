@@ -204,7 +204,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
 
 #[test]
 fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -251,7 +251,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
 
 #[test]
 fn producer_publication_preserves_unclassified_rows_without_granting_retirement() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime

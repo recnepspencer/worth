@@ -6,6 +6,7 @@
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use std::sync::{Arc, Weak};
+use worth_relational_storage::internal_port::storage::substrate::allocation_witness::RelationalAllocationWitnessOwnerPort as _;
 
 pub use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 

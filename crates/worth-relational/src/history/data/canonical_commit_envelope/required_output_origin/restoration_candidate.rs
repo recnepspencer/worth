@@ -18,6 +18,8 @@ use crate::transactions::data::{
 };
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::*;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 
 pub(crate) struct RestorationPrestate<'a> {
     pub(crate) partitions: &'a dyn CurrentPartitionAccess,

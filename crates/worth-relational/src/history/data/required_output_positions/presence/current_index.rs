@@ -1,4 +1,6 @@
 //! Warm source-keyed position image; cold history's unresolved locator is unchanged.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use super::*;
 use crate::transactions::data::outcomes::{
     commit_conflict::CommitConflict, conflict_class::ConflictClass,

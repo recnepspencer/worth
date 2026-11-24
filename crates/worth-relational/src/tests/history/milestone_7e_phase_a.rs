@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 use crate::branch::{RelationalBranchReferenceCell, RelationalBranchTarget};
 use crate::facade::history::{BranchId, CommitId};
@@ -33,7 +34,7 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
 
     let direct_basis = runtime
         .history()
-        .resolve_merge_branch_basis(&request.source_branch, &request.target_branch)
+        .resolve_merge_branch_basis(request.source_branch(), request.target_branch())
         .expect("direct branch basis");
     let history_plan = runtime
         .merge()

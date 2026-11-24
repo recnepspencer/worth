@@ -1,5 +1,7 @@
 //! Diagnostic retained-allocation observations, separate from before-growth quotes.
 use super::*;
+use worth_relational_contracts::internal_port::content::schema::RelationalContentSchemaSnapshotOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
@@ -29,17 +31,7 @@ impl RelationalBranchRootSchemaAuthority {
 }
 
 fn registry_allocation_bytes(registry: &RelationalSchemaRegistry) -> usize {
-    let entity_bytes = registry.entity_kinds.values().fold(0_usize, |bytes, kind| {
-        bytes
-            .saturating_add(std::mem::size_of_val(kind))
-            .saturating_add(kind.kind_name.capacity())
-            .saturating_add(kind.schema_id.0.capacity())
-            .saturating_add(declaration_allocation_bytes(
-                &kind.aspect_contract_declarations,
-            ))
-    });
-    let relation_bytes = registry
-        .relation_kinds
+    let entity_bytes = (*registry.owner_entity_kinds())
         .values()
         .fold(0_usize, |bytes, kind| {
             bytes
@@ -50,10 +42,22 @@ fn registry_allocation_bytes(registry: &RelationalSchemaRegistry) -> usize {
                     &kind.aspect_contract_declarations,
                 ))
         });
+    let relation_bytes =
+        (*registry.owner_relation_kinds())
+            .values()
+            .fold(0_usize, |bytes, kind| {
+                bytes
+                    .saturating_add(std::mem::size_of_val(kind))
+                    .saturating_add(kind.kind_name.capacity())
+                    .saturating_add(kind.schema_id.0.capacity())
+                    .saturating_add(declaration_allocation_bytes(
+                        &kind.aspect_contract_declarations,
+                    ))
+            });
     std::mem::size_of::<RelationalSchemaRegistry>()
         .saturating_add(entity_bytes)
         .saturating_add(relation_bytes)
-        .saturating_add(registry.content_formats.snapshot().owned_bytes() as usize)
+        .saturating_add((*registry.owner_content_formats()).snapshot().owned_bytes() as usize)
 }
 
 fn declaration_allocation_bytes(

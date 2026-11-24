@@ -21,6 +21,7 @@ use crate::validation::{
     },
 };
 use std::num::NonZeroUsize;
+use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 #[path = "native_report_fixture.rs"]
 mod fixture;
 use fixture::UNRELATED;

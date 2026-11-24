@@ -1,4 +1,5 @@
 //! The Native read-locality court builds ordinary intents and observes exact selected residency.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::overlay::CurrentPartitionAccess;

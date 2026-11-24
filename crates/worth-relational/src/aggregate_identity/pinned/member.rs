@@ -2,6 +2,7 @@
 use super::*;
 use crate::aggregate_identity::projected_storage::domain_for_contract;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
 
 pub(super) fn validate(
     view: &InvariantStateView<'_>,

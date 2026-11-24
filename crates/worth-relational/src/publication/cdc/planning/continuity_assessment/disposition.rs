@@ -29,6 +29,7 @@ pub(crate) fn disposition_for_assessment(
         SchemaContinuationClassification::Rejected => {
             SubscriberRecoveryDisposition::RequireRenegotiation
         }
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 
@@ -51,5 +52,6 @@ pub(super) fn continuation_priority(classification: SchemaContinuationClassifica
         SchemaContinuationClassification::ContinueWithContractUpgrade => 3,
         SchemaContinuationClassification::RequireRenegotiation => 4,
         SchemaContinuationClassification::Rejected => 5,
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }

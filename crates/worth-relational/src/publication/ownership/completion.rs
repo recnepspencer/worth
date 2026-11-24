@@ -1,4 +1,6 @@
 //! Advance current custody while preserving every unchanged claim row.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 mod claims_delta;
 mod successors;
 use super::{record, CurrentPublicationRoster};
@@ -28,12 +30,12 @@ pub(crate) fn complete(
     roster: &CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedOwnership, TransactionCommitError> {
-    let Some(storage) = &basis
+    let Some(storage) = &(*basis
         .inner
         .root
         .schema_authority()
         .registry()
-        .current_publication_storage
+        .owner_current_publication_storage())
     else {
         return Err(
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(

@@ -1,5 +1,6 @@
 use crate::transactions::data::primitives::EntityReference;
 use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 use super::super::CustomInvariantWorkMeter;
 

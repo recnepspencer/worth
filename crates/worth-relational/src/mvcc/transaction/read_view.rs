@@ -4,6 +4,7 @@ use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent,
     RelationMutationIntent,
 };
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 use super::read_projection::{
     project_entity, project_relation, RelationalTransactionRelationValue,

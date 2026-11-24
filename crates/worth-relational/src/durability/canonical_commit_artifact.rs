@@ -21,7 +21,7 @@
 //! `payload_digest` for its exact domain-separated grammar.
 
 mod body_read;
-pub(crate) mod borrowed_payload;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::borrowed_payload;
 #[cfg(test)]
 pub(crate) mod checkpoint_body;
 pub(crate) mod decoded_quote;
@@ -31,11 +31,11 @@ pub(crate) use decoded_quote::schema_image::{
 
 use frame_contract::MAXIMUM_ARTIFACT_BYTES;
 
-pub(crate) mod encode_denial;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::encode_denial;
 mod encoding;
-pub(crate) mod frame;
-pub(crate) mod frame_contract;
-pub(crate) mod frame_refusal;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame_contract;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::frame_refusal;
 pub(crate) mod input_commitment;
 mod memory_publication;
 pub(crate) use memory_publication::MemoryFramePreparationDenial;
@@ -44,10 +44,10 @@ pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
 pub(crate) mod frame_encoding;
 #[cfg(test)]
 mod frame_reference_encoding;
-pub(crate) mod payload_digest;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest;
 mod payload_wire;
 mod readmission;
-pub(crate) mod readmission_refusal;
+pub(crate) use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::readmission_refusal;
 mod request_agreement;
 mod request_encoding;
 #[cfg(test)]

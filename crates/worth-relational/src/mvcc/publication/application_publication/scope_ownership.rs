@@ -3,6 +3,8 @@ use super::RelationalInstalledApplicationPublicationAuthority;
 use crate::identity::data::KindId;
 use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
 use crate::storage::overlay::PartitionAccess;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn require_current_ownership_storage(
@@ -13,13 +15,13 @@ impl RelationalInstalledApplicationPublicationAuthority {
         (),
         crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
-        if basis
+        if (*basis
             .inner
             .root
             .schema_authority()
             .registry()
-            .current_publication_storage
-            .is_none()
+            .owner_current_publication_storage())
+        .is_none()
         {
             return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::authored_retirement(

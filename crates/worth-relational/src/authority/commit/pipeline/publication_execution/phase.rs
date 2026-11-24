@@ -7,6 +7,7 @@ use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::commit_log::CommitPhase;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::transactions::data::commit_log::CommitLogOwnerPort as _;
 
 mod finalization;
 

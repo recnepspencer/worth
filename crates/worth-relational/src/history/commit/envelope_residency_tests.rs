@@ -86,7 +86,7 @@ fn selected(
 
 #[test]
 fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let expected = entry.commit.clone();
@@ -104,7 +104,7 @@ fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() 
 
 #[test]
 fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, Some(Cause::Damaged));
     let position = entry.position;
@@ -130,7 +130,7 @@ fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
 
 #[test]
 fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let id = entry.commit.commit_id;
@@ -162,7 +162,7 @@ fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight
 
 #[test]
 fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_position() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     for journal_backed in [false, true] {
         let (entry, source) = selected(&execution, None);
@@ -221,7 +221,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
 
 #[test]
 fn positioned_demand_owns_its_result_across_journal_settlement() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let cell = RelationalCommitEnvelopeResidency::cold(entry.clone(), source.clone(), None, None);
@@ -236,7 +236,7 @@ fn positioned_demand_owns_its_result_across_journal_settlement() {
 
 #[test]
 fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let id = entry.commit.commit_id;

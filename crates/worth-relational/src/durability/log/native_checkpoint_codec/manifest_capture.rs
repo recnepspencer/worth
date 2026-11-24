@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 mod seal;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -107,8 +108,8 @@ impl CapturedManifest {
         let symbol_buckets = dictionary.by_text;
         let mut lineage_pages = Vec::new();
         for page in checkpoint.lineage.nodes().chunk_by(|a, b| {
-            RelationalCheckpointPage::range_of(a.lineage_id.0)
-                == RelationalCheckpointPage::range_of(b.lineage_id.0)
+            RelationalCheckpointPage::range_of((*a.owner_lineage_id()).0)
+                == RelationalCheckpointPage::range_of((*b.owner_lineage_id()).0)
         }) {
             let member = add(
                 &mut members,
@@ -117,7 +118,7 @@ impl CapturedManifest {
             );
             lineage_pages.push(
                 RelationalCheckpointPage::from_ids(
-                    page.iter().map(|node| node.lineage_id.0),
+                    page.iter().map(|node| (*node.owner_lineage_id()).0),
                     member,
                 )
                 .ok_or_else(|| corrupt("invalid captured lineage page membership"))?,

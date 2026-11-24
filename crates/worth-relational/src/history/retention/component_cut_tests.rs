@@ -11,7 +11,7 @@ impl<T> Drop for ClearOnDrop<'_, T> {
 }
 #[test]
 fn native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "lane-a-original");
@@ -119,7 +119,7 @@ pub(super) mod complete;
 #[test]
 fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_root() {
     use crate::storage::substrate::StorageAllocationOverflow;
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut config = runtime_with_test_schema().config();
     config.storage.retention.reclaim_batch_size = 0;
@@ -194,7 +194,7 @@ fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_
 
 #[test]
 fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boundary() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut config = runtime_with_test_schema().config();
     config.storage.retention.reclaim_batch_size = 0;

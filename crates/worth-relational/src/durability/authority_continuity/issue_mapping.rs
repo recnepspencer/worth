@@ -6,6 +6,7 @@ use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCoun
 use crate::replay::data::ReplayVerificationLayer;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::SchemaContinuityBundleIssue;
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 pub(super) fn apply_continuity_issue(
     instrumentation: &RuntimeInstrumentation,

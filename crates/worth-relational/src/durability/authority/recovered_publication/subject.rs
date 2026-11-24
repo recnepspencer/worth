@@ -4,6 +4,7 @@ use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };
 use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -7,6 +7,7 @@ use crate::validation::data::execution::InvariantDecisionRecord;
 use crate::validation::data::execution::InvariantReportedRule;
 use crate::validation::data::execution::InvariantVerdict;
 use crate::validation::engine::result::InvariantCheckResult;
+use worth_relational_contracts::internal_port::validation::data::results::InvariantViolationFieldsOwnerPort as _;
 
 pub(crate) struct InvariantStageOutput {
     pub(crate) strategy:
@@ -112,6 +113,7 @@ pub(crate) fn check_result_bytes(result: &InvariantCheckResult) -> u64 {
             (violation.detail.capacity() as u64)
                 .saturating_add(violation.fields.owned_allocation_capacity_bytes())
         }
+        &_ => unreachable!("unhandled Relational contract variant"),
     };
     rule_bytes(&result.rule)
         .saturating_add(result.witness.owned_allocation_capacity_bytes())

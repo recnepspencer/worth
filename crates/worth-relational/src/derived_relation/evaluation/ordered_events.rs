@@ -18,7 +18,9 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
             self.read,
         )?;
         for data in acquired.support {
-            for (entity, kind) in data.entities {
+            let (entities, relations, adjacency) =
+                crate::derived_relation::read::take_dependencies(data);
+            for (entity, kind) in entities {
                 self.read.checkpoint(1)?;
                 if !self.entities.contains_key(&entity) {
                     self.read
@@ -26,7 +28,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                     self.entities.insert(entity, kind);
                 }
             }
-            for record in data.relations {
+            for record in relations {
                 self.read.checkpoint(1)?;
                 if !self.relations.contains_key(&record.relation_id) {
                     self.read
@@ -34,7 +36,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                     self.relations.insert(record.relation_id, record);
                 }
             }
-            for probe in data.adjacency {
+            for probe in adjacency {
                 self.read.checkpoint(1)?;
                 if !self.adjacency.contains(&probe) {
                     self.read

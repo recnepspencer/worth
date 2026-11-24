@@ -6,6 +6,7 @@ use crate::durability::data::*;
 use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
 use crate::durability::medium::RelationalDurableMemberLocator;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 pub(super) fn may_carry_metadata(
     basis: &CapturedCheckpointBasis,
@@ -58,7 +59,7 @@ pub(super) fn may_carry_metadata(
         let nodes = basis
             .lineage_nodes
             .iter()
-            .filter(|node| page.contains(node.lineage_id.0))
+            .filter(|node| page.contains((*node.owner_lineage_id()).0))
             .collect::<Vec<_>>();
         let encoded = member_frame::encode(MemberKind::Lineage, &nodes).map_err(|_| {
             unavailable(crate::storage::data::RelationalStorageSubject::Lineage {

@@ -2,6 +2,7 @@
 use super::{CommitChange, Maintained};
 use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::storage::substrate::maintenance::work::ChangeWorkOwnerPort as _;
 
 /// Cost: change routes times installed-route lookup, then the owner's delta.
 /// The install-time dispatcher offers only owners reached by those routes.

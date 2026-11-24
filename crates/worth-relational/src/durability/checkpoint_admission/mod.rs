@@ -13,10 +13,10 @@ pub(crate) use custody::{
     CheckpointAdmissionBinding, CheckpointAdmissionOwner, DirectoryAdmissionIdentity,
 };
 mod authentication;
-pub(crate) mod binary_encoding;
+pub(crate) use worth_relational_contracts::internal_port::durability::checkpoint_admission::binary_encoding;
 pub(crate) mod read_image;
 pub(crate) mod recorded_reference;
-pub(crate) mod refusal;
+pub(crate) use worth_relational_contracts::internal_port::durability::checkpoint_admission::refusal;
 mod root_positions;
 mod row_custody;
 pub(crate) use refusal::native_stop;

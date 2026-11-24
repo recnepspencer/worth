@@ -12,7 +12,7 @@ use crate::schema::data::{
     DescriptorSemanticsVersion, EntityKindRegistration, RelationKindRegistration,
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
-use crate::storage::overlay::small_relation_partition::small_relation_partition;
+use crate::storage::overlay::small_relation_partition::small_relation_partition_for_test;
 use crate::storage::RelationalPublishedPartitionDelta;
 use crate::visibility::materialization::read_records::projection::pinned::PinnedProjectionSource;
 use crate::visibility::materialization::read_records::reader::query_execution::pinned_walk::{
@@ -32,7 +32,7 @@ fn scope(roots: &[EntityId], direction: RelationDirection) -> PinnedStructuralWa
 
 #[test]
 fn original_work_cancellation_and_retained_memory_survive_handoff() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let graph = WalkGraph::new(&request, true);
     let a = graph.source;
@@ -115,7 +115,7 @@ fn original_work_cancellation_and_retained_memory_survive_handoff() {
 #[test]
 fn optional_and_ancestral_memory_custody_uses_the_original_backing() {
     use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let graph = WalkGraph::new(&setup_request, false);
     let a = graph.source;
@@ -173,13 +173,13 @@ fn leased_walk_preserves_original_stop_partial_reads_and_output_payer() {
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let graph = WalkGraph::new(&setup_request, true);
     let (a, b, edge) = (graph.source, graph.target, graph.relation.unwrap());
     for stop in [true, false] {
         let cancellation = CancellationSource::new();
-        let lease = crate::execution::test_authority::test_execution_authority()
+        let lease = worth_harness::facade::execution_fixture::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
@@ -245,7 +245,7 @@ struct WalkGraph {
 
 impl WalkGraph {
     fn new(execution: &ExecutionRequest<'_, '_>, linked: bool) -> Self {
-        let graph = small_relation_partition(PartitionId(7), linked);
+        let graph = small_relation_partition_for_test(PartitionId(7), linked);
         let schema = RelationalSchemaRegistry::new()
             .register_entity_kind(EntityKindRegistration {
                 kind_id: KindId(1),

@@ -7,6 +7,7 @@ use crate::storage::data::{
     StorageStats,
 };
 use crate::storage::substrate::RecordKind;
+use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;
 
 pub struct StorageAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -36,7 +37,7 @@ impl<'runtime> StorageAccess<'runtime> {
     pub(crate) fn entity_slot_count(&self) -> usize {
         self.current_edition()
             .cells()
-            .map(|(_, region)| region.cell().slot_counts().0)
+            .map(|(_, region)| region.cell().slot_counts_for_test().0)
             .sum()
     }
 

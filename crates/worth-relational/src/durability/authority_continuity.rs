@@ -10,6 +10,7 @@ use crate::schema::data::{
     DescriptorCanonicalBasisSupportPolicy, DescriptorSemanticsSupportPolicy,
 };
 use crate::schema::validate_schema_continuity_bundle;
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 mod issue_mapping;
 

@@ -5,6 +5,7 @@ use crate::validation::data::catalog::InvariantRegistration;
 use crate::validation::data::execution::InvariantExecutionPoint as Point;
 use crate::validation::data::rules::InvariantRule;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 #[derive(Debug)]
 pub(crate) struct NativeInvariantPoints {
     points: [Vec<InvariantRegistration>; Point::COUNT],

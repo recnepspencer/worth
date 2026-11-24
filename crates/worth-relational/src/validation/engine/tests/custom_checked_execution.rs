@@ -18,7 +18,7 @@ fn checked_lease(
     work_ceiling: u64,
     cancellation: CancellationToken,
 ) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
+    worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,

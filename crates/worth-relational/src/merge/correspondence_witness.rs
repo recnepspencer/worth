@@ -1,6 +1,7 @@
 use crate::merge::data::MergePlanningArtifactCore;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness::RelationalMergeCorrespondenceWitnessOwnerPort as _;
 
 use crate::merge::data::{
     IdentityMatchCandidate, IdentityResolutionReason, RelationalMergeCorrespondenceWitness,

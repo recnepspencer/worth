@@ -1,4 +1,6 @@
 //! Judge executed application effects before any new publication can be adopted.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::PreparedRelationalCommitCandidate;
 use crate::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublication;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;

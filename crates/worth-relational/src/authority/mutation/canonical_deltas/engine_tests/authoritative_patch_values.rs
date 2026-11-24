@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::authority::mutation::outcomes::MutationAspectPatch;
 use worth_foundational::facade::{ContractValidatedAspectValueView, FieldKey, StructAspectValue};
 use worth_foundational::{
@@ -23,7 +24,7 @@ use super::support::{
 
 #[test]
 fn entity_field_delta_materializes_authoritative_aspect_patch() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -75,7 +76,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
 
 #[test]
 fn entity_struct_delta_materializes_authoritative_patch_value() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -136,7 +137,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
 
 #[test]
 fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -201,7 +202,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
 
 #[test]
 fn relation_field_delta_materializes_authoritative_aspect_patch() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();

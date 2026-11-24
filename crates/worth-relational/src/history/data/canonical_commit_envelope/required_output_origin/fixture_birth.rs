@@ -6,9 +6,8 @@ use super::{
 use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, KindId};
-use crate::mvcc::publication::application_publication::output_meaning::{
-    native_meaning_fixture, RequiredOutputRolePosture,
-};
+use crate::mvcc::publication::application_publication::meaning_fixture::native_meaning_fixture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
 use worth_foundational::CanonicalDigestId;
 
 pub(in crate::history::data) fn describe_birth(

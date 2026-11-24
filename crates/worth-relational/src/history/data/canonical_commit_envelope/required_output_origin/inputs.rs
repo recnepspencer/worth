@@ -1,4 +1,6 @@
 //! Current-version required-input meaning follows genuine restoration identity.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementationOwnerPort as _;
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};

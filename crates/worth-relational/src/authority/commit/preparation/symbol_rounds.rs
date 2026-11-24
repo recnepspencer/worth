@@ -8,6 +8,7 @@ use crate::storage::data::{
 };
 use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
 
 use crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;

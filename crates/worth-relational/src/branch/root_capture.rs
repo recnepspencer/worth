@@ -210,3 +210,35 @@ pub(super) fn build_incremental_regions(
     };
     Ok((regions, cost))
 }
+
+#[cfg(test)]
+pub(crate) fn with_reconstruction_fixture<T>(
+    inspect: impl FnOnce(&crate::storage::substrate::maintenance::ReconstructionLane<'_>) -> T,
+) -> T {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(inspect)
+}
+
+#[cfg(test)]
+pub(crate) mod reconstruction_fixture {
+    use crate::storage::overlay::partition_content::PartitionContentDigestError;
+    use crate::storage::overlay::PartitionState;
+    use crate::symbols::data::StringInterner;
+    use worth_relational_storage::internal_port::storage::overlay::partition_content::PartitionContentFixturePort as _;
+
+    pub(crate) trait PartitionContentOracle {
+        fn authoritative_content_digest(
+            &self,
+            symbols: &StringInterner,
+        ) -> Result<[u8; 32], PartitionContentDigestError>;
+    }
+    impl PartitionContentOracle for PartitionState {
+        fn authoritative_content_digest(
+            &self,
+            symbols: &StringInterner,
+        ) -> Result<[u8; 32], PartitionContentDigestError> {
+            super::with_reconstruction_fixture(|lane| {
+                self.authoritative_content_digest_for_test(lane, symbols)
+            })
+        }
+    }
+}

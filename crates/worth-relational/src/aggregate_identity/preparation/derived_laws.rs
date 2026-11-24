@@ -6,6 +6,8 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::sync::Arc;
 use worth_execution::MapKernelFailure;
+use worth_relational_contracts::internal_port::derived_relation::definition::assemble_derived_relation_handle;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Clone, Copy)]
 pub(in crate::aggregate_identity) enum LawStage {
@@ -23,13 +25,18 @@ pub(in crate::aggregate_identity) fn validate(
     stage: LawStage,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<()> {
-    for entry in registry.derived_relations.values() {
+    for entry in (*registry.owner_derived_relations()).values() {
         work.checkpoint(1)?;
         if entry.parts.laws.is_none() {
             continue;
         }
-        let levels =
-            u64::from(usize::BITS - registry.native_private_kinds.len().max(1).leading_zeros());
+        let levels = u64::from(
+            usize::BITS
+                - (*registry.owner_native_private_kinds())
+                    .len()
+                    .max(1)
+                    .leading_zeros(),
+        );
         let probes = entry
             .leaves
             .len()
@@ -47,9 +54,7 @@ pub(in crate::aggregate_identity) fn validate(
         if metadata != matches!(stage, LawStage::FinalMetadata) {
             continue;
         }
-        let definition = DerivedRelationHandle {
-            entry: Arc::clone(entry),
-        };
+        let definition = assemble_derived_relation_handle(Arc::clone(entry));
         let violation = derived_source::with_views(
             before,
             after,

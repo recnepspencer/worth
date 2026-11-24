@@ -1,4 +1,7 @@
 //! Drive the exact cold-lineage failure classes through the installed Runtime.
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::lineage::data::LineageGraphRequest;
 
 #[derive(Debug)]
@@ -279,9 +282,9 @@ fn graph_cold_lineage_doors_preserve_every_failure_class() {
                     assert_eq!(source.reads.load(Ordering::Relaxed), reads);
                 } else {
                     let graph = access.graph(execution, req()).unwrap();
-                    assert!(!graph.nodes.is_empty() && !graph.events.is_empty());
+                    assert!(!graph.nodes().is_empty() && !graph.events().is_empty());
                     assert!(source.reads.load(Ordering::Relaxed) > reads);
-                    assert!(lineage.node(graph.nodes[0].lineage_id).is_some());
+                    assert!(lineage.node(graph.nodes()[0].lineage_id()).is_some());
                 }
                 assert_eq!(history.latest_patch_stream_position(), frontier);
             },
@@ -372,9 +375,9 @@ fn divergence_cold_lineage_doors_preserve_every_failure_class() {
                     let summary = access
                         .divergence_between_branches(execution, req())
                         .unwrap();
-                    assert!(!summary.shared_lineage_ids.is_empty());
+                    assert!(!summary.shared_lineage_ids().is_empty());
                     assert!(source.reads.load(Ordering::Relaxed) > reads);
-                    assert!(lineage.node(summary.shared_lineage_ids[0]).is_some());
+                    assert!(lineage.node(summary.shared_lineage_ids()[0]).is_some());
                 }
                 assert_eq!(history.latest_patch_stream_position(), frontier);
             },

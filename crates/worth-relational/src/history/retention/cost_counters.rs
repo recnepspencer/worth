@@ -1,8 +1,8 @@
 use super::RelationalRetentionObligationKind;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-pub(crate) mod snapshot;
 pub use snapshot::RelationalRetentionCostCounters;
+pub(crate) use worth_relational_contracts::internal_port::history::retention::cost_counters::snapshot;
 
 #[derive(Debug, Default)]
 pub(super) struct RelationalRetentionAtomicCounters {

@@ -1,4 +1,5 @@
 //! Complete required writer coverage and capture only the authored stage spans.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::super::{custody, RelationalAuthoredCoupledOwners, RequiredOutputPublication};
 use super::refusals::reject;
 use super::retained_assembly::{CoupledAuthoredStagePart, CoupledPublicationPart};

@@ -81,10 +81,10 @@ pub(super) fn resolve_policy_scope(
             let base_commit_id = record_policy_base_commit_id(
                 policy_base_commit,
                 annotation,
-                causal_plan.basis.merge_base.commit.commit_id,
+                causal_plan.basis.merge_base().commit().commit_id,
             );
             let record_base_envelope =
-                if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {
+                if base_commit_id == causal_plan.basis.merge_base().commit().commit_id {
                     base_envelope.clone()
                 } else {
                     match record_base_envelopes.entry(base_commit_id) {
@@ -95,7 +95,7 @@ pub(super) fn resolve_policy_scope(
                     }
                 };
             let record_base_view =
-                if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {
+                if base_commit_id == causal_plan.basis.merge_base().commit().commit_id {
                     base_view
                 } else {
                     let version_id = record_base_envelope.commit.version_id;
@@ -107,7 +107,7 @@ pub(super) fn resolve_policy_scope(
                     }
                 };
             let record_base_view_index =
-                if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {
+                if base_commit_id == causal_plan.basis.merge_base().commit().commit_id {
                     &base_view_index
                 } else {
                     record_base_view_indices
@@ -130,8 +130,8 @@ pub(super) fn resolve_policy_scope(
                     .ok_or_else(|| MergePlanningError::MissingCausalAnnotation {
                         record: classification.record.clone(),
                     })?,
-                &causal_plan.basis.source_head.branch_id,
-                &causal_plan.basis.target_head.branch_id,
+                &causal_plan.basis.source_head().branch_id,
+                &causal_plan.basis.target_head().branch_id,
                 base_commit_id,
                 &source_view_context,
                 &target_view_context,

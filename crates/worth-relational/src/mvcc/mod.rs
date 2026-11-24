@@ -31,7 +31,6 @@ pub use crate::runtime::{
     RelationalOperationInterruption,
 };
 pub use observation::RelationalBranchObservation;
-pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use publication::{
     origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,

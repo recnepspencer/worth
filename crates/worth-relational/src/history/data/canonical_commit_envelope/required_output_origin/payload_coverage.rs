@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::identity::data::{EntityId, RelationId};
 use crate::publication::patch::data::{

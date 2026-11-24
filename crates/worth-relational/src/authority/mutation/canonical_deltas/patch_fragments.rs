@@ -1,3 +1,6 @@
+use worth_relational_contracts::internal_port::publication::patch::data::patch_detail::PatchDetailOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
 use worth_foundational::facade::{
     validate_aspect_value, AspectValue as FoundationalAspectValue, AuthoritativeRecordAspectPatch,
     ContractValidatedAspectArtifact, ContractValidationInput, EntityId as FoundationalEntityId,
@@ -331,5 +334,6 @@ fn structural_change_label(change: RecordStructuralChange) -> &'static str {
         RecordStructuralChange::RetainedForAudit => "retain_for_audit",
         RecordStructuralChange::MaterializationSuspended => "materialization_suspended",
         RecordStructuralChange::Rematerialized => "rematerialized",
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }

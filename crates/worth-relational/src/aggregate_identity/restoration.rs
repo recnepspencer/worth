@@ -1,4 +1,6 @@
 //! Rebind private memberships only to actual Native consequence allocations.
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
 use crate::identity::data::KindId;

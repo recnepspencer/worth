@@ -12,6 +12,7 @@ use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::TransactionId;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 /// Admission owns the exact draft only until the consuming Draft handoff.
 pub(super) struct AdmittedCommitExecution<V> {

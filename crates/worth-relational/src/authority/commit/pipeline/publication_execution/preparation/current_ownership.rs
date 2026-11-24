@@ -1,4 +1,6 @@
 //! Select current custody once in the commit's original work account.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::publication::ownership;
 use crate::publication::ownership::CurrentPublicationRoster;
@@ -18,13 +20,13 @@ pub(super) fn select(
         &crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     >,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
-    if basis
+    if (*basis
         .inner
         .root
         .schema_authority()
         .registry()
-        .current_publication_storage
-        .is_none()
+        .owner_current_publication_storage())
+    .is_none()
     {
         return Ok(None);
     }

@@ -1,4 +1,5 @@
 //! One counted, damage-isolated event cell is shared by all its node-range routes.
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 mod member_export;
 use super::event_page::{self, ReadmittedLineageEventPage};
 use crate::durability::data::lineage_event_pages::*;

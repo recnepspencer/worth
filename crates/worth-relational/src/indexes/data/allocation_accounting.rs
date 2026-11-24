@@ -1,4 +1,5 @@
 use super::{DerivedIndexEntryMap, DerivedIndexRows};
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingEntryOwnerPort as _;
 
 use crate::identity::data::EntityId;
 use crate::storage::data::authoritative_field_comparison_key::AuthoritativeFieldComparisonKey;

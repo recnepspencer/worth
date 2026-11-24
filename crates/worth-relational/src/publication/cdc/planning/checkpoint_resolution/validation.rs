@@ -218,5 +218,6 @@ fn continuation_priority(
         crate::schema::data::SchemaContinuationClassification::ContinueWithContractUpgrade => 3,
         crate::schema::data::SchemaContinuationClassification::RequireRenegotiation => 4,
         crate::schema::data::SchemaContinuationClassification::Rejected => 5,
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }

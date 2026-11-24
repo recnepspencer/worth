@@ -11,6 +11,8 @@
 //!   (lineage 5).
 
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::{EntityId, LineageId, PartitionId, VersionId};
@@ -61,19 +63,20 @@ impl CommitLineage {
         targets: &[u64],
     ) {
         let event_id = self.receipt.commit_id.0 * 10 + self.events.len() as u64;
-        self.events.push(LineageEventRecord {
-            event_id,
-            commit: self.receipt.clone(),
-            branch_id: self.receipt.branch_id.clone(),
-            kind,
-            sources: sources.iter().copied().map(LineageId).collect(),
-            targets: targets.iter().copied().map(LineageId).collect(),
-            subject,
-            name_birth: None,
-            kept_name: None,
-            relation_id: None,
-            entity_id: None,
-        });
+        self.events
+            .push(assemble_lineage_event_record(LineageEventRecordParts {
+                event_id,
+                commit: self.receipt.clone(),
+                branch_id: self.receipt.branch_id.clone(),
+                kind,
+                sources: sources.iter().copied().map(LineageId).collect(),
+                targets: targets.iter().copied().map(LineageId).collect(),
+                subject,
+                name_birth: None,
+                kept_name: None,
+                relation_id: None,
+                entity_id: None,
+            }));
     }
 
     pub(super) fn view(&self) -> CommitAllocationView<'_> {

@@ -68,7 +68,7 @@ fn behind_derived(
 ) -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
     let (_, template) = managed_cache_schema();
-    let mut membership = template.0.path.parts().clone();
+    let mut membership = (*template.owner_field_0()).path.parts().clone();
     membership.identity.name = "event-membership".into();
     membership.to = row.into();
     membership.nodes = nodes;
@@ -158,7 +158,7 @@ pub(super) fn unread(_: EntityId) -> Option<worth_foundational::facade::AspectVa
 fn derived_ordered_source_admits_only_a_born_scope_predecessor() {
     let (registry, program) = behind_derived(ROW, events(ROW, INTRODUCES));
     assert!(
-        program.0.ordered.is_none(),
+        (*program.owner_field_0()).ordered.is_none(),
         "the same-scope Source has no compiled recipe"
     );
     let (probed, peer, born, older) = (entity(1), entity(2), entity(3), entity(4));

@@ -1,4 +1,5 @@
 //! Endpoint lifecycle, scalar writes and rewiring pull back to actual Source rows.
+use worth_relational_contracts::internal_port::validation::candidate_source::program::projection_routes::ManagedIndexSourceProjectionRouteFieldsPort as _;
 use super::*;
 
 pub(super) fn pullback(
@@ -13,7 +14,7 @@ pub(super) fn pullback(
     for route in program.projection_routes() {
         let affected = crate::derived_relation::affected::collect(
             registry,
-            &route.path,
+            &(*route.owner_path()),
             adjacency,
             records,
             old,
@@ -36,8 +37,8 @@ pub(super) fn pullback(
                 }
                 let data = evaluate_position(
                     registry,
-                    &route.path,
-                    route.path.parts().nodes.len() - 1,
+                    &(*route.owner_path()),
+                    (*route.owner_path()).parts().nodes.len() - 1,
                     true,
                     entity.into(),
                     source,
@@ -92,8 +93,8 @@ fn lift_ancestors(
                 }
                 let data = evaluate_position(
                     registry,
-                    &parent_route.path,
-                    parent_route.path.parts().nodes.len() - 1,
+                    &(*parent_route.owner_path()),
+                    (*parent_route.owner_path()).parts().nodes.len() - 1,
                     true,
                     entity.into(),
                     source,

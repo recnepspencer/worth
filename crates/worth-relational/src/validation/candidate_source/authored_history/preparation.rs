@@ -18,6 +18,7 @@ use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 pub(in crate::validation::candidate_source) fn prepare<'a>(
     context: &'a SourcePreparationContext<'a>,

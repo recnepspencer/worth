@@ -3,6 +3,7 @@ use super::*;
 use crate::derived_relation::evaluation::SourceRead;
 use crate::derived_relation::traversal::{available, walk, walk_undirected, DerivedTraversalStep};
 use std::mem::size_of;
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
 
 pub(super) struct Discovery {
     pub(super) groups: Vec<BTreeSet<Member>>,

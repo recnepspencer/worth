@@ -5,6 +5,8 @@ use crate::durability::data::{DurableCheckpoint, RelationalRecoveryStop};
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::content::schema::RelationalContentSchemaSnapshotOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Only carriers bound to a current cell's exact schema root enter this
 /// comparison; binding corruption is refused by exact readmission. Historical
@@ -40,8 +42,8 @@ pub(super) fn check_current_schema_meaning(
                         }) else {
                             continue;
                         };
-                        let source_content = source.registry().content_formats.snapshot();
-                        let target_content = target.content_formats.snapshot();
+                        let source_content = (*source.registry().owner_content_formats()).snapshot();
+                        let target_content = (*target.owner_content_formats()).snapshot();
                         let bytes = source_content
                             .owned_bytes()
                             .checked_add(target_content.owned_bytes())

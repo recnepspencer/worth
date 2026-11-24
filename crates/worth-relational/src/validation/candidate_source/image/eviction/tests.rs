@@ -92,7 +92,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
         MinimumCardinalityEnforcement, PairMinimumSemantics, RelationIntegrityDeclarations,
         RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
     };
-    use crate::storage::overlay::small_relation_partition::typed_relation_partition;
+    use crate::storage::overlay::small_relation_partition::typed_relation_partition_for_test;
     use crate::transactions::data::primitives::RecordRef;
     use crate::validation::candidate_source::{scope_closure, ManagedIndexSourceProjectionRoute};
     use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
@@ -228,7 +228,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
                 routes,
             )
             .unwrap();
-        let host = crate::execution::test_policy::serial_request();
+        let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = ExecutionRequest::serial(&host);
         let id = PartitionId::main();
         let mut edges = vec![(0, 1, KindId(4))];
@@ -236,10 +236,12 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
             edges.push((1, 2, KindId(6)));
         }
         let kinds = [KindId(1), KindId(2), KindId(2), KindId(1), KindId(2)];
-        let (before, _, _) = typed_relation_partition(id, kinds[..3].iter().copied(), &edges);
+        let (before, _, _) =
+            typed_relation_partition_for_test(id, kinds[..3].iter().copied(), &edges);
         let anchor = if nested { 2 } else { 1 };
         edges.extend([(3, 0, KindId(3)), (4, anchor, KindId(6))]);
-        let (after, entities, relations) = typed_relation_partition(id, kinds.into_iter(), &edges);
+        let (after, entities, relations) =
+            typed_relation_partition_for_test(id, kinds.into_iter(), &edges);
         let before = BTreeMap::from([(id, before)]);
         let after = BTreeMap::from([(id, after)]);
         let (parent, row, successor, endpoint) =

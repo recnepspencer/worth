@@ -7,6 +7,7 @@ use super::retention_extent as extent;
 use crate::graph_member::NativeMemberKey as Member;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, PartitionId, RelationId};
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 mod membership;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::symbols::data::ClientKey;

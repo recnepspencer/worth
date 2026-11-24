@@ -1,6 +1,8 @@
 //! Native partition construction and scoped reads for structural traversal.
 use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
-use crate::storage::overlay::{small_relation_partition::relation_partition, PartitionState};
+use crate::storage::overlay::{
+    small_relation_partition::relation_partition_for_test, PartitionState,
+};
 use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
@@ -22,7 +24,7 @@ struct Graph {
 impl Graph {
     fn new(count: usize, edges: &[(usize, usize, KindId)]) -> Self {
         let id = PartitionId::main();
-        let (partition, entities, _) = relation_partition(id, count, edges);
+        let (partition, entities, _) = relation_partition_for_test(id, count, edges);
         Self {
             partitions: BTreeMap::from([(id, partition)]),
             entities,
@@ -33,7 +35,7 @@ impl Graph {
     fn add_entities(&mut self, count: usize) {
         let id = PartitionId::main();
         let (partition, entities, _) =
-            relation_partition(id, self.entities.len() + count, &self.edges);
+            relation_partition_for_test(id, self.entities.len() + count, &self.edges);
         self.partitions.insert(id, partition);
         self.entities = entities;
     }

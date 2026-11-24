@@ -1,5 +1,6 @@
 //! A synchronous test rendezvous at the maintenance payment boundary.
 use std::cell::RefCell;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 thread_local! {
     static RENDEZVOUS: RefCell<Option<Box<dyn FnMut()>>> = RefCell::new(None);

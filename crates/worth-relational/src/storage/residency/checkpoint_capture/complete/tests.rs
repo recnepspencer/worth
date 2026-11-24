@@ -1,10 +1,14 @@
 //! Genuine published Struct/history source, prior whole wire and actual custody.
 use super::*;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::identity::data::{EntityId, KindId, PartitionId};
+use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 use crate::storage::residency::region_image::{
     RegionHeadImage, RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
 };
 use crate::storage::residency::{PreparedResidentRegion, RelationalRegionSchema};
+use std::sync::Arc;
+use worth_execution::ExecutionRequest;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::ContractValidationInput;
 #[path = "tests/fixture.rs"]
@@ -17,26 +21,23 @@ struct Fixture {
 }
 
 fn fixture() -> Fixture {
-    let (partition, schema) = fixture_data::original_partition();
-    let host = crate::execution::test_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
-        .unwrap()
-        .carrier_digest();
-    let symbols = crate::symbols::data::StringInterner::default();
-    let prepared = PreparedResidentRegion::initial(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &request,
-        partition,
-        &symbols,
-    )
-    .unwrap();
-    Fixture {
-        prepared,
-        schema,
-        symbols,
-        schema_digest,
-    }
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let (partition, schema) = fixture_data::original_partition();
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let request = ExecutionRequest::serial(&host);
+        let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
+            .unwrap()
+            .carrier_digest();
+        let symbols = crate::symbols::data::StringInterner::default();
+        let prepared =
+            PreparedResidentRegion::initial(fixture_lane, &request, partition, &symbols).unwrap();
+        Fixture {
+            prepared,
+            schema,
+            symbols,
+            schema_digest,
+        }
+    })
 }
 
 fn captured(fixture: &Fixture, request: &ExecutionRequest<'_, '_>) -> CapturedCompleteRegion {
@@ -60,77 +61,79 @@ fn bytes(member: &RelationalCheckpointMember) -> &worth_execution::ExecutionImmu
 }
 #[test]
 fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() {
-    let fixture = fixture();
-    let region = fixture
-        .prepared
-        .retention
-        .capture_region()
-        .unwrap()
-        .unwrap();
-    let host = crate::execution::test_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let old = crate::storage::residency::region_capture::capture_region_members(
-        &lane,
-        &request,
-        &region.partition,
-        region.commitment.as_ref().unwrap(),
-        fixture.schema.as_ref(),
-        fixture.schema_digest,
-    )
-    .unwrap();
-    let emitted = captured(&fixture, &request);
-    assert_eq!(bytes(&emitted.members[0]).as_ref(), old.head.1);
-    assert_eq!(bytes(&emitted.members[1]).as_ref(), old.history.1);
-    assert_eq!(emitted.leaf.head, old.head.0);
-    assert_eq!(emitted.leaf.history, old.history.0);
-    assert_eq!(emitted.leaf.kind_authority, old.kind_authority);
-    let frame = RelationalRegionImage::decode(
-        &lane,
-        &mut |_, _| Ok(()),
-        bytes(&emitted.members[0]),
-        emitted.leaf.head,
-        emitted.leaf.partition_id,
-        fixture.schema_digest,
-        RelationalRegionImageKind::Head,
-    )
-    .unwrap();
-    let head: RegionHeadImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert!(head.partition.entity_arena.extra.iter().any(|extra|extra.authoritative_aspect_state.as_ref().is_some_and(|state|
-        state.entries().iter().any(|entry|matches!(entry.value(),ContractValidationInput::Struct(value) if value.fields().count()>1)))));
-    let (_, frontiers) = head.history_frontiers.into_arenas();
-    assert!(frontiers
-        .iter()
-        .any(|(_, frontier)| frontier.last.is_some() && !frontier.siblings.is_empty()));
-    let frame = RelationalRegionImage::decode(
-        &lane,
-        &mut |_, _| Ok(()),
-        bytes(&emitted.members[1]),
-        emitted.leaf.history,
-        emitted.leaf.partition_id,
-        fixture.schema_digest,
-        RelationalRegionImageKind::History,
-    )
-    .unwrap();
-    let history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert!(history.relations.iter().any(|row| row.earlier.len() > 1));
-    assert!(
-        history
-            .reverse_adjacency_kinds
-            .iter()
-            .filter(|row| !row.kinds.is_empty())
-            .count()
-            > 1
-    );
-    assert!(history.relations.iter().all(|row| row.prefix.is_none()));
-    assert_eq!(
-        region
-            .commitment
-            .as_ref()
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = fixture();
+        let region = fixture
+            .prepared
+            .retention
+            .capture_region()
             .unwrap()
-            .digest(region.partition.partition_id),
-        emitted.leaf.content_digest
-    );
+            .unwrap();
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let request = ExecutionRequest::serial(&host);
+        let lane = fixture_lane;
+        let old = crate::storage::residency::region_capture::capture_region_members(
+            &lane,
+            &request,
+            &region.partition,
+            region.commitment.as_ref().unwrap(),
+            fixture.schema.as_ref(),
+            fixture.schema_digest,
+        )
+        .unwrap();
+        let emitted = captured(&fixture, &request);
+        assert_eq!(bytes(&emitted.members[0]).as_ref(), old.head.1);
+        assert_eq!(bytes(&emitted.members[1]).as_ref(), old.history.1);
+        assert_eq!(emitted.leaf.head, old.head.0);
+        assert_eq!(emitted.leaf.history, old.history.0);
+        assert_eq!(emitted.leaf.kind_authority, old.kind_authority);
+        let frame = RelationalRegionImage::decode(
+            &lane,
+            &mut |_, _| Ok(()),
+            bytes(&emitted.members[0]),
+            emitted.leaf.head,
+            emitted.leaf.partition_id,
+            fixture.schema_digest,
+            RelationalRegionImageKind::Head,
+        )
+        .unwrap();
+        let head: RegionHeadImage = rmp_serde::from_slice(frame.payload).unwrap();
+        assert!(head.partition.entity_arena.extra.iter().any(|extra|extra.authoritative_aspect_state.as_ref().is_some_and(|state|
+        state.entries().iter().any(|entry|matches!(entry.value(),ContractValidationInput::Struct(value) if value.fields().count()>1)))));
+        let (_, frontiers) = head.history_frontiers.into_arenas();
+        assert!(frontiers
+            .iter()
+            .any(|(_, frontier)| frontier.last.is_some() && !frontier.siblings.is_empty()));
+        let frame = RelationalRegionImage::decode(
+            &lane,
+            &mut |_, _| Ok(()),
+            bytes(&emitted.members[1]),
+            emitted.leaf.history,
+            emitted.leaf.partition_id,
+            fixture.schema_digest,
+            RelationalRegionImageKind::History,
+        )
+        .unwrap();
+        let history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
+        assert!(history.relations.iter().any(|row| row.earlier.len() > 1));
+        assert!(
+            history
+                .reverse_adjacency_kinds
+                .iter()
+                .filter(|row| !row.kinds.is_empty())
+                .count()
+                > 1
+        );
+        assert!(history.relations.iter().all(|row| row.prefix.is_none()));
+        assert_eq!(
+            region
+                .commitment
+                .as_ref()
+                .unwrap()
+                .digest(region.partition.partition_id),
+            emitted.leaf.content_digest
+        );
+    })
 }
 #[test]
 fn complete_region_ack_busy_and_stop_preserve_original_binding_then_refund() {

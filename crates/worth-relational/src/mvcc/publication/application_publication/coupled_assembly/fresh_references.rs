@@ -6,6 +6,7 @@ use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedE
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::EntityReference;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 /// A producer sees real allocated IDs in its candidate reads. The enclosing
 /// transaction keeps their original Create references for the final full plan.

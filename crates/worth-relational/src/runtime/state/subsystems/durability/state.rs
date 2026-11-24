@@ -122,15 +122,15 @@ impl DurabilityState {
 
     #[cfg(test)]
     pub(super) fn remove_log_commit(&mut self, commit_id: CommitId) -> bool {
-        let before = self.log.len();
-        self.log.retain(|entry| entry.0 != commit_id);
-        let changed = before != self.log.len();
-        if changed {
-            self.rebuild_log_commit_index(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            );
-        }
-        changed
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let before = self.log.len();
+            self.log.retain(|entry| entry.0 != commit_id);
+            let changed = before != self.log.len();
+            if changed {
+                self.rebuild_log_commit_index(fixture_lane);
+            }
+            changed
+        })
     }
 
     /// Drop every envelope at or below a checkpoint's coverage frontier.

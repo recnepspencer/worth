@@ -1,14 +1,16 @@
 //! Repeated real member placement and readmission exercise capture's fold bound.
 use super::layered_history_tests::{counted, place};
 use super::*;
+use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
 use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 use crate::storage::residency::history_capture_bound::{
     HISTORY_CAPTURE_INPUT_TARGET, HISTORY_CAPTURE_MAX_LAYERS,
 };
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 
 #[test]
 fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold;
@@ -40,78 +42,80 @@ fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
 
 #[test]
 fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let fixture = region_with_history();
-    let flat_bytes = fixture.cold.history.length;
-    let mut cold = fixture.cold.clone();
-    let mut consolidations = 0;
-    for _ in 0..(HISTORY_CAPTURE_MAX_LAYERS * 8) {
-        let cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
-        head_demand(&cell, 1 << 24).unwrap();
-        let prior = cold.history_members.fold_span(cold.history).0;
-        let captured = capture_next(execution, &cell, &cold);
-        let directory = Arc::new(
-            RelationalHistoryMemberDirectory::readmit(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                &captured.history_dependencies,
-                [captured.leaf.history],
-            )
-            .unwrap(),
-        );
-        let (layers, input) = directory.fold_span(captured.leaf.history);
-        assert!(layers < HISTORY_CAPTURE_MAX_LAYERS + 1);
-        assert!(input < HISTORY_CAPTURE_INPUT_TARGET);
-        // This independent byte sum catches growth even if depth accounting lies.
-        let members = place(&captured.members, &archive(&cold));
-        let actual = directory
-            .members(captured.leaf.history)
-            .iter()
-            .map(|member| members[member].len() as u64)
-            .sum::<u64>();
-        assert_eq!(input, actual);
-        assert!(
-            actual < flat_bytes * (HISTORY_CAPTURE_MAX_LAYERS as u64 + 4),
-            "actual history input is {actual} bytes for a {flat_bytes}-byte flattened history"
-        );
-        consolidations += usize::from(layers < prior);
-        let source = counted(members, captured.leaf.history);
-        cold = RelationalColdRegion {
-            source: Some(source),
-            head: captured.leaf.head,
-            history: captured.leaf.history,
-            history_members: directory,
-            kind_authority: captured.leaf.kind_authority,
-            ..cold
-        };
-        let full_cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
-        let full = full_demand(&full_cell, 1 << 24).unwrap();
-        assert_eq!(
-            full.full_view()
-                .partition()
-                .authoritative_content_digest(&cold.symbols.interner_snapshot())
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let fixture = region_with_history();
+        let flat_bytes = fixture.cold.history.length;
+        let mut cold = fixture.cold.clone();
+        let mut consolidations = 0;
+        for _ in 0..(HISTORY_CAPTURE_MAX_LAYERS * 8) {
+            let cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
+            head_demand(&cell, 1 << 24).unwrap();
+            let prior = cold.history_members.fold_span(cold.history).0;
+            let captured = capture_next(execution, &cell, &cold);
+            let directory = Arc::new(
+                RelationalHistoryMemberDirectory::readmit(
+                    fixture_lane,
+                    &captured.history_dependencies,
+                    [captured.leaf.history],
+                )
                 .unwrap(),
-            fixture.expected_digest
+            );
+            let (layers, input) = directory.fold_span(captured.leaf.history);
+            assert!(layers < HISTORY_CAPTURE_MAX_LAYERS + 1);
+            assert!(input < HISTORY_CAPTURE_INPUT_TARGET);
+            // This independent byte sum catches growth even if depth accounting lies.
+            let members = place(&captured.members, &archive(&cold));
+            let actual = directory
+                .members(captured.leaf.history)
+                .iter()
+                .map(|member| members[member].len() as u64)
+                .sum::<u64>();
+            assert_eq!(input, actual);
+            assert!(
+                actual < flat_bytes * (HISTORY_CAPTURE_MAX_LAYERS as u64 + 4),
+                "actual history input is {actual} bytes for a {flat_bytes}-byte flattened history"
+            );
+            consolidations += usize::from(layers < prior);
+            let source = counted(members, captured.leaf.history);
+            cold = RelationalColdRegion {
+                source: Some(source),
+                head: captured.leaf.head,
+                history: captured.leaf.history,
+                history_members: directory,
+                kind_authority: captured.leaf.kind_authority,
+                ..cold
+            };
+            let full_cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
+            let full = full_demand(&full_cell, 1 << 24).unwrap();
+            assert_eq!(
+                full.full_view()
+                    .partition()
+                    .authoritative_content_digest(&cold.symbols.interner_snapshot())
+                    .unwrap(),
+                fixture.expected_digest
+            );
+            assert_eq!(
+                full.full_view()
+                    .partition()
+                    .entity_arena
+                    .metadata_history_at(fixture.entity.slot_index())
+                    .unwrap()
+                    .len(),
+                fixture.expected_history
+            );
+        }
+        assert!(
+            consolidations >= 4,
+            "the fixture must cross the policy repeatedly"
         );
-        assert_eq!(
-            full.full_view()
-                .partition()
-                .entity_arena
-                .metadata_history_at(fixture.entity.slot_index())
-                .unwrap()
-                .len(),
-            fixture.expected_history
-        );
-    }
-    assert!(
-        consolidations >= 4,
-        "the fixture must cross the policy repeatedly"
-    );
+    })
 }
 
 #[test]
 fn consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold;
@@ -222,23 +226,25 @@ fn reopened(
     cold: &RelationalColdRegion,
     captured: super::super::checkpoint_capture::RelationalCapturedRegionCheckpoint,
 ) -> RelationalColdRegion {
-    let source = counted(
-        place(&captured.members, &archive(cold)),
-        captured.leaf.history,
-    );
-    RelationalColdRegion {
-        source: Some(source),
-        head: captured.leaf.head,
-        history: captured.leaf.history,
-        history_members: Arc::new(
-            RelationalHistoryMemberDirectory::readmit(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                &captured.history_dependencies,
-                [captured.leaf.history],
-            )
-            .unwrap(),
-        ),
-        kind_authority: captured.leaf.kind_authority,
-        ..cold.clone()
-    }
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let source = counted(
+            place(&captured.members, &archive(cold)),
+            captured.leaf.history,
+        );
+        RelationalColdRegion {
+            source: Some(source),
+            head: captured.leaf.head,
+            history: captured.leaf.history,
+            history_members: Arc::new(
+                RelationalHistoryMemberDirectory::readmit(
+                    fixture_lane,
+                    &captured.history_dependencies,
+                    [captured.leaf.history],
+                )
+                .unwrap(),
+            ),
+            kind_authority: captured.leaf.kind_authority,
+            ..cold.clone()
+        }
+    })
 }

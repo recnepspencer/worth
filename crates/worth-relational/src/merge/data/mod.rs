@@ -1,25 +1,19 @@
-pub(crate) mod ancestry;
-pub(crate) mod artifacts;
-pub(crate) mod causal;
-pub(crate) mod conflicts;
-pub(crate) mod decisions;
-pub(crate) mod execution;
-pub(crate) mod execution_artifacts;
-pub(crate) mod identity;
-pub(crate) mod inspection_digest;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::ancestry;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::artifacts;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::causal;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::conflicts;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::decisions;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::execution;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::execution_artifacts;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::identity;
 pub(crate) mod plans;
-pub(crate) mod policy;
-pub(crate) mod readmission_memory;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::policy;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::readmission_memory;
 pub(crate) mod requests;
-pub(crate) mod resolved_value_strategy;
-pub(crate) use readmission_memory::{
-    attach_policy_name, MergeBasisMemory, MergeIdentityMemory, MergeLeafMemory,
-    MergePolicyRowMemory, MergeReadmissionMemory, MergeStrategyMemory,
-};
+pub(crate) use worth_relational_contracts::internal_port::merge::data::resolved_value_strategy;
 
 pub use crate::history::data::{MergeBaseSelectionRule, ResolvedMergeBase};
 pub use ancestry::{BranchDeltaSummary, MergeAncestrySummary};
-pub(crate) use artifacts::MergeWitnessRows;
 pub(crate) use artifacts::RelationalSchemaReconciliationWitnessRowInput;
 pub(crate) use artifacts::{
     correspondence_posture_for_candidate, row_for_candidate, schema_declared_correspondence_posture,
@@ -84,7 +78,6 @@ pub use identity::{
     IdentityMatchClass, IdentityResolutionReason, MergeRecordIdentity,
     SchemaDeclaredCorrespondenceValidationSummary,
 };
-pub(crate) mod planning_denial;
 pub use planning_denial::MergePlanningError;
 pub(crate) use plans::{
     BranchCommitDelta, BranchTouchedRecordDelta, CausallyAnnotatedMergePlan,
@@ -116,15 +109,16 @@ pub use requests::{
     RelationalMergeScope, RelationalMergeTopologyIntent,
 };
 pub use resolved_value_strategy::MergeResolvedAspectValueStrategy;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::planning_denial;
 
-pub(crate) mod blocked_posture;
-pub(crate) mod execution_authority_contract;
-pub(crate) mod policy_meaning;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::blocked_posture;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::execution_authority_contract;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::policy_meaning;
 
 pub(crate) mod prepared_execution;
 pub use prepared_execution::PreparedMergeExecution;
 pub(crate) use prepared_execution::{
     CompiledMergeExecution, ExecutionReadyLoweredMergePlan, PreparedMergeMutationPlan,
 };
-pub(crate) mod visible_record;
 pub(crate) use visible_record::{VisibleMergeRecord, VisibleMergeRecordKind};
+pub(crate) use worth_relational_contracts::internal_port::merge::data::visible_record;

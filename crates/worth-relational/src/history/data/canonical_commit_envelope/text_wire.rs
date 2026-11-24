@@ -1,4 +1,5 @@
 //! Current native canonical envelope input: managed text remains borrowed until admission.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultFieldsPort as _;
 #[path = "text_wire/cascade_memory.rs"]
 mod cascade_memory;
 #[path = "text_wire/seed.rs"]
@@ -193,11 +194,11 @@ impl CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'_>> {
         // Every Arc here was created by this single private decode and has
         // not escaped or acquired Weak observers. Attach its already-admitted
         // allocation BEFORE any text/readmission operation can refuse.
-        std::sync::Arc::get_mut(&mut self.semantic_result)
+        (*std::sync::Arc::get_mut(&mut self.semantic_result)
             .ok_or(
                 crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
             )?
-            .decoded_memory = self.readmission_memory.semantic.take();
+            .owner_decoded_memory_mut()) = self.readmission_memory.semantic.take();
         if let Some(association) = self.caller_association.take() {
             self.caller_association =
                 Some(association.with_decoded_memory(self.readmission_memory.association.take()));

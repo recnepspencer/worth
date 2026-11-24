@@ -3,6 +3,9 @@ use super::*;
 use crate::merge::data::identity::{DeclaredIdentityKeys, IdentityBasisName};
 use crate::merge::data::policy::MergePolicyName;
 use worth_foundational::facade::AspectKey;
+use worth_relational_contracts::internal_port::merge::data::identity::custom_name::IdentityBasisNameOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::identity::declared_keys::DeclaredIdentityKeysOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::policy::custom_name::MergePolicyNameOwnerPort as _;
 
 pub(super) fn declaration(
     value: BorrowedPayload<'_>,

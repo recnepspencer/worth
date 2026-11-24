@@ -62,6 +62,7 @@ fn witness_for_verdict(verdict: &InvariantVerdict) -> InvariantWitnessKey {
         InvariantVerdict::Advisory { violation, .. } | InvariantVerdict::Violation(violation) => {
             violation.witness_key()
         }
+        &_ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

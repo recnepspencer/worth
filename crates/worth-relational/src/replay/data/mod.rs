@@ -1,7 +1,7 @@
 mod digest;
 mod lineage_authority;
 mod parity;
-pub(crate) mod replay_errors;
+pub(crate) use worth_relational_contracts::internal_port::replay::data::replay_errors;
 mod verification;
 
 pub use crate::history::data::{

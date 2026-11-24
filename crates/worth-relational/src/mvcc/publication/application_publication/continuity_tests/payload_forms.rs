@@ -1,6 +1,8 @@
 //! Real installed publication of generic Query-shaped string struct outputs.
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
-use crate::mvcc::publication::application_publication::output_meaning::{
+use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,
 };
 use worth_foundational::facade::{
@@ -42,7 +44,7 @@ fn succession(
 
 #[test]
 fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_and_cold_custody() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = build_runtime();
     let receipt = runtime

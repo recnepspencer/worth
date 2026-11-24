@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::*;
 use crate::identity::data::{KindId, PartitionId, VersionId};
-use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
@@ -63,14 +63,14 @@ fn scope_with_access(
 
 #[test]
 fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let id = PartitionId::main();
     let edges = (1..=64)
         .map(|leaf| (0, leaf, KindId(2)))
         .collect::<Vec<_>>();
-    let (partition, entities, _) = relation_partition(id, 66, &edges);
+    let (partition, entities, _) = relation_partition_for_test(id, 66, &edges);
     let partitions = std::collections::BTreeMap::from([(id, partition)]);
     let shared = entities[0];
     let target = entities[65];
@@ -116,7 +116,7 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
 
 #[test]
 fn custom_scope_planner_preserves_owner_selected_current_version() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let partitions = std::collections::BTreeMap::new();
@@ -241,7 +241,7 @@ fn custom_registration_rejects_empty_ids() {
 
 #[test]
 fn traversal_budget_is_session_wide() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let partitions = std::collections::BTreeMap::new();

@@ -83,7 +83,7 @@ fn canonical_source() -> CanonicalCommitEnvelope {
 }
 
 fn source_artifact() -> Frame {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let envelope = canonical_source();
     assert!(envelope.control_allocation.is_none());

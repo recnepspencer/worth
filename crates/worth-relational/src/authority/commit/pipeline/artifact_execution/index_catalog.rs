@@ -2,6 +2,7 @@
 use crate::history::data::CanonicalIndexDefinitionDelta;
 use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
 use crate::runtime::state::subsystems::indexing::IndexDefinitionReadBinding;
+use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexDefinitionOwnerPort as _;
 
 pub(crate) struct PublicationIndexCatalogInputs<'a> {
     pub(crate) history: &'a crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,

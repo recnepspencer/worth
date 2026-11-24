@@ -1,4 +1,6 @@
 //! One recorded-fact closure owner for authored and producer-triggered source removal.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use super::{
     charge, require_linear_history, CodecRetirementClosureStop as Stop,
     PublicationHistoryFailure as Failure,

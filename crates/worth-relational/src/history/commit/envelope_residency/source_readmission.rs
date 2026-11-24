@@ -1,5 +1,6 @@
 //! Journal and selected singleton bytes share the complete existing admission.
 use super::*;
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn original_source_damage(&self) -> Option<RelationalStorageUnavailable> {
         self.state

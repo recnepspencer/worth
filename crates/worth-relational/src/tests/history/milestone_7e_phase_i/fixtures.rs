@@ -1,3 +1,7 @@
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness::RelationalMergeStrategyWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_policy_rows::RelationalMergeAspectPolicyWitnessRowOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_posture_rows::RelationalMergeDeletionStrategyWitnessRowOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_posture_rows::RelationalMergeTopologyStrategyWitnessRowOwnerPort as _;
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
 use crate::facade::merge::{

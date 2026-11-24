@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
 
 use sha2::{Digest, Sha256};
 use worth_proof::TransitionOutcome;

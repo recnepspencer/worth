@@ -3,6 +3,9 @@ use super::super::funding::{AggregateWork, BuildResult, PlanDenial};
 use crate::graph_member::NativeMemberDomain;
 use crate::projected_member_domain::ProjectedMemberDomainHandle;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
+use worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(in crate::aggregate_identity) fn domain_for_contract(
     registry: &RelationalSchemaRegistry,
@@ -18,8 +21,8 @@ pub(in crate::aggregate_identity) fn domain_for_contract(
         .len()
         .checked_add(identity.name.len())
         .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-    lookup(bytes, registry.derived_relations.len(), work)?;
-    let Some(recipe) = registry.derived_relations.get(identity) else {
+    lookup(bytes, (*registry.owner_derived_relations()).len(), work)?;
+    let Some(recipe) = (*registry.owner_derived_relations()).get(identity) else {
         return work.invalid(PlanDenial::DefinitionUnavailable);
     };
     match &recipe.parts.from {
@@ -28,7 +31,11 @@ pub(in crate::aggregate_identity) fn domain_for_contract(
             let bytes = projected
                 .name_bytes()
                 .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-            lookup(bytes, registry.projected_member_domains.len(), work)?;
+            lookup(
+                bytes,
+                (*registry.owner_projected_member_domains()).len(),
+                work,
+            )?;
             registry.projected_member_domain(projected).map(Some).ok_or(
                 worth_execution::MapKernelFailure::Domain(PlanDenial::DefinitionUnavailable),
             )

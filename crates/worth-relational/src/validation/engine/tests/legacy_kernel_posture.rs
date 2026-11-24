@@ -8,7 +8,7 @@ use worth_foundational::{
 };
 
 fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
+    worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 posture,
@@ -45,7 +45,7 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
         );
         InvariantEngine::from_view(&view).execute(execution, request)
     };
-    let serial_request = crate::execution::test_policy::serial_request();
+    let serial_request = worth_harness::facade::execution_fixture::serial_request();
     let expected = run(&ExecutionRequest::serial(&serial_request)).unwrap();
     for (posture, workers) in [
         (ExecutionPosture::Serial, 4),

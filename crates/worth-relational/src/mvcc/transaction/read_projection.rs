@@ -8,7 +8,6 @@ use crate::transactions::data::intents::mutation_intent::{
 use crate::transactions::data::outcomes::{
     commit_conflict::CommitConflict, conflict_class::RecordAspectPatchTarget,
 };
-use crate::transactions::data::primitives::EntityReference;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 pub use super::relation_value::RelationalTransactionRelationValue;

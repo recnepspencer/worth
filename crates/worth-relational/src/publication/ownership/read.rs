@@ -11,6 +11,7 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod entity;
 mod integrity;
 mod linked;
@@ -83,10 +84,10 @@ fn read_source(
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let mut roster = empty(execution, source)?;
     let root = source.root();
-    let Some(storage) = &root
+    let Some(storage) = &(*root
         .schema_authority()
         .registry()
-        .current_publication_storage
+        .owner_current_publication_storage())
     else {
         return Ok(roster);
     };

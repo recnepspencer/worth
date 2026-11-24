@@ -7,6 +7,9 @@ use crate::runtime::state::subsystems::{
     lineage::{LineageState, LineageSubsystem},
     record_identity::RecordIdentitySubsystem,
 };
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 use super::super::super::derived_index_artifacts::restore_checkpoint_derived_index_artifacts;
 use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
@@ -190,7 +193,7 @@ fn prepare_lineage(
         .nodes()
         .iter()
         .cloned()
-        .map(|node| (node.lineage_id, node))
+        .map(|node| ((*node.owner_lineage_id()), node))
         .collect();
     for cell in &checkpoint.branch_cells {
         if let (Some(source_branch), Some(provenance)) =
@@ -224,7 +227,7 @@ fn prepare_lineage(
         })
         .collect::<Vec<_>>();
     let mut events = events;
-    events.sort_by_key(|(event, _)| event.event_id);
+    events.sort_by_key(|(event, _)| (*event.owner_event_id()));
     lineage.replace_events(lane, events);
     lineage
 }

@@ -1,5 +1,5 @@
 use crate::identity::data::{KindId, PartitionId, VersionId};
-use crate::storage::overlay::small_relation_partition::typed_relation_partition;
+use crate::storage::overlay::small_relation_partition::typed_relation_partition_for_test;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
@@ -135,7 +135,7 @@ fn touched(
     state: &dyn CurrentPartitionAccess,
     plan: &MergedCommitPlan,
 ) -> Option<CandidateTouchedKinds> {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
     let view = empty_invariant_view(&instrumentation);
@@ -171,7 +171,8 @@ fn partitions(
     Vec<crate::identity::data::RelationId>,
 ) {
     let id = PartitionId::main();
-    let (partition, entities, relations) = typed_relation_partition(id, kinds.into_iter(), edges);
+    let (partition, entities, relations) =
+        typed_relation_partition_for_test(id, kinds.into_iter(), edges);
     (
         std::collections::BTreeMap::from([(id, partition)]),
         entities,

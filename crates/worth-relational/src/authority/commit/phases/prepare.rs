@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::authority::commit::structural_summary::CommitStructuralSummary;

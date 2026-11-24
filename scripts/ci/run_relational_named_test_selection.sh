@@ -23,7 +23,7 @@ set -euo pipefail
 # lane red instead of quietly shrinking what it proves.
 #
 # Usage:
-#   run_relational_named_test_selection.sh (--lib | --test <target>) \
+#   run_relational_named_test_selection.sh [--package <package>] (--lib | --test <target>) \
 #     --selection <filter> [--exact] [--ignored] \
 #     [--expect-name <exact test path>]...
 
@@ -46,6 +46,14 @@ parse_selection_request() {
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --package)
+        [[ $# -ge 2 ]] || fail_usage "--package requires a Relational package"
+        case "$2" in
+          worth-relational|worth-relational-contracts|worth-relational-storage) PACKAGE="$2" ;;
+          *) fail_usage "unknown Relational package '$2'" ;;
+        esac
+        shift 2
+        ;;
       --lib)
         [[ -n "$TARGET_LABEL" ]] && fail_usage "--lib and --test are mutually exclusive"
         CARGO_TARGET_ARGS=(--lib)
@@ -105,7 +113,7 @@ parse_selection_request() {
 
 fail_usage() {
   echo "FAIL: $1" >&2
-  echo "Usage: $(basename "${BASH_SOURCE[0]}") (--lib | --test <target>) --selection <filter> [--exact] [--ignored] [--expect-name <exact test path>]..." >&2
+  echo "Usage: $(basename "${BASH_SOURCE[0]}") [--package <package>] (--lib | --test <target>) --selection <filter> [--exact] [--ignored] [--expect-name <exact test path>]..." >&2
   exit 2
 }
 

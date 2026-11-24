@@ -114,6 +114,7 @@ fn filter_mode_value(mode: ProjectionAspectFilterMode) -> RelationalDiagnosticVa
     match mode {
         ProjectionAspectFilterMode::Any => RelationalDiagnosticValue::string("any"),
         ProjectionAspectFilterMode::All => RelationalDiagnosticValue::string("all"),
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

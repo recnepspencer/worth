@@ -3,6 +3,9 @@
 //! ancestry (including historical fork cutoffs), and fails closed with
 //! `MissingBirth` when a schemed kind is created without a birth or posture.
 
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use std::collections::BTreeMap;
 
 use crate::facade::history::{BranchId, CommitId};
@@ -40,8 +43,8 @@ fn lineage_basis_is_exact_across_rebuild_derived_indexes_and_fork_ancestry_cutof
     )
     .expect("c1 succeeds");
     let f1_lin = staged_entity_lineage(&staged, f1).unwrap();
-    let s1_lin = c1.relation_lineages()[&s1];
-    let s2_lin = c1.relation_lineages()[&s2];
+    let s1_lin = c1.relation_lineages_for_test()[&s1];
+    let s2_lin = c1.relation_lineages_for_test()[&s2];
     let name_for = |lin| {
         c1.artifact()
             .event_batch()
@@ -102,8 +105,11 @@ fn lineage_basis_is_exact_across_rebuild_derived_indexes_and_fork_ancestry_cutof
 
     // Register fork rooted at CommitId(1): must inherit f1 + s1 + s2 LIVE even
     // though main retired f1 at CommitId(2).
-    prep.lineage_naming_basis
-        .register_fork_ancestry(fork_branch.clone(), main_branch.clone(), CommitId(1));
+    prep.lineage_naming_basis.register_fork_ancestry(
+        fork_branch.clone(),
+        main_branch.clone(),
+        CommitId(1),
+    );
 
     let main_before = prep.lineage_naming_basis.authoritative_basis(&main_branch);
     let fork_before = prep.lineage_naming_basis.authoritative_basis(&fork_branch);
@@ -138,8 +144,8 @@ fn lineage_basis_is_exact_across_rebuild_derived_indexes_and_fork_ancestry_cutof
 #[test]
 fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
     let base = test_schema_registry();
-    let entity_kind_name = base.entity_kinds[&KindId(1)].kind_name.clone();
-    let rel_kind_name = base.relation_kinds[&KindId(2)].kind_name.clone();
+    let entity_kind_name = (*base.owner_entity_kinds())[&KindId(1)].kind_name.clone();
+    let rel_kind_name = (*base.owner_relation_kinds())[&KindId(2)].kind_name.clone();
     let mut reg = InstalledPersistentNameSchemeRegistry::new();
     reg.register(
         InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
@@ -226,19 +232,30 @@ fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
     assert_eq!(allocator.frontiers(), before);
 
     let fresh_r = {
-        use crate::storage::substrate::{RelationEndpoints, RelationExtra, RelationRecordKind, SlotInit};
+        use crate::storage::substrate::{
+            RelationEndpoints, RelationExtra, RelationRecordKind, SlotInit,
+        };
         let part = staged.get_partition_mut(crate::facade::identity::PartitionId::main());
-        let (slot, gen_id, _) = part.relation_arena.push_slot(SlotInit::<RelationRecordKind> {
+        let (slot, gen_id, _) = part.relation_arena.push_slot_for_test(SlotInit::<
+            RelationRecordKind,
+        > {
             partition_id: crate::facade::identity::PartitionId::main(),
             kind_id: KindId(2),
             version_id: VersionId(2),
             extra: RelationExtra::from_funded_parts(
-                Some(RelationEndpoints { source: f1, target: f2 }),
+                Some(RelationEndpoints {
+                    source: f1,
+                    target: f2,
+                }),
                 None,
                 None,
             ),
         });
-        crate::facade::identity::RelationId::new(crate::facade::identity::PartitionId::main(), slot as u64, gen_id)
+        crate::facade::identity::RelationId::new(
+            crate::facade::identity::PartitionId::main(),
+            slot as u64,
+            gen_id,
+        )
     };
     let err_r = crate::lineage::authority::test_finalize_with_schema(
         &allocator,

@@ -18,6 +18,7 @@ impl AuthoredSourceInputs {
                 Change::Updated => Use::FIELDS,
                 Change::Created | Change::Deleted | Change::RetainedForAudit => Use::LIFECYCLE,
                 Change::MaterializationSuspended | Change::Rematerialized => return Ok(false),
+                _ => unreachable!("unhandled Relational contract variant"),
             };
             match delta.target {
                 RecordRef::Entity(_) => self.record(execution, budget, &delta.target, usage)?,

@@ -1309,6 +1309,8 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "worth-execution",
+ "worth-foundational",
 ]
 
 [[package]]
@@ -1730,6 +1732,38 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-contracts"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-relational-storage"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-contracts",
 ]
 
 [[package]]

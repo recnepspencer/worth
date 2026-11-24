@@ -5,6 +5,8 @@ use crate::derived_relation::definition::{
 use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::data::structural_read::StructuralReadError;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl StructuralRelationView<'_> {
     /// Admit only the actual registered source and this view's full audience.
@@ -33,9 +35,7 @@ impl StructuralRelationView<'_> {
             .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
         let levels = u64::from(
             usize::BITS
-                - registry
-                    .registry()
-                    .derived_relations
+                - (*registry.registry().owner_derived_relations())
                     .len()
                     .max(1)
                     .leading_zeros(),
@@ -63,7 +63,7 @@ impl StructuralRelationView<'_> {
         }
         // A carrier-only recipe may have no physical relation leaves. Its
         // existence and empty-result reads still require the actual carrier.
-        for &carrier in &definition.entry.carriers {
+        for &carrier in &(*definition.owner_entry()).carriers {
             self.require_entity_kind(carrier)
                 .map_err(|error| self.derived_refusal(error))?;
         }

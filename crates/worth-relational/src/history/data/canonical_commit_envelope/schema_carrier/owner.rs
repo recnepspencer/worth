@@ -28,13 +28,11 @@ impl RecordedBranchSchemaImage {
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<Self, rmp_serde::encode::Error> {
         let registry = source.registry;
-        let entity_registrations = registry
-            .entity_kinds
+        let entity_registrations = (*registry.owner_entity_kinds())
             .values()
             .map(DurableEntitySchemaRegistration::capture)
             .collect();
-        let relation_registrations = registry
-            .relation_kinds
+        let relation_registrations = (*registry.owner_relation_kinds())
             .values()
             .map(DurableRelationSchemaRegistration::capture)
             .collect();
@@ -47,7 +45,7 @@ impl RecordedBranchSchemaImage {
             relation_registrations,
             derived_relations: registry.derived_parts(),
             projected_member_domains: registry.projected_domain_parts(),
-            content_formats: registry.content_formats.snapshot(),
+            content_formats: (*registry.owner_content_formats()).snapshot(),
             persistent_name_schemes: registry.persistent_name_scheme_snapshots(),
             kind_name_schemes: registry.kind_name_scheme_snapshots(),
             _memory: memory,

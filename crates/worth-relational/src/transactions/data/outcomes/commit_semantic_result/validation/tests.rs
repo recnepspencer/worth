@@ -1,5 +1,17 @@
 use super::*;
+use crate::identity::data::VersionId;
+use crate::validation::data::custom_rule::touched_scope::planned_records::StructuralCountView;
+use crate::validation::data::execution::InvariantDecisionKind;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::execution_posture::InvariantExecutionDisposition;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::observation_kind::InvariantObservationKind;
 use crate::validation::engine::result::metadata::InvariantExecutionMetadata;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantDecisionKindOwnerPort as _;
 
 fn execution_metadata(ceiling: InvariantCostClass) -> InvariantExecutionMetadata {
     InvariantExecutionMetadata::new(

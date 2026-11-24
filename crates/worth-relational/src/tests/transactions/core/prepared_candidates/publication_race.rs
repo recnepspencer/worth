@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use super::*;
 use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 

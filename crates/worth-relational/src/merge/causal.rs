@@ -65,7 +65,7 @@ pub(super) fn annotate_causal_scope(
             MergeRecordCausalAnnotation {
                 record: classification.record.clone(),
                 target_record: classification.target_record.clone(),
-                merge_base_commit_id: conflict_plan.basis.merge_base.commit.commit_id,
+                merge_base_commit_id: conflict_plan.basis.merge_base().commit().commit_id,
                 source_latest_touch,
                 target_latest_touch,
                 disposition,

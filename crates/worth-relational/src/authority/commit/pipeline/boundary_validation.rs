@@ -1,5 +1,6 @@
 use super::draft_execution::PreparedCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) struct BoundaryValidatedCommitExecution {
     prepared: PreparedCommitExecution,

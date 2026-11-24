@@ -1,6 +1,7 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBranchTarget};
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
 fn durability_contract_damaged_checkpoint_refuses_rather_than_shortening_history() {

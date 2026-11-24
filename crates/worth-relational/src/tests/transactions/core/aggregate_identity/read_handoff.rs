@@ -1,4 +1,5 @@
 //! Native custom entry, proposal retention and final history use one aggregate artifact.
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use super::fixtures::*;
 use super::read_handoff_rule::{registration, Control, ReadMode};
 use super::read_handoff_truth::assert_published;
@@ -64,7 +65,8 @@ fn created_members_keep_one_original_projection_payer_through_two_rules_and_fina
         held,
         "every rule/phase retained the same conservative grant"
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    let pending = runtime.record_identity.pending_snapshot_for_test();
+    assert!(pending.is_empty());
     let expected_members = members(&born, 4);
     drop((runtime, born));
     assert!(memory.charged_memory_bytes() > 0);
@@ -175,7 +177,8 @@ fn malformed_permutation_retains_exact_native_law_and_never_contacts_custom_read
         runtime.history().branch_head(&BranchId("main".into())),
         before
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    let pending = runtime.record_identity.pending_snapshot_for_test();
+    assert!(pending.is_empty());
     let lawful = publish(
         execution,
         &runtime,
@@ -227,7 +230,10 @@ fn swallowed_original_memory_refusal_cannot_publish_and_funded_twin_succeeds() {
         runtime.history().branch_head(&BranchId("main".into())),
         before
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     control.held.lock().unwrap().take();
     control.pressure.lock().unwrap().take();
     control.arm(vec![ids[0]]);
@@ -317,7 +323,10 @@ fn deliberate_stored_group_spends_rule_allowance_with_accounted_and_unaccounted_
             drop(captures);
             control.captures.lock().unwrap().clear();
             release_test_commit_snapshot(&runtime, &born);
-            assert!(runtime.record_identity.pending_snapshot().is_empty());
+            assert!(runtime
+                .record_identity
+                .pending_snapshot_for_test()
+                .is_empty());
             drop((runtime, born));
             assert_eq!(lease.charged_memory_bytes(), 0);
         }
@@ -373,7 +382,10 @@ fn cancellation_after_real_preparation_and_discard_release_original_custody() {
         runtime.history().branch_head(&BranchId("main".into())),
         before
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     control.captures.lock().unwrap().clear();
     assert_eq!(
         setup.memory().unwrap().charged_memory_bytes(),
@@ -384,10 +396,5 @@ fn cancellation_after_real_preparation_and_discard_release_original_custody() {
     assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }
 
-fn cause(error: TransactionCommitError) -> Cause {
-    let TransactionCommitError::Execution { denial, .. } = error else {
-        panic!("original execution cause required: {error:?}")
-    };
-    let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) = denial.kind;
-    cause
-}
+mod fixture;
+use fixture::cause;

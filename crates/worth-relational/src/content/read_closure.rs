@@ -7,6 +7,8 @@ use super::{
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
+use worth_relational_contracts::internal_port::content::registry::RelationalContentFormatRegistryOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]
 pub struct RelationalContentReadClosure {
@@ -36,7 +38,7 @@ impl AdmittedRelationalBranchBasis {
         let schema = self.inner.root.retained_schema_authority();
         let staged = ContentFrameAdmission::admit(
             execution,
-            &schema.registry().content_formats,
+            &(*schema.registry().owner_content_formats()),
             attachments,
         )?;
         Ok(RelationalContentReadClosure {
@@ -54,10 +56,10 @@ impl AdmittedRelationalBranchBasis {
     ) -> Result<RelationalContentFrame, Denial> {
         let schema = self.inner.root.retained_schema_authority();
         control::run(execution, |control| {
-            control.checkpoint(schema.registry().content_formats.lookup_bound())?;
+            control.checkpoint((*schema.registry().owner_content_formats()).lookup_bound())?;
             RelationalContentFrame::encode(
                 execution,
-                schema.registry().content_formats.get(format)?,
+                (*schema.registry().owner_content_formats()).get(format)?,
                 input,
             )
         })
@@ -113,7 +115,7 @@ impl RelationalContentReadClosure {
     ) -> Result<RelationalContentFrame, Denial> {
         let root = &self.basis.inner.root;
         let schema = root.retained_schema_authority();
-        let formats = &schema.registry().content_formats;
+        let formats = &(*schema.registry().owner_content_formats());
         control::run(execution, |control| {
             control.checkpoint(formats.lookup_bound())
         })?;

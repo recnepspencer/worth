@@ -1,5 +1,6 @@
 //! Collision guard and lineage emission for one chosen group naming plan.
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::aggregate_identity::transition::group::model::AggregateGroupMembersOwnerPort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 

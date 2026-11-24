@@ -1,5 +1,6 @@
 use crate::facade::lineage::LineageDecisionKind;
 use crate::tests::support::*;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 #[test]
 fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_lineage_residue() {
@@ -10,12 +11,12 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
     let target = create_entity(execution, &runtime, "target");
-    let start_lineage = runtime
+    let start_lineage = (*runtime
         .lineage_access()
         .for_record(execution, anchor)
         .unwrap()
         .unwrap()
-        .lineage_id;
+        .owner_lineage_id());
     let checkpoint = checkpoint_for_schema_version(
         runtime.publication().latest_patch().unwrap().position,
         SchemaVersionId(1),

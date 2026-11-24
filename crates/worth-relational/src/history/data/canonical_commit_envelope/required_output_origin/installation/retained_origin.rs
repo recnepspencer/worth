@@ -5,6 +5,7 @@ use super::{
 };
 use crate::execution::request_stage::checkpoint;
 use worth_execution::MapKernelContext;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 pub(super) fn compare_retained_origin(
     carried: &CanonicalRequiredOutputOrigin,

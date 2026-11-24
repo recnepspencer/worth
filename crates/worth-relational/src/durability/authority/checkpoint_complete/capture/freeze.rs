@@ -3,6 +3,7 @@ use super::super::current_metadata::FrozenCurrentCheckpointMetadata;
 use super::{Denial, FrozenCompleteMetadata, FrozenOriginalInputs};
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 pub(in super::super) fn capture(
     runtime: &RelationalRuntime,

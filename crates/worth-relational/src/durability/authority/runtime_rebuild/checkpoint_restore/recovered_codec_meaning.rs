@@ -3,15 +3,16 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::schema::data::{DeclaredAspectContractBinding, RelationalSchemaRegistry};
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::AspectShape;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn compare_registries(
     source: &RelationalSchemaRegistry,
     target: &RelationalSchemaRegistry,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    for (kind, previous) in &source.entity_kinds {
-        charge(context, lookup_work(target.entity_kinds.len()))?;
-        if let Some(next) = target.entity_kinds.get(kind) {
+    for (kind, previous) in &(*source.owner_entity_kinds()) {
+        charge(context, lookup_work((*target.owner_entity_kinds()).len()))?;
+        if let Some(next) = (*target.owner_entity_kinds()).get(kind) {
             compare_bindings(
                 &previous.aspect_contract_declarations.aspects,
                 &next.aspect_contract_declarations.aspects,
@@ -25,9 +26,9 @@ pub(super) fn compare_registries(
             }
         }
     }
-    for (kind, previous) in &source.relation_kinds {
-        charge(context, lookup_work(target.relation_kinds.len()))?;
-        if let Some(next) = target.relation_kinds.get(kind) {
+    for (kind, previous) in &(*source.owner_relation_kinds()) {
+        charge(context, lookup_work((*target.owner_relation_kinds()).len()))?;
+        if let Some(next) = (*target.owner_relation_kinds()).get(kind) {
             compare_bindings(
                 &previous.aspect_contract_declarations.aspects,
                 &next.aspect_contract_declarations.aspects,

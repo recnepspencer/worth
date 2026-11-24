@@ -10,6 +10,7 @@ use crate::storage::data::{
 };
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::sync::{Arc, Mutex};
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 
 #[path = "cold_checkpoint/member_export.rs"]
 mod member_export;

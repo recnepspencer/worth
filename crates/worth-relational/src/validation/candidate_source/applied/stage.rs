@@ -3,6 +3,7 @@ use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::custom_rule::CustomPreparationBudget;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
+use worth_relational_contracts::internal_port::validation::candidate_source::denial::ManagedIndexSourcePreparationDenialOwnerPort as _;
 fn request(cause: WorkCeilingDenial) -> Denial {
     DerivedRelationReadDenial::Request(cause.into()).into()
 }

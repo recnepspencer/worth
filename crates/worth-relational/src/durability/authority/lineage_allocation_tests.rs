@@ -5,6 +5,7 @@ use super::lineage_allocation::{entity_allocation_bindings, LineageAllocationRef
 use super::lineage_allocation_fixtures::{entity, receipt, restore_history};
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageSubject;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 #[test]
 fn restore_only_and_mixed_commits_bind_their_created_entities_in_ascending_order() {
@@ -27,7 +28,7 @@ fn restore_only_and_mixed_commits_bind_their_created_entities_in_ascending_order
 #[test]
 fn relation_restores_malformed_restores_and_foreign_commits_refuse() {
     let [_, mixed, mut restore_only] = restore_history();
-    restore_only.allocating(5).subject = LineageSubject::Relation;
+    (*restore_only.allocating(5).owner_subject_mut()) = LineageSubject::Relation;
     assert_eq!(
         entity_allocation_bindings(&restore_only.view()),
         Err(LineageAllocationRefusal::EntityAllocationCountMismatch {
@@ -38,7 +39,7 @@ fn relation_restores_malformed_restores_and_foreign_commits_refuse() {
     for sources in [vec![], vec![LineageId(1), LineageId(2)], vec![LineageId(3)]] {
         let mut malformed = mixed.clone();
         let restore = malformed.allocating(3);
-        restore.sources = sources;
+        (*restore.owner_sources_mut()) = sources;
         let event_id = restore.event_id();
         assert_eq!(
             entity_allocation_bindings(&malformed.view()),
@@ -47,7 +48,7 @@ fn relation_restores_malformed_restores_and_foreign_commits_refuse() {
     }
     let mut foreign = mixed.clone();
     let restore = foreign.allocating(3);
-    restore.commit = receipt(9);
+    (*restore.owner_commit_mut()) = receipt(9);
     let event_id = restore.event_id();
     assert_eq!(
         entity_allocation_bindings(&foreign.view()),
@@ -67,7 +68,7 @@ fn selection_restore() -> super::lineage_allocation_fixtures::CommitLineage {
         &[5],
         &[6],
     );
-    commit.allocating(6).entity_id = Some(entity(6));
+    (*commit.allocating(6).owner_entity_id_mut()) = Some(entity(6));
     commit
 }
 
@@ -90,12 +91,12 @@ fn forged_duplicate_created_relation_and_non_allocating_bindings_refuse() {
     };
     // (a) an entity the commit never rematerialized.
     let mut forged = selection_restore();
-    forged.allocating(6).entity_id = Some(entity(8));
+    (*forged.allocating(6).owner_entity_id_mut()) = Some(entity(8));
     malformed(&forged, 40);
     // (b) the same entity bound twice in one commit.
     let mut duplicate = selection_restore();
     duplicate.push(Restore, LineageSubject::Entity, &[4], &[9]);
-    duplicate.allocating(9).entity_id = Some(entity(6));
+    (*duplicate.allocating(9).owner_entity_id_mut()) = Some(entity(6));
     malformed(&duplicate, 41);
     // (c) an entity the commit created, never a rematerialized one.
     let mut created = selection_restore();
@@ -109,14 +110,14 @@ fn forged_duplicate_created_relation_and_non_allocating_bindings_refuse() {
     malformed(&created, 40);
     // (d) a relation allocation.
     let mut relation = selection_restore();
-    relation.allocating(6).subject = LineageSubject::Relation;
+    (*relation.allocating(6).owner_subject_mut()) = LineageSubject::Relation;
     malformed(&relation, 40);
     // (e) non-allocating events.
     for kind in [Retire, Replace] {
         let mut ending = selection_restore();
         let targets: &[u64] = if kind == Retire { &[] } else { &[11] };
         ending.push(kind, LineageSubject::Entity, &[6], targets);
-        ending.events[1].entity_id = Some(entity(7));
+        (*ending.events[1].owner_entity_id_mut()) = Some(entity(7));
         malformed(&ending, 41);
     }
 }

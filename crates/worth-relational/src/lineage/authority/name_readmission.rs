@@ -17,6 +17,9 @@
 use crate::lineage::data::{
     PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameIdentity,
 };
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthPartsOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthRecordOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::lineage::data::birth_wire::verify_claim_encoding;
 pub(crate) use crate::lineage::data::birth_wire::{

@@ -1,4 +1,5 @@
 //! Actual change/event backing and old/new reallocation overlap.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::MutationOutcome;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError as Error;

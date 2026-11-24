@@ -1,4 +1,5 @@
 //! Check sealed original inputs before any Native or Source preparation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
 use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial as Denial;
 use crate::mvcc::{BranchBoundRelationalTransaction, RelationalPublicationDenial};

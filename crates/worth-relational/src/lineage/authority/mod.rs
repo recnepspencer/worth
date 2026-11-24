@@ -34,3 +34,6 @@ pub(crate) use name_readmission::{
     verify_persisted_birth_digest, BirthReadmissionRefusal, PersistedBirthClaim,
     PersistedNameBytes, VerifiedBirthDigest,
 };
+
+#[cfg(test)]
+pub(crate) mod posture_fixture;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet source dependencies before Relational's virtual owners become packages."""
+"""Ratchet source dependencies across Relational's physical and virtual owners."""
 import argparse
 from collections import Counter, defaultdict
 import json
@@ -8,9 +8,10 @@ import sys
 import tomllib
 
 from relational_dag_rust import (
-    LibraryModel, ProductionView, RelationalProductionView, Surface, alias_target, bare_pub_module, contacts,
-    identifiers, resolve, resolved_origin, section, self_types, test_spans,
+    ProductionView, Surface, alias_target, bare_pub_module, contacts, identifiers, resolved_origin,
+    section, self_types, test_spans,
 )
+from relational_dag_workspace import WorkspaceModel, physical_owners
 
 SOURCE = Path('crates/worth-relational/src')
 CONFIG = Path('scripts/ci/relational_dag_owners.toml')
@@ -42,7 +43,13 @@ class OwnerMap:
         self.packages = {owner['crate'].replace('-', '_'): name
                          for name, owner in self.owners.items()}
         self.packages['worth_testkit_relational'] = TESTKIT
+        self.extracted = physical_owners(root, self.owners, root / SOURCE)
+        self.physical = {source: self.packages[name.replace('-', '_')]
+                         for name, source in self.extracted.items()}
+        physical_names = set(self.physical.values())
         for path, name in self.paths.items():
+            if name in physical_names:
+                raise ValueError(f'physical owner {name} cannot own Runtime path {path}')
             if name != self.seed and name not in self.owners:
                 raise ValueError(f'unknown owner {name} for {path}')
         for name, owner in self.owners.items():
@@ -58,6 +65,9 @@ class OwnerMap:
 
     def locations(self, source):
         """The virtual package and, where governed, its internal responsibility."""
+        for directory, owner in self.physical.items():
+            if source.is_relative_to(directory):
+                return owner, None
         relative = source.relative_to(self.root / SOURCE)
         owner = self.paths[self.rule(relative)]
         if owner not in self.boundaries:
@@ -92,10 +102,12 @@ class Audit:
         if unused_rules:
             raise ValueError(f'unused owner rules: {", ".join(sorted(unused_rules))}')
         self.file_owners = {p: self.map.paths[rule] for p, rule in file_rules.items()}
-        self.model = LibraryModel(base / 'lib.rs', self.root, production_view=RelationalProductionView)
+        for directory, owner in self.map.physical.items():
+            self.file_owners.update((p.resolve(), owner) for p in directory.rglob('*') if p.is_file())
+        self.model = WorkspaceModel(self.root, base, self.map.extracted)
         self.locations = {names: self.map.locations(node.source)
                           for names, node in self.model.index.items()}
-        unmounted = {p for p in files if p.suffix == '.rs'} - {
+        unmounted = {p for p in self.file_owners if p.suffix == '.rs'} - {
             node.source for node in self.model.index.values()
         }
         for path in sorted(unmounted):
@@ -125,10 +137,10 @@ class Audit:
     def paths(self, names, contact, words=None):
         segments = contact.segments
         package = self.map.packages.get(segments[0])
-        if package:
+        resolved = self.model.resolve(segments, names, self.model.index)
+        if package and resolved is None:
             external = '::'.join(segments)
             return ((package, None), external), []
-        resolved = resolve(segments, names, self.model.index)
         explicit = None
         if resolved is not None:
             module, rest = resolved
@@ -167,7 +179,7 @@ class Audit:
         words = identifiers(self.model.index[names].own_text())
         for contact in contacts(text, imports):
             explicit, defining = self.paths(names, contact, None if contact.public else words)
-            rooted = resolve(contact.segments, names, self.model.index)
+            rooted = self.model.resolve(contact.segments, names, self.model.index)
             if rooted and any(rooted[0][:len(prefix)] == prefix for prefix in TEST_PATHS):
                 explicit = (self.map.seed, None), '::'.join(rooted[0] + rooted[1])
                 defining = []
@@ -191,7 +203,8 @@ class Audit:
             surface = self.model.surface
             if names not in surface.scopes:
                 if self.test_surface is None:
-                    self.test_surface = Surface(self.model.tree, self.model.index, ())
+                    self.test_surface = Surface(
+                        self.model.tree, self.model.index, (), resolver=self.model.resolve)
                 surface = self.test_surface
             origin = self.type_origin(surface, names, segments)
             if not origin or origin[0] == '<external>' or origin[1] is None:
@@ -284,7 +297,8 @@ def totals(directions):
 
 def ordinary_storage_totals(projection, directions):
     """Count the Storage cut while retaining the residency ledger separately."""
-    residency = (SOURCE / 'storage/residency').as_posix() + '/'
+    residency = tuple(f'crates/{crate}/src/storage/residency/' for crate in
+                      ('worth-relational', 'worth-relational-storage'))
     counts = {}
     for direction, references in directions.items():
         caller, callee = direction.split(' -> ')
@@ -313,7 +327,7 @@ def compare(directions, ceilings, rows):
 
 
 def check_owner_sizes(audit):
-    """Count each virtual crate with the split's physical and production measures."""
+    """Count each Relational owner using the split's source and production measures."""
     total, production = Counter(), Counter()
     for source, owner in audit.file_owners.items():
         if source.suffix == '.rs' and owner in audit.map.owners:

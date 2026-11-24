@@ -3,10 +3,11 @@ use crate::config::data::RelationalRuntimeConfig;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::storage::overlay::small_relation_partition::{
-    relation_partition, typed_relation_partition,
+    relation_partition_for_test, typed_relation_partition_for_test,
 };
 use crate::storage::overlay::PartitionState;
 use std::collections::BTreeMap;
+use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
 
 fn evaluate(
     schema: RelationalSchemaRegistry,
@@ -150,7 +151,7 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
 #[test]
 fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
     let partition_id = PartitionId::main();
-    let (partition, nodes, _) = typed_relation_partition(
+    let (partition, nodes, _) = typed_relation_partition_for_test(
         partition_id,
         [KindId(3); 5].into_iter(),
         &[
@@ -212,12 +213,12 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
 
 #[test]
 fn minimum_cardinality_current_version_scans_only_live_slots() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let partition_id = PartitionId::main();
     let (mut partition, _, relations) =
-        relation_partition(partition_id, 3, &[(0, 2, KindId(2)), (0, 1, KindId(2))]);
+        relation_partition_for_test(partition_id, 3, &[(0, 2, KindId(2)), (0, 1, KindId(2))]);
     partition
         .relation_arena
         .retire_for_request(execution, relations[0].slot_index(), VersionId(2))
@@ -227,12 +228,12 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         .adjacency
         .get_mut(0)
         .unwrap()
-        .remove(KindId(2), &relations[0]);
+        .remove_adjacent_id_for_test(KindId(2), &relations[0]);
     partition
         .reverse_adjacency
         .get_mut(2)
         .unwrap()
-        .remove(KindId(2), &relations[0]);
+        .remove_adjacent_id_for_test(KindId(2), &relations[0]);
     let instrumentation = RuntimeInstrumentation::new();
     let results = evaluate(
         cardinality_minimum_registry(),
@@ -279,7 +280,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
 fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
     let partition_id = PartitionId::main();
     let (partition, _, _) =
-        relation_partition(partition_id, 2, &[(0, 1, KindId(2)), (1, 0, KindId(2))]);
+        relation_partition_for_test(partition_id, 2, &[(0, 1, KindId(2)), (1, 0, KindId(2))]);
     let instrumentation = RuntimeInstrumentation::new();
     let results = evaluate(
         cardinality_minimum_registry(),

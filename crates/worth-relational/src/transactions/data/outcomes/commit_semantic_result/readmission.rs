@@ -1,4 +1,6 @@
 //! Check recorded original facts against the enclosing canonical publication.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultFieldsPort as _;
+use worth_relational_contracts::internal_port::schema::data::continuity::transition_plans::SchemaTransitionSummaryOwnerPort as _;
 use super::{
     RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal as Refusal,
     RelationalCreatedEndpoint,
@@ -13,24 +15,28 @@ pub(crate) fn validate_envelope(
     semantic: &RelationalCommitSemanticResult,
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Refusal> {
-    if semantic.receipt != envelope.commit
-        || semantic.history.target_branch != semantic.receipt.branch_id.0
+    if (*semantic.owner_receipt()) != envelope.commit
+        || (*semantic.owner_history()).target_branch != (*semantic.owner_receipt()).branch_id.0
     {
         return Err(Refusal::ReceiptMismatch);
     }
-    let same_transition = match (&semantic.schema.transition, &envelope.schema_transition) {
+    let same_transition = match (
+        &(*semantic.owner_schema()).transition,
+        &envelope.schema_transition,
+    ) {
         (None, None) => true,
         (Some(summary), Some(artifact)) => summary.matches_artifact(artifact),
         _ => false,
     };
     if !same_transition
-        || semantic.schema.descriptor_semantics_version != envelope.descriptor_semantics_version
-        || semantic.structural.descriptor_semantics_version != envelope.descriptor_semantics_version
+        || (*semantic.owner_schema()).descriptor_semantics_version
+            != envelope.descriptor_semantics_version
+        || (*semantic.owner_structural()).descriptor_semantics_version
+            != envelope.descriptor_semantics_version
     {
         return Err(Refusal::SchemaMismatch);
     }
-    if semantic
-        .changed_records
+    if (*semantic.owner_changed_records())
         .windows(2)
         .any(|pair| pair[0] >= pair[1])
         || envelope
@@ -38,28 +44,27 @@ pub(crate) fn validate_envelope(
             .authoritative_record_patches
             .iter()
             .any(|patch| {
-                semantic
-                    .changed_records
+                (*semantic.owner_changed_records())
                     .binary_search(&patch.target)
                     .is_err()
             })
-        || semantic.change.changed_record_count != semantic.changed_records.len()
+        || (*semantic.owner_change()).changed_record_count
+            != (*semantic.owner_changed_records()).len()
     {
         return Err(Refusal::ChangedRecordsMismatch);
     }
-    if semantic.publication.patch_record_count != envelope.patch.authoritative_record_patches.len()
-        || semantic.publication.lineage_event_count != envelope.lineage_events().len()
-        || semantic.publication.merge_parent_count
-            != semantic.receipt.parents.len().saturating_sub(1)
-        || semantic.history.parent_count != semantic.receipt.parents.len()
-        || semantic.history.merge_base_count != envelope.merge_base_commits.len()
-        || semantic
-            .structural
+    if (*semantic.owner_publication()).patch_record_count
+        != envelope.patch.authoritative_record_patches.len()
+        || (*semantic.owner_publication()).lineage_event_count != envelope.lineage_events().len()
+        || (*semantic.owner_publication()).merge_parent_count
+            != (*semantic.owner_receipt()).parents.len().saturating_sub(1)
+        || (*semantic.owner_history()).parent_count != (*semantic.owner_receipt()).parents.len()
+        || (*semantic.owner_history()).merge_base_count != envelope.merge_base_commits.len()
+        || (*semantic.owner_structural())
             .touched_partitions
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
-        || semantic
-            .aspects
+        || (*semantic.owner_aspects())
             .touched_aspects
             .windows(2)
             .any(|pair| pair[0] >= pair[1])
@@ -69,8 +74,7 @@ pub(crate) fn validate_envelope(
     validate_creations(semantic, envelope)?;
     // An original committed observation may name the predecessor version.
     // Its version is an execution fact, not the newly published version.
-    if semantic
-        .validation
+    if (*semantic.owner_validation())
         .iter()
         .any(|execution| !execution.is_consistent())
     {
@@ -83,12 +87,10 @@ fn validate_creations(
     semantic: &RelationalCommitSemanticResult,
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Refusal> {
-    if semantic
-        .created_entities
+    if (*semantic.owner_created_entities())
         .windows(2)
         .any(|pair| pair[0].key >= pair[1].key)
-        || semantic
-            .created_relations
+        || (*semantic.owner_created_relations())
             .windows(2)
             .any(|pair| pair[0].key >= pair[1].key)
     {
@@ -114,13 +116,12 @@ fn validate_creations(
             .map(|index| &patches[*index])
             .filter(|patch| &patch.target == target)
     };
-    let count = semantic
-        .created_entities
+    let count = (*semantic.owner_created_entities())
         .len()
-        .checked_add(semantic.created_relations.len())
+        .checked_add((*semantic.owner_created_relations()).len())
         .ok_or(Refusal::CreateCardinalityOverflow)?;
     let mut records = Vec::with_capacity(count);
-    for created in &semantic.created_entities {
+    for created in &(*semantic.owner_created_entities()) {
         if created.key.partition != created.assigned.partition_id {
             return Err(Refusal::CreatePartitionMismatch);
         }
@@ -128,13 +129,12 @@ fn validate_creations(
     }
     let resolve = |reference: &RelationalCreatedEndpoint| match reference {
         RelationalCreatedEndpoint::Existing(id) => Some(*id),
-        RelationalCreatedEndpoint::Created(key) => semantic
-            .created_entities
+        RelationalCreatedEndpoint::Created(key) => (*semantic.owner_created_entities())
             .binary_search_by(|created| created.key.cmp(key))
             .ok()
-            .map(|index| semantic.created_entities[index].assigned),
+            .map(|index| (*semantic.owner_created_entities())[index].assigned),
     };
-    for created in &semantic.created_relations {
+    for created in &(*semantic.owner_created_relations()) {
         if created.key.partition != created.assigned.partition_id {
             return Err(Refusal::CreatePartitionMismatch);
         }

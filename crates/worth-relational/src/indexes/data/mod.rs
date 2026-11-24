@@ -1,22 +1,22 @@
-pub(crate) mod applied_candidate_qualification;
-pub(crate) mod definition;
-pub(crate) mod execution_denial;
-pub(crate) mod publication_posture;
+pub(crate) use basis_checkpoint::IndexBasisCheckpoint;
 pub use definition::{
     DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId, DerivedIndexKind,
 };
 pub use execution_denial::{DerivedIndexExecutionDenial, DerivedIndexExecutionDenialKind};
 pub use publication_posture::{DerivedIndexApplicability, DerivedIndexPublicationStatus};
-mod basis_checkpoint;
-pub(crate) use basis_checkpoint::IndexBasisCheckpoint;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::applied_candidate_qualification;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::basis_checkpoint;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::definition;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::execution_denial;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::publication_posture;
 mod join_leg_state;
 pub(crate) use join_leg_state::{ColdJoinLeg, JoinLegState, JoinLegsState};
 mod relation_join_index;
-pub use relation_join_index::RelationJoinIndex;
-mod installed_routing;
 pub(crate) use installed_routing::InstalledIndexRouting;
-mod registration_denial;
 pub use registration_denial::DerivedIndexRegistrationDenial;
+pub use relation_join_index::RelationJoinIndex;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::installed_routing;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::registration_denial;
 mod entity_field_page;
 pub use entity_field_page::{
     BoundedEntityFieldBoundary, BoundedEntityFieldPage, BoundedEntityFieldPageStop,
@@ -26,29 +26,29 @@ pub use related_entity_prefix::{
     BoundedRelatedEntityPrefixBoundary, BoundedRelatedEntityPrefixDenial,
     BoundedRelatedEntityPrefixLookupRequest, BoundedRelatedEntityPrefixPage,
 };
-mod selected_read_work;
 pub use selected_read_work::SelectedIndexReadWork;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::selected_read_work;
 mod allocation_accounting;
-mod discard;
 pub use discard::{
     DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
 };
-mod entry_map;
 pub use entry_map::{DerivedIndexEntryMap, DerivedIndexRows};
-pub(crate) mod maintenance;
 pub use maintenance::{
     DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget,
     DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceWork,
     SelectedIndexGenerationAdmissionStop,
 };
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::discard;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::entry_map;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::maintenance;
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
-mod generation_residency;
-mod generation_selection_counters;
 pub use generation_residency::DerivedIndexGenerationResidency;
-mod related_entity_ordering;
-mod relation_join;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::generation_residency;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::generation_selection_counters;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering;
+pub(crate) use worth_relational_contracts::internal_port::indexes::data::relation_join;
 
 pub use generation_selection_counters::DerivedIndexSelectionCounters;
 

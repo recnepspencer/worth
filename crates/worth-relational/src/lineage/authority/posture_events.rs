@@ -6,6 +6,8 @@ use crate::lineage::data::{
     LineageDecisionKind, LineageEventKind, LineageEventRecord, LineageSubject,
     PersistentNameBirthRecord, PersistentNameIdentity,
 };
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
 pub(super) struct AssignedPostureEvent {
     pub(super) kind: LineageEventKind,
@@ -28,7 +30,7 @@ impl AssignedPostureEvent {
         commit: &RelationalCommitReceipt,
         entity_id: Option<EntityId>,
     ) -> LineageEventRecord {
-        LineageEventRecord {
+        assemble_lineage_event_record(LineageEventRecordParts {
             event_id,
             commit: commit.clone(),
             branch_id: commit.branch_id.clone(),
@@ -40,6 +42,6 @@ impl AssignedPostureEvent {
             kept_name: self.kept_name,
             relation_id: self.relation_lineage.map(|(relation_id, _)| relation_id),
             entity_id,
-        }
+        })
     }
 }

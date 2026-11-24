@@ -1,4 +1,5 @@
 //! Read the exact discovered source outside owner locks and match actual state.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::*;
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 
@@ -71,9 +72,7 @@ impl DurabilityAuthority<'_> {
                         .map_err(|cause| {
                             Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
                         })?;
-                let semantic = RecoveredRelationalSemanticResult {
-                    semantic: data.semantic.clone(),
-                };
+                let semantic = assemble_recovered_relational_semantic_result(data.semantic.clone());
                 (
                     ReadmittedEffectOrigin::Checkpoint { commit, data },
                     semantic,
@@ -88,9 +87,9 @@ impl DurabilityAuthority<'_> {
                 if positioned.envelope().caller_association() != subject.association() {
                     return Err(Refusal::SubjectMismatch);
                 }
-                let semantic = RecoveredRelationalSemanticResult {
-                    semantic: positioned.envelope().semantic_result_arc(),
-                };
+                let semantic = assemble_recovered_relational_semantic_result(
+                    positioned.envelope().semantic_result_arc(),
+                );
                 (ReadmittedEffectOrigin::Original(positioned), semantic)
             }
         };

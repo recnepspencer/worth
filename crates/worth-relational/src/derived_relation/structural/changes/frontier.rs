@@ -4,6 +4,7 @@ use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
 use crate::transactions::data::primitives::RecordRef;
 use crate::validation::data::structural_read::StructuralReadError;
 use crate::validation::data::structural_read::StructuralRelationRecord;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
 
 pub(super) fn acquire(
     proposed: &StructuralRelationView<'_>,
@@ -69,7 +70,7 @@ fn entity(
     definition: &Handle,
 ) -> Result<bool, Denial> {
     match view.readable_entity_kind(id) {
-        Ok(Some(kind)) => Ok(definition.entry.carriers.contains(&kind)),
+        Ok(Some(kind)) => Ok((*definition.owner_entry()).carriers.contains(&kind)),
         Ok(None) | Err(StructuralReadError::RecordUnavailable) => Ok(false),
         Err(cause) => Err(view.derived_refusal(cause)),
     }

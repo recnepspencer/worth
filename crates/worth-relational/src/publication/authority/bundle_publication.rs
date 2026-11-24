@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use crate::history::data::canonical_commit_envelope::RelationalReplayRecord;
 use crate::history::data::replay_version::ReplaySchemaVersion;
 use crate::history::data::RelationalCommitReceipt;

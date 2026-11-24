@@ -1,5 +1,6 @@
 use crate::transactions::data::primitives::CreatedEntityRef;
 use crate::transactions::data::primitives::EntityReference;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::common::contract_candidate_kind_matches;

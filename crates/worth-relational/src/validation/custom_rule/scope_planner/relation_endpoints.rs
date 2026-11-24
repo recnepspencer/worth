@@ -4,6 +4,7 @@ use crate::identity::data::EntityId;
 use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 pub(super) fn retains_entity(
     id: EntityId,
     touched: &TouchedStructuralSet,

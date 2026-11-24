@@ -1,6 +1,7 @@
 //! Canonical declared storage identity; live binding checks remain separate.
 use super::{EntityId, Program};
 use std::cmp::Ordering;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
 #[derive(Clone)]
 pub(super) struct SourceKey {
     program: Program,
@@ -16,12 +17,11 @@ impl SourceKey {
 }
 impl Ord for SourceKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.program
-            .0
+        (*self.program.owner_field_0())
             .path
             .parts()
             .identity
-            .cmp(&other.program.0.path.parts().identity)
+            .cmp(&(*other.program.owner_field_0()).path.parts().identity)
             .then_with(|| self.scope.cmp(&other.scope))
     }
 }

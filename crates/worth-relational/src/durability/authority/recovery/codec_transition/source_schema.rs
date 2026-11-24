@@ -5,6 +5,7 @@ use crate::schema::codec_field_comparison::CodecFieldLocus;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 mod relation_consequences;
 pub(super) use relation_consequences::admit_retired_relation_consequences;
@@ -39,7 +40,8 @@ pub(super) fn readmit_current_source_schema(
             .into());
         }
         let (mut registry, _) = carrier.readmit_registry().map_err(schema_denial)?;
-        registry.content_formats = registry.content_formats.bind_recorded(available)?;
+        (*registry.owner_content_formats_mut()) =
+            (*registry.owner_content_formats()).bind_recorded(available)?;
         return Ok(registry);
     }
     Err(schema_denial("codec transition requires a committed current source schema".into()).into())
@@ -142,7 +144,8 @@ pub(super) fn readmit_interim_current_source_schema(
     // The existing source schema constructor and executable format binding stay
     // identical to original-frame admission; only the authoritative selector differs.
     let (mut registry, _) = carrier.readmit_registry().map_err(schema_denial)?;
-    registry.content_formats = registry.content_formats.bind_recorded(available)?;
+    (*registry.owner_content_formats_mut()) =
+        (*registry.owner_content_formats()).bind_recorded(available)?;
     Ok(registry)
 }
 fn work(

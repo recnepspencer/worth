@@ -1,6 +1,7 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBranchTarget};
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
 fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact() {

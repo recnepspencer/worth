@@ -1,4 +1,5 @@
 //! Derived cohorts consume actual before/after sources through the common coordinator.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod discovery;
 mod partition;
 use super::*;
@@ -123,7 +124,13 @@ fn handle(
         .len()
         .checked_add(identity.name.len())
         .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-    let levels = u64::from(usize::BITS - registry.derived_relations.len().max(1).leading_zeros());
+    let levels = u64::from(
+        usize::BITS
+            - (*registry.owner_derived_relations())
+                .len()
+                .max(1)
+                .leading_zeros(),
+    );
     work.checkpoint(
         (bytes as u64)
             .checked_mul(11)

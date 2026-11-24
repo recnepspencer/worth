@@ -1,4 +1,6 @@
 //! Catalog-bounded closure from installed source ownership, never submitted reachability.
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::CommitId;

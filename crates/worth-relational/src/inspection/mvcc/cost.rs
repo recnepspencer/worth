@@ -1,6 +1,8 @@
 use crate::branch::RelationalBranchIdentity;
 use crate::runtime::state::subsystems::history::history_canonical_routes::settlement_route_visit_count;
 use crate::runtime::RelationalRuntime;
+use worth_relational_contracts::internal_port::history::retention::cost_counters::snapshot::RelationalRetentionCostCountersOwnerPort as _;
+use worth_relational_contracts::internal_port::runtime::interruption_counters::RelationalInterruptionCostCountersOwnerPort as _;
 
 use super::sharing::{RelationalBranchSharingInspectionDenial, RelationalBranchSharingObservation};
 

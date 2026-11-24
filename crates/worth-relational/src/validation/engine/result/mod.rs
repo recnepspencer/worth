@@ -1,6 +1,6 @@
 mod diagnostic_artifacts;
-pub(crate) mod execution_summary;
-mod failures;
+pub(crate) use worth_relational_contracts::internal_port::validation::engine::result::execution_summary;
+pub(crate) use worth_relational_contracts::internal_port::validation::engine::result::failures;
 pub(crate) mod metadata;
 #[cfg(test)]
 mod tests;

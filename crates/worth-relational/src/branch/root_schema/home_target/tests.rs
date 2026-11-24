@@ -5,6 +5,7 @@ use crate::schema::data::{
     EntityKindRegistration, KindAspectContractDeclarations, SchemaId, SchemaVersionId,
 };
 use worth_execution::SerialMemoryBudget;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 fn registry() -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
@@ -49,7 +50,7 @@ fn retained_schema_children_keep_the_original_compilation_charge_until_the_last_
     let selected_registry = schema.registry_arc();
     let selected_plans = schema.aspect_plans_arc();
     assert!(selected_registry.same_allocation(&schema.registry_arc()));
-    assert_eq!(selected_registry.entity_kinds.len(), 1);
+    assert_eq!((*selected_registry.owner_entity_kinds()).len(), 1);
     assert_eq!(selected_plans.entity_plans.len(), 1);
     drop(schema);
     assert_eq!(memory.charged_memory_bytes(), charged);

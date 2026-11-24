@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;

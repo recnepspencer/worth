@@ -12,6 +12,7 @@ use crate::durability::authority::lineage_allocation_fixtures::{restore_history,
 use crate::durability::data::RecoveryFailureClass;
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageSubject;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 fn admit_all(history: &[CommitLineage]) -> Result<(), String> {
     let mut ledger = RecoveredLineageIdentityLedger::default();
@@ -41,8 +42,8 @@ fn reused_restored_lineages_of_either_subject_refuse() {
     for subject in [LineageSubject::Entity, LineageSubject::Relation] {
         let mut history = restore_history();
         let restore = history[2].allocating(5);
-        restore.subject = subject;
-        restore.targets = vec![LineageId(3)];
+        (*restore.owner_subject_mut()) = subject;
+        (*restore.owner_targets_mut()) = vec![LineageId(3)];
         let detail = admit_all(&history).expect_err("reused restored lineage");
         assert!(detail.contains("lineage id 3 is reused"), "{detail}");
     }
@@ -51,8 +52,8 @@ fn reused_restored_lineages_of_either_subject_refuse() {
 #[test]
 fn non_advancing_and_malformed_restored_lineages_refuse() {
     let mut history = restore_history();
-    history[1].allocating(2).targets = vec![LineageId(30)];
-    history[1].allocating(3).targets = vec![LineageId(2)];
+    (*history[1].allocating(2).owner_targets_mut()) = vec![LineageId(30)];
+    (*history[1].allocating(3).owner_targets_mut()) = vec![LineageId(2)];
     let detail = admit_all(&history).expect_err("a restore below its commit's create");
     assert!(
         detail.contains("lineage id 2 does not advance after 30"),
@@ -60,7 +61,7 @@ fn non_advancing_and_malformed_restored_lineages_refuse() {
     );
 
     let mut history = restore_history();
-    history[2].allocating(5).sources = vec![LineageId(5)];
+    (*history[2].allocating(5).owner_sources_mut()) = vec![LineageId(5)];
     let detail = admit_all(&history).expect_err("a self-restore is malformed");
     assert!(
         detail.contains("one source and one different target"),
@@ -77,7 +78,7 @@ fn restore_only_commits_set_the_replay_frontier_and_count_against_capacity() {
     );
     assert_eq!(first_allocated_lineage(&mixed.events), Some(LineageId(2)));
     assert!(!allocations_exhaust_allocator(&restore_only.events));
-    restore_only.allocating(5).targets = vec![LineageId(u64::MAX - 1)];
+    (*restore_only.allocating(5).owner_targets_mut()) = vec![LineageId(u64::MAX - 1)];
     assert!(allocations_exhaust_allocator(&restore_only.events));
 }
 
@@ -91,8 +92,8 @@ fn relation_allocations_above_every_entity_node_advance_the_recovered_frontier()
         "a relation Create at lineage 4 outranks entity node 3"
     );
     let restore = restore_only.allocating(5);
-    restore.subject = LineageSubject::Relation;
-    restore.targets = vec![LineageId(7)];
+    (*restore.owner_subject_mut()) = LineageSubject::Relation;
+    (*restore.owner_targets_mut()) = vec![LineageId(7)];
     assert_eq!(
         recovered_lineage_frontier(entity_node_max, &restore_only.events),
         Ok(8),
@@ -108,7 +109,7 @@ fn relation_allocations_above_every_entity_node_advance_the_recovered_frontier()
 fn an_exhausting_relation_allocation_refuses_the_recovered_frontier() {
     let [_, mixed, _] = restore_history();
     let mut relation_only = [mixed.events[2].clone()];
-    relation_only[0].targets = vec![LineageId(u64::MAX - 1)];
+    (*relation_only[0].owner_targets_mut()) = vec![LineageId(u64::MAX - 1)];
     let error = recovered_lineage_frontier(None, &relation_only)
         .expect_err("no safe lineage id follows the relation allocation");
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);

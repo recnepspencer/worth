@@ -1,6 +1,7 @@
 //! Privately prepare an append-only catalog on the actual indexing owner.
 use super::*;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
+use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexDefinitionOwnerPort as _;
 
 mod backing;
 pub(super) use crate::indexes::retained_definition::IndexDefinitionBacking;

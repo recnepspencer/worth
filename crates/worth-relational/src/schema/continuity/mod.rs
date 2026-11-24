@@ -1,10 +1,9 @@
 mod authority_input;
 mod bundle_admission;
-mod errors;
-pub(crate) mod transition_canonical_fingerprint;
-pub(crate) mod transition_classification;
-pub(crate) mod transition_lowering;
-pub(crate) mod transition_validation;
+pub(crate) use worth_relational_contracts::internal_port::schema::continuity::errors;
+pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_classification;
+pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_lowering;
+pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_validation;
 
 pub use bundle_admission::{validate_schema_continuity_bundle, ValidatedSchemaContinuityBundle};
 pub use errors::SchemaContinuityBundleIssue;

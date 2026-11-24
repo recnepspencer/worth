@@ -4,6 +4,7 @@ use super::{
     RelationalDurableMemberCustody, RelationalDurableMemberLocator, RuntimeLineageEventResidency,
     LINEAGE_EVENT_PAGE_BYTES,
 };
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 impl RelationalDurableColdSource for RuntimeLineageEventResidency {
     fn retain_members(
         &self,

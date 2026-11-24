@@ -41,7 +41,7 @@ fn model(
 
 #[test]
 fn complete_walk_matches_independent_bfs_and_retains_non_discovery_edges() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let mut seed = 0x9181_u64;
     for case in 0..12 {
@@ -117,7 +117,7 @@ fn complete_walk_matches_independent_bfs_and_retains_non_discovery_edges() {
 
 #[test]
 fn thousand_hops_complete_and_disconnected_growth_adds_no_reads() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let edges = (0..1000)
         .map(|index| (index, index + 1, KindId(2)))

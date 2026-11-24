@@ -1,4 +1,5 @@
 //! Durable cutover retains the genuine request through count, emit and hash.
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use super::frame_contract::MAXIMUM_ARTIFACT_BYTES;
 use super::{
     encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial,

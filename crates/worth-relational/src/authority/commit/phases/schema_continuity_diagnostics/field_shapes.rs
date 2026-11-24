@@ -221,5 +221,6 @@ fn schema_diff_detail_fields(detail: &SchemaDiffDetail) -> SchemaDiffDetailField
             detail: detail.to_string(),
             declared_intent: *declared_intent,
         },
+        &_ => unreachable!("unhandled Relational contract variant"),
     }
 }

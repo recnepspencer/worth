@@ -19,7 +19,7 @@ mod axes;
 #[path = "root_candidate.rs"]
 mod candidate;
 #[path = "root_capture.rs"]
-mod capture;
+pub(crate) mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
 #[path = "root_checkpoint_projection.rs"]
@@ -369,21 +369,6 @@ impl RelationalBranchRoot {
             (Some(target), Some(source)) => target.evidence.shares_owner(&source.evidence),
             (None, None) => true,
             _ => false,
-        }
-    }
-}
-
-impl From<schema::quote_denial::SchemaCompilationQuoteDenial>
-    for RelationalBranchRootCaptureDenial
-{
-    fn from(cause: schema::quote_denial::SchemaCompilationQuoteDenial) -> Self {
-        match cause {
-            schema::quote_denial::SchemaCompilationQuoteDenial::AllocationLayoutOverflow => {
-                Self::AllocationLayoutOverflow
-            }
-            schema::quote_denial::SchemaCompilationQuoteDenial::Request(cause) => {
-                Self::Request(cause)
-            }
         }
     }
 }

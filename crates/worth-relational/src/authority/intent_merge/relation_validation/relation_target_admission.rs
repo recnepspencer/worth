@@ -3,6 +3,7 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::primitives::ExistingRecordTarget;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use super::super::record_lookup::relation_exists_in_state;
 

@@ -4,6 +4,8 @@ use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::RelationId;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 mod association;
 mod incident_boundary;
@@ -50,11 +52,12 @@ pub(super) fn derive_closed_relations(
             // Current custody links are removed by publication completion in
             // this same codec retirement, rather than claimed as producer edges.
             if record.kind_id().is_some_and(|kind| {
-                root.schema_authority()
+                (*root
+                    .schema_authority()
                     .registry()
-                    .current_publication_storage
-                    .as_ref()
-                    .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+                    .owner_current_publication_storage())
+                .as_ref()
+                .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
             }) {
                 continue;
             }

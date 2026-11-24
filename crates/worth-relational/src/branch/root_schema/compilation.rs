@@ -1,5 +1,6 @@
 //! The one owned-schema lowering owner, shared by capture, readmission and Home.
 use super::*;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) enum RetainedContracts<'a> {
     Extend(Option<&'a RelationalBranchRootSchemaAuthority>),
@@ -16,9 +17,7 @@ impl RelationalBranchRootSchemaAuthority {
         funding: Option<Arc<compiled_retention::SchemaCompilationFunding>>,
         control: crate::schema::SchemaCompilationControl<'_, '_>,
     ) -> Result<Arc<Self>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        registry
-            .content_formats
-            .bind_carried_snapshot(&expected.content_formats);
+        (*registry.owner_content_formats_mut()).bind_carried_snapshot(&expected.content_formats);
         let aspect_plans = crate::schema::lower_aspect_plans_for_compilation(&registry, control)?;
         let retained_aspect_contracts = match retained {
             RetainedContracts::Extend(previous) => {

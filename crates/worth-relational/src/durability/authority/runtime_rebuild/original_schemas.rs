@@ -5,6 +5,7 @@ use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
 use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]
 pub(crate) struct OriginalSchemaGraph {
@@ -19,7 +20,10 @@ impl OriginalSchemaGraph {
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
         let mut graph = Self::admit_unbound(plan, request)?;
         if let Some(graph) = &mut graph {
-            graph.bind_home_executables(&plan.config.schema.registry.content_formats, request)?;
+            graph.bind_home_executables(
+                &(*plan.config.schema.registry.owner_content_formats()),
+                request,
+            )?;
             graph.bind_directories(plan, request)?;
         }
         Ok(graph)
@@ -133,7 +137,7 @@ impl OriginalSchemaGraph {
             .schemas
             .rows
             .values()
-            .all(|schema| schema.registry().content_formats.is_bound_to(available))
+            .all(|schema| (*schema.registry().owner_content_formats()).is_bound_to(available))
         {
             return Ok(());
         }

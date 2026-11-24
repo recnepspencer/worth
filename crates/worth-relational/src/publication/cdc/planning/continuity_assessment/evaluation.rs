@@ -133,6 +133,7 @@ pub(crate) fn assess_subscriber_continuity(
                     ),
                 ));
             }
+            _ => unreachable!("unhandled Relational contract variant"),
         }
 
         continuation_outcome = strongest_outcome(continuation_outcome, subscriber_specific_outcome);

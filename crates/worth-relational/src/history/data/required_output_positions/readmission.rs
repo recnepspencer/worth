@@ -106,5 +106,6 @@ fn projected_stop(
         | Cause::FieldText(_)
         | Cause::PositionAdmission(_)
         | Cause::NonCanonicalPayload => Refusal::InvalidProjectedMeaning,
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }

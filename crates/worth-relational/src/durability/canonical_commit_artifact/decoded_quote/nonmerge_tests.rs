@@ -1,4 +1,10 @@
 //! Pure decoded leaf ownership and unchanged wire, without invented publication authority.
+use worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::continuity::diff_atoms::schema_change_text::SchemaChangeTextOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::entity_ids::InvariantEntityIdsOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::partition_ids::InvariantPartitionIdsOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::relation_ids::InvariantRelationIdsOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::rule_id::CustomInvariantRuleIdOwnerPort as _;
 use super::*;
 mod corrective_sources;
 mod optional_fields;
@@ -321,7 +327,7 @@ fn current_source_codec_roundtrips_funded_ordered_sources() {
 }
 #[test]
 fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     for (label, bytes) in corrective_sources::malformed_inputs() {
         assert!(
             super::coupled_publication::quote(
@@ -335,7 +341,7 @@ fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
 }
 #[test]
 fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_, basis) = crate::branch::basis_admission_tests::observed_empty_branch(1);
     let source = EntityId::new(PartitionId::main(), 1, 1);
@@ -363,7 +369,7 @@ fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
 
 #[test]
 fn unchanged_codec_loci_select_no_live_entities_from_populated_native_history() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let fixture = crate::durability::native_region_fixture::populated_partition();
     assert!(fixture.partition.entity_arena.occupied_slots_iter().count() > 1);

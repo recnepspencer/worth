@@ -1,4 +1,5 @@
 //! Run the real native intent limit with the configured failure effect.
+use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 mod publication;
 use super::*;
 use crate::validation::data::execution::InvariantExecutionPoint as Point;

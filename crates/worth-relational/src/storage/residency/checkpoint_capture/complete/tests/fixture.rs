@@ -1,4 +1,7 @@
 //! Produce declared scalar and struct state plus a real multi-version relation.
+use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+use std::sync::Arc;
 use super::*;
 use crate::config::data::{
     AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CrossContextPolicy,
@@ -138,7 +141,7 @@ pub(super) fn original_partition() -> (
         };
         partition
             .entity_arena
-            .write_reserved_slot(
+            .write_reserved_slot_for_test(
                 SlotInit {
                     partition_id,
                     kind_id: entity_kind,
@@ -173,15 +176,15 @@ pub(super) fn original_partition() -> (
                 .reverse_adjacency
                 .get_mut(previous)
                 .unwrap()
-                .remove(relation_kind, &relation);
+                .remove_adjacent_id_for_test(relation_kind, &relation);
             partition
                 .relation_arena
-                .apply_extra_update(0, extra, version)
+                .apply_extra_update_for_test(0, extra, version)
                 .unwrap();
         } else {
             partition
                 .relation_arena
-                .write_reserved_slot(
+                .write_reserved_slot_for_test(
                     SlotInit {
                         partition_id,
                         kind_id: relation_kind,
@@ -196,13 +199,13 @@ pub(super) fn original_partition() -> (
                 .adjacency
                 .get_mut(0)
                 .unwrap()
-                .insert_at(relation_kind, relation, version);
+                .insert_adjacent_id_at_for_test(relation_kind, relation, version);
         }
         partition
             .reverse_adjacency
             .get_mut(slot)
             .unwrap()
-            .insert_at(relation_kind, relation, version);
+            .insert_adjacent_id_at_for_test(relation_kind, relation, version);
         previous_target = Some(slot);
     }
     assert!(

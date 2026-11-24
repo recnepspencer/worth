@@ -2,6 +2,8 @@
 use super::*;
 use crate::identity::data::RelationId;
 use crate::validation::data::structural_read::StructuralRelationRecord;
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
     pub(in crate::branch::model_ownership) fn relation(
@@ -38,13 +40,13 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         let mut edges = Vec::new();
         for &id in ids.iter() {
             if let Some(edge) = self.relation(id)? {
-                let native_custody = self
+                let native_custody = (*self
                     .root
                     .schema_authority()
                     .registry()
-                    .current_publication_storage
-                    .as_ref()
-                    .is_some_and(|storage| storage.metadata_kinds().contains(&edge.kind_id));
+                    .owner_current_publication_storage())
+                .as_ref()
+                .is_some_and(|storage| storage.metadata_kinds().contains(&edge.kind_id));
                 if !native_custody
                     && if outgoing {
                         edge.source == entity

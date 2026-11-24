@@ -7,6 +7,7 @@ use crate::transactions::data::intents::mutation_intent::{
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::primitives::{EntityReference, ExistingRecordTarget};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use super::{
     collect_created_entity_refs,

@@ -7,6 +7,7 @@ use crate::{
     runtime::RelationalInitialSchemaInstallationReceipt,
 };
 use worth_proof::AdmittedHomeProgramTransitionCatalog;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl DurabilityRecoveryAuthority<'_> {
     pub fn recover_prepared_home_source(
@@ -36,7 +37,12 @@ impl DurabilityRecoveryAuthority<'_> {
                 .state
                 .graph
                 .bind_home_executables(
-                    &self.runtime.config().schema.registry.content_formats,
+                    &(*self
+                        .runtime
+                        .config()
+                        .schema
+                        .registry
+                        .owner_content_formats()),
                     request,
                 )
                 .map_err(Denial::Recovery)?;

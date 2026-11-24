@@ -1,6 +1,8 @@
 use crate::branch::root::identity::RelationalBranchRootIdentityIssuer;
 use std::sync::Arc;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 use super::{RelationalBranchRootCaptureDenial, RelationalBranchVisibilityCommitment};
 use crate::history::data::{BranchId, CommitId};
@@ -13,7 +15,7 @@ use super::physical_linkage_tests::{capture_committed_fixture, committed_root_an
 
 #[test]
 fn publication_cost_distinguishes_new_and_reused_schema_authority() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let first = capture_committed_fixture(execution, 1, None);
@@ -31,7 +33,7 @@ fn publication_cost_distinguishes_new_and_reused_schema_authority() {
 
 #[test]
 fn relink_rejects_schema_authority_mutation() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (symbols, root, mut envelope) = committed_root_and_envelope(execution);
@@ -59,7 +61,7 @@ fn relink_rejects_schema_authority_mutation() {
 
 #[test]
 fn relink_rejects_visibility_tuple_mutation() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (symbols, root, mut envelope) = committed_root_and_envelope(execution);
@@ -89,7 +91,7 @@ fn relink_rejects_visibility_tuple_mutation() {
 
 #[test]
 fn completeness_recomputes_visibility_commitment() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (symbols, root, mut altered_envelope) = committed_root_and_envelope(execution);
@@ -119,7 +121,7 @@ fn completeness_recomputes_visibility_commitment() {
 
 #[test]
 fn visibility_commitment_binds_every_visible_tuple_axis() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (symbols, root, envelope) = committed_root_and_envelope(execution);
@@ -202,11 +204,11 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
     patch.body_mut_for_test().patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
     mutants.push(("patch", patch));
     let mut lineage = envelope.independent_fixture_image();
-    lineage
+    *lineage
         .body_mut_for_test()
         .published_lineage_mut_for_test()
-        .lineage_events_mut()[0]
-        .event_id += 1;
+        .lineage_events_mut_for_test()[0]
+        .event_id_mut_for_test() += 1;
     mutants.push(("lineage", lineage));
     let mut descriptor_semantics = envelope.independent_fixture_image();
     descriptor_semantics
@@ -253,59 +255,64 @@ fn production_visibility(
 
 #[test]
 fn request_root_refusal_preserves_original_and_releases_partial_backing() {
-    let host = crate::execution::test_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let (_, original, _) = committed_root_and_envelope(&execution);
-    let axes = original.axes();
-    let issuer = RelationalBranchRootIdentityIssuer::default();
-    let calibration = SerialMemoryBudget::new(Some(1024 * 1024));
-    let host =
-        SerialRequest::from_memory(calibration.clone(), CancellationSource::new().token(), None);
-    let execution = ExecutionRequest::serial(&host);
-    let mut controller = 0;
-    execution
-        .run_native_with_checkpoint(|_| controller = calibration.charged_memory_bytes())
-        .unwrap();
-    let budget = SerialMemoryBudget::new(Some(
-        controller + size_of::<super::RelationalBranchRoot>() as u64 - 1,
-    ));
-    let cancellation = CancellationSource::new();
-    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
-    let execution = ExecutionRequest::serial(&host);
-    let attempt = || {
-        super::RelationalBranchRoot::readmit_unchanged_for_request(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &issuer,
-            &original,
-            original.canonical_payload().unwrap(),
-            original.descriptor().unwrap().clone(),
-            original.retained_schema_authority(),
-            original.output_publication_positions.clone(),
-            &execution,
-        )
-    };
-    assert!(matches!(
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let execution = ExecutionRequest::serial(&host);
+        let (_, original, _) = committed_root_and_envelope(&execution);
+        let axes = original.axes();
+        let issuer = RelationalBranchRootIdentityIssuer::default();
+        let calibration = SerialMemoryBudget::new(Some(1024 * 1024));
+        let host = SerialRequest::from_memory(
+            calibration.clone(),
+            CancellationSource::new().token(),
+            None,
+        );
+        let execution = ExecutionRequest::serial(&host);
+        let mut controller = 0;
+        execution
+            .run_native_with_checkpoint(|_| controller = calibration.charged_memory_bytes())
+            .unwrap();
+        let budget = SerialMemoryBudget::new(Some(
+            controller + size_of::<super::RelationalBranchRoot>() as u64 - 1,
+        ));
+        let cancellation = CancellationSource::new();
+        let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+        let execution = ExecutionRequest::serial(&host);
+        let attempt = || {
+            super::RelationalBranchRoot::readmit_unchanged_for_request(
+                fixture_lane,
+                &issuer,
+                &original,
+                original.canonical_payload().unwrap(),
+                original.descriptor().unwrap().clone(),
+                original.retained_schema_authority(),
+                original.output_publication_positions.clone(),
+                &execution,
+            )
+        };
+        assert!(matches!(
         attempt(),
         Err(RelationalBranchRootCaptureDenial::Request(
             crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
         ))
     ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    cancellation.cancel();
-    assert!(matches!(
-        attempt(),
-        Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
-        ))
-    ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    assert_eq!(original.axes(), axes);
+        assert_eq!(budget.charged_memory_bytes(), 0);
+        cancellation.cancel();
+        assert!(matches!(
+            attempt(),
+            Err(RelationalBranchRootCaptureDenial::Request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
+            ))
+        ));
+        assert_eq!(budget.charged_memory_bytes(), 0);
+        assert_eq!(original.axes(), axes);
+    })
 }
 
 #[test]
 fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
     use sha2::{Digest, Sha256};
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_, original, envelope) = committed_root_and_envelope(&execution);
     let axes = original.axes().unwrap();

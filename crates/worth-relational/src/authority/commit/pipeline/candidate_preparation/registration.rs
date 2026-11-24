@@ -1,4 +1,6 @@
 //! Register one completely prepared publication after artifact-assembly frames expire.
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::{consult_stage, CommitStage};
 use crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;

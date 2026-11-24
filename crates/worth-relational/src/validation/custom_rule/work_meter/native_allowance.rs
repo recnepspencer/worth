@@ -19,7 +19,7 @@ mod tests {
 
     #[test]
     fn native_debit_preserves_rule_limit_without_rebilling_leased_custom_counter() {
-        let lease = crate::execution::test_authority::test_execution_authority()
+        let lease = worth_harness::facade::execution_fixture::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,

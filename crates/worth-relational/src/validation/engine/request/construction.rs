@@ -21,7 +21,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     where
         'runtime: 'state,
     {
-        let backing = crate::execution::test_policy::serial_request();
+        let backing = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
             &execution,

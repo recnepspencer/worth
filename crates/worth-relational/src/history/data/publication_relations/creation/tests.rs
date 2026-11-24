@@ -10,7 +10,7 @@ use worth_foundational::facade::AspectBinding;
 
 #[test]
 fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let CommittedImages {
         edition,

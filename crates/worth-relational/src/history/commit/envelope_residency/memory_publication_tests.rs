@@ -91,7 +91,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
 }
 #[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = create_entity_outcome(&execution, &runtime, "tuple-observations");
@@ -200,7 +200,7 @@ struct OldCell {
 // using case-owned `OwnedTestDurableMedium` (no runtime_attachment).
 #[test]
 fn journal_publication_keeps_journal_placement_without_memory_frame() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
@@ -230,7 +230,7 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
 
 #[test]
 fn recovered_nonhead_tail_envelopes_release_demanded_journal_body_on_drop() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);

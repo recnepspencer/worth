@@ -6,6 +6,7 @@ use crate::schema::{lower_schema_transition, validate_schema_transition};
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 #[path = "schema_continuity_diagnostics/mod.rs"]
 mod diagnostics;
 pub(crate) use diagnostics::prepare_schema_continuity_diagnostics;

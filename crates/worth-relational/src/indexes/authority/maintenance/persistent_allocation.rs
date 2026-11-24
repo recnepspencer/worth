@@ -2,6 +2,7 @@
 use super::work::MaintenanceWork;
 use crate::indexes::data::{DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexRows};
 use std::{collections::BTreeMap, mem::size_of, sync::Arc};
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 #[derive(Default)]
 pub(super) struct MapAllocation {

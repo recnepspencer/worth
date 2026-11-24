@@ -1,6 +1,7 @@
 //! Resolve a selector from its actual slot lifecycle, never from missing metadata.
 use super::*;
 use crate::branch::structural_state::VisibleRelationMetadata;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) fn relation(
     view: &StructuralStateView<'_>,

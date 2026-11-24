@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use worth_foundational::facade::{AspectContract, PortableAspectContract};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::identity::data::KindId;
 use crate::merge::data::{
@@ -20,8 +21,7 @@ mod capture_tests;
 mod digest;
 mod encoding;
 mod owner;
-#[path = "../../../durability/data/branch_root_schema_images/registrations.rs"]
-pub(crate) mod registrations;
+pub(crate) use worth_relational_contracts::internal_port::history::data::canonical_commit_envelope::schema_carrier::registrations;
 pub(crate) use registrations::DurableEntitySchemaRegistration;
 use registrations::{
     DurableDeclaredAspectBinding, DurableKindAspectDeclarations, DurableRelationSchemaRegistration,
@@ -147,10 +147,11 @@ impl RecordedBranchSchemaImage {
         if registry.derived_parts() != self.0.derived_relations {
             return Err("branch-root derived definitions are not canonical".to_owned());
         }
-        registry.content_formats = crate::content::RelationalContentFormatRegistry::from_recorded(
-            self.0.content_formats.clone(),
-        )
-        .map_err(|cause| format!("content declarations refused: {cause:?}"))?;
+        (*registry.owner_content_formats_mut()) =
+            crate::content::RelationalContentFormatRegistry::from_recorded(
+                self.0.content_formats.clone(),
+            )
+            .map_err(|cause| format!("content declarations refused: {cause:?}"))?;
         registry = registry.readmit_persistent_name_schemes(
             &self.0.persistent_name_schemes,
             &self.0.kind_name_schemes,

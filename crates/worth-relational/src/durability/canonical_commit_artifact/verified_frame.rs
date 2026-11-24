@@ -1,4 +1,5 @@
 //! One originally funded canonical frame admitted by its digest and fixed header.
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use super::body_read::complete;
 use super::frame::CanonicalCommitArtifactHeader;
 use super::frame_contract::ControlledFrameCopyDenial;

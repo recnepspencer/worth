@@ -12,5 +12,6 @@ pub(super) fn lifecycle_transition(
         RecordStructuralChange::RetainedForAudit => LifecycleTransitionClass::RetainForAudit,
         RecordStructuralChange::MaterializationSuspended
         | RecordStructuralChange::Rematerialized => LifecycleTransitionClass::NoTransition,
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }

@@ -1,4 +1,6 @@
 //! Complete the group and stage the applied pins for the performed publication routes.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
@@ -229,8 +231,11 @@ fn restrict(
     context
         .checkpoint(full.len().saturating_mul(records.len() + 1) as u64)
         .map_err(origin_request)?;
-    let private_lookup =
-        (usize::BITS - registry.native_private_kinds.len().max(1).leading_zeros()) as u64;
+    let private_lookup = (usize::BITS
+        - (*registry.owner_native_private_kinds())
+            .len()
+            .max(1)
+            .leading_zeros()) as u64;
     let mut selected = Vec::new();
     for patch in full {
         context

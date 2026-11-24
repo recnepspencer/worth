@@ -1,4 +1,5 @@
 //! Historical aspect grammar shared by inverse publication preparation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::CodecRetirementClosureStop as Stop;
 use crate::transactions::data::outcomes::transaction_commit_error::{
     CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,

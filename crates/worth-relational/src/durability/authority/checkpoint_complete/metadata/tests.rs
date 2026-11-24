@@ -20,6 +20,9 @@ use worth_execution::{
     CancellationSource, ExecutionMemoryReservation, ExecutionRequest, SerialMemoryBudget,
     SerialRequest,
 };
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
+use worth_relational_contracts::internal_port::lineage::data::graph::assemble_lineage_node;
 fn same_wire(left: &impl serde::Serialize, right: &impl serde::Serialize) {
     assert_eq!(
         rmp_serde::to_vec_named(left).unwrap(),
@@ -46,90 +49,94 @@ fn controller() -> u64 {
 }
 #[test]
 fn borrowed_dictionary_and_selection_cache_match_owned_wire_twins_and_members() {
-    let entries = vec![
-        (Symbol(1), StoredSymbolText::from("first".to_owned())),
-        (
-            Symbol(513),
-            StoredSymbolText::from("unicode-\u{03bb}".to_owned()),
-        ),
-    ];
-    let old = SymbolTableSnapshot {
-        entries: entries.clone(),
-    };
-    same_wire(
-        &dictionary::view(entries.len(), || {
-            entries.iter().map(|(symbol, text)| (*symbol, text))
-        }),
-        &old,
-    );
-    let branch = BranchId("main".to_owned());
-    let generation = DerivedIndexGeneration {
-        generation_id: DerivedIndexGenerationId(7),
-        index_id: DerivedIndexId(2),
-        source_commit_id: CommitId(11),
-        source_branch_id: branch.clone(),
-        applicability: DerivedIndexApplicability {
-            branch_id: branch,
-            version_id: VersionId(13),
-            schema_version: SchemaVersionId(3),
-        },
-        status: DerivedIndexPublicationStatus::Published,
-        entries: DerivedIndexEntries::EntityField(Default::default()),
-    };
-    let generations = [Arc::new(generation.clone())];
-    // One selection sits beside an emitted root; the other root is not retained.
-    let basis = |commit| IndexBasisCheckpoint {
-        branch: generation.source_branch_id.clone(),
-        commit: CommitId(commit),
-        version: VersionId(commit + 2),
-        schema: SchemaVersionId(3),
-        empty: vec![DerivedIndexId(5)],
-        bindings: vec![(DerivedIndexId(2), DerivedIndexGenerationId(7))],
-    };
-    let bases = [basis(11), basis(12)];
-    let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(11);
-    let twin = (
-        DerivedIndexArtifacts::default(),
-        Some(
-            DerivedIndexCheckpointArtifacts::capture(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                generations.to_vec(),
-                vec![bases[0].clone()],
-            )
-            .unwrap(),
-        ),
-        DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
-    );
-    let budget = SerialMemoryBudget::new(Some(1024 * 1024));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let checkpoint =
-        CompleteIndexCheckpointView::capture(&generations, &bases, &retained, &request).unwrap();
-    same_wire(&indexes::view(&checkpoint), &twin);
-    let dictionary = encode_dictionary(
-        entries.len(),
-        || entries.iter().map(|(symbol, text)| (*symbol, text)),
-        &request,
-    )
-    .unwrap();
-    let old_dictionary = member_frame::encode(MemberKind::Symbols, &old).unwrap();
-    assert_eq!(dictionary.0, old_dictionary.0);
-    assert_eq!(dictionary.1.bytes(), old_dictionary.1);
-    // This is the pure wire view; Complete emission requires an actual resolved owner.
-    let cache = member_frame::encode_for_request(
-        MemberKind::DerivedIndex,
-        &indexes::view(&checkpoint),
-        &request,
-    )
-    .unwrap();
-    assert_eq!(
-        cache.1.bytes(),
-        member_frame::encode(MemberKind::DerivedIndex, &twin)
-            .unwrap()
-            .1
-    );
-    drop((dictionary, cache, checkpoint));
-    assert_eq!(budget.charged_memory_bytes(), 0);
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let entries = vec![
+            (Symbol(1), StoredSymbolText::from("first".to_owned())),
+            (
+                Symbol(513),
+                StoredSymbolText::from("unicode-\u{03bb}".to_owned()),
+            ),
+        ];
+        let old = SymbolTableSnapshot {
+            entries: entries.clone(),
+        };
+        same_wire(
+            &dictionary::view(entries.len(), || {
+                entries.iter().map(|(symbol, text)| (*symbol, text))
+            }),
+            &old,
+        );
+        let branch = BranchId("main".to_owned());
+        let generation = DerivedIndexGeneration {
+            generation_id: DerivedIndexGenerationId(7),
+            index_id: DerivedIndexId(2),
+            source_commit_id: CommitId(11),
+            source_branch_id: branch.clone(),
+            applicability: DerivedIndexApplicability {
+                branch_id: branch,
+                version_id: VersionId(13),
+                schema_version: SchemaVersionId(3),
+            },
+            status: DerivedIndexPublicationStatus::Published,
+            entries: DerivedIndexEntries::EntityField(Default::default()),
+        };
+        let generations = [Arc::new(generation.clone())];
+        // One selection sits beside an emitted root; the other root is not retained.
+        let basis = |commit| IndexBasisCheckpoint {
+            branch: generation.source_branch_id.clone(),
+            commit: CommitId(commit),
+            version: VersionId(commit + 2),
+            schema: SchemaVersionId(3),
+            empty: vec![DerivedIndexId(5)],
+            bindings: vec![(DerivedIndexId(2), DerivedIndexGenerationId(7))],
+        };
+        let bases = [basis(11), basis(12)];
+        let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(11);
+        let twin = (
+            DerivedIndexArtifacts::default(),
+            Some(
+                DerivedIndexCheckpointArtifacts::capture(
+                    fixture_lane,
+                    generations.to_vec(),
+                    vec![bases[0].clone()],
+                )
+                .unwrap(),
+            ),
+            DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
+        );
+        let budget = SerialMemoryBudget::new(Some(1024 * 1024));
+        let host =
+            SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+        let request = ExecutionRequest::serial(&host);
+        let checkpoint =
+            CompleteIndexCheckpointView::capture(&generations, &bases, &retained, &request)
+                .unwrap();
+        same_wire(&indexes::view(&checkpoint), &twin);
+        let dictionary = encode_dictionary(
+            entries.len(),
+            || entries.iter().map(|(symbol, text)| (*symbol, text)),
+            &request,
+        )
+        .unwrap();
+        let old_dictionary = member_frame::encode(MemberKind::Symbols, &old).unwrap();
+        assert_eq!(dictionary.0, old_dictionary.0);
+        assert_eq!(dictionary.1.bytes(), old_dictionary.1);
+        // This is the pure wire view; Complete emission requires an actual resolved owner.
+        let cache = member_frame::encode_for_request(
+            MemberKind::DerivedIndex,
+            &indexes::view(&checkpoint),
+            &request,
+        )
+        .unwrap();
+        assert_eq!(
+            cache.1.bytes(),
+            member_frame::encode(MemberKind::DerivedIndex, &twin)
+                .unwrap()
+                .1
+        );
+        drop((dictionary, cache, checkpoint));
+        assert_eq!(budget.charged_memory_bytes(), 0);
+    })
 }
 #[test]
 fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
@@ -139,7 +146,7 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         branch_id: BranchId("branch".to_owned()),
         parents: vec![CommitId(1)],
     };
-    let event = LineageEventRecord {
+    let event = assemble_lineage_event_record(LineageEventRecordParts {
         event_id: 7,
         commit: commit.clone(),
         branch_id: commit.branch_id.clone(),
@@ -151,7 +158,7 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         kept_name: None,
         relation_id: None,
         entity_id: None,
-    };
+    });
     let borrowed = [OriginalLineageEvent {
         event: &event,
         publication_commit_id: CommitId(4),
@@ -161,10 +168,10 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         publication_commit_id: CommitId(4),
     }];
     same_wire(&borrowed, &old);
-    let nodes = [LineageNode {
-        lineage_id: LineageId(513),
-        entity_id: EntityId::new(PartitionId::main(), 2, 1),
-    }];
+    let nodes = [assemble_lineage_node(
+        LineageId(513),
+        EntityId::new(PartitionId::main(), 2, 1),
+    )];
     let budget = SerialMemoryBudget::new(Some(1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);

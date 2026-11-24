@@ -1,4 +1,6 @@
 //! Directory disagreement and row amplification refuse bounded reconstruction.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::region_image::*;
 use super::layered_history_tests::{counted, encode_layer};
 use super::*;
@@ -10,7 +12,7 @@ use crate::storage::substrate::EntityRecordKind;
 #[test]
 fn an_undeclared_base_is_refused_before_its_payload_is_read() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = fixture
         .cold
@@ -33,131 +35,133 @@ fn an_undeclared_base_is_refused_before_its_payload_is_read() {
 
 #[test]
 fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
-    let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = fixture
-        .cold
-        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let head = fixture
+            .cold
+            .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
+        let mut complete = fixture
+            .cold
+            .read_full(
+                fixture.cold.source.as_ref().unwrap(),
+                &head,
+                execution,
+                1 << 24,
+            )
+            .unwrap()
+            .partition
+            .clone();
+        let slot = fixture.entity.slot_index();
+        let extra = complete
+            .entity_arena
+            .get_slot(slot)
+            .unwrap()
+            .extra()
+            .clone();
+        for version in 1_000..1_064 {
+            complete.entity_arena.apply_extra_update_for_test(
+                slot,
+                extra.clone(),
+                crate::identity::data::VersionId(version),
+            );
+        }
+        let (cold, produced) = super::mixed_history_tests::recapture(&fixture.cold, &complete);
+        let bytes = &produced.members[&cold.history];
+        let frame = RelationalRegionImage::decode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            bytes,
+            cold.history,
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+        )
         .unwrap();
-    let mut complete = fixture
-        .cold
-        .read_full(
-            fixture.cold.source.as_ref().unwrap(),
-            &head,
-            execution,
-            1 << 24,
+        let mut image: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
+        let base = RegionHistoryBase {
+            member: cold.history,
+            partition_id: cold.partition_id,
+            schema_carrier_digest: cold.schema_carrier_digest,
+            row_index: 0,
+            kind_commitment: *cold.kind_authority.history.bytes(),
+        };
+        let per_row = image.entities[0]
+            .earlier
+            .iter()
+            .map(|metadata| rmp_serde::to_vec(metadata).unwrap().len() as u64)
+            .sum::<u64>();
+        image.entities = (0..128)
+            .map(|_| RegionHistoryRow {
+                prefix: Some(base.clone()),
+                earlier: Vec::new(),
+            })
+            .collect();
+        // This is an untrusted amplification input to the folder, not a claimed
+        // branch root or a fabricated Full residency witness.
+        let encoded = RelationalRegionImage::encode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            fixture.cold.partition_id,
+            fixture.cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+            &image,
         )
-        .unwrap()
-        .partition
-        .clone();
-    let slot = fixture.entity.slot_index();
-    let extra = complete
-        .entity_arena
-        .get_slot(slot)
-        .unwrap()
-        .extra()
-        .clone();
-    for version in 1_000..1_064 {
-        complete.entity_arena.apply_extra_update(
-            slot,
-            extra.clone(),
-            crate::identity::data::VersionId(version),
+        .unwrap();
+        let directory = Arc::new(
+            RelationalHistoryMemberDirectory::readmit(
+                fixture_lane,
+                &[RelationalCheckpointHistoryDependency {
+                    member: encoded.0,
+                    bases: vec![cold.history],
+                }],
+                [encoded.0],
+            )
+            .unwrap(),
         );
-    }
-    let (cold, produced) = super::mixed_history_tests::recapture(&fixture.cold, &complete);
-    let bytes = &produced.members[&cold.history];
-    let frame = RelationalRegionImage::decode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        bytes,
-        cold.history,
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-    )
-    .unwrap();
-    let mut image: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    let base = RegionHistoryBase {
-        member: cold.history,
-        partition_id: cold.partition_id,
-        schema_carrier_digest: cold.schema_carrier_digest,
-        row_index: 0,
-        kind_commitment: *cold.kind_authority.history.bytes(),
-    };
-    let per_row = image.entities[0]
-        .earlier
-        .iter()
-        .map(|metadata| rmp_serde::to_vec(metadata).unwrap().len() as u64)
-        .sum::<u64>();
-    image.entities = (0..128)
-        .map(|_| RegionHistoryRow {
-            prefix: Some(base.clone()),
-            earlier: Vec::new(),
-        })
-        .collect();
-    // This is an untrusted amplification input to the folder, not a claimed
-    // branch root or a fabricated Full residency witness.
-    let encoded = RelationalRegionImage::encode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        fixture.cold.partition_id,
-        fixture.cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-        &image,
-    )
-    .unwrap();
-    let directory = Arc::new(
-        RelationalHistoryMemberDirectory::readmit(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &[RelationalCheckpointHistoryDependency {
-                member: encoded.0,
-                bases: vec![cold.history],
-            }],
-            [encoded.0],
-        )
-        .unwrap(),
-    );
-    let limit = encoded.0.length + cold.history.length + 16;
-    assert!(
-        per_row * image.entities.len() as u64 > limit * 2,
-        "the fixture must actually amplify beyond the input budget"
-    );
-    let source = counted(
-        BTreeMap::from([encoded.clone(), (cold.history, bytes.clone())]),
-        encoded.0,
-    );
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let mut folder = super::super::history_fold::HistoryFolder::new(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        execution,
-        fixture.cold.partition_id,
-        limit,
-    );
-    let root = RegionHistoryBase {
-        member: encoded.0,
-        ..base
-    };
-    let failure = match folder.fold_rows::<EntityRecordKind>(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        source.as_ref(),
-        &directory,
-        &root,
-        image.entities.len(),
-    ) {
-        Err(failure) => failure,
-        Ok(rows) => panic!(
-            "accepted {} amplified rows beyond limit {limit}",
-            rows.len()
-        ),
-    };
-    assert!(
-        matches!(failure, super::super::RelationalResidencyDemandFailure::StorageUnavailable(failure)
+        let limit = encoded.0.length + cold.history.length + 16;
+        assert!(
+            per_row * image.entities.len() as u64 > limit * 2,
+            "the fixture must actually amplify beyond the input budget"
+        );
+        let source = counted(
+            BTreeMap::from([encoded.clone(), (cold.history, bytes.clone())]),
+            encoded.0,
+        );
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let mut folder = super::super::history_fold::HistoryFolder::new(
+            fixture_lane,
+            execution,
+            fixture.cold.partition_id,
+            limit,
+        );
+        let root = RegionHistoryBase {
+            member: encoded.0,
+            ..base
+        };
+        let failure = match folder.fold_rows::<EntityRecordKind>(
+            fixture_lane,
+            source.as_ref(),
+            &directory,
+            &root,
+            image.entities.len(),
+        ) {
+            Err(failure) => failure,
+            Ok(rows) => panic!(
+                "accepted {} amplified rows beyond limit {limit}",
+                rows.len()
+            ),
+        };
+        assert!(
+            matches!(failure, super::super::RelationalResidencyDemandFailure::StorageUnavailable(failure)
         if matches!(failure.cause, Cause::LimitExceeded { length, limit: actual } if actual == limit && length > limit))
-    );
-    assert!(
-        source.reads.load(Ordering::SeqCst) <= 4,
-        "member reuse stays within input-read headroom"
-    );
+        );
+        assert!(
+            source.reads.load(Ordering::SeqCst) <= 4,
+            "member reuse stays within input-read headroom"
+        );
+    })
 }

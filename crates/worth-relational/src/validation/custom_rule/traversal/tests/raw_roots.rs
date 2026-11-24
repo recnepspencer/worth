@@ -16,7 +16,7 @@ enum Case {
 
 #[test]
 fn duplicate_raw_roots_spend_original_work_and_observe_interruption_before_deduplication() {
-    let setup_host = crate::execution::test_policy::serial_request();
+    let setup_host = worth_harness::facade::execution_fixture::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
     let graph = Graph::new(2, &[(0, 1, KindId(2))]);
     let root = graph.entities[0];
@@ -29,9 +29,9 @@ fn duplicate_raw_roots_spend_original_work_and_observe_interruption_before_dedup
     for leased in [false, true] {
         for case in [Case::Funded, Case::WorkLimited, Case::Cancelled] {
             let cancellation = CancellationSource::new();
-            let host = crate::execution::test_policy::serial_request()
+            let host = worth_harness::facade::execution_fixture::serial_request()
                 .with_cancellation(cancellation.token());
-            let lease = crate::execution::test_authority::test_execution_authority()
+            let lease = worth_harness::facade::execution_fixture::test_execution_authority()
                 .request_lease(worth_execution::LeaseRequest {
                     policy: worth_foundational::ExecutionRequestPolicy::new(
                         worth_foundational::ExecutionPosture::Serial,

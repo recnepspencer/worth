@@ -8,6 +8,7 @@ use crate::derived_relation::read::DerivedRelationData;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::derived_relation::read_shape::DerivedRelationReadShape as Shape;
 use crate::{graph_member::NativeMemberKey, schema::data::RelationalSchemaRegistry};
+use worth_relational_contracts::internal_port::graph_member::domain::NativeMemberDomainOwnerPort as _;
 
 pub(super) fn acquire(
     registry: &RelationalSchemaRegistry,

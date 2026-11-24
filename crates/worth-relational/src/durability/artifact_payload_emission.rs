@@ -8,7 +8,7 @@
 //! length overflow) and its cost class (two serializer passes over one
 //! payload). Each artifact maps the denial into its own encode denial.
 
-pub(crate) mod request;
+pub(crate) use worth_relational_contracts::internal_port::durability::artifact_payload_emission::request;
 
 use std::io::{self, Write};
 

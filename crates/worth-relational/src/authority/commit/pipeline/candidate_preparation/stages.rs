@@ -7,6 +7,7 @@ use super::{CandidateArtifactSelection, SelectedCandidateSymbols};
 use super::{CommitPhaseBacking, HistoryPreparedCandidate};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 struct CandidateContext {
     registration: CandidateRegistration,
@@ -112,13 +113,13 @@ pub(in crate::authority::commit::pipeline) fn assemble(
     } = checked.into_inner();
     let lineage_deferred = (inputs.publication.is_some()
         || validated.value().has_codec_publication())
-        && context
+        && (*context
             .registration
             .expected_root
             .schema_authority()
             .registry()
-            .current_publication_storage
-            .is_some();
+            .owner_current_publication_storage())
+        .is_some();
     let assembled = artifact_execution::assemble_commit_artifacts(
         request,
         inputs_for_assembly.owners,

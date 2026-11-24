@@ -15,7 +15,11 @@ pub(crate) fn entity_aspect_versions(
     entity_id: crate::identity::data::EntityId,
 ) -> Result<Option<Vec<(AspectKey, u64)>>, super::query_execution::QueryReadExecutionStop> {
     super::query_preparation::consult_query_preparation_request(execution)?;
-    let Some(partition) = partitions.partition(entity_id.partition_id) else {
+    let edition = partitions.acquire();
+    let Some(partition) = edition
+        .try_full_partition(entity_id.partition_id)
+        .expect("fixture partition is resident")
+    else {
         return Ok(None);
     };
     let slot = entity_id.slot_index();
@@ -43,7 +47,11 @@ pub(crate) fn relation_aspect_versions(
     relation_id: crate::identity::data::RelationId,
 ) -> Result<Option<Vec<(AspectKey, u64)>>, super::query_execution::QueryReadExecutionStop> {
     super::query_preparation::consult_query_preparation_request(execution)?;
-    let Some(partition) = partitions.partition(relation_id.partition_id) else {
+    let edition = partitions.acquire();
+    let Some(partition) = edition
+        .try_full_partition(relation_id.partition_id)
+        .expect("fixture partition is resident")
+    else {
         return Ok(None);
     };
     let slot = relation_id.slot_index();

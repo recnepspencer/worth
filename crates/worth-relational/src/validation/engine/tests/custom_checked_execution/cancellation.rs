@@ -6,7 +6,7 @@ use crate::runtime::state::subsystems::{
     services::instrumentation::RuntimeInstrumentation,
     storage::{PartitionEditionCopyLane, StorageSubsystem},
 };
-use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
 use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 
 #[test]
@@ -16,7 +16,7 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         let target = Arc::new(OnceLock::new());
         let visits = Arc::new(AtomicUsize::new(0));
         let partition = PartitionId::main();
-        let (state, entities, _) = relation_partition(partition, 1, &[]);
+        let (state, entities, _) = relation_partition_for_test(partition, 1, &[]);
         let storage = StorageSubsystem::default();
         let copy_counters = std::sync::Mutex::default();
         storage.install_owned(
@@ -57,8 +57,8 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
             None,
             None,
         );
-        let serial =
-            crate::execution::test_policy::serial_request().with_cancellation(cancellation.token());
+        let serial = worth_harness::facade::execution_fixture::serial_request()
+            .with_cancellation(cancellation.token());
         let original = if leased {
             worth_execution::ExecutionRequest::leased(&lease)
         } else {

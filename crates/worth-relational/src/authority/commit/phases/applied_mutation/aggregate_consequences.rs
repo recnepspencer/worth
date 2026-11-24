@@ -6,6 +6,8 @@ use crate::authority::mutation::{apply_plan_to_working_state, BranchLocalDeleteA
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 impl AppliedMutationDraft {
     pub(crate) fn complete_aggregate_draft<'a>(
@@ -28,7 +30,8 @@ impl AppliedMutationDraft {
             .as_ref()
             .map(|owner| owner.borrow(working, *selected));
         let authority = admitted.schema;
-        let current_ownership = authority.registry().current_publication_storage.is_some();
+        let current_ownership =
+            (*authority.registry().owner_current_publication_storage()).is_some();
         if !admitted.materialization_only {
             let (prepared, reads) = match aggregate_source {
                 Some(source) => source.take_for_commit(

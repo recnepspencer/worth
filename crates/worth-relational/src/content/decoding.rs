@@ -8,6 +8,7 @@ use serde::Deserializer;
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::ContentRefId;
+use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachmentsOwnerPort as _;
 
 pub(crate) struct ContentDecodeContext<'r, 'c, 's> {
     pub(crate) execution: &'r ExecutionRequest<'c, 's>,

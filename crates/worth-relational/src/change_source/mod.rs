@@ -5,17 +5,16 @@
 //! through this module. Nothing here names a consumer concept.
 
 pub(crate) mod commit_selection;
-mod consistency;
-mod consistency_expectations;
+pub(crate) use worth_relational_contracts::internal_port::change_source::consistency;
 #[cfg(test)]
 mod consistency_tests;
 mod exact_reads;
 mod lineage_at_observation;
-pub(crate) mod memory_close_observation;
+pub(crate) use worth_relational_contracts::internal_port::change_source::memory_close_observation;
 mod names_at_observation;
 mod observation_read;
 mod partition_projection;
-pub(crate) mod read_custody;
+pub(crate) use worth_relational_contracts::internal_port::change_source::read_custody;
 mod receipt;
 mod receipt_minting;
 mod receipt_witness;

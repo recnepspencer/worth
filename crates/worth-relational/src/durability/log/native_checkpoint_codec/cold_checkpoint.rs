@@ -1,5 +1,6 @@
 //! Readmit only the directory and the envelopes of its distinct heads.
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 use super::{manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts};
 use crate::durability::data::*;

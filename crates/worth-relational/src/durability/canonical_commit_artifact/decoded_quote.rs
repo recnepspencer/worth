@@ -243,3 +243,6 @@ pub(super) fn field<'a>(
     })?;
     result.ok_or_else(malformed)
 }
+
+#[cfg(test)]
+pub(crate) mod omission_for_test;

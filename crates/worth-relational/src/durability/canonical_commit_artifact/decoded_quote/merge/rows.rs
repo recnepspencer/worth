@@ -1,4 +1,5 @@
 //! Correspondence and schema witnesses own typed rows and validation scratch.
+use worth_relational_contracts::internal_port::schema::data::continuity::diff_atoms::schema_change_text::SchemaChangeTextOwnerPort as _;
 use super::*;
 use crate::merge::data::artifacts::{
     RelationalMergeCorrespondenceWitnessRow, RelationalSchemaReconciliationWitnessRow,

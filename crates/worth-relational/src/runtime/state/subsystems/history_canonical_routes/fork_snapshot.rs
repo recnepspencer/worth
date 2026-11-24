@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn fork_refuses_a_missing_performed_artifact_without_reconstructing_inventory() {
-        let host = crate::execution::test_policy::serial_request();
+        let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let history = RelationalPublicationHistory::from_branch(
             crate::branch::basis_admission_tests::installed_history(1),

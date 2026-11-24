@@ -5,6 +5,8 @@ use crate::history::data::{
 };
 use crate::identity::data::{EntityId, PartitionId};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::branch::transition::sequence::RelationalBranchTransitionSequenceOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 fn prefixes() -> (
     Arc<CanonicalAuthoredRetirement>,
     Arc<CanonicalAuthoredRestoration>,

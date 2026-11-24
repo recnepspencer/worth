@@ -164,9 +164,9 @@ fn independent_occurrences_produce_distinct_names() {
     };
     use crate::facade::identity::VersionId;
     use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget, LineageSubject};
-    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
     use crate::lineage::authority::finalize_postures_in_working_state;
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
     use crate::runtime::LineageIdentityAllocator;
 
     let allocator = LineageIdentityAllocator::new();

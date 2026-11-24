@@ -14,8 +14,8 @@ mod state;
 
 mod retained_state_building;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;
-pub(crate) mod historical_denial;
 pub use historical_denial::HistoricalVisibilityDenial;
 pub(crate) use historical_state_building::build_historical_visibility_state;
 pub(crate) use read_views::read_view_from_snapshot_state;
 pub(crate) use state::{SnapshotState, SnapshotStateBasis, VisibilitySnapshotStateKey};
+pub(crate) use worth_relational_contracts::internal_port::visibility::snapshot_states::historical_denial;

@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::planned_records::PlannedRelationEndpointUpdateOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use std::collections::BTreeSet;
 

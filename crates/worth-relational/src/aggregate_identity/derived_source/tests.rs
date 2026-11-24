@@ -1,4 +1,6 @@
 //! Native slot lifecycle distinguishes this candidate's retirement from prior absence.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::{
     config::data::{AdjacencyBackend, AdjacencyPolicy},
@@ -27,7 +29,7 @@ fn native_endpoint_classification_distinguishes_current_retirement_from_prior_ab
     };
     let mut entities = Vec::new();
     for _ in 0..3 {
-        let (slot, generation, _) = before.entity_arena.push_slot(SlotInit {
+        let (slot, generation, _) = before.entity_arena.push_slot_for_test(SlotInit {
             partition_id: partition,
             kind_id: KindId(1),
             version_id: VersionId(1),
@@ -37,15 +39,16 @@ fn native_endpoint_classification_distinguishes_current_retirement_from_prior_ab
     }
     before
         .entity_arena
-        .retire(entities[1].slot_index(), VersionId(2))
+        .retire_record_for_test(entities[1].slot_index(), VersionId(2))
         .unwrap();
     let mut after = before.clone();
     after
         .entity_arena
-        .retire(entities[0].slot_index(), VersionId(3))
+        .retire_record_for_test(entities[0].slot_index(), VersionId(3))
         .unwrap();
-    let before = WorkingState::new(BTreeMap::from([(partition, before)]), policy.clone());
-    let after = WorkingState::new(BTreeMap::from([(partition, after)]), policy);
+    let before =
+        WorkingState::working_state_for_test(BTreeMap::from([(partition, before)]), policy.clone());
+    let after = WorkingState::working_state_for_test(BTreeMap::from([(partition, after)]), policy);
     let before = InvariantStateView::new(&before, VersionId(2));
     let after = InvariantStateView::new(&after, VersionId(3));
     use super::retirement::{classify, EndpointRetirement};

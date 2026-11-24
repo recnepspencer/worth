@@ -1,5 +1,7 @@
 use crate::validation::data::custom_rule::errors::CustomInvariantTraversalError;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
@@ -279,7 +281,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         &self,
         definition: &crate::derived_relation::DerivedRelationHandle,
     ) -> Result<(), StructuralReadError> {
-        for &kind in &definition.entry.carriers {
+        for &kind in &(*definition.owner_entry()).carriers {
             if !self.work.try_charge_work(1) {
                 return Err(StructuralReadError::WorkBudgetExceeded);
             }

@@ -7,6 +7,7 @@
 //! state, its aspect version and its lineage are left exactly as they were, so
 //! the only thing the record gains is a rule's attention.
 
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;

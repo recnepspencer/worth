@@ -108,7 +108,7 @@ fn assert_exact_registry_cleanup(
 
 #[test]
 fn retained_basis_registry_cost_is_fixed_at_one_sixty_four_and_four_thousand_ninety_six_branches() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for branch_population in [1, 64, 4_096] {
@@ -118,7 +118,7 @@ fn retained_basis_registry_cost_is_fixed_at_one_sixty_four_and_four_thousand_nin
 
 #[test]
 fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for branch_population in [64, 4_096] {

@@ -35,81 +35,85 @@ pub(super) fn readmit(
     fixture: &RegionFixture,
     request: &ExecutionRequest<'_, '_>,
 ) -> CheckpointFixture {
-    let native = Arc::new(selected_region_archive(
-        &fixture.partition,
-        fixture.cold.schema.as_ref(),
-        fixture.cold.schema_carrier_digest,
-        &fixture.cold.symbols.interner_snapshot(),
-        request,
-    ));
-    let cold = &fixture.cold;
-    assert!(native
-        .manifest
-        .roots
-        .iter()
-        .flat_map(|root| &root.regions)
-        .chain(&native.manifest.mirror)
-        .any(|region| region.partition_id == cold.partition_id
-            && region.head == cold.head
-            && region.history == cold.history
-            && region.content_digest == cold.content_digest));
-    let archive = Arc::new(CountedSource {
-        members: native
-            .members
-            .entries()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
-                RelationalCheckpointMember::Carried { .. } => {
-                    panic!("fresh memory checkpoint must own every member's actual bytes")
-                }
-            })
-            .collect::<BTreeMap<_, _>>(),
-        history: cold.history,
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-    });
-    let active = Arc::new(AtomicUsize::new(0));
-    let source = Arc::new(CheckpointSource {
-        native: native.clone(),
-        custody: CustodySource {
-            source: archive.clone(),
-            active: active.clone(),
-            refusal: Mutex::new(None),
-        },
-    });
-    let directory = PreparedCheckpointDirectory {
-        history_members: native
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let native = Arc::new(selected_region_archive(
+            &fixture.partition,
+            fixture.cold.schema.as_ref(),
+            fixture.cold.schema_carrier_digest,
+            &fixture.cold.symbols.interner_snapshot(),
+            request,
+        ));
+        let cold = &fixture.cold;
+        assert!(native
             .manifest
-            .readmit_history_members(&ReconstructionLane::oracle())
-            .unwrap(),
-        manifest: native.manifest.clone(),
-        source: source.clone(),
-    }
-    .readmit(request)
-    .unwrap();
-    let mut cold: RelationalColdRegion = fixture.cold.clone();
-    cold.source = Some(directory.source.clone());
-    cold.history_members = directory.history_members.clone();
-    let cell = RelationalRegionResidency::from_selected_directory(
-        cold,
-        directory.region_member_basis(),
-        &directory.history_members,
-        request,
-    )
-    .unwrap();
-    // Consume the directory's genuine shares before the cell retires the last member owner.
-    let mut retirement = directory.into_retirement();
-    while !retirement.advance(request).unwrap() {}
-    drop(retirement); // Explicit unbudgeted reclaim of the now inert directory payload.
-    assert!(active.load(Ordering::SeqCst) > 0);
-    CheckpointFixture {
-        cell,
-        source,
-        archive,
-        active,
-    }
+            .roots
+            .iter()
+            .flat_map(|root| &root.regions)
+            .chain(&native.manifest.mirror)
+            .any(|region| region.partition_id == cold.partition_id
+                && region.head == cold.head
+                && region.history == cold.history
+                && region.content_digest == cold.content_digest));
+        let archive = Arc::new(CountedSource {
+            members: native
+                .members
+                .entries()
+                .iter()
+                .map(|member| match member {
+                    RelationalCheckpointMember::New { locator, bytes } => {
+                        (*locator, bytes.to_vec())
+                    }
+                    RelationalCheckpointMember::Carried { .. } => {
+                        panic!("fresh memory checkpoint must own every member's actual bytes")
+                    }
+                })
+                .collect::<BTreeMap<_, _>>(),
+            history: cold.history,
+            reads: AtomicUsize::new(0),
+            history_reads: AtomicUsize::new(0),
+            corrupt: AtomicBool::new(false),
+        });
+        let active = Arc::new(AtomicUsize::new(0));
+        let source = Arc::new(CheckpointSource {
+            native: native.clone(),
+            custody: CustodySource {
+                source: archive.clone(),
+                active: active.clone(),
+                refusal: Mutex::new(None),
+            },
+        });
+        let directory = PreparedCheckpointDirectory {
+            history_members: native
+                .manifest
+                .readmit_history_members(fixture_lane)
+                .unwrap(),
+            manifest: native.manifest.clone(),
+            source: source.clone(),
+        }
+        .readmit(request)
+        .unwrap();
+        let mut cold: RelationalColdRegion = fixture.cold.clone();
+        cold.source = Some(directory.source.clone());
+        cold.history_members = directory.history_members.clone();
+        let cell = RelationalRegionResidency::from_selected_directory(
+            cold,
+            directory.region_member_basis(),
+            &directory.history_members,
+            request,
+        )
+        .unwrap();
+        // Consume the directory's genuine shares before the cell retires the last member owner.
+        let mut retirement = directory.into_retirement();
+        while !retirement.advance(request).unwrap() {}
+        drop(retirement); // Explicit unbudgeted reclaim of the now inert directory payload.
+        assert!(active.load(Ordering::SeqCst) > 0);
+        CheckpointFixture {
+            cell,
+            source,
+            archive,
+            active,
+        }
+    })
 }
 
 impl RelationalDurableColdSource for CheckpointSource {

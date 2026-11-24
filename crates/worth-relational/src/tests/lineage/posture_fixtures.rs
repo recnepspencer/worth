@@ -1,3 +1,6 @@
+use worth_relational_contracts::internal_port::lineage::data::naming::InstalledPersistentNameSchemeOwnerPort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use std::collections::BTreeMap;
 
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
@@ -19,28 +22,32 @@ pub(super) const SEAM_SCHEME_ID: &str = "worth.cad.seam.v1";
 pub(super) fn cad_scheme_registry() -> InstalledPersistentNameSchemeRegistry {
     let mut registry = InstalledPersistentNameSchemeRegistry::new();
     registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            FACE_SCHEME_ID,
-            PersistentNameSubjectKind::Entity,
-            ["authored", "cut_piece", "merged_face"],
-            true,
-            true,
-        ))
+        .register(
+            InstalledPersistentNameScheme::name_scheme_from_ordered_roles_for_test(
+                FACE_SCHEME_ID,
+                PersistentNameSubjectKind::Entity,
+                ["authored", "cut_piece", "merged_face"],
+                true,
+                true,
+            ),
+        )
         .unwrap();
     registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            SEAM_SCHEME_ID,
-            PersistentNameSubjectKind::Relation,
-            ["seam", "seam_piece", "merged_seam"],
-            true,
-            true,
-        ))
+        .register(
+            InstalledPersistentNameScheme::name_scheme_from_ordered_roles_for_test(
+                SEAM_SCHEME_ID,
+                PersistentNameSubjectKind::Relation,
+                ["seam", "seam_piece", "merged_seam"],
+                true,
+                true,
+            ),
+        )
         .unwrap();
     registry
 }
 
 pub(super) fn empty_working_state() -> WorkingState {
-    WorkingState::new(
+    WorkingState::working_state_for_test(
         BTreeMap::new(),
         AdjacencyPolicy {
             backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -51,12 +58,14 @@ pub(super) fn empty_working_state() -> WorkingState {
 
 pub(super) fn push_entity(staged: &mut WorkingState, version_id: VersionId) -> EntityId {
     let part = staged.get_partition_mut(PartitionId::main());
-    let (slot, generation, _) = part.entity_arena.push_slot(SlotInit::<EntityRecordKind> {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(1),
-        version_id,
-        extra: Default::default(),
-    });
+    let (slot, generation, _) =
+        part.entity_arena
+            .push_slot_for_test(SlotInit::<EntityRecordKind> {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                version_id,
+                extra: Default::default(),
+            });
     EntityId::new(PartitionId::main(), slot as u64, generation)
 }
 
@@ -67,25 +76,25 @@ pub(super) fn push_relation(
     target: EntityId,
 ) -> RelationId {
     let part = staged.get_partition_mut(PartitionId::main());
-    let (slot, generation, _) = part
-        .relation_arena
-        .push_slot(SlotInit::<RelationRecordKind> {
-            partition_id: PartitionId::main(),
-            kind_id: KindId(10),
-            version_id,
-            extra: RelationExtra::from_funded_parts(
-                Some(RelationEndpoints { source, target }),
-                None,
-                None,
-            ),
-        });
+    let (slot, generation, _) = part.relation_arena.push_slot_for_test(SlotInit::<
+        RelationRecordKind,
+    > {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(10),
+        version_id,
+        extra: RelationExtra::from_funded_parts(
+            Some(RelationEndpoints { source, target }),
+            None,
+            None,
+        ),
+    });
     RelationId::new(PartitionId::main(), slot as u64, generation)
 }
 
 pub(super) fn retire_entity(staged: &mut WorkingState, entity: EntityId, version_id: VersionId) {
     let part = staged.get_partition_mut(entity.partition_id);
     part.entity_arena
-        .retire(entity.slot_index(), version_id)
+        .retire_record_for_test(entity.slot_index(), version_id)
         .expect("entity slot exists to retire");
 }
 
@@ -96,7 +105,7 @@ pub(super) fn retire_relation(
 ) {
     let part = staged.get_partition_mut(relation.partition_id);
     part.relation_arena
-        .retire(relation.slot_index(), version_id)
+        .retire_record_for_test(relation.slot_index(), version_id)
         .expect("relation slot exists to retire");
 }
 
@@ -182,11 +191,11 @@ pub(super) fn seed_two_faces_and_parallel_seams() -> (
     RelationId,
     RelationId,
     Vec<crate::facade::transactions::RecordRef>,
-    crate::lineage::data::LineageCommitPostureInput,
+    crate::lineage::authority::posture_fixture::LineageCommitPostureInput,
 ) {
     use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget};
-    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 
     let mut staged = empty_working_state();
     let f1 = push_entity(&mut staged, VersionId(1));
@@ -224,4 +233,54 @@ pub(super) fn seed_two_faces_and_parallel_seams() -> (
         ],
     };
     (staged, f1, f2, s1, s2, changed, input)
+}
+
+pub(super) fn merge_and_split_postures(
+    scheme_registry: crate::facade::lineage::InstalledPersistentNameSchemeRegistry,
+    faces: [(
+        crate::facade::identity::EntityId,
+        crate::facade::lineage::PersistentNameIdentity,
+    ); 2],
+    seam: (
+        crate::facade::identity::RelationId,
+        crate::facade::lineage::PersistentNameIdentity,
+    ),
+    children: [crate::facade::identity::RelationId; 2],
+) -> crate::lineage::authority::posture_fixture::LineageCommitPostureInput {
+    use crate::facade::lineage::{
+        LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
+    };
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
+
+    let [(f1, f1_name), (f2, f2_name)] = faces;
+    let (s1, s1_name) = seam;
+    let [s1_a, s1_b] = children;
+    LineageCommitPostureInput {
+        scheme_registry,
+        postures: vec![
+            LineagePostureClaim::Merge {
+                parents: vec![
+                    (LineageRecordTarget::Entity(f1), f1_name),
+                    (LineageRecordTarget::Entity(f2), f2_name),
+                ],
+                target: LineageRecordTarget::Entity(f1),
+                keeper: LineageMergeKeeper::KeepParent(f1_name),
+            },
+            LineagePostureClaim::Split {
+                parent_target: LineageRecordTarget::Relation(s1),
+                parent_name: s1_name,
+                children: vec![
+                    LineageSplitChild {
+                        target: LineageRecordTarget::Relation(s1_a),
+                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "a", s1_a),
+                    },
+                    LineageSplitChild {
+                        target: LineageRecordTarget::Relation(s1_b),
+                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "b", s1_b),
+                    },
+                ],
+            },
+        ],
+        ..Default::default()
+    }
 }

@@ -1,4 +1,6 @@
 //! Apply an admitted immutable artifact, preserving the target's record history.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::effect_assembly::assemble_effect;
 use super::outcomes::{MutationEvent, MutationOutcome, RecordMutation};
 use super::{

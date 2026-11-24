@@ -1,4 +1,5 @@
 //! Test-local contacts at the split commit's owner boundaries.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use std::cell::Cell;
 thread_local! {
     static CONTACTS: Cell<(usize, usize, usize)> = const { Cell::new((0, 0, 0)) };

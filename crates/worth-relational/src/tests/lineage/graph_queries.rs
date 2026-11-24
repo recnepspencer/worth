@@ -8,6 +8,7 @@ use crate::facade::transactions::{
     EntityMutationIntent, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
 };
 use crate::tests::support::*;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 // CONTRACT: lineage_graph_queries
 // LANES: success, determinism
@@ -33,14 +34,14 @@ fn lineage_graph_delete_emits_retire_event() {
         .unwrap();
 
     assert_eq!(
-        graph.traversal_basis,
+        graph.traversal_basis(),
         LineageGraphTraversalBasis::FullBranchGraphMaterialization
     );
     assert!(graph
-        .events
+        .events()
         .iter()
-        .any(|event| event.commit.commit_id == deleted.commit.commit_id
-            && event.kind == LineageEventKind::Retire));
+        .any(|event| event.commit().commit_id == deleted.commit.commit_id
+            && event.kind() == LineageEventKind::Retire));
 }
 
 #[test]
@@ -85,14 +86,14 @@ fn lineage_graph_replace_emits_replace_edge() {
         .unwrap();
 
     assert_eq!(
-        graph.traversal_basis,
+        graph.traversal_basis(),
         LineageGraphTraversalBasis::FullBranchGraphMaterialization
     );
-    assert!(graph.events.iter().any(|event| {
-        event.commit.commit_id == outcome.commit.commit_id
-            && event.kind == LineageEventKind::Replace
-            && event.sources.len() == 1
-            && event.targets.len() == 1
+    assert!(graph.events().iter().any(|event| {
+        event.commit().commit_id == outcome.commit.commit_id
+            && event.kind() == LineageEventKind::Replace
+            && event.sources().len() == 1
+            && event.targets().len() == 1
     }));
 }
 
@@ -155,17 +156,17 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
         )
         .unwrap();
     let replace_events = graph
-        .events
+        .events()
         .iter()
         .filter(|event| {
-            event.commit.commit_id == outcome.commit.commit_id
-                && event.kind == LineageEventKind::Replace
+            event.commit().commit_id == outcome.commit.commit_id
+                && event.kind() == LineageEventKind::Replace
         })
         .collect::<Vec<_>>();
 
     assert_eq!(replace_events.len(), 2);
-    assert_eq!(graph.metrics.event_count, graph.events.len());
-    assert_eq!(graph.metrics.node_count, graph.nodes.len());
+    assert_eq!(graph.metrics().event_count, graph.events().len());
+    assert_eq!(graph.metrics().node_count, graph.nodes().len());
     assert_eq!(
         graph.digest_basis().digest_mode(),
         LineageGraphDigestMode::ExactDigestCanonicalOrder
@@ -173,20 +174,20 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
     assert_eq!(
         graph.digest_basis().canonical_event_ids(),
         graph
-            .events
+            .events()
             .iter()
-            .map(|event| event.event_id)
+            .map(|event| event.event_id())
             .collect::<Vec<_>>()
     );
     assert_eq!(
         graph.digest_basis().canonical_lineage_ids(),
         graph
-            .nodes
+            .nodes()
             .iter()
-            .map(|node| node.lineage_id)
+            .map(|node| node.lineage_id())
             .collect::<Vec<_>>()
     );
-    assert_ne!(replace_events[0].targets, replace_events[1].targets);
+    assert_ne!(replace_events[0].targets(), replace_events[1].targets());
 }
 
 #[test]
@@ -235,14 +236,14 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
 fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_corrupt_claims() {
     use crate::facade::identity::VersionId;
     use crate::facade::lineage::{
-        LineageMergeKeeper, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
-        LineageRecordTarget, LineageSplitChild, LineageSubject,
+        LineageNameDenial, LineagePostureClaim, LineagePostureKind, LineageRecordTarget,
+        LineageSubject,
     };
-    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 
     use super::posture_fixtures::{
-        cad_scheme_registry, push_relation, receipt_at, retire_entity, retire_relation, seam_birth,
+        cad_scheme_registry, push_relation, receipt_at, retire_entity, retire_relation,
         seed_two_faces_and_parallel_seams, staged_entity_lineage,
     };
 
@@ -269,7 +270,10 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         staged_entity_lineage(&staged, f1).unwrap(),
         staged_entity_lineage(&staged, f2).unwrap(),
     );
-    let (s1_lin, s2_lin) = (c1.relation_lineages()[&s1], c1.relation_lineages()[&s2]);
+    let (s1_lin, s2_lin) = (
+        c1.relation_lineages_for_test()[&s1],
+        c1.relation_lineages_for_test()[&s2],
+    );
     let name_of = |lin| {
         c1_ev
             .iter()
@@ -315,14 +319,23 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
                 scheme_registry: registry.clone(),
                 postures: vec![LineagePostureClaim::Create {
                     target: LineageRecordTarget::Entity(dup_e),
-                    birth: super::posture_fixtures::face_birth("occ.rt.1", "authored", vec![], "f1", dup_e),
+                    birth: super::posture_fixtures::face_birth(
+                        "occ.rt.1",
+                        "authored",
+                        vec![],
+                        "f1",
+                        dup_e,
+                    ),
                 }],
                 ..Default::default()
             },
         )
         .err()
         .expect("omitted caller live_holders must not bypass DuplicateBirth");
-    assert!(matches!(spoof.lineage_name_denial_ref(), Some(LineageNameDenial::DuplicateBirth { .. })));
+    assert!(matches!(
+        spoof.lineage_name_denial_ref(),
+        Some(LineageNameDenial::DuplicateBirth { .. })
+    ));
     assert_eq!(prep.lineage_identity.frontiers(), before);
     let err = authority
         .ensure_lineage_for_commit_with_postures(
@@ -344,7 +357,10 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         .expect("unretired Retire must refuse");
     assert!(matches!(
         err.lineage_name_denial_ref(),
-        Some(LineageNameDenial::LineagePostureMismatch { posture: LineagePostureKind::Retire, .. })
+        Some(LineageNameDenial::LineagePostureMismatch {
+            posture: LineagePostureKind::Retire,
+            ..
+        })
     ));
     assert_eq!(prep.lineage_identity.frontiers(), before);
 
@@ -353,30 +369,26 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     let s1_a = push_relation(&mut staged, VersionId(2), f1, f1);
     let s1_b = push_relation(&mut staged, VersionId(2), f1, f1);
     let c2_changed = [
-        RecordRef::Entity(f2), RecordRef::Relation(s1),
-        RecordRef::Relation(s1_a), RecordRef::Relation(s1_b),
+        RecordRef::Entity(f2),
+        RecordRef::Relation(s1),
+        RecordRef::Relation(s1_a),
+        RecordRef::Relation(s1_b),
     ];
-    let c2_input = LineageCommitPostureInput {
-        scheme_registry: registry,
-        postures: vec![
-            LineagePostureClaim::Merge {
-                parents: vec![(LineageRecordTarget::Entity(f1), f1_name), (LineageRecordTarget::Entity(f2), f2_name)],
-                target: LineageRecordTarget::Entity(f1),
-                keeper: LineageMergeKeeper::KeepParent(f1_name),
-            },
-            LineagePostureClaim::Split {
-                parent_target: LineageRecordTarget::Relation(s1),
-                parent_name: s1_name,
-                children: vec![
-                    LineageSplitChild { target: LineageRecordTarget::Relation(s1_a), birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "a", s1_a) },
-                    LineageSplitChild { target: LineageRecordTarget::Relation(s1_b), birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "b", s1_b) },
-                ],
-            },
-        ],
-        ..Default::default()
-    };
+    let c2_input = super::posture_fixtures::merge_and_split_postures(
+        registry,
+        [(f1, f1_name), (f2, f2_name)],
+        (s1, s1_name),
+        [s1_a, s1_b],
+    );
     let c2 = authority
-        .ensure_lineage_for_commit_with_postures(execution, &mut staged, &receipt_at(2, 2), &[], &c2_changed, &c2_input)
+        .ensure_lineage_for_commit_with_postures(
+            execution,
+            &mut staged,
+            &receipt_at(2, 2),
+            &[],
+            &c2_changed,
+            &c2_input,
+        )
         .expect("runtime Merge + relation Split succeeds");
     let c2_ev = c2.artifact().event_batch().events();
     let has = |k, s| c2_ev.iter().any(|e| e.kind() == k && e.subject() == s);

@@ -4,6 +4,8 @@
 //! Memory runtime (Embedded checkpoint plus tail recovery plan), since these
 //! claims exercise record-identity allocator frontiers and tail replay without
 //! physical-medium content.
+use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
@@ -11,7 +13,6 @@ use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 fn tail_replay_consumes_canonical_reused_record_allocation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
@@ -46,7 +47,6 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
         .durability_authority()
         .checkpoint(execution)
         .unwrap();
-
     let replacement = create_entity(execution, &runtime, "allocation-after");
     let plan = runtime
         .durability()
@@ -59,7 +59,6 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
-
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
     let current = recovered
@@ -147,7 +146,10 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
         .recover(execution, plan)
         .unwrap();
 
-    assert!(recovered.record_identity.pending_snapshot().is_empty());
+    assert!(recovered
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let after_recovery = create_entity(execution, &recovered, "orphan-append-after");
     assert_eq!(after_recovery.local_slot.0, original.local_slot.0 + 2);
 }
@@ -198,7 +200,10 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
         .recover(execution, plan)
         .unwrap();
 
-    assert!(recovered.record_identity.pending_snapshot().is_empty());
+    assert!(recovered
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let replacement = create_entity(execution, &recovered, "orphan-reclaimed-after");
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
@@ -355,11 +360,11 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_owned()),
-                source_branch: BranchId("allocation-feature".to_owned()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_owned()),
+                BranchId("allocation-feature".to_owned()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .unwrap();
     runtime.execute_prepared_merge(execution, prepared).unwrap();
@@ -375,10 +380,12 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         .last_mut()
         .expect("merge tail is selected")
         .readmitted_envelope_mut_for_test(execution);
-    tail.install_record_allocations(vec![crate::history::data::CanonicalRecordAllocation::new(
-        0,
-        crate::transactions::data::RecordRef::Entity(entity),
-    )]);
+    tail.install_record_allocations(vec![
+        crate::history::data::CanonicalRecordAllocation::canonical_allocation_for_test(
+            0,
+            crate::transactions::data::RecordRef::Entity(entity),
+        ),
+    ]);
 
     let mut recovered = durable_runtime_for_medium(&medium);
     let error = recovered

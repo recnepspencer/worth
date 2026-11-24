@@ -5,6 +5,7 @@ use crate::durability::medium::{
 };
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 #[derive(Debug)]
 struct Backing {
     source: Arc<dyn RelationalDurableColdSource>,

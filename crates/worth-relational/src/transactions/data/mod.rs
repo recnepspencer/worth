@@ -1,14 +1,12 @@
-pub(crate) mod aspect_field_patch;
-mod aspect_reports;
-pub(crate) mod aspect_traces;
-pub(crate) mod bulk_plan_digest;
-pub(crate) mod canonical_intent_key;
-pub(crate) mod commit_log;
-pub(crate) mod intents;
-pub(crate) mod mutation_planning;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_field_patch;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_reports;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_traces;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::bulk_plan_digest;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::canonical_intent_key;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::commit_log;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::intents;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::mutation_planning;
 pub(crate) mod outcomes;
-pub(crate) mod preparation_strategy;
-pub(crate) mod preparation_strategy_posture;
 pub use outcomes::{
     RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
     RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
@@ -19,7 +17,7 @@ pub use outcomes::{
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
 };
-pub(crate) mod primitives;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::primitives;
 
 pub use aspect_field_patch::{
     planned_aspect_field_locator, planned_single_field_locator, AspectFieldPatch,
@@ -28,9 +26,6 @@ pub use aspect_reports::{AspectTagAccuracyReport, PatchVsTruthDeltaReport};
 pub use aspect_traces::{
     AspectEmissionTrace, AspectEvaluationTrace, AspectEvaluationTraceRow,
     AspectLifecycleTransitionClass, AspectTraceEvidence,
-};
-pub(crate) use bulk_plan_digest::{
-    bulk_lineage_plan_digest, bulk_naming_plan_digest, bulk_provenance_plan_digest,
 };
 pub use commit_log::{
     CommitAspectSummary, CommitChangeSummary, CommitHistorySummary, CommitLog,
@@ -47,8 +42,6 @@ pub use intents::{
     SuspendRelationMaterializationIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
 };
 pub use mutation_planning::CommitTopology;
-pub(crate) use outcomes::merge_commit_mutation_plan_token;
-pub(crate) use outcomes::CommitCreatedEntityBindings;
 pub use outcomes::{
     AspectDeltaFailureFields, AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial,
     AspectDeltaRecordClass, AspectFieldTargetRejectionReason, AuthoritativeApplyPlan,
@@ -64,7 +57,6 @@ pub use outcomes::{
     RelationEndpointUpdateMissingState, RollbackEffect, RollbackOutcome, RollbackSummary,
     SelectedBranchRootDenialReason, TransactionCommitError, UndoRecord,
 };
-pub(crate) use outcomes::{CommitCreatedRelationBindings, CoupledOriginalRelationCreates};
 pub(crate) use primitives::{
     lineage_safe_bulk_mutation_batch, naming_stable_bulk_mutation_batch,
     provenance_complete_bulk_mutation_batch,
@@ -78,8 +70,4 @@ pub use primitives::{
     RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
 };
 
-pub(crate) use outcomes::{
-    ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
-};
-
-pub(crate) mod copy_denial;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::copy_denial;

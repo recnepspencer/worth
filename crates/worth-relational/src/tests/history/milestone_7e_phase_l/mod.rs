@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
 mod fixtures;
 
 use crate::facade::inspection::{

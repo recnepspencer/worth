@@ -1,5 +1,5 @@
 //! Missing actual None fields preserve the same owner-validated merge meaning.
-use crate::durability::canonical_commit_artifact::borrowed_payload::{
+use crate::durability::canonical_commit_artifact::decoded_quote::omission_for_test::{
     omit_nil_record_field, replace_record,
 };
 use crate::merge::data::artifacts::RelationalSchemaReconciliationWitnessRow;

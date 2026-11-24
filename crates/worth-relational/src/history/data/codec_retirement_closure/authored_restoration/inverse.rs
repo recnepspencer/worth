@@ -19,6 +19,7 @@ use crate::transactions::data::primitives::{
     CreatedEntityRef, CreatedRelationRef, EntityReference,
 };
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) struct RestorationSelection<'a> {
     pub(super) basis: &'a AdmittedRelationalBranchBasis,
@@ -222,13 +223,13 @@ pub(super) fn prepare(
                     &mut content,
                 )
                 .map_err(crate::content::publication::commit_denial)?;
-            if basis
+            if (*basis
                 .inner
                 .root
                 .schema_authority()
                 .registry()
-                .native_private_kinds
-                .contains(&edge.kind)
+                .owner_native_private_kinds())
+            .contains(&edge.kind)
             {
                 let (state, funding) = match payload {
                     Some(payload) => {

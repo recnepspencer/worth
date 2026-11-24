@@ -1,4 +1,8 @@
 //! Actual allocation bindings and retained metadata for relation-birth readmission.
+use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use crate::branch::basis_admission_tests::observed_empty_branch;
 use crate::history::data::canonical_commit_envelope::required_output_origin::fixture_birth::describe_birth;
 use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_at;
@@ -16,7 +20,7 @@ use crate::schema::data::{
     DeclaredAspectContractBinding, KindAspectContractDeclarations, RelationKindRegistration,
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
-use crate::storage::overlay::{small_relation_partition::relation_partition, PartitionState};
+use crate::storage::overlay::{small_relation_partition::relation_partition_for_test, PartitionState};
 use crate::storage::substrate::{HistoricalMetadata, RelationEndpoints, RelationExtra, SlotInit};
 use crate::symbols::data::{ClientKey, StringInterner};
 use crate::transactions::data::outcomes::{
@@ -53,7 +57,7 @@ pub(super) fn committed_images(
     capture: impl FnOnce(BirthRelationInputs<'_>) -> Vec<CanonicalRequiredOutputRelation>,
 ) -> CommittedImages {
     let partition_id = PartitionId::main();
-    let (mut partition, entities, _) = relation_partition(partition_id, 3, &[]);
+    let (mut partition, entities, _) = relation_partition_for_test(partition_id, 3, &[]);
     let [left, right, output_id] = entities[..] else {
         unreachable!("the partition has two external endpoints and one output");
     };
@@ -62,7 +66,7 @@ pub(super) fn committed_images(
     let source_contract = endpoint_contract("source", 1, AspectBinding::RelationSourceEndpoint);
     let target_contract = endpoint_contract("target", 2, AspectBinding::RelationTargetEndpoint);
     let insert = |partition: &mut PartitionState, source, target| {
-        let (slot, generation, _) = partition.relation_arena.push_slot(SlotInit {
+        let (slot, generation, _) = partition.relation_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(2),
             version_id: birth_version,
@@ -148,7 +152,9 @@ pub(super) fn committed_images(
         ]
         .into_iter()
         .enumerate()
-        .map(|(ordinal, record)| CanonicalRecordAllocation::new(ordinal as u64, record))
+        .map(|(ordinal, record)| {
+            CanonicalRecordAllocation::canonical_allocation_for_test(ordinal as u64, record)
+        })
         .collect(),
     );
     let mut edition = BTreeMap::from([(partition_id, partition)]);
@@ -169,7 +175,7 @@ pub(super) fn committed_images(
     let partition = edition.get_mut(&partition_id).unwrap();
     partition
         .relation_arena
-        .apply_extra_update(
+        .apply_extra_update_for_test(
             id.slot_index(),
             relation_extra(&source_contract, &target_contract, output_id, right),
             write_version,

@@ -12,7 +12,7 @@ pub(crate) mod durable_step;
 pub(crate) mod original_inputs;
 mod positioned;
 mod record;
-pub(crate) mod sequence;
+pub(crate) use worth_relational_contracts::internal_port::branch::transition::sequence;
 mod stop;
 
 pub use committed_evidence::RelationalCommittedTransitionEvidence;

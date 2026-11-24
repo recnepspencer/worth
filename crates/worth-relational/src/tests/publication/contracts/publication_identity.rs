@@ -1,3 +1,4 @@
+use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
 use crate::capabilities::DurabilityRead;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
@@ -119,9 +120,10 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         .expect("the committed entity installs one partition");
     let mut malformed_partition = runtime
         .partitions
-        .partition(partition_id)
+        .acquire()
+        .try_full_partition(partition_id)
+        .expect("committed partition is resident")
         .expect("committed partition")
-        .as_ref()
         .clone();
     malformed_partition.entity_arena.aspect_versions[0]
         .insert(crate::symbols::data::Symbol(u32::MAX), 1);

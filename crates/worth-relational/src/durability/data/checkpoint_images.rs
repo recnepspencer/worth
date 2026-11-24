@@ -148,6 +148,8 @@ pub struct DurableCheckpoint {
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+
     use sha2::{Digest, Sha256};
 
     use super::branch_root_partition_image_digest;
@@ -158,50 +160,52 @@ mod tests {
 
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
-        let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-        let fixture = crate::durability::native_region_fixture::populated_partition();
-        let contracts = CheckpointAspectContractCatalog::from_contracts(
-            fixture.schema.retained_aspect_contracts(),
-        )
-        .unwrap();
-        let mut sibling = fixture.partition.clone();
-        let kind = crate::identity::data::KindId(1);
-        sibling
-            .entity_arena
-            .push_slot(crate::storage::substrate::SlotInit {
-                partition_id: fixture.partition.partition_id,
-                kind_id: kind,
-                version_id: crate::identity::data::VersionId(13),
-                extra: Default::default(),
-            });
-        let roots = [fixture.partition, sibling].map(|partition| {
-            vec![partition_to_image_with_contracts(
-                &lane,
-                partition,
-                fixture.schema.aspect_plans(),
-                &contracts,
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let lane = fixture_lane;
+            let fixture = crate::durability::native_region_fixture::populated_partition();
+            let contracts = CheckpointAspectContractCatalog::from_contracts(
+                fixture.schema.retained_aspect_contracts(),
             )
-            .unwrap()]
-        });
-        assert_eq!(roots.len(), 2);
-        assert_ne!(roots[0], roots[1]);
-        for root in &roots {
+            .unwrap();
+            let mut sibling = fixture.partition.clone();
+            let kind = crate::identity::data::KindId(1);
+            sibling
+                .entity_arena
+                .push_slot_for_test(crate::storage::substrate::SlotInit {
+                    partition_id: fixture.partition.partition_id,
+                    kind_id: kind,
+                    version_id: crate::identity::data::VersionId(13),
+                    extra: Default::default(),
+                });
+            let roots = [fixture.partition, sibling].map(|partition| {
+                vec![partition_to_image_with_contracts(
+                    &lane,
+                    partition,
+                    fixture.schema.aspect_plans(),
+                    &contracts,
+                )
+                .unwrap()]
+            });
+            assert_eq!(roots.len(), 2);
+            assert_ne!(roots[0], roots[1]);
+            for root in &roots {
+                assert_eq!(
+                    branch_root_partition_image_digest(&lane, root).unwrap(),
+                    buffered_digest(root)
+                );
+            }
+            let mut altered = roots[0].clone();
+            let original = branch_root_partition_image_digest(&lane, &altered).unwrap();
+            altered[0].entity_arena.generations[0] ^= 1;
             assert_eq!(
-                branch_root_partition_image_digest(&lane, root).unwrap(),
-                buffered_digest(root)
+                branch_root_partition_image_digest(&lane, &altered).unwrap(),
+                buffered_digest(&altered)
             );
-        }
-        let mut altered = roots[0].clone();
-        let original = branch_root_partition_image_digest(&lane, &altered).unwrap();
-        altered[0].entity_arena.generations[0] ^= 1;
-        assert_eq!(
-            branch_root_partition_image_digest(&lane, &altered).unwrap(),
-            buffered_digest(&altered)
-        );
-        assert_ne!(
-            branch_root_partition_image_digest(&lane, &altered).unwrap(),
-            original
-        );
+            assert_ne!(
+                branch_root_partition_image_digest(&lane, &altered).unwrap(),
+                original
+            );
+        })
     }
 
     fn buffered_digest(images: &[super::PartitionCheckpointImage]) -> [u8; 32] {

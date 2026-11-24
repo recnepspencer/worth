@@ -1,3 +1,6 @@
+use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness_rows::RelationalMergeCorrespondenceWitnessRowOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::MergeExecutionSummaryOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
 use worth_foundational::{
     admit_requested_foundational_profile, attach_support_profiled_artifact,
     foundational_profile_progression_authority, request_foundational_profile_set,

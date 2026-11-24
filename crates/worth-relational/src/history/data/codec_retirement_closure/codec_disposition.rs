@@ -11,6 +11,7 @@ use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod activation;
 pub(crate) mod deletion_grammar;
 mod effect_coverage;
@@ -201,8 +202,7 @@ fn validate_group(
             envelope,
             member,
             present,
-            &before
-                .entity_kinds
+            &(*before.owner_entity_kinds())
                 .get(&member.kind)
                 .ok_or("codec member source registration absent")?
                 .aspect_contract_declarations,

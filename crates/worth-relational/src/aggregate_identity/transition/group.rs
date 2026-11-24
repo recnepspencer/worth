@@ -10,18 +10,19 @@
 //! name). Keepers follow the declared continuity rule. Native carriers, commit
 //! identities, and input order never decide anything.
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::aggregate_identity::transition::group::model::AggregateGroupMembersOwnerPort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 
 use super::mint::{mint_group_identity, mint_group_name};
 use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
 use crate::lineage::data::PersistentNameIdentity as Name;
-mod denial;
+pub(crate) use worth_relational_contracts::internal_port::aggregate_identity::transition::group::denial;
 mod keeper;
-pub(crate) mod model;
+pub(crate) use worth_relational_contracts::internal_port::aggregate_identity::transition::group::model;
 mod outcome;
-pub(crate) mod transition_result;
 pub use transition_result::AggregateGroupTransition;
+pub(crate) use worth_relational_contracts::internal_port::aggregate_identity::transition::group::transition_result;
 #[cfg(test)]
 mod tests;
 

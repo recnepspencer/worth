@@ -3,6 +3,7 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::data::RecordLifecycleState;
 use crate::visibility::snapshot_states::SnapshotStateBasis;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalBorrowedRecordReadDenial {
@@ -34,12 +35,12 @@ impl VisibilityProjectionView {
         };
         Some(
             38_u64.saturating_add(kind_lookup_work(
-                basis
+                (*basis
                     .projection_root()
                     .schema_authority()
                     .registry()
-                    .entity_kinds
-                    .len(),
+                    .owner_entity_kinds())
+                .len(),
             )),
         )
     }
@@ -51,12 +52,12 @@ impl VisibilityProjectionView {
             return None;
         };
         Some(kind_lookup_work(
-            basis
+            (*basis
                 .projection_root()
                 .schema_authority()
                 .registry()
-                .entity_kinds
-                .len(),
+                .owner_entity_kinds())
+            .len(),
         ))
     }
 
@@ -67,12 +68,12 @@ impl VisibilityProjectionView {
         };
         Some(
             39_u64.saturating_add(kind_lookup_work(
-                basis
+                (*basis
                     .projection_root()
                     .schema_authority()
                     .registry()
-                    .relation_kinds
-                    .len(),
+                    .owner_relation_kinds())
+                .len(),
             )),
         )
     }
@@ -111,12 +112,7 @@ impl VisibilityProjectionView {
         let Some(kind_id) = slot.kind_id() else {
             return Ok(None);
         };
-        if !root
-            .schema_authority()
-            .registry()
-            .entity_kinds
-            .contains_key(&kind_id)
-        {
+        if !(*root.schema_authority().registry().owner_entity_kinds()).contains_key(&kind_id) {
             return Ok(None);
         }
         let metadata = RelationalEntityMetadata {
@@ -171,12 +167,7 @@ impl VisibilityProjectionView {
         let Some(kind_id) = slot.kind_id() else {
             return Ok(None);
         };
-        if !root
-            .schema_authority()
-            .registry()
-            .relation_kinds
-            .contains_key(&kind_id)
-        {
+        if !(*root.schema_authority().registry().owner_relation_kinds()).contains_key(&kind_id) {
             return Ok(None);
         }
         let Some(endpoints) = &slot.extra().endpoints else {

@@ -73,6 +73,9 @@ fn include_relation_scope(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+
     use std::collections::BTreeMap;
 
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
@@ -103,22 +106,23 @@ mod tests {
         let target_entity_id = EntityId::new(target_partition_id, 0, 1);
 
         let mut relation_arena = RelationArena::with_capacity(1);
-        let (slot, generation, _) = relation_arena.push_slot(crate::storage::substrate::SlotInit {
-            partition_id: relation_partition_id,
-            kind_id: KindId(9),
-            version_id: VersionId(1),
-            extra: RelationExtra::from_unbudgeted_parts(
-                Some(RelationEndpoints {
-                    source: source_entity_id,
-                    target: target_entity_id,
-                }),
-                None,
-            ),
-        });
+        let (slot, generation, _) =
+            relation_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+                partition_id: relation_partition_id,
+                kind_id: KindId(9),
+                version_id: VersionId(1),
+                extra: RelationExtra::from_unbudgeted_parts(
+                    Some(RelationEndpoints {
+                        source: source_entity_id,
+                        target: target_entity_id,
+                    }),
+                    None,
+                ),
+            });
         let relation_id = RelationId::new(relation_partition_id, slot as u64, generation);
 
         let mut source_adjacency = AdjacencySet::new(&adjacency_policy);
-        source_adjacency.insert(KindId(9), relation_id);
+        source_adjacency.insert_adjacent_id_for_test(KindId(9), relation_id);
 
         let mut partitions = BTreeMap::new();
         partitions.insert(
@@ -158,7 +162,7 @@ mod tests {
             },
         );
 
-        let state = WorkingState::new(partitions, adjacency_policy);
+        let state = WorkingState::working_state_for_test(partitions, adjacency_policy);
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(1),
             merged_intents: vec![MutationIntent::Entity(EntityMutationIntent::Delete(
@@ -188,22 +192,23 @@ mod tests {
         let target_entity_id = EntityId::new(target_partition_id, 0, 1);
 
         let mut relation_arena = RelationArena::with_capacity(1);
-        let (slot, generation, _) = relation_arena.push_slot(crate::storage::substrate::SlotInit {
-            partition_id: relation_partition_id,
-            kind_id: KindId(9),
-            version_id: VersionId(1),
-            extra: RelationExtra::from_unbudgeted_parts(
-                Some(RelationEndpoints {
-                    source: source_entity_id,
-                    target: target_entity_id,
-                }),
-                None,
-            ),
-        });
+        let (slot, generation, _) =
+            relation_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+                partition_id: relation_partition_id,
+                kind_id: KindId(9),
+                version_id: VersionId(1),
+                extra: RelationExtra::from_unbudgeted_parts(
+                    Some(RelationEndpoints {
+                        source: source_entity_id,
+                        target: target_entity_id,
+                    }),
+                    None,
+                ),
+            });
         let relation_id = RelationId::new(relation_partition_id, slot as u64, generation);
 
         let mut source_adjacency = AdjacencySet::new(&adjacency_policy);
-        source_adjacency.insert(KindId(9), relation_id);
+        source_adjacency.insert_adjacent_id_for_test(KindId(9), relation_id);
 
         let mut partitions = BTreeMap::new();
         partitions.insert(
@@ -243,7 +248,7 @@ mod tests {
             },
         );
 
-        let state = WorkingState::new(partitions, adjacency_policy);
+        let state = WorkingState::working_state_for_test(partitions, adjacency_policy);
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(1),
             merged_intents: vec![MutationIntent::Entity(EntityMutationIntent::UpdateFields(

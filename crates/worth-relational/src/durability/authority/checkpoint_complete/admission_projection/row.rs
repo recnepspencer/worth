@@ -4,6 +4,7 @@ use crate::durability::checkpoint_admission::{AdmissionRowKey, EncodedAdmissionR
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_foundational::CanonicalDigestId;
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
     envelope: &crate::history::data::CanonicalCommitEnvelope,

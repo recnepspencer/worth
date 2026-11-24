@@ -3,6 +3,7 @@ use crate::mvcc::publication::application_publication::custody;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 pub(super) fn reject(
     cause: Cause,

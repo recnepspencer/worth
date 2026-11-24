@@ -270,56 +270,58 @@ mod tests {
     use super::*;
     #[test]
     fn excess_scalar_columns_refuse_before_schema_lookup() {
-        let changes: [fn(&mut RecordArenaCheckpointImage<EntityCheckpointImageKind>); 4] = [
-            |image| image.created_at.push(crate::identity::data::VersionId(1)),
-            |image| image.retired_at.push(None),
-            |image| image.kind_ids.push(None),
-            |image| {
-                image
-                    .lifecycle
-                    .push(crate::storage::data::RecordLifecycleState::Live)
-            },
-        ];
-        for change in changes {
-            let mut image = RecordArenaCheckpointImage::<EntityCheckpointImageKind> {
-                slots: vec![],
-                generations: vec![],
-                lifecycle: vec![],
-                kind_ids: vec![],
-                metadata_history: vec![],
-                created_at: vec![],
-                retired_at: vec![],
-                aspect_versions: vec![],
-                field_revisions: vec![],
-                extra: vec![],
-                diagnostics_enrichment: vec![],
-                branch_pins: vec![],
-                replay_pins: vec![],
-                snapshot_pins: vec![],
-                live_bitset: DurableBitSet {
-                    words: vec![],
-                    sparse_words: vec![],
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let changes: [fn(&mut RecordArenaCheckpointImage<EntityCheckpointImageKind>); 4] = [
+                |image| image.created_at.push(crate::identity::data::VersionId(1)),
+                |image| image.retired_at.push(None),
+                |image| image.kind_ids.push(None),
+                |image| {
+                    image
+                        .lifecycle
+                        .push(crate::storage::data::RecordLifecycleState::Live)
                 },
-                reclaimable_bitset: DurableBitSet {
-                    words: vec![],
-                    sparse_words: vec![],
-                },
-                free_list: vec![],
-                marker: std::marker::PhantomData,
-            };
-            change(&mut image);
-            let contracts = CheckpointAspectContractCatalog::from_contracts(&[]).unwrap();
-            let error = arena::<EntityRecordKind>(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                PartitionId::main(),
-                image,
-                &AspectContractPlanCatalog::empty(),
-                &contracts,
-                &ImageReadmission { request: None },
-            )
-            .unwrap_err();
-            assert!(matches!(error, Stop::Durability(error)
+            ];
+            for change in changes {
+                let mut image = RecordArenaCheckpointImage::<EntityCheckpointImageKind> {
+                    slots: vec![],
+                    generations: vec![],
+                    lifecycle: vec![],
+                    kind_ids: vec![],
+                    metadata_history: vec![],
+                    created_at: vec![],
+                    retired_at: vec![],
+                    aspect_versions: vec![],
+                    field_revisions: vec![],
+                    extra: vec![],
+                    diagnostics_enrichment: vec![],
+                    branch_pins: vec![],
+                    replay_pins: vec![],
+                    snapshot_pins: vec![],
+                    live_bitset: DurableBitSet {
+                        words: vec![],
+                        sparse_words: vec![],
+                    },
+                    reclaimable_bitset: DurableBitSet {
+                        words: vec![],
+                        sparse_words: vec![],
+                    },
+                    free_list: vec![],
+                    marker: std::marker::PhantomData,
+                };
+                change(&mut image);
+                let contracts = CheckpointAspectContractCatalog::from_contracts(&[]).unwrap();
+                let error = arena::<EntityRecordKind>(
+                    fixture_lane,
+                    PartitionId::main(),
+                    image,
+                    &AspectContractPlanCatalog::empty(),
+                    &contracts,
+                    &ImageReadmission { request: None },
+                )
+                .unwrap_err();
+                assert!(matches!(error, Stop::Durability(error)
                 if error.class == RecoveryFailureClass::CorruptCheckpoint));
-        }
+            }
+        })
     }
 }

@@ -1,5 +1,6 @@
 //! Capture the installed lineage basis and install entity-slot bindings in the staged commit.
 
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::data::RelationalCommitReceipt;
 use crate::lineage::authority::{prepare_posture_finalization, resolve_commit_naming_plan};
 use crate::lineage::data::{CommitNamingPlan, LineagePostureClaim, PreparedLineageFinalization};
@@ -105,7 +106,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         commit: &RelationalCommitReceipt,
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
-        input: &crate::lineage::data::LineageCommitPostureInput,
+        input: &crate::lineage::authority::posture_fixture::LineageCommitPostureInput,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
         let basis = self.naming.read_guard(commit.branch_id.clone());
         let mut prepared = prepare_posture_finalization(

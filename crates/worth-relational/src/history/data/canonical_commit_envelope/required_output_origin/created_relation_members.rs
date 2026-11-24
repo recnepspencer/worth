@@ -9,6 +9,7 @@ use crate::transactions::data::outcomes::created_relation_bindings::CommitCreate
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::EntityReference;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use super::CanonicalRequiredOutputRelation;
 
@@ -55,14 +56,17 @@ pub(in crate::history::data) fn capture_created_relations(
                     records.len() as u64
                         + u64::from(
                             usize::BITS
-                                - registry.native_private_kinds.len().max(1).leading_zeros(),
+                                - (*registry.owner_native_private_kinds())
+                                    .len()
+                                    .max(1)
+                                    .leading_zeros(),
                         )
                         + 1,
                 )
                 .map_err(origin_request)?;
             if !records.contains(&crate::transactions::data::primitives::RecordRef::Relation(
                 *id,
-            )) && !registry.native_private_kinds.contains(&created.kind_id)
+            )) && !(*registry.owner_native_private_kinds()).contains(&created.kind_id)
             {
                 continue;
             }

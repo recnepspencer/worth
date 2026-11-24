@@ -5,6 +5,8 @@ use crate::projected_member_domain::ProjectedMemberDomainHandle;
 use crate::schema::SchemaRegistryCustody;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::hash::{Hash, Hasher};
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Opaque exact-view lookup currency; descriptive definition bytes cannot issue it.
 #[derive(Clone)]
@@ -118,9 +120,7 @@ impl AggregateReadPort<'_, '_> {
                     .name_bytes()
                     .ok_or(AggregateReadDenial::PreparationRefused)?;
                 let levels = usize::BITS
-                    - registry
-                        .registry()
-                        .projected_member_domains
+                    - (*registry.registry().owner_projected_member_domains())
                         .len()
                         .max(1)
                         .leading_zeros();

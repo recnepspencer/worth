@@ -1,16 +1,10 @@
-pub(crate) mod binding_denial;
-#[path = "requests/denial.rs"]
-pub(crate) mod denial;
-#[path = "requests/digest.rs"]
-pub(crate) mod digest;
-#[path = "requests/foundational.rs"]
-mod foundational;
-#[path = "requests/normalized.rs"]
-pub(crate) mod normalized;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::requests::binding_denial;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::requests::denial;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::requests::foundational;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::requests::normalized;
 #[path = "requests/owner_bound.rs"]
 mod owner_bound;
-#[path = "requests/raw.rs"]
-pub(crate) mod raw;
+pub(crate) use worth_relational_contracts::internal_port::merge::data::requests::raw;
 
 pub use denial::RelationalMergeRequestNormalizationDenial;
 pub use foundational::RelationalFoundationalMergeRequest;

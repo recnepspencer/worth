@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
 fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {

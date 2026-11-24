@@ -11,6 +11,7 @@ use crate::identity::data::EntityId;
 use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use std::{any::Any, sync::Arc};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
 
 mod home_catalog;
 mod ordered_predecessor;
@@ -206,7 +207,7 @@ impl<'a> ManagedIndexSourceScope<'a> {
                     } else {
                         &self.views.after_fields
                     },
-                    audience: self.program.0.issuer.admit(),
+                    audience: (*self.program.owner_field_0()).issuer.admit(),
                     interpretation: self.interpretation,
                     before,
                 },

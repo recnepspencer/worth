@@ -1,4 +1,6 @@
 //! Judge a rescoped producer round against its exact chain and applied records.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 use super::super::super::custody;
 use super::super::refusals::{overflow, postponed, reject};
 use super::super::{

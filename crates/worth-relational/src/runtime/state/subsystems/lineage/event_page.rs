@@ -184,10 +184,12 @@ mod tests {
     use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
     use crate::identity::data::{LineageId, VersionId};
     use crate::lineage::data::{LineageEventKind, LineageEventRecord, LineageSubject};
+    use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+    use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
     fn restore_event(sources: Vec<LineageId>, targets: Vec<LineageId>) -> LineageEventRecord {
         let branch_id = BranchId("main".to_owned());
-        LineageEventRecord {
+        assemble_lineage_event_record(LineageEventRecordParts {
             event_id: 1,
             commit: RelationalCommitReceipt {
                 commit_id: CommitId(1),
@@ -204,7 +206,7 @@ mod tests {
             kept_name: None,
             relation_id: None,
             entity_id: None,
-        }
+        })
     }
 
     #[test]

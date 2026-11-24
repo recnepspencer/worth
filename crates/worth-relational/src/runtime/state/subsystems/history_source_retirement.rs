@@ -8,6 +8,7 @@ use crate::branch::registry::RelationalSourceRootSlot;
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::retention::RelationalBranchRetentionOwner;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 
 pub(crate) struct RelationalSourceHistoryBinding {
     branches: RelationalBranchReferenceRegistry,

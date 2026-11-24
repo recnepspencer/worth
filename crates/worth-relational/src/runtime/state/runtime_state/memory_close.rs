@@ -1,6 +1,7 @@
 //! Only the authentic memory owner may establish business quiescence.
 use super::RelationalReadCustodyHolders as Holders;
 use super::{RelationalRuntime, RelationalRuntimeCloseDenial};
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn has_memory_close_source_affinity(&self) -> bool {

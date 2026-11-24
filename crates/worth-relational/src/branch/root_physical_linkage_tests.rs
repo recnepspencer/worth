@@ -3,10 +3,15 @@ use super::*;
 use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
 use crate::identity::data::{EntityId, PartitionId};
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
+use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
 #[test]
 fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let envelope = Arc::new(envelope_with_patch_and_update(
@@ -63,12 +68,16 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
 #[test]
 fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
     use crate::history::commit::{RelationalCommitArtifact, RelationalCommitArtifactDenial};
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let partition_id = crate::identity::data::PartitionId::main();
     let (partition, entities, _) =
-        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 1, &[]);
+        crate::storage::overlay::small_relation_partition::relation_partition_for_test(
+            partition_id,
+            1,
+            &[],
+        );
     let entity = entities[0];
     let registry = crate::schema::data::RelationalSchemaRegistry::new()
         .register_entity_kind(crate::schema::data::EntityKindRegistration {
@@ -189,7 +198,11 @@ pub(super) fn capture_committed_fixture(
 
     let partition_id = PartitionId::main();
     let (partition, entities, _) =
-        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 1, &[]);
+        crate::storage::overlay::small_relation_partition::relation_partition_for_test(
+            partition_id,
+            1,
+            &[],
+        );
     let record = RecordRef::Entity(entities[0]);
     let branch_id = BranchId("main".into());
     let receipt = RelationalCommitReceipt {
@@ -240,10 +253,12 @@ pub(super) fn capture_committed_fixture(
         fork_provenance: None,
         fork_source_branch_id: None,
     });
-    body.install_record_allocations(vec![CanonicalRecordAllocation::new(0, record)]);
+    body.install_record_allocations(vec![
+        CanonicalRecordAllocation::canonical_allocation_for_test(0, record),
+    ]);
     body.published_lineage_mut_for_test()
-        .lineage_events_mut()
-        .push(LineageEventRecord {
+        .lineage_events_mut_for_test()
+        .push(assemble_lineage_event_record(LineageEventRecordParts {
             event_id: version,
             commit: receipt,
             branch_id,
@@ -255,7 +270,7 @@ pub(super) fn capture_committed_fixture(
             kept_name: None,
             relation_id: None,
             entity_id: None,
-        });
+        }));
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
     journal.entity_slots.insert(entities[0].slot_index());
     let delta = crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(

@@ -1,11 +1,11 @@
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageMergeKeeper, LineageNameDenial, LineagePostureClaim,
-    LineagePostureKind, LineageRecordTarget, LineageSplitChild, LineageSubject,
+    LineageMergeKeeper, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
+    LineageRecordTarget, LineageSplitChild, LineageSubject,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::posture_corruption_fixtures::setup_corruption_base;

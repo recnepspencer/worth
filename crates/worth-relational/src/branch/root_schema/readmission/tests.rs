@@ -4,6 +4,7 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 use worth_foundational::facade::{
     AspectContractRevision, AspectIdentity, AspectKey, ScalarAspectType,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[test]
 fn exact_readmission_retains_original_compiler_funding_until_last_child() {
@@ -54,7 +55,7 @@ fn exact_readmission_retains_original_compiler_funding_until_last_child() {
     .unwrap();
     let registry = schema.registry_arc();
     let plans = schema.aspect_plans_arc();
-    assert_eq!(registry.entity_kinds.len(), 1);
+    assert_eq!((*registry.owner_entity_kinds()).len(), 1);
     assert_eq!(plans.entity_plans.len(), 1);
     assert_eq!(schema.authority_digest(), expected.digest());
     drop(schema);

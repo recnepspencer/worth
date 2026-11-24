@@ -6,6 +6,7 @@ use crate::execution::request_stage::checkpoint;
 use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 mod current_retirement;
 mod owned_members;
 pub use owned_members::AuthoredOwnedMemberKind;

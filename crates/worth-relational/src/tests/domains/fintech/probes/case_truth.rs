@@ -129,7 +129,7 @@ pub(crate) fn read_version_probe(
             0,
         )
         .expect("version probe packet fragment");
-    let reduced = crate::query::data::reduce_query_fragments(
+    let reduced = crate::query::data::reduce_query_fragments_for_test(
         crate::facade::query::QueryExecutionShape::BulkPacketized,
         crate::facade::query::QueryOrderingContract::CanonicalRecordRefOrder,
         vec![fragment],

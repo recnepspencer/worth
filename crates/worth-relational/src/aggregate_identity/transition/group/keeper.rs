@@ -1,5 +1,6 @@
 //! Continuity-rule keeper selection and birth anchors, by name and role only.
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::aggregate_identity::transition::group::model::AggregateGroupMembersOwnerPort as _;
 
 use super::{AggregateContinuityRule as Rule, AggregateGroupMembers, AggregatePriorGroup};
 use super::{AggregateGroupNamingDenial as Denial, Name, Role};

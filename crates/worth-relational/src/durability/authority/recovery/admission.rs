@@ -5,6 +5,7 @@ use crate::diagnostics::data::{DiagnosticsArtifactKind, RelationalDiagnosticsEnt
 use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use super::super::authority_continuity::{
     recovery_authority_continuity_diagnostic, validate_recovery_authority_continuity,
@@ -139,10 +140,12 @@ fn validate_reported_parity(
                     .registry
                     .primary_schema_version_id(),
                 found_primary_schema_version: config.schema.registry.primary_schema_version_id(),
-                expected_entity_kind_count: plan.config.schema.registry.entity_kinds.len(),
-                found_entity_kind_count: config.schema.registry.entity_kinds.len(),
-                expected_relation_kind_count: plan.config.schema.registry.relation_kinds.len(),
-                found_relation_kind_count: config.schema.registry.relation_kinds.len(),
+                expected_entity_kind_count: (*plan.config.schema.registry.owner_entity_kinds())
+                    .len(),
+                found_entity_kind_count: (*config.schema.registry.owner_entity_kinds()).len(),
+                expected_relation_kind_count: (*plan.config.schema.registry.owner_relation_kinds())
+                    .len(),
+                found_relation_kind_count: (*config.schema.registry.owner_relation_kinds()).len(),
             },
         ));
     }

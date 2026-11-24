@@ -1,5 +1,6 @@
 //! Compare the selected branch state and consume one prepared movement.
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 
 mod preflight;
 

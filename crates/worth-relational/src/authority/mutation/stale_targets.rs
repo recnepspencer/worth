@@ -6,6 +6,7 @@ use crate::storage::substrate::{
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::primitives::ExistingRecordTarget;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) fn ensure_entity_target_is_current(
     staged: &impl CurrentPartitionAccess,

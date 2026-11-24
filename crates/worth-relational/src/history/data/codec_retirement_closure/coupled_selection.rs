@@ -1,4 +1,6 @@
 //! Resolve an exact recorded route against the selected current provenance.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use super::{authored_cascade, CodecRetirementClosureStop as Stop};
 use crate::execution::request_stage::checkpoint;
 use crate::history::data::{CanonicalRequiredOutputOrigin, SelectedOutputPublication};

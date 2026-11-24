@@ -26,4 +26,4 @@ pub(crate) use index_entry::RelationalCommitIndexEntry;
 mod retained_index;
 pub(crate) use retained_index::RetainedCanonicalIndex;
 
-pub(crate) mod artifact_denial;
+pub(crate) use worth_relational_contracts::internal_port::history::commit::artifact_denial;

@@ -2,6 +2,7 @@
 use super::*;
 use crate::identity::data::KindId;
 use worth_foundational::facade::AspectIdentity;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl PreparedRelationalHomeRecovery {
     /// DATA only: the maxima cover every admitted original schema, including
@@ -14,7 +15,7 @@ impl PreparedRelationalHomeRecovery {
         let mut aspect = None;
         for schema in self.state.graph.schemas.rows.values() {
             let registry = schema.registry();
-            for entry in registry.entity_kinds.values() {
+            for entry in (*registry.owner_entity_kinds()).values() {
                 request.consult().map_err(Denial::Request)?;
                 kind = kind.max(Some(entry.kind_id));
                 for declaration in &entry.aspect_contract_declarations.aspects {
@@ -22,7 +23,7 @@ impl PreparedRelationalHomeRecovery {
                     aspect = aspect.max(Some(declaration.contract.identity()));
                 }
             }
-            for entry in registry.relation_kinds.values() {
+            for entry in (*registry.owner_relation_kinds()).values() {
                 request.consult().map_err(Denial::Request)?;
                 kind = kind.max(Some(entry.kind_id));
                 for declaration in &entry.aspect_contract_declarations.aspects {
@@ -89,13 +90,11 @@ impl PreparedRelationalHomeRecovery {
                 continue;
             }
             let registry = schema.registry();
-            for (kind_id, aspects) in registry
-                .entity_kinds
+            for (kind_id, aspects) in (*registry.owner_entity_kinds())
                 .values()
                 .map(|entry| (entry.kind_id, &entry.aspect_contract_declarations.aspects))
                 .chain(
-                    registry
-                        .relation_kinds
+                    (*registry.owner_relation_kinds())
                         .values()
                         .map(|entry| (entry.kind_id, &entry.aspect_contract_declarations.aspects)),
                 )

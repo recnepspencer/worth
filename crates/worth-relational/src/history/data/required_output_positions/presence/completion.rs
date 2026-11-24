@@ -1,4 +1,6 @@
 //! Position transitions independently maintain presence; no roster row is consulted.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::authority::mutation::current_records::CompletedCurrentRecords;
 use crate::authority::mutation::current_records::Writer;
@@ -23,18 +25,18 @@ pub(crate) fn complete(
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedCurrentRecords, TransactionCommitError> {
-    let storage = basis
+    let storage = (*basis
         .inner
         .root
         .schema_authority()
         .registry()
-        .current_publication_storage
-        .as_ref()
-        .ok_or_else(|| {
-            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
-                "position presence requires its installed storage",
-            )
-        })?;
+        .owner_current_publication_storage())
+    .as_ref()
+    .ok_or_else(|| {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+            "position presence requires its installed storage",
+        )
+    })?;
     crate::publication::ownership::read_request::checkpoint(
         context,
         current

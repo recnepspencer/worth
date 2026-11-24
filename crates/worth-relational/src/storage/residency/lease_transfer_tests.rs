@@ -1,4 +1,6 @@
 //! Consuming Full custody preserves an outstanding immutable observation.
+use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::identity::data::VersionId;
 
@@ -18,7 +20,7 @@ fn consuming_full_custody_releases_its_lease_and_keeps_shared_history_immutable(
         .clone();
     owned
         .entity_arena
-        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
+        .apply_extra_update_for_test(fixture.entity.slot_index(), extra, VersionId(1_000))
         .expect("fixture slot is materialized");
     assert_eq!(
         owned

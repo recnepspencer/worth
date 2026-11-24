@@ -1,3 +1,4 @@
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 mod complete_view;
 mod readmission;
 mod request_quote;
@@ -244,63 +245,56 @@ mod tests {
     }
 
     fn capture(generations: Vec<DerivedIndexGeneration>) -> DerivedIndexCheckpointArtifacts {
-        DerivedIndexCheckpointArtifacts::capture(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            generations.into_iter().map(Arc::new).collect(),
-            Vec::new(),
-        )
-        .unwrap()
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            DerivedIndexCheckpointArtifacts::capture(
+                fixture_lane,
+                generations.into_iter().map(Arc::new).collect(),
+                Vec::new(),
+            )
+            .unwrap()
+        })
     }
 
     #[test]
     fn delta_checkpoint_roundtrips_exact_payload_and_shares_unchanged_bytes() {
-        let generations = vec![generation(1, 90), generation(2, 90)];
-        let checkpoint = capture(generations.clone());
-        let wire = rmp_serde::to_vec_named(&checkpoint).unwrap();
-        let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
-        assert_eq!(
-            decoded
-                .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-                .unwrap(),
-            generations
-        );
-        assert!(decoded.generations[1].shared_suffix_bytes > 0);
-        assert!(wire.len() < rmp_serde::to_vec_named(&generations).unwrap().len());
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let generations = vec![generation(1, 90), generation(2, 90)];
+            let checkpoint = capture(generations.clone());
+            let wire = rmp_serde::to_vec_named(&checkpoint).unwrap();
+            let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
+            assert_eq!(decoded.readmit(fixture_lane).unwrap(), generations);
+            assert!(decoded.generations[1].shared_suffix_bytes > 0);
+            assert!(wire.len() < rmp_serde::to_vec_named(&generations).unwrap().len());
+        })
     }
 
     #[test]
     fn delta_checkpoint_denies_corrupt_missing_and_incompatible_payloads() {
-        let generations = vec![generation(1, 10), generation(2, 90)];
-        let mut checkpoint = capture(generations);
-        checkpoint.generations[1].changed_bytes[0] ^= 1;
-        assert!(checkpoint
-            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-            .is_err());
-        let mut checkpoint = capture(vec![generation(1, 10)]);
-        checkpoint.generations[0].status = DerivedIndexPublicationStatus::BuildFailed;
-        assert!(checkpoint
-            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-            .is_err());
-        let mut checkpoint = capture(vec![generation(1, 10)]);
-        checkpoint.generations.clear();
-        assert!(checkpoint
-            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-            .is_err());
-        checkpoint.format_version = 1;
-        assert!(checkpoint
-            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-            .is_err());
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let generations = vec![generation(1, 10), generation(2, 90)];
+            let mut checkpoint = capture(generations);
+            checkpoint.generations[1].changed_bytes[0] ^= 1;
+            assert!(checkpoint.readmit(fixture_lane).is_err());
+            let mut checkpoint = capture(vec![generation(1, 10)]);
+            checkpoint.generations[0].status = DerivedIndexPublicationStatus::BuildFailed;
+            assert!(checkpoint.readmit(fixture_lane).is_err());
+            let mut checkpoint = capture(vec![generation(1, 10)]);
+            checkpoint.generations.clear();
+            assert!(checkpoint.readmit(fixture_lane).is_err());
+            checkpoint.format_version = 1;
+            assert!(checkpoint.readmit(fixture_lane).is_err());
+        })
     }
 
     #[test]
     fn self_consistent_digest_cannot_relabel_generation_to_foreign_branch() {
-        let mut foreign = generation(1, 10);
-        foreign.applicability.branch_id = BranchId("foreign".into());
-        let checkpoint = capture(vec![foreign]);
-        let error = checkpoint
-            .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
-            .unwrap_err();
-        assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-        assert!(error.detail.contains("branch affinity"));
+        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+            let mut foreign = generation(1, 10);
+            foreign.applicability.branch_id = BranchId("foreign".into());
+            let checkpoint = capture(vec![foreign]);
+            let error = checkpoint.readmit(fixture_lane).unwrap_err();
+            assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+            assert!(error.detail.contains("branch affinity"));
+        })
     }
 }

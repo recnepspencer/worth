@@ -1,4 +1,6 @@
 //! Producer-written history bases follow rows rather than record generations.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
@@ -8,7 +10,7 @@ use std::collections::BTreeSet;
 #[test]
 fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = fixture
         .cold
@@ -29,7 +31,7 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
     assert!(Arc::ptr_eq(&prefix.source().unwrap(), &source));
 
     arena
-        .retire(slot, VersionId(1_000))
+        .retire_record_for_test(slot, VersionId(1_000))
         .expect("fixture slot is materialized");
     arena.set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
     arena
@@ -40,7 +42,7 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
         prefix.member
     );
     arena
-        .write_reserved_slot(
+        .write_reserved_slot_for_test(
             SlotInit {
                 partition_id: fixture.entity.partition_id,
                 kind_id: KindId(1),
@@ -70,7 +72,7 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
         "generation reuse preserves the original shared history opening"
     );
 
-    arena.suspend_materialization(slot).unwrap();
+    arena.suspend_materialization_for_test(slot).unwrap();
     assert!(arena.metadata_history[physical].is_empty());
     assert!(arena.history_prefixes[physical].is_none());
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
@@ -79,7 +81,7 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
 #[test]
 fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_changes() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = fixture
         .cold
@@ -98,7 +100,7 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
         .clone();
     let mut destination = EntityArena::with_capacity(0);
     destination
-        .write_reserved_slot(
+        .write_reserved_slot_for_test(
             SlotInit {
                 partition_id: fixture.entity.partition_id,
                 kind_id: KindId(1),
@@ -126,133 +128,132 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
 
 #[test]
 fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() {
-    let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = fixture
-        .cold
-        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
-        .unwrap();
-    let physical = head
-        .partition
-        .entity_arena
-        .physical_index(fixture.entity.slot_index())
-        .unwrap();
-    let prefix = head.partition.entity_arena.history_prefixes[physical]
-        .as_ref()
-        .unwrap();
-    let (openings, _) = head
-        .commitment
-        .as_ref()
-        .unwrap()
-        .history_frontiers(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            execution,
-            &head.partition,
-        )
-        .unwrap()
-        .into_arenas();
-    let (_, expected) = openings
-        .into_iter()
-        .find(|(slot, _)| *slot == fixture.entity.slot_index() as u64)
-        .unwrap();
-    assert_eq!(&prefix.history_opening.frontier, &expected);
-    struct Owners(BTreeMap<u64, u64>);
-    impl crate::storage::substrate::StorageAllocationVisitor for Owners {
-        fn visit(
-            &mut self,
-            value: crate::storage::substrate::StorageAllocationObservation,
-        ) -> bool {
-            self.0.insert(value.id, value.bytes).is_none()
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let head = fixture
+            .cold
+            .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
+        let physical = head
+            .partition
+            .entity_arena
+            .physical_index(fixture.entity.slot_index())
+            .unwrap();
+        let prefix = head.partition.entity_arena.history_prefixes[physical]
+            .as_ref()
+            .unwrap();
+        let (openings, _) = head
+            .commitment
+            .as_ref()
+            .unwrap()
+            .history_frontiers(fixture_lane, execution, &head.partition)
+            .unwrap()
+            .into_arenas();
+        let (_, expected) = openings
+            .into_iter()
+            .find(|(slot, _)| *slot == fixture.entity.slot_index() as u64)
+            .unwrap();
+        assert_eq!(&prefix.history_opening.frontier, &expected);
+        struct Owners(BTreeMap<u64, u64>);
+        impl crate::storage::substrate::StorageAllocationVisitor for Owners {
+            fn visit(
+                &mut self,
+                value: crate::storage::substrate::StorageAllocationObservation,
+            ) -> bool {
+                self.0.insert(value.id, value.bytes).is_none()
+            }
         }
-    }
-    let mut owners = Owners(BTreeMap::new());
-    head.partition
-        .entity_arena
-        .visit_authoritative_allocations(false, &mut owners);
-    let bytes = owners
-        .0
-        .get(&prefix.history_opening.id())
-        .expect("the actual opening owner is part of the arena footprint");
-    assert!(*bytes >= prefix.history_opening.owned_allocation_bytes());
-    assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
+        let mut owners = Owners(BTreeMap::new());
+        head.partition
+            .entity_arena
+            .visit_authoritative_allocations(false, &mut owners);
+        let bytes = owners
+            .0
+            .get(&prefix.history_opening.id())
+            .expect("the actual opening owner is part of the arena footprint");
+        assert!(*bytes >= prefix.history_opening.owned_allocation_bytes());
+        assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
+    })
 }
 
 #[test]
 fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_rows() {
-    let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = fixture
-        .cold
-        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
-        .unwrap();
-    let symbols = fixture.cold.symbols.interner_snapshot();
-    let layered = (fixture.cold.readmission.capture_members)(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        execution,
-        &head.partition,
-        head.commitment.as_ref().unwrap(),
-        fixture.cold.schema.as_ref(),
-        fixture.cold.schema_carrier_digest,
-    )
-    .unwrap();
-    assert!(layered
-        .history_members
-        .members(layered.history.0)
-        .contains(&fixture.cold.history));
-    assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let full = fixture
-        .cold
-        .read_full(
-            fixture.cold.source.as_ref().unwrap(),
-            &head,
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let head = fixture
+            .cold
+            .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
+        let symbols = fixture.cold.symbols.interner_snapshot();
+        let layered = (fixture.cold.readmission.capture_members)(
+            fixture_lane,
             execution,
-            1 << 24,
+            &head.partition,
+            head.commitment.as_ref().unwrap(),
+            fixture.cold.schema.as_ref(),
+            fixture.cold.schema_carrier_digest,
         )
         .unwrap();
-    assert!(full
-        .partition
-        .entity_arena
-        .history_prefixes
-        .iter()
-        .all(Option::is_none));
-    assert!(full
-        .partition
-        .relation_arena
-        .history_prefixes
-        .iter()
-        .all(Option::is_none));
-    assert_eq!(
-        full.partition
+        assert!(layered
+            .history_members
+            .members(layered.history.0)
+            .contains(&fixture.cold.history));
+        assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
+        let full = fixture
+            .cold
+            .read_full(
+                fixture.cold.source.as_ref().unwrap(),
+                &head,
+                execution,
+                1 << 24,
+            )
+            .unwrap();
+        assert!(full
+            .partition
             .entity_arena
-            .metadata_history_at(fixture.entity.slot_index())
-            .unwrap()
-            .len(),
-        fixture.expected_history
-    );
-    let (commitment, _) =
-        PartitionContentCommitment::capture(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            .history_prefixes
+            .iter()
+            .all(Option::is_none));
+        assert!(full
+            .partition
+            .relation_arena
+            .history_prefixes
+            .iter()
+            .all(Option::is_none));
+        assert_eq!(
+            full.partition
+                .entity_arena
+                .metadata_history_at(fixture.entity.slot_index())
+                .unwrap()
+                .len(),
+            fixture.expected_history
+        );
+        let (commitment, _) = PartitionContentCommitment::capture(
+            fixture_lane,
             &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
+                &worth_harness::facade::execution_fixture::serial_request(),
             ),
             &full.partition,
             &symbols,
         )
         .unwrap();
-    let captured = (fixture.cold.readmission.capture_members)(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        execution,
-        &full.partition,
-        &commitment,
-        fixture.cold.schema.as_ref(),
-        fixture.cold.schema_carrier_digest,
-    )
-    .unwrap();
-    assert_eq!(captured.history.0, fixture.cold.history);
-    assert_eq!(
-        commitment.digest(fixture.entity.partition_id),
-        fixture.expected_digest
-    );
+        let captured = (fixture.cold.readmission.capture_members)(
+            fixture_lane,
+            execution,
+            &full.partition,
+            &commitment,
+            fixture.cold.schema.as_ref(),
+            fixture.cold.schema_carrier_digest,
+        )
+        .unwrap();
+        assert_eq!(captured.history.0, fixture.cold.history);
+        assert_eq!(
+            commitment.digest(fixture.entity.partition_id),
+            fixture.expected_digest
+        );
+    })
 }

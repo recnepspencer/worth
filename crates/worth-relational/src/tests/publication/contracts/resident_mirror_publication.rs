@@ -1,4 +1,5 @@
 //! Prepared resident targets preserve live metadata and private new partitions.
+use worth_relational_storage::internal_port::runtime::state::subsystems::storage::partition_edition::resident::ResidentPartitionEditionFixturePort as _;
 use crate::mvcc::{PreparedRelationalCommitCandidate, RelationalPublicationOutcome};
 use crate::storage::substrate::{EntityRecordKind, PinClass};
 use crate::tests::support::*;
@@ -72,7 +73,9 @@ fn publication_edits_the_latest_target_pins_and_preserves_earlier_editions() {
         .acquire_partition_edition()
         .resident_full()
         .expect("resident fixture has Full custody");
-    let witness = old_edition.resident_pin_lease(entity.partition_id).unwrap();
+    let witness = old_edition
+        .resident_pin_lease_for_test(entity.partition_id)
+        .unwrap();
     let candidate = prepare(
         execution,
         &runtime,

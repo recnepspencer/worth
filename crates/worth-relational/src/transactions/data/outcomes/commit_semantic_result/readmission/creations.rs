@@ -1,4 +1,5 @@
 //! Compare recorded canonical names with the original admitted create inputs.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultFieldsPort as _;
 use super::{Refusal, RelationalCommitSemanticResult};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{KindId, PartitionId};
@@ -20,8 +21,7 @@ pub(super) fn validate_original_keys(
     let symbols = SymbolNames::new(&envelope.symbol_texts.entries);
     let entity = |partition, kind, key: &ClientKey, (intent_ordinal, entity_ordinal)| {
         let text = symbols.text(key)?;
-        result
-            .created_entities
+        (*result.owner_created_entities())
             .binary_search_by(|created| compare_entity_key(&created.key, partition, kind, text))
             .map(|_| ())
             .map_err(|_| Refusal::OriginalEntityKeyMissing {
@@ -38,8 +38,7 @@ pub(super) fn validate_original_keys(
         let text = symbols.text(key)?;
         let source_text = endpoint_text(&symbols, source)?;
         let target_text = endpoint_text(&symbols, target)?;
-        result
-            .created_relations
+        (*result.owner_created_relations())
             .binary_search_by(|created| {
                 compare_relation_key(
                     &created.key,

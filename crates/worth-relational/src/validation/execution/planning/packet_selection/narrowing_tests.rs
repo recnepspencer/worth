@@ -149,7 +149,7 @@ fn request(serial: bool) -> ExecutionResourceLease<'static> {
     if serial {
         ExecutionResourceLease::serial(request).unwrap()
     } else {
-        crate::execution::test_authority::test_execution_authority()
+        worth_harness::facade::execution_fixture::test_execution_authority()
             .request_lease(request)
             .unwrap()
     }

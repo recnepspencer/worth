@@ -1,4 +1,5 @@
 //! Validate the recorded merge plan source before its request funds a copy.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::mvcc::transaction::reconstructed_merge_plan::{OwnedMergePlan, RecordedMergePlanSource};

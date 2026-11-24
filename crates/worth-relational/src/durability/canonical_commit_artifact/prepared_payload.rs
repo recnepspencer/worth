@@ -1,4 +1,5 @@
 //! Prepared DATA commitment retains the exact immutable producer envelope.
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};

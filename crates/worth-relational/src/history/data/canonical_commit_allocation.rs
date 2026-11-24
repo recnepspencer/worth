@@ -1,3 +1,8 @@
+use worth_relational_contracts::internal_port::diagnostics::data::artifacts::RelationalDiagnosticArtifactOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::patch_detail::PatchDetailOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 

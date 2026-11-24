@@ -3,6 +3,7 @@
 //! refused batch leaves it untouched.
 
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -10,19 +11,12 @@ use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::CommitId;
 use crate::facade::lineage::{
     LineageEventKind, LineageSubject, PersistentNameBranchIndex, PersistentNameCommittedBatch,
-    PersistentNameIndexDenial, PersistentNameKey, PersistentNameSelection,
+    PersistentNameIndexDenial, PersistentNameKey,
 };
 
 use super::name_group_world::member;
-use super::name_index_fixtures::{all, bounded, exact, main_branch, mixed_history, rebuild, side};
-use super::name_world::{Keep, LineageWorld, Name, Subject};
-
-fn selections(carriers: &[Name]) -> Vec<PersistentNameSelection> {
-    let mut selections = vec![exact(), all(), side("left"), side("top"), side("absent")];
-    selections.extend(carriers.iter().map(|carrier| bounded(&[*carrier])));
-    selections.push(bounded(carriers));
-    selections
-}
+use super::name_index_fixtures::{main_branch, mixed_history, rebuild, selections};
+use super::name_world::{Keep, LineageWorld, Subject};
 
 #[test]
 fn destroyed_index_rebuilds_identical_state_and_answers_from_the_log_alone() {
@@ -312,7 +306,7 @@ fn corrupt_lineage_creates_and_subjects_refuse_atomically() {
     let birth = world.log()[1].lineage_events[0].name_birth().cloned();
     for event in &mut dual.lineage_events {
         if event.kept_name().is_some() {
-            event.name_birth = birth.clone();
+            (*event.owner_name_birth_mut()) = birth.clone();
         }
     }
     assert!(refuses(&mut index, &dual).contains("both birth"));
@@ -320,7 +314,7 @@ fn corrupt_lineage_creates_and_subjects_refuse_atomically() {
     let mut foreign_subject = merge.clone();
     for event in &mut foreign_subject.lineage_events {
         if event.kind() == LineageEventKind::Merge {
-            event.subject = LineageSubject::Relation;
+            (*event.owner_subject_mut()) = LineageSubject::Relation;
         }
     }
     assert!(refuses(&mut index, &foreign_subject).contains("event subject"));
@@ -356,11 +350,15 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
             "expected `{expected}`, got `{detail}`"
         );
     };
-    check("kept_name", |e| e.kept_name = None);
-    check("event subject", |e| e.subject = LineageSubject::Relation);
-    check("one source", |e| e.sources.clear());
-    check("one target", |e| e.targets.clear());
-    check("differ", |e| e.targets = vec![e.sources[0]]);
+    check("kept_name", |e| (*e.owner_kept_name_mut()) = None);
+    check("event subject", |e| {
+        (*e.owner_subject_mut()) = LineageSubject::Relation
+    });
+    check("one source", |e| (*e.owner_sources_mut()).clear());
+    check("one target", |e| (*e.owner_targets_mut()).clear());
+    check("differ", |e| {
+        (*e.owner_targets_mut()) = vec![(*e.owner_sources())[0]]
+    });
     for (expected, mut bad) in [
         ("live name", restore_batch.clone()),
         ("does not exist", restore_batch.clone()),
@@ -371,13 +369,13 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
         let ev = &mut bad.lineage_events[0];
         match expected {
             "live name" => {
-                ev.kept_name = Some(b_name);
-                ev.sources = vec![b_lin];
+                (*ev.owner_kept_name_mut()) = Some(b_name);
+                (*ev.owner_sources_mut()) = vec![b_lin];
             }
-            "does not exist" => ev.kept_name = Some(synthetic_name(0xee, 99)),
-            "name_birth" => ev.name_birth = birth.clone(),
-            "second name" => ev.targets = vec![b_lin],
-            _ => ev.sources = vec![b_lin],
+            "does not exist" => (*ev.owner_kept_name_mut()) = Some(synthetic_name(0xee, 99)),
+            "name_birth" => (*ev.owner_name_birth_mut()) = birth.clone(),
+            "second name" => (*ev.owner_targets_mut()) = vec![b_lin],
+            _ => (*ev.owner_sources_mut()) = vec![b_lin],
         }
         let detail = refuses(&mut index, &bad);
         assert!(
@@ -393,7 +391,8 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
     world.restore(a_name, false);
     let restore2 = world.commit(); // 6
     let mut stale = restore2.clone();
-    stale.lineage_events[0].sources = restore_batch.lineage_events[0].sources.clone();
+    (*stale.lineage_events[0].owner_sources_mut()) =
+        (*restore_batch.lineage_events[0].owner_sources()).clone();
     assert!(refuses(&mut index, &stale).contains("most recent retired"));
     index.apply(&restore2).expect("second canonical restore");
 }

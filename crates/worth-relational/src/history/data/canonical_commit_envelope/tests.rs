@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultParts;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_commit_semantic_result;
 use super::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouchGraph,
 };
@@ -109,7 +111,7 @@ pub(crate) fn envelope_with_patch_at(
     // Seal directly at the canonical owner. These descriptor predicates
     // require one admitted wire value, with no claim of performed publication.
     let parent_count = receipt.parents.len();
-    let semantic = RelationalCommitSemanticResult {
+    let semantic = assemble_commit_semantic_result(RelationalCommitSemanticResultParts {
         receipt,
         created_entities: Vec::new(),
         created_relations: Vec::new(),
@@ -150,7 +152,7 @@ pub(crate) fn envelope_with_patch_at(
         },
         validation: Vec::new(),
         decoded_memory: None,
-    };
+    });
     draft.seal(Arc::new(semantic)).unwrap()
 }
 

@@ -11,6 +11,7 @@ use crate::branch::{
 use crate::history::data::BranchId;
 use std::sync::Arc;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 impl RelationalForkPort {
     pub(super) fn validate_fork_input(

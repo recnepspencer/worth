@@ -2,6 +2,7 @@
 use crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation as Observation;
 use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_proof::AdmittedManagedIndexSourceAudience;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
 
 use super::program::ManagedIndexSourceProgram;
 use crate::derived_relation::definition::DerivedRelationDenial as Definition;
@@ -35,7 +36,7 @@ impl<'source> ManagedIndexSourceProjection<'source> {
                 audience,
                 ..
             } => {
-                if !self.program.0.authority.admits(audience) {
+                if !(*self.program.owner_field_0()).authority.admits(audience) {
                     return Err(Definition::OutsideDeclaredAccess.into());
                 }
                 self.checkpoint(1)?;

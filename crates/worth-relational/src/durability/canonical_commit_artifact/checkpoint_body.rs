@@ -1,4 +1,5 @@
 //! The fixed checkpoint projection uses the same quote, wire and leaf handoff.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{
     borrowed_payload::BorrowedPayload, decoded_quote,
     readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal,

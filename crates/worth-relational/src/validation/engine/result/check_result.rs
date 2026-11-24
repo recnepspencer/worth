@@ -6,6 +6,7 @@ use crate::validation::data::execution::{
 };
 use crate::validation::data::groups::{InvariantCostClass, InvariantGroupSet};
 use serde::{Deserialize, Serialize};
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantDecisionKindOwnerPort as _;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantCheckResult {

@@ -1,4 +1,5 @@
 //! Two committed editions with the same entity and different summary values.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use crate::config::data::RelationalRuntimeConfig;
 use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
 use crate::runtime::state::subsystems::storage::{PartitionEditionCopyLane, StorageSubsystem};
@@ -6,7 +7,7 @@ use crate::schema::data::{
     DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
-use crate::storage::overlay::{small_relation_partition::relation_partition, PartitionState};
+use crate::storage::overlay::{small_relation_partition::relation_partition_for_test, PartitionState};
 use crate::storage::substrate::EntityExtra;
 use worth_foundational::facade::*;
 use worth_proof::TransitionOutcome;
@@ -72,7 +73,7 @@ impl SummaryImage {
             })
             .unwrap();
         let partition_id = PartitionId::main();
-        let (partition, entities, _) = relation_partition(partition_id, 1, &[]);
+        let (partition, entities, _) = relation_partition_for_test(partition_id, 1, &[]);
         let mut image = Self {
             storage: StorageSubsystem::default(),
             config,
@@ -122,7 +123,7 @@ impl SummaryImage {
         );
         self.partition
             .entity_arena
-            .apply_extra_update(self.entity.slot_index(), extra, self.version)
+            .apply_extra_update_for_test(self.entity.slot_index(), extra, self.version)
             .expect("the fixture replaces the exact selected slot");
         self.storage.install_owned(
             &Default::default(),
@@ -132,7 +133,11 @@ impl SummaryImage {
     }
 
     pub(super) fn assert_summary(&self, title: &str, status: &str) {
-        let partition = self.storage.partition(self.entity.partition_id).unwrap();
+        let edition = self.storage.acquire();
+        let partition = edition
+            .try_full_partition(self.entity.partition_id)
+            .unwrap()
+            .unwrap();
         let record = partition.entity_arena.get(&self.entity).unwrap();
         let summary = record
             .extra()

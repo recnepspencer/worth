@@ -1,4 +1,7 @@
 //! Producer-written region members and their immutable counted archive.
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 use super::super::{RelationalColdRegion, RelationalRegionResidency};
 #[path = "region_fixture/placement_registration.rs"]
 mod placement_registration;
@@ -30,82 +33,85 @@ pub(super) struct RegionFixture {
 }
 
 pub(super) fn region_with_history() -> RegionFixture {
-    let native_region_fixture::HistoryPartition {
-        partition,
-        entity,
-        relation,
-        schema,
-        symbols,
-    } = native_region_fixture::populated_partition();
-    let host = crate::execution::test_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let expected_history = partition
-        .entity_arena
-        .metadata_history_at(entity.slot_index())
-        .unwrap()
-        .len();
-    assert!(
-        expected_history > 1,
-        "fixture must have real committed history"
-    );
-    let (commitment, _) = crate::storage::overlay::PartitionContentCommitment::capture(
-        &lane, execution, &partition, &symbols,
-    )
-    .unwrap();
-    let expected_digest = commitment.digest(partition.partition_id);
-    let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
-        .unwrap()
-        .carrier_digest();
-    let codec = &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION;
-    let members = (codec.capture_members)(
-        &lane,
-        execution,
-        &partition,
-        &commitment,
-        schema.as_ref(),
-        schema_digest,
-    )
-    .unwrap();
-    let source = Arc::new(CountedSource {
-        history: members.history.0,
-        members: BTreeMap::from([members.head.clone(), members.history.clone()]),
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-    });
-    let symbol_authority =
-        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
-    symbol_authority.replace(symbols);
-    let cold = RelationalColdRegion {
-        readmission: codec,
-        directory: members.directory.portable(&lane, execution).unwrap(),
-        history_members: members.history_members,
-        kind_authority: members.kind_authority,
-        source: Some(source.clone()),
-        partition_id: partition.partition_id,
-        head: members.head.0,
-        history: members.history.0,
-        schema,
-        schema_carrier_digest: schema_digest,
-        symbols: symbol_authority,
-        content_digest: expected_digest,
-        live_counts: super::LiveRecordCounts::from_partition(&partition),
-        entity_slots: partition.entity_arena.slot_count(),
-        relation_slots: partition.relation_arena.slot_count(),
-        unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
-            + partition.relation_arena.lifecycle_counts().unavailable,
-    };
-    RegionFixture {
-        cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
-        cold,
-        source,
-        entity,
-        relation,
-        expected_digest,
-        expected_history,
-        partition,
-    }
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let native_region_fixture::HistoryPartition {
+            partition,
+            entity,
+            relation,
+            schema,
+            symbols,
+        } = native_region_fixture::populated_partition();
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &ExecutionRequest::serial(&host);
+        let lane = fixture_lane;
+        let expected_history = partition
+            .entity_arena
+            .metadata_history_at(entity.slot_index())
+            .unwrap()
+            .len();
+        assert!(
+            expected_history > 1,
+            "fixture must have real committed history"
+        );
+        let (commitment, _) = crate::storage::overlay::PartitionContentCommitment::capture(
+            &lane, execution, &partition, &symbols,
+        )
+        .unwrap();
+        let expected_digest = commitment.digest(partition.partition_id);
+        let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
+            .unwrap()
+            .carrier_digest();
+        let codec = &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION;
+        let members = (codec.capture_members)(
+            &lane,
+            execution,
+            &partition,
+            &commitment,
+            schema.as_ref(),
+            schema_digest,
+        )
+        .unwrap();
+        let source = Arc::new(CountedSource {
+            history: members.history.0,
+            members: BTreeMap::from([members.head.clone(), members.history.clone()]),
+            reads: AtomicUsize::new(0),
+            history_reads: AtomicUsize::new(0),
+            corrupt: AtomicBool::new(false),
+        });
+        let symbol_authority =
+            crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default(
+            );
+        symbol_authority.replace(symbols);
+        let cold = RelationalColdRegion {
+            readmission: codec,
+            directory: members.directory.portable(&lane, execution).unwrap(),
+            history_members: members.history_members,
+            kind_authority: members.kind_authority,
+            source: Some(source.clone()),
+            partition_id: partition.partition_id,
+            head: members.head.0,
+            history: members.history.0,
+            schema,
+            schema_carrier_digest: schema_digest,
+            symbols: symbol_authority,
+            content_digest: expected_digest,
+            live_counts: super::LiveRecordCounts::from_partition(&partition),
+            entity_slots: partition.entity_arena.slot_count(),
+            relation_slots: partition.relation_arena.slot_count(),
+            unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
+                + partition.relation_arena.lifecycle_counts().unavailable,
+        };
+        RegionFixture {
+            cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
+            cold,
+            source,
+            entity,
+            relation,
+            expected_digest,
+            expected_history,
+            partition,
+        }
+    })
 }
 
 #[derive(Debug)]
@@ -233,7 +239,7 @@ pub(super) fn with_memory_request<R>(
     memory: worth_execution::SerialMemoryBudget,
     observe: impl FnOnce(ExecutionRequest<'_, '_>) -> R,
 ) -> R {
-    let host = crate::execution::test_policy::serial_request_with_memory(memory);
+    let host = worth_harness::facade::execution_fixture::serial_request_with_memory(memory);
     observe(ExecutionRequest::serial(&host))
 }
 
@@ -257,36 +263,36 @@ pub(super) fn selected_region_archive(
     symbols: &crate::symbols::data::StringInterner,
     request: &ExecutionRequest<'_, '_>,
 ) -> SelectedRegionArchive {
-    let prepared = PreparedResidentRegion::initial(
-        &ReconstructionLane::oracle(),
-        request,
-        partition.clone(),
-        symbols,
-    )
-    .unwrap();
-    let captured = prepared
-        .retention
-        .cell()
-        .capture_complete_for_request(request, schema, schema_digest, symbols)
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let prepared =
+            PreparedResidentRegion::initial(fixture_lane, request, partition.clone(), symbols)
+                .unwrap();
+        let captured = prepared
+            .retention
+            .cell()
+            .capture_complete_for_request(request, schema, schema_digest, symbols)
+            .unwrap();
+        let (derived_indexes, indexes) = member_frame::encode(
+            MemberKind::DerivedIndex,
+            &(DerivedIndexArtifacts::default(), Option::<()>::None, 0_u16),
+        )
         .unwrap();
-    let (derived_indexes, indexes) = member_frame::encode(
-        MemberKind::DerivedIndex,
-        &(DerivedIndexArtifacts::default(), Option::<()>::None, 0_u16),
-    )
-    .unwrap();
-    let mut members = Vec::from(captured.members);
-    members.push(RelationalCheckpointMember::New {
-        locator: derived_indexes,
-        bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(indexes.into_boxed_slice())),
-    });
-    let manifest = crate::durability::data::selected_region_archive::selected_region_manifest(
-        captured.leaf,
-        schema_digest,
-        derived_indexes,
-    );
-    manifest.assert_original_flat_wire();
-    SelectedRegionArchive {
-        manifest,
-        members: CapturedCheckpointMembers::capture(request, members.len(), members).unwrap(),
-    }
+        let mut members = Vec::from(captured.members);
+        members.push(RelationalCheckpointMember::New {
+            locator: derived_indexes,
+            bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                indexes.into_boxed_slice(),
+            )),
+        });
+        let manifest = crate::durability::data::selected_region_archive::selected_region_manifest(
+            captured.leaf,
+            schema_digest,
+            derived_indexes,
+        );
+        manifest.assert_original_flat_wire();
+        SelectedRegionArchive {
+            manifest,
+            members: CapturedCheckpointMembers::capture(request, members.len(), members).unwrap(),
+        }
+    })
 }

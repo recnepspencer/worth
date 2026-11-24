@@ -1,4 +1,6 @@
 //! Malformed twins start from actual native Create artifacts; none mints custody.
+use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::history::data::{CanonicalCommitEnvelope, CanonicalRecordAllocation};
@@ -39,7 +41,7 @@ fn validate(
 
 #[test]
 fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = birth_fixture(execution, "real-empty-birth", None);
     let (id, envelope, plan, payload) = (
@@ -127,7 +129,7 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
 
 #[test]
 fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = scalar_birth_fixture(execution, "real-present-birth");
     let (id, envelope, plan, payload) = (
@@ -251,7 +253,7 @@ fn birth_fixture(
         .remove(&KindId(1))
         .unwrap();
     let (mut partition, entities, _) =
-        crate::storage::overlay::small_relation_partition::relation_partition(
+        crate::storage::overlay::small_relation_partition::relation_partition_for_test(
             PartitionId::main(),
             1,
             &[],
@@ -267,7 +269,9 @@ fn birth_fixture(
         );
     let body = envelope.body_mut_for_test();
     body.schema_authority = registry.authority_snapshot();
-    body.install_record_allocations(vec![CanonicalRecordAllocation::new(0, record)]);
+    body.install_record_allocations(vec![
+        CanonicalRecordAllocation::canonical_allocation_for_test(0, record),
+    ]);
     body.merged_plan.merged_intents =
         vec![MutationIntent::Create(CreateIntent::Entity(EntitySpec {
             partition_id: id.partition_id,
@@ -307,7 +311,7 @@ fn birth_fixture(
     use crate::storage::substrate::EntityExtra;
     partition
         .entity_arena
-        .apply_extra_update(
+        .apply_extra_update_for_test(
             id.slot_index(),
             EntityExtra::from_unbudgeted_parts(None, None, payload),
             envelope.commit.version_id,

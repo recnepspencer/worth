@@ -7,6 +7,9 @@
 //! commit (8), retention-floor tag (1), and the counted sections in order.
 
 use worth_foundational::facade::AggregateIdentity;
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
@@ -57,7 +60,7 @@ fn retire(event_id: u64) -> LineageEventRecord {
         branch_id: main_branch(),
         parents: Vec::new(),
     };
-    LineageEventRecord {
+    assemble_lineage_event_record(LineageEventRecordParts {
         event_id,
         commit,
         branch_id: BranchId("main".to_owned()),
@@ -69,7 +72,7 @@ fn retire(event_id: u64) -> LineageEventRecord {
         kept_name: None,
         relation_id: None,
         entity_id: None,
-    }
+    })
 }
 
 fn group(byte: u8) -> AggregateIdentity {

@@ -4,7 +4,7 @@ use crate::config::data::RelationalRuntimeConfig;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::data::{EntityKindRegistration, SchemaId, SchemaVersionId};
-use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
 use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 use std::collections::BTreeMap;
 
@@ -28,7 +28,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
     let mut config = RelationalRuntimeConfig::default();
     config.schema.registry = checked_structural_registry();
     let id = PartitionId::main();
-    let (partition, entities, _) = relation_partition(id, 1, &[]);
+    let (partition, entities, _) = relation_partition_for_test(id, 1, &[]);
     let partitions = BTreeMap::from([(id, partition)]);
     let instrumentation = RuntimeInstrumentation::default();
     let version = VersionId(1);

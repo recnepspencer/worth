@@ -24,7 +24,7 @@ fn full_query_result_vector_admits_replacement_peak_before_growth() {
     );
     for under in [true, false] {
         let ceiling = peak - u64::from(under);
-        let lease = crate::execution::test_authority::test_execution_authority()
+        let lease = worth_harness::facade::execution_fixture::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,

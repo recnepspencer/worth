@@ -20,6 +20,8 @@ use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::validation::candidate_source::denial::ManagedIndexSourcePreparationDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 pub(super) mod context;
 pub(super) mod discovery;
 pub(super) mod stage;
@@ -350,7 +352,6 @@ fn prepare(
         .map_err(|_| Denial::IncompletePreparation)?;
     Ok(())
 }
-
 struct SourcePlan<'a> {
     program: &'a super::ManagedIndexSourceProgram,
     group: &'a SourcePreparationGroup,
@@ -373,7 +374,6 @@ fn changed_source_records(
         .cloned()
         .collect()
 }
-
 fn views<'a>(
     runtime: &InvariantRuntimeView<'a>,
     observation: &InvariantObservation<'a>,

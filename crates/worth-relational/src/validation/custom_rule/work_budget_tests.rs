@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 
 #[test]
 fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, source) = relation_budget_state();
@@ -34,7 +34,7 @@ fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation()
 
 #[test]
 fn rejected_adjacency_budget_never_consumes_the_denied_scan() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, source) = relation_budget_state();
@@ -106,10 +106,10 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
                 let clock = worth_execution::MonotonicClock::system();
                 clock.deadline_at(clock.now())
             });
-            let serial = crate::execution::test_policy::serial_request()
+            let serial = worth_harness::facade::execution_fixture::serial_request()
                 .with_cancellation(cancellation.token())
                 .with_deadline(deadline.clone());
-            let lease = crate::execution::test_authority::test_execution_authority()
+            let lease = worth_harness::facade::execution_fixture::test_execution_authority()
                 .request_lease(LeaseRequest {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,
@@ -178,6 +178,8 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
 fn relation_budget_state() -> (BTreeMap<PartitionId, PartitionState>, EntityId) {
     let id = PartitionId::main();
     let graph =
-        crate::storage::overlay::small_relation_partition::small_relation_partition(id, true);
+        crate::storage::overlay::small_relation_partition::small_relation_partition_for_test(
+            id, true,
+        );
     (BTreeMap::from([(id, graph.partition)]), graph.source)
 }

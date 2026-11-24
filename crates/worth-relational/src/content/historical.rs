@@ -8,6 +8,7 @@ use crate::{
     transactions::data::primitives::RecordRef,
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 impl CanonicalCommitEnvelope {
     /// Data custody only. Without an admitted historical directory, returns
     /// HistoryNotResident rather than claiming that referenced bytes are missing.
@@ -25,7 +26,7 @@ impl CanonicalCommitEnvelope {
             };
             let record = RecordRef::Entity(row);
             let mut selected_kind = None;
-            for kind in schema.registry().entity_kinds.values() {
+            for kind in (*schema.registry().owner_entity_kinds()).values() {
                 control.checkpoint(
                     kind.kind_name
                         .len()

@@ -1,6 +1,7 @@
 use crate::identity::data::VersionId;
 use crate::storage::residency::{Full, RelationalResidencyLease};
 use crate::storage::substrate::{PinClass, RecordKind};
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::RecordArenaFixturePort as _;
 
 use super::StorageAuthority;
 
@@ -9,8 +10,8 @@ impl StorageAuthority<'_> {
     pub(crate) fn clear_named_pins(&self, class: PinClass) {
         let mut writer = self.runtime.edit_partitions();
         for partition in writer.resident_partitions_mut() {
-            partition.entity_arena.clear_named_pins(class);
-            partition.relation_arena.clear_named_pins(class);
+            partition.entity_arena.clear_named_pins_for_test(class);
+            partition.relation_arena.clear_named_pins_for_test(class);
         }
     }
 

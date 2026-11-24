@@ -1,12 +1,12 @@
 mod aspect_history;
 mod association_discovery;
 pub use association_discovery::RelationalAssociationDiscovery;
-pub(crate) mod recorded_json_allocation;
+pub(crate) use worth_relational_contracts::internal_port::history::data::recorded_json_allocation;
 mod replay_retention_denial;
-pub(crate) mod replay_version;
 pub use recorded_json_allocation::RecordedRelationalJsonHeapQuote;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
-pub(crate) mod branch_creation;
+pub(crate) use worth_relational_contracts::internal_port::history::data::branch_creation;
+pub(crate) use worth_relational_contracts::internal_port::history::data::replay_version;
 mod caller_association;
 mod canonical_commit_allocation;
 pub(crate) mod canonical_commit_envelope;
@@ -31,14 +31,13 @@ pub(crate) use codec_retirement_closure::{
     SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
-pub(crate) mod canonical_record_allocation;
+pub(crate) use worth_relational_contracts::internal_port::history::data::canonical_record_allocation;
 mod committed_version;
-pub(crate) mod merge_branch_basis;
+pub(crate) use worth_relational_contracts::internal_port::history::data::merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
 mod publication_relations;
-pub(crate) mod record_allocation_class;
 mod required_output_positions;
 pub(crate) use required_output_positions::presence as current_route_presence;
 pub(crate) use required_output_positions::{
@@ -93,13 +92,13 @@ pub use merge_branch_basis_foundational::{
 };
 pub(crate) use positioned_canonical_commit::PositionedCanonicalCommit;
 
-pub(crate) mod coordinates;
 pub use coordinates::{BranchId, CommitId, HistoryRetentionClass, VersionGraphPolicy};
+pub(crate) use worth_relational_contracts::internal_port::history::data::coordinates;
 
-pub(crate) mod commit_receipt;
-pub(crate) mod history_policy;
 pub use commit_receipt::{OrderedParentList, RelationalCommitReceipt};
 pub use history_policy::{HistoryDriftClass, HistoryShapeClassification};
+pub(crate) use worth_relational_contracts::internal_port::history::data::commit_receipt;
+pub(crate) use worth_relational_contracts::internal_port::history::data::history_policy;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct VersionNode {

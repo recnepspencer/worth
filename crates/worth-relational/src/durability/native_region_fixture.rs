@@ -1,4 +1,9 @@
 //! Author an exact region image without constructing a runtime.
+use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::config::data::{
     AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CrossContextPolicy,
@@ -109,7 +114,7 @@ pub(crate) fn populated_partition() -> HistoryPartition {
     {
         partition
             .entity_arena
-            .write_reserved_slot(
+            .write_reserved_slot_for_test(
                 SlotInit {
                     partition_id,
                     kind_id: entity_kind,
@@ -133,7 +138,7 @@ pub(crate) fn populated_partition() -> HistoryPartition {
     {
         partition
             .entity_arena
-            .apply_extra_update(
+            .apply_extra_update_for_test(
                 0,
                 named_extra(&contract, &mut symbols, label),
                 VersionId(2 + offset as u64),
@@ -156,15 +161,15 @@ pub(crate) fn populated_partition() -> HistoryPartition {
                 .reverse_adjacency
                 .get_mut(previous)
                 .unwrap()
-                .remove(relation_kind, &relation);
+                .remove_adjacent_id_for_test(relation_kind, &relation);
             partition
                 .relation_arena
-                .apply_extra_update(0, extra, version)
+                .apply_extra_update_for_test(0, extra, version)
                 .unwrap();
         } else {
             partition
                 .relation_arena
-                .write_reserved_slot(
+                .write_reserved_slot_for_test(
                     SlotInit {
                         partition_id,
                         kind_id: relation_kind,
@@ -179,13 +184,13 @@ pub(crate) fn populated_partition() -> HistoryPartition {
                 .adjacency
                 .get_mut(0)
                 .unwrap()
-                .insert_at(relation_kind, relation, version);
+                .insert_adjacent_id_at_for_test(relation_kind, relation, version);
         }
         partition
             .reverse_adjacency
             .get_mut(slot)
             .unwrap()
-            .insert_at(relation_kind, relation, version);
+            .insert_adjacent_id_at_for_test(relation_kind, relation, version);
         previous_target = Some(slot);
     }
     HistoryPartition {
@@ -228,7 +233,9 @@ fn named_extra(contract: &AspectContract, symbols: &mut StringInterner, name: &s
 fn partial_update_fixture_has_an_executable_lifecycle_binding() {
     let fixture = populated_partition();
     let mut registry = fixture.schema.registry().clone();
-    let mut entity = registry.entity_kinds.remove(&KindId(1)).unwrap();
+    let mut entity = (*registry.owner_entity_kinds_mut())
+        .remove(&KindId(1))
+        .unwrap();
     entity
         .aspect_contract_declarations
         .aspects

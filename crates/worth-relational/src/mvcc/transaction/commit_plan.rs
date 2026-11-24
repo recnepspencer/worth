@@ -2,6 +2,7 @@ use super::staged_plan::{MergedPlanPreparationTiming, StagedPlanValidation};
 use crate::authority::intent_merge::validate_branch_locality;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{CommitConflict, ConflictClass};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn validate_staged_branch_locality(

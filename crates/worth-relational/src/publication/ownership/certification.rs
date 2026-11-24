@@ -1,4 +1,6 @@
 //! Closed preflight of an external native-only verb against actual current custody.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::observation::CurrentOwnershipContactsForTest;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
@@ -78,8 +80,7 @@ pub(crate) fn current_owned_aggregate_memberships(
         .filter(|o| o.meaning.source_scope == owner)
         .flat_map(|o| &o.relations)
         .filter(|edge| {
-            registry
-                .relation_kinds
+            (*registry.owner_relation_kinds())
                 .get(&edge.kind)
                 .is_some_and(|kind| kind.kind_name.starts_with("worth-aggregate-membership-"))
         })
@@ -156,7 +157,7 @@ pub(crate) fn owned_edge_retarget_intent(
         .origins()
         .filter(|origin| origin.meaning.source_scope == owner)
         .flat_map(|origin| &origin.relations)
-        .find(|edge| !registry.native_private_kinds.contains(&edge.kind))
+        .find(|edge| !(*registry.owner_native_private_kinds()).contains(&edge.kind))
         .ok_or_else(|| {
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                 "owned edge retarget court requires a real business edge",

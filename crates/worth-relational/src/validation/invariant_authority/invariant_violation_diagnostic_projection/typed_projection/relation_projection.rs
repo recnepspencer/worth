@@ -302,6 +302,7 @@ fn uniqueness_scope_label(scope: UniquenessScope) -> &'static str {
     match scope {
         UniquenessScope::DirectedSemanticEdge => "directed",
         UniquenessScope::NormalizedSymmetricEdge => "normalized",
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 
@@ -311,6 +312,7 @@ fn symmetry_mode_label(mode: SymmetryMode) -> &'static str {
         SymmetryMode::PairedInverseRequired => "paired_inverse_required",
         SymmetryMode::InverseProhibited => "inverse_prohibited",
         SymmetryMode::PairedTwinRequired => "paired_twin_required",
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 
@@ -323,6 +325,7 @@ fn endpoint_deletion_integrity_mode_label(mode: EndpointDeletionIntegrityMode) -
             "require_relation_deletion_in_same_commit"
         }
         EndpointDeletionIntegrityMode::RequireRelationRetirement => "require_relation_retirement",
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

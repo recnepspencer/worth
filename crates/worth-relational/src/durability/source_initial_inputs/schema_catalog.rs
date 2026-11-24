@@ -7,6 +7,7 @@ use crate::schema::data::{RelationalSchemaRegistry, SchemaAuthoritySnapshot};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::facade::AspectContract;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]
 pub(crate) struct ReadmittedSourceSchemaCatalog {
@@ -85,9 +86,8 @@ impl ReadmittedSourceSchemaCatalog {
         else {
             return Ok(());
         };
-        registry.content_formats = registry
-            .content_formats
-            .bind_recorded(&configured.content_formats)?;
+        (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
+            .bind_recorded(&(*configured.owner_content_formats()))?;
         Self::retain_image(catalog, image, registry, contracts, &expected, request)
     }
 

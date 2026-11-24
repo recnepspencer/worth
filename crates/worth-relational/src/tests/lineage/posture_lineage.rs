@@ -1,16 +1,16 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageDecisionKind, LineageEventKind, LineageMergeKeeper,
-    LineagePostureClaim, LineageRecordTarget, LineageSplitChild, LineageSubject,
-    PersistentNameHolder,
+    LineageDecisionKind, LineageEventKind, LineageMergeKeeper, LineagePostureClaim,
+    LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameHolder,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::{
     DeleteRelationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::posture_fixtures::{
@@ -85,8 +85,8 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
 
     let f_a_lin = staged_entity_lineage(&staged, f_a).unwrap();
     let f_b_lin = staged_entity_lineage(&staged, f_b).unwrap();
-    let s1_lin = c1.relation_lineages()[&s1];
-    let s2_lin = c1.relation_lineages()[&s2];
+    let s1_lin = c1.relation_lineages_for_test()[&s1];
+    let s2_lin = c1.relation_lineages_for_test()[&s2];
 
     let name_for_lineage = |events: &[crate::facade::lineage::LineageEventRecord],
                             lin: crate::facade::identity::LineageId| {
@@ -204,8 +204,8 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
     let c2_events = c2.artifact().event_batch().events();
     let f_a1_lin = staged_entity_lineage(&staged, f_a1).unwrap();
     let f_a2_lin = staged_entity_lineage(&staged, f_a2).unwrap();
-    let s1_a_lin = c2.relation_lineages()[&s1_a];
-    let s1_b_lin = c2.relation_lineages()[&s1_b];
+    let s1_a_lin = c2.relation_lineages_for_test()[&s1_a];
+    let s1_b_lin = c2.relation_lineages_for_test()[&s1_b];
 
     let entity_split = c2_events
         .iter()
@@ -321,7 +321,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
     assert_eq!(entity_merge.targets(), &[f_a1_lin]);
     assert_eq!(entity_merge.kept_name(), Some(f_a1_name));
 
-    let s_merged_lin = c3.relation_lineages()[&s_merged];
+    let s_merged_lin = c3.relation_lineages_for_test()[&s_merged];
     let rel_merge = c3_events
         .iter()
         .find(|e| e.kind() == LineageEventKind::Merge && e.subject() == LineageSubject::Relation)

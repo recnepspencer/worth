@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use super::*;
 
 #[test]

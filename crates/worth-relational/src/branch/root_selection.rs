@@ -3,6 +3,7 @@ use crate::branch::root::RelationalBranchRootState;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
 
 #[derive(Debug, Clone)]
 pub(crate) enum SelectedRelationalBranchState {

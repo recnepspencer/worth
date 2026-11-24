@@ -1,4 +1,5 @@
 //! Actual installed publication denial exposes metadata, never proposal strings.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 #[test]
 fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_strings() {
@@ -11,7 +12,7 @@ fn empty_required_struct_refusal_carries_numeric_member_and_redacts_proposal_str
 }
 
 fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usize) {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = build_runtime();
     let receipt = runtime
@@ -77,7 +78,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
             .adjacency
             .get(baseline_ids[0].slot_index())
             .unwrap()
-            .current_ids(),
+            .current_ids()
+            .to_vec(),
         [edge_id]
     );
     assert_eq!(
@@ -85,7 +87,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
             .reverse_adjacency
             .get(baseline_ids[1].slot_index())
             .unwrap()
-            .current_ids(),
+            .current_ids()
+            .to_vec(),
         [edge_id]
     );
     for id in baseline_ids {

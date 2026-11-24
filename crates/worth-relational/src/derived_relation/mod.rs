@@ -5,8 +5,7 @@ pub use laws::{
     DerivedRelationCardinality, DerivedRelationGraphLaws, DerivedRelationLaw,
     DerivedRelationLawViolation, DerivedRelationMinimumReachability,
 };
-pub(crate) mod canonical;
-pub(crate) mod catalog;
+pub(crate) use worth_relational_contracts::internal_port::derived_relation::canonical;
 pub(crate) mod evaluation;
 mod ordered_events;
 pub(crate) mod pinned;
@@ -22,18 +21,17 @@ pub(crate) mod structural;
 pub use proof::{
     DerivedRelationReadIdentity, DerivedRelationWalkStep, PreparedDerivedRelationRead,
 };
-pub(crate) use structural::{prepare_changes, read_changes};
-pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
-pub(crate) mod read;
-pub(crate) mod read_denial;
-pub(crate) mod read_shape;
 pub use read::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial, DerivedRelationReads,
 };
 pub use read_shape::DerivedRelationReadShape;
-pub(crate) mod definition;
+pub(crate) use structural::{prepare_changes, read_changes};
+pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
+pub(crate) use worth_relational_contracts::internal_port::derived_relation::definition;
+pub(crate) use worth_relational_contracts::internal_port::derived_relation::read;
+pub(crate) use worth_relational_contracts::internal_port::derived_relation::read_denial;
+pub(crate) use worth_relational_contracts::internal_port::derived_relation::read_shape;
 pub(crate) mod traversal;
-mod validation;
 
 pub use definition::{
     DerivedRelationDefinitionParts, DerivedRelationDenial, DerivedRelationHandle,

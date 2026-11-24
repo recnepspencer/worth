@@ -1,4 +1,8 @@
 //! Typed funding outcomes remain intact until their audience adapter consumes them.
+use worth_relational_contracts::internal_port::derived_relation::laws::violation::DerivedRelationLawViolationOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ChargedBytes, MapKernelFailure};

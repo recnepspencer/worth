@@ -1,3 +1,5 @@
+use worth_relational_storage::internal_port::storage::overlay::working_state::mutation_tracking::WorkingStateFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::storage::overlay::{
@@ -8,7 +10,7 @@ use std::collections::BTreeMap;
 
 #[test]
 fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (partitions, entities, _) = scope_partitions(3);
     let (shared, existing_neighbor, new_neighbor) = (entities[0], entities[1], entities[2]);
@@ -55,7 +57,7 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
 
 #[test]
 fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, entities, relation_id) = scope_partitions(3);
@@ -87,7 +89,7 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
 
 #[test]
 fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, entities, relation_id) = scope_partitions(2);
@@ -108,7 +110,7 @@ fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, entities, relation_id) = scope_partitions(3);
@@ -159,7 +161,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, entities, relation_id) = scope_partitions(2);
@@ -216,7 +218,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
 
 #[test]
 fn touched_scope_tracks_planned_relation_deletes() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (partitions, _, relation_id) = scope_partitions(2);
@@ -322,16 +324,16 @@ fn proposed_relation_scope(
             extra.endpoints = Some(crate::storage::substrate::RelationEndpoints { source, target });
             partition
                 .relation_arena
-                .apply_extra_update(relation_slot, extra, proposed_version)
+                .apply_extra_update_for_test(relation_slot, extra, proposed_version)
                 .expect("fixture slot is materialized");
         }
         ProposedRelationState::Deleted => proposed
             .get_partition_mut(partition_id)
             .relation_arena
-            .retire(relation_slot, proposed_version)
+            .retire_record_for_test(relation_slot, proposed_version)
             .expect("fixture slot is materialized"),
     }
-    proposed.mark_relation_slot_touched(partition_id, relation_slot);
+    proposed.mark_relation_slot_touched_for_test(partition_id, relation_slot);
     let overlay = OverlayStateView::new(committed, &proposed);
     let observation =
         InvariantObservation::speculative_with_proposal(overlay, current_version, None);
@@ -379,7 +381,7 @@ fn scope_partitions(
 ) {
     let id = PartitionId::main();
     let (partition, entities, relations) =
-        relation_partition(id, entity_count, &[(0, 1, KindId(2))]);
+        relation_partition_for_test(id, entity_count, &[(0, 1, KindId(2))]);
     (BTreeMap::from([(id, partition)]), entities, relations[0])
 }
 

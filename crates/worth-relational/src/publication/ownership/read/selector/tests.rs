@@ -1,4 +1,6 @@
 //! Lifecycle corruption is distinct from legitimate absent materialization.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::storage::{
     overlay::PartitionState,
@@ -25,14 +27,14 @@ fn image() -> (
         adjacency: Default::default(),
         reverse_adjacency: Default::default(),
     };
-    let (slot, generation, _) = state.entity_arena.push_slot(SlotInit {
+    let (slot, generation, _) = state.entity_arena.push_slot_for_test(SlotInit {
         partition_id: partition,
         kind_id: KindId(1),
         version_id: crate::identity::data::VersionId(1),
         extra: EntityExtra::default(),
     });
     let entity = EntityId::new(partition, slot as u64, generation);
-    let (slot, generation, _) = state.relation_arena.push_slot(SlotInit {
+    let (slot, generation, _) = state.relation_arena.push_slot_for_test(SlotInit {
         partition_id: partition,
         kind_id: KindId(2),
         version_id: crate::identity::data::VersionId(1),
@@ -103,11 +105,11 @@ fn suspended_selectors_use_only_restored_candidate_metadata() {
     let state = suspended.get_mut(&entity.partition_id).unwrap();
     state
         .entity_arena
-        .suspend_materialization(entity.slot_index())
+        .suspend_materialization_for_test(entity.slot_index())
         .unwrap();
     state
         .relation_arena
-        .suspend_materialization(relation_id.slot_index())
+        .suspend_materialization_for_test(relation_id.slot_index())
         .unwrap();
     let before = StructuralStateView::new(&suspended, crate::identity::data::VersionId(1));
     let after = StructuralStateView::new(&healthy, crate::identity::data::VersionId(1));
@@ -145,7 +147,7 @@ fn retired_and_audit_retained_relations_route_only_through_the_restored_candidat
             .unwrap()
             .relation_arena;
         arena
-            .retire(relation_id.slot_index(), VersionId(2))
+            .retire_record_for_test(relation_id.slot_index(), VersionId(2))
             .unwrap();
         arena.set_lifecycle_for_slot(relation_id.slot_index(), lifecycle);
         let before = StructuralStateView::new(&retired, VersionId(2));

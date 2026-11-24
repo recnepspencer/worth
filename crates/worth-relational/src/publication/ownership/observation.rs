@@ -3,6 +3,7 @@ use super::read::roster::CurrentPublicationRoster;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
 use std::cell::RefCell;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 /// Actual private rows decoded by a one-hop custody read, with their source loci.
 #[derive(Debug)]
 pub struct CurrentOwnershipContactsForTest {
@@ -20,13 +21,13 @@ impl CurrentOwnershipContactsForTest {
         current: &CurrentPublicationRoster,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Self {
-        let storage = basis
+        let storage = (*basis
             .inner
             .root
             .schema_authority()
             .registry()
-            .current_publication_storage
-            .as_ref();
+            .owner_current_publication_storage())
+        .as_ref();
         Self {
             position_work: current.observed_position_work,
             publication_rows: current

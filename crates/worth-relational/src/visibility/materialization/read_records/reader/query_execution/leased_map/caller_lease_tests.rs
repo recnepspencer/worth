@@ -8,7 +8,7 @@ use worth_foundational::{
 
 #[test]
 fn relational_packet_dispatch_obeys_its_callers_lease() {
-    let lease = crate::execution::test_authority::test_execution_authority()
+    let lease = worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -45,7 +45,7 @@ fn relational_packet_dispatch_obeys_its_callers_lease() {
 #[test]
 fn uncapped_query_packet_keeps_actual_claims_and_overflow_as_native_cause() {
     use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
-    let lease = crate::execution::test_authority::test_execution_lease();
+    let lease = worth_harness::facade::execution_fixture::test_execution_lease();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     assert_eq!(execution.memory_limit(), None);
     let outcome = execute_leased_query_packets(

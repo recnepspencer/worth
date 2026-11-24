@@ -7,6 +7,9 @@ use crate::transactions::data::intents::MutationIntent;
 use crate::transactions::data::intents::RelationMutationIntent as Relation;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::AggregateIdentityContractDeclarationOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Selection is not a metadata-owner grant, even when its old payload is genuine.
 pub(crate) fn retained_entity_selection(
@@ -16,8 +19,7 @@ pub(crate) fn retained_entity_selection(
     kind: KindId,
 ) -> Result<(), TransactionCommitError> {
     super::funding::run(execution, budget, |work| {
-        if registry
-            .current_publication_storage
+        if (*registry.owner_current_publication_storage())
             .as_ref()
             .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
         {
@@ -27,8 +29,7 @@ pub(crate) fn retained_entity_selection(
                 record: None,
             });
         }
-        for contract in registry
-            .relation_kinds
+        for contract in (*registry.owner_relation_kinds())
             .values()
             .filter_map(|entry| entry.relation_integrity.aggregate_identity.as_ref())
         {
@@ -50,21 +51,20 @@ pub(crate) fn ordinary_plan(
     intents: &[MutationIntent],
     mode: Option<crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode>,
 ) -> Result<(), TransactionCommitError> {
-    if registry.current_publication_storage.is_none()
-        && !registry
-            .relation_kinds
+    if (*registry.owner_current_publication_storage()).is_none()
+        && !(*registry.owner_relation_kinds())
             .values()
             .any(|kind| kind.relation_integrity.aggregate_identity.is_some())
     {
         return Ok(());
     }
     super::funding::run(execution, budget, |work| {
-    for metadata in registry
-        .relation_kinds
+    for metadata in (*registry
+        .owner_relation_kinds())
         .values()
         .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         .map(|contract| PrivateKinds::Aggregate(contract.metadata_kinds()))
-        .chain(registry.current_publication_storage.as_ref()
+        .chain((*registry.owner_current_publication_storage()).as_ref()
             .map(|storage| PrivateKinds::Publication(storage.metadata_kinds())))
     {
         work.checkpoint(1)?;
@@ -124,7 +124,7 @@ pub(crate) fn ordinary_plan(
                 }
             };
             if declared.into_iter().chain(record).any(private) {
-                if registry.current_publication_storage.is_some() {
+                if (*registry.owner_current_publication_storage()).is_some() {
                     let target=match intent {
                         MutationIntent::Entity(Entity::UpdateFields(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
                         MutationIntent::Entity(Entity::ApplyAspectPatch(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
@@ -172,7 +172,7 @@ pub(crate) fn current_relation_creations(
     registry: &RelationalSchemaRegistry,
     intents: &[MutationIntent],
 ) -> Result<(), TransactionCommitError> {
-    let Some(storage) = &registry.current_publication_storage else {
+    let Some(storage) = &(*registry.owner_current_publication_storage()) else {
         return Ok(());
     };
     super::funding::run(execution, budget, |work| {

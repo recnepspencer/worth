@@ -14,6 +14,8 @@ use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
 use crate::validation::data::results::InvariantViolationFields;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn validate_candidate_ownership(
     execution: &ExecutionRequest<'_, '_>,
@@ -21,11 +23,11 @@ pub(crate) fn validate_candidate_ownership(
     root: &RelationalBranchRoot,
     candidate: &CanonicalCommitEnvelope,
 ) -> Result<(), TransactionCommitError> {
-    if root
+    if (*root
         .schema_authority()
         .registry()
-        .current_publication_storage
-        .is_none()
+        .owner_current_publication_storage())
+    .is_none()
     {
         return Ok(());
     }

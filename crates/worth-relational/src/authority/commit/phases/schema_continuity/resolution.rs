@@ -1,4 +1,6 @@
 //! Ordinary continuity shares accepted root DATA; only declared transitions compile.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::inputs::{SchemaContinuityInputs, SchemaContinuityRequest};
 use super::*;
 pub(crate) fn resolve_schema_continuity<'a>(

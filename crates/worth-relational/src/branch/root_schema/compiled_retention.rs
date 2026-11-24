@@ -2,6 +2,8 @@
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use std::{ops::Deref, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
+use worth_relational_contracts::internal_port::content::registry::RelationalContentFormatRegistryOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Its Arc allocation is included in the schema compilation quote. It owns no
 /// runtime port, request loan, filesystem lease or read authority.
@@ -49,11 +51,10 @@ impl RetainedRelationalSchemaRegistry {
             .checkpoint()
             .map_err(crate::branch::root::RelationalBranchRootCaptureDenial::Request)?;
         let mut copied = registry.clone();
-        let content = registry
-            .content_formats
+        let content = (*registry.owner_content_formats())
             .snapshot_for_compilation(control)
             .map_err(crate::branch::root::RelationalBranchRootCaptureDenial::Request)?;
-        copied.content_formats.bind_carried_snapshot(&content);
+        (*copied.owner_content_formats_mut()).bind_carried_snapshot(&content);
         Ok(Self {
             registry: Arc::new(copied),
             _funding: Some(Arc::new(SchemaCompilationFunding { _memory: memory })),

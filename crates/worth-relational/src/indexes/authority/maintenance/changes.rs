@@ -5,6 +5,7 @@ use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::storage::data::RecordLifecycleState;
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) struct ChangedRecords {
     pub(super) entities: BTreeSet<EntityId>,
@@ -81,12 +82,13 @@ impl ChangedRecords {
                     continue;
                 };
                 let id = EntityId::new(partition_id, slot as u64, slot_view.generation());
-                work.lookup(root.schema_authority().registry().entity_kinds.len(), 1)?;
+                work.lookup(
+                    (*root.schema_authority().registry().owner_entity_kinds()).len(),
+                    1,
+                )?;
                 if slot_view.lifecycle() == RecordLifecycleState::Live
                     && slot_view.kind_id().is_some_and(|kind| {
-                        root.schema_authority()
-                            .registry()
-                            .entity_kinds
+                        (*root.schema_authority().registry().owner_entity_kinds())
                             .contains_key(&kind)
                     })
                 {
@@ -100,15 +102,15 @@ impl ChangedRecords {
                     continue;
                 };
                 let id = RelationId::new(partition_id, slot as u64, slot_view.generation());
-                work.lookup(root.schema_authority().registry().relation_kinds.len(), 1)?;
+                work.lookup(
+                    (*root.schema_authority().registry().owner_relation_kinds()).len(),
+                    1,
+                )?;
                 if matches!(
                     slot_view.lifecycle(),
                     RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
                 ) && slot_view.kind_id().is_some_and(|kind| {
-                    root.schema_authority()
-                        .registry()
-                        .relation_kinds
-                        .contains_key(&kind)
+                    (*root.schema_authority().registry().owner_relation_kinds()).contains_key(&kind)
                 }) && slot_view.extra().endpoints.is_some()
                 {
                     work.ordered::<RelationId, ()>(relations.len(), 1, 0)?;

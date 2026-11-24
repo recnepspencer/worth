@@ -1,9 +1,11 @@
 //! Refusal summaries derive from genuine native artifacts, never payload Debug.
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 
 #[test]
 fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = scalar_birth_fixture(execution, "payload-and-client-key-sentinel");
     let (id, original, plan, payload) = (
@@ -111,7 +113,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
 
 #[test]
 fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     use worth_foundational::facade::{StructAspectValue, StructFieldBuilder};
 

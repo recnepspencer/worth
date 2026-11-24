@@ -1,4 +1,6 @@
 //! Proposal-lived initialization, retained read custody and single write consumption.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 mod pin_read;
 mod symbol_admission;
 use super::changes::AggregateChanges;
@@ -61,12 +63,10 @@ impl AggregateProposal {
         materialization: Option<RelationalMaterializationTransactionMode>,
     ) -> Option<Self> {
         let registry = authority.registry();
-        let aggregate = registry
-            .relation_kinds
+        let aggregate = (*registry.owner_relation_kinds())
             .values()
             .any(|kind| kind.relation_integrity.aggregate_identity.is_some());
-        let derived_laws = registry
-            .derived_relations
+        let derived_laws = (*registry.owner_derived_relations())
             .values()
             .any(|entry| entry.parts.laws.is_some());
         (aggregate || derived_laws).then(|| Self {
@@ -268,17 +268,24 @@ impl AggregateInvocation<'_> {
 
     pub(super) fn contract_count(&self, committed: bool) -> u64 {
         if committed {
-            self.source
+            (*self
+                .source
                 .owner
                 .selected
                 .state()
                 .root()
                 .schema_authority()
                 .registry()
-                .relation_kinds
-                .len() as u64
+                .owner_relation_kinds())
+            .len() as u64
         } else {
-            self.source.owner.authority.registry().relation_kinds.len() as u64
+            (*self
+                .source
+                .owner
+                .authority
+                .registry()
+                .owner_relation_kinds())
+            .len() as u64
         }
     }
 
@@ -296,9 +303,7 @@ impl AggregateInvocation<'_> {
         } else {
             &self.source.owner.authority
         };
-        authority
-            .registry()
-            .relation_kinds
+        (*authority.registry().owner_relation_kinds())
             .values()
             .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
             .find(|contract| selection.matches(contract))

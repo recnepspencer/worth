@@ -1,4 +1,5 @@
 //! Projection borrows the selected live or retired storage image.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::{RelationalBranchRoot, RelationalBranchRootIdentityIssuer};
 use crate::branch::basis_admission_tests::installed_history;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
@@ -33,7 +34,7 @@ fn aspect_key(name: &str) -> AspectKey {
 
 #[test]
 fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_bases() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (entity, before, after) = selected_images(execution, "live");
@@ -95,7 +96,7 @@ fn assert_projection_lifecycle(
 
 #[test]
 fn wrong_kind_refusal_precedes_projection_mask_admission() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (entity, before, _) = selected_images(execution, "wrong-kind");
     for view in before {
@@ -167,11 +168,15 @@ fn selected_images(
     };
     let partition_id = PartitionId::main();
     let (mut partition, entities, _) =
-        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 1, &[]);
+        crate::storage::overlay::small_relation_partition::relation_partition_for_test(
+            partition_id,
+            1,
+            &[],
+        );
     let entity = entities[0];
     partition
         .entity_arena
-        .apply_extra_update(
+        .apply_extra_update_for_test(
             entity.slot_index(),
             EntityExtra::from_unbudgeted_parts(
                 None,
@@ -242,7 +247,7 @@ fn selected_images(
     let live = capture(VersionId(1), partition.clone(), None);
     partition
         .entity_arena
-        .retire(entity.slot_index(), VersionId(2))
+        .retire_record_for_test(entity.slot_index(), VersionId(2))
         .unwrap();
     let retired = capture(VersionId(2), partition, Some(&live));
     let project = |version, root: Arc<RelationalBranchRoot>| {

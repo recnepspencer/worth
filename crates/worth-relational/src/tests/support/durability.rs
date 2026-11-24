@@ -80,7 +80,7 @@ pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: 
     branch_id
 }
 
-pub(crate) use crate::execution::packet_preparation::memory_tests::retained_byte_owner_bill;
+pub(crate) use worth_harness::facade::execution_fixture::retained_byte_owner_bill;
 
 /// Measure counted work charged to `execution` during `operation`.
 pub(crate) fn measure_counted_work<T>(

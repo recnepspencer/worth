@@ -11,6 +11,7 @@ use crate::publication::ownership::authored_retirement::SelectedAuthoredRetireme
 use crate::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 mod corrective_root;
 mod edit;
 mod member_edit;

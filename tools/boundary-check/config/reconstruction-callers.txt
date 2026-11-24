@@ -1,10 +1,10 @@
 # Exact constructor callers only; there is no crate-wide owner exemption.
 # Cold restore and lazy readmission of untrusted region/history bytes.
 crates/worth-relational/src/storage/residency/region_load.rs
-crates/worth-relational/src/storage/residency/resident_history.rs
-crates/worth-relational/src/storage/residency/history_fold.rs
+crates/worth-relational-storage/src/storage/residency/resident_history.rs
+crates/worth-relational-storage/src/storage/residency/history_fold.rs
 # Checkpoint export verification and checkpoint image import.
-crates/worth-relational/src/storage/residency/checkpoint_capture.rs
+crates/worth-relational-storage/src/storage/residency/checkpoint_capture.rs
 crates/worth-relational/src/durability/authority/checkpoint_image.rs
 crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_checkpoint.rs
 crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs

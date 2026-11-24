@@ -1,4 +1,5 @@
 use worth_foundational::AspectKey;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::facade::schema::{
     DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
@@ -43,8 +44,12 @@ fn schema_aspect_declarations_are_canonicalized_before_revision_is_derived() {
         })
         .unwrap();
 
-    let left = first_registry.entity_kinds.get(&KindId(1)).unwrap();
-    let right = second_registry.entity_kinds.get(&KindId(1)).unwrap();
+    let left = (*first_registry.owner_entity_kinds())
+        .get(&KindId(1))
+        .unwrap();
+    let right = (*second_registry.owner_entity_kinds())
+        .get(&KindId(1))
+        .unwrap();
 
     assert_eq!(
         left.aspect_contract_declarations.plan_revision,

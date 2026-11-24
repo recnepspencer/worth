@@ -2,6 +2,8 @@
 use worth_foundational::facade::{
     AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
 };
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use super::codec_retirement_closure::{
     charge, request, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
@@ -42,11 +44,11 @@ fn validate_metered(
     // ordinary metadata guard denies caller intents before codec preparation;
     // recovered codec custody is itself required by this caller. Current-fact
     // integrity belongs to the same roster reader as ordinary admission.
-    let current = before
+    let current = (*before
         .schema_authority()
         .registry()
-        .current_publication_storage
-        .as_ref();
+        .owner_current_publication_storage())
+    .as_ref();
     let private = |kind: Option<crate::identity::data::KindId>| {
         current.is_some_and(|storage| {
             kind.is_some_and(|kind| storage.metadata_kinds().contains(&kind))

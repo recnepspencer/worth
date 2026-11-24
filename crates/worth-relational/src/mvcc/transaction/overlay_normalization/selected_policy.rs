@@ -1,4 +1,7 @@
 //! Actual native normalization and validation-dependency replacement use selected custody.
+use worth_relational_contracts::internal_port::content::registry::RelationalContentFormatRegistryOwnerPort as _;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::transactions::data::{CreateIntent, MutationIntent};
 use crate::{facade::mvcc::RelationalTransactionIntent, tests::support::*};
 use std::num::NonZeroUsize;

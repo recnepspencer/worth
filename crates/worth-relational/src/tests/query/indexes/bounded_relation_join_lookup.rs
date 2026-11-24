@@ -4,6 +4,8 @@ use crate::facade::indexes::{
     DerivedIndexEntries, RelationJoinDefinition, RelationJoinEntry, RelationJoinKey,
     RelationJoinLeg, RelationJoinSharedEndpoint,
 };
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 #[test]
 fn relation_join_isolates_both_exact_endpoints_and_certifies_storage_parity() {
@@ -91,7 +93,7 @@ fn relation_join_certification_rejects_a_missing_candidate() {
             let DerivedIndexEntries::RelationJoin(entries) = &mut generation.entries else {
                 panic!("relation join generation expected");
             };
-            entries.remove(&key);
+            entries.remove_index_entries_for_test(&key);
         });
     let snapshot = runtime
         .visibility_authority()
@@ -196,7 +198,10 @@ fn relation_join_rejects_a_candidate_with_substituted_relation_evidence() {
             let DerivedIndexEntries::RelationJoin(entries) = &mut generation.entries else {
                 panic!("relation join generation expected");
             };
-            entries.get_mut(&key).unwrap()[0] = RelationJoinEntry::new(
+            (*entries
+                .index_rows_mut_for_test(&key)
+                .unwrap()
+                .index_row_mut_for_test(0)) = RelationJoinEntry::new(
                 selected,
                 selected_left_relation,
                 substituted_right_relation,

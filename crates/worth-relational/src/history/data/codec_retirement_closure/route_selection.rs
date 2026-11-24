@@ -1,4 +1,5 @@
 //! Latest complete native publication or governed codec disposition on a route.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::{charge, request, require_linear_history, CodecRetirementClosureStop as Stop};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::CommitId;

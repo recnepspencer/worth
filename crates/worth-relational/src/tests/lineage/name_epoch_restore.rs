@@ -3,6 +3,8 @@
 //! `L1`, ended under `L1` after deletion, and live under `L2` only from the
 //! restoring commit on, for entities and relations, live and rebuilt.
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
 
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::LineageId;
@@ -42,7 +44,7 @@ fn restore_batch(
         PersistentNameHolder::Entity(entity) => (LineageSubject::Entity, None, Some(*entity)),
         _ => unreachable!("worlds hold only entity and relation records"),
     };
-    let event = LineageEventRecord {
+    let event = assemble_lineage_event_record(LineageEventRecordParts {
         event_id: 10_000 + commit,
         commit: receipt_at(commit, commit),
         branch_id: BranchId("main".to_owned()),
@@ -54,7 +56,7 @@ fn restore_batch(
         kept_name: Some(name),
         relation_id,
         entity_id,
-    };
+    });
     let mut batch = PersistentNameCommittedBatch::new(CommitId(commit));
     batch.lineage_events = vec![event];
     match holder {

@@ -1,4 +1,6 @@
 //! The single Native entity-aspect preparation used by judgment and mutation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{field_authoring_candidate::FieldAuthoringDomain, record_aspect_patch};
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::identity::data::{EntityId, KindId};

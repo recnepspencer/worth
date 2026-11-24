@@ -3,6 +3,7 @@
 //! independent-occurrence isolation across Entities and Relations.
 
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::VersionId;
@@ -12,9 +13,9 @@ use crate::facade::lineage::{
     PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameKey,
     PersistentNameResolution, PersistentNameTarget,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::name_index_fixtures::{exact, main_branch, resolve, retired};
@@ -62,7 +63,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     )
     .expect("initial births succeed");
     let e1_lin = staged_entity_lineage(&staged, e1).unwrap();
-    let r1_lin = c1.relation_lineages()[&r1];
+    let r1_lin = c1.relation_lineages_for_test()[&r1];
     let name_for = |lin| {
         c1.artifact()
             .event_batch()
@@ -186,7 +187,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     let c2_ev = c2.artifact().event_batch().events();
     assert!(c2_ev.iter().all(|e| e.kind() != LineageEventKind::Retire));
     let e2_lin = staged_entity_lineage(&staged, e2).unwrap();
-    let r2_lin = c2.relation_lineages()[&r2];
+    let r2_lin = c2.relation_lineages_for_test()[&r2];
     assert_ne!(e2, e1);
     assert_ne!(r2, r1);
     assert!(c2_ev.iter().any(|e| {
@@ -327,7 +328,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     )
     .expect("cross-commit explicit and birth-classified Restore succeed");
     let e3_lin = staged_entity_lineage(&staged, e3).unwrap();
-    let r3_lin = c4.relation_lineages()[&r3];
+    let r3_lin = c4.relation_lineages_for_test()[&r3];
     let c4_ev = c4.artifact().event_batch().events();
     assert_eq!(c4_ev.len(), 2);
     assert!(c4_ev

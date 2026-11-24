@@ -214,13 +214,13 @@ mod tests {
         EntityKindRegistration, RelationKindRegistration, RelationalSchemaRegistry, SchemaId,
         SchemaVersionId,
     };
-    use crate::storage::overlay::small_relation_partition::relation_partition;
+    use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
     use crate::visibility::materialization::read_records::read_work;
     use std::collections::BTreeMap;
 
     #[test]
     fn paid_record_walk_reports_materializations_and_historical_slot_visits() {
-        let host = crate::execution::test_policy::serial_request();
+        let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let registry = RelationalSchemaRegistry::new()
             .register_entity_kind(EntityKindRegistration {
@@ -249,7 +249,7 @@ mod tests {
             (KindScanVisibility::AtVersion(VersionId(1)), 2, 2, 1),
         ] {
             let (partition, _, _) =
-                relation_partition(partition_id, entities, &[(0, 1, KindId(2))]);
+                relation_partition_for_test(partition_id, entities, &[(0, 1, KindId(2))]);
             let partitions = BTreeMap::from([(partition_id, partition)]);
             let instrumentation = RuntimeInstrumentation::default();
             let reader = ProjectionRecordReader::new(VersionId(2), &instrumentation);

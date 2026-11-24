@@ -15,8 +15,8 @@ pub struct RelationalTransactionIntent {
     )>,
 }
 
-pub(crate) mod materialization_mode;
 pub(crate) use materialization_mode::RelationalMaterializationTransactionMode;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::transaction::intent::materialization_mode;
 
 impl RelationalTransactionIntent {
     /// Exhaustively expose only portable authored policy to the Home commitment.

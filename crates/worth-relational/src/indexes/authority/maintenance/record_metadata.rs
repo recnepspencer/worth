@@ -3,6 +3,7 @@ use super::{root_view::IndexRootView, work::MaintenanceWork};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::storage::data::RecordLifecycleState;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 #[derive(Clone, Copy)]
 pub(super) struct RelationMetadata {
     pub(super) id: RelationId,
@@ -38,16 +39,21 @@ pub(super) fn entity_kind(
         return Ok(None);
     };
     work.lookup(
-        view.root().schema_authority().registry().entity_kinds.len(),
+        (*view
+            .root()
+            .schema_authority()
+            .registry()
+            .owner_entity_kinds())
+        .len(),
         1,
     )?;
-    Ok(view
+    Ok((*view
         .root()
         .schema_authority()
         .registry()
-        .entity_kinds
-        .contains_key(&kind)
-        .then_some(kind))
+        .owner_entity_kinds())
+    .contains_key(&kind)
+    .then_some(kind))
 }
 pub(super) fn relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -80,19 +86,20 @@ pub(super) fn relation(
         return Ok(None);
     };
     work.lookup(
-        view.root()
+        (*view
+            .root()
             .schema_authority()
             .registry()
-            .relation_kinds
-            .len(),
+            .owner_relation_kinds())
+        .len(),
         1,
     )?;
-    if !view
+    if !(*view
         .root()
         .schema_authority()
         .registry()
-        .relation_kinds
-        .contains_key(&kind)
+        .owner_relation_kinds())
+    .contains_key(&kind)
     {
         return Ok(None);
     }

@@ -4,6 +4,8 @@
 //! birth that appears later in that commit's event order.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::facade::lineage::{
     admit_persisted_name, encode_durable_persistent_name_log, rebuild_name_index_from_durable_log,
@@ -12,8 +14,8 @@ use crate::facade::lineage::{
     PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
     PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
-use crate::lineage::authority::PersistentNameMintingAuthority;
 use crate::identity::data::EntityId;
+use crate::lineage::authority::PersistentNameMintingAuthority;
 
 use super::name_durable_world::durable_naming_history;
 use super::name_index_fixtures::main_branch;
@@ -152,7 +154,7 @@ fn a_digest_consistent_birth_embedding_an_unborn_name_refuses_typed() {
             .iter_mut()
             .find(|event| event.name_birth().is_some())
             .unwrap();
-        event.name_birth = Some(minted);
+        (*event.owner_name_birth_mut()) = Some(minted);
     });
     assert_eq!(
         refused,

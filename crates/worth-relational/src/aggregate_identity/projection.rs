@@ -1,4 +1,5 @@
 //! Shared logical output of the same transition that authored private consequences.
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::source::AggregateIdentitySourceOwnerPort as _;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;

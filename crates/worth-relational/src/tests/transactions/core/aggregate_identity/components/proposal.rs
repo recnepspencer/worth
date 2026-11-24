@@ -3,6 +3,7 @@ use super::super::read_handoff_rule::{registration, Control, ReadMode};
 use super::fixtures::*;
 use std::sync::Arc;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[test]
 fn component_proposed_and_committed_rule_reads_share_sealed_identity_and_last_drop_custody() {
@@ -10,7 +11,7 @@ fn component_proposed_and_committed_rule_reads_share_sealed_identity_and_last_dr
     let host = SerialRequest::from_memory(memory.clone(), CancellationSource::new().token(), None);
     let execution = &ExecutionRequest::serial(&host);
     let registry = registry();
-    let source = registry.relation_kinds[&KindId(7)]
+    let source = (*registry.owner_relation_kinds())[&KindId(7)]
         .relation_integrity
         .aggregate_identity
         .clone();

@@ -1,6 +1,8 @@
 //! Many-to-many entity and relation lineage finalization over validated Phase 2
 //! postures.
 
+use worth_relational_contracts::internal_port::lineage::data::graph::assemble_lineage_node;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use std::collections::BTreeMap;
 
 use crate::history::data::RelationalCommitReceipt;
@@ -100,10 +102,7 @@ pub(crate) fn prepare_posture_finalization(
             if install {
                 entity_bindings.push((entity_id, lineage_id));
             }
-            new_nodes.push(LineageNode {
-                lineage_id,
-                entity_id,
-            });
+            new_nodes.push(assemble_lineage_node(lineage_id, entity_id));
         }
         if let Some((relation_id, lineage_id)) = item.relation_lineage {
             new_relation_lineages.insert(relation_id, lineage_id);

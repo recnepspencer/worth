@@ -10,6 +10,7 @@ use crate::transactions::data::outcomes::{
     transaction_commit_error::TransactionCommitError,
 };
 use crate::transactions::data::primitives::WorkerIntentBatch;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn delete_entity(
     posture: &RelationalCoupledProducerPosture,
@@ -77,8 +78,7 @@ pub(super) fn delete_membership(
         .relations
         .iter()
         .find(|edge| {
-            registry
-                .relation_kinds
+            (*registry.owner_relation_kinds())
                 .get(&edge.kind)
                 .is_some_and(|kind| kind.kind_name.starts_with("worth-aggregate-membership-"))
         })

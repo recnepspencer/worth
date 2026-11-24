@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::durability::branch_transition_artifact::payload_digest::RelationalBranchTransitionArtifactDigestOwnerPort as _;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
 use super::frame::{BranchTransitionArtifactHeader, DIGEST_OFFSET, HEADER_LEN};

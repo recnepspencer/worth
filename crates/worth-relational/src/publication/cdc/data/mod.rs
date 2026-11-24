@@ -1,8 +1,8 @@
 pub(crate) mod normalized_continuation_proof;
 mod subscriber_checkpoint;
-pub(crate) mod subscriber_contract;
 pub use normalized_continuation_proof::NormalizedContinuationProof;
-pub(crate) mod subscriber_decision;
+pub(crate) use worth_relational_contracts::internal_port::publication::cdc::data::subscriber_contract;
+pub(crate) use worth_relational_contracts::internal_port::publication::cdc::data::subscriber_decision;
 mod subscriber_failure;
 mod subscriber_recovery_plan;
 mod subscriber_resume_request;

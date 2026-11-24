@@ -10,6 +10,7 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 
 impl BoundAuthoredCoupling {
     pub(crate) fn adopt_applied(

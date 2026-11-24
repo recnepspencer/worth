@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::RelationalMergeBranchBasisFieldsPort as _;
 mod aspect_plan_compilation;
 mod authority_verification;
 mod lineage_continuity;
@@ -146,8 +147,12 @@ impl<'runtime> MergeAccess<'runtime> {
         compile_bound_executable_plan(
             self.runtime,
             &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
-                execution_ready.basis.target_head.branch_id.clone(),
-                execution_ready.basis.source_head.branch_id.clone(),
+                (*execution_ready.basis.owner_target_head())
+                    .branch_id
+                    .clone(),
+                (*execution_ready.basis.owner_source_head())
+                    .branch_id
+                    .clone(),
                 crate::merge::data::MergeIntent::ReconcileIntoTarget,
                 crate::merge::data::RelationalMergeCorrespondencePosture::Advisory,
                 crate::merge::data::RelationalMergeSchemaReconciliationPosture::Participate,

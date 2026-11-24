@@ -26,7 +26,7 @@ impl DagFixture {
     }
 
     pub(super) fn from_runtime(runtime: RelationalRuntime, count: usize) -> Self {
-        let backing = crate::execution::test_policy::serial_request();
+        let backing = worth_harness::facade::execution_fixture::serial_request();
         let execution = ExecutionRequest::serial(&backing);
         let keys: Vec<_> = (0..count)
             .map(|index| ClientKey::raw(format!("dag-node-{index}")))

@@ -7,6 +7,7 @@ use crate::{
     },
 };
 use worth_execution::ExecutionAllocationPolicy as Allocation;
+use worth_relational_contracts::internal_port::branch::transition::sequence::RelationalBranchTransitionSequenceOwnerPort as _;
 
 #[test]
 fn no_raw_client_keys_preserve_staged_backing_and_exact_rollback_effects() {

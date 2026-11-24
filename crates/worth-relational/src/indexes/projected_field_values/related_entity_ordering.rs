@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingEntryOwnerPort as _;
 
 use crate::identity::data::KindId;
 use crate::indexes::data::{

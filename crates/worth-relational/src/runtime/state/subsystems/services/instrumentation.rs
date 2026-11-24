@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use std::sync::{Arc, Mutex};
 

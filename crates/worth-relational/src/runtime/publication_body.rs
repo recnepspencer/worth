@@ -4,6 +4,7 @@ use crate::mvcc::{
     RelationalPublicationBodySelection,
 };
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
     /// Consume Native's exact body/appendix phase. An omitted appendix can only

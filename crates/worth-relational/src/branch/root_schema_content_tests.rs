@@ -3,6 +3,7 @@ use super::*;
 use crate::content::*;
 use std::{any::Any, sync::Arc};
 use worth_foundational::facade::{CanonicalDigestId, ContentFormat};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]
 struct RefusingCodec {
@@ -107,25 +108,26 @@ fn content_schema_descriptor_ceiling_and_alias_cannot_rebind_old_authority() {
 #[test]
 fn content_recorded_declarations_cannot_resolve_a_handle_until_exact_installed_binding() {
     let available = registry(1, 4096, 2);
-    let recorded =
-        RelationalContentFormatRegistry::from_recorded(available.content_formats.snapshot())
-            .unwrap();
+    let recorded = RelationalContentFormatRegistry::from_recorded(
+        (*available.owner_content_formats()).snapshot(),
+    )
+    .unwrap();
     let id = CanonicalDigestId::new([1; 32]);
     assert!(matches!(
         recorded.get(id),
         Err(RelationalContentDenial::FormatMismatch)
     ));
     assert!(recorded
-        .bind_recorded(&available.content_formats)
+        .bind_recorded(&(*available.owner_content_formats()))
         .unwrap()
         .get(id)
         .is_ok());
     assert!(matches!(
-        recorded.bind_recorded(&registry(2, 4096, 2).content_formats),
+        recorded.bind_recorded(&(*registry(2, 4096, 2).owner_content_formats())),
         Err(RelationalContentDenial::UnsupportedVersion)
     ));
     assert!(matches!(
-        recorded.bind_recorded(&registry(1, 2048, 2).content_formats),
+        recorded.bind_recorded(&(*registry(1, 2048, 2).owner_content_formats())),
         Err(RelationalContentDenial::FormatMismatch)
     ));
 }
@@ -201,7 +203,7 @@ fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_positio
         );
         let compact = rmp_serde::to_vec(&image).unwrap();
         assert_eq!(compact[0], 0x9a, "all ten positional fields are present");
-        if registry.content_formats.snapshot().is_empty() {
+        if (*registry.owner_content_formats()).snapshot().is_empty() {
             // Manual MessagePack tokens plus the independently frozen empty root.
             assert_eq!(
                 image.carrier_digest(),

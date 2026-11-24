@@ -1,0 +1,96 @@
+use super::node::{ColumnNode, ColumnStorage};
+use super::PAGE_LEN;
+use crate::storage::substrate::StoredValue;
+
+pub struct SharedColumnIter<'a, T: StoredValue> {
+    pending: Vec<(Option<&'a ColumnNode<T>>, usize)>,
+    page: std::slice::Iter<'a, Option<T>>,
+    default: Option<&'a T::Value>,
+    default_run: usize,
+    remaining: usize,
+    root: Option<&'a ColumnNode<T>>,
+    height: usize,
+    back: usize,
+}
+
+impl<'a, T: StoredValue> SharedColumnIter<'a, T> {
+    pub(super) fn new(
+        root: Option<&'a ColumnNode<T>>,
+        height: usize,
+        remaining: usize,
+        default: Option<&'a T::Value>,
+    ) -> Self {
+        Self {
+            pending: vec![(root, height)],
+            page: [].iter(),
+            default,
+            default_run: 0,
+            remaining,
+            root,
+            height,
+            back: remaining,
+        }
+    }
+}
+
+impl<'a, T: StoredValue> Iterator for SharedColumnIter<'a, T> {
+    type Item = &'a T::Value;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+        super::iteration_observation::visited::<T>();
+        loop {
+            if self.default_run != 0 {
+                self.default_run -= 1;
+                self.remaining -= 1;
+                return Some(
+                    self.default
+                        .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "unmaterialized column range needs a default"),
+                );
+            }
+            if let Some(value) = self.page.next() {
+                self.remaining -= 1;
+                return Some(
+                    value
+                        .as_ref().map(T::value)
+                        .or(self.default)
+                        .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "column value must exist"),
+                );
+            }
+            let (node, height) = self.pending.pop()?;
+            match node.map(|node| &node.storage) {
+                None => self.default_run = (PAGE_LEN << height).min(self.remaining),
+                Some(ColumnStorage::Page(values)) => self.page = values.iter(),
+                Some(ColumnStorage::Branch(children)) => self.pending.extend(
+                    children
+                        .iter()
+                        .rev()
+                        .map(|child| (child.as_deref(), height - 1)),
+                ),
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remaining, Some(self.remaining))
+    }
+}
+
+impl<T: StoredValue> ExactSizeIterator for SharedColumnIter<'_, T> {}
+
+impl<'a, T: StoredValue> DoubleEndedIterator for SharedColumnIter<'a, T> {
+    fn next_back(&mut self) -> Option<&'a T::Value> {
+        if self.remaining == 0 {
+            return None;
+        }
+        super::iteration_observation::visited::<T>();
+        self.remaining -= 1;
+        self.back -= 1;
+        self.root
+            .and_then(|root| root.get(self.back, self.height))
+            .map(T::value)
+            .or(self.default)
+    }
+}

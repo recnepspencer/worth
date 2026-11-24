@@ -1,4 +1,5 @@
 //! Exact complete publication edges, including dynamic births and retirements.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::membership::writes;
 use super::require_linear_history;
 use super::{charge, CodecRetirementClosureStop as Stop};

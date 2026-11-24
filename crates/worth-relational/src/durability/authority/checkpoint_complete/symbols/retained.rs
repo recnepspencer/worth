@@ -2,6 +2,7 @@
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 pub(super) struct RetainedSymbols<'a> {
     entries: im::ordmap::Iter<'a, Symbol, StoredSymbolText>,

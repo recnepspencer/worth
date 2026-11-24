@@ -1,5 +1,6 @@
 //! Every root-scoped catalog shares its original admitted compiled owners.
 use super::*;
+use worth_relational_contracts::internal_port::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceiptOwnerPort as _;
 impl RelationalRuntime {
     pub(crate) fn retain_home_program_contracts(
         &self,

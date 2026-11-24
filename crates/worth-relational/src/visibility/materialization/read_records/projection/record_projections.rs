@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::projection_records::EntityProjectionRecordOwnerPort as _;
+use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::projection_records::RelationProjectionRecordOwnerPort as _;
 use super::{
     EntityProjectionRecord, EntityRecordProjection, ProjectionAspectScope,
     RelationProjectionRecord, RelationRecordProjection, VisibilityProjectionView,

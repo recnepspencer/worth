@@ -5,6 +5,8 @@ use crate::publication::close_custody::{
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+use worth_relational_contracts::internal_port::publication::close_custody::RelationalPublicationCustodyHoldersOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::close_custody::RelationalPublicationRegistryCustodyOwnerPort as _;
 mod source_registration;
 
 /// Drop-governed publication authority owned directly by one runtime.

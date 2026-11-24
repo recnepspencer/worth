@@ -1,4 +1,5 @@
 //! Complete affected graph cohorts using Native frontier mechanics.
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::source::AggregateIdentitySourceOwnerPort as _;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::changes::AggregateChanges;

@@ -13,6 +13,7 @@ use crate::durability::branch_transition_artifact::{
 };
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::publication::patch::data::PatchStreamPosition;
+use worth_relational_contracts::internal_port::branch::transition::sequence::RelationalBranchTransitionSequenceOwnerPort as _;
 
 /// The bounds a recovered transition tail must lie within.
 pub(crate) struct TransitionTailBounds {

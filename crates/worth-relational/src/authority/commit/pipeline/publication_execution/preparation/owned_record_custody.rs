@@ -1,4 +1,6 @@
 //! Current ownership alone fences destruction, including relation endpoint changes.
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::history::data::CodecRetirementClosureStop as Stop;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;

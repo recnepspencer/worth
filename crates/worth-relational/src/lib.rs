@@ -24,25 +24,35 @@
 #![deny(unreachable_patterns)]
 
 mod aggregate_identity;
-mod aspect_wire;
+pub(crate) use worth_relational_contracts::internal_port::aspect_wire;
 mod authority;
 mod authorization;
 mod branch;
-mod canonical_basis_ready_sequence;
+pub(crate) use worth_relational_contracts::internal_port::canonical_basis_ready_sequence;
 mod capabilities;
 mod change_source;
 mod commit_strategies;
-mod config;
+pub(crate) use worth_relational_contracts::internal_port::config;
 mod content;
 mod derived_relation;
-mod diagnostics;
+pub(crate) use worth_relational_contracts::internal_port::diagnostics;
 mod durability;
-mod errors;
+pub(crate) use worth_relational_contracts::internal_port::errors;
 mod execution;
-mod graph_member;
+pub(crate) use worth_relational_contracts::internal_port::graph_member;
 mod history;
-mod identity;
-mod identity_authority;
+pub(crate) use worth_relational_contracts::internal_port::identity;
+mod identity_authority {
+    pub(crate) use worth_relational_contracts::internal_port::identity_authority::authority::relational_source_truth_authority;
+    pub use worth_relational_contracts::internal_port::identity_authority::{
+        RelationalBranchIdentityKind, RelationalCanonicalDigestIdentityBasis,
+        RelationalCommitIdentityKind, RelationalEntityIdentityKind, RelationalRelationIdentityKind,
+        RelationalSnapshotIdentityKind, RelationalSourceTruthAuthorityIdentity,
+        RelationalSourceTruthBoundaryBridgedIdentity, RelationalSourceTruthDigestIdentityEvidence,
+        RelationalSourceTruthExternalIdentityToken, RelationalSourceTruthProjectionIdentity,
+        RelationalVersionIdentityKind, RelationalWorkspaceIdentityKind,
+    };
+}
 mod indexes;
 mod inspection;
 mod lineage;
@@ -59,7 +69,7 @@ mod schema;
 mod simulation;
 mod snapshots;
 mod storage;
-mod structural_traversal;
+pub(crate) use worth_relational_contracts::internal_port::structural_traversal;
 mod symbols;
 mod transactions;
 mod validation;
@@ -72,7 +82,9 @@ mod tests;
 
 #[cfg(test)]
 mod test_execution_policy {
-    pub(crate) use crate::execution::test_policy::{serial_request, serial_request_with_memory};
+    pub(crate) use worth_harness::facade::execution_fixture::{
+        serial_request, serial_request_with_memory,
+    };
 }
 #[cfg(test)]
 use worth_harness::facade::process_deadline;

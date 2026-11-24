@@ -1,4 +1,6 @@
 //! Readmit a manifest's immutable region directory without reading members.
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod root_readmission;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -128,9 +130,8 @@ impl ReadmittedRegionDirectory {
                     *request,
                 ))
                 .map_err(RelationalRecoveryStop::Request)?;
-            registry.content_formats = registry
-                .content_formats
-                .bind_recorded(&configured_schema.content_formats)
+            (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
+                .bind_recorded(&(*configured_schema.owner_content_formats()))
                 .map_err(RelationalRecoveryStop::from)?;
             let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
                 index as u64 + 1,
@@ -274,19 +275,4 @@ impl ReadmittedRegionDirectory {
 
 pub(crate) fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::corrupt_checkpoint(detail)
-}
-
-impl From<crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial>
-    for crate::durability::data::RelationalRecoveryStop
-{
-    fn from(
-        cause: crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial,
-    ) -> Self {
-        use crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial as Denial;
-        match cause {
-            Denial::Invalid(message) => corrupt(message).into(),
-            Denial::StorageUnavailable(cause) => cause.into(),
-            Denial::Request(cause) => Self::Request(cause),
-        }
-    }
 }

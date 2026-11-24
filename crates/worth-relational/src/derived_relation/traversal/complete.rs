@@ -27,9 +27,9 @@ pub(in crate::derived_relation) fn acquire(
     for step in &traversal.support {
         read.checkpoint(1)?;
         for (count, length) in counts.iter_mut().zip([
-            step.data.entities.len(),
-            step.data.relations.len(),
-            step.data.adjacency.len(),
+            step.data.entity_dependencies().len(),
+            step.data.physical_relations().len(),
+            step.data.adjacency_dependencies().len(),
         ]) {
             *count = count
                 .checked_add(length)
@@ -55,9 +55,11 @@ pub(in crate::derived_relation) fn acquire(
     let mut adjacency = Vec::with_capacity(counts[2]);
     for step in traversal.support {
         read.checkpoint(1)?;
-        entities.extend(step.data.entities);
-        relations.extend(step.data.relations);
-        adjacency.extend(step.data.adjacency);
+        let (step_entities, step_relations, step_adjacency) =
+            crate::derived_relation::read::take_dependencies(step.data);
+        entities.extend(step_entities);
+        relations.extend(step_relations);
+        adjacency.extend(step_adjacency);
     }
     // These are fixed-width physical fact keys. Preserve every support until
     // the complete traversal has succeeded, then canonicalize only the roster.
@@ -95,13 +97,13 @@ pub(in crate::derived_relation) fn acquire(
             .then_with(|| left.member.cmp(&right.member))
     });
     Ok((
-        Data {
-            endpoints: traversal.members.into_iter().collect(),
+        crate::derived_relation::read::complete_data(
+            traversal.members.into_iter().collect(),
             entities,
             relations,
             adjacency,
-            reads: read.reads(),
-        },
+            read.reads(),
+        ),
         traversal.steps,
     ))
 }

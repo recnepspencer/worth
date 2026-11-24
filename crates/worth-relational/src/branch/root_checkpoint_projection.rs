@@ -6,6 +6,7 @@ use crate::history::retention::VisibilitySnapshotBasis;
 use crate::visibility::materialization::read_records::projection::checkpoint_selection::RequestOwnedCheckpointBasis;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 impl RelationalBranchRoot {
     pub(crate) fn admit_checkpoint_projection(

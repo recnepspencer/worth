@@ -7,6 +7,7 @@ use crate::history::data::CommitId;
 use crate::identity::data::EntityId;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_member(
@@ -251,7 +252,7 @@ pub(super) fn validate_groups(
                     && new.kind == edge.kind
                     && new.source == map(edge.source)
                     && (new.target == map(edge.target)
-                        || schema.registry().native_private_kinds.contains(&edge.kind))
+                        || (*schema.registry().owner_native_private_kinds()).contains(&edge.kind))
             }) {
                 return Err("restoration changes owned relation correspondence".into());
             }

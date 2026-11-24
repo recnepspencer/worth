@@ -1,4 +1,5 @@
 //! Association wire meaning and embedded original encoding are owner value units.
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::facade::mvcc::{
     RelationalCallerAssociation as Association, RelationalPublicationOutcome,
@@ -153,7 +154,10 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
     assert!(proposal
         .bind_caller_association(association.clone())
         .is_err());
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let proposal = propose(execution, &runtime, "discarded")
         .bind_caller_association(association.clone())
         .unwrap();
@@ -170,7 +174,10 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
         pending_canonical_publication_route_count(&runtime.history),
         routes
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
 }
 
 #[test]

@@ -13,9 +13,9 @@ use crate::facade::lineage::{
     PersistentNameHolder, PersistentNameIdentity, PersistentNameKey, PersistentNameResolution,
     PersistentNameSelection, PersistentNameTarget,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::name_event_fixtures::synthetic_name;

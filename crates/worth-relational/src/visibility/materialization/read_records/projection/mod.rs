@@ -12,7 +12,7 @@ mod borrowed_adjacency;
 mod borrowed_records;
 mod checkpoint_context;
 pub(crate) mod checkpoint_selection;
-pub(crate) mod contracts;
+pub(crate) use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::contracts;
 pub(crate) mod creation;
 pub(crate) use checkpoint_context::CheckpointProjectionContext;
 pub(crate) use creation::ProjectionInputs;
@@ -28,7 +28,7 @@ mod frontier_adjacency;
 mod historical_basis_reads;
 mod kind_scans;
 pub(crate) mod pinned;
-pub(crate) mod projection_records;
+pub(crate) use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::projection_records;
 pub(crate) mod query_locus_projection;
 mod read_record_identity_ordering;
 mod record_source;
@@ -53,9 +53,6 @@ pub use entity_retirement::RelationalEntityRetirement;
 pub use projection_records::{
     EntityProjectionRecord, EntityRecordProjection, RelationProjectionRecord,
     RelationRecordProjection, RelationalProjectedFieldObservation,
-};
-pub(crate) use query_locus_projection::{
-    authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
 };
 #[cfg(test)]
 pub(crate) use query_locus_projection::{

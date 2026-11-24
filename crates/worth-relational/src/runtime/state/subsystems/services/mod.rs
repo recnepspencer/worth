@@ -1,7 +1,7 @@
 mod compiled_artifacts;
 pub(crate) mod instrumentation;
 pub(crate) mod sequence;
-pub(crate) mod symbol_table;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table;
 #[cfg(test)]
 mod tests;
 

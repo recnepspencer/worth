@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 mod admission;
 mod construction;
 mod filtering;

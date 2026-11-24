@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use crate::publication::patch::data::{
     PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
     PublishedAuthoritativePatchOperation, PublishedAuthoritativePatchValue,

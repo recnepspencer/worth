@@ -2,6 +2,7 @@
 use crate::storage::residency::RelationalResidencyDemandFailure;
 use crate::transactions::data::{EntityMutationIntent, ExistingRecordTarget, MutationIntent};
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl super::BranchBoundRelationalTransaction {
     pub(crate) fn demand_preparation_regions(

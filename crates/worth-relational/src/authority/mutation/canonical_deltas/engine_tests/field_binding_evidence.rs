@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use worth_foundational::{
     aspects, AspectContractRevision, AspectIdentity, AspectKey as FoundationalAspectKey,
     ScalarAspectType,
@@ -49,7 +51,7 @@ fn entity_field_patch_evidence_denial_carries_typed_target() {
 
 #[test]
 fn entity_field_delta_requires_authoritative_state() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();

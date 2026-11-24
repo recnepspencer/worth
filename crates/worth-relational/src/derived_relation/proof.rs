@@ -6,6 +6,7 @@ use crate::graph_member::NativeMemberKey;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
 
 /// A descriptive step retained by an actual admitted breadth-first traversal.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -50,7 +51,7 @@ impl Hash for DerivedRelationReadIdentity {
         // Membership only: no ordering, serialized key or graph identity follows
         // from these opaque owners. Full equality also compares the proposal.
         self.source.observation.hash(state);
-        Arc::as_ptr(&self.definition.entry).hash(state);
+        Arc::as_ptr(&(*self.definition.owner_entry())).hash(state);
         self.source.committed.hash(state);
         self.source.version.hash(state);
         self.root.hash(state);

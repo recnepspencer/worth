@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::runtime::interruption_counters::RelationalInterruptionCostCountersOwnerPort as _;
 mod acquisition;
 mod gate_trial;
 pub(crate) use acquisition::RelationalRetentionRequestAcquisitionDenial;

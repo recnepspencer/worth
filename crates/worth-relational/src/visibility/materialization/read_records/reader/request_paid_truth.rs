@@ -1,4 +1,5 @@
 //! Each truth seam must refuse without returning a partial row set.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::read_prices::{
     ASPECT_BINDING, ASPECT_COMPARISON, EXAMINE_SLOT, KEYED_RECORD, RESERVE_RECORD,
 };
@@ -12,7 +13,7 @@ use worth_execution::{
 
 #[test]
 fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let first = create_entity_outcome(&execution, &runtime, "truth-paid-first");
@@ -271,7 +272,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                 _ => unreachable!(),
             }
         };
-        let short = crate::execution::test_policy::serial_request();
+        let short = worth_harness::facade::execution_fixture::serial_request();
         let request = ExecutionRequest::serial(&short);
         assert_eq!(
             request
@@ -283,7 +284,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
             Err(Cause::WorkExhausted),
             "seam {seam} one short"
         );
-        let live = crate::execution::test_policy::serial_request();
+        let live = worth_harness::facade::execution_fixture::serial_request();
         let request = ExecutionRequest::serial(&live);
         let (answer, report) = request
             .run(ExecutionWorkCeiling::new(Some(units)), |_| read(&request))

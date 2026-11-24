@@ -8,6 +8,7 @@ use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(crate) fn validate_final_derived_laws(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -20,8 +21,8 @@ pub(crate) fn validate_final_derived_laws(
     symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
 ) -> Result<super::AggregateReadObservations, TransactionCommitError> {
-    if authority.registry().derived_relations.is_empty()
-        || authority.registry().native_private_kinds.is_empty()
+    if (*authority.registry().owner_derived_relations()).is_empty()
+        || (*authority.registry().owner_native_private_kinds()).is_empty()
     {
         return Ok(super::AggregateReadObservations::default());
     }

@@ -4,6 +4,7 @@ use super::super::{
     RelationalDurableReadProtection,
 };
 use super::*;
+use worth_relational_storage::internal_port::durability::medium::read_protection::RelationalDurableReadProtectionOwnerPort as _;
 impl RelationalDurableRecoverySource {
     /// Keep `protection` alive through source admission. Transport/plan collection
     /// heaps retain their ordinary contract; each raw body owns its genuine grant.

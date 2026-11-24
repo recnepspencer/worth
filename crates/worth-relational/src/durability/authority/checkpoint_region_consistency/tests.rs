@@ -5,6 +5,7 @@ use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
 use crate::storage::residency::{RelationalRegionKindCommitment, RelationalRegionRetention};
 use crate::storage::substrate::{EntityArena, RelationArena};
+use worth_relational_storage::internal_port::storage::residency::record_directory::portable::RegionRecordDirectoryFixturePort as _;
 
 #[test]
 fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture() {
@@ -12,7 +13,12 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
     validate_value(
         &selected,
         &matching,
-        selected.directory.portable_oracle().unwrap().as_ref() == matching.directory.as_ref(),
+        crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+            selected.directory.portable_oracle_for_test(lane)
+        })
+        .unwrap()
+        .as_ref()
+            == matching.directory.as_ref(),
     )
     .unwrap();
     let disagreements: [fn(&mut RelationalCheckpointRegion); 9] = [
@@ -32,7 +38,12 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
         let error = validate_value(
             &selected,
             &captured,
-            selected.directory.portable_oracle().unwrap().as_ref() == captured.directory.as_ref(),
+            crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+                selected.directory.portable_oracle_for_test(lane)
+            })
+            .unwrap()
+            .as_ref()
+                == captured.directory.as_ref(),
         )
         .unwrap_err();
         assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
@@ -96,7 +107,10 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
-        directory: selected.directory.portable_oracle().unwrap(),
+        directory: crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+            selected.directory.portable_oracle_for_test(lane)
+        })
+        .unwrap(),
         live_counts: Default::default(),
         entity_slots: 0,
         relation_slots: 0,

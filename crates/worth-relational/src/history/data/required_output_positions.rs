@@ -1,5 +1,6 @@
 //! Current complete canonical publication per family/source route at one native root.
 //! This derived selection image grants no ownership without native/proof custody.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 mod checkpoint;
 pub(crate) mod presence;
 mod readmission;

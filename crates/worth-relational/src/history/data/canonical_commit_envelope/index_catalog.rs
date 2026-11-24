@@ -2,6 +2,7 @@
 use crate::indexes::data::DerivedIndexDefinition;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexDefinitionOwnerPort as _;
 
 #[derive(Debug)]
 struct Backing {

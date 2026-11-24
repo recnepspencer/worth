@@ -1,5 +1,6 @@
 //! Routing distinguishes real schema meanings at the same version.
 use super::*;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[test]
 fn schema_meanings_with_one_version_keep_distinct_kind_routes() {
@@ -37,7 +38,7 @@ fn schema_meanings_with_one_version_keep_distinct_kind_routes() {
             ]),
         })
         .unwrap();
-    let mut added = old.entity_kinds.get(&KindId(1)).unwrap().clone();
+    let mut added = (*old.owner_entity_kinds()).get(&KindId(1)).unwrap().clone();
     added.kind_id = KindId(91);
     added.kind_name = "new-index-covered-kind".into();
     added

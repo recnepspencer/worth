@@ -1,5 +1,6 @@
 //! Compare the original immutable schema to a snapshot without cloning its heaps.
 use super::*;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn retain_revisions(
     expected: &SchemaAuthoritySnapshot,
@@ -21,13 +22,11 @@ pub(super) fn matches(
     expected: &SchemaAuthoritySnapshot,
 ) -> bool {
     let registry = &authority.registry;
-    let mut registrations = registry
-        .entity_kinds
+    let mut registrations = (*registry.owner_entity_kinds())
         .values()
         .map(|kind| (&kind.schema_id, kind.schema_version_id))
         .chain(
-            registry
-                .relation_kinds
+            (*registry.owner_relation_kinds())
                 .values()
                 .map(|kind| (&kind.schema_id, kind.schema_version_id)),
         );
@@ -37,17 +36,16 @@ pub(super) fn matches(
     } else {
         None
     };
-    if registry.content_formats.snapshot() != expected.content_formats
+    if (*registry.owner_content_formats()).snapshot() != expected.content_formats
         || expected.primary_schema_id.as_ref() != basis.map(|(id, _)| id)
         || expected.primary_schema_version_id != basis.map(|(_, version)| version)
-        || registry.entity_kinds.len() != expected.entity_kinds.len()
-        || registry.relation_kinds.len() != expected.relation_kinds.len()
+        || (*registry.owner_entity_kinds()).len() != expected.entity_kinds.len()
+        || (*registry.owner_relation_kinds()).len() != expected.relation_kinds.len()
         || authority.relation_integrity_revisions.len() != expected.relation_kinds.len()
     {
         return false;
     }
-    let entities_match = registry
-        .entity_kinds
+    let entities_match = (*registry.owner_entity_kinds())
         .iter()
         .zip(&expected.entity_kinds)
         .all(|((id, actual), expected)| {
@@ -58,8 +56,7 @@ pub(super) fn matches(
                 && actual.aspect_contract_declarations.plan_revision
                     == expected.aspect_plan_revision
         });
-    let relations_match = registry
-        .relation_kinds
+    let relations_match = (*registry.owner_relation_kinds())
         .iter()
         .zip(authority.relation_integrity_revisions.iter())
         .zip(&expected.relation_kinds)
@@ -76,13 +73,11 @@ pub(super) fn matches(
         });
     entities_match
         && relations_match
-        && registry
-            .derived_relations
+        && (*registry.owner_derived_relations())
             .values()
             .map(|entry| &entry.parts)
             .eq(expected.derived_relations.iter())
-        && registry
-            .projected_member_domains
+        && (*registry.owner_projected_member_domains())
             .values()
             .map(|entry| &entry.parts)
             .eq(expected.projected_member_domains.iter())

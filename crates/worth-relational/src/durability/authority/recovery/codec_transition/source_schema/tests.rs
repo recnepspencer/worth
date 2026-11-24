@@ -12,16 +12,17 @@ use worth_foundational::facade::{AspectBinding, AspectKey, FieldKey};
 fn source_only_codec_consequences_refuse_affected_support_and_allow_an_unrelated_kind() {
     let (mut registry, program) = managed_cache_schema();
     let unrelated_kind = KindId(
-        registry
-            .entity_kinds
+        (*registry.owner_entity_kinds())
             .keys()
-            .chain(registry.relation_kinds.keys())
+            .chain((*registry.owner_relation_kinds()).keys())
             .map(|kind| kind.0)
             .max()
             .unwrap()
             + 1,
     );
-    let schema = registry.entity_kinds[&KindId(1)].schema_id.clone();
+    let schema = (*registry.owner_entity_kinds())[&KindId(1)]
+        .schema_id
+        .clone();
     registry = registry
         .register_entity_kind(crate::schema::data::EntityKindRegistration {
             kind_id: unrelated_kind,

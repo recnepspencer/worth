@@ -11,6 +11,7 @@ use crate::runtime::state::subsystems::indexing::IndexingState;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 pub(crate) fn verify_with_images(
     projections: &CheckpointIndexProjections,
     lane: &ReconstructionLane<'_>,

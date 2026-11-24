@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::lineage::data::naming::InstalledPersistentNameSchemeOwnerPort as _;
 mod basis_tests;
 mod discriminator_scan_tests;
 mod invariance_proptest;
@@ -16,13 +17,15 @@ use crate::lineage::data::{
 pub(super) fn face_registry() -> InstalledPersistentNameSchemeRegistry {
     let mut registry = InstalledPersistentNameSchemeRegistry::new();
     registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            "worth.cad.face.v1",
-            PersistentNameSubjectKind::Entity,
-            ["authored", "cut_piece", "seam_patch"],
-            true,
-            true,
-        ))
+        .register(
+            InstalledPersistentNameScheme::name_scheme_from_ordered_roles_for_test(
+                "worth.cad.face.v1",
+                PersistentNameSubjectKind::Entity,
+                ["authored", "cut_piece", "seam_patch"],
+                true,
+                true,
+            ),
+        )
         .expect("register face scheme");
     registry
 }

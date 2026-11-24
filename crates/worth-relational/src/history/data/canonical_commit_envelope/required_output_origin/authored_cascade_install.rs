@@ -10,6 +10,7 @@ use crate::transactions::data::outcomes::created_relation_bindings::CommitCreate
 use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 use super::authored_cascade::CanonicalAuthoredRetirement;
 

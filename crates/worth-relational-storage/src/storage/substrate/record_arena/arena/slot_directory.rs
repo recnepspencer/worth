@@ -1,0 +1,163 @@
+use crate::storage::substrate::{SharedColumn, SharedMap};
+#[cfg(test)]
+mod custody_tests;
+
+#[derive(Debug, Clone, Default)]
+pub struct RecordSlotDirectory {
+    logical_by_physical: SharedColumn<u64>,
+    physical_by_logical: SharedMap<u64, usize>,
+}
+
+impl RecordSlotDirectory {
+    pub(super) fn navigation_work_bound(&self) -> usize {
+        self.physical_by_logical.navigation_work_bound()
+    }
+    pub(super) fn try_occupied_entries<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<crate::storage::substrate::SharedMapIter<'_, u64, usize>, Stop> {
+        self.physical_by_logical.try_iter(prepare)
+    }
+    pub(super) fn visit_new_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.logical_by_physical.visit_new_allocations(
+            &previous.logical_by_physical,
+            visitor,
+            &mut crate::storage::substrate::visit_new_inline_value,
+        );
+        self.physical_by_logical.visit_new_allocations(
+            &previous.physical_by_logical,
+            visitor,
+            &mut crate::storage::substrate::visit_new_inline_value,
+        );
+    }
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            logical_by_physical: SharedColumn::with_capacity(capacity),
+            physical_by_logical: SharedMap::new(),
+        }
+    }
+
+    pub fn restore(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        slots: Vec<u64>,
+    ) -> Result<Self, &'static str> {
+        let mut directory = Self::with_capacity(slots.len());
+        for slot in slots {
+            directory.insert(slot)?;
+        }
+        Ok(directory)
+    }
+
+    pub fn restore_for_request(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        slots: Vec<u64>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::MetadataWriteDenial> {
+        let mut directory = Self::with_capacity(slots.len());
+        for slot in slots {
+            directory.insert_for_request(slot, request)?;
+        }
+        Ok(directory)
+    }
+
+    pub fn physical_index(&self, logical_slot: usize) -> Option<usize> {
+        self.physical_by_logical
+            .get(&(logical_slot as u64))
+            .copied()
+    }
+
+    pub(super) fn logical_slot(&self, physical: usize) -> Option<usize> {
+        self.logical_by_physical
+            .get(physical)
+            .map(|slot| *slot as usize)
+    }
+
+    /// Insert one slot and return the bytes of index paths actually copied.
+    pub fn insert(&mut self, logical_slot: u64) -> Result<u64, &'static str> {
+        if self.physical_by_logical.contains_key(&logical_slot) {
+            return Err("record slot directory contains a duplicate logical slot");
+        }
+        let physical = self.logical_by_physical.len();
+        let copied_bytes = self.logical_by_physical.push(logical_slot);
+        Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
+    }
+
+    pub(super) fn insert_for_request(
+        &mut self,
+        logical_slot: u64,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, super::MetadataWriteDenial> {
+        if self.physical_by_logical.contains_key(&logical_slot) {
+            return Err(super::MetadataWriteDenial::Invalid(
+                "record slot directory contains a duplicate logical slot",
+            ));
+        }
+        let physical = self.logical_by_physical.len();
+        let copied = self
+            .logical_by_physical
+            .push_for_request(logical_slot, request)?;
+        Ok(
+            copied.saturating_add(self.physical_by_logical.insert_for_request(
+                logical_slot,
+                physical,
+                request,
+            )?),
+        )
+    }
+    pub fn try_occupied_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        std::iter::Map<
+            crate::storage::substrate::SharedMapIter<'_, u64, usize>,
+            fn((&u64, &usize)) -> usize,
+        >,
+        Stop,
+    > {
+        Ok(self
+            .physical_by_logical
+            .try_iter(prepare)?
+            .map(logical_slot as fn((&u64, &usize)) -> usize))
+    }
+
+    pub fn occupied_slots(&self) -> Vec<usize> {
+        self.occupied_slots_iter().collect()
+    }
+
+    pub fn occupied_slots_iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.physical_by_logical.keys().map(|slot| *slot as usize)
+    }
+
+    pub fn slots(&self) -> &SharedColumn<u64> {
+        &self.logical_by_physical
+    }
+
+    pub fn len(&self) -> usize {
+        self.logical_by_physical.len()
+    }
+
+    pub(super) fn visit_allocations(
+        &self,
+        unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.logical_by_physical.visit_allocations(
+            unique,
+            visitor,
+            &mut crate::storage::substrate::visit_inline_value,
+        );
+        self.physical_by_logical.visit_allocations(
+            unique,
+            visitor,
+            &mut crate::storage::substrate::visit_inline_value,
+        );
+    }
+}
+
+fn logical_slot((&slot, _): (&u64, &usize)) -> usize {
+    slot as usize
+}

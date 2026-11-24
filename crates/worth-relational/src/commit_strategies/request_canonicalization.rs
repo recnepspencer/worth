@@ -1,4 +1,6 @@
 use sha2::{Digest, Sha256};
+use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyCommitRequestOwnerPort as _;
+use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyInputArtifactOwnerPort as _;
 
 use crate::commit_strategies::data::{
     CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, CanonicalStrategyInputDigest,

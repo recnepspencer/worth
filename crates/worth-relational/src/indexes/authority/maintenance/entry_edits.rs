@@ -7,6 +7,9 @@ use crate::indexes::data::{
 };
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingBoundaryOwnerPort as _;
 
 pub(super) struct PendingEdit<R> {
     pub(super) row: R,

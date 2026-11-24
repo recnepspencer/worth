@@ -9,7 +9,7 @@ use worth_foundational::{
 #[test]
 fn the_checked_plan_ceiling_has_an_exact_scratch_and_retention_boundary() {
     const EXTENT: u64 = 20_000;
-    let authority = crate::execution::test_authority::test_execution_authority();
+    let authority = worth_harness::facade::execution_fixture::test_execution_authority();
     let request = |bytes| LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,

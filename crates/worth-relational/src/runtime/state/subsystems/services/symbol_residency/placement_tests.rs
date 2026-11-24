@@ -1,7 +1,15 @@
 //! Dictionary placement survives checkpoint replacement without warming payloads.
 use super::*;
+use crate::durability::medium::RelationalDurableColdSource;
 use crate::durability::medium::RelationalDurableMemberCustody;
+use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::storage::data::RelationalStorageSubject;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 struct PruningSource {

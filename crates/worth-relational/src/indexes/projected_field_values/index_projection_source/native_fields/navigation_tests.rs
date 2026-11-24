@@ -4,7 +4,6 @@ use crate::execution::packet_memory::PacketMemory;
 use crate::execution::read_only_packets::execute_read_only_packets;
 use crate::execution::read_only_packets::PacketBudgetDenial;
 use crate::execution::read_only_packets::ReadOnlyPacket;
-use crate::execution::test_authority::test_execution_authority;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
@@ -20,6 +19,7 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     PartitionIdentity,
 };
+use worth_harness::facade::execution_fixture::test_execution_authority;
 
 fn lease(
     limit: Option<u64>,

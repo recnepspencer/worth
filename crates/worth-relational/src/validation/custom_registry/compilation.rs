@@ -3,6 +3,7 @@ use super::*;
 use crate::schema::{data::RelationalSchemaRegistry, SchemaCompilationControl};
 use crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 
 impl FrozenCustomInvariantRegistry {
     pub(crate) fn compile(

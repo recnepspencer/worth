@@ -1,4 +1,5 @@
 //! Current owned publications whose exact source would be removed by a candidate.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::{charge, CodecRetirementClosureStop as Stop, PublicationHistoryFailure as Failure};
 use crate::history::data::CanonicalRequiredOutputOrigin;
 use crate::identity::data::EntityId;

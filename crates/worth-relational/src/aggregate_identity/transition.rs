@@ -1,5 +1,6 @@
 //! Naming policy over complete partitions, independent of publication timing.
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
 
 pub(crate) use worth_foundational::facade::AggregateLineageKind;
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};

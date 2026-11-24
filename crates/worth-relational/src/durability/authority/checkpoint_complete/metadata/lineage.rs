@@ -19,6 +19,7 @@ use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
     ExecutionRequestArrayBuilder,
 };
+use worth_relational_contracts::internal_port::lineage::data::graph::assemble_lineage_node;
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename = "RelationalCheckpointLineageEventRow")]
@@ -133,10 +134,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>
         ExecutionRequestArrayBuilder::allocate(*request, nodes.len()).map_err(array_stop)?;
     for (&lineage_id, &entity_id) in nodes.iter() {
         node_roster
-            .push(LineageNode {
-                lineage_id,
-                entity_id,
-            })
+            .push(assemble_lineage_node(lineage_id, entity_id))
             .map_err(array_stop)?;
     }
     let mut event_roster =

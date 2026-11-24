@@ -1,4 +1,5 @@
 //! Consuming execution of one prepared merge.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 
 use crate::authority::commit::pipeline::execution::execute_authoritative_commit;

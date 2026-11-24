@@ -15,13 +15,15 @@ use crate::transactions::data::outcomes::transaction_commit_error::{
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::HashMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(crate) fn validate(
     execution: &ExecutionRequest<'_, '_>,
     partition: &PartitionState,
     registry: &RelationalSchemaRegistry,
 ) -> Result<(), Failure> {
-    let Some(storage) = &registry.current_publication_storage else {
+    let Some(storage) = &(*registry.owner_current_publication_storage()) else {
         return Ok(());
     };
     let mut result = None;

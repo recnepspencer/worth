@@ -1,4 +1,5 @@
 //! Image effect DATA uses the original semantic and creation allocation owners.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultFieldsPort as _;
 use super::*;
 use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
@@ -52,9 +53,9 @@ pub(crate) fn decode_checkpoint_effect(
     })?;
     let mut semantic: RelationalCommitSemanticResult =
         rmp_serde::from_slice(semantic.0).map_err(|_| malformed())?;
-    semantic.decoded_memory = semantic_memory;
+    (*semantic.owner_decoded_memory_mut()) = semantic_memory;
     validation
-        .attach(&semantic.validation)
+        .attach(&(*semantic.owner_validation()))
         .map_err(|_| malformed())?;
     let creations = rmp_serde::from_slice(creations.0).map_err(|_| malformed())?;
     Ok(CheckpointEffectData {

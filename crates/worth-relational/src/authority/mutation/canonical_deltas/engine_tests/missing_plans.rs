@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
@@ -9,7 +10,7 @@ use super::support::{empty_working_state, empty_workspace, mutation_config};
 
 #[test]
 fn missing_entity_aspect_plan_returns_typed_error() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -37,7 +38,7 @@ fn missing_entity_aspect_plan_returns_typed_error() {
 
 #[test]
 fn missing_relation_aspect_plan_returns_typed_error() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();

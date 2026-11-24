@@ -1,5 +1,6 @@
 //! Demand uses the original backing and preserves sticky damage.
 use super::*;
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn demand_positioned(
         &self,

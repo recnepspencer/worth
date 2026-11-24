@@ -13,6 +13,8 @@
 
 
 [dependencies]
+worth-relational-contracts.workspace = true
+worth-relational-storage.workspace = true
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }
 worth-execution = { path = "../worth-execution" }

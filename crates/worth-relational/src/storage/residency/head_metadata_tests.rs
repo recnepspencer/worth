@@ -1,4 +1,5 @@
 //! Current metadata is authenticated and sufficient for an append, not history.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::storage::residency::region_image::{
     RegionHeadImage, RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
@@ -6,154 +7,155 @@ use crate::storage::residency::region_image::{
 
 #[test]
 fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
-    let fixture = region_with_history();
-    let head = decode_head(&fixture);
-    let head_rows = &head.partition.entity_arena.metadata_history[0];
-    assert_eq!(
-        head_rows.len(),
-        1,
-        "one current metadata version belongs in Head"
-    );
-    let bytes = fixture.source.members.get(&fixture.cold.history).unwrap();
-    let frame = RelationalRegionImage::decode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        bytes,
-        fixture.cold.history,
-        fixture.cold.partition_id,
-        fixture.cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-    )
-    .unwrap();
-    let history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert_eq!(
-        history.entities[0].earlier.len() + head_rows.len(),
-        fixture.expected_history
-    );
-    assert!(history.entities[0].earlier.last().unwrap().effective_at < head_rows[0].effective_at);
-    assert!(
-        !history.relations[0].earlier.is_empty(),
-        "fixture has real earlier endpoint versions"
-    );
-    assert_eq!(
-        fixture.source.reads.load(Ordering::SeqCst),
-        0,
-        "inspect producer bytes without warming the receiver"
-    );
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let head = decode_head(&fixture);
+        let head_rows = &head.partition.entity_arena.metadata_history[0];
+        assert_eq!(
+            head_rows.len(),
+            1,
+            "one current metadata version belongs in Head"
+        );
+        let bytes = fixture.source.members.get(&fixture.cold.history).unwrap();
+        let frame = RelationalRegionImage::decode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            bytes,
+            fixture.cold.history,
+            fixture.cold.partition_id,
+            fixture.cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+        )
+        .unwrap();
+        let history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
+        assert_eq!(
+            history.entities[0].earlier.len() + head_rows.len(),
+            fixture.expected_history
+        );
+        assert!(
+            history.entities[0].earlier.last().unwrap().effective_at < head_rows[0].effective_at
+        );
+        assert!(
+            !history.relations[0].earlier.is_empty(),
+            "fixture has real earlier endpoint versions"
+        );
+        assert_eq!(
+            fixture.source.reads.load(Ordering::SeqCst),
+            0,
+            "inspect producer bytes without warming the receiver"
+        );
+    })
 }
 
 #[test]
 fn a_head_append_matches_a_separately_recomputed_full_history_root() {
-    let fixture = region_with_history();
-    let backing = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let head = fixture
-        .cold
-        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
-        .unwrap();
-    let symbols = fixture.cold.symbols.interner_snapshot();
-    let slot = fixture.entity.slot_index();
-    let mut written_head = head.partition.clone();
-    let extra = written_head
-        .entity_arena
-        .get_slot(slot)
-        .unwrap()
-        .extra()
-        .clone();
-    let version = crate::identity::data::VersionId(1_000);
-    written_head
-        .entity_arena
-        .apply_extra_update(slot, extra.clone(), version)
-        .expect("fixture slot is materialized");
-    let physical = written_head.entity_arena.physical_index(slot).unwrap();
-    let baseline = &head.partition.entity_arena.history_prefixes[physical]
-        .as_ref()
-        .unwrap()
-        .history_opening;
-    let carried = &written_head.entity_arena.history_prefixes[physical]
-        .as_ref()
-        .unwrap()
-        .history_opening;
-    assert_eq!(
-        baseline.id(),
-        carried.id(),
-        "appending keeps the prefix's original opening"
-    );
-    let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
-    journal.entity_slots.insert(slot);
-    let (appended, _) = PartitionContentCommitment::maintain(
-        &written_head,
-        &symbols,
-        (head.commitment.as_ref().unwrap(), &head.partition, &journal),
-    )
-    .unwrap();
-    let (advanced, _) = appended
-        .history_frontiers(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            execution,
-            &written_head,
-        )
-        .unwrap()
-        .into_arenas();
-    let (_, advanced) = advanced
-        .into_iter()
-        .find(|(logical, _)| *logical == slot as u64)
-        .unwrap();
-    assert_ne!(
-        &carried.frontier, &advanced,
-        "the current commitment advances independently of its cold baseline"
-    );
-    assert_eq!(
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let backing = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&backing);
+        let head = fixture
+            .cold
+            .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
+        let symbols = fixture.cold.symbols.interner_snapshot();
+        let slot = fixture.entity.slot_index();
+        let mut written_head = head.partition.clone();
+        let extra = written_head
+            .entity_arena
+            .get_slot(slot)
+            .unwrap()
+            .extra()
+            .clone();
+        let version = crate::identity::data::VersionId(1_000);
         written_head
             .entity_arena
-            .metadata_history_at(slot)
+            .apply_extra_update_for_test(slot, extra.clone(), version)
+            .expect("fixture slot is materialized");
+        let physical = written_head.entity_arena.physical_index(slot).unwrap();
+        let baseline = &head.partition.entity_arena.history_prefixes[physical]
+            .as_ref()
             .unwrap()
-            .len(),
-        2,
-        "only the old current row and the appended row are resident"
-    );
-    assert_eq!(
-        fixture.source.history_reads.load(Ordering::SeqCst),
-        0,
-        "retiring and appending under the carried frontier loads no history"
-    );
-
-    let full = fixture
-        .cold
-        .read_full(
-            fixture.cold.source.as_ref().unwrap(),
-            &head,
-            execution,
-            1 << 24,
+            .history_opening;
+        let carried = &written_head.entity_arena.history_prefixes[physical]
+            .as_ref()
+            .unwrap()
+            .history_opening;
+        assert_eq!(
+            baseline.id(),
+            carried.id(),
+            "appending keeps the prefix's original opening"
+        );
+        let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
+        journal.entity_slots.insert(slot);
+        let (appended, _) = PartitionContentCommitment::maintain(
+            &written_head,
+            &symbols,
+            (head.commitment.as_ref().unwrap(), &head.partition, &journal),
         )
         .unwrap();
-    let mut written_full = full.partition.clone();
-    written_full
-        .entity_arena
-        .apply_extra_update(slot, extra, version)
-        .expect("fixture slot is materialized");
-    let (oracle, _) =
-        PartitionContentCommitment::capture(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        let (advanced, _) = appended
+            .history_frontiers(fixture_lane, execution, &written_head)
+            .unwrap()
+            .into_arenas();
+        let (_, advanced) = advanced
+            .into_iter()
+            .find(|(logical, _)| *logical == slot as u64)
+            .unwrap();
+        assert_ne!(
+            &carried.frontier, &advanced,
+            "the current commitment advances independently of its cold baseline"
+        );
+        assert_eq!(
+            written_head
+                .entity_arena
+                .metadata_history_at(slot)
+                .unwrap()
+                .len(),
+            2,
+            "only the old current row and the appended row are resident"
+        );
+        assert_eq!(
+            fixture.source.history_reads.load(Ordering::SeqCst),
+            0,
+            "retiring and appending under the carried frontier loads no history"
+        );
+
+        let full = fixture
+            .cold
+            .read_full(
+                fixture.cold.source.as_ref().unwrap(),
+                &head,
+                execution,
+                1 << 24,
+            )
+            .unwrap();
+        let mut written_full = full.partition.clone();
+        written_full
+            .entity_arena
+            .apply_extra_update_for_test(slot, extra, version)
+            .expect("fixture slot is materialized");
+        let (oracle, _) = PartitionContentCommitment::capture(
+            fixture_lane,
             &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
+                &worth_harness::facade::execution_fixture::serial_request(),
             ),
             &written_full,
             &symbols,
         )
         .unwrap();
-    assert_eq!(
-        appended.digest(fixture.entity.partition_id),
-        oracle.digest(fixture.entity.partition_id)
-    );
-    assert_eq!(
-        written_full
-            .entity_arena
-            .metadata_history_at(slot)
-            .unwrap()
-            .len(),
-        fixture.expected_history + 1
-    );
+        assert_eq!(
+            appended.digest(fixture.entity.partition_id),
+            oracle.digest(fixture.entity.partition_id)
+        );
+        assert_eq!(
+            written_full
+                .entity_arena
+                .metadata_history_at(slot)
+                .unwrap()
+                .len(),
+            fixture.expected_history + 1
+        );
+    })
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -229,44 +231,48 @@ fn the_head_historical_projection_is_authenticated_without_a_history_read() {
 }
 
 pub(super) fn decode_head(fixture: &RegionFixture) -> RegionHeadImage {
-    let bytes = fixture.source.members.get(&fixture.cold.head).unwrap();
-    let frame = RelationalRegionImage::decode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        bytes,
-        fixture.cold.head,
-        fixture.cold.partition_id,
-        fixture.cold.schema_carrier_digest,
-        RelationalRegionImageKind::Head,
-    )
-    .unwrap();
-    rmp_serde::from_slice(frame.payload).unwrap()
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let bytes = fixture.source.members.get(&fixture.cold.head).unwrap();
+        let frame = RelationalRegionImage::decode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            bytes,
+            fixture.cold.head,
+            fixture.cold.partition_id,
+            fixture.cold.schema_carrier_digest,
+            RelationalRegionImageKind::Head,
+        )
+        .unwrap();
+        rmp_serde::from_slice(frame.payload).unwrap()
+    })
 }
 
 fn cell_with_head(
     fixture: RegionFixture,
     head: RegionHeadImage,
 ) -> (Arc<RelationalRegionResidency>, Arc<CountedSource>) {
-    let mut cold = fixture.cold;
-    let (locator, bytes) = RelationalRegionImage::encode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::Head,
-        &head,
-    )
-    .unwrap();
-    let mut members = fixture.source.members.clone();
-    members.insert(locator, bytes);
-    let source = Arc::new(CountedSource {
-        members,
-        history: cold.history,
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-    });
-    cold.head = locator;
-    cold.source = Some(source.clone());
-    (RelationalRegionResidency::cold(cold).unwrap(), source)
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let mut cold = fixture.cold;
+        let (locator, bytes) = RelationalRegionImage::encode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::Head,
+            &head,
+        )
+        .unwrap();
+        let mut members = fixture.source.members.clone();
+        members.insert(locator, bytes);
+        let source = Arc::new(CountedSource {
+            members,
+            history: cold.history,
+            reads: AtomicUsize::new(0),
+            history_reads: AtomicUsize::new(0),
+            corrupt: AtomicBool::new(false),
+        });
+        cold.head = locator;
+        cold.source = Some(source.clone());
+        (RelationalRegionResidency::cold(cold).unwrap(), source)
+    })
 }

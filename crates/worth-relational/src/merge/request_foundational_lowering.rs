@@ -2,6 +2,7 @@ use worth_foundational::{
     FoundationalMergeAdmissionOutcome, FoundationalMergeIntent, FoundationalMergeScope,
 };
 use worth_proof::TransitionOutcome;
+use worth_relational_contracts::internal_port::merge::data::requests::foundational::RelationalFoundationalMergeRequestOwnerPort as _;
 
 use crate::merge::data::{
     MergeIntent, NormalizedRelationalMergeRequest, RelationalFoundationalMergeRequest,

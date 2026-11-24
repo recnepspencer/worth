@@ -183,7 +183,7 @@ fn run(workers: usize, wait: Duration) -> Run {
         ],
     );
     let partitions = std::collections::BTreeMap::new();
-    let lease = crate::execution::test_authority::test_execution_authority()
+    let lease = worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,

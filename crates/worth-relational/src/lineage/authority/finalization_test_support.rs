@@ -9,6 +9,7 @@ use crate::transactions::data::{
     intents::MutationIntent, outcomes::transaction_commit_error::TransactionCommitError,
     primitives::RecordRef,
 };
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 pub(crate) fn finalize_postures_in_working_state(
     allocator: &LineageIdentityAllocator,
@@ -16,7 +17,7 @@ pub(crate) fn finalize_postures_in_working_state(
     commit: &RelationalCommitReceipt,
     merged_plan: &[MutationIntent],
     changed_records: &[RecordRef],
-    input: &crate::lineage::data::LineageCommitPostureInput,
+    input: &super::posture_fixture::LineageCommitPostureInput,
 ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
     let prepared = prepare_posture_finalization(
         allocator,
@@ -40,7 +41,7 @@ pub(crate) fn test_finalize_with_schema(
     changed_records: &[RecordRef],
     schema: &crate::schema::data::RelationalSchemaRegistry,
 ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-    let empty = crate::lineage::data::LineageCommitPostureInput::default();
+    let empty = super::posture_fixture::LineageCommitPostureInput::default();
     let prepared = prepare_posture_finalization(
         allocator,
         staged,

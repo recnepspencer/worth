@@ -1,4 +1,6 @@
 //! The single original semantic producer; no publication or measured work is recorded.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultParts;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_commit_semantic_result;
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::transactions::data::commit_log::CommitLog;
@@ -72,34 +74,36 @@ pub(super) fn prepare_semantic_result(
             Ok::<_, Refusal>((entities, relations, validation))
         })
         .map_err(denied)?;
-    Ok(Arc::new(RelationalCommitSemanticResult {
-        decoded_memory: None,
-        receipt: input.envelope.commit.clone(),
-        created_entities,
-        created_relations,
-        changed_records: input.changed.to_vec(),
-        structural: RelationalCommitStructuralMeaning {
-            invariant_groups: input.structural.invariant_groups,
-            commit_topology: input.structural.commit_topology,
-            touched_partitions: input.structural.touched_partitions.clone(),
-            descriptor_semantics_version: input.structural.descriptor_semantics_version,
+    Ok(Arc::new(assemble_commit_semantic_result(
+        RelationalCommitSemanticResultParts {
+            decoded_memory: None,
+            receipt: input.envelope.commit.clone(),
+            created_entities,
+            created_relations,
+            changed_records: input.changed.to_vec(),
+            structural: RelationalCommitStructuralMeaning {
+                invariant_groups: input.structural.invariant_groups,
+                commit_topology: input.structural.commit_topology,
+                touched_partitions: input.structural.touched_partitions.clone(),
+                descriptor_semantics_version: input.structural.descriptor_semantics_version,
+            },
+            schema: CommitSchemaSummary {
+                transition: input
+                    .envelope
+                    .schema_transition
+                    .as_ref()
+                    .map(crate::schema::data::SchemaTransitionSummary::from_artifact),
+                descriptor_semantics_version: input.envelope.descriptor_semantics_version,
+            },
+            history,
+            change,
+            aspects,
+            publication: RelationalCommitPublicationMeaning {
+                patch_record_count: input.envelope.patch.authoritative_record_patches.len(),
+                lineage_event_count: publication.lineage_event_count,
+                merge_parent_count: publication.merge_parent_count,
+            },
+            validation,
         },
-        schema: CommitSchemaSummary {
-            transition: input
-                .envelope
-                .schema_transition
-                .as_ref()
-                .map(crate::schema::data::SchemaTransitionSummary::from_artifact),
-            descriptor_semantics_version: input.envelope.descriptor_semantics_version,
-        },
-        history,
-        change,
-        aspects,
-        publication: RelationalCommitPublicationMeaning {
-            patch_record_count: input.envelope.patch.authoritative_record_patches.len(),
-            lineage_event_count: publication.lineage_event_count,
-            merge_parent_count: publication.merge_parent_count,
-        },
-        validation,
-    }))
+    )))
 }

@@ -60,7 +60,7 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
     let view = invariant_view(&instrumentation, config, VersionId(0));
     let partitions = BTreeMap::new();
     let cancellation = worth_execution::CancellationSource::new();
-    let lease = crate::execution::test_authority::test_execution_authority()
+    let lease = worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(worth_execution::LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,

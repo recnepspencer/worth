@@ -1,15 +1,16 @@
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use proptest::prelude::*;
 
 use crate::facade::identity::{EntityId, LineageId, RelationId, VersionId};
 use crate::facade::lineage::{
-    LineageEventKind, LineagePostureClaim, LineageRecordTarget,
-    LineageSubject, PersistentNameHolder, PersistentNameIdentity,
+    LineageEventKind, LineagePostureClaim, LineageRecordTarget, LineageSubject,
+    PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::posture_conservation_ops::{arb_step, CommitBatchAccumulator, StepOp};
@@ -161,7 +162,7 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
                         }
                         LineageSubject::Relation => {
                             let (&r, _) = prepared
-                                .relation_lineages()
+                                .relation_lineages_for_test()
                                 .iter()
                                 .find(|(_, l)| **l == lin)
                                 .expect("created relation lineage recorded");

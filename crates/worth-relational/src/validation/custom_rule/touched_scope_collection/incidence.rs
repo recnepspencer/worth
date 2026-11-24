@@ -5,6 +5,7 @@ use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 
 pub(super) fn expand(
     visible_entities: &mut BTreeSet<EntityId>,

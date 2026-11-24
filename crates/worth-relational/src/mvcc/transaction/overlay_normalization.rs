@@ -10,6 +10,7 @@ use super::{
 };
 use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner, Symbol};
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl DetachedRelationalTransactionOverlay {
     /// Normalize inside the candidate's private symbol binding. A backing

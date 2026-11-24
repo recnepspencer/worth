@@ -1,4 +1,5 @@
 use std::mem::size_of;
+use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexDefinitionOwnerPort as _;
 
 use worth_execution::{ChargedBytes, ExecutionResourceLease, MapKernelFailure, ScanOutcome};
 use worth_foundational::PartitionIdentity;

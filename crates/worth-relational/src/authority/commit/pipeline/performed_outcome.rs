@@ -1,4 +1,6 @@
 //! Translate the exact native publication outcome before owner settlement.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::mvcc::publication::outcome::{PerformedRelationalCommit, RelationalPublicationOutcome};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 

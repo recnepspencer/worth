@@ -4,6 +4,7 @@ use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use std::mem::size_of;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 
 use super::retained_bytes::{custom_access_retained_bytes, native_registration_retained_bytes};
 

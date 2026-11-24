@@ -1,8 +1,9 @@
 //! Real producer ownership must survive exact subset materialization maintenance.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::branch::materialization::RelationalEntityMaterialization;
 use crate::branch::materialization::RelationalRelationMaterialization;
-use crate::mvcc::publication::application_publication::output_meaning::{
+use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,
 };
 
@@ -27,7 +28,7 @@ fn fieldless_owned_relation_birth_survives_materialization_and_cold_succession()
 }
 
 fn run(owned: bool, changed: u8, fieldless: bool) {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let make_runtime = || {
         if fieldless {

@@ -1,6 +1,7 @@
 //! Candidate-qualified native reads have no snapshot or Current observation door.
 use super::*;
 use crate::execution::request_stage::checkpoint;
+use worth_relational_contracts::internal_port::indexes::data::applied_candidate_qualification::assemble_applied_candidate_read_qualification;
 mod changes;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
@@ -22,12 +23,12 @@ pub struct RelationalAppliedCandidateReadIdentity {
 
 impl RelationalAppliedCandidateReadIdentity {
     pub const fn qualification(&self) -> RelationalAppliedCandidateReadQualification {
-        RelationalAppliedCandidateReadQualification {
-            runtime_instance_id: self.proposal.runtime_instance_id(),
-            proposal_ordinal: self.proposal.ordinal(),
-            proposed_version: self.proposal.proposed_version_id(),
-            phase: self.phase,
-        }
+        assemble_applied_candidate_read_qualification(
+            self.proposal.runtime_instance_id(),
+            self.proposal.ordinal(),
+            self.proposal.proposed_version_id(),
+            self.phase,
+        )
     }
     /// An assembly read includes its earlier revisions. The prepared image is
     /// issued only after the same proposal's complete assembly is admitted, so

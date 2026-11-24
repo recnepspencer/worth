@@ -13,6 +13,7 @@ use crate::validation::engine::budget::InvariantBudget;
 use crate::validation::engine::context::InvariantExecutionContext;
 use crate::validation::engine::evaluator::evaluate_rule;
 use crate::validation::engine::InvariantRuntimeView;
+use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 
 use super::super::packets::InvariantWorkPacket;
 

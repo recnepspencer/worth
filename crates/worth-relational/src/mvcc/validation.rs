@@ -1,6 +1,7 @@
 //! Owner-private inputs carried from exact transaction admission through
 //! schema, invariant, footprint, and publication validation.
 
+use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachmentsOwnerPort as _;
 #[path = "validation/custom_invariant_execution_receipt.rs"]
 pub(crate) mod custom_invariant_execution_receipt;
 #[path = "validation/invariant_evidence.rs"]
@@ -39,7 +40,6 @@ pub use proposal_footprint::{
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
 pub(crate) use proposal_source::StrategyProposalDecoration;
-pub(crate) use proposal_touches::project_applied_intents;
 pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,

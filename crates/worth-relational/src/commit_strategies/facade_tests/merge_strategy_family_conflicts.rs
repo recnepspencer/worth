@@ -1,4 +1,5 @@
 use super::native_strategy_fixtures::*;
+use worth_relational_contracts::internal_port::runtime::interruption_counters::RelationalInterruptionCostCountersOwnerPort as _;
 
 #[test]
 fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conflict() {

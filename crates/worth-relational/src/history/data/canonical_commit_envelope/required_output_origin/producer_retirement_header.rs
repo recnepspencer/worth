@@ -1,4 +1,5 @@
 //! Cold grouped retirement retains distinct routes rooted in actual generator deletions.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::history::data::CodecRetirementClosureStop as Stop;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;

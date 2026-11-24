@@ -110,5 +110,5 @@ impl RecordedRelationalCanonicalComponent {
     }
 }
 
-pub(crate) mod refusal;
 pub use refusal::RelationalRecordedComponentRefusal;
+pub(crate) use worth_relational_contracts::internal_port::branch::recorded_basis::refusal;

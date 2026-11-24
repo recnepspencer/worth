@@ -5,6 +5,7 @@ use worth_foundational::{
     CanonicalDigestId, CanonicalIntegerWidth, CanonicalizationRuleVersion,
 };
 use worth_proof::TransitionOutcome;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet_canonical::RelationalMergeProofPacketCanonicalBasisOwnerPort as _;
 
 use crate::merge::data::{
     RelationalMergeAdmittedSurfaceRow, RelationalMergeProofPacket,

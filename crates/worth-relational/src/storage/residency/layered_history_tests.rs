@@ -1,4 +1,6 @@
 //! Real encoded members cross Head capture, placement, reopen and Full demand.
+use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::identity::data::VersionId;
 use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
@@ -8,95 +10,97 @@ use std::collections::BTreeSet;
 
 #[test]
 fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading() {
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let fixture = region_with_history();
-    let mut cold = fixture.cold.clone();
-    let mut source = fixture.source.clone();
-    let mut cell = fixture.cell.clone();
-    let expected = fixture.expected_digest;
-    for layer in 1..=4 {
-        head_demand(&cell, 1 << 24).unwrap();
-        let destination = source
-            .members
-            .keys()
-            .copied()
-            .filter(|member| *member != cold.head)
-            .collect::<BTreeSet<_>>();
-        let before = source.reads.load(Ordering::SeqCst);
-        let captured = cell
-            .capture_checkpoint(
-                execution,
-                cold.schema.as_ref(),
-                cold.schema_carrier_digest,
-                &cold.symbols.interner_snapshot(),
-                cold.readmission.capture_members,
-                Some(&destination),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let fixture = region_with_history();
+        let mut cold = fixture.cold.clone();
+        let mut source = fixture.source.clone();
+        let mut cell = fixture.cell.clone();
+        let expected = fixture.expected_digest;
+        for layer in 1..=4 {
+            head_demand(&cell, 1 << 24).unwrap();
+            let destination = source
+                .members
+                .keys()
+                .copied()
+                .filter(|member| *member != cold.head)
+                .collect::<BTreeSet<_>>();
+            let before = source.reads.load(Ordering::SeqCst);
+            let captured = cell
+                .capture_checkpoint(
+                    execution,
+                    cold.schema.as_ref(),
+                    cold.schema_carrier_digest,
+                    &cold.symbols.interner_snapshot(),
+                    cold.readmission.capture_members,
+                    Some(&destination),
+                )
+                .unwrap();
+            assert_eq!(source.reads.load(Ordering::SeqCst), before);
+            assert_eq!(captured.leaf.content_digest, expected);
+            assert!(captured.members.iter().any(|member| matches!(member, RelationalCheckpointMember::Carried { locator } if *locator == cold.history)));
+            let members = place(&captured.members, &source.members);
+            // Ordinary fixture disposal happens after try_acknowledge released its guard.
+            drop(captured.publication.try_acknowledge().unwrap());
+            let current = members.keys().copied().collect::<BTreeSet<_>>();
+            let repeated = cell
+                .capture_checkpoint(
+                    execution,
+                    cold.schema.as_ref(),
+                    cold.schema_carrier_digest,
+                    &cold.symbols.interner_snapshot(),
+                    cold.readmission.capture_members,
+                    Some(&current),
+                )
+                .unwrap();
+            assert!(repeated
+                .members
+                .iter()
+                .all(|member| matches!(member, RelationalCheckpointMember::Carried { .. })));
+            assert_eq!(repeated.history_dependencies, captured.history_dependencies);
+            assert_eq!(source.reads.load(Ordering::SeqCst), before);
+            let directory = RelationalHistoryMemberDirectory::readmit(
+                fixture_lane,
+                &captured.history_dependencies,
+                [captured.leaf.history],
             )
             .unwrap();
-        assert_eq!(source.reads.load(Ordering::SeqCst), before);
-        assert_eq!(captured.leaf.content_digest, expected);
-        assert!(captured.members.iter().any(|member| matches!(member, RelationalCheckpointMember::Carried { locator } if *locator == cold.history)));
-        let members = place(&captured.members, &source.members);
-        // Ordinary fixture disposal happens after try_acknowledge released its guard.
-        drop(captured.publication.try_acknowledge().unwrap());
-        let current = members.keys().copied().collect::<BTreeSet<_>>();
-        let repeated = cell
-            .capture_checkpoint(
-                execution,
-                cold.schema.as_ref(),
-                cold.schema_carrier_digest,
-                &cold.symbols.interner_snapshot(),
-                cold.readmission.capture_members,
-                Some(&current),
-            )
-            .unwrap();
-        assert!(repeated
-            .members
-            .iter()
-            .all(|member| matches!(member, RelationalCheckpointMember::Carried { .. })));
-        assert_eq!(repeated.history_dependencies, captured.history_dependencies);
-        assert_eq!(source.reads.load(Ordering::SeqCst), before);
-        let directory = RelationalHistoryMemberDirectory::readmit(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &captured.history_dependencies,
-            [captured.leaf.history],
-        )
-        .unwrap();
-        let next_source = counted(members, captured.leaf.history);
-        cold = RelationalColdRegion {
-            head: captured.leaf.head,
-            history: captured.leaf.history,
-            history_members: Arc::new(directory),
-            source: Some(next_source.clone()),
-            kind_authority: captured.leaf.kind_authority,
-            ..cold
-        };
-        cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
-        head_demand(&cell, 1 << 24).unwrap();
-        assert_eq!(next_source.history_reads.load(Ordering::SeqCst), 0);
-        let full = full_demand(&cell, 1 << 24).unwrap();
-        assert_eq!(
-            full.full_view()
-                .partition()
-                .authoritative_content_digest(&cold.symbols.interner_snapshot())
-                .unwrap(),
-            expected
-        );
-        assert!(
-            next_source.reads.load(Ordering::SeqCst) <= layer + 4,
-            "shared bases are read within layer headroom"
-        );
-        source = next_source;
-        // Start the next capture from a fresh Head cell, without the Full oracle.
-        cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
-    }
+            let next_source = counted(members, captured.leaf.history);
+            cold = RelationalColdRegion {
+                head: captured.leaf.head,
+                history: captured.leaf.history,
+                history_members: Arc::new(directory),
+                source: Some(next_source.clone()),
+                kind_authority: captured.leaf.kind_authority,
+                ..cold
+            };
+            cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
+            head_demand(&cell, 1 << 24).unwrap();
+            assert_eq!(next_source.history_reads.load(Ordering::SeqCst), 0);
+            let full = full_demand(&cell, 1 << 24).unwrap();
+            assert_eq!(
+                full.full_view()
+                    .partition()
+                    .authoritative_content_digest(&cold.symbols.interner_snapshot())
+                    .unwrap(),
+                expected
+            );
+            assert!(
+                next_source.reads.load(Ordering::SeqCst) <= layer + 4,
+                "shared bases are read within layer headroom"
+            );
+            source = next_source;
+            // Start the next capture from a fresh Head cell, without the Full oracle.
+            cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
+        }
+    })
 }
 
 #[test]
 fn appending_at_head_across_reopened_layers_matches_complete_history() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let original = fixture
         .cold
@@ -128,7 +132,7 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
             .clone();
         partial
             .entity_arena
-            .apply_extra_update(
+            .apply_extra_update_for_test(
                 fixture.entity.slot_index(),
                 extra.clone(),
                 VersionId(version),
@@ -136,7 +140,7 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
             .expect("fixture slot is materialized");
         oracle
             .entity_arena
-            .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(version))
+            .apply_extra_update_for_test(fixture.entity.slot_index(), extra, VersionId(version))
             .expect("fixture slot is materialized");
         let before = source.reads.load(Ordering::SeqCst);
         let (next, next_source) = encode_layer(&cold, &source, &partial);
@@ -159,7 +163,7 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
 #[test]
 fn ancestor_damage_is_sticky_and_aggregate_input_limits_are_retryable() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = fixture
         .cold
@@ -200,49 +204,50 @@ pub(super) fn encode_layer(
     source: &Arc<CountedSource>,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) =
-        PartitionContentCommitment::capture_layered(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let symbols = cold.symbols.interner_snapshot();
+        let (commitment, _) = PartitionContentCommitment::capture_layered(
+            fixture_lane,
             &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
+                &worth_harness::facade::execution_fixture::serial_request(),
             ),
             partition,
             &symbols,
         )
         .unwrap();
-    let captured = (cold.readmission.capture_members)(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        execution,
-        partition,
-        &commitment,
-        cold.schema.as_ref(),
-        cold.schema_carrier_digest,
-    )
-    .unwrap();
-    let mut members = BTreeMap::new();
-    for member in captured.history_members.members(captured.history.0) {
-        if member != captured.history.0 {
-            members.insert(member, source.members[&member].clone());
+        let captured = (cold.readmission.capture_members)(
+            fixture_lane,
+            execution,
+            partition,
+            &commitment,
+            cold.schema.as_ref(),
+            cold.schema_carrier_digest,
+        )
+        .unwrap();
+        let mut members = BTreeMap::new();
+        for member in captured.history_members.members(captured.history.0) {
+            if member != captured.history.0 {
+                members.insert(member, source.members[&member].clone());
+            }
         }
-    }
-    members.insert(captured.head.0, captured.head.1);
-    members.insert(captured.history.0, captured.history.1);
-    let source = counted(members, captured.history.0);
-    (
-        RelationalColdRegion {
-            head: captured.head.0,
-            history: captured.history.0,
-            history_members: captured.history_members,
-            content_digest: commitment.digest(partition.partition_id),
-            kind_authority: captured.kind_authority,
-            source: Some(source.clone()),
-            ..cold.clone()
-        },
-        source,
-    )
+        members.insert(captured.head.0, captured.head.1);
+        members.insert(captured.history.0, captured.history.1);
+        let source = counted(members, captured.history.0);
+        (
+            RelationalColdRegion {
+                head: captured.head.0,
+                history: captured.history.0,
+                history_members: captured.history_members,
+                content_digest: commitment.digest(partition.partition_id),
+                kind_authority: captured.kind_authority,
+                source: Some(source.clone()),
+                ..cold.clone()
+            },
+            source,
+        )
+    })
 }
 
 pub(super) fn place(

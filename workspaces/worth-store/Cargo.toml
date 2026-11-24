@@ -80,6 +80,8 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.test.package]
@@ -88,6 +90,8 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.ci-test]

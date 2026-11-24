@@ -6,6 +6,7 @@ use crate::transactions::data::{
     intents::mutation_intent::MutationIntent,
     outcomes::transaction_commit_error::TransactionCommitError, primitives::RecordRef,
 };
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
     proposal

@@ -11,6 +11,7 @@ use crate::storage::overlay::record_observation::{
 use crate::storage::overlay::{OverlayStateView, WorkingState};
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 pub(in crate::history::data::canonical_commit_envelope::required_output_origin::historical_selection) fn install(
     original: &CanonicalRequiredOutputOrigin,

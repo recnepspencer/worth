@@ -14,6 +14,8 @@ use crate::transactions::data::primitives::RecordRef;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
 use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectKey, FieldKey};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 /// The literal relations of an ordered-events membership.
 #[derive(Clone, Copy)]
@@ -54,8 +56,7 @@ impl<'p> SourceRelevance<'p> {
         let scope = program.scope_kind();
         // An ordered-events membership, compiled or behind one derived
         // relation, resolved by the same reader that binds ordered Sources.
-        let ordered = program
-            .0
+        let ordered = (*program.owner_field_0())
             .ordered
             .as_ref()
             .map(|recipe| (recipe.predecessor, recipe.introduced, recipe.retired))

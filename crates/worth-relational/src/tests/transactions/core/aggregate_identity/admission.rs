@@ -1,3 +1,5 @@
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use super::fixtures::*;
 use crate::tests::support::*;
 
@@ -78,7 +80,10 @@ fn added_private_rows_must_pass_final_snapshot_admission_after_prevalidation() {
         before
     );
     assert_eq!(records(execution, &runtime, &born.snapshot), rows);
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
 }
 
 #[test]
@@ -103,7 +108,10 @@ fn preparation_discard_does_not_publish_generated_metadata_or_reservations() {
     );
     assert_eq!(runtime.history().immutable_commit_count(), before);
     runtime.discard_prepared_candidate(candidate).unwrap();
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     assert_eq!(runtime.history().immutable_commit_count(), before);
 }
 
@@ -132,7 +140,9 @@ fn native_unaccounted_serial_request_does_not_invent_accounting() {
 #[test]
 fn metadata_registration_refuses_conflicting_policies_and_accepts_its_exact_twin() {
     let mut base = registry();
-    let original = base.relation_kinds.remove(&KindId(5)).unwrap();
+    let original = (*base.owner_relation_kinds_mut())
+        .remove(&KindId(5))
+        .unwrap();
     assert!(base
         .clone()
         .register_relation_kind(original.clone())
@@ -151,8 +161,12 @@ fn metadata_registration_refuses_conflicting_policies_and_accepts_its_exact_twin
 #[test]
 fn conflicting_lineage_law_is_refused_at_descriptor_binding() {
     let mut base = registry();
-    let membership = base.relation_kinds.remove(&KindId(5)).unwrap();
-    let mut lineage = base.relation_kinds.remove(&KindId(4)).unwrap();
+    let membership = (*base.owner_relation_kinds_mut())
+        .remove(&KindId(5))
+        .unwrap();
+    let mut lineage = (*base.owner_relation_kinds_mut())
+        .remove(&KindId(4))
+        .unwrap();
     lineage.relation_integrity.cardinality_contracts.push(
         crate::schema::data::CardinalityContractDeclaration {
             contract_id: "hostile-lineage-max-zero".into(),

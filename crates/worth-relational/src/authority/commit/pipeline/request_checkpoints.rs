@@ -1,8 +1,4 @@
 //! Named safe points of one borrowed commit request; no stage fee is charged.
-use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
-use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
-use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CommitStage {
     /// A detached transaction read consults the same original request court.
@@ -43,29 +39,5 @@ fn consult_stage_control(
     execution.consult()
 }
 
-impl From<worth_execution::WorkCeilingDenial> for CommitExecutionDenial {
-    fn from(denial: worth_execution::WorkCeilingDenial) -> Self {
-        use worth_execution::{MapKernelFailure, WorkCeilingDenial};
-        let cause = match denial {
-            WorkCeilingDenial::Admission(denial) => crate::execution::denial::lease_denial(denial),
-            WorkCeilingDenial::Stopped(stop) => {
-                crate::execution::kernel_failure(MapKernelFailure::Stop(stop))
-            }
-            WorkCeilingDenial::Panicked => {
-                crate::execution::kernel_failure(MapKernelFailure::Panic)
-            }
-        };
-        Self {
-            kind: CommitExecutionDenialKind::Cause(cause),
-            partition_identity: None,
-        }
-    }
-}
-
 #[cfg(test)]
 pub(crate) mod observation;
-impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {
-    fn from(denial: worth_execution::WorkCeilingDenial) -> Self {
-        Self::execution(denial.into())
-    }
-}

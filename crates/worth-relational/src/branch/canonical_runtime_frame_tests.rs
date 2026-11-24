@@ -1,4 +1,5 @@
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 use super::CANONICAL_RUNTIME_INSTANCE_ID;
 use crate::branch::reference::RelationalBranchReferenceCell;

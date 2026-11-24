@@ -13,6 +13,7 @@ use crate::derived_relation::read_shape::DerivedRelationReadShape as Shape;
 use crate::graph_member::NativeMemberKey;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::graph_member::domain::NativeMemberDomainOwnerPort as _;
 
 mod admission;
 mod changes;

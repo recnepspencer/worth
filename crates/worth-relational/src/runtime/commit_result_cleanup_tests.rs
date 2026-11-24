@@ -12,7 +12,7 @@ use worth_execution::ExecutionRequest;
 #[test]
 fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
     use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupDenial as Denial;
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = std::sync::Arc::new(create_entity_outcome(
@@ -59,7 +59,7 @@ fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
 
 #[test]
 fn native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let service = runtime.owner_component_services().basis_port();
@@ -102,7 +102,7 @@ fn native_custody_correction_result_release_cell_tracks_public_release_closeout_
 
 #[test]
 fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let foreign = runtime_with_test_schema();
@@ -142,7 +142,7 @@ fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_
 
 #[test]
 fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let result = Arc::new(create_entity_outcome(

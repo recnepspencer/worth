@@ -1,4 +1,6 @@
 //! Complete current ownership inside the original commit publication preparation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use crate::publication::ownership::read::roster::CurrentPublicationRoster;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;

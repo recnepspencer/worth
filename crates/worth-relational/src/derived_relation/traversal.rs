@@ -9,6 +9,8 @@ use crate::graph_member::{NativeMemberDomain as Domain, NativeMemberKey as Membe
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::structural_traversal::{walk as frontier, BreadthFirstRead};
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod complete;
 pub(in crate::derived_relation) use complete::acquire;
 
@@ -183,8 +185,7 @@ pub(crate) fn available(
                 .name_bytes()
                 .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
             let levels = (usize::BITS
-                - registry
-                    .projected_member_domains
+                - (*registry.owner_projected_member_domains())
                     .len()
                     .max(1)
                     .leading_zeros()) as usize;

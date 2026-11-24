@@ -3,7 +3,7 @@ use crate::symbols::data::StringInterner;
 use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal as Refusal;
 use crate::validation::engine::result::InvariantExecutionResult;
 
-pub(super) mod references;
+pub(crate) use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::validation::production::references;
 
 pub(crate) fn from_original(
     original: &InvariantExecutionResult,

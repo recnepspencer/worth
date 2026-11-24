@@ -10,7 +10,7 @@ use crate::validation::engine::{
 
 #[test]
 fn planner_packets_only_include_relation_integrity_registrations_authorized_by_plan_scope() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let graph = RequestGraph::new(2, &[]);
@@ -43,7 +43,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
 
 #[test]
 fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let graph = RequestGraph::new(2, &[]);
@@ -71,7 +71,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
 
 #[test]
 fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let graph = RequestGraph::new(0, &[]);

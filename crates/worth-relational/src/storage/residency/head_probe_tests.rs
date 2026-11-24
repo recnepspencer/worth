@@ -100,7 +100,7 @@ fn head_rounds_probe_related_sources_and_an_independent_cold_before_image() {
         staged.full_view().partition().clone(),
     )]);
     let overlay = OverlayStateView::new(&editions[0], &staged);
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let id = fixtures[0].entity.partition_id;
     let mut rounds = 0;
@@ -127,7 +127,7 @@ fn provisional_head_absence_never_masks_sticky_damage() {
     let fixture = region_with_history();
     fixture.source.corrupt.store(true, Ordering::SeqCst);
     let edition = edition(&fixture);
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let attempt = || {
         probe_head(&execution, &edition, |view| {
@@ -150,7 +150,7 @@ fn provisional_head_absence_never_masks_sticky_damage() {
 fn invariant_current_rows_and_aspects_succeed_when_history_is_unavailable() {
     let fixture = region_with_history();
     let edition = edition(&fixture);
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
     let answer = probe_head(&execution, &edition, |source| {

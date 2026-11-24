@@ -2,6 +2,8 @@
 use super::*;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
 use crate::transactions::data::primitives::CreatedEntityRef;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 impl AuthoredPublicationReads<'_> {
     /// Retain correspondence for the actual corrective prefix. The caller has

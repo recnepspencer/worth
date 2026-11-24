@@ -11,6 +11,7 @@ use crate::branch::target::RelationalBranchRootDescriptor;
 use crate::branch::target::RelationalBranchTarget;
 use std::cmp::Ordering;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[derive(Clone, Copy)]
 pub(crate) struct CheckpointComponentDescriptorView<'a> {

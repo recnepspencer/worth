@@ -19,11 +19,11 @@ fn prepare_merge_execution_admits_fully_ready_source_only_addition() {
         BranchId("feature".to_string()),
     );
 
-    let request = MergeExecutionRequest {
-        target_branch: BranchId("main".to_string()),
-        source_branch: BranchId("feature".to_string()),
-        merge_intent: MergeIntent::ReconcileIntoTarget,
-    };
+    let request = MergeExecutionRequest::new(
+        BranchId("main".to_string()),
+        BranchId("feature".to_string()),
+        MergeIntent::ReconcileIntoTarget,
+    );
 
     let prepared = runtime
         .merge()

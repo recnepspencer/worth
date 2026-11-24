@@ -7,6 +7,9 @@ use crate::identity::data::EntityId;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// A read-only member issued by one actual observation and registered domain.
 /// Its descriptive carrier ID cannot serve as an entity or mutation proof.
@@ -45,9 +48,7 @@ impl StructuralRelationView<'_> {
             .and_then(|n| n.checked_add(case.name().len()))
             .ok_or(Denial::WorkBudgetExceeded)?;
         let levels = (usize::BITS
-            - registry
-                .registry()
-                .projected_member_domains
+            - (*registry.registry().owner_projected_member_domains())
                 .len()
                 .max(1)
                 .leading_zeros()) as u64;
@@ -121,9 +122,7 @@ impl StructuralRelationView<'_> {
             .name_bytes()
             .ok_or(Denial::WorkBudgetExceeded)?;
         let levels = (usize::BITS
-            - registry
-                .registry()
-                .projected_member_domains
+            - (*registry.registry().owner_projected_member_domains())
                 .len()
                 .max(1)
                 .leading_zeros()) as u64;

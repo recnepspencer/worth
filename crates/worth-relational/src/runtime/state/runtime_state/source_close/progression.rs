@@ -1,6 +1,7 @@
 //! The irreversible cut precedes all physical retirement and forbids resume.
 use super::*;
 use crate::runtime::state::RelationalReadCustodyHolders as Holders;
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 impl RelationalSourceClose {
     /// Validate the complete original source graph while serving remains
     /// resumable. Each cursor step consults the caller's original request;

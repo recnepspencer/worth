@@ -1,4 +1,5 @@
 use super::{RelationalSchemaRegistry, SchemaAuthoritySnapshot};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Re-admit an older basis only when the available registry carries exactly
 /// the same executable kind meaning. A changed schema id/version may be
@@ -12,7 +13,7 @@ pub(super) fn registry_for_snapshot(
     // executable recipe, even when all physical registrations still match.
     if available.derived_parts() != expected.derived_relations
         || available.projected_domain_parts() != expected.projected_member_domains
-        || available.content_formats.snapshot() != expected.content_formats
+        || (*available.owner_content_formats()).snapshot() != expected.content_formats
         || available.persistent_name_scheme_snapshots() != expected.persistent_name_schemes
         || available.kind_name_scheme_snapshots() != expected.kind_name_schemes
     {
@@ -52,12 +53,12 @@ pub(super) fn registry_for_snapshot(
 
     let mut rebound = available.clone();
     for expected_kind in &expected.entity_kinds {
-        let registration = rebound.entity_kinds.get_mut(&expected_kind.kind_id)?;
+        let registration = (*rebound.owner_entity_kinds_mut()).get_mut(&expected_kind.kind_id)?;
         registration.schema_id = expected_kind.schema_id.clone();
         registration.schema_version_id = expected_kind.schema_version_id;
     }
     for expected_kind in &expected.relation_kinds {
-        let registration = rebound.relation_kinds.get_mut(&expected_kind.kind_id)?;
+        let registration = (*rebound.owner_relation_kinds_mut()).get_mut(&expected_kind.kind_id)?;
         registration.schema_id = expected_kind.schema_id.clone();
         registration.schema_version_id = expected_kind.schema_version_id;
     }

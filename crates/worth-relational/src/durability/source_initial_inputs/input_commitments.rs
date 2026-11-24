@@ -1,4 +1,5 @@
 //! One admitted result-image hash prefix per distinct selected schema carrier.
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use super::{normalized::CanonicalOriginalRecord, RelationalInitialInputsRefusal as Refusal};
 use crate::config::data::MutationConfig;
 use crate::durability::canonical_commit_artifact::input_commitment::{

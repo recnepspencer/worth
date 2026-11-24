@@ -53,7 +53,6 @@ pub use crate::timeline::{
     ClockDomain, ExecutionPhase, FeedBatch, FeedSequencingPolicy, TimeMarker, TimelineCheckpoint,
     TimelineSession, TimelineSessionError,
 };
-pub use crate::tooling::process_deadline;
 pub use crate::tooling::{
     bench, certification_matrix, filter_events, flatten_event_streams, group_events_by_category,
     parity_suite, project_events, run_matrix, select_events, AdapterDouble, AdapterDoubleRuntime,
@@ -61,6 +60,7 @@ pub use crate::tooling::{
     CertificationMatrixReport, EventSubscription, HarnessBench, ParityError, ParityReport,
     ParityResult, ParitySuite, ProfileCatalog, ProjectedEvent, RunMatrix,
 };
+pub use crate::tooling::{execution_fixture, process_deadline};
 pub use crate::workflow::{
     ArtifactBundle, ArtifactClass, ArtifactSurface, CheckpointSemantics, DifferentialComparison,
     DifferentialMatrixCapability, DifferentialOutcome, FailureBundle, FailureBundleVersion,

@@ -2,6 +2,7 @@
 
 use std::sync::{mpsc, Mutex};
 use std::time::Duration;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 #[derive(Default)]
 pub(super) struct BranchTransitionPublicationControlForTest {

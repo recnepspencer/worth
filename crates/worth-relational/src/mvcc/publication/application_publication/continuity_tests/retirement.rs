@@ -1,6 +1,7 @@
 //! Complete publication position survives total membership replacement.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
-use crate::mvcc::publication::application_publication::output_meaning::{
+use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,
 };
 #[path = "retirement/authored.rs"]
@@ -61,7 +62,7 @@ fn new_roles(targets: &[CreatedEntityRef; 2]) -> Vec<RequiredOutputRoleTarget> {
 
 #[test]
 fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_movement() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime

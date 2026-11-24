@@ -7,6 +7,7 @@ use crate::history::data::BranchId;
 use crate::identity::data::{EntityId, KindId};
 use serde::{Deserialize, Serialize};
 use worth_foundational::FoundationalBranchReferenceGeneration;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 /// Describes the historical payload of a fresh selection occurrence.
 /// This is provenance, never a source lease or permission to select again.

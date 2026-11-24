@@ -18,6 +18,7 @@ use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 mod entities;
 mod relations;
 

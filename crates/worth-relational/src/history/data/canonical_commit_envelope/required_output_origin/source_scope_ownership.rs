@@ -8,6 +8,7 @@ use crate::storage::overlay::OverlayStateView;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate(

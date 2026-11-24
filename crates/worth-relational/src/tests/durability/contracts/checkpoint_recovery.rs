@@ -1,5 +1,6 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 #[test]
 fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
@@ -11,18 +12,18 @@ fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
     let second = create_entity_outcome(execution, &runtime, "second");
     let first_entity = changed_entities(&first)[0];
     let second_entity = changed_entities(&second)[0];
-    let first_lineage = runtime
+    let first_lineage = (*runtime
         .lineage_access()
         .for_record(execution, first_entity)
         .unwrap()
         .unwrap()
-        .lineage_id;
-    let second_lineage = runtime
+        .owner_lineage_id());
+    let second_lineage = (*runtime
         .lineage_access()
         .for_record(execution, second_entity)
         .unwrap()
         .unwrap()
-        .lineage_id;
+        .owner_lineage_id());
     let checkpoint = runtime
         .durability_authority()
         .checkpoint(execution)
@@ -85,12 +86,12 @@ fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
         },
     ).unwrap();
 
-    assert_eq!(graph.nodes.len(), 2);
-    assert_eq!(graph.events.len(), 2);
+    assert_eq!(graph.nodes().len(), 2);
+    assert_eq!(graph.events().len(), 2);
     assert!(graph
-        .events
+        .events()
         .iter()
-        .all(|event| event.kind == LineageEventKind::Create));
+        .all(|event| event.kind() == LineageEventKind::Create));
     assert_eq!(
         recovered
             .lineage_access()

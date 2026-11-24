@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
+use worth_relational_storage::internal_port::durability::medium::read_protection::RelationalDurableReadProtectionOwnerPort as _;
 use crate::authority::commit::pipeline::request_checkpoints::{observation, CommitStage};
 use crate::tests::support::{
     batch_create, create_entity_outcome, release_test_commit_snapshot, runtime_with_test_schema,
@@ -102,7 +104,7 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
 // Observe the actual Runtime prepared root and prior canonical position.
 #[test]
 fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let setup_request = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime

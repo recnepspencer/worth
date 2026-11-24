@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
 
 use crate::authority::commit::preparation::planning::context::PreparationPlanningContext;
 use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;

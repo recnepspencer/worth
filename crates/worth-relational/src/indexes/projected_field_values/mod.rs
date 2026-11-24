@@ -1,7 +1,7 @@
 mod checked_entry_map;
 mod entity_field_index_values;
 mod exact_entity_field_match;
-pub(crate) mod field_projection_scope;
+pub(crate) use worth_relational_contracts::internal_port::indexes::projected_field_values::field_projection_scope;
 mod index_projection_source;
 #[cfg(test)]
 pub(crate) use index_projection_source::verify_native_field_navigation;

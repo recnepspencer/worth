@@ -3,7 +3,7 @@ pub(crate) mod authority;
 pub mod bundle;
 pub(crate) mod canonical_history;
 pub mod cdc;
-pub(crate) mod close_custody;
+pub(crate) use worth_relational_contracts::internal_port::publication::close_custody;
 pub mod data;
 pub(crate) mod diagnostic_store;
 pub(crate) mod live_publication_inputs;
@@ -15,7 +15,6 @@ pub use access::{
     PublicationArtifactsAccess, PublicationDiagnosticsAccess, PublicationPatchStreamAccess,
     PublicationSubscriberStreamAccess, PublicationSurface,
 };
-pub(crate) use authority::production_post_commit_consumer;
 pub use authority::PublicationAuthority;
 pub(crate) use authority::PublicationPreparationAuthority;
 pub use authority::{

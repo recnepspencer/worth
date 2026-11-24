@@ -11,6 +11,7 @@ use crate::publication::patch::data::{
 use crate::schema::aspect_plan_source::AspectPlanSource;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn entity_deletion_publication_patch(
     id: EntityId,

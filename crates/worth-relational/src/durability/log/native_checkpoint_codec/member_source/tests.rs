@@ -3,12 +3,12 @@ use super::*;
 use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal as Refusal, RelationalDurableReadProtection,
 };
-use crate::execution::packet_preparation::memory_tests::retained_byte_owner_bill;
 use sha2::{Digest, Sha256};
 use worth_execution::{
     CancellationSource, ExecutionImmutableBytes, ExecutionRequest, SerialMemoryBudget,
     SerialRequest,
 };
+use worth_harness::facade::execution_fixture::retained_byte_owner_bill;
 // Observe the public controller in a separate genuine finite fixture call.
 fn controller_memory() -> u64 {
     let budget = SerialMemoryBudget::new(Some(64 * 1024));

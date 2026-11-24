@@ -4,7 +4,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
 mod memory;
 mod native_allowance;
-pub(crate) mod native_rule_debit;
+pub(crate) use worth_relational_contracts::internal_port::validation::custom_rule::work_meter::native_rule_debit;
 mod source_stage;
 use memory::PreparationMemory;
 pub(crate) use native_rule_debit::CustomPreparationStop;

@@ -14,6 +14,8 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectValue;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 
 /// Only these commands can leave a record structurally as it was. Creation,
 /// deletion, replacement and endpoint changes are effects by their application.

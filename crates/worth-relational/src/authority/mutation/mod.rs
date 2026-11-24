@@ -4,7 +4,7 @@ mod disjoint_publication;
 mod mutation_delta_dispatch;
 pub(crate) mod pending_identities;
 pub(crate) use disjoint_publication::compose as compose_disjoint_publication;
-pub(crate) mod adjacency_delta;
+pub(crate) use worth_relational_contracts::internal_port::authority::mutation::adjacency_delta;
 pub(crate) mod current_records;
 pub(crate) mod deletion_publication;
 mod delta_symbols;

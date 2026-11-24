@@ -3,14 +3,16 @@
 //! and every persisted reference must name such a birth.
 
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::facade::lineage::{
     admit_persisted_name, rebuild_name_index_from_durable_log, LineageEventKind,
     PersistentNameDurabilityError, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
     PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
-use crate::lineage::authority::PersistentNameMintingAuthority;
 use crate::identity::data::{EntityId, PartitionId};
+use crate::lineage::authority::PersistentNameMintingAuthority;
 
 use super::name_durable_world::durable_naming_history;
 use super::posture_fixtures::{cad_scheme_registry, face_birth};
@@ -86,7 +88,7 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
             .flat_map(|(batch, _)| batch.lineage_events.iter_mut())
             .find(|event| event.kind() == LineageEventKind::Restore)
             .expect("the history restores a name");
-        restore.kept_name = Some(fabricated());
+        (*restore.owner_kept_name_mut()) = Some(fabricated());
     });
     assert_eq!(
         refused,
@@ -163,7 +165,7 @@ fn a_digest_consistent_birth_with_an_unborn_parent_refuses_typed() {
             .iter_mut()
             .find(|event| event.name_birth().is_some())
             .unwrap();
-        birth.name_birth = Some(minted);
+        (*birth.owner_name_birth_mut()) = Some(minted);
     });
     assert_eq!(
         refused,

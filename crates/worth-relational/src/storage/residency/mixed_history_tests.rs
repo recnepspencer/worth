@@ -1,4 +1,7 @@
 //! Adopt producer-authenticated histories and compare against complete rows.
+use crate::branch::root::capture::reconstruction_fixture::PartitionContentOracle as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::*;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{
@@ -10,7 +13,7 @@ use std::collections::BTreeSet;
 #[test]
 fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let first = fixture
         .cold
@@ -30,7 +33,7 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let extra = later.entity_arena.get_slot(slot).unwrap().extra().clone();
     later
         .entity_arena
-        .apply_extra_update(slot, extra, VersionId(2_000))
+        .apply_extra_update_for_test(slot, extra, VersionId(2_000))
         .expect("fixture slot is materialized");
     let (other_cold, other_source) = recapture(&fixture.cold, &later);
     let second = other_cold
@@ -70,11 +73,11 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
     let previous = head.clone();
     let extra = head.entity_arena.get_slot(slot).unwrap().extra().clone();
     head.entity_arena
-        .apply_extra_update(slot, extra.clone(), VersionId(3_000))
+        .apply_extra_update_for_test(slot, extra.clone(), VersionId(3_000))
         .expect("fixture slot is materialized");
     oracle
         .entity_arena
-        .apply_extra_update(slot, extra, VersionId(3_000))
+        .apply_extra_update_for_test(slot, extra, VersionId(3_000))
         .expect("fixture slot is materialized");
     let (next, _) =
         PartitionContentCommitment::maintain(&head, &symbols, (&commitment, &previous, &journal))
@@ -87,7 +90,7 @@ fn replacing_a_prefix_in_either_direction_reseeds_only_the_selected_history() {
 #[test]
 fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = fixture
         .cold
@@ -114,8 +117,14 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     };
     let mut written = head.partition.clone();
     let mut oracle = full.partition.clone();
-    written.entity_arena.suspend_materialization(slot).unwrap();
-    oracle.entity_arena.suspend_materialization(slot).unwrap();
+    written
+        .entity_arena
+        .suspend_materialization_for_test(slot)
+        .unwrap();
+    oracle
+        .entity_arena
+        .suspend_materialization_for_test(slot)
+        .unwrap();
     let (suspended, _) = PartitionContentCommitment::maintain(
         &written,
         &symbols,
@@ -134,7 +143,7 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
     for partition in [&mut written, &mut oracle] {
         partition
             .entity_arena
-            .rematerialize(&fixture.entity, KindId(1), VersionId(2_000), extra.clone())
+            .rematerialize_for_test(&fixture.entity, KindId(1), VersionId(2_000), extra.clone())
             .unwrap();
     }
     let (rematerialized, _) =
@@ -145,75 +154,76 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
 
 #[test]
 fn an_adopted_opening_is_independent_of_the_destination_physical_row() {
-    let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = fixture
-        .cold
-        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
-        .unwrap();
-    let full = fixture
-        .cold
-        .read_full(
-            fixture.cold.source.as_ref().unwrap(),
-            &head,
-            execution,
-            1 << 24,
-        )
-        .unwrap();
-    let symbols = fixture.cold.symbols.interner_snapshot();
-    let mut destination = head.partition.clone();
-    destination.entity_arena = EntityArena::with_capacity(0);
-    destination
-        .entity_arena
-        .write_reserved_slot(
-            SlotInit {
-                partition_id: fixture.entity.partition_id,
-                kind_id: KindId(1),
-                version_id: VersionId(2_000),
-                extra: EntityExtra::default(),
-            },
-            90,
-            1,
-        )
-        .unwrap();
-    let mut oracle = destination.clone();
-    oracle.relation_arena = full.partition.relation_arena.clone();
-    let selected = BTreeSet::from([fixture.entity.slot_index()]);
-    destination
-        .entity_arena
-        .merge_slots_from_owned(&mut head.partition.entity_arena.clone(), &selected);
-    oracle
-        .entity_arena
-        .merge_slots_from_owned(&mut full.partition.entity_arena.clone(), &selected);
-    let physical = destination
-        .entity_arena
-        .physical_index(fixture.entity.slot_index())
-        .unwrap();
-    assert_ne!(
-        physical,
-        destination.entity_arena.history_prefixes[physical]
-            .as_ref()
-            .unwrap()
-            .row_index
-    );
-    let (commitment, _) =
-        PartitionContentCommitment::capture_layered(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let head = fixture
+            .cold
+            .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
+        let full = fixture
+            .cold
+            .read_full(
+                fixture.cold.source.as_ref().unwrap(),
+                &head,
+                execution,
+                1 << 24,
+            )
+            .unwrap();
+        let symbols = fixture.cold.symbols.interner_snapshot();
+        let mut destination = head.partition.clone();
+        destination.entity_arena = EntityArena::with_capacity(0);
+        destination
+            .entity_arena
+            .write_reserved_slot_for_test(
+                SlotInit {
+                    partition_id: fixture.entity.partition_id,
+                    kind_id: KindId(1),
+                    version_id: VersionId(2_000),
+                    extra: EntityExtra::default(),
+                },
+                90,
+                1,
+            )
+            .unwrap();
+        let mut oracle = destination.clone();
+        oracle.relation_arena = full.partition.relation_arena.clone();
+        let selected = BTreeSet::from([fixture.entity.slot_index()]);
+        destination
+            .entity_arena
+            .merge_slots_from_owned(&mut head.partition.entity_arena.clone(), &selected);
+        oracle
+            .entity_arena
+            .merge_slots_from_owned(&mut full.partition.entity_arena.clone(), &selected);
+        let physical = destination
+            .entity_arena
+            .physical_index(fixture.entity.slot_index())
+            .unwrap();
+        assert_ne!(
+            physical,
+            destination.entity_arena.history_prefixes[physical]
+                .as_ref()
+                .unwrap()
+                .row_index
+        );
+        let (commitment, _) = PartitionContentCommitment::capture_layered(
+            fixture_lane,
             &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
+                &worth_harness::facade::execution_fixture::serial_request(),
             ),
             &destination,
             &symbols,
         )
         .unwrap();
-    assert_content(&destination, &oracle, &symbols, &commitment);
+        assert_content(&destination, &oracle, &symbols, &commitment);
+    })
 }
 
 #[test]
 fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
     let fixture = region_with_history();
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let first = fixture
         .cold
@@ -233,7 +243,7 @@ fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
     let extra = later.relation_arena.get_slot(slot).unwrap().extra().clone();
     later
         .relation_arena
-        .apply_extra_update(slot, extra, VersionId(2_000))
+        .apply_extra_update_for_test(slot, extra, VersionId(2_000))
         .expect("fixture slot is materialized");
     let (cold, source) = recapture(&fixture.cold, &later);
     let second = cold
@@ -266,11 +276,11 @@ fn relation_adoption_and_append_publication_the_independent_entity_prefixes() {
     let previous = head.clone();
     let extra = head.relation_arena.get_slot(slot).unwrap().extra().clone();
     head.relation_arena
-        .apply_extra_update(slot, extra.clone(), VersionId(3_000))
+        .apply_extra_update_for_test(slot, extra.clone(), VersionId(3_000))
         .expect("fixture slot is materialized");
     oracle
         .relation_arena
-        .apply_extra_update(slot, extra, VersionId(3_000))
+        .apply_extra_update_for_test(slot, extra, VersionId(3_000))
         .expect("fixture slot is materialized");
     let (appended, _) =
         PartitionContentCommitment::maintain(&head, &symbols, (&adopted, &previous, &journal))
@@ -283,57 +293,58 @@ pub(super) fn recapture(
     cold: &RelationalColdRegion,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
-    let request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) =
-        PartitionContentCommitment::capture(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let symbols = cold.symbols.interner_snapshot();
+        let (commitment, _) = PartitionContentCommitment::capture(
+            fixture_lane,
             &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
+                &worth_harness::facade::execution_fixture::serial_request(),
             ),
             partition,
             &symbols,
         )
         .unwrap();
-    let members = (cold.readmission.capture_members)(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        execution,
-        partition,
-        &commitment,
-        cold.schema.as_ref(),
-        cold.schema_carrier_digest,
-    )
-    .unwrap();
-    let source = Arc::new(CountedSource {
-        history: members.history.0,
-        members: BTreeMap::from([members.head.clone(), members.history.clone()]),
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-    });
-    (
-        RelationalColdRegion {
-            directory: members
-                .directory
-                .portable(
-                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                    &worth_execution::ExecutionRequest::serial(
-                        &crate::execution::test_policy::serial_request(),
-                    ),
-                )
-                .unwrap(),
-            history_members: members.history_members,
-            head: members.head.0,
+        let members = (cold.readmission.capture_members)(
+            fixture_lane,
+            execution,
+            partition,
+            &commitment,
+            cold.schema.as_ref(),
+            cold.schema_carrier_digest,
+        )
+        .unwrap();
+        let source = Arc::new(CountedSource {
             history: members.history.0,
-            kind_authority: members.kind_authority,
-            live_counts: super::LiveRecordCounts::from_partition(partition),
-            content_digest: commitment.digest(partition.partition_id),
-            source: Some(source.clone()),
-            ..cold.clone()
-        },
-        source,
-    )
+            members: BTreeMap::from([members.head.clone(), members.history.clone()]),
+            reads: AtomicUsize::new(0),
+            history_reads: AtomicUsize::new(0),
+            corrupt: AtomicBool::new(false),
+        });
+        (
+            RelationalColdRegion {
+                directory: members
+                    .directory
+                    .portable(
+                        fixture_lane,
+                        &worth_execution::ExecutionRequest::serial(
+                            &worth_harness::facade::execution_fixture::serial_request(),
+                        ),
+                    )
+                    .unwrap(),
+                history_members: members.history_members,
+                head: members.head.0,
+                history: members.history.0,
+                kind_authority: members.kind_authority,
+                live_counts: super::LiveRecordCounts::from_partition(partition),
+                content_digest: commitment.digest(partition.partition_id),
+                source: Some(source.clone()),
+                ..cold.clone()
+            },
+            source,
+        )
+    })
 }
 
 fn assert_content(
@@ -342,20 +353,22 @@ fn assert_content(
     symbols: &crate::symbols::data::StringInterner,
     incremental: &PartitionContentCommitment,
 ) {
-    let oracle = full.authoritative_content_digest(symbols).unwrap();
-    assert_eq!(incremental.digest(head.partition_id), oracle);
-    assert_eq!(
-        PartitionContentCommitment::capture_layered(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request()
-            ),
-            head,
-            symbols
-        )
-        .unwrap()
-        .0
-        .digest(head.partition_id),
-        oracle
-    );
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let oracle = full.authoritative_content_digest(symbols).unwrap();
+        assert_eq!(incremental.digest(head.partition_id), oracle);
+        assert_eq!(
+            PartitionContentCommitment::capture_layered(
+                fixture_lane,
+                &worth_execution::ExecutionRequest::serial(
+                    &worth_harness::facade::execution_fixture::serial_request()
+                ),
+                head,
+                symbols
+            )
+            .unwrap()
+            .0
+            .digest(head.partition_id),
+            oracle
+        );
+    })
 }

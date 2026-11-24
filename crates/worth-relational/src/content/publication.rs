@@ -1,4 +1,6 @@
 //! Content admission belongs to the same candidate as its referencing fields.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{ContentDirectory, RelationalContentAttachments, RelationalContentDenial as Denial};
 use crate::branch::root::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
 use serde::{Deserialize, Serialize};

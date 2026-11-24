@@ -2,6 +2,7 @@
 use super::*;
 use crate::authority::mutation::MutationApplyDenial;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 pub(crate) fn prepare_coupled_candidate(
     execution: &ExecutionRequest<'_, '_>,

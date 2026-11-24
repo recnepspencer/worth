@@ -48,7 +48,7 @@ fn memory_terminal_close_refuses_admitted_tenure_and_retains_actual_inflight_ope
 // Exact Runtime admission and owner close are needed to observe these private custody transitions.
 #[test]
 fn memory_terminal_close_publication_registry_contention_preserves_admission() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let publication = runtime.publication_binding();
@@ -78,7 +78,7 @@ fn memory_terminal_close_publication_registry_contention_preserves_admission() {
 
 #[test]
 fn memory_terminal_close_cache_contention_preserves_exact_and_historical_allocations() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let original = create_entity_outcome(request, &runtime, "original-cache-root");
@@ -160,7 +160,7 @@ fn memory_terminal_close_cache_contention_preserves_exact_and_historical_allocat
 
 #[test]
 fn memory_terminal_close_head_contention_retires_actual_token_without_dropping_root() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let cell = runtime

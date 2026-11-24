@@ -7,6 +7,7 @@ use super::{
 use crate::{runtime::RelationalRuntime, transactions::data::CommitResult};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::visibility::snapshot_release::RelationalSnapshotReleaseReceiptOwnerPort as _;
 
 /// Retains the original result and its SAME release-cell retirement across
 /// stops and lost responses. Final task/result/owner Drop is ordinary,

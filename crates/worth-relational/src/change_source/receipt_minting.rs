@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_proof::TransitionOutcome;
 

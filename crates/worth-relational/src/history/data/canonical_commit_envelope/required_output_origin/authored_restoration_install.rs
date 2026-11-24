@@ -26,6 +26,7 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(

@@ -1,12 +1,11 @@
-pub(crate) mod access_denial;
-pub(crate) mod failure_cause;
-mod memory_denial;
 pub use access_denial::{CustomInvariantAccessDenial, CustomInvariantAccessDenialKind};
 pub use failure_cause::CustomInvariantFailureCause;
-pub(crate) mod errors;
-pub(crate) mod refusal;
 pub use refusal::CustomInvariantRefusal;
-pub(crate) mod touched_scope;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::access_denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::errors;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::failure_cause;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::refusal;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope;
 
 pub use crate::validation::custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,

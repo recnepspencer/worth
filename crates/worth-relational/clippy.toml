@@ -46,6 +46,8 @@ ignore-interior-mutability = [
 
   # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
   "worth_relational::validation::candidate_source::program::ManagedIndexSourceProgram",
+  "worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorage",
+  "worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgram",
   # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
   "worth_relational::graph_member::key::projected_storage::ProjectedMemberStorage",
   "bytes::Bytes",

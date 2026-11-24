@@ -5,8 +5,8 @@ use crate::branch::basis::RelationalBranchBasisDescriptor;
 use crate::history::commit::RelationalCommitIdentity;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 
-pub(crate) mod failure;
 pub use failure::{RelationalPublicationFailure, RelationalPublicationFailureKind};
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure;
 
 pub struct PublishRelationalCommit;
 
@@ -198,8 +198,8 @@ impl StaleRelationalBranchObservation {
     }
 }
 
-pub(crate) mod refusals;
 pub use refusals::{RelationalPublicationDeferred, RelationalPublicationDenial};
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::outcome::refusals;
 
 #[derive(Debug)]
 #[must_use = "publication outcomes carry performed work or a typed terminal posture"]

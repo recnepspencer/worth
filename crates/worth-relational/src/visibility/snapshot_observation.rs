@@ -1,4 +1,5 @@
 //! Open and release the exact active registration of a retained observation.
+use worth_relational_contracts::internal_port::visibility::snapshot_release::RelationalSnapshotReleaseReceiptOwnerPort as _;
 #[path = "snapshot_observation_registration.rs"]
 mod registration;
 

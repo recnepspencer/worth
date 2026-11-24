@@ -1,4 +1,5 @@
 //! Current-loan direct occurrences retain exact nested parent issuance.
+use worth_relational_contracts::internal_port::validation::candidate_source::program::projection_routes::ManagedIndexSourceProjectionRouteFieldsPort as _;
 use super::*;
 use crate::derived_relation::{read::DerivedRelationData, read_shape::DerivedRelationReadShape};
 use crate::validation::data::structural_read::StructuralRelationRecord;
@@ -60,7 +61,7 @@ impl ManagedIndexSourceRows<'_> {
             return Err(Definition::InvalidExpression.into());
         }
         let prepared = self.projection.prepare(
-            &descriptor.path,
+            &(*descriptor.owner_path()),
             root.row,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )?;
@@ -121,7 +122,7 @@ impl ManagedIndexSourceRows<'_> {
             _retention: retention,
         });
         let prepared = self.projection.prepare(
-            &descriptor.path,
+            &(*descriptor.owner_path()),
             occurrence.entity,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )?;
@@ -158,7 +159,7 @@ impl ManagedIndexSourceRows<'_> {
             .ok_or(Definition::InvalidExpression)?;
         self.projection.read(
             &read.prepared,
-            &route.path,
+            &(*route.owner_path()),
             read.anchor,
             DerivedRelationReadShape::Adjacency { reverse: false },
         )

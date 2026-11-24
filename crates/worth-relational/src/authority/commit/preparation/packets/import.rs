@@ -4,6 +4,8 @@ use crate::identity::data::{KindId, PartitionId};
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 use crate::transactions::data::primitives::EntityReference;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::aspect_field_patch::AspectFieldPatchOwnerPort as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ImportFragmentKind {

@@ -11,8 +11,9 @@ impl RelationalInitialSchemaInstallationReceipt {
         self.runtime_instance_id == runtime
             && self.custom_invariant_generation == contracts.custom_invariant_generation
             && self.retained_schema_authority_digest == schema.authority_digest()
-            && self.retained_entity_kind_count == schema.registry().entity_kinds.len()
-            && self.retained_relation_kind_count == schema.registry().relation_kinds.len()
+            && self.retained_entity_kind_count == (*schema.registry().owner_entity_kinds()).len()
+            && self.retained_relation_kind_count
+                == (*schema.registry().owner_relation_kinds()).len()
             && Arc::ptr_eq(
                 &self.source_groups,
                 &contracts.custom_invariant_registries.source_inventory(),
@@ -35,8 +36,8 @@ impl RelationalInitialSchemaInstallationReceipt {
             source_groups: contracts.custom_invariant_registries.source_inventory(),
             custom_invariant_generation: contracts.custom_invariant_generation,
             custom_invariant_inventory_digest: inventory,
-            retained_entity_kind_count: schema.registry().entity_kinds.len(),
-            retained_relation_kind_count: schema.registry().relation_kinds.len(),
+            retained_entity_kind_count: (*schema.registry().owner_entity_kinds()).len(),
+            retained_relation_kind_count: (*schema.registry().owner_relation_kinds()).len(),
             retained_schema_authority_digest: schema.authority_digest(),
         })
     }

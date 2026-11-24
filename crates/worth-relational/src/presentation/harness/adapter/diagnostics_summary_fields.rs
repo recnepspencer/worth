@@ -1,5 +1,6 @@
 use crate::performance::data::RuntimeComplexityCounters;
 use crate::publication::data::PublicationDiagnosticsSnapshot;
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingBoundaryOwnerPort as _;
 
 use super::run_summary_fields::publication_diagnostic_observation_fields;
 use super::terminal_harness_summary_projection::{

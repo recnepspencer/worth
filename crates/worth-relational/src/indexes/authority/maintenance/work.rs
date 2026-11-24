@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn child_scan_quote_is_bounded_by_the_callers_remaining_work() {
-        let host = crate::execution::test_policy::serial_request();
+        let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let budget = DerivedIndexMaintenanceBudget {
             maximum_work_units: Some(100),
@@ -319,7 +319,7 @@ mod tests {
             ),
             (100, 2, Denial::WorkBudgetExceeded),
         ] {
-            let host = crate::execution::test_policy::serial_request();
+            let host = worth_harness::facade::execution_fixture::serial_request();
             let execution = worth_execution::ExecutionRequest::serial(&host);
             let budget = DerivedIndexMaintenanceBudget {
                 maximum_work_units: Some(native_limit),

@@ -4,6 +4,7 @@
 //! finalization path and reproduce exact canonical `LineageEventRecord`s.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::durability::authority::lineage_allocation::{
     entity_allocation_bindings, CommitAllocationView,

@@ -1,4 +1,5 @@
 //! Concrete original-request admissions move with the decoded owners.
+use worth_relational_contracts::internal_port::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundleOwnerPort as _;
 #[derive(Default)]
 pub(crate) struct CanonicalEnvelopeReadmissionMemory {
     pub(crate) input: Option<worth_execution::ExecutionImmutableBytes>,

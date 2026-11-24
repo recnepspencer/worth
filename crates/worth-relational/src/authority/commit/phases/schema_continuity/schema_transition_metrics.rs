@@ -46,6 +46,7 @@ pub(super) fn count_schema_bridge_descriptor(
             SchemaContinuationClassification::Rejected => {
                 counters.schema_transition_rejected_count += 1;
             }
+            _ => unreachable!("unhandled Relational contract variant"),
         }
         if historical_interpretation != HistoricalInterpretationSensitivity::NotSensitive {
             counters.schema_historical_interpretation_sensitive_boundaries += 1;
@@ -69,6 +70,7 @@ pub(super) fn count_schema_bridge_descriptor(
             SchemaReconciliationPolicy::RequireExplicitProjection => {
                 counters.schema_reconciliation_require_explicit_projection_count += 1;
             }
+            _ => unreachable!("unhandled Relational contract variant"),
         }
     });
 }

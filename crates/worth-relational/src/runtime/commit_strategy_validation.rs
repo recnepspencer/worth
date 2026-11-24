@@ -6,6 +6,7 @@ use crate::mvcc::ValidatedRelationalProposal;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::TransactionCommitError;
 use crate::transactions::data::{CommitConflict, ConflictClass};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn validate_lowered_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

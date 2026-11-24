@@ -4,6 +4,7 @@ use super::*;
 use crate::durability::medium::RelationalDurableMemberCustody;
 use crate::storage::overlay::PartitionCloneMode;
 use std::sync::Mutex;
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 
 #[test]
 fn an_adopted_suffix_keeps_placement_custody_after_its_source_cell_is_released() {

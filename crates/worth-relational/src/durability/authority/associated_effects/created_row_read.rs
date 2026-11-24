@@ -1,4 +1,5 @@
 //! Borrow original created-row fields from the SAME readmitted canonical artifact.
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
 use crate::identity::data::{EntityId, KindId};
 use crate::publication::patch::data::{PublishedAuthoritativeRecordPatch, RecordStructuralChange};

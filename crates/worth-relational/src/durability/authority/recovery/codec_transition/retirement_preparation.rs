@@ -1,4 +1,6 @@
 //! Capture only complete decisions from the native retirement court.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::publication_custody::RecoveredCodecPublicationCustody;
 use crate::history::data::{RequiredOutputPublicationPositions, RequiredOutputRoutePosition};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -50,7 +52,7 @@ pub(super) fn capture(
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
                     for registry in [source.inner.root.schema_authority().registry(), target] {
-                        let kind = registry.entity_kinds.get(&kind_id).ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
+                        let kind = (*registry.owner_entity_kinds()).get(&kind_id).ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
                         let quote = crate::durability::data::DurableEntitySchemaRegistration::capture_bytes(kind).ok_or_else(overflow)?;
                         context.checkpoint(quote as u64).map_err(|stop| Denial::request(stop.into()))?;
                         bytes = bytes.checked_add(quote).ok_or_else(overflow)?;
@@ -65,8 +67,8 @@ pub(super) fn capture(
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
                     kinds.push(CanonicalCodecRetirementKind {
-                        source: crate::durability::data::DurableEntitySchemaRegistration::capture(&source.inner.root.schema_authority().registry().entity_kinds[&kind_id]),
-                        target: crate::durability::data::DurableEntitySchemaRegistration::capture(&target.entity_kinds[&kind_id]),
+                        source: crate::durability::data::DurableEntitySchemaRegistration::capture(&(*source.inner.root.schema_authority().registry().owner_entity_kinds())[&kind_id]),
+                        target: crate::durability::data::DurableEntitySchemaRegistration::capture(&(*target.owner_entity_kinds())[&kind_id]),
                     });
                 }
                 prepared.push(PreparedCodecRetirement { origin, kinds: Arc::new(kinds) });

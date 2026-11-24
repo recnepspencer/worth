@@ -137,7 +137,9 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     drop(restored);
     let symbols = pinned.symbols();
     assert_eq!(
-        symbols.symbol(JSON).and_then(|symbol| symbols.resolve(symbol)),
+        symbols
+            .symbol(JSON)
+            .and_then(|symbol| symbols.resolve(symbol)),
         Some(JSON)
     );
 }

@@ -1,4 +1,5 @@
 //! Independently reconstruct a serialized succession closure from its before image.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::{charge, source_scope_closure, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, ValidatedOutputOrigins,

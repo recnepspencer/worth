@@ -1,6 +1,7 @@
 use super::*;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess, PartitionState};
+use crate::storage::residency::probe::probe_full_sources;
 
 #[test]
 fn related_sources_do_not_confuse_equal_partition_ids() {
@@ -21,7 +22,7 @@ fn related_sources_do_not_confuse_equal_partition_ids() {
     });
     let symbols =
         crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let id = fixtures[0].entity.partition_id;
     let mut rounds = 0;
@@ -73,7 +74,7 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
         staged: &staged,
         current: crate::storage::overlay::OverlayStateView::new(&edition, &staged),
     };
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
     let history = probe_full_sources(&execution, [&overlay], |[view]| {
@@ -108,7 +109,7 @@ fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
         );
     let symbols =
         crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
     let answer = probe_full(
@@ -154,7 +155,7 @@ fn a_provisional_denial_cannot_mask_sticky_storage_damage() {
         );
     let symbols =
         crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let attempt = || {
         probe_full(
@@ -283,7 +284,7 @@ impl Drop for DiscoveryAnswer {
 fn deep_or_wide_discovery_loads_only_observed_misses_after_dropping_the_round() {
     let fixture = region_with_history();
     let full = full_demand(&fixture.cell, 1 << 24).unwrap();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     for stop_on_first_miss in [true, false] {
         let source = DiscoverySource {

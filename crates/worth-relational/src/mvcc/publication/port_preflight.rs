@@ -3,6 +3,7 @@ use super::{
     PreparedBranchPublicationPreflight, RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
 };
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 
 impl PreparedBranchPublicationPreflight {
     pub(super) fn preflight(

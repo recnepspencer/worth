@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 use crate::diagnostics::data::{
     DiagnosticCode, RelationalDiagnosticFields, RelationalDiagnosticValue,
@@ -54,7 +55,7 @@ fn canonical_accounting_fixture() -> crate::history::data::CanonicalCommitEnvelo
 
 #[test]
 fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut envelope = canonical_accounting_fixture();
@@ -163,7 +164,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
 
 #[test]
 fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut envelope = canonical_accounting_fixture();

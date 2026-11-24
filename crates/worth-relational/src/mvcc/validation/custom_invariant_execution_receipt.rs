@@ -79,6 +79,7 @@ pub(crate) fn collect_custom_invariant_execution_receipts<'a>(
                     InvariantVerdict::NotApplicable => InvariantDecisionKind::NotApplicable,
                     InvariantVerdict::Advisory { .. } => InvariantDecisionKind::Advisory,
                     InvariantVerdict::Violation(_) => InvariantDecisionKind::Violated,
+                    _ => unreachable!("unhandled Relational contract variant"),
                 },
                 provenance: result
                     .custom_provenance()

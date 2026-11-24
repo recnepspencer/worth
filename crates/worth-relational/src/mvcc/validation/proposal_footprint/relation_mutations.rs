@@ -1,4 +1,5 @@
 //! Projected relation changes and their funded correspondence.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::RecordedMemberRestorationRefusal;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::transactions::data::outcomes::transaction_commit_error::{

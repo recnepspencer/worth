@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use sha2::{Digest, Sha256};
 
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, StructAspectValue};
@@ -203,6 +204,7 @@ impl ReplayDigestBuilder {
             RecordStructuralChange::RetainedForAudit => self.tag(4),
             RecordStructuralChange::MaterializationSuspended => self.tag(5),
             RecordStructuralChange::Rematerialized => self.tag(6),
+            _ => unreachable!("unhandled Relational contract variant"),
         }
     }
 

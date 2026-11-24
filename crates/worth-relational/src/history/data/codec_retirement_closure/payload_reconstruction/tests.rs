@@ -1,4 +1,5 @@
 //! Finite original serial funding for pure payload reconstruction owners.
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use super::*;
 mod optional_output;
 mod storage_footprint;
@@ -288,7 +289,7 @@ fn quote_footprint(
     plan: &LoweredAspectContractPlan,
     creation: bool,
 ) -> storage_footprint::Footprint {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (mut quote, _) = execution
         .run_native_with_checkpoint(|context| {

@@ -12,6 +12,7 @@ use crate::validation::candidate_source::{
 use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::custom_rule::CustomPreparationBudget;
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 pub(in crate::validation::candidate_source) struct DiscoveredSource<'a> {
     context: &'a SourcePreparationContext<'a>,

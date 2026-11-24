@@ -12,6 +12,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::WorkerIntentBatch;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 /// A publication appendix can allocate its own single entity. It cannot update
 /// a producer record, acquire a relation, or carry an arbitrary effect batch.

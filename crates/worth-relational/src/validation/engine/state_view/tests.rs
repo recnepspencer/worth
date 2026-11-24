@@ -1,3 +1,6 @@
+use worth_relational_storage::internal_port::storage::overlay::working_state::mutation_tracking::WorkingStateFixturePort as _;
+use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -43,13 +46,13 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
         reverse_adjacency: Default::default(),
     };
     let name_contract = scalar_string_contract(AspectKey::new("name").unwrap(), 1);
-    let _ = base_partition.entity_arena.push_slot(SlotInit {
+    let _ = base_partition.entity_arena.push_slot_for_test(SlotInit {
         partition_id,
         kind_id: KindId(1),
         version_id: VersionId(1),
         extra: entity_extra_with_aspect_state(authoritative_string_state(&name_contract, "left")),
     });
-    let _ = base_partition.entity_arena.push_slot(SlotInit {
+    let _ = base_partition.entity_arena.push_slot_for_test(SlotInit {
         partition_id,
         kind_id: KindId(1),
         version_id: VersionId(1),
@@ -68,7 +71,7 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
         Some(&sparse_slots),
         None,
     );
-    staged.mark_entity_slot_touched(partition_id, 1);
+    staged.mark_entity_slot_touched_for_test(partition_id, 1);
     let overlay = OverlayStateView::new(&base, &staged);
     let state_view = InvariantStateView::new(&overlay, VersionId(1));
 
@@ -156,22 +159,24 @@ fn sparse_speculative_overlay_reads_untouched_relation_truth_from_base_partition
     };
     let relation_kind_contract =
         scalar_string_contract(AspectKey::new("relation.kind").unwrap(), 2);
-    let (left_slot, left_generation, _) = base_partition.entity_arena.push_slot(SlotInit {
-        partition_id,
-        kind_id: KindId(1),
-        version_id: VersionId(1),
-        extra: EntityRecordKind::empty_extra(),
-    });
-    let (right_slot, right_generation, _) = base_partition.entity_arena.push_slot(SlotInit {
-        partition_id,
-        kind_id: KindId(1),
-        version_id: VersionId(1),
-        extra: EntityRecordKind::empty_extra(),
-    });
+    let (left_slot, left_generation, _) =
+        base_partition.entity_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(1),
+            version_id: VersionId(1),
+            extra: EntityRecordKind::empty_extra(),
+        });
+    let (right_slot, right_generation, _) =
+        base_partition.entity_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(1),
+            version_id: VersionId(1),
+            extra: EntityRecordKind::empty_extra(),
+        });
     let left = EntityId::new(partition_id, left_slot as u64, left_generation);
     let right = EntityId::new(partition_id, right_slot as u64, right_generation);
     let (relation_slot, relation_generation, _) =
-        base_partition.relation_arena.push_slot(SlotInit {
+        base_partition.relation_arena.push_slot_for_test(SlotInit {
             partition_id,
             kind_id: KindId(9),
             version_id: VersionId(1),
@@ -191,12 +196,12 @@ fn sparse_speculative_overlay_reads_untouched_relation_truth_from_base_partition
         .adjacency
         .get_mut(left_slot)
         .expect("fixture adjacency is materialized")
-        .insert(KindId(9), relation_id);
+        .insert_adjacent_id_for_test(KindId(9), relation_id);
     base_partition
         .reverse_adjacency
         .get_mut(right_slot)
         .expect("fixture adjacency is materialized")
-        .insert(KindId(9), relation_id);
+        .insert_adjacent_id_for_test(KindId(9), relation_id);
 
     let mut base = BTreeMap::new();
     base.insert(partition_id, base_partition);

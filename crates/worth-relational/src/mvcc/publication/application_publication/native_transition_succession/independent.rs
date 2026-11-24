@@ -1,6 +1,7 @@
 //! Independent succession comes from the current route's actual canonical coordinate.
 use super::*;
 use crate::execution::request_stage::checkpoint;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 pub(crate) fn readmit_current_independent_output_successor(
     inputs: RetirementHistoryInputs<'_>,

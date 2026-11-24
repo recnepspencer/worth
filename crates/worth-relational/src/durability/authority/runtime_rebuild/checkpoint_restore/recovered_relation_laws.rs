@@ -3,18 +3,18 @@ use super::recovered_codec_meaning::{charge, lookup_work};
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::schema::data::{RelationIntegrityDeclarations, RelationalSchemaRegistry};
 use worth_execution::MapKernelContext;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn compare_registries(
     source: &RelationalSchemaRegistry,
     target: &RelationalSchemaRegistry,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    for (kind, previous) in &source.relation_kinds {
-        charge(context, lookup_work(target.relation_kinds.len()))?;
+    for (kind, previous) in &(*source.owner_relation_kinds()) {
+        charge(context, lookup_work((*target.owner_relation_kinds()).len()))?;
         let previous = &previous.relation_integrity;
         charge_meaning(context, previous)?;
-        let next = target
-            .relation_kinds
+        let next = (*target.owner_relation_kinds())
             .get(kind)
             .map(|kind| &kind.relation_integrity);
         let same = if let Some(next) = next {

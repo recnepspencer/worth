@@ -1,19 +1,18 @@
-pub(crate) mod catalog;
-pub(crate) mod compilation_denial;
-pub(crate) mod contracts;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::catalog;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::compilation_denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::contracts;
 pub(crate) mod custom_rule;
-pub(crate) mod descriptor;
-pub(crate) mod execution;
-pub(crate) mod groups;
-pub(crate) mod observation_kind;
-pub(crate) mod registration_conflict;
-pub(crate) mod results;
-pub(crate) mod rule_id;
-pub(crate) mod rules;
-pub(crate) mod structural_read;
-pub(crate) mod structural_walk_denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::descriptor;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::execution;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::groups;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::observation_kind;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::registration_conflict;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::results;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::rule_id;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::rules;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::structural_read;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::structural_walk_denial;
 
-pub(crate) use catalog::append_relation_integrity_registrations;
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
 pub use custom_rule::{
@@ -55,6 +54,6 @@ pub use custom_rule::{
     CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
 };
 
-pub(crate) mod execution_posture;
-pub(crate) mod non_applicability;
 pub use crate::validation::engine::result::InvariantCheckResult;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::execution_posture;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::non_applicability;

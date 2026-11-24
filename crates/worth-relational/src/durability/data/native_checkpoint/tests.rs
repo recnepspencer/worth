@@ -127,7 +127,7 @@ fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
     let payload = b"prefixnative-suffix";
-    let lease = crate::execution::test_authority::test_execution_authority()
+    let lease = worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,

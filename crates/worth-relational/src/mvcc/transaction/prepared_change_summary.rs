@@ -1,5 +1,6 @@
 //! Value-free, bounded projection of one sealed publication candidate.
 
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};

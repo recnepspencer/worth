@@ -7,6 +7,7 @@ use crate::validation::data::catalog::relation_integrity_registration_plan::appe
 use crate::validation::data::catalog::InvariantRegistration;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug, Default)]
 pub(crate) struct NativeRelationIntegrityInventory {
@@ -77,7 +78,7 @@ impl NativeRegistrationQuote {
             crate::branch::root::schema::retained_compilation_tree_bytes::<
                 KindId,
                 LoweredRelationIntegrityPlan,
-            >(registry.relation_kinds.len())
+            >((*registry.owner_relation_kinds()).len())
             .map_err(|_| Denial::MemoryOverflow)?,
         )
         .map_err(|_| Denial::MemoryOverflow)?;
@@ -85,7 +86,7 @@ impl NativeRegistrationQuote {
         add(&mut retained, arc::<SchemaContractRuntimeSubsystem>()?)?;
         let mut temporary = 0usize;
         let mut registrations = 0usize;
-        for relation in registry.relation_kinds.values() {
+        for relation in (*registry.owner_relation_kinds()).values() {
             control.checkpoint()?;
             let quote = relation.relation_integrity.lowering_backing(control)?;
             add(&mut registrations, quote.registrations)?;

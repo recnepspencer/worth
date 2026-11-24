@@ -1,6 +1,7 @@
 //! One commit's canonical naming input to the derived name index.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
@@ -62,11 +63,11 @@ impl PersistentNameCommittedBatch {
     pub(crate) fn with_prepared_lineage(self, prepared: &PreparedLineageFinalization) -> Self {
         let events = prepared.artifact().event_batch().events().iter().cloned();
         let entities = prepared
-            .new_nodes()
+            .new_nodes_for_test()
             .iter()
             .map(|node| (node.lineage_id(), node.entity_id()));
         let relations = prepared
-            .relation_lineages()
+            .relation_lineages_for_test()
             .iter()
             .map(|(relation, lineage)| (*lineage, *relation));
         self.with_lineage_events(events, entities, relations)

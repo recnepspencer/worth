@@ -1,6 +1,8 @@
 //! Per-validation metadata is bound to each real Native proposal round.
 use super::{NativeManagedSourceInterpretation, NativeSourceInterpretationIdentity};
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::candidate_source::denial::ManagedIndexSourcePreparationDenialOwnerPort as _;
 mod share;
 pub use share::{ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare};
 

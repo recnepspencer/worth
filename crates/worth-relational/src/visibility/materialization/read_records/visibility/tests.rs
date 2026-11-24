@@ -1,3 +1,5 @@
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::super::reader::{
     kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
 };
@@ -69,26 +71,28 @@ fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
     let partition_id = PartitionId(7);
     let adjacency_policy = RelationalRuntimeConfig::default().storage.adjacency_policy;
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);
-    let (slot, generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
-        partition_id,
-        kind_id: KindId(11),
-        version_id: VersionId(1),
-        extra: EntityExtra::default(),
-    });
+    let (slot, generation, _) =
+        entity_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+            partition_id,
+            kind_id: KindId(11),
+            version_id: VersionId(1),
+            extra: EntityExtra::default(),
+        });
     let stale_id = crate::identity::data::EntityId::new(partition_id, slot as u64, generation);
     entity_arena
-        .retire(slot, VersionId(2))
+        .retire_record_for_test(slot, VersionId(2))
         .expect("fixture slot is materialized");
     entity_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
     entity_arena
         .reset_slot(slot)
         .expect("fixture slot is materialized");
-    let (_, reused_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
-        partition_id,
-        kind_id: KindId(12),
-        version_id: VersionId(3),
-        extra: EntityExtra::default(),
-    });
+    let (_, reused_generation, _) =
+        entity_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+            partition_id,
+            kind_id: KindId(12),
+            version_id: VersionId(3),
+            extra: EntityExtra::default(),
+        });
     assert_eq!(reused_generation, 2);
 
     let state = BTreeMap::from([(
@@ -134,25 +138,27 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     let partition_id = PartitionId(7);
     let adjacency_policy = RelationalRuntimeConfig::default().storage.adjacency_policy;
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);
-    let (slot, first_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
-        partition_id,
-        kind_id: KindId(11),
-        version_id: VersionId(1),
-        extra: EntityExtra::default(),
-    });
+    let (slot, first_generation, _) =
+        entity_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+            partition_id,
+            kind_id: KindId(11),
+            version_id: VersionId(1),
+            extra: EntityExtra::default(),
+        });
     entity_arena
-        .retire(slot, VersionId(2))
+        .retire_record_for_test(slot, VersionId(2))
         .expect("fixture slot is materialized");
     entity_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
     entity_arena
         .reset_slot(slot)
         .expect("fixture slot is materialized");
-    let (_, reused_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
-        partition_id,
-        kind_id: KindId(12),
-        version_id: VersionId(3),
-        extra: EntityExtra::default(),
-    });
+    let (_, reused_generation, _) =
+        entity_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+            partition_id,
+            kind_id: KindId(12),
+            version_id: VersionId(3),
+            extra: EntityExtra::default(),
+        });
     assert_eq!(reused_generation, 2);
 
     let state = BTreeMap::from([(
@@ -171,7 +177,7 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     let current_version = VersionId(3);
     let instrumentation = RuntimeInstrumentation::new();
     let read = ProjectionRecordReader::new(current_version, &instrumentation);
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(
         &execution,
@@ -194,7 +200,7 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     )
     .unwrap()
     .unwrap();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let reused_kind_records = super::super::read_work::metered_with_memory(
         &execution,
@@ -241,25 +247,26 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
         target: EntityId::new(partition_id, 4, 1),
     };
     let (slot, first_generation, _) =
-        relation_arena.push_slot(crate::storage::substrate::SlotInit {
+        relation_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
             partition_id,
             kind_id: KindId(21),
             version_id: VersionId(1),
             extra: RelationExtra::from_unbudgeted_parts(Some(first_endpoints), None),
         });
     relation_arena
-        .retire(slot, VersionId(2))
+        .retire_record_for_test(slot, VersionId(2))
         .expect("fixture slot is materialized");
     relation_arena.lifecycle[slot] = RecordLifecycleState::Reusable;
     relation_arena
         .reset_slot(slot)
         .expect("fixture slot is materialized");
-    let (_, reused_generation, _) = relation_arena.push_slot(crate::storage::substrate::SlotInit {
-        partition_id,
-        kind_id: KindId(22),
-        version_id: VersionId(3),
-        extra: RelationExtra::from_unbudgeted_parts(Some(second_endpoints), None),
-    });
+    let (_, reused_generation, _) =
+        relation_arena.push_slot_for_test(crate::storage::substrate::SlotInit {
+            partition_id,
+            kind_id: KindId(22),
+            version_id: VersionId(3),
+            extra: RelationExtra::from_unbudgeted_parts(Some(second_endpoints), None),
+        });
     assert_eq!(reused_generation, 2);
 
     let state = BTreeMap::from([(
@@ -278,7 +285,7 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     let current_version = VersionId(3);
     let instrumentation = RuntimeInstrumentation::new();
     let read = ProjectionRecordReader::new(current_version, &instrumentation);
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(
         &execution,
@@ -301,7 +308,7 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     )
     .unwrap()
     .unwrap();
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let reused_kind_records = super::super::read_work::metered_with_memory(
         &execution,

@@ -1,4 +1,6 @@
 //! Independent policy-funded wire reference used by artifact and residency tests.
+use worth_relational_contracts::internal_port::durability::branch_transition_artifact::payload_digest::RelationalBranchTransitionArtifactDigestOwnerPort as _;
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
 use super::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;
@@ -44,7 +46,7 @@ pub(super) fn encode(
             },
         );
     }
-    let digest = Digest::of_payload(
+    let digest = Digest::canonical_payload_digest_for_test(
         commit.position().0,
         commit.envelope().commit.commit_id.0,
         &frame.bytes()[HEADER_LEN..],

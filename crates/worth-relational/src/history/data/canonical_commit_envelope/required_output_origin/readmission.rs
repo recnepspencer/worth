@@ -1,4 +1,5 @@
 //! Native envelope association checks; reconstructive succession lives in history.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementationOwnerPort as _;
 use super::payload_coverage::OutputPayloadCoverageFailure as Failure;
 use super::*;
 use crate::history::data::CodecRetirementClosureStop as Stop;

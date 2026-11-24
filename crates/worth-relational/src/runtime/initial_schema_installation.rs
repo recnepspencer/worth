@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod readmission;
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -201,8 +202,8 @@ impl RelationalInitialSchemaInstallation<'_> {
             .clone()
             .extend(additions)
             .map_err(schema_denial)?;
-        let retained_entity_kind_count = merged.entity_kinds.len();
-        let retained_relation_kind_count = merged.relation_kinds.len();
+        let retained_entity_kind_count = (*merged.owner_entity_kinds()).len();
+        let retained_relation_kind_count = (*merged.owner_relation_kinds()).len();
         let retained_schema_authority_digest =
             crate::schema::data::schema_authority_snapshot_digest_bytes(
                 &merged.authority_snapshot(),

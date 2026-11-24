@@ -1,4 +1,5 @@
 //! Strict stored groups use the same funded Native graph traversal and decoder.
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::source::AggregateIdentitySourceOwnerPort as _;
 use super::funding::PlanDenial;
 use super::{cohorts, funding, retention_extent as extent};
 use crate::graph_member::NativeMemberKey as Member;

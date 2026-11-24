@@ -11,6 +11,7 @@ use worth_foundational::facade::{
     AspectKey, AspectValue, ContractValidationInput, FieldKey, PortableAspectContractBasis,
     PortableAspectPatchOperation, PortableRecordAspectPatch, StructAspectValue,
 };
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
 
 type GroupKey = (EntityId, AggregateIdentity);
 type Groups = BTreeMap<GroupKey, BTreeSet<Member>>;

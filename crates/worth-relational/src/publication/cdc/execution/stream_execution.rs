@@ -7,6 +7,7 @@ use crate::runtime::RelationalRuntime;
 use crate::schema::data::SchemaBoundaryFingerprint;
 #[cfg(test)]
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 pub(crate) fn execute_subscriber_stream(
     runtime: &RelationalRuntime,

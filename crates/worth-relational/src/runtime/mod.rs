@@ -40,11 +40,11 @@ pub(crate) use home_program_transition::{
 };
 pub(crate) mod checkpoint_split_doors_for_test;
 pub(crate) mod commit_strategy_validation;
-pub(crate) mod interruption_counters;
+pub(crate) use worth_relational_contracts::internal_port::runtime::interruption_counters;
 mod invariant_view;
 mod lineage_commit;
 mod managed_source_history;
-pub(crate) mod operation_control;
+pub(crate) use worth_relational_contracts::internal_port::runtime::operation_control;
 mod ownership_certification;
 mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
@@ -123,9 +123,6 @@ pub use state::{
     RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
 
-pub(crate) use crate::storage::overlay::WorkingState;
-pub(crate) mod close_denial;
-pub(crate) mod fork_denial;
 pub(crate) use construction::RuntimeExtensions;
 pub use fork_denial::RelationalRuntimeForkDenial;
 pub use state::RelationalRuntime;
@@ -169,6 +166,8 @@ pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
+pub(crate) use worth_relational_contracts::internal_port::runtime::close_denial;
+pub(crate) use worth_relational_contracts::internal_port::runtime::fork_denial;
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
 

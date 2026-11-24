@@ -7,6 +7,8 @@ use crate::history::data::{
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use std::collections::BTreeSet;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::assemble_merge_branch_basis;
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::assemble_resolved_merge_base;
 pub(super) fn resolve_from_heads(
     mut ancestor_set: impl FnMut(CommitId) -> BTreeSet<CommitId>,
     mut receipt: impl FnMut(CommitId) -> Option<RelationalCommitReceipt>,
@@ -34,16 +36,16 @@ pub(super) fn resolve_from_heads(
             commit_id: merge_base_commit_id,
         },
     )?;
-    Ok(RelationalMergeBranchBasis {
+    Ok(assemble_merge_branch_basis(
         source_head,
         target_head,
-        merge_base: ResolvedMergeBase {
-            rule: MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
-            commit: merge_base,
-            supporting_left_ancestors: left_ancestors.into(),
-            supporting_right_ancestors: right_ancestors.into(),
-        },
-    })
+        assemble_resolved_merge_base(
+            MergeBaseSelectionRule::MaxCommitIdCommonAncestor,
+            merge_base,
+            left_ancestors.into(),
+            right_ancestors.into(),
+        ),
+    ))
 }
 
 pub(super) fn resolve_from_bindings(

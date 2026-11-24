@@ -1,6 +1,8 @@
 //! Canonical memo identity and its actual semantic-comparison work.
 use super::{Denial, Evaluation, Handle, Member, SourceRead};
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
 mod storage;
 pub(super) use storage::MemoValues;
 
@@ -95,8 +97,10 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
     /// Only actual same-registry navigation changes the retained definition.
     pub(super) fn target_key(&mut self, parent: &Key, target: Handle) -> Result<Key, Denial> {
         self.read.checkpoint(1)?;
-        let definition_scope = if std::sync::Arc::ptr_eq(&target.entry, &self.root_definition.entry)
-        {
+        let definition_scope = if std::sync::Arc::ptr_eq(
+            &(*target.owner_entry()),
+            &(*self.root_definition.owner_entry()),
+        ) {
             DefinitionScope::Root
         } else {
             DefinitionScope::Named

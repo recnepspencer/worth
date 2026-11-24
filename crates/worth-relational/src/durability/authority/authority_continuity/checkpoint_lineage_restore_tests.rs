@@ -9,6 +9,7 @@ use crate::durability::authority::lineage_allocation_fixtures::{
 use crate::durability::data::RecoveryFailureClass;
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageSubject;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 fn validate(commits: &[CommitLineage]) -> Result<(), String> {
     validate_entity_allocation_nodes(
@@ -32,8 +33,8 @@ fn reused_restore_lineages_of_either_subject_refuse() {
     for subject in [LineageSubject::Entity, LineageSubject::Relation] {
         let mut history = restore_history();
         let restore = history[2].allocating(5);
-        restore.subject = subject;
-        restore.targets = vec![LineageId(4)];
+        (*restore.owner_subject_mut()) = subject;
+        (*restore.owner_targets_mut()) = vec![LineageId(4)];
         let detail = validate(&history).expect_err("a reused restored lineage refuses");
         assert!(detail.contains("lineage id 4 is reused"), "{detail}");
     }
@@ -42,9 +43,9 @@ fn reused_restore_lineages_of_either_subject_refuse() {
 #[test]
 fn restores_bound_to_the_wrong_entity_node_or_subject_refuse() {
     let mut history = restore_history();
-    history[1].allocating(2).targets = vec![LineageId(30)];
-    history[1].allocating(3).targets = vec![LineageId(2)];
-    history[1].allocating(30).targets = vec![LineageId(3)];
+    (*history[1].allocating(2).owner_targets_mut()) = vec![LineageId(30)];
+    (*history[1].allocating(3).owner_targets_mut()) = vec![LineageId(2)];
+    (*history[1].allocating(30).owner_targets_mut()) = vec![LineageId(3)];
     let detail = validate(&history).expect_err("swapped allocations bind the wrong entities");
     assert!(
         detail.contains("does not name its exact entity"),
@@ -52,7 +53,7 @@ fn restores_bound_to_the_wrong_entity_node_or_subject_refuse() {
     );
 
     let mut history = restore_history();
-    history[2].allocating(5).targets = vec![LineageId(50)];
+    (*history[2].allocating(5).owner_targets_mut()) = vec![LineageId(50)];
     let detail = validate(&history).expect_err("a restore with no canonical node refuses");
     assert!(
         detail.contains("lineage id 50 has no canonical node"),
@@ -60,7 +61,7 @@ fn restores_bound_to_the_wrong_entity_node_or_subject_refuse() {
     );
 
     let mut history = restore_history();
-    history[2].allocating(5).subject = LineageSubject::Relation;
+    (*history[2].allocating(5).owner_subject_mut()) = LineageSubject::Relation;
     let detail = validate(&history).expect_err("a relation restore cannot bind an entity");
     assert!(
         detail.contains("binds 0 entity lineage allocations to 1"),
@@ -80,7 +81,7 @@ fn restores_bound_to_the_wrong_entity_node_or_subject_refuse() {
 fn malformed_restore_shapes_refuse_before_binding() {
     for sources in [vec![], vec![LineageId(1), LineageId(2)], vec![LineageId(5)]] {
         let mut history = restore_history();
-        history[2].allocating(5).sources = sources;
+        (*history[2].allocating(5).owner_sources_mut()) = sources;
         let detail = validate(&history).expect_err("malformed restore refuses");
         assert!(
             detail.contains("one source and one different target"),
@@ -101,7 +102,7 @@ fn a_selection_restore_binds_its_named_node_and_a_forged_binding_refuses() {
             &[5],
             &[6],
         );
-        commit.allocating(6).entity_id = Some(entity(named));
+        (*commit.allocating(6).owner_entity_id_mut()) = Some(entity(named));
         commit
     };
     let mut nodes = restore_history_nodes();

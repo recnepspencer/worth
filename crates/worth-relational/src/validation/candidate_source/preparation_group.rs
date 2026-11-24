@@ -7,6 +7,9 @@ use crate::validation::custom_rule::CustomInvariantRegistration;
 use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as CompilationDenial;
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use std::{num::NonZeroU64, sync::Arc};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct SourcePreparationGroup {
@@ -57,7 +60,7 @@ impl SourcePreparationGroup {
                 if group.programs.contains(&program) {
                     return Err(CompilationDenial::Source(
                         DerivedRelationDenial::DuplicateDefinition(
-                            program.0.path.parts().identity.clone(),
+                            (*program.owner_field_0()).path.parts().identity.clone(),
                         ),
                     ));
                 }

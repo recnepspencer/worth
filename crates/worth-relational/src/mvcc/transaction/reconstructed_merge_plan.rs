@@ -6,6 +6,9 @@ use crate::transactions::data::outcomes::plan_artifacts::{
 };
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::assemble_merge_commit_mutation_plan;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlanParts;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
 
 mod copy_storage;
 
@@ -79,7 +82,7 @@ impl OwnedMergePlan {
         });
         let memory = reserve_copy(request, bytes)?;
         Ok(Self {
-            plan: MergeCommitMutationPlan {
+            plan: assemble_merge_commit_mutation_plan(MergeCommitMutationPlanParts {
                 transaction_id: envelope.merged_plan.transaction_id,
                 target_branch: packet.request().target_branch().clone(),
                 source_branch: packet.request().source_branch().clone(),
@@ -95,7 +98,7 @@ impl OwnedMergePlan {
                 structural_summary: authority.structural_summary.clone(),
                 merge_execution_summary: summary.clone(),
                 proof_token: merge_commit_mutation_plan_token(),
-            },
+            }),
             _memory: memory,
         })
     }

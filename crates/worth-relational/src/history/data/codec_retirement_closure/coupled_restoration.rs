@@ -11,6 +11,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 impl RelationalRuntime {
     /// Explicit envelope conversion retains the genuine restoration plan.

@@ -5,6 +5,7 @@ use crate::{
     durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
     schema::codec_field_comparison::CodecFieldLocus,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn derive_codec_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -29,13 +30,11 @@ pub(super) fn derive_codec_transition(
                         // Includes the two top-level basis copies and the source-owned
                         // target schema identifier copied into each diff atom.
                         let mut maximum = 0_usize;
-                        for (id, _) in registry
-                            .entity_kinds
+                        for (id, _) in (*registry.owner_entity_kinds())
                             .values()
                             .map(|r| (&r.schema_id, r.schema_version_id))
                             .chain(
-                                registry
-                                    .relation_kinds
+                                (*registry.owner_relation_kinds())
                                     .values()
                                     .map(|r| (&r.schema_id, r.schema_version_id)),
                             )

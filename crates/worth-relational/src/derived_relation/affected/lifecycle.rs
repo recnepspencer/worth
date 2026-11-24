@@ -10,6 +10,9 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(in crate::derived_relation) struct Lifecycle {
     pub(in crate::derived_relation) carrier: EntityId,
@@ -74,8 +77,7 @@ pub(super) fn seed_domain(
                 .name_bytes()
                 .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
             let levels = (usize::BITS
-                - registry
-                    .projected_member_domains
+                - (*registry.owner_projected_member_domains())
                     .len()
                     .max(1)
                     .leading_zeros()) as usize;

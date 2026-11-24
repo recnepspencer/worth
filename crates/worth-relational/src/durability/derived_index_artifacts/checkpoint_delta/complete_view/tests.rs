@@ -47,35 +47,39 @@ fn basis(commit: u64, generation: u64) -> IndexBasisCheckpoint {
 
 #[test]
 fn complete_view_roundtrips_same_index_generations_and_only_retained_selections() {
-    // Two generations of one index: the owned writer would delta the second.
-    let generations = [Arc::new(generation(1, 90)), Arc::new(generation(2, 90))];
-    // Commit 7 carries generation 2, authored at version 2, to a later root.
-    let bases = [basis(5, 1), basis(7, 2)];
-    let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(7);
-    let budget = SerialMemoryBudget::new(Some(4 * 1024 * 1024));
-    let view = with_budget(&budget, |work| {
-        CompleteIndexCheckpointView::capture_funded(&generations, &bases, &retained, work)
-    })
-    .unwrap();
-    assert!(budget.charged_memory_bytes() > 0);
-    let wire = rmp_serde::to_vec_named(&view).unwrap();
-    drop(view);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    // The funded reader's quote walks the same payload, selections included.
-    assert!(with_budget(&budget, |work| quote_decode(BorrowedPayload(&wire), work)).unwrap() > 0);
-    let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
-    assert!(decoded
-        .generations
-        .iter()
-        .all(|row| row.base_generation_id.is_none()));
-    assert_eq!(
-        decoded.readmit(&ReconstructionLane::oracle()).unwrap(),
-        generations
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        // Two generations of one index: the owned writer would delta the second.
+        let generations = [Arc::new(generation(1, 90)), Arc::new(generation(2, 90))];
+        // Commit 7 carries generation 2, authored at version 2, to a later root.
+        let bases = [basis(5, 1), basis(7, 2)];
+        let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(7);
+        let budget = SerialMemoryBudget::new(Some(4 * 1024 * 1024));
+        let view = with_budget(&budget, |work| {
+            CompleteIndexCheckpointView::capture_funded(&generations, &bases, &retained, work)
+        })
+        .unwrap();
+        assert!(budget.charged_memory_bytes() > 0);
+        let wire = rmp_serde::to_vec_named(&view).unwrap();
+        drop(view);
+        assert_eq!(budget.charged_memory_bytes(), 0);
+        // The funded reader's quote walks the same payload, selections included.
+        assert!(
+            with_budget(&budget, |work| quote_decode(BorrowedPayload(&wire), work)).unwrap() > 0
+        );
+        let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
+        assert!(decoded
+            .generations
             .iter()
-            .map(|generation| generation.as_ref().clone())
-            .collect::<Vec<_>>()
-    );
-    assert_eq!(decoded.bases(), &bases[1..]);
+            .all(|row| row.base_generation_id.is_none()));
+        assert_eq!(
+            decoded.readmit(fixture_lane).unwrap(),
+            generations
+                .iter()
+                .map(|generation| generation.as_ref().clone())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(decoded.bases(), &bases[1..]);
+    })
 }
 
 #[test]

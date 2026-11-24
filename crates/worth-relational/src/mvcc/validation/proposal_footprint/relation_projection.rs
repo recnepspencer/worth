@@ -13,6 +13,7 @@ use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedE
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::{CreatedEntityRef, RecordRef};
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) struct RelationProjectionInputs<'a> {
     pub(super) before: &'a dyn CurrentPartitionAccess,

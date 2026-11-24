@@ -1,4 +1,5 @@
 //! Prepare only the full-generation records in the two owned closures.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
 use crate::transactions::data::primitives::RecordRef;

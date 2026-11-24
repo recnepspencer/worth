@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::ResolvedMergeBaseOwnerPort as _;
 
 use crate::merge::data::{
     LoweredMergePlan, MergeArtifactDigestBasis, MergeBaseDigestBasis, MergeCausalDigestBasis,
@@ -43,10 +44,10 @@ fn merge_request_digest_basis(plan: &LoweredMergePlan) -> MergeRequestDigestBasi
 
 fn merge_base_digest_basis(plan: &LoweredMergePlan) -> MergeBaseDigestBasis {
     MergeBaseDigestBasis {
-        rule: plan.basis.merge_base.rule,
-        commit_id: plan.basis.merge_base.commit.commit_id,
-        supporting_left_ancestors: plan.basis.merge_base.supporting_left_ancestors.clone(),
-        supporting_right_ancestors: plan.basis.merge_base.supporting_right_ancestors.clone(),
+        rule: plan.basis.merge_base().rule(),
+        commit_id: plan.basis.merge_base().commit().commit_id,
+        supporting_left_ancestors: plan.basis.merge_base().left_ancestors().clone(),
+        supporting_right_ancestors: plan.basis.merge_base().right_ancestors().clone(),
     }
 }
 

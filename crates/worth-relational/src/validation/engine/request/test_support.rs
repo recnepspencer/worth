@@ -1,3 +1,7 @@
+use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeConfig};
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
@@ -6,7 +10,7 @@ use crate::schema::data::{
     RelationIntegrityDeclarations, RelationKindRegistration, RelationalSchemaRegistry, SchemaId,
     SchemaVersionId,
 };
-use crate::storage::overlay::{small_relation_partition::relation_partition, PartitionState};
+use crate::storage::overlay::{small_relation_partition::relation_partition_for_test, PartitionState};
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::validation::data::contracts::InvariantPlanContract;
 use crate::validation::engine::{
@@ -85,7 +89,7 @@ pub(crate) struct RequestGraph {
 impl RequestGraph {
     pub(crate) fn new(entity_count: usize, edges: &[(usize, usize, KindId)]) -> Self {
         let id = PartitionId::main();
-        let (partition, entities, relations) = relation_partition(id, entity_count, edges);
+        let (partition, entities, relations) = relation_partition_for_test(id, entity_count, edges);
         Self {
             partitions: BTreeMap::from([(id, partition)]),
             entities,
@@ -97,18 +101,18 @@ impl RequestGraph {
         let partition = self.partitions.get_mut(&relation.partition_id).unwrap();
         partition
             .relation_arena
-            .suspend_materialization(relation.slot_index())
+            .suspend_materialization_for_test(relation.slot_index())
             .unwrap();
         partition
             .adjacency
             .get_mut(endpoints.0.slot_index())
             .unwrap()
-            .remove(KindId(2), &relation);
+            .remove_adjacent_id_for_test(KindId(2), &relation);
         partition
             .reverse_adjacency
             .get_mut(endpoints.1.slot_index())
             .unwrap()
-            .remove(KindId(2), &relation);
+            .remove_adjacent_id_for_test(KindId(2), &relation);
     }
 
     pub(crate) fn view(instrumentation: &RuntimeInstrumentation) -> InvariantRuntimeView<'_> {
@@ -122,7 +126,7 @@ impl RequestGraph {
         view: &InvariantRuntimeView<'_>,
         plan: Option<&'state MergedCommitPlan>,
     ) -> InvariantExecutionRequest<'state> {
-        let host = crate::execution::test_policy::serial_request();
+        let host = worth_harness::facade::execution_fixture::serial_request();
         InvariantExecutionRequest::from_profile_with_contract_at_current_version(
             &ExecutionRequest::serial(&host),
             InvariantRequestProfile::CommitBoundary,

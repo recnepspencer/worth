@@ -1,4 +1,6 @@
 //! A participant's admission never transfers another writer's record custody.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use crate::execution::request_stage::checkpoint;
 use crate::history::data::source_scope_closure;
 use crate::history::data::CanonicalRequiredOutputOrigin;

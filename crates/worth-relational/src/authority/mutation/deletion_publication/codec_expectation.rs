@@ -1,4 +1,6 @@
 //! Re-evaluate a retained codec deletion with the original mutation grammar.
+use worth_relational_contracts::internal_port::publication::patch::data::patch_detail::PatchDetailOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use super::{entity_deletion_publication_patch, relation_deletion_publication_patch};
 use crate::history::data::codec_retirement_closure::codec_disposition::deletion_grammar::{
     DeletionPublicationGrammar, EntityDeletionExpectation, FundedDeletionExpectation,

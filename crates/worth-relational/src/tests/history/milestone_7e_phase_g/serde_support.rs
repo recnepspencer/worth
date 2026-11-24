@@ -4,6 +4,7 @@ use crate::facade::merge::{
     RelationalMergeCorrespondenceWitnessPosture, RelationalMergeCorrespondenceWitnessRow,
 };
 use sha2::{Digest, Sha256};
+use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness::RelationalMergeCorrespondenceWitnessOwnerPort as _;
 
 #[derive(Clone, serde::Serialize)]
 pub(super) struct CorrespondenceWitnessSerdePayload {

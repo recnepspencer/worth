@@ -1,14 +1,14 @@
-pub(crate) mod aggregate_identity;
-pub(crate) mod aspect_plan_source;
-pub(crate) mod aspect_plans;
+pub(crate) use worth_relational_contracts::internal_port::schema::aggregate_identity;
+pub(crate) use worth_relational_contracts::internal_port::schema::aspect_plan_source;
+pub(crate) use worth_relational_contracts::internal_port::schema::aspect_plans;
 pub(crate) mod continuity;
-pub(crate) mod current_publication_ownership;
-pub mod data;
-pub(crate) mod home_program_catalog_receipt;
-pub(crate) mod installed_source_scopes;
+pub(crate) use worth_relational_contracts::internal_port::schema::current_publication_ownership;
+pub(crate) use worth_relational_contracts::internal_port::schema::data;
+pub(crate) use worth_relational_contracts::internal_port::schema::home_program_catalog_receipt;
+pub(crate) use worth_relational_contracts::internal_port::schema::installed_source_scopes;
 mod registry_custody;
-pub(crate) mod source_catalog;
 pub(crate) use registry_custody::SchemaRegistryCustody;
+pub(crate) use worth_relational_contracts::internal_port::schema::source_catalog;
 
 pub(crate) use aspect_plans::{
     lower_aspect_plans, lower_aspect_plans_for_compilation,
@@ -24,11 +24,9 @@ pub(crate) use continuity::{
 
 pub(crate) use continuity::validate_schema_continuity_body;
 
-pub(crate) mod compilation_control;
 pub(crate) use compilation_control::SchemaCompilationControl;
-mod snapshot_compilation;
+pub(crate) use worth_relational_contracts::internal_port::schema::compilation_control;
 
-pub(crate) mod portable_patch;
+pub(crate) use worth_relational_contracts::internal_port::schema::portable_patch;
 
-#[path = "../runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis.rs"]
-pub(crate) mod codec_field_comparison;
+pub(crate) use worth_relational_contracts::internal_port::schema::codec_field_comparison;

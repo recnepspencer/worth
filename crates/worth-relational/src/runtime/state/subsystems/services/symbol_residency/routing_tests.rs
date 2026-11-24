@@ -1,6 +1,16 @@
 //! Real checkpoint pages must preserve bounded lookup and authenticated routing.
 use super::*;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::storage::data::symbol_page_roster::RelationalCheckpointSymbolBucket;
+use crate::storage::data::RelationalStorageSubject;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::data::SymbolPageSelection;
+use crate::storage::data::SymbolPageShape;
+use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+use crate::symbols::data::Symbol;
 use sha2::{Digest, Sha256};
+use std::sync::Arc;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 fn colliding_texts() -> Vec<String> {
     (0..)
@@ -161,7 +171,7 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
         source.clone(),
     )
     .unwrap();
-    cold.demand_page(
+    cold.demand_page_for_test(
         &table,
         &execution,
         locator,
@@ -181,7 +191,7 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
         last: page.entries.last().unwrap().0,
         id_digest: SymbolPageShape::digest_ids(page.entries.iter().map(|(id, _)| u64::from(id.0))),
     };
-    cold.demand_page(&table, &execution, locator, selection)
+    cold.demand_page_for_test(&table, &execution, locator, selection)
         .unwrap();
     assert_eq!(
         source.reads.load(Ordering::SeqCst),
@@ -189,7 +199,7 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
         "shared page needs no second read"
     );
     let failure = cold
-        .demand_page(
+        .demand_page_for_test(
             &table,
             &execution,
             locator,
@@ -199,7 +209,7 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
     assert!(matches!(failure, Failure::StorageUnavailable(error) if error.cause == Cause::Damaged));
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
     assert_eq!(
-        cold.demand_page(&table, &execution, locator, selection),
+        cold.demand_page_for_test(&table, &execution, locator, selection),
         Err(failure)
     );
 }
@@ -303,7 +313,7 @@ fn cached_symbol_page_rejects_changed_interior_membership_without_another_load()
         last: page.entries.last().unwrap().0,
         id_digest: SymbolPageShape::digest_ids(page.entries.iter().map(|(id, _)| u64::from(id.0))),
     };
-    cold.demand_page(&table, &execution, descriptor.member, selection)
+    cold.demand_page_for_test(&table, &execution, descriptor.member, selection)
         .unwrap();
     let reads = source.reads.load(Ordering::SeqCst);
     let forged = SymbolPageSelection::IdRange {
@@ -318,12 +328,12 @@ fn cached_symbol_page_rejects_changed_interior_membership_without_another_load()
         ),
     };
     let failure = cold
-        .demand_page(&table, &execution, descriptor.member, forged)
+        .demand_page_for_test(&table, &execution, descriptor.member, forged)
         .unwrap_err();
     assert!(matches!(failure, Failure::StorageUnavailable(error) if error.cause == Cause::Damaged));
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
     assert_eq!(
-        cold.demand_page(&table, &execution, descriptor.member, selection),
+        cold.demand_page_for_test(&table, &execution, descriptor.member, selection),
         Err(failure)
     );
 }

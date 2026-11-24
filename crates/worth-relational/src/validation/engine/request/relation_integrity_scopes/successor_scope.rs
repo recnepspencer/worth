@@ -5,6 +5,7 @@ use crate::storage::partition::AdjacencyDirection;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn scan_required_visible_successors(

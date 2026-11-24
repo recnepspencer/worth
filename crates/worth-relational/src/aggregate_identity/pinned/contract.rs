@@ -2,6 +2,7 @@
 use super::*;
 use crate::branch::root::RelationalBranchRoot;
 use crate::schema::data::AggregateIdentityContractDeclaration;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn resolve<'root>(
     root: &'root RelationalBranchRoot,
@@ -9,7 +10,7 @@ pub(super) fn resolve<'root>(
     work: &mut super::super::funding::AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<&'root AggregateIdentityContractDeclaration> {
     let mut selected = None;
-    for kind in root.schema_authority().registry().relation_kinds.values() {
+    for kind in (*root.schema_authority().registry().owner_relation_kinds()).values() {
         work.checkpoint(1)?;
         if let Some(found) = kind
             .relation_integrity

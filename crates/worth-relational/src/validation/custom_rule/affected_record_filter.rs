@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 
 use crate::identity::data::{EntityId, RelationId};
 use crate::transactions::data::primitives::EntityReference;

@@ -7,6 +7,7 @@ use crate::storage::overlay::PartitionContentCommitment;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use worth_relational_storage::internal_port::storage::residency::views::RelationalRegionFullViewFixturePort as _;
 
 #[path = "cross_region_forgery_tests.rs"]
 mod cross_region_forgery;
@@ -22,8 +23,6 @@ mod history_prefix_tests;
 mod layered_history_tests;
 #[path = "lease_transfer_tests.rs"]
 mod lease_transfer_tests;
-#[path = "level_tests.rs"]
-mod level_tests;
 #[path = "member_custody_tests.rs"]
 mod member_custody_tests;
 #[path = "mixed_history_tests.rs"]
@@ -105,7 +104,7 @@ fn concurrent_head_demands_share_the_load_and_count_every_lease() {
     );
     assert_eq!(
         full.full_view()
-            .commitment()
+            .full_view_commitment_for_test()
             .digest(fixture.entity.partition_id),
         fixture.expected_digest
     );
@@ -113,50 +112,52 @@ fn concurrent_head_demands_share_the_load_and_count_every_lease() {
 
 #[test]
 fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
-    use super::region_image::{
-        RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
-    };
-    let fixture = region_with_history();
-    let mut cold = fixture.cold;
-    let bytes = fixture.source.members.get(&cold.history).unwrap();
-    let frame = RelationalRegionImage::decode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        bytes,
-        cold.history,
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-    )
-    .unwrap();
-    let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    history.entities[0].earlier[0].generation ^= 1;
-    let (locator, bytes) = RelationalRegionImage::encode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-        &history,
-    )
-    .unwrap();
-    let mut members = fixture.source.members.clone();
-    members.insert(locator, bytes);
-    cold.history = locator;
-    cold.source = Some(Arc::new(CountedSource {
-        members,
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        history: locator,
-        corrupt: AtomicBool::new(false),
-    }));
-    let cell = RelationalRegionResidency::cold(cold).unwrap();
-    let head = head_demand(&cell, 1 << 24).unwrap();
-    assert!(head.head_view().entity(fixture.entity).is_some());
-    assert_eq!(
-        full_demand(&cell, 1 << 24).unwrap_err().cause,
-        Cause::IntegrityMismatch
-    );
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        use super::region_image::{
+            RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
+        };
+        let fixture = region_with_history();
+        let mut cold = fixture.cold;
+        let bytes = fixture.source.members.get(&cold.history).unwrap();
+        let frame = RelationalRegionImage::decode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            bytes,
+            cold.history,
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+        )
+        .unwrap();
+        let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
+        history.entities[0].earlier[0].generation ^= 1;
+        let (locator, bytes) = RelationalRegionImage::encode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+            &history,
+        )
+        .unwrap();
+        let mut members = fixture.source.members.clone();
+        members.insert(locator, bytes);
+        cold.history = locator;
+        cold.source = Some(Arc::new(CountedSource {
+            members,
+            reads: AtomicUsize::new(0),
+            history_reads: AtomicUsize::new(0),
+            history: locator,
+            corrupt: AtomicBool::new(false),
+        }));
+        let cell = RelationalRegionResidency::cold(cold).unwrap();
+        let head = head_demand(&cell, 1 << 24).unwrap();
+        assert!(head.head_view().entity(fixture.entity).is_some());
+        assert_eq!(
+            full_demand(&cell, 1 << 24).unwrap_err().cause,
+            Cause::IntegrityMismatch
+        );
+    })
 }
 
 #[test]
@@ -212,7 +213,7 @@ mod root_view_tests;
 
 #[test]
 fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let captured = fixture
@@ -239,7 +240,7 @@ fn head_demand(
     cell: &Arc<RelationalRegionResidency>,
     limit: u64,
 ) -> Result<RelationalResidencyLease<Head>, crate::storage::data::RelationalStorageUnavailable> {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     cell.demand_head(
         &worth_execution::ExecutionRequest::serial(&request),
         limit,
@@ -251,7 +252,7 @@ fn full_demand(
     cell: &Arc<RelationalRegionResidency>,
     limit: u64,
 ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable> {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     cell.demand_full(
         &worth_execution::ExecutionRequest::serial(&request),
         limit,
@@ -268,128 +269,132 @@ fn storage_failure(
     }
 }
 
+#[path = "head_probe_tests.rs"]
+mod head_probe_tests;
+#[path = "probe_tests.rs"]
+mod probe_tests;
 #[path = "request_stop_tests.rs"]
 mod request_stop_tests;
 
-#[path = "probe_tests.rs"]
-mod probe_tests;
-
-#[path = "head_probe_tests.rs"]
-mod head_probe_tests;
-
 #[test]
 fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
-    use super::source_retirement::OriginalResidentSlot::RawHead;
-    let fixture = region_with_history();
-    let host = crate::execution::test_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let checkpoint = checkpoint_inputs::readmit(&fixture, &execution);
-    let cell = checkpoint.cell;
-    let source = checkpoint.source;
-    let active = checkpoint.active;
-    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let first = cell.reconstruct_head(&lane, &execution, None).unwrap();
-    assert!(first.view().entity(fixture.entity).is_some());
-    let original = cell.source_retirement_resident(RawHead).unwrap().unwrap();
-    assert!(first
-        .view()
-        .same_region_view(RelationalRegionHeadView::new(&original)));
-    let retained = Arc::downgrade(&original);
-    drop(original);
-    drop(first);
-    let second = cell.reconstruct_head(&lane, &execution, None).unwrap();
-    let original = retained
-        .upgrade()
-        .expect("original cell retains authenticated rows");
-    assert!(second
-        .view()
-        .same_region_view(RelationalRegionHeadView::new(&original)));
-    assert_eq!(checkpoint.archive.reads.load(Ordering::SeqCst), 1);
-    assert_eq!(checkpoint.archive.history_reads.load(Ordering::SeqCst), 0);
-    assert_eq!(cell.leases.load(Ordering::SeqCst), 0);
-    assert!(cell.lease_checkpoint_contents().unwrap().is_none());
-    assert!(active.load(Ordering::SeqCst) > 0);
-    drop(original);
-    drop(second);
-    for pass in [NativeSourcePass::Validate, NativeSourcePass::Retire] {
-        let mut retirement = NativeRegionSourceRetirement::new(cell.clone(), pass);
-        while retirement.advance(&execution, source.as_ref()).unwrap()
-            != NativeRegionSourceRetirementProgress::Complete
-        {}
-    }
-    assert_eq!(active.load(Ordering::SeqCst), 0);
-    assert!(matches!(cell.reconstruct_head(&lane, &execution, None),
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        use super::source_retirement::OriginalResidentSlot::RawHead;
+        let fixture = region_with_history();
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let checkpoint = checkpoint_inputs::readmit(&fixture, &execution);
+        let cell = checkpoint.cell;
+        let source = checkpoint.source;
+        let active = checkpoint.active;
+        let lane = fixture_lane;
+        let first = cell.reconstruct_head(&lane, &execution, None).unwrap();
+        assert!(first.view().entity(fixture.entity).is_some());
+        let original = cell.source_retirement_resident(RawHead).unwrap().unwrap();
+        assert!(first
+            .view()
+            .same_region_view(RelationalRegionHeadView::new(&original)));
+        let retained = Arc::downgrade(&original);
+        drop(original);
+        drop(first);
+        let second = cell.reconstruct_head(&lane, &execution, None).unwrap();
+        let original = retained
+            .upgrade()
+            .expect("original cell retains authenticated rows");
+        assert!(second
+            .view()
+            .same_region_view(RelationalRegionHeadView::new(&original)));
+        assert_eq!(checkpoint.archive.reads.load(Ordering::SeqCst), 1);
+        assert_eq!(checkpoint.archive.history_reads.load(Ordering::SeqCst), 0);
+        assert_eq!(cell.leases.load(Ordering::SeqCst), 0);
+        assert!(!cell.has_checkpoint_contents_for_test().unwrap());
+        assert!(active.load(Ordering::SeqCst) > 0);
+        drop(original);
+        drop(second);
+        for pass in [NativeSourcePass::Validate, NativeSourcePass::Retire] {
+            let mut retirement = NativeRegionSourceRetirement::new(cell.clone(), pass);
+            while retirement.advance(&execution, source.as_ref()).unwrap()
+                != NativeRegionSourceRetirementProgress::Complete
+            {}
+        }
+        assert_eq!(active.load(Ordering::SeqCst), 0);
+        assert!(matches!(cell.reconstruct_head(&lane, &execution, None),
         Err(RelationalResidencyDemandFailure::StorageUnavailable(error))
             if error.cause == Cause::SourceUnavailable));
-    drop(cell);
-    assert!(retained.upgrade().is_none());
+        drop(cell);
+        assert!(retained.upgrade().is_none());
+    })
 }
 
 #[test]
 fn reconstructed_heads_do_not_alias_distinct_cells_with_equal_partition_ids() {
-    let fixtures = [region_with_history(), region_with_history()];
-    assert_eq!(fixtures[0].cold.partition_id, fixtures[1].cold.partition_id);
-    let host = crate::execution::test_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let first = fixtures[0]
-        .cell
-        .reconstruct_head(&lane, &execution, None)
-        .unwrap();
-    let second = fixtures[1]
-        .cell
-        .reconstruct_head(&lane, &execution, None)
-        .unwrap();
-    assert!(!first.view().same_region_view(second.view()));
-    for fixture in &fixtures {
-        assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 1);
-        assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
-        assert!(fixture.cell.lease_checkpoint_contents().unwrap().is_none());
-    }
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixtures = [region_with_history(), region_with_history()];
+        assert_eq!(fixtures[0].cold.partition_id, fixtures[1].cold.partition_id);
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let lane = fixture_lane;
+        let first = fixtures[0]
+            .cell
+            .reconstruct_head(&lane, &execution, None)
+            .unwrap();
+        let second = fixtures[1]
+            .cell
+            .reconstruct_head(&lane, &execution, None)
+            .unwrap();
+        assert!(!first.view().same_region_view(second.view()));
+        for fixture in &fixtures {
+            assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 1);
+            assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
+            assert!(!fixture.cell.has_checkpoint_contents_for_test().unwrap());
+        }
+    })
 }
 
 #[test]
 fn reconstructed_heads_check_stopped_requests_and_retain_only_proven_damage() {
-    let fixture = region_with_history();
-    let cell = &fixture.cell;
-    let cancellation = worth_execution::CancellationSource::new();
-    cancellation.cancel();
-    let stopped =
-        crate::execution::test_policy::serial_request().with_cancellation(cancellation.token());
-    let stopped = worth_execution::ExecutionRequest::serial(&stopped);
-    let host = crate::execution::test_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    for expected_reads in [0, 1] {
-        assert!(matches!(
-            cell.reconstruct_head(&lane, &stopped, None),
-            Err(RelationalResidencyDemandFailure::Request(_))
-        ));
-        assert_eq!(fixture.source.reads.load(Ordering::SeqCst), expected_reads);
-        drop(cell.reconstruct_head(&lane, &execution, None).unwrap());
-        assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 1);
-    }
-    let damaged = region_with_history();
-    damaged.source.corrupt.store(true, Ordering::SeqCst);
-    let first = damaged
-        .cell
-        .reconstruct_head(&lane, &execution, None)
-        .err()
-        .unwrap();
-    assert!(
-        matches!(&first, RelationalResidencyDemandFailure::StorageUnavailable(error)
-        if error.cause == Cause::IntegrityMismatch)
-    );
-    damaged.source.corrupt.store(false, Ordering::SeqCst);
-    let reads = damaged.source.reads.load(Ordering::SeqCst);
-    assert_eq!(
-        damaged
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let fixture = region_with_history();
+        let cell = &fixture.cell;
+        let cancellation = worth_execution::CancellationSource::new();
+        cancellation.cancel();
+        let stopped = worth_harness::facade::execution_fixture::serial_request()
+            .with_cancellation(cancellation.token());
+        let stopped = worth_execution::ExecutionRequest::serial(&stopped);
+        let host = worth_harness::facade::execution_fixture::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let lane = fixture_lane;
+        for expected_reads in [0, 1] {
+            assert!(matches!(
+                cell.reconstruct_head(&lane, &stopped, None),
+                Err(RelationalResidencyDemandFailure::Request(_))
+            ));
+            assert_eq!(fixture.source.reads.load(Ordering::SeqCst), expected_reads);
+            drop(cell.reconstruct_head(&lane, &execution, None).unwrap());
+            assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 1);
+        }
+        let damaged = region_with_history();
+        damaged.source.corrupt.store(true, Ordering::SeqCst);
+        let first = damaged
             .cell
             .reconstruct_head(&lane, &execution, None)
             .err()
-            .unwrap(),
-        first
-    );
-    assert_eq!(damaged.source.reads.load(Ordering::SeqCst), reads);
-    assert_eq!(damaged.cell.leases.load(Ordering::SeqCst), 0);
+            .unwrap();
+        assert!(
+            matches!(&first, RelationalResidencyDemandFailure::StorageUnavailable(error)
+        if error.cause == Cause::IntegrityMismatch)
+        );
+        damaged.source.corrupt.store(false, Ordering::SeqCst);
+        let reads = damaged.source.reads.load(Ordering::SeqCst);
+        assert_eq!(
+            damaged
+                .cell
+                .reconstruct_head(&lane, &execution, None)
+                .err()
+                .unwrap(),
+            first
+        );
+        assert_eq!(damaged.source.reads.load(Ordering::SeqCst), reads);
+        assert_eq!(damaged.cell.leases.load(Ordering::SeqCst), 0);
+    })
 }

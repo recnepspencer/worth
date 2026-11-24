@@ -3,6 +3,7 @@ use crate::transactions::data::primitives::TransactionId;
 use crate::validation::data::contracts::InvariantPlanContract;
 use crate::validation::data::execution::InvariantExecutionPoint;
 use crate::validation::engine::InvariantObservationKind;
+use worth_relational_contracts::internal_port::validation::data::execution::InvariantExecutionPointOwnerPort as _;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PreparationPlanningContext {

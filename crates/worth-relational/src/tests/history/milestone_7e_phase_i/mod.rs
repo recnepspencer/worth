@@ -1,3 +1,7 @@
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness::RelationalMergeStrategyWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_posture_rows::RelationalMergeTopologyStrategyWitnessRowOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::MergeExecutionSummaryOwnerPort as _;
 mod fixtures;
 mod serde_support;
 

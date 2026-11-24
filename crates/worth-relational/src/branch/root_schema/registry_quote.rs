@@ -3,21 +3,22 @@ use super::compilation_quote::{add, array, checked, size, tree, Denial};
 use crate::identity::data::KindId;
 use crate::schema::data::*;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn retained(
     registry: &RelationalSchemaRegistry,
     control: crate::schema::SchemaCompilationControl<'_, '_>,
 ) -> Result<u64, Denial> {
-    let mut bytes = tree::<KindId, EntityKindRegistration>(registry.entity_kinds.len())?;
+    let mut bytes = tree::<KindId, EntityKindRegistration>((*registry.owner_entity_kinds()).len())?;
     add(
         &mut bytes,
-        tree::<KindId, RelationKindRegistration>(registry.relation_kinds.len())?,
+        tree::<KindId, RelationKindRegistration>((*registry.owner_relation_kinds()).len())?,
     )?;
     add(
         &mut bytes,
-        tree::<KindId, ()>(registry.native_private_kinds.len())?,
+        tree::<KindId, ()>((*registry.owner_native_private_kinds()).len())?,
     )?;
-    if let Some(storage) = &registry.current_publication_storage {
+    if let Some(storage) = &(*registry.owner_current_publication_storage()) {
         control.checkpoint().map_err(Denial::Request)?;
         add(
             &mut bytes,
@@ -29,16 +30,16 @@ pub(super) fn retained(
         tree::<
             crate::derived_relation::definition::DerivedRelationIdentity,
             Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
-        >(registry.derived_relations.len())?,
+        >((*registry.owner_derived_relations()).len())?,
     )?;
     add(
         &mut bytes,
         tree::<
             crate::projected_member_domain::ProjectedMemberDomainIdentity,
             Arc<crate::projected_member_domain::RegisteredProjectedMemberDomain>,
-        >(registry.projected_member_domains.len())?,
+        >((*registry.owner_projected_member_domains()).len())?,
     )?;
-    for kind in registry.entity_kinds.values() {
+    for kind in (*registry.owner_entity_kinds()).values() {
         control.checkpoint().map_err(Denial::Request)?;
         add(&mut bytes, size(kind.kind_name.capacity())?)?;
         add(&mut bytes, size(kind.schema_id.0.capacity())?)?;
@@ -47,7 +48,7 @@ pub(super) fn retained(
             declarations(&kind.aspect_contract_declarations, control)?,
         )?;
     }
-    for kind in registry.relation_kinds.values() {
+    for kind in (*registry.owner_relation_kinds()).values() {
         control.checkpoint().map_err(Denial::Request)?;
         add(&mut bytes, size(kind.kind_name.capacity())?)?;
         add(&mut bytes, size(kind.schema_id.0.capacity())?)?;
@@ -66,7 +67,7 @@ pub(super) fn retained(
     }
     // Registered recipe/domain values already have shared owners. Only these
     // map keys are moved owned text; do not recursively bill the Arc payloads.
-    for key in registry.derived_relations.keys() {
+    for key in (*registry.owner_derived_relations()).keys() {
         control.checkpoint().map_err(Denial::Request)?;
         add(
             &mut bytes,
@@ -75,7 +76,7 @@ pub(super) fn retained(
             )?)?,
         )?;
     }
-    for key in registry.projected_member_domains.keys() {
+    for key in (*registry.owner_projected_member_domains()).keys() {
         control.checkpoint().map_err(Denial::Request)?;
         add(
             &mut bytes,
@@ -84,8 +85,7 @@ pub(super) fn retained(
             )?)?,
         )?;
     }
-    let content = registry
-        .content_formats
+    let content = (*registry.owner_content_formats())
         .copy_geometry(control)
         .map_err(Denial::Request)?;
     use worth_foundational::facade::CanonicalDigestId;
@@ -114,14 +114,14 @@ pub(super) fn retained(
         checked(tree::<u32, CanonicalDigestId>(0)?.checked_mul(size(content.version_node_bound)?))?,
     )?;
     add(&mut bytes, size(content.name_bytes)?)?;
-    if !registry.persistent_name_schemes.is_empty() {
+    if !(*registry.owner_persistent_name_schemes()).is_empty() {
         add(
             &mut bytes,
             tree::<String, crate::lineage::data::InstalledPersistentNameScheme>(
-                registry.persistent_name_schemes.len(),
+                (*registry.owner_persistent_name_schemes()).len(),
             )?,
         )?;
-        for scheme in registry.persistent_name_schemes.iter() {
+        for scheme in (*registry.owner_persistent_name_schemes()).iter() {
             control.checkpoint().map_err(Denial::Request)?;
             add(&mut bytes, size(scheme.scheme_id().len())?)?;
             add(&mut bytes, size(scheme.subject_name().len())?)?;
@@ -132,14 +132,14 @@ pub(super) fn retained(
             }
         }
     }
-    if !registry.kind_name_schemes.is_empty() {
+    if !(*registry.owner_kind_name_schemes()).is_empty() {
         add(
             &mut bytes,
             tree::<(crate::lineage::data::PersistentNameSubjectKind, KindId), String>(
-                registry.kind_name_schemes.len(),
+                (*registry.owner_kind_name_schemes()).len(),
             )?,
         )?;
-        for scheme_id in registry.kind_name_schemes.values() {
+        for scheme_id in (*registry.owner_kind_name_schemes()).values() {
             control.checkpoint().map_err(Denial::Request)?;
             add(&mut bytes, size(scheme_id.capacity())?)?;
         }

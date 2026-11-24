@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 use proptest::prelude::*;
 

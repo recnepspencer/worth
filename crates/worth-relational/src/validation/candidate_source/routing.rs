@@ -2,6 +2,7 @@
 use crate::identity::data::KindId;
 use crate::validation::candidate_source::SourcePreparationGroup;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 #[derive(Default, Debug)]
 pub(crate) struct SourceProgramPostings {

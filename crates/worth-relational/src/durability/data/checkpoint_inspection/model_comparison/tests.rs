@@ -5,6 +5,8 @@ use crate::branch::version::RelationalBranchVersion;
 use worth_foundational::{
     FoundationalBranchReferenceGeneration as Generation, FoundationalBranchTarget,
 };
+use worth_relational_contracts::internal_port::branch::identity::RelationalBranchIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 fn cell(runtime: u64, branch: &str) -> RelationalBranchCellCheckpoint {
     RelationalBranchCellCheckpoint {

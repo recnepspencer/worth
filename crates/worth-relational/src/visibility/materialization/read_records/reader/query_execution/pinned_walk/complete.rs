@@ -7,6 +7,7 @@ use crate::visibility::materialization::read_records::projection::{
     pinned::PinnedProjectionSource, VisibilityProjectionView,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(crate) fn complete(
     execution: &ExecutionRequest<'_, '_>,
@@ -24,8 +25,8 @@ pub(crate) fn complete(
             .projection_root()
             .schema_authority()
             .registry();
-        if !schema.entity_kinds.contains_key(&scope.entity_kind)
-            || !schema.relation_kinds.contains_key(&scope.relation_kind)
+        if !(*schema.owner_entity_kinds()).contains_key(&scope.entity_kind)
+            || !(*schema.owner_relation_kinds()).contains_key(&scope.relation_kind)
         {
             return Err(PinnedStructuralWalkDenialKind::KindUnavailable);
         }

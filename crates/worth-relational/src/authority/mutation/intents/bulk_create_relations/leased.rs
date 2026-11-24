@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 pub(super) fn stage_leased_relation_rows(
     intent: &BulkRelationCreateIntent,

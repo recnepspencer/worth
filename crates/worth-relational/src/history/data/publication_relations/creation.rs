@@ -1,4 +1,6 @@
 //! Exact native creation position and canonical allocations classify relation custody.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use super::{
     charge, writes, CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody,
     CanonicalRequiredOutputOrigin, Stop,

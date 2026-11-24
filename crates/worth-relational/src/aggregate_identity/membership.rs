@@ -8,6 +8,7 @@ use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchema
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView, FieldKey};
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
 
 /// One carrier may own different cohorts for its cases. Every complete logical
 /// key occurs on exactly one edge; a single (carrier,target) edge holds all its

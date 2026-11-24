@@ -1,4 +1,5 @@
 //! Immutable native custody independent of the installed runtime's borrow.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::retention::VisibilitySnapshotBasis;
 use crate::indexes::access::selected_index::PinnedIndex;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};

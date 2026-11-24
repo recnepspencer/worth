@@ -1,4 +1,7 @@
 //! One iterative endpoint evaluator for physical and projected member domains.
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod memo;
 mod navigation;
 mod ordered_events;
@@ -63,7 +66,11 @@ pub(super) fn admit_definition(
         .len()
         .checked_add(handle.parts().identity.name.len())
         .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
-    let levels = (usize::BITS - registry.derived_relations.len().max(1).leading_zeros()) as usize;
+    let levels = (usize::BITS
+        - (*registry.owner_derived_relations())
+            .len()
+            .max(1)
+            .leading_zeros()) as usize;
     read.checkpoint(
         names
             .checked_mul(11)
@@ -98,8 +105,7 @@ pub(crate) fn evaluate_position(
         relations: BTreeMap::new(),
         adjacency: BTreeSet::new(),
     };
-    let endpoints = handle
-        .entry
+    let endpoints = (*handle.owner_entry())
         .endpoints
         .get(node)
         .ok_or(DefinitionDenial::InvalidExpression)?;
@@ -145,13 +151,13 @@ pub(crate) fn evaluate_position(
         })
         .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
     evaluation.read.retain(output_bytes)?;
-    Ok(Data {
-        endpoints: endpoints.into_iter().collect(),
-        entities: evaluation.entities.into_iter().collect(),
-        relations: evaluation.relations.into_values().collect(),
-        adjacency: evaluation.adjacency.into_iter().collect(),
-        reads: evaluation.read.reads(),
-    })
+    Ok(super::read::complete_data(
+        endpoints.into_iter().collect(),
+        evaluation.entities.into_iter().collect(),
+        evaluation.relations.into_values().collect(),
+        evaluation.adjacency.into_iter().collect(),
+        evaluation.read.reads(),
+    ))
 }
 
 /// Fixed-width physical keys retain their one-unit insertion cost. Semantic

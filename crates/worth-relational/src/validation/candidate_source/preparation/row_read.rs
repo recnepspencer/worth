@@ -88,7 +88,7 @@ impl<'source> ManagedIndexSourceRows<'source> {
         self.check_row_context(occurrence)?;
         let data = self.projection.read(
             read,
-            &self.projection.program.0.path,
+            &(*self.projection.program.owner_field_0()).path,
             self.scope,
             Shape::Adjacency { reverse: false },
         )?;
@@ -114,7 +114,7 @@ impl<'source> ManagedIndexSourceRows<'source> {
             OccurrenceMembership::Inverse(read) => {
                 let data = self.projection.read(
                     read,
-                    &self.projection.program.0.path,
+                    &(*self.projection.program.owner_field_0()).path,
                     occurrence.row,
                     Shape::Adjacency { reverse: true },
                 )?;
@@ -146,7 +146,7 @@ impl<'source> ManagedIndexSourceRows<'source> {
         occurrence: &'read ManagedIndexSourceOccurrence,
     ) -> Result<PreparedManagedIndexSourceRowRead<'read, 'source>, ReadDenial> {
         self.check_row_context(occurrence)?;
-        let path = &self.projection.program.0.path;
+        let path = &(*self.projection.program.owner_field_0()).path;
         let shape = Shape::Adjacency { reverse: true };
         let read = self.projection.prepare(path, occurrence.row, shape)?;
         let data = self.projection.read(&read, path, occurrence.row, shape)?;

@@ -1,6 +1,7 @@
 //! Successful static admission belongs only to its immutable structural view.
 use crate::derived_relation::DerivedRelationHandle;
 use std::sync::{Arc, Mutex};
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
 
 // This is acceleration capacity, never an admission or expression-size limit.
 // A full cache continues through the ordinary registered-definition gate.
@@ -26,14 +27,16 @@ impl DerivedAdmissionCache {
             .unwrap()
             .iter()
             .flatten()
-            .any(|cached| Arc::ptr_eq(&cached.entry, &handle.entry))
+            .any(|cached| Arc::ptr_eq(&(*cached.owner_entry()), &(*handle.owner_entry())))
     }
     pub(crate) fn remember(&self, handle: &DerivedRelationHandle) {
         let mut slots = self.0.lock().unwrap();
         let mut empty = None;
         for (index, slot) in slots.iter().enumerate() {
             match slot {
-                Some(cached) if Arc::ptr_eq(&cached.entry, &handle.entry) => return,
+                Some(cached) if Arc::ptr_eq(&(*cached.owner_entry()), &(*handle.owner_entry())) => {
+                    return
+                }
                 None if empty.is_none() => empty = Some(index),
                 _ => {}
             }

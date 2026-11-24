@@ -1,4 +1,5 @@
 //! Reissue the selected producer custody with fresh provenance and exact IDs.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::super::retention_budget::origin_retention_bytes;
 use super::super::*;
 use super::{absence, records, CanonicalHistoricalOutputSelection};

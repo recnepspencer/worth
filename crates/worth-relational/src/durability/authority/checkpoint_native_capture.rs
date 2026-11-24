@@ -1,5 +1,6 @@
 //! Native capture selects cells, consolidating history only at its declared bound.
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 use super::checkpoint_capture::CapturedCheckpointBasis;
 use crate::durability::data::*;
@@ -37,7 +38,11 @@ impl CapturedCheckpointBasis {
                     .is_none()
             });
             self.lineage_nodes.retain(|node| {
-                RelationalCheckpointPage::find(&prior.manifest.lineage, node.lineage_id.0).is_none()
+                RelationalCheckpointPage::find(
+                    &prior.manifest.lineage,
+                    (*node.owner_lineage_id()).0,
+                )
+                .is_none()
             });
         }
         let resident_event_rows = if placement.is_embedded() {

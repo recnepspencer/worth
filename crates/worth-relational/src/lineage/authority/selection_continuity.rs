@@ -23,6 +23,7 @@
 //! Other records without a name on this branch are untouched, so unnamed and
 //! schemaless selections emit exactly the events they emitted before.
 
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::CanonicalOwnedGraphSelection;

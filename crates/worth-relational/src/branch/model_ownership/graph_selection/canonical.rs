@@ -12,6 +12,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::{
     origin_denial, TransactionCommitError,
 };
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 impl RelationalOwnedModelGraphSelection {
     pub(crate) fn canonical_meaning(

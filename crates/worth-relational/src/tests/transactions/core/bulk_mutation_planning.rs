@@ -1,5 +1,6 @@
 use crate::facade::transactions::{EntitySpec, MutationIntent};
 use crate::tests::support::*;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 #[test]
 fn bulk_mutation_plan_uses_owned_preview_symbols_and_tracks_locality() {

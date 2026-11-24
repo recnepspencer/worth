@@ -2,6 +2,7 @@
 //! 32-byte digest.
 
 use worth_foundational::facade::AggregateIdentity;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::lineage::data::{PersistentNameIdentity, PersistentNameKey, PersistentNameSubjectKind};
 

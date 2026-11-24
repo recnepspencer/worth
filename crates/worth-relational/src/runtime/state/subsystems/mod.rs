@@ -6,11 +6,11 @@ pub(crate) mod indexing;
 pub(crate) mod lineage;
 pub(crate) mod lineage_identity;
 pub(crate) mod publication;
-pub(crate) mod record_identity;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity;
 mod schema_contract_construction;
 pub(crate) mod schema_contract_runtime;
 pub(crate) mod services;
-pub(crate) mod storage;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::storage;
 mod storage_lifecycle;
 pub(crate) mod visibility;
 

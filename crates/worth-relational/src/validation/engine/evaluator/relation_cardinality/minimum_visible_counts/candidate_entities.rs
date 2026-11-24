@@ -5,6 +5,7 @@ use super::{
 use crate::identity::data::KindId;
 use crate::transactions::data::primitives::EntityReference;
 use crate::validation::engine::evaluator::common::contract_candidate_kind_matches;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 pub(super) fn record_candidate_entity(
     context: &InvariantExecutionContext<'_, '_>,

@@ -1,5 +1,6 @@
 //! Canonical payload commitments over positioned envelope DATA.
 
+use worth_relational_contracts::internal_port::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigestOwnerPort as _;
 use crate::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};

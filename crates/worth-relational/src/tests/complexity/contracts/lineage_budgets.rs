@@ -8,6 +8,7 @@ use crate::facade::replay::{
     ReplayLineageDigestMode, ReplayVerificationMode,
 };
 use crate::tests::support::*;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 #[test]
 fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() {
@@ -17,12 +18,12 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let start_lineage = runtime
+    let start_lineage = (*runtime
         .lineage_access()
         .for_record(execution, entity)
         .unwrap()
         .unwrap()
-        .lineage_id;
+        .owner_lineage_id());
 
     for index in 0..5 {
         let label = format!("noise-{index}");
@@ -94,16 +95,16 @@ fn complexity_budget_lineage_branch_divergence_reports_breadth() {
     assert_eq!(counters.lineage_branch_divergence_requests, 1);
     assert_eq!(
         counters.lineage_branch_divergence_event_scans,
-        divergence.metrics.left_event_count + divergence.metrics.right_event_count
+        divergence.metrics().left_event_count + divergence.metrics().right_event_count
     );
     assert_eq!(
         counters.lineage_branch_divergence_node_scans,
-        divergence.metrics.left_node_count + divergence.metrics.right_node_count
+        divergence.metrics().left_node_count + divergence.metrics().right_node_count
     );
     assert!(counters.lineage_graph_snapshot_requests >= 2);
     assert_eq!(
         counters.lineage_graph_snapshot_nodes_materialized,
-        divergence.metrics.left_node_count + divergence.metrics.right_node_count
+        divergence.metrics().left_node_count + divergence.metrics().right_node_count
     );
     assert!(
         counters.visible_authoritative_entity_records_materialized
@@ -147,11 +148,11 @@ fn complexity_budget_lineage_graph_snapshot_reports_full_breadth() {
     assert_eq!(counters.lineage_graph_snapshot_requests, 1);
     assert_eq!(
         counters.lineage_graph_snapshot_nodes_materialized,
-        graph.metrics.node_count
+        graph.metrics().node_count
     );
     assert_eq!(
         counters.lineage_graph_snapshot_events_materialized,
-        graph.metrics.event_count
+        graph.metrics().event_count
     );
 }
 

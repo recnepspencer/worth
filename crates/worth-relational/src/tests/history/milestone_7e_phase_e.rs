@@ -8,6 +8,9 @@ use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
     runtime_with_test_schema,
 };
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
 
 #[test]
 fn retained_merge_proof_packet_preserves_exact_authority_truth() {

@@ -1,5 +1,6 @@
 use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+use worth_relational_contracts::internal_port::durability::medium::unresolved::RelationalDurabilityUnresolvedOwnerPort as _;
 mod source_retirement;
 pub(crate) use source_retirement::SealedRelationalMediumBinding;
 mod checkpoint_selection;

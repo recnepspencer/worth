@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+use worth_relational_contracts::internal_port::branch::identity::RelationalBranchIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 use worth_foundational::FoundationalBranchTarget;
 

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 use super::super::super::context::InvariantExecutionContext;
 use crate::transactions::data::primitives::EntityReference;

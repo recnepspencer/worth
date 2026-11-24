@@ -9,6 +9,8 @@ use crate::runtime::{
 };
 use crate::validation::data::CustomInvariantRegistration;
 use crate::validation::FrozenCustomInvariantRegistry;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
 
 use super::state::{
     RelationalRuntimeConfiguration, RelationalRuntimeOwner, RelationalRuntimePublicationOwner,

@@ -9,6 +9,7 @@
 //! source name ends there with no named successor.
 
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::history::data::CommitId;
 use crate::identity::data::LineageId;

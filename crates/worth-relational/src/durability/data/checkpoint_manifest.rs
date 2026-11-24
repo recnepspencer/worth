@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
-use crate::identity::data::PartitionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Clone)]

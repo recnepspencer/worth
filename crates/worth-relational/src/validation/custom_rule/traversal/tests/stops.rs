@@ -14,7 +14,7 @@ fn lease(
     cancellation: CancellationToken,
     deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
+    worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -51,7 +51,7 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
             let held = time.hold();
             let deadline = (stop == Some(CustomInvariantInterruption::DeadlineElapsed))
                 .then(|| time.clock().deadline_at(held + Duration::from_secs(1)));
-            let host = crate::execution::test_policy::serial_request()
+            let host = worth_harness::facade::execution_fixture::serial_request()
                 .with_cancellation(cancellation.token())
                 .with_deadline(deadline.clone());
             let lease = lease(None, cancellation.token(), deadline);
@@ -107,7 +107,7 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
 
 #[test]
 fn complete_walk_work_and_memory_refuse_without_a_partial_result() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let graph = Graph::new(
         5,
@@ -190,7 +190,7 @@ fn retained_complete_result_keeps_its_original_payer_until_drop() {
 
 #[test]
 fn complete_walk_counts_acquired_metadata_even_when_access_is_denied() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let graph = Graph::new(2, &[(0, 1, KindId(2))]);
     for denied_relation in [false, true] {

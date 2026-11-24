@@ -1,5 +1,6 @@
 //! Join a retained scoped cache to already readmitted native history authority.
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 use crate::branch::target::RelationalBranchTarget;
 use crate::history::data::{BranchId, CommitId};

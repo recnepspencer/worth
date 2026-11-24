@@ -1,4 +1,6 @@
 //! Original-request work and retained custody for relation witness preparation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::PreparedRelationIntegrityScopes;
 use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

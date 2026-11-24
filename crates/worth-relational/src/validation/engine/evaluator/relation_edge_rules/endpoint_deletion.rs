@@ -29,6 +29,7 @@ pub(super) fn classify(
             (contract.cascade_delete_policy != CascadeDeletePolicy::RetainDanglingForAudit)
                 .then_some(EndpointDeletionRefusal::RelationRetirementRequired)
         }
+        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

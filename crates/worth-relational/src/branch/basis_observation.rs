@@ -4,6 +4,7 @@ use super::{
     RelationalBranchIdentity,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_contracts::internal_port::branch::identity::RelationalBranchIdentityOwnerPort as _;
 
 impl RelationalRuntime {
     /// Observe and admit one exact owner branch basis from one cell snapshot.

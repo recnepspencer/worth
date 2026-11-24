@@ -5,6 +5,7 @@ use crate::mvcc::publication::application_publication::output_meaning::RequiredO
 use crate::publication::ownership::read::roster::CurrentPublicationRoster;
 use crate::transactions::data::primitives::RecordRef;
 use std::rc::Rc;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// What the ownership walk consumes of one entity's authenticated roster:
 /// every member with its origin's source scope and whether it is retired, and
@@ -121,12 +122,12 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         &mut self,
         entity: EntityId,
     ) -> Result<Option<CurrentPublicationRoster>, RelationalModelOwnershipDenial> {
-        if self
+        if (*self
             .root
             .schema_authority()
             .registry()
-            .current_publication_storage
-            .is_none()
+            .owner_current_publication_storage())
+        .is_none()
         {
             return Ok(None);
         }

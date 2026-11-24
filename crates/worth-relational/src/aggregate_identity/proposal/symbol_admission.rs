@@ -9,6 +9,7 @@ use crate::transactions::data::intents::MutationIntent;
 use crate::transactions::data::intents::RelationMutationIntent;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl AggregateProposalBorrow<'_> {
     pub(crate) fn reserve_consequence_symbols(

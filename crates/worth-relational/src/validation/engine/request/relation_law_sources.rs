@@ -3,6 +3,7 @@ use crate::identity::data::KindId;
 use crate::transactions::data::primitives::EntityReference;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationLawSourceWitness {

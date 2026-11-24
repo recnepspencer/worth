@@ -11,6 +11,7 @@ use crate::mvcc::publication::application_publication::{
 use crate::transactions::data::outcomes::transaction_commit_error::origin_denial;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 /// Untrusted posture selectors with the installed producer's concrete admission.
 /// Native admits these against C before applying any participant commands to D.

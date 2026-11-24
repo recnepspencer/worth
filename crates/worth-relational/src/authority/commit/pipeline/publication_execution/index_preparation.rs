@@ -1,4 +1,6 @@
 //! Attach the index owner's funded result to the exact prepared publication.
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::root::RelationalBranchRoot;
 use crate::indexes::authority::PreparedCandidateIndexPublication;
 use crate::indexes::data::{DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceWork};

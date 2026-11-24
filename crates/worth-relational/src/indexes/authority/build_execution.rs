@@ -1,5 +1,6 @@
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
+use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexDefinitionOwnerPort as _;
 
 use crate::authority::commit::preparation::packets::index::IndexPreparationPacket;
 use crate::authority::commit::preparation::packets::index::IndexReductionKey;

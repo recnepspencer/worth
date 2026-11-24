@@ -1,5 +1,5 @@
 mod head_validation;
-pub(super) mod materialization_funding;
+pub(crate) use worth_relational_storage::internal_port::storage::residency::region_load::materialization_funding;
 mod owned_partition;
 use super::region_image::*;
 use super::resident_history::projection_funding;
@@ -8,7 +8,6 @@ use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContrac
 use crate::durability::checkpoints::images::{
     partition_from_image_for_request, partition_to_image_with_contracts,
 };
-use crate::identity::data::PartitionId;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,

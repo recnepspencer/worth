@@ -1,4 +1,7 @@
 //! Request-funded preparation of deterministic, atomic aggregate consequences.
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::source::AggregateIdentitySourceOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
 use crate::branch::root::RelationalBranchRootSchemaAuthority;
@@ -123,9 +126,7 @@ pub(super) fn prepare(
         let controls = super::retention_extent::arc_backing::<AggregateProjection>()
             + super::retention_extent::arc_backing::<ExecutionMemoryReservation>();
         work.retain(source_bytes.saturating_add(controls))?;
-        for contract in authority
-            .registry()
-            .relation_kinds
+        for contract in (*authority.registry().owner_relation_kinds())
             .values()
             .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         {

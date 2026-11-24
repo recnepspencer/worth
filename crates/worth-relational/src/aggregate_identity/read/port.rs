@@ -5,6 +5,9 @@ use crate::graph_member::{NativeMemberDomain, NativeMemberKey as Member};
 use crate::identity::data::KindId;
 use crate::projected_member_domain::projection::ObservedProjectedMember;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
+use worth_relational_contracts::internal_port::graph_member::key::NativeMemberKeyOwnerPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {
     pub(crate) fn new(view: &'view StructuralRelationView<'runtime>) -> Self {
@@ -193,8 +196,13 @@ impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {
                 .len()
                 .checked_add(identity.name.len())
                 .ok_or(AggregateReadDenial::PreparationRefused)?;
-            let levels =
-                u64::from(usize::BITS - registry.derived_relations.len().max(1).leading_zeros());
+            let levels = u64::from(
+                usize::BITS
+                    - (*registry.owner_derived_relations())
+                        .len()
+                        .max(1)
+                        .leading_zeros(),
+            );
             self.view
                 .read_budget()
                 .checkpoint(

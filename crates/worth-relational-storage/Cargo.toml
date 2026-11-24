@@ -1,0 +1,32 @@
+[package]
+name = "worth-relational-storage"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Relational storage and residency mechanisms."
+publish = false
+
+[dependencies]
+worth-relational-contracts.workspace = true
+worth-foundational = { path = "../worth-foundational" }
+worth-proof = { path = "../worth-proof" }
+worth-execution = { path = "../worth-execution" }
+serde = { version = "1", features = ["derive", "rc"] }
+rmp-serde = "1.3"
+"serde_json" = { version = "1", features = ["raw_value"] }
+sha2 = "=0.10.9"
+# Pinned with worth-signal, whose retained-storage charges describe im 15.1 nodes.
+im = { version = "=15.1.0", features = ["serde"] }
+# aarch64's SHA2 instructions are runtime detected by sha2. x86 uses its
+# built-in SHA-NI backend without requiring an assembler on MSVC hosts.
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+sha2 = { version = "=0.10.9", features = ["asm"] }
+
+[dev-dependencies]
+worth-harness.workspace = true
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+stats_alloc = "0.1"
+
+[lints]
+workspace = true

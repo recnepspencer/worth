@@ -8,6 +8,9 @@
 //! `generation`, `LineageId`, `CommitId`, or worker order).
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthPartsOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameBirthRecordOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::lineage::data::{
     DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageBasisView,

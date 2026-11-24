@@ -4,11 +4,11 @@ pub(crate) use cell::ManagedSourceRootImage;
 mod cell;
 mod managed_fork;
 mod preflight;
-pub(crate) mod preflight_stop;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::companion::preflight_stop;
 pub(crate) mod registration;
-pub(crate) mod registration_stop;
 pub use managed_fork::ManagedIndexSourceForkPreparation;
 pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
+pub(crate) use worth_relational_contracts::internal_port::mvcc::publication::companion::registration_stop;
 
 pub use cell::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,

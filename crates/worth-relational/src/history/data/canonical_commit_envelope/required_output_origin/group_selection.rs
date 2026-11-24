@@ -1,4 +1,5 @@
 //! Exact route/member selection within a multi-route canonical retirement.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::{history::data::CodecRetirementClosureStop as Stop, identity::data::RelationId};
 use std::sync::Arc;

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 use worth_foundational::{
     aspects, validate_aspect_value, AspectContract, AspectContractRevision, AspectIdentity,
@@ -198,5 +199,5 @@ pub(super) fn authoritative_summary_field_patch(
 }
 
 pub(super) fn empty_working_state(config: &crate::config::data::MutationConfig) -> WorkingState {
-    WorkingState::new(BTreeMap::new(), config.adjacency_policy.clone())
+    WorkingState::working_state_for_test(BTreeMap::new(), config.adjacency_policy.clone())
 }

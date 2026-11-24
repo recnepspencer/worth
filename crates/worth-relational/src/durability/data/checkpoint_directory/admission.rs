@@ -11,6 +11,7 @@ use crate::durability::{
     },
 };
 use worth_execution::{ExecutionArray, ExecutionRequest};
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 #[derive(Debug)]
 pub(crate) struct CheckpointDirectoryAdmission {
     draft: Option<PreparedCheckpointDirectory>,

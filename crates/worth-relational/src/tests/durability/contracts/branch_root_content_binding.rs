@@ -1,5 +1,6 @@
 use super::*;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
 fn checkpoint_rejects_previous_branch_root_format_before_readmission() {

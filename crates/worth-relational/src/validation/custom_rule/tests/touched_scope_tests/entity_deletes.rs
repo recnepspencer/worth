@@ -2,11 +2,11 @@ use super::*;
 
 #[test]
 fn touched_scope_tracks_planned_entity_deletes() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let id = PartitionId::main();
-    let (partition, entities, _) = relation_partition(id, 1, &[]);
+    let (partition, entities, _) = relation_partition_for_test(id, 1, &[]);
     let partitions = BTreeMap::from([(id, partition)]);
     let entity_id = entities[0];
     let intent = MutationIntent::Entity(

@@ -21,6 +21,7 @@ impl From<RecordStructuralChange> for DiffFragmentKind {
             RecordStructuralChange::RetainedForAudit => Self::RetainedForAudit,
             RecordStructuralChange::MaterializationSuspended => Self::MaterializationSuspended,
             RecordStructuralChange::Rematerialized => Self::Rematerialized,
+            _ => unreachable!("unhandled Relational contract variant"),
         }
     }
 }

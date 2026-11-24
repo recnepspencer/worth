@@ -1,16 +1,17 @@
 use super::*;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 pub(super) fn run_replacement_strategy_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> ReplacementCertificationBundle {
     let runtime = replacement_strategy_runtime();
     let replacement_entity = create_entity(execution, &runtime, "replace-target");
-    let replacement_start_lineage = runtime
+    let replacement_start_lineage = (*runtime
         .lineage_access()
         .for_record(execution, replacement_entity)
         .unwrap()
         .expect("replacement entity lineage before strategy")
-        .lineage_id;
+        .owner_lineage_id());
     let replacement_commit = execute_strategy_commit(
         execution,
         &runtime,
@@ -35,12 +36,12 @@ pub(super) fn run_replacement_strategy_certification(
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).map(|record| record.entity_id))
         .expect("replacement entity visible after strategy");
-    let replacement_end_lineage = runtime
+    let replacement_end_lineage = (*runtime
         .lineage_access()
         .for_record(execution, replacement_record)
         .unwrap()
         .expect("replacement entity lineage after strategy")
-        .lineage_id;
+        .owner_lineage_id());
     assert_ne!(replacement_start_lineage, replacement_end_lineage);
     let replacement_envelope = runtime
         .replay()
@@ -128,12 +129,12 @@ pub(super) fn run_replacement_strategy_certification(
         recovered_replacement_replay.failure.is_none(),
         "recovered replacement replay failed: {recovered_replacement_replay:?}"
     );
-    let recovered_replacement_lineage = recovered
+    let recovered_replacement_lineage = (*recovered
         .lineage_access()
         .for_record(execution, replacement_record)
         .unwrap()
         .expect("recovered replacement entity lineage")
-        .lineage_id;
+        .owner_lineage_id());
     let recovered_replacement_strategy_artifacts = recovered_replacement_envelope
         .strategy_artifacts
         .as_ref()

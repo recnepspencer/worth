@@ -34,7 +34,7 @@ fn controller() -> u64 {
 }
 #[test]
 fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&setup);
     let history = crate::branch::basis_admission_tests::installed_history(1);
     let schema = RelationalSchemaRegistry::new();
@@ -117,7 +117,7 @@ fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
 }
 #[test]
 fn complete_component_capture_refuses_original_roster_before_effects() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let metadata = ExecutionRequest::serial(&setup);
     let history = crate::branch::basis_admission_tests::installed_history(1);
     let before = history.retention_cost_counters();
@@ -144,7 +144,7 @@ fn complete_component_capture_refuses_original_roster_before_effects() {
 }
 #[test]
 fn complete_component_holds_keep_actual_read_obligations_until_drop() {
-    let setup = crate::execution::test_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     let metadata = ExecutionRequest::serial(&setup);
     let history = crate::branch::basis_admission_tests::installed_history(1);
     let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));

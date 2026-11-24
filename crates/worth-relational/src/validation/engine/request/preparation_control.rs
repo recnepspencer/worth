@@ -4,6 +4,7 @@ use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionAllocationPolicy;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 /// The original operation and retention binding selected by the transaction owner.
 pub(crate) struct InvariantPreparationSource<'a> {

@@ -6,6 +6,7 @@ use crate::indexes::data::IndexBasisCheckpoint;
 use crate::runtime::state::subsystems::indexing::IndexingState;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 #[derive(Debug)]
 pub(crate) struct CheckpointIndexProjections {

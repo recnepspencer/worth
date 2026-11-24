@@ -1,4 +1,5 @@
 //! Independent normalized-plan data and its original request reservation.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::transactions::data::intents::MutationIntent;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

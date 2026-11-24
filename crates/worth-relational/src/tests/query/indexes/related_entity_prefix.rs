@@ -11,6 +11,9 @@ use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingEntryOwnerPort as _;
 
 #[test]
 fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
@@ -278,14 +281,14 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
             else {
                 panic!("related ordering expected");
             };
-            let rows = entries.get_mut(&parent).unwrap();
-            let original = &rows[0];
+            let rows = entries.index_rows_mut_for_test(&parent).unwrap();
+            let original = rows.iter().next().expect("the fixture has one indexed row");
             let truncated = crate::indexes::data::RelatedEntityOrderingEntry::new(
                 vec![],
                 original.child_entity_id(),
                 original.relation_id(),
             );
-            rows[0] = truncated;
+            *rows.index_row_mut_for_test(0) = truncated;
         });
     let corrupt_pin = runtime
         .read_truth()

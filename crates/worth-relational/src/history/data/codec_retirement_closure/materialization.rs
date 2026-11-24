@@ -1,4 +1,5 @@
 //! Native producer association survives only authenticated semantic maintenance.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;

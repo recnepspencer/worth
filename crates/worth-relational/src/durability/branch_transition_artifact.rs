@@ -19,11 +19,11 @@
 //! inside the digested payload, so a rewritten header cannot pass
 //! readmission.
 
-pub(crate) mod encode_denial;
+pub(crate) use worth_relational_contracts::internal_port::durability::branch_transition_artifact::encode_denial;
 mod encoding;
 mod frame;
-pub(crate) mod frame_refusal;
-pub(crate) mod payload_digest;
+pub(crate) use worth_relational_contracts::internal_port::durability::branch_transition_artifact::frame_refusal;
+pub(crate) use worth_relational_contracts::internal_port::durability::branch_transition_artifact::payload_digest;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;

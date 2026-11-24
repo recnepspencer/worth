@@ -1,6 +1,7 @@
 //! One coupled chain record as a single round of its latest re-derivation
 //! would publish it. Folding a successor round re-runs the ordinary record
 //! publication from the chain's base, not a patch-by-patch netting of rounds.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::canonical_deltas::canonical_publication_fragment;
 use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::intents::entity_aspect_preparation::{

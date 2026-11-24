@@ -52,14 +52,14 @@ pub(super) fn quote(
         bytes: layout.size(),
     };
     let registry = source.registry;
-    quote.array::<DurableEntitySchemaRegistration>(registry.entity_kinds.len())?;
-    for registration in registry.entity_kinds.values() {
+    quote.array::<DurableEntitySchemaRegistration>((*registry.owner_entity_kinds()).len())?;
+    for registration in (*registry.owner_entity_kinds()).values() {
         quote.text(&registration.kind_name)?;
         quote.text(&registration.schema_id.0)?;
         declarations::quote(&mut quote, &registration.aspect_contract_declarations)?;
     }
-    quote.array::<DurableRelationSchemaRegistration>(registry.relation_kinds.len())?;
-    for registration in registry.relation_kinds.values() {
+    quote.array::<DurableRelationSchemaRegistration>((*registry.owner_relation_kinds()).len())?;
+    for registration in (*registry.owner_relation_kinds()).values() {
         quote.text(&registration.kind_name)?;
         quote.text(&registration.schema_id.0)?;
         declarations::quote(&mut quote, &registration.aspect_contract_declarations)?;

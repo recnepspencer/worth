@@ -1,5 +1,6 @@
 use crate::runtime::state::subsystems::history::history_canonical_routes::canonical_publication_reservation_counters;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 
 use super::movement::PreparedCanonicalBranchMovement;
 

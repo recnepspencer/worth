@@ -18,6 +18,7 @@ use std::{
         Arc,
     },
 };
+use worth_relational_storage::internal_port::storage::residency::record_directory::portable::RegionRecordDirectoryFixturePort as _;
 
 #[derive(Default)]
 struct UnionWalk {
@@ -46,46 +47,44 @@ impl RelationalRootAllocationVisitor for UnionWalk {
 
 #[test]
 fn shared_radix_union_matches_independent_full_walks_in_both_orders() {
-    let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
-    let first = RelationalPersistentRegionSet::initial(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        101,
-        BTreeMap::new(),
-        &issuer,
-    )
-    .unwrap();
-    let second = RelationalPersistentRegionSet::replace(
-        102,
-        &first,
-        BTreeMap::new(),
-        [PartitionId(7), PartitionId(11)].into_iter().collect(),
-        &issuer,
-    )
-    .unwrap();
-    let third = RelationalPersistentRegionSet::replace(
-        103,
-        &second,
-        BTreeMap::new(),
-        [PartitionId(17)].into_iter().collect(),
-        &issuer,
-    )
-    .unwrap();
-    let expected = [&first, &second, &third]
-        .into_iter()
-        .flat_map(|set| set.allocation_observations())
-        .map(RelationalRootAuthoritativeAllocationObservation::from)
-        .map(|row| ((row.kind, row.owner_id), row.authoritative_bytes))
-        .collect::<BTreeMap<_, _>>();
-    for roots in [[&first, &second, &third], [&third, &second, &first]] {
-        let mut union = UnionWalk::default();
-        for root in roots {
-            root.try_visit_allocation_union(&mut union).unwrap();
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
+        let first =
+            RelationalPersistentRegionSet::initial(fixture_lane, 101, BTreeMap::new(), &issuer)
+                .unwrap();
+        let second = RelationalPersistentRegionSet::replace(
+            102,
+            &first,
+            BTreeMap::new(),
+            [PartitionId(7), PartitionId(11)].into_iter().collect(),
+            &issuer,
+        )
+        .unwrap();
+        let third = RelationalPersistentRegionSet::replace(
+            103,
+            &second,
+            BTreeMap::new(),
+            [PartitionId(17)].into_iter().collect(),
+            &issuer,
+        )
+        .unwrap();
+        let expected = [&first, &second, &third]
+            .into_iter()
+            .flat_map(|set| set.allocation_observations())
+            .map(RelationalRootAuthoritativeAllocationObservation::from)
+            .map(|row| ((row.kind, row.owner_id), row.authoritative_bytes))
+            .collect::<BTreeMap<_, _>>();
+        for roots in [[&first, &second, &third], [&third, &second, &first]] {
+            let mut union = UnionWalk::default();
+            for root in roots {
+                root.try_visit_allocation_union(&mut union).unwrap();
+            }
+            assert_eq!(union.allocations, expected);
+            let before = union.allocations.clone();
+            third.try_visit_allocation_union(&mut union).unwrap();
+            assert_eq!(union.allocations, before);
         }
-        assert_eq!(union.allocations, expected);
-        let before = union.allocations.clone();
-        third.try_visit_allocation_union(&mut union).unwrap();
-        assert_eq!(union.allocations, before);
-    }
+    })
 }
 
 #[derive(Debug, Default)]
@@ -113,79 +112,81 @@ impl RelationalDurableColdSource for UnreadSource {
 
 #[test]
 fn cold_region_union_refuses_without_demanding_any_payload() {
-    // The unavailable source and its weak member labels are denial inputs,
-    // never a claim that a durable payload or application was admitted.
-    let source = Arc::new(UnreadSource::default());
-    let locator = RelationalDurableMemberLocator {
-        sha256: [0; 32],
-        length: 0,
-    };
-    let kind_authority = RelationalRegionKindCommitment {
-        head: worth_foundational::CanonicalDigestId::new([0; 32]),
-        history: worth_foundational::CanonicalDigestId::new([0; 32]),
-    };
-    use crate::storage::residency::cold_readmission::ColdRegionReadmission;
-    static READMISSION: ColdRegionReadmission = ColdRegionReadmission::new(
-        |_, _, _, _| panic!("allocation inspection must not load Head"),
-        |_, _, _, _, _| panic!("allocation inspection must not load Full"),
-        |_, _, _, _, _, _| panic!("allocation inspection must not write region members"),
-        |_, _, _| panic!("allocation inspection must not reconstruct owned Head"),
-    );
-    let cell = RelationalRegionResidency::cold(RelationalColdRegion {
-        readmission: &READMISSION,
-        source: Some(source.clone()),
-        partition_id: PartitionId(7),
-        head: locator,
-        history: locator,
-        history_members: Arc::new(Default::default()),
-        kind_authority,
-        schema: super::super::super::RelationalBranchRootSchemaAuthority::empty(),
-        schema_carrier_digest: [0; 32],
-        symbols: Default::default(),
-        content_digest: [0; 32],
-        directory: std::sync::Arc::new(crate::storage::residency::RegionRecordDirectory::empty(
-            PartitionId(7),
-        ))
-        .portable_oracle()
-        .unwrap(),
-        live_counts: Default::default(),
-        entity_slots: 0,
-        relation_slots: 0,
-        unavailable_records: 0,
+    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        // The unavailable source and its weak member labels are denial inputs,
+        // never a claim that a durable payload or application was admitted.
+        let source = Arc::new(UnreadSource::default());
+        let locator = RelationalDurableMemberLocator {
+            sha256: [0; 32],
+            length: 0,
+        };
+        let kind_authority = RelationalRegionKindCommitment {
+            head: worth_foundational::CanonicalDigestId::new([0; 32]),
+            history: worth_foundational::CanonicalDigestId::new([0; 32]),
+        };
+        use crate::storage::residency::cold_readmission::ColdRegionReadmission;
+        static READMISSION: ColdRegionReadmission = ColdRegionReadmission::new(
+            |_, _, _, _| panic!("allocation inspection must not load Head"),
+            |_, _, _, _, _| panic!("allocation inspection must not load Full"),
+            |_, _, _, _, _, _| panic!("allocation inspection must not write region members"),
+            |_, _, _| panic!("allocation inspection must not reconstruct owned Head"),
+        );
+        let cell = RelationalRegionResidency::cold(RelationalColdRegion {
+            readmission: &READMISSION,
+            source: Some(source.clone()),
+            partition_id: PartitionId(7),
+            head: locator,
+            history: locator,
+            history_members: Arc::new(Default::default()),
+            kind_authority,
+            schema: super::super::super::RelationalBranchRootSchemaAuthority::empty(),
+            schema_carrier_digest: [0; 32],
+            symbols: Default::default(),
+            content_digest: [0; 32],
+            directory: std::sync::Arc::new(
+                crate::storage::residency::RegionRecordDirectory::empty(PartitionId(7)),
+            )
+            .portable_oracle_for_test(fixture_lane)
+            .unwrap(),
+            live_counts: Default::default(),
+            entity_slots: 0,
+            relation_slots: 0,
+            unavailable_records: 0,
+        })
+        .unwrap();
+        let region = Arc::new(
+            crate::branch::root_region::RelationalRootRegion::from_checkpoint(
+                fixture_lane,
+                1,
+                1,
+                crate::branch::root_checkpoint::RelationalRootRegionCheckpoint {
+                    partition_id: PartitionId(7),
+                    cell,
+                    kind_authority: None,
+                    kind_commitment: kind_authority,
+                    content_digest: [0; 32],
+                    directory: std::sync::Arc::new(
+                        crate::storage::residency::RegionRecordDirectory::empty(PartitionId(7)),
+                    ),
+                    live_counts: Default::default(),
+                    entity_slots: 0,
+                    relation_slots: 0,
+                    unavailable_records: 0,
+                },
+            ),
+        );
+        let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
+        let set = RelationalPersistentRegionSet::initial(
+            fixture_lane,
+            101,
+            [(PartitionId(7), region)].into_iter().collect(),
+            &issuer,
+        )
+        .unwrap();
+        let mut walk = UnionWalk::default();
+        assert_eq!(set.try_visit_allocation_union(&mut walk), Err(()));
+        assert_eq!(source.0.load(Ordering::SeqCst), 0);
+        assert!(walk.allocations.keys().any(|(kind, _)| *kind
+            == RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage));
     })
-    .unwrap();
-    let region = Arc::new(
-        crate::branch::root_region::RelationalRootRegion::from_checkpoint(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            1,
-            1,
-            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint {
-                partition_id: PartitionId(7),
-                cell,
-                kind_authority: None,
-                kind_commitment: kind_authority,
-                content_digest: [0; 32],
-                directory: std::sync::Arc::new(
-                    crate::storage::residency::RegionRecordDirectory::empty(PartitionId(7)),
-                ),
-                live_counts: Default::default(),
-                entity_slots: 0,
-                relation_slots: 0,
-                unavailable_records: 0,
-            },
-        ),
-    );
-    let issuer = super::super::super::RelationalBranchRootIdentityIssuer::default();
-    let set = RelationalPersistentRegionSet::initial(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        101,
-        [(PartitionId(7), region)].into_iter().collect(),
-        &issuer,
-    )
-    .unwrap();
-    let mut walk = UnionWalk::default();
-    assert_eq!(set.try_visit_allocation_union(&mut walk), Err(()));
-    assert_eq!(source.0.load(Ordering::SeqCst), 0);
-    assert!(walk.allocations.keys().any(|(kind, _)| *kind
-        == RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage));
 }

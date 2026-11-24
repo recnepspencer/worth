@@ -3,8 +3,8 @@
 mod affected_record_filter;
 mod derived_changes;
 mod execution_context;
-pub(crate) mod interruption;
 pub use interruption::CustomInvariantInterruption;
+pub(crate) use worth_relational_contracts::internal_port::validation::custom_rule::interruption;
 pub(crate) mod read_budget;
 pub use read_budget::{CustomInvariantNativeCheckpointDenial, CustomInvariantReadBudget};
 mod managed_source;
@@ -14,7 +14,6 @@ mod registration;
 mod scope_planner;
 mod structural_source;
 pub(crate) mod structural_views;
-pub(crate) use structural_views::StructuralPresenceDenial;
 #[cfg(test)]
 mod tests;
 mod touched_scope_collection;

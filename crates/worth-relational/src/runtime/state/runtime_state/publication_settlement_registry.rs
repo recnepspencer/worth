@@ -2,6 +2,7 @@ use crate::publication::close_custody::RelationalPublicationRegistryCustody;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use worth_relational_contracts::internal_port::publication::close_custody::RelationalPublicationRegistryCustodyOwnerPort as _;
 
 use crate::history::data::CommitId;
 

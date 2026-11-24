@@ -1,5 +1,6 @@
 //! Complete reverse scope discovery from the applied Native mutation effect.
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
 
 use super::program::ManagedIndexSourceProgram;
 use crate::authority::mutation::AdjacencyDelta;
@@ -60,8 +61,8 @@ pub(crate) fn discover(
     before: &StructuralRelationView<'_>,
     after: &StructuralRelationView<'_>,
 ) -> Result<PreparedManagedIndexScopeClosure, Denial> {
-    before.require_derived_relation(&program.0.path)?;
-    after.require_derived_relation(&program.0.path)?;
+    before.require_derived_relation(&(*program.owner_field_0()).path)?;
+    after.require_derived_relation(&(*program.owner_field_0()).path)?;
     if let Some(birth) = ordered_birth::discover(program, records, adjacency, before, after)? {
         return Ok(birth);
     }
@@ -75,7 +76,7 @@ pub(crate) fn discover(
     });
     let affected = crate::derived_relation::affected::collect(
         registry,
-        &program.0.path,
+        &(*program.owner_field_0()).path,
         adjacency,
         records,
         &mut old,
@@ -137,8 +138,7 @@ pub(crate) fn discover(
     changed_occurrence_records.sort_unstable();
     changed_occurrence_records.dedup();
     closure.changed_occurrence_records = Some(changed_occurrence_records);
-    let position = program
-        .0
+    let position = (*program.owner_field_0())
         .path
         .parts()
         .nodes
@@ -157,7 +157,7 @@ pub(crate) fn discover(
             }
             let data = evaluate_position(
                 registry,
-                &program.0.path,
+                &(*program.owner_field_0()).path,
                 position,
                 true,
                 row.into(),

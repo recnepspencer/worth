@@ -2,6 +2,7 @@
 use super::CustomInvariantRegistration;
 use crate::derived_relation::DerivedRelationDenial;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 mod execution;
 
 impl CustomInvariantRegistration {

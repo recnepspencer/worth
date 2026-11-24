@@ -2,10 +2,10 @@ use std::sync::{Arc, OnceLock};
 use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView, InternedString};
 
 use super::validation_engine_fixtures::*;
-use crate::execution::test_authority::test_execution_lease;
 use crate::identity::data::EntityId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::validation::engine::test_view::invariant_view_with_custom_rules;
+use worth_harness::facade::execution_fixture::test_execution_lease;
 
 mod summary_image;
 use summary_image::{aspect_key, field_key, SummaryImage};

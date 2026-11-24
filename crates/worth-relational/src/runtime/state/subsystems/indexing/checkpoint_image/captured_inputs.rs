@@ -7,6 +7,7 @@ use crate::indexes::retained_definition::RetainedDerivedIndexDefinition;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 pub(crate) fn validate(
     lane: &ReconstructionLane<'_>,

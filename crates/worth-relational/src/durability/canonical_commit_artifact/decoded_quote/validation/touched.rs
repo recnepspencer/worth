@@ -1,4 +1,7 @@
 //! Concrete intrinsic backing for each touched-summary slice.
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::entity_ids::InvariantEntityIdsOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::partition_ids::InvariantPartitionIdsOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope::touched_ids::relation_ids::InvariantRelationIdsOwnerPort as _;
 use super::*;
 pub(super) fn touched_entities(
     value: BorrowedPayload<'_>,

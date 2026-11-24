@@ -2,6 +2,7 @@
 use super::*;
 use crate::authority::mutation::AdjacencyDeltaKind;
 use crate::derived_relation::read::DerivedRelationAdjacency;
+use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
 
 pub(super) fn discover(
     program: &ManagedIndexSourceProgram,
@@ -10,7 +11,7 @@ pub(super) fn discover(
     before: &StructuralRelationView<'_>,
     after: &StructuralRelationView<'_>,
 ) -> Result<Option<PreparedManagedIndexScopeClosure>, Denial> {
-    let Some(recipe) = program.0.ordered else {
+    let Some(recipe) = (*program.owner_field_0()).ordered else {
         return Ok(None);
     };
     let mut old = LifecycleSource(StructuralSource {

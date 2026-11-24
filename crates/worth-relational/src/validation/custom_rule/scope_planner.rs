@@ -5,6 +5,7 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::engine::{InvariantObservation, InvariantObservationKind};
+use worth_relational_contracts::internal_port::validation::data::descriptor::CustomInvariantAccessContractOwnerPort as _;
 
 use super::structural_views::{StructuralAspectStateView, StructuralRelationView};
 use super::touched_scope_collection::collect_touched_structural_set;

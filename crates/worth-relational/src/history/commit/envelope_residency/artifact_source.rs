@@ -5,6 +5,7 @@ use crate::history::data::PositionedCanonicalCommit;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailable;
 use std::sync::MutexGuard;
+use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 
 pub(crate) struct EnvelopeArtifactLoan<'a>(MutexGuard<'a, EnvelopeState>);
 

@@ -13,6 +13,8 @@ use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, WorkCeilingDenial,
 };
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
+use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 #[derive(Clone, Copy, Debug)]
 pub struct RelationalRecordAdvanceLimits {

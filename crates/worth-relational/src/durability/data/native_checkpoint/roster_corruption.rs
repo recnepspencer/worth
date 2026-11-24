@@ -4,6 +4,7 @@ use crate::{
     durability::{data::*, log::native_checkpoint_codec as codec},
     history::data::CommitId,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod commitments;
 mod portable_rows;
 impl RelationalNativeCheckpoint {
@@ -58,7 +59,13 @@ impl RelationalNativeCheckpoint {
         let storage = checkpoint
             .branch_root_schema_images
             .iter()
-            .find_map(|image| image.readmit_registry().ok()?.0.current_publication_storage)
+            .find_map(|image| {
+                image
+                    .readmit_registry()
+                    .ok()?
+                    .0
+                    .into_current_publication_storage()
+            })
             .ok_or_else(|| {
                 DurabilityError::new(
                     RecoveryFailureClass::CorruptCheckpoint,

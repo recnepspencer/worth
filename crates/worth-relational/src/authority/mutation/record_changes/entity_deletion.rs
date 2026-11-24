@@ -3,6 +3,7 @@ use super::super::intents::entity_authoritative_deletion_patch::plan_entity_auth
 use super::super::outcomes::MutationAspectPatch;
 use super::*;
 use crate::storage::substrate::StorageAllocation;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 struct EntityDeletionInput {
     kind_id: KindId,
     original: StorageAllocation<EntityExtra>,
@@ -144,7 +145,9 @@ fn retire(
             });
         // Native aggregate consequences own metadata deletion; an early audit
         // retirement would hide their required true deletion patches.
-        if relation_kind.is_some_and(|kind| schema_registry.native_private_kinds.contains(&kind)) {
+        if relation_kind
+            .is_some_and(|kind| (*schema_registry.owner_native_private_kinds()).contains(&kind))
+        {
             continue;
         }
         let cascade_policy = relation_kind

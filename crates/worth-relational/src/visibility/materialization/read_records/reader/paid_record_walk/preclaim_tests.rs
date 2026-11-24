@@ -6,7 +6,7 @@ use crate::schema::data::{
     EntityKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::storage::data::EntityReadRecord;
-use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::storage::overlay::small_relation_partition::relation_partition_for_test;
 use crate::storage::overlay::PartitionState;
 use std::collections::BTreeMap;
 
@@ -16,7 +16,7 @@ fn resident_row() -> (
     crate::identity::data::EntityId,
 ) {
     let id = PartitionId::main();
-    let (partition, entities, _) = relation_partition(id, 1, &[]);
+    let (partition, entities, _) = relation_partition_for_test(id, 1, &[]);
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -92,7 +92,7 @@ fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
 
 #[test]
 fn native_clone_settles_source_spare_payload_on_the_original_ticket() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (state, registry, entity) = resident_row();
     let version = VersionId(1);

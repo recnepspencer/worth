@@ -1,4 +1,5 @@
 //! A genuine Native transition supplies the complete Original semantic image.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::data::SharedCanonicalCommitEnvelope;
 use crate::schema::data::{
     ProposedSchemaTransition, RelationalSchemaRegistry, SchemaReconciliationPolicy,

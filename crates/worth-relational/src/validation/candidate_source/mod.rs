@@ -1,9 +1,9 @@
 //! Native-owned candidate Source interpretation and its retained materialization basis.
-pub(crate) mod availability;
 pub use availability::ManagedIndexSourceAvailability;
+pub(crate) use worth_relational_contracts::internal_port::validation::candidate_source::availability;
 mod context;
 mod correspondence;
-pub(crate) mod denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::candidate_source::denial;
 mod interpretation;
 mod interpretation_identity;
 pub(crate) mod opaque_custody;
@@ -12,18 +12,18 @@ pub use context::{
     ManagedIndexSourceContextFactory, ManagedIndexSourceContextReceipt,
     ManagedIndexSourceContextShare, ManagedIndexSourcePreparationMetadata,
 };
-pub use interpretation_identity::NativeSourceInterpretationIdentity;
-pub(crate) mod program;
 pub use denial::ManagedIndexSourcePreparationDenial;
+pub use interpretation_identity::NativeSourceInterpretationIdentity;
 pub(crate) use program::SourceProgramCommitmentDenial;
+pub(crate) use worth_relational_contracts::internal_port::validation::candidate_source::program;
 mod observation;
 mod preparation;
 mod preparation_group;
 pub(crate) use preparation_group::SourcePreparationGroup;
 mod projection;
 pub(crate) use projection::selected_rows;
-pub(crate) mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
+pub(crate) use worth_relational_contracts::internal_port::validation::candidate_source::provider_failure;
 pub(crate) mod publication;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
 pub(crate) mod history_material;

@@ -10,6 +10,9 @@ use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::{NativeMemberDomain as Domain, NativeMemberKey as Member};
 use crate::schema::data::RelationalSchemaRegistry;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Clone)]
 struct Position {
@@ -133,7 +136,7 @@ pub(super) fn collect(
                     }
                     Node::CarrierLift { domain, case } => {
                         let mut roots = BTreeSet::new();
-                        let pair = &key.definition.entry.endpoints[key.node];
+                        let pair = &(*key.definition.owner_entry()).endpoints[key.node];
                         lifecycle::seed_domain(
                             registry,
                             if key.reverse { &pair.1 } else { &pair.0 },
@@ -169,8 +172,7 @@ pub(super) fn collect(
                                 .and_then(|n| {
                                     n.checked_mul(
                                         (usize::BITS
-                                            - registry
-                                                .derived_relations
+                                            - (*registry.owner_derived_relations())
                                                 .len()
                                                 .max(1)
                                                 .leading_zeros())
@@ -319,7 +321,7 @@ fn pullback(
     anchor: &Member,
     read: &mut impl SourceRead,
 ) -> Result<Option<crate::derived_relation::read::DerivedRelationData>, Denial> {
-    let pair = &first.definition.entry.endpoints[first.node];
+    let pair = &(*first.definition.owner_entry()).endpoints[first.node];
     let input = if first.reverse { &pair.0 } else { &pair.1 };
     let expected = match input {
         Domain::Entity(kind) => *kind,
@@ -331,8 +333,7 @@ fn pullback(
                     .and_then(|n| {
                         n.checked_mul(
                             (usize::BITS
-                                - registry
-                                    .projected_member_domains
+                                - (*registry.owner_projected_member_domains())
                                     .len()
                                     .max(1)
                                     .leading_zeros()) as usize,

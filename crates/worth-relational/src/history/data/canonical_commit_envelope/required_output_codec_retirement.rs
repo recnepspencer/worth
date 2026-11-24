@@ -1,4 +1,5 @@
 //! Authenticated complete codec-disposition claims; cold readers re-admit them.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::schema_carrier::registrations::DurableEntitySchemaRegistration;
 use super::*;
 

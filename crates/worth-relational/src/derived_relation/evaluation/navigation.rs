@@ -3,6 +3,8 @@ use super::memo::Key;
 use super::{insert_member, member_work, DefinitionDenial, Denial, Evaluation, SourceRead};
 use crate::derived_relation::definition::DerivedRelationNode as Node;
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::derived_relation::definition::DerivedRelationHandleFieldsPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) enum Frame {
     Enter(Key),
@@ -123,7 +125,7 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
         if self.values.get(&key, self.read)?.is_some() {
             return Ok(());
         }
-        let definition = std::sync::Arc::clone(&key.definition.entry);
+        let definition = std::sync::Arc::clone(&(*key.definition.owner_entry()));
         self.read.checkpoint(1)?;
         match &definition.parts.nodes[key.node] {
             Node::Stored { relation, from, to } => self.stored(key, *relation, *from, *to),
@@ -146,8 +148,10 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
                     .checked_add(identity.schema.0.len())
                     .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
                 let levels = (usize::BITS
-                    - self.registry.derived_relations.len().max(1).leading_zeros())
-                    as usize;
+                    - (*self.registry.owner_derived_relations())
+                        .len()
+                        .max(1)
+                        .leading_zeros()) as usize;
                 self.read.checkpoint(
                     names
                         .checked_mul(11)

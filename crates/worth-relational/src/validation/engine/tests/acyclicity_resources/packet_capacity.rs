@@ -255,7 +255,7 @@ impl InvariantDag {
     ) -> Self {
         let partition = PartitionId::main();
         let (state, nodes, _) =
-            crate::storage::overlay::small_relation_partition::typed_relation_partition(
+            crate::storage::overlay::small_relation_partition::typed_relation_partition_for_test(
                 partition,
                 std::iter::repeat_n(KindId(3), count),
                 &[],
@@ -350,7 +350,7 @@ pub(super) fn paid_dag_request(
     cancellation: CancellationToken,
     deadline: Option<std::time::Instant>,
 ) -> ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
+    worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,

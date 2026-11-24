@@ -2,6 +2,7 @@
 use super::*;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, PartitionId};
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 use AggregateContinuityRule as Rule;
 mod continuity;
 mod property;

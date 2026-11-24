@@ -6,6 +6,7 @@ use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingEntry,
     RelatedEntityOrderingField,
 };
+use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingBoundaryOwnerPort as _;
 
 use super::super::projected_field_values::compare_related_entries;
 

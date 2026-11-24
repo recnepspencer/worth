@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatchOwnerPort as _;
 use super::{diff_packet_stream, direct_diff_record_order};
 use crate::authority::commit::preparation::packets::diff::{
     DiffPreparationHeader, DiffPreparationPacket,
@@ -102,7 +103,7 @@ fn fragment(
 }
 
 fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
+    worth_harness::facade::execution_fixture::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,

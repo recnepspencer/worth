@@ -12,7 +12,7 @@ pub use authority::recovery::home_program_transition::{
     RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
 };
 pub use authority::RecoveredRelationalBranchBasis;
-pub(crate) mod artifact_canonical_payload;
+pub(crate) use worth_relational_contracts::internal_port::durability::artifact_canonical_payload;
 pub(crate) mod artifact_payload_emission;
 pub(crate) mod branch_transition_artifact;
 pub(crate) mod canonical_commit_artifact;
@@ -34,7 +34,7 @@ pub(crate) mod derived_index_artifacts;
 pub(crate) mod envelope_version_selection;
 pub(crate) mod history_source_readmission;
 pub(crate) mod log;
-pub(crate) mod medium;
+pub(crate) use worth_relational_storage::internal_port::durability::medium;
 pub(crate) mod medium_recovery_readmission;
 pub(crate) mod medium_transition_tail;
 pub(crate) mod migration;

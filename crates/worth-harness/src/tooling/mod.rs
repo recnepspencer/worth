@@ -19,3 +19,5 @@ pub use event_projection::{
 pub use parity_suite::{parity_suite, ParityError, ParityReport, ParityResult, ParitySuite};
 pub use run_matrix::{run_matrix, RunMatrix};
 pub use testbench::{bench, BenchError, HarnessBench, ProfileCatalog};
+
+pub mod execution_fixture;

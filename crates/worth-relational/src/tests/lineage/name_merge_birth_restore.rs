@@ -12,9 +12,9 @@ use crate::facade::lineage::{
     LineageRecordTarget, LineageSubject, PersistentNameBranchIndex, PersistentNameCommittedBatch,
     PersistentNameHolder, PersistentNameKey,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::name_index_fixtures::{all, exact, main_branch, resolve, retired, side, unknown};

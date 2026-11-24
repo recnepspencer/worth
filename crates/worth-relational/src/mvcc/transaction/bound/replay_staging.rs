@@ -3,6 +3,8 @@ use super::super::{normalized_plan, BranchBoundRelationalTransaction};
 use crate::transactions::data::{MutationIntent, TransactionCommitError, WorkerIntentBatch};
 use std::fmt::Write;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 impl BranchBoundRelationalTransaction {
     pub(crate) fn stage_recovered_intents(

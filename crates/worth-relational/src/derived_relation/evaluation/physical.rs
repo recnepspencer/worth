@@ -7,6 +7,9 @@ use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 use crate::validation::data::structural_read::StructuralRelationRecord;
 use std::collections::BTreeSet;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::graph_member::key::projected_storage::ProjectedMemberStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::projected_member_domain::definition::ProjectedMemberDomainIdentityOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 impl<Port: SourceRead> Evaluation<'_, Port> {
     pub(super) fn member(&mut self, member: &Member, expected: &Domain) -> Result<(), Denial> {
@@ -33,7 +36,10 @@ impl<Port: SourceRead> Evaluation<'_, Port> {
         let names = identity
             .name_bytes()
             .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
-        self.semantic_work(names, self.registry.projected_member_domains.len())?;
+        self.semantic_work(
+            names,
+            (*self.registry.owner_projected_member_domains()).len(),
+        )?;
         self.registry
             .projected_member_domain(identity)
             .ok_or(DefinitionDenial::InvalidMemberDomain.into())

@@ -75,7 +75,7 @@ fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() 
     let (registry, _) = decoded.readmit_registry().unwrap();
     assert_eq!(&registry, &original);
     assert_eq!(
-        registry.relation_kinds[&KindId(2)]
+        (*registry.owner_relation_kinds())[&KindId(2)]
             .relation_integrity
             .endpoint_kind_contracts
             .len(),

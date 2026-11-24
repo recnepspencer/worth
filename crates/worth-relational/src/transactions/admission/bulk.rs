@@ -9,6 +9,7 @@ use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence;
 use crate::transactions::data::primitives::PlannedBulkMutationBatch;
 use crate::transactions::data::primitives::WorkerIntentBatch;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use crate::transactions::planning::bulk::{
     bulk_mutation_lineage, bulk_mutation_naming, bulk_mutation_provenance,

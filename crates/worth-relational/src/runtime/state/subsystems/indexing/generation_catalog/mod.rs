@@ -1,4 +1,5 @@
 //! Rebuildable selection indexes over retained derived generations.
+use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness_rows::RelationalMergeCorrespondenceWitnessRowOwnerPort as _;
 mod admitted_publication;
 mod admitted_selection;
 mod checkpoint_inputs;

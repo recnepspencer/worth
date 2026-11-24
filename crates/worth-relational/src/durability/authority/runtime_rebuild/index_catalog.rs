@@ -2,6 +2,7 @@
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalIndexDefinitionDelta;
 use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) mod predecessor;
 

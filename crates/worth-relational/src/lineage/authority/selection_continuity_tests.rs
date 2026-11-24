@@ -1,5 +1,7 @@
 //! The selection planner's continuity classes over an exact branch basis:
 //! retire, restore, in-place continuation, live conflicts and slot repair.
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{plan, SelectionTransition};
@@ -59,7 +61,7 @@ fn name(byte: u8) -> PersistentNameIdentity {
 }
 
 fn staged_with(count: usize) -> (WorkingState, Vec<EntityId>) {
-    let mut staged = WorkingState::new(
+    let mut staged = WorkingState::working_state_for_test(
         BTreeMap::new(),
         AdjacencyPolicy {
             backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -69,7 +71,9 @@ fn staged_with(count: usize) -> (WorkingState, Vec<EntityId>) {
     let part = staged.get_partition_mut(PartitionId::main());
     let ids = (0..count)
         .map(|_| {
-            let (slot, generation, _) = part.entity_arena.push_slot(SlotInit::<EntityRecordKind> {
+            let (slot, generation, _) = part.entity_arena.push_slot_for_test(SlotInit::<
+                EntityRecordKind,
+            > {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 version_id: VersionId(1),
