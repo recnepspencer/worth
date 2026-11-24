@@ -145,6 +145,23 @@ impl<'r> NativeProjectionRead<'r> {
         };
         own.or_else(|| self.projection(snapshot))
     }
+    /// The projection one relation is read at: for a successor round, a
+    /// relation its own chain linked or unlinked is read as it was at the
+    /// chain head (#277), as its adjacency is served.
+    pub fn projection_of_relation(
+        &self,
+        snapshot: &SnapshotHandle,
+        relation: worth_relational::facade::identity::RelationId,
+    ) -> Option<VisibilityProjectionView> {
+        let own = match self {
+            Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } if own.relations().covers(relation) => Some(own.head().project_candidate()),
+            _ => None,
+        };
+        own.or_else(|| self.projection(snapshot))
+    }
     pub fn observe_field<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

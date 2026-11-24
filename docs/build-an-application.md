@@ -627,7 +627,10 @@ replay:
   name's live records, never silently dropped) refuses `EndedInCandidate`;
   and an answer resting on an ended or unborn name refuses
   `CandidateNameHistory`, because the candidate may restore, regenerate or
-  bear it. Every admitted read records the same decision facts as a
+  bear it. A coupled producer's successor round reads a record or relation
+  its own chain wrote as it was at the chain head, as all its other reads
+  of it are served, so it can read and act again on a name its earlier
+  round retired. Every admitted read records the same decision facts as a
   committed read
   ([candidate-basis courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/candidate/mod.rs)).
 - Group names do not resolve at runtime yet: group transitions are not part

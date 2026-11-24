@@ -230,7 +230,8 @@ impl<Schema: ApplicationSchema, Operation>
     }
 
     /// Admits a live record into the realized read scope as a local identity
-    /// and keys it as the entity's decision fact.
+    /// and keys it as the entity's decision fact; a successor round's own
+    /// record is admitted at its chain head, where its liveness was read.
     fn live_identity<Entity>(
         &mut self,
         entity_id: EntityId,
@@ -239,7 +240,7 @@ impl<Schema: ApplicationSchema, Operation>
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
         let execution = *self.reader.execution;
-        self.live_current_identity(&execution, Entity::IDENTIFIER, entity_id)
+        self.live_own_view_identity(&execution, Entity::IDENTIFIER, entity_id)
             .map_err(|denial| {
                 self.decision_facts
                     .veto_persistent_name(PersistentNameReadVeto::ReadFailed);

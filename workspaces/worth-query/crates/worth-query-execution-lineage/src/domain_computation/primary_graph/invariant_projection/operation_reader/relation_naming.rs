@@ -114,9 +114,15 @@ impl<Schema: ApplicationSchema, Operation>
             let resolved = reader.resolve_relation::<Relation>(held, selection, &mut dependencies);
             (resolved, reader.branch().clone())
         })?;
-        if !matches!(resolved, Err(ExecutionNameResolveDenial::Read(_))) {
-            self.require_candidate_footprint(&dependencies, &branch)?;
-        }
+        let resolved = match resolved {
+            Err(ExecutionNameResolveDenial::Read(read)) => {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+                return Ok(Err(ExecutionNameResolveDenial::Read(read)));
+            }
+            resolved => resolved,
+        };
+        self.require_candidate_footprint(&dependencies, &branch)?;
         let untracked = untracked_resolution(&resolved, &dependencies, &branch);
         if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
             self.decision_facts.veto_persistent_name(veto);
@@ -196,7 +202,7 @@ impl<Schema: ApplicationSchema, Operation>
         let record = self
             .reader
             .native
-            .projection(self.reader.snapshot)
+            .projection_of_relation(self.reader.snapshot, relation_id)
             .map(|view| {
                 view.relation_record_with_projection_scope(
                     &execution,

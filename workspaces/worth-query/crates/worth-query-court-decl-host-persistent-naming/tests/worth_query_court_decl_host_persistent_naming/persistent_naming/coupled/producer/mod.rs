@@ -18,6 +18,7 @@ pub mod preserve;
 mod reading;
 pub mod reads;
 pub mod shape;
+pub mod successor;
 
 pub const PROFILE: &str = "pieces";
 
@@ -133,7 +134,7 @@ pub fn feature() -> ApplicationFeatureSpec {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    shape::declare(preserve::declare(initial::declare(schema)))
+    successor::declare(shape::declare(preserve::declare(initial::declare(schema))))
 }
 
 pub fn contracts(
@@ -143,6 +144,10 @@ pub fn contracts(
     contracts.producer::<preserve::Producer>()?;
     contracts.conditional::<initial::Readiness>()?;
     contracts.conditional::<preserve::Readiness>()?;
+    // Only the successor-round world installs its producers (`successor`).
+    if successor::installing() {
+        successor::contracts(contracts)?;
+    }
     Ok(())
 }
 
@@ -155,5 +160,6 @@ pub fn install(
     setup.producer::<preserve::Producer>(preserve::Provider)?;
     setup.conditional::<initial::Readiness>(())?;
     setup.conditional::<preserve::Readiness>(())?;
+    successor::install(setup)?;
     setup.handler::<shape::Binding, _>(shape::Handler)
 }

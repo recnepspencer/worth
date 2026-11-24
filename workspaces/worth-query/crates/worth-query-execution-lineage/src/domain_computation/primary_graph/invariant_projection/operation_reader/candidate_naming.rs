@@ -31,8 +31,9 @@
 //!   on a created record. (A committed read of such an answer never seals
 //!   either.)
 //!
-//! A successor round reads each record its own chain wrote as it was before
-//! the chain (`projection_of`, §1.5). Owner chains are read on the candidate
+//! A successor round reads each record and relation its own chain wrote as it
+//! was before the chain (`projection_of`, `projection_of_relation`, §1.5,
+//! #277), and admits its identity there too. Owner chains are read on the candidate
 //! itself (`name_owner`), so a same-candidate re-owning is what `resolve_in`
 //! sees and is tracked as an adjacency fact.
 
@@ -178,7 +179,9 @@ impl<Schema: ApplicationSchema, Operation>
             LineageRecordTarget::Entity(entity) => {
                 reader.native.projection_of(reader.snapshot, entity)
             }
-            LineageRecordTarget::Relation(_) => reader.native.projection(reader.snapshot),
+            LineageRecordTarget::Relation(relation) => reader
+                .native
+                .projection_of_relation(reader.snapshot, relation),
         };
         let live = |view: Option<VisibilityProjectionView>| -> Result<bool, _> {
             let Some(view) = view else {
