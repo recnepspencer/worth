@@ -16,7 +16,7 @@ pub use catalog::{RelationalCommitCatalogAppendDenial, RelationalCommitCatalogEn
 pub use identity::RelationalCommitIdentity;
 pub use parentage::{RelationalCommitParentage, RelationalCommitParentageDenial};
 
-mod envelope_residency;
+pub(crate) mod envelope_residency;
 #[cfg(test)]
 mod envelope_residency_tests;
 mod index_entry;

@@ -4,10 +4,11 @@ use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
 
-use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::ProjectionInputs;
 use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection;
+use crate::visibility::snapshot_states::resolution::SnapshotReadDirectory;
 
 use super::{
     capture, FieldDependency, RelationalAuthorizationDependencyDenial as Denial,
@@ -15,14 +16,33 @@ use super::{
     DURABLE_DEPENDENCY_VERSION, MAXIMUM_AUTHORIZATION_DEPENDENCIES,
 };
 
+/// The native directory and projection share the same installed snapshot owner.
+pub struct RelationalAuthorizationDependencySnapshots<'a> {
+    pub(crate) projection: ProjectionInputs<'a>,
+    pub(crate) directory: SnapshotReadDirectory<'a>,
+}
+
+impl RelationalAuthorizationDependencySnapshots<'_> {
+    pub(crate) fn project(
+        self,
+        snapshot: &SnapshotHandle,
+    ) -> Result<VisibilityProjectionView, Denial> {
+        if snapshot.runtime_instance_id != self.projection.runtime_identity {
+            return Err(Denial::ForeignRuntime);
+        }
+        VisibilityProjectionView::from_snapshot(self.projection, self.directory, snapshot)
+            .ok_or(Denial::SnapshotUnavailable)
+    }
+}
+
 impl RelationalAuthorizationDurableDependencies {
     /// Checks retained source revisions without reconstructing the original policy.
     /// The caller must separately establish that the stamp was issued by its owner
     /// and that the current authorization still admits the requested action.
     /// Cost is O(retained dependencies), bounded by the native wire contract.
-    pub fn source_revisions_match(
+    pub fn source_revisions_match<'a>(
         &self,
-        runtime: &RelationalRuntime,
+        snapshots: impl Into<RelationalAuthorizationDependencySnapshots<'a>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
     ) -> Result<bool, Denial> {
@@ -33,7 +53,7 @@ impl RelationalAuthorizationDurableDependencies {
             return Err(Denial::UnsupportedVersion);
         }
         self.check_wire_limits(execution)?;
-        let view = runtime.project_authorization_dependency_snapshot(snapshot)?;
+        let view = snapshots.into().project(snapshot)?;
         self.revisions_match_in_projection(execution, &view)
     }
 

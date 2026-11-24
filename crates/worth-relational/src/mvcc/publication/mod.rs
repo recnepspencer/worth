@@ -62,12 +62,10 @@ pub use companion::{
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
-    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PendingCompanionRegistration,
-    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
-    PublicationCompanionPreflight, PublicationCompanionRegistration,
-    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    PublicationCompanionRetirementDenial, RelationalPublicationCompanion,
-    ReservedCompanionBranchCell, RetiredPublicationCompanionRegistration,
+    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PreparedCompanionBranchCell,
+    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PublicationCompanionPreflight, PublicationCompanionRegistrationStop,
+    RelationalPublicationCompanion, ReservedCompanionBranchCell,
 };
 pub(crate) use movement::PreparedCanonicalBranchMovement;
 pub use outcome::{

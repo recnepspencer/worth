@@ -1,5 +1,5 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
-mod artifact_export;
+mod artifact_source;
 mod authored_writes;
 mod selected_checkpoint;
 pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
@@ -7,10 +7,9 @@ mod demand;
 mod interim_original;
 mod original_frame_digest;
 mod recovered_position;
-mod source_readmission;
+pub(crate) mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;
-use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
@@ -27,7 +26,7 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
     state: Mutex<EnvelopeState>,
 }
 #[derive(Debug)]
-enum EnvelopeBacking {
+pub(crate) enum EnvelopeBacking {
     Memory {
         canonical:
             Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>,

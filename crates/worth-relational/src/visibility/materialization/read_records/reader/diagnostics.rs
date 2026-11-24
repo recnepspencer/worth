@@ -11,7 +11,9 @@ use crate::visibility::{
         cached_historical_state_for_version, cached_state, residency, residency_for_version,
         VisibilityCacheInputs,
     },
-    snapshot_states::{resolve_snapshot_basis, resolve_snapshot_handle, SnapshotReadDirectory},
+    snapshot_states::resolution::{
+        resolve_snapshot_basis, resolve_snapshot_handle, SnapshotReadDirectory,
+    },
 };
 
 impl<'runtime> VisibilityReadContext<'runtime> {

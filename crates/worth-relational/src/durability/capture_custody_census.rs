@@ -106,9 +106,7 @@ impl RelationalRuntime {
         self.history
             .commit_artifact(commit_id)
             .map(|artifact| {
-                artifact
-                    .envelope_residency()
-                    .require_original_artifact(execution, None)
+                crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&artifact.envelope_residency(), execution, None)
                     .map(crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_verified)
             })
             .transpose()

@@ -217,9 +217,8 @@ impl FrozenOriginalInputs {
             ExecutionRequestArrayBuilder::allocate(*execution, count).map_err(array_stop)?;
         for (offset, artifact) in self.artifacts.iter().enumerate().skip(covered) {
             crate::execution::check_request(execution).map_err(Denial::Request)?;
-            let frame = artifact
-                .envelope_residency()
-                .require_original_artifact(
+            let frame = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(
+                    &artifact.envelope_residency(),
                     execution,
                     self.journal
                         .as_ref()

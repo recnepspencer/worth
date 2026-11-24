@@ -96,7 +96,14 @@ impl<'a> PublicationCompanionPreflight<'a> {
         if source.proposed_version() != envelope.commit.version_id {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
-        let sources = source.prepare_publication_loan(&binding)?;
+        let sources = source.prepare_publication_loan(
+            crate::validation::candidate_source::publication::ManagedSourcePublicationSelection {
+                runtime_instance_id: binding.runtime_instance_id,
+                branch_id: &binding.branch_id,
+                expected_root_id: binding.expected_root_id,
+                registration_generation: binding.registration_generation,
+            },
+        )?;
         Ok(Self {
             binding,
             envelope,

@@ -12,7 +12,7 @@ use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 mod activation;
-mod deletion_grammar;
+pub(crate) mod deletion_grammar;
 mod effect_coverage;
 mod metadata;
 
@@ -197,6 +197,7 @@ fn validate_group(
             return Err("codec disposition retires a protected or omitted unchanged member".into());
         }
         deletion_grammar::entity(
+            &runtime.input.deletion_grammar,
             envelope,
             member,
             present,

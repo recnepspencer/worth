@@ -15,9 +15,11 @@ impl VisibilityReadContext<'_> {
         payload: &Arc<dyn Any + Send + Sync>,
     ) -> Result<ManagedIndexPublicCache, Denial> {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
-                .ok_or(Denial::RootUnavailable)?;
+        let basis = crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(
+            self.runtime,
+            handle,
+        )
+        .ok_or(Denial::RootUnavailable)?;
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()
@@ -42,9 +44,11 @@ impl VisibilityReadContext<'_> {
         cache: &ManagedIndexPublicCache,
     ) -> Result<Arc<dyn Any + Send + Sync>, Denial> {
         let (selected, _memory) = self.managed_source_position(execution, handle)?;
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
-                .ok_or(Denial::RootUnavailable)?;
+        let basis = crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(
+            self.runtime,
+            handle,
+        )
+        .ok_or(Denial::RootUnavailable)?;
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()

@@ -8,6 +8,8 @@ impl<'a> From<&'a RelationalRuntime> for RetirementHistoryInputs<'a> {
         Self {
             plans: &runtime.schema_contract_runtime.aspect_contract_plans,
             projection: runtime.into(),
+            deletion_grammar:
+                crate::authority::mutation::deletion_publication::codec_expectation::GRAMMAR,
         }
     }
 }

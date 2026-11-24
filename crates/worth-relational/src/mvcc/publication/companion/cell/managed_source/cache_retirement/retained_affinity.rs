@@ -122,13 +122,14 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ),
         Err(CompanionPreflightStop::ForeignCell)
     ));
-    let image = crate::visibility::snapshot_states::resolve_snapshot_basis(&runtime, &snapshot)
-        .unwrap()
-        .root()
-        .managed_source_image
-        .get()
-        .unwrap()
-        .clone();
+    let image =
+        crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(&runtime, &snapshot)
+            .unwrap()
+            .root()
+            .managed_source_image
+            .get()
+            .unwrap()
+            .clone();
     assert!(matches!(
         image.admit_selected(&selected, generation + 1),
         Err(Denial::Publication(

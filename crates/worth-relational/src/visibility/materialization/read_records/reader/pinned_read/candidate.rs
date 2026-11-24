@@ -257,7 +257,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             previous_changes.map(|changes| Arc::clone(&changes.fields)),
         )
         .map_err(request_stop)?;
-        let source = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_applied_root(
+        let source = crate::history::retention::VisibilitySnapshotBasis::from_applied_root(
             basis.identity().branch_id().clone(),
             identity.proposal.proposed_version_id(),
             root,

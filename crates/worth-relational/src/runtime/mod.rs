@@ -94,7 +94,7 @@ pub use crate::visibility::materialization::read_records::{
     RelationalFieldSupportComparisonDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
-    VisibilityProjectionView, VisibilityReadContext,
+    VisibilityProjectionView,
 };
 pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,
@@ -196,3 +196,5 @@ mod retirement_history_inputs;
 mod cold_ownership_probe;
 mod merge_ownership_probe;
 mod metadata_guard_probe;
+
+pub use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;

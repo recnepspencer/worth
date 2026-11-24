@@ -47,8 +47,10 @@ impl<'a> Restore<'a> {
                     .expect("court commit exists"),
             )
         });
-        let frame = original
-            .export_artifact(execution)
+        let frame =
+            crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+                &original, execution,
+            )
             .expect("court copies its actual recorded original frame");
         let admitted = frame
             .readmitted_body(execution)

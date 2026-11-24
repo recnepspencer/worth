@@ -16,8 +16,7 @@ pub(super) struct FinalizationInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) phase_timing:
         &'a mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
-    pub(super) published_snapshot_basis:
-        crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    pub(super) published_snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
     pub(super) published_snapshot_slot:
         crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
 }
@@ -109,7 +108,7 @@ fn advance_visibility(
     branch_id: &crate::history::data::BranchId,
     previous_branch_head_version: Option<crate::identity::data::VersionId>,
     version_id: crate::identity::data::VersionId,
-    published_snapshot_basis: &crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    published_snapshot_basis: &crate::history::retention::VisibilitySnapshotBasis,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
@@ -152,7 +151,7 @@ fn publish_artifacts(
     version_id: crate::identity::data::VersionId,
     artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     patch_position: crate::publication::patch::data::PatchStreamPosition,
-    basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    basis: crate::history::retention::VisibilitySnapshotBasis,
     slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) -> crate::snapshots::data::SnapshotId {

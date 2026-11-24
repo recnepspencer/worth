@@ -74,6 +74,35 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"branch/historical_selection/chain.rs" = "runtime"
+"branch/historical_selection/runtime_reads.rs" = "runtime"
+"branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
+"visibility/materialization/read_records/projection/view/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/context.rs" = "runtime"
+"visibility/materialization/read_records/reader/diagnostics.rs" = "runtime"
+"visibility/materialization/read_records/reader/managed_source.rs" = "runtime"
+"visibility/materialization/read_records/reader/native_output_probe.rs" = "runtime"
+"visibility/materialization/read_records/reader/paid_record_walk/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_entity_metadata/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read/pinning.rs" = "runtime"
+"visibility/materialization/read_records/reader/positioned_snapshot/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/public_managed_cache.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_plan_live.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_planning.rs" = "runtime"
+"visibility/materialization/read_records/reader/snapshot_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_aspect_versions.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_field_equality/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_kind_scan/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_record_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_relation_kind_scan/runtime_reads.rs" = "runtime"
+"mvcc/publication/companion/registration/port.rs" = "runtime"
+"mvcc/publication/companion/registration/head_cell.rs" = "runtime"
+"mvcc/publication/companion/registration/retirement.rs" = "runtime"
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
@@ -871,6 +900,14 @@ owner = "branch"
 allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["envelope", "projection_view"]]
 [boundaries.paths]
 root_custody = [
+    "runtime/state/subsystems/visibility/mod.rs",
+    "runtime/state/subsystems/visibility/replay_retention.rs",
+    "runtime/state/subsystems/visibility/snapshot_handle_binding.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles",
+    "visibility/exact_commit_snapshot.rs",
+    "visibility/snapshot_observation.rs",
+    "visibility/snapshot_states/resolution.rs",
+    "visibility/materialization/read_records/projection/registered_snapshot_projection.rs",
     "branch",
     "durability/checkpoint_admission/recorded_reference.rs",
     "durability/checkpoint_admission/row_custody.rs",
@@ -925,6 +962,35 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"branch/historical_selection/chain.rs" = "runtime"
+"branch/historical_selection/runtime_reads.rs" = "runtime"
+"branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
+"visibility/materialization/read_records/projection/view/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/context.rs" = "runtime"
+"visibility/materialization/read_records/reader/diagnostics.rs" = "runtime"
+"visibility/materialization/read_records/reader/managed_source.rs" = "runtime"
+"visibility/materialization/read_records/reader/native_output_probe.rs" = "runtime"
+"visibility/materialization/read_records/reader/paid_record_walk/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_entity_metadata/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read/pinning.rs" = "runtime"
+"visibility/materialization/read_records/reader/positioned_snapshot/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/public_managed_cache.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_plan_live.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_planning.rs" = "runtime"
+"visibility/materialization/read_records/reader/snapshot_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_aspect_versions.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_field_equality/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_kind_scan/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_record_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_relation_kind_scan/runtime_reads.rs" = "runtime"
+"mvcc/publication/companion/registration/port.rs" = "runtime"
+"mvcc/publication/companion/registration/head_cell.rs" = "runtime"
+"mvcc/publication/companion/registration/retirement.rs" = "runtime"
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"

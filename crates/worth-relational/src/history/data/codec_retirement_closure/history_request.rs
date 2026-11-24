@@ -11,6 +11,8 @@ use worth_execution::{ExecutionRequest, MapKernelContext};
 pub(crate) struct RetirementHistoryInputs<'r> {
     pub(crate) plans: &'r AspectContractPlanCatalog,
     pub(crate) projection: ProjectionInputs<'r>,
+    pub(crate) deletion_grammar:
+        super::codec_disposition::deletion_grammar::DeletionPublicationGrammar,
 }
 
 pub(crate) struct RuntimeHistoryRequest<'r, 'q, 'l> {

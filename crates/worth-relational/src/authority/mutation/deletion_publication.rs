@@ -51,3 +51,5 @@ pub(crate) fn relation_deletion_publication_patch(
         .map_err(|error| error.to_commit_conflict())?;
     Ok(canonical_publication_fragment(&delta, detail, None)?.published_patch)
 }
+
+pub(crate) mod codec_expectation;

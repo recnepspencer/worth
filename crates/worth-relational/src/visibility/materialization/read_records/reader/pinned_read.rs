@@ -1,13 +1,12 @@
 //! Immutable native custody independent of the installed runtime's borrow.
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::indexes::access::selected_index::PinnedIndex;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
 use crate::query::data::QueryPlanContextId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::snapshots::data::SnapshotHandle;
 use crate::symbols::data::StringInterner;
-use crate::visibility::snapshot_states::{
-    ResidentVisibilitySnapshotBasis, VisibilitySnapshotBasis,
-};
+use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
 use std::{collections::BTreeMap, sync::Arc};
 
 mod aggregate_reads;

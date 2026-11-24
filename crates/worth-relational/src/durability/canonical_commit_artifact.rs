@@ -53,6 +53,7 @@ mod request_encoding;
 pub(crate) mod verified_frame;
 
 mod retained_export;
+pub(crate) mod retained_frame_reads;
 
 pub use encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;
 pub use frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal;

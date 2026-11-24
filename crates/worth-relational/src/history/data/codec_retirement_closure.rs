@@ -17,7 +17,7 @@ pub(crate) mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
 pub(crate) use scope_dependents::OwnedScopeDependentSelection;
-mod codec_disposition;
+pub(crate) mod codec_disposition;
 mod restoration_payload;
 pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;
@@ -324,13 +324,13 @@ pub(crate) fn request(
     CodecRetirementClosureStop::Request(cause.into())
 }
 
-fn memory_overflow() -> CodecRetirementClosureStop {
+pub(crate) fn memory_overflow() -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(
         crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )
 }
 
-fn reserve(
+pub(crate) fn reserve(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     bytes: usize,
 ) -> Result<worth_execution::ExecutionMemoryReservation, CodecRetirementClosureStop> {

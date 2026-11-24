@@ -1,5 +1,6 @@
 //! Real Memory publication owns one original frame; tuple observations stay scalar.
 use super::*;
+use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 use crate::tests::support::*;
 use sha2::{Digest, Sha256};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -106,7 +107,11 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     );
     assert!(artifact.envelope_residency().payload_storage_bytes() > bytes.len() as u64);
     let cell = artifact.envelope_residency();
-    let original = cell.export_artifact(&execution).unwrap();
+    let original =
+        crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+            &cell, &execution,
+        )
+        .unwrap();
     assert_ne!(
         original.payload_digest().as_bytes(),
         &artifact.canonical_payload_digest().unwrap()

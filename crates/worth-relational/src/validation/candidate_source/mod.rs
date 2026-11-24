@@ -22,7 +22,7 @@ mod projection;
 pub(crate) use projection::selected_rows;
 pub(crate) mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
-mod publication;
+pub(crate) mod publication;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
 pub(crate) mod history_material;
 pub(crate) mod image;

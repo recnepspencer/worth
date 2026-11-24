@@ -49,7 +49,7 @@ impl<'runtime> PublicationAuthority<'runtime> {
         version_id: VersionId,
         artifacts: PublicationArtifacts,
         patch_position: crate::publication::patch::data::PatchStreamPosition,
-        basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+        basis: crate::history::retention::VisibilitySnapshotBasis,
         published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     ) -> SnapshotId {
         let PublicationArtifacts {

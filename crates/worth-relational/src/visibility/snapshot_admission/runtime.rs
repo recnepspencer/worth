@@ -3,7 +3,7 @@ use super::*;
 impl super::super::authority::VisibilityAuthority<'_> {
     pub(in crate::visibility) fn open_active_snapshot_for_basis(
         &self,
-        basis: super::super::snapshot_states::VisibilitySnapshotBasis,
+        basis: crate::history::retention::VisibilitySnapshotBasis,
         read_policy: crate::snapshots::data::SnapshotReadPolicy,
     ) -> Result<crate::snapshots::data::SnapshotHandle, RelationalSnapshotAdmissionDenial> {
         crate::visibility::snapshot_observation::SnapshotObservationInputs::from(self.runtime)

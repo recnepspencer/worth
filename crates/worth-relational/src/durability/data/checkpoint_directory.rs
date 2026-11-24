@@ -88,6 +88,19 @@ impl RelationalCheckpointDirectory {
 }
 
 impl RelationalCheckpointDirectory {
+    pub(crate) fn readmit_canonical_member(
+        &self,
+        entry: &crate::history::commit::RelationalCommitIndexEntry,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<crate::history::data::PositionedCanonicalCommit, super::RelationalRecoveryStop>
+    {
+        crate::durability::canonical_commit_artifact::retained_frame_reads::selected_artifact(
+            entry, self, execution, limit,
+        )?
+        .readmit_indexed(entry, execution)
+    }
+
     pub(crate) fn symbol_member_custody(
         &self,
     ) -> crate::durability::medium::NativeSourceMemberState {

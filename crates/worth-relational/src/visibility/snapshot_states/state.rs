@@ -1,3 +1,4 @@
+use crate::history::retention::VisibilitySnapshotBasis;
 use std::collections::BTreeMap;
 
 use crate::branch::root::projection::SnapshotProjectionRoot;
@@ -6,7 +7,7 @@ use crate::identity::data::{PartitionId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
 use crate::storage::overlay::SnapshotPartitionPins;
 
-use super::{HistoricalVisibilityBasis, VisibilitySnapshotBasis};
+use super::HistoricalVisibilityBasis;
 
 /// Exact equivalence identity for one derived visibility state.
 ///

@@ -2,12 +2,11 @@
 use crate::visibility::materialization::read_records::projection::{
     ProjectionInputs, VisibilityProjectionView,
 };
-use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 impl VisibilityProjectionView {
     pub(crate) fn retain_exact_basis(
         &self,
-    ) -> Option<crate::visibility::snapshot_states::VisibilitySnapshotBasis> {
+    ) -> Option<crate::history::retention::VisibilitySnapshotBasis> {
         match self.snapshot_basis() {
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                 Some(basis.clone())
@@ -17,17 +16,8 @@ impl VisibilityProjectionView {
     }
 }
 
-impl<'runtime> VisibilityReadContext<'runtime> {
-    /// Project through an owner-issued exact branch observation without
-    /// allocating a tracked snapshot handle.
-    pub fn project_observation(
-        &self,
-        observation: &crate::mvcc::observation::RelationalBranchObservation,
-    ) -> Result<VisibilityProjectionView, crate::branch::basis_denial::RelationalBranchBasisDenial>
-    {
-        VisibilityProjectionView::from_observation(self.runtime().into(), observation)
-    }
-}
+#[path = "exact_observation/runtime_reads.rs"]
+mod runtime_reads;
 
 impl VisibilityProjectionView {
     pub(crate) fn from_observation(
@@ -48,9 +38,8 @@ impl VisibilityProjectionView {
         {
             return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::MaterializationUnavailable);
         }
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-            observation,
-        );
+        let basis =
+            crate::history::retention::VisibilitySnapshotBasis::from_observation(observation);
         Ok(VisibilityProjectionView::new(
             inputs,
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),

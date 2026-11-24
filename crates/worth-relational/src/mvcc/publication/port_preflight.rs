@@ -140,7 +140,7 @@ impl PreparedBranchPublicationPreflight {
         // recovery lookup has no record. Every stop below this point releases
         // the reservation by dropping it.
         let published_snapshot_basis =
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
+            crate::history::retention::VisibilitySnapshotBasis::from_observation(
                 &next_basis.observation(),
             );
         completion.admit_prepared_indexes(execution)?;

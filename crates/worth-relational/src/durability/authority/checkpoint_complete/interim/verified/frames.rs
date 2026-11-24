@@ -20,8 +20,7 @@ impl FrozenMemoryOriginals {
             .map_err(array_stop)?;
         for (offset, artifact) in self.artifacts.iter().enumerate() {
             let cell = artifact.envelope_residency();
-            let original = cell
-                .require_original_artifact(request, None)
+            let original = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&cell, request, None)
                 .map_err(stop)?;
             let positioned = original.readmitted_body(request)
                 .map_err(crate::durability::authority::checkpoint_complete::source::canonical_readmission_stop)?;

@@ -38,7 +38,7 @@ impl RelationalRuntime {
             )
         });
         let Some(root) = root else { return false };
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_applied_root(
+        let basis = crate::history::retention::VisibilitySnapshotBasis::from_applied_root(
             binding.branch_id,
             binding.version_id,
             root,

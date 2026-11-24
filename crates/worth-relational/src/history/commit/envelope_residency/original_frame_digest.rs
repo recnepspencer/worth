@@ -1,5 +1,5 @@
 //! Read original Memory-frame digest metadata without rehashing the body.
-use super::artifact_export::original_frame_stop;
+use super::source_readmission::original_frame_stop;
 use super::{EnvelopeBacking, RelationalCommitEnvelopeResidency};
 use crate::durability::canonical_commit_artifact::frame::recorded_payload_digest;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;

@@ -5,10 +5,10 @@ use crate::publication::PublicationSurface;
 use crate::replay::ReplayAccess;
 use crate::runtime::durability_access::DurabilityAccess;
 use crate::runtime::RelationalRuntime;
+use crate::runtime::VisibilityReadContext;
 use crate::simulation::{SimulationAccess, SimulationAuthority};
 use crate::validation::InvariantAccess;
 use crate::visibility::authority::VisibilityAuthority;
-use crate::visibility::materialization::read_records::VisibilityReadContext;
 use crate::visibility::retention::VisibilityRetentionAuthority;
 
 impl RelationalRuntime {
@@ -18,6 +18,10 @@ impl RelationalRuntime {
 
     pub fn read_truth(&self) -> VisibilityReadContext<'_> {
         self.visibility_reads()
+    }
+
+    pub(crate) fn visibility_reads(&self) -> VisibilityReadContext<'_> {
+        VisibilityReadContext::new(self)
     }
 
     pub fn validation(&self) -> InvariantAccess<'_> {

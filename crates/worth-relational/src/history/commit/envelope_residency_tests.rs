@@ -312,7 +312,11 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
     assert!(cell.resident_payload_bytes().is_none());
     assert_eq!(cell.payload_storage_bytes(), 0);
     let original = medium.latest_committed_artifact().unwrap();
-    let exported = cell.export_artifact(&execution).unwrap();
+    let exported =
+        crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+            &cell, &execution,
+        )
+        .unwrap();
     assert_eq!(exported.as_bytes(), original.as_bytes());
     assert!(Arc::ptr_eq(
         &source,

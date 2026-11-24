@@ -17,9 +17,11 @@ impl VisibilityReadContext<'_> {
     ) -> Result<crate::branch::projection_view::managed_source::ManagedIndexSourceObservation, Denial>
     {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
-                .ok_or(Denial::RootUnavailable)?;
+        let basis = crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(
+            self.runtime,
+            handle,
+        )
+        .ok_or(Denial::RootUnavailable)?;
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()
@@ -49,9 +51,11 @@ impl VisibilityReadContext<'_> {
         Denial,
     > {
         let (selected, _memory) = self.managed_source_position(execution, handle)?;
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
-                .ok_or(Denial::RootUnavailable)?;
+        let basis = crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(
+            self.runtime,
+            handle,
+        )
+        .ok_or(Denial::RootUnavailable)?;
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()
@@ -87,9 +91,11 @@ impl VisibilityReadContext<'_> {
                 )
             })?
             .ok_or(Denial::RootUnavailable)?;
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
-                .ok_or(Denial::RootUnavailable)?;
+        let basis = crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(
+            self.runtime,
+            handle,
+        )
+        .ok_or(Denial::RootUnavailable)?;
         let publication = self.runtime.publication_binding();
         let epoch = publication
             .companion_epoch()

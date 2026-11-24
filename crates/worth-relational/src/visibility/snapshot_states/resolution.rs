@@ -1,8 +1,9 @@
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary};
 use crate::visibility::cache_state::{materialize_exact_state, VisibilityCacheInputs};
 
-use super::{SnapshotState, VisibilitySnapshotBasis};
+use super::SnapshotState;
 
 pub(crate) struct ResolvedVisibilitySnapshot {
     pub(crate) handle: SnapshotHandle,

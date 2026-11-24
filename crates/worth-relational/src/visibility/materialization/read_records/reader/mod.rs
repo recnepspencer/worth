@@ -4,7 +4,7 @@ pub use pinned_entity_metadata::{
 };
 pub(crate) mod adjacency_work_ledger;
 mod aspect_catalog;
-mod aspect_version_access;
+pub(crate) mod aspect_version_access;
 #[cfg(test)]
 mod aspect_version_read;
 #[cfg(test)]
@@ -41,7 +41,6 @@ pub(crate) mod truth_kind_scan;
 mod truth_record_access;
 pub(crate) mod truth_relation_kind_scan;
 
-pub use context::VisibilityReadContext;
 pub use pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,

@@ -1,5 +1,7 @@
 //! Compose authentic selections without rebasing any producer observation.
 use super::*;
+use crate::runtime::VisibilityReadContext;
+
 use crate::execution::request_stage::checkpoint;
 
 impl VisibilityReadContext<'_> {

@@ -1,10 +1,10 @@
 //! Visibility bookkeeping follows a branch owner's exact installed head.
 use crate::branch::basis_observation_inputs::BranchObservationInputs;
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
 use crate::visibility::cache_state::{
     bump_visibility_ref, evict_cache_if_needed, protect_branch_head_state, VisibilityCacheInputs,
 };
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 #[derive(Clone, Copy)]
 pub(crate) struct BranchHeadVisibilityInputs<'a> {

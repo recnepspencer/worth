@@ -54,7 +54,8 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
         .pin_read_capability(&snapshot, &[index], &request)
         .unwrap();
     let basis =
-        crate::visibility::snapshot_states::resolve_snapshot_basis(&runtime, &snapshot).unwrap();
+        crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(&runtime, &snapshot)
+            .unwrap();
     assert!(Arc::ptr_eq(read.basis.root(), basis.root()));
     assert!(std::ptr::eq(
         read.indexes[&index].definition.as_ref(),

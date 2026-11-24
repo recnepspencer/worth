@@ -1,11 +1,10 @@
 //! Bind durable dependency capture to the evidence's exact snapshot.
+use super::durable_dependencies::currentness::RelationalAuthorizationDependencySnapshots;
 use super::{
     durable_dependencies::capture::capture, RelationalAuthorizationDependencyDenial as Denial,
     RelationalAuthorizationDurableDependencies, RelationalAuthorizationObservationEvidence,
 };
 use crate::runtime::RelationalRuntime;
-use crate::snapshots::data::SnapshotHandle;
-use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 
 impl RelationalRuntime {
     /// Capture exact source revisions from the evidence's own immutable root.
@@ -15,19 +14,34 @@ impl RelationalRuntime {
         evidence: &RelationalAuthorizationObservationEvidence,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationDurableDependencies, Denial> {
-        let view = self.project_authorization_dependency_snapshot(evidence.snapshot())?;
+        let view =
+            RelationalAuthorizationDependencySnapshots::from(self).project(evidence.snapshot())?;
         capture(&view, execution, evidence)
     }
+}
 
-    pub(crate) fn project_authorization_dependency_snapshot(
-        &self,
-        snapshot: &SnapshotHandle,
-    ) -> Result<VisibilityProjectionView, Denial> {
-        if snapshot.runtime_instance_id != self.runtime_instance_id() {
-            return Err(Denial::ForeignRuntime);
+impl<'a> From<&'a RelationalRuntime> for RelationalAuthorizationDependencySnapshots<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            projection: runtime.into(),
+            directory: runtime.into(),
         }
-        self.read_truth()
-            .project_snapshot(snapshot)
-            .ok_or(Denial::SnapshotUnavailable)
+    }
+}
+impl<'a> From<&'a mut RelationalRuntime> for RelationalAuthorizationDependencySnapshots<'a> {
+    fn from(runtime: &'a mut RelationalRuntime) -> Self {
+        (&*runtime).into()
+    }
+}
+impl<'a> From<&'a std::sync::Arc<RelationalRuntime>>
+    for RelationalAuthorizationDependencySnapshots<'a>
+{
+    fn from(runtime: &'a std::sync::Arc<RelationalRuntime>) -> Self {
+        runtime.as_ref().into()
+    }
+}
+impl<'a> From<&'a Box<RelationalRuntime>> for RelationalAuthorizationDependencySnapshots<'a> {
+    fn from(runtime: &'a Box<RelationalRuntime>) -> Self {
+        runtime.as_ref().into()
     }
 }

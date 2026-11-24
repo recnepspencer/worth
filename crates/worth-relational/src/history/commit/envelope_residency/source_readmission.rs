@@ -1,5 +1,6 @@
 //! Journal and selected singleton bytes share the complete existing admission.
 use super::*;
+use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn original_source_damage(&self) -> Option<RelationalStorageUnavailable> {
         self.state
@@ -36,67 +37,10 @@ impl RelationalCommitEnvelopeResidency {
             .read_commit(entry.position, read_limit)
             .map_err(failure)?;
         let artifact = VerifiedCanonicalCommitFrame::copy_frame_original(&bytes, execution)
-            .map_err(|cause| match cause {
-                crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Request(cause) => RelationalRecoveryStop::Request(cause),
-                crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Allocation(cause) => RelationalRecoveryStop::Allocation(cause),
-                crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Frame(cause) => crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause).into(),
-            })?;
+            .map_err(original_frame_stop)?;
         drop(bytes);
         drop(reservation);
-        Self::readmit_owned_artifact(entry, artifact, execution)
-    }
-    pub(crate) fn readmit_owned_artifact(
-        entry: &RelationalCommitIndexEntry,
-        artifact: VerifiedCanonicalCommitFrame,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        Self::check_frame(entry, &artifact)?;
-        let admitted=artifact.readmitted_body(execution).map_err(|error| match error {
-            crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Request(cause)=>RelationalRecoveryStop::Request(cause),
-            crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
-                crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::FieldText(cause)=>crate::symbols::data::field_text_recovery_stop(cause),
-            _=>RelationalStorageUnavailable{subject:RelationalStorageSubject::Envelope(entry.position),cause:Cause::Damaged}.into(),
-        })?;
-        Self::check_positioned(entry, admitted, execution)
-    }
-    pub(super) fn check_frame(
-        entry: &RelationalCommitIndexEntry,
-        artifact: &VerifiedCanonicalCommitFrame,
-    ) -> Result<(), RelationalRecoveryStop> {
-        let failure = |cause| RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Envelope(entry.position),
-            cause,
-        };
-        if artifact.position() != entry.position
-            || artifact.commit_id() != entry.commit.commit_id
-            || artifact.payload_digest().as_bytes() != &entry.payload_digest
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        Ok(())
-    }
-    fn check_positioned(
-        entry: &RelationalCommitIndexEntry,
-        admitted: PositionedCanonicalCommit,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        let failure = |cause| RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Envelope(entry.position),
-            cause,
-        };
-        if admitted.commit != entry.commit
-            || admitted.envelope().association_discovery() != entry.association_discovery
-            || admitted.schema_version != entry.schema_version
-            || entry.root.schema_root()
-                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    &admitted.schema_authority,
-                )
-        {
-            return Err(failure(Cause::IntegrityMismatch).into());
-        }
-        crate::execution::request_custody::check_request(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
-        Ok(admitted)
+        artifact.readmit_indexed(entry, execution)
     }
 }
 
@@ -107,6 +51,21 @@ impl EnvelopeState {
             && failure.cause.is_proven_damage()
         {
             self.damage = Some(failure);
+        }
+    }
+}
+
+pub(crate) fn original_frame_stop(
+    cause: crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial,
+) -> RelationalRecoveryStop {
+    use crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial as Copy;
+    use RelationalRecoveryStop as Stop;
+    match cause {
+        Copy::Request(cause) => Stop::Request(cause),
+        Copy::Allocation(cause) => Stop::Allocation(cause),
+        Copy::Frame(cause) => {
+            crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause)
+                .into()
         }
     }
 }

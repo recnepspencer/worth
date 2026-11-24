@@ -66,9 +66,7 @@ impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
         // Skipping an immutable index prefix does not demand its bodies.
         self.retained.nth(n).map(|commit| {
-            commit
-                .cell
-                .export_artifact(&self.execution)
+            super::retained_frame_reads::export_artifact(&commit.cell, &self.execution)
                 .map(super::RelationalCanonicalCommitArtifact::from_verified)
         })
     }

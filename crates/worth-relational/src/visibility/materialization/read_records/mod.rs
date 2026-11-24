@@ -39,16 +39,8 @@ pub use reader::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
-    SnapshotPositionDenial, VisibilityReadContext,
+    SnapshotPositionDenial,
 };
-
-use crate::runtime::RelationalRuntime;
-
-impl RelationalRuntime {
-    pub(crate) fn visibility_reads(&self) -> VisibilityReadContext<'_> {
-        VisibilityReadContext::new(self)
-    }
-}
 
 pub(crate) mod read_stop;
 

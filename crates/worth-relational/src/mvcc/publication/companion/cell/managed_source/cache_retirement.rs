@@ -3,7 +3,7 @@ use super::*;
 use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
 use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
 use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
-use crate::mvcc::publication::companion::registration::PublicationCompanionRegistrationPort;
+use crate::mvcc::publication::companion::registration::port::PublicationCompanionRegistrationPort;
 use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},

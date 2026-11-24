@@ -5,7 +5,7 @@ use crate::storage::substrate::maintenance::ReconstructionLane;
 use worth_execution::ExecutionMemoryReservation;
 
 pub(crate) struct RequestOwnedCheckpointBasis {
-    pub(crate) basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    pub(crate) basis: crate::history::retention::VisibilitySnapshotBasis,
     pub(crate) memory: Option<ExecutionMemoryReservation>,
 }
 

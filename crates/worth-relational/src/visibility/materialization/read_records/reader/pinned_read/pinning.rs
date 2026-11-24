@@ -1,6 +1,6 @@
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
-use crate::visibility::snapshot_states::resolve_snapshot_basis;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_basis;
 
 impl VisibilityReadContext<'_> {
     /// Capture native immutable custody while the installed owner is borrowed.

@@ -1,8 +1,8 @@
 use crate::capabilities::VisibilityPolicySource;
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::visibility::cache_state::{
     evict_cache_if_needed, maybe_remove_unprotected_state, protect_branch_head_state,
 };
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 use super::*;
 

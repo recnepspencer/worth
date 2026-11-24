@@ -56,7 +56,7 @@ impl RelationalSettlementCompletion {
 /// One admitted installation, bound to the movement proof that supplied it.
 pub(crate) struct SettlementPublication {
     completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
-    snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
     positioned: Arc<crate::history::data::PositionedCanonicalCommit>,
     envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
@@ -66,7 +66,7 @@ impl SettlementPublication {
         self,
     ) -> (
         crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
-        crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+        crate::history::retention::VisibilitySnapshotBasis,
         Arc<crate::history::data::PositionedCanonicalCommit>,
         Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     ) {

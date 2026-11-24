@@ -47,7 +47,7 @@ impl BranchObservationInputs<'_> {
         branch: &crate::history::data::BranchId,
         version: crate::identity::data::VersionId,
     ) -> Result<
-        Option<crate::visibility::snapshot_states::VisibilitySnapshotBasis>,
+        Option<crate::history::retention::VisibilitySnapshotBasis>,
         RelationalBranchBasisDenial,
     > {
         let identity = self
@@ -56,9 +56,7 @@ impl BranchObservationInputs<'_> {
         let (_, basis) = self.observe(&identity, || None)?;
         let observation = basis.observation();
         Ok((observation.version_id() == version).then(|| {
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-                &observation,
-            )
+            crate::history::retention::VisibilitySnapshotBasis::from_observation(&observation)
         }))
     }
 

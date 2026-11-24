@@ -43,8 +43,7 @@ pub(crate) fn capture(
             .envelope_cells
             .get(&entry.position)
             .ok_or_else(|| corrupt("original canonical cell unavailable"))?;
-        let artifact = cell
-            .require_original_artifact(request, source.as_ref().zip(protection.as_ref()))
+        let artifact = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(cell, request, source.as_ref().zip(protection.as_ref()))
             .map_err(capture_stop)?;
         if artifact.position() != entry.position
             || artifact.commit_id() != entry.commit.commit_id

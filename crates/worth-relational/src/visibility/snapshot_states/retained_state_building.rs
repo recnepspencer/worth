@@ -1,7 +1,8 @@
 //! Assemble pins under the exact basis that owns their root lifetime.
 use super::exact_state_building::{exact_entity_slots, exact_relation_slots};
 use super::pin_assembly::assemble_snapshot_state;
-use super::{SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis};
+use super::{SnapshotState, SnapshotStateBasis};
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
 
 impl VisibilitySnapshotBasis {

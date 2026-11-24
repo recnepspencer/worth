@@ -43,17 +43,14 @@ pub use publication::{
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
     ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
-    PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
-    PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
-    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
-    PublishRelationalCommit, RelationalCurrentOutputAdoption, RelationalPublicationCompanion,
-    RelationalPublicationDeferred, RelationalPublicationDenial,
-    RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
-    RelationalPublicationFailureKind, RelationalPublicationOutcome,
+    PerformedRelationalCommit, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
+    PreparedPublicationCompanionEffect, PreparedRelationalCommitCandidate,
+    PublicationCompanionPreflight, PublicationCompanionRegistrationStop, PublishRelationalCommit,
+    RelationalCurrentOutputAdoption, RelationalPublicationCompanion, RelationalPublicationDeferred,
+    RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
+    RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
-    RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
+    StaleRelationalBranchObservation,
 };
 pub use publication::{
     ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
@@ -114,3 +111,9 @@ pub(crate) use validation::ValidatedProposalState;
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
 pub(crate) use publication::require_graph_coverage;
+
+pub use publication::companion::registration::port::{
+    PendingCompanionRegistration, PublicationCompanionRegistration,
+    PublicationCompanionRegistrationPort, PublicationCompanionRetirementDenial,
+    RetiredPublicationCompanionRegistration,
+};

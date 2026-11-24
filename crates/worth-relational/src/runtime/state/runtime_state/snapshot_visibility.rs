@@ -1,8 +1,8 @@
 //! The installed owner selects the current branch observation for visibility.
 use super::RelationalRuntime;
 use crate::history::data::BranchId;
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::identity::data::VersionId;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 impl RelationalRuntime {
     pub(crate) fn capture_current_visibility_basis(

@@ -1,7 +1,8 @@
 //! The runtime binds the exact visibility and record readers once per operation.
 use crate::runtime::RelationalRuntime;
 use crate::visibility::snapshot_states::{
-    SnapshotReadDirectory, SnapshotRecordReadInputs, SnapshotResolutionInputs,
+    resolution::{SnapshotReadDirectory, SnapshotResolutionInputs},
+    SnapshotRecordReadInputs,
 };
 use std::sync::Arc;
 
