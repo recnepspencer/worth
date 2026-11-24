@@ -17,7 +17,9 @@ pub use super::media_evidence::{
 pub use super::record_serving::{
     CertificationPhysicalRecordSubmission, CertificationRetirementPause,
 };
-pub use super::work::CertificationPhysicalSubmissionPauseGate;
+pub use super::work::{
+    CertificationPhysicalAbandonmentWaitObserver, CertificationPhysicalSubmissionPauseGate,
+};
 pub use worth_store_physical_backend::{
     CertificationMediaFaultActivation, CertificationMediaFaultAuthority, MediaFaultDirective,
     MediaFaultRule, MediaFaultSchedule, MediaFaultScheduleDenial, MediaOperationRole,

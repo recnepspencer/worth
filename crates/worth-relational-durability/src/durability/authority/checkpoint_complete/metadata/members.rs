@@ -32,7 +32,8 @@ pub(in crate::internal_port::durability::authority::checkpoint_complete) fn capt
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointMetadataMembers, Denial> {
     let mut members = ExecutionOrderedMap::default();
-    let (symbols, symbol_buckets) = dictionary_pages::capture(dictionary, request, &mut members)?;
+    let (symbols, symbol_buckets) =
+        dictionary_pages::capture(dictionary, prior, request, &mut members)?;
     let (nodes, events) = lineage_pages::capture(lineage, prior, request, &mut members)?;
     let derived_indexes = add(
         &mut members,

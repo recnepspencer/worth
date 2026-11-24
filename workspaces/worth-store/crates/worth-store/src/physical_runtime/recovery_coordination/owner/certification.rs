@@ -163,4 +163,18 @@ impl PhysicalRecoveryCoordination {
     pub fn take_certification_cleanup_media_handle_leak(&self) -> bool {
         self.certification_faults.take_cleanup_media_handle_leak()
     }
+
+    pub fn certification_pause_abandonment_after_dequeue(
+        &self,
+    ) -> crate::physical_runtime::certification::CertificationPhysicalSignalPauseGate {
+        self.signal
+            .pause_abandonment_after_dequeue_for_certification()
+    }
+
+    pub fn certification_abandonment_wait_observer(
+        &self,
+    ) -> crate::physical_runtime::certification::CertificationPhysicalAbandonmentWaitObserver {
+        self.submission
+            .abandonment_wait_observer_for_certification()
+    }
 }
