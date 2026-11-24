@@ -81,15 +81,8 @@ impl<'filter> RowOperandReader<'filter> {
             keys.into_iter()
                 .map(|(aspect, fields)| ProjectionAspectRequirement::fields(aspect, fields)),
         );
-        let scope_scan_steps: usize = scope
-            .requirements()
-            .iter()
-            .map(|req| req.mask().paths().len().saturating_add(1))
-            .sum();
-        let observe_work = (field_count as u64)
-            .checked_mul(scope_scan_steps.max(1) as u64)
-            .and_then(|n| n.checked_mul(2))
-            .and_then(|n| n.checked_add(scope.requirements().len() as u64))
+        let roster_width = read.projection.entity_aspect_binding_count(kind);
+        let observe_work = observe_row_work(field_count, &scope, roster_width)
             .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
         Ok(Self {
             fields: filter.fields(),
@@ -270,4 +263,53 @@ fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> 
             .checked_add(field_bytes)?;
     }
     u64::try_from(total).ok()
+}
+
+/// Per-candidate projection-scope admission and two-pass field-observation
+/// work, explicitly scaled by the root entity kind's executable binding roster
+/// width (`admit_declared_projection_aspects` + both `observe_aspect_field`
+/// passes).
+fn observe_row_work(
+    field_count: usize,
+    scope: &ProjectionAspectScope,
+    roster_width: usize,
+) -> Option<u64> {
+    let roster = roster_width.max(1);
+    let roster_u64 = u64::try_from(roster).ok()?;
+    let scope_reqs = u64::try_from(scope.requirements().len()).ok()?;
+    let mut scope_scan_steps = 0_u64;
+    for req in scope.requirements() {
+        let paths = u64::try_from(req.mask().paths().len()).ok()?;
+        scope_scan_steps = scope_scan_steps.checked_add(paths.checked_add(1)?)?;
+    }
+    let admit_work = scope_reqs
+        .checked_mul(roster_u64)?
+        .checked_add(scope_scan_steps)?;
+    let per_observe_work = scope_scan_steps
+        .max(1)
+        .checked_add(roster_u64)?
+        .checked_add(log2_ceil(roster))?;
+    u64::try_from(field_count)
+        .ok()?
+        .checked_mul(per_observe_work)?
+        .checked_mul(2)?
+        .checked_add(admit_work)?
+        .checked_add(scope_reqs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn observe_row_work_scales_with_root_kind_roster_width_for_fixed_scope() {
+        let aspect = AspectKey::new("ItemCore").unwrap();
+        let field = FieldKey::new("Tag").unwrap();
+        let scope = ProjectionAspectScope::fields(aspect, [field]);
+        let narrow = observe_row_work(1, &scope, 1).unwrap();
+        let wide = observe_row_work(1, &scope, 16).unwrap();
+        // 1 requirement * (16 - 1) for admission + 2 passes * ((16 - 1) + (log2_ceil(16) - log2_ceil(1))).
+        let expected_delta = 3 * (16 - 1) + 2 * (log2_ceil(16) - log2_ceil(1));
+        assert_eq!(wide - narrow, expected_delta);
+    }
 }

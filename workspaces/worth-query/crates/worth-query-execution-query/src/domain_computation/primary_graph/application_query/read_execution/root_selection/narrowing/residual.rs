@@ -44,10 +44,12 @@ pub fn narrow<ReadIdentity>(
         unavailable(WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded)
     })?;
     let builder_schema_bytes =
-        ExpressionInputs::builder_schema_and_conform_bytes(filter.program().schema())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| {
-                relational_read_denial(Cause::ChargedBytesOverflow, WHERE_FILTER_SUBJECT)
+        ExpressionInputs::scalar_builder_schema_and_conform_bytes(filter.program().schema())
+            .ok_or_else(projection_unavailable)
+            .and_then(|bytes| {
+                u64::try_from(bytes).map_err(|_| {
+                    relational_read_denial(Cause::ChargedBytesOverflow, WHERE_FILTER_SUBJECT)
+                })
             })?;
     let static_input_bytes = operands_input_bytes(&parameters)
         .and_then(|n| n.checked_add(operands_input_bytes(&literals)?))

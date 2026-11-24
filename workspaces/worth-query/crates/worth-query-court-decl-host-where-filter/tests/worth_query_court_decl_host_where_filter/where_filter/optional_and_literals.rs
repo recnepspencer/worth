@@ -21,6 +21,8 @@ use worth_query_testkit_document_retention::facade::document_retention_model::op
 
 #[path = "optional_and_literals/metering.rs"]
 mod metering;
+#[path = "optional_and_literals/roster_width.rs"]
+mod roster_width;
 
 #[test]
 fn open_inbox_combines_literal_status_equality_and_two_optional_filters() {
