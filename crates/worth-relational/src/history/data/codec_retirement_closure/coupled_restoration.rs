@@ -119,10 +119,10 @@ impl RelationalRuntime {
         };
         let (owners, current) = execution
             .run_native_with_checkpoint(|context| {
-                let current = crate::history::data::source_scope_closure::current(
+                let current = crate::publication::ownership::source_scope::current(
                     execution,
                     &restoration.before,
-                    Some(installed),
+                    Some(&installed.source_scope_ownership),
                     &group
                         .participants
                         .iter()

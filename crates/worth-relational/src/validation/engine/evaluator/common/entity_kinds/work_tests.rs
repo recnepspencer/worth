@@ -7,9 +7,7 @@ use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::primitives::TransactionId;
-use crate::validation::engine::{
-    budget::LeasedInvariantBudget, InvariantObservation, InvariantRuntimeView,
-};
+use crate::validation::engine::{budget::LeasedInvariantBudget, InvariantObservation};
 use std::num::NonZeroUsize;
 use std::sync::{Arc, OnceLock};
 use worth_execution::{CancellationToken, LeaseRequest};
@@ -90,7 +88,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
             |_, packet_context| {
                 let budget = LeasedInvariantBudget::new(packet_context, lease.status());
                 let context = InvariantExecutionContext::new(
-                    &InvariantRuntimeView::from_runtime(&runtime),
+                    &runtime.invariant_validation_view(),
                     InvariantObservation::committed(runtime.storage_access().current_edition()),
                     runtime.current_version_id(),
                     runtime.current_version_id(),

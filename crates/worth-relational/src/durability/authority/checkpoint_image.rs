@@ -179,7 +179,7 @@ struct CapturedBranchRootImages {
 }
 
 fn branch_root_images(
-    branch_roots: Vec<crate::branch::RelationalBranchRootCheckpoint>,
+    branch_roots: Vec<crate::branch::root_checkpoint::RelationalBranchRootCheckpoint>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CapturedBranchRootImages, crate::durability::data::RelationalRecoveryStop> {
     let mut root_kind_images = std::collections::BTreeMap::new();

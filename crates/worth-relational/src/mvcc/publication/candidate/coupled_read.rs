@@ -1,24 +1,24 @@
 //! The complete prepared image keeps its genuine proposal and registration phase.
 use super::PreparedRelationalCommitCandidate;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    mvcc::RelationalMutationProposalIdentity,
-    runtime::{
-        RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalPreparationRuntime,
-        RuntimeServices,
-    },
-    transactions::data::TransactionCommitError,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity;
+use crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead;
 
 pub(super) struct CoupledCandidateReadContext {
-    services: RuntimeServices,
+    dictionary: RuntimeSymbolTable,
+    instrumentation: RuntimeInstrumentation,
     before: AdmittedRelationalBranchBasis,
     proposal: RelationalMutationProposalIdentity,
 }
 impl PreparedRelationalCommitCandidate {
     pub(crate) fn retain_coupled_read(
         &mut self,
-        runtime: &RelationalPreparationRuntime,
+        dictionary: RuntimeSymbolTable,
+        instrumentation: RuntimeInstrumentation,
         before: AdmittedRelationalBranchBasis,
         proposal: RelationalMutationProposalIdentity,
     ) {
@@ -35,7 +35,8 @@ impl PreparedRelationalCommitCandidate {
         assert!(payload
             .coupled_read
             .replace(CoupledCandidateReadContext {
-                services: runtime.services.clone(),
+                dictionary,
+                instrumentation,
                 before,
                 proposal,
             })
@@ -54,15 +55,19 @@ impl PreparedRelationalCommitCandidate {
             ._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let payload = payload
-            .as_ref()
-            .ok_or_else(|| crate::mvcc::origin_denial("prepared candidate was consumed"))?;
+        let payload = payload.as_ref().ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "prepared candidate was consumed",
+            )
+        })?;
         let Some(read) = &payload.coupled_read else {
             return Ok(None);
         };
         RelationalPinnedRead::capture_prepared(
             execution,
-            &read.services,
+            &read.dictionary,
+            &read.instrumentation,
+            self.runtime_instance_id,
             &read.before,
             &read.proposal,
             self.candidate_id,

@@ -2,7 +2,7 @@
 use super::*;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
 use crate::derived_relation::affected::lifecycle::{self, Lifecycle};
-use crate::derived_relation::DerivedRelationNode as Node;
+use crate::derived_relation::definition::DerivedRelationNode as Node;
 use crate::identity::data::KindId;
 
 pub(in crate::derived_relation) fn collect(

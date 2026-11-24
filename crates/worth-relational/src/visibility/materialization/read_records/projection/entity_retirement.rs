@@ -79,6 +79,3 @@ impl RelationalEntityRetirement {
         })
     }
 }
-
-#[cfg(test)]
-mod tests;

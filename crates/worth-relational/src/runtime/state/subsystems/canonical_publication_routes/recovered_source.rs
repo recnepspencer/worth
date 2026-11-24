@@ -3,8 +3,8 @@ use super::*;
 
 pub(super) fn prepare_route(
     source: Arc<PositionedCanonicalCommit>,
-    envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-    roots: crate::branch::RelationalBranchRootDescriptor,
+    envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+    roots: crate::branch::target::RelationalBranchRootDescriptor,
 ) -> Result<
     (
         Arc<PositionedCanonicalCommit>,
@@ -37,8 +37,8 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn rebind_recovered_latest(
         &self,
         source: &PositionedCanonicalCommit,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        roots: crate::branch::RelationalBranchRootDescriptor,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        roots: crate::branch::target::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
         let previous = self
             .by_commit

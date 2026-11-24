@@ -291,7 +291,7 @@ impl RelationalPublicationPort {
                         },
                     )
                 })?;
-        let mut prepared = PreparedCanonicalBranchMovement::preflight(
+        let mut prepared = PreparedBranchPublicationPreflight::preflight(
             execution,
             parts,
             retention_binding,

@@ -1,5 +1,6 @@
 //! The real cache keeps disarmed Exact/Historical payloads through reclamation.
-use crate::change_source::{RelationalMemoryCloseObservation as O, RelationalRuntimeHandle};
+use crate::change_source::memory_close_observation::RelationalMemoryCloseObservation as O;
+use crate::change_source::RelationalRuntimeHandle;
 use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
 use worth_execution::ExecutionRequest;
 

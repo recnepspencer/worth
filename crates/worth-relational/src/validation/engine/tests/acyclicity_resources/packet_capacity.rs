@@ -2,7 +2,6 @@
 use super::super::validation_engine_fixtures::*;
 use super::fixture::*;
 use crate::execution::{execute_read_only_packets, PacketExecutionStop, ReadOnlyPacket};
-use crate::validation::engine::InvariantRuntimeView;
 use worth_execution::CancellationToken;
 use worth_foundational::PartitionIdentity;
 
@@ -30,7 +29,7 @@ fn run(
         Some(&plan),
         Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
     );
-    let view = InvariantRuntimeView::from_runtime(runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = crate::validation::execution::plan_invariant_execution(
         &view,
         worth_execution::ExecutionRequest::leased(&lease),

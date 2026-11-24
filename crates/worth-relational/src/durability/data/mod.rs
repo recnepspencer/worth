@@ -36,6 +36,7 @@ pub(crate) mod recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
 pub(crate) mod recovery_stop;
+pub(crate) mod recovery_verification;
 
 pub(crate) use crate::storage::data::record_identity_image::{
     DurablePendingRecordReservation, DurableRecordGenerationClass,

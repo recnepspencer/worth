@@ -1,45 +1,52 @@
 //! Consume one candidate phase before entering its successor's call frame.
+use super::super::publication_execution::PublicationPhaseOwners;
 use super::super::{artifact_execution, publication_execution, snapshot_validation};
 use super::registration::CandidateRegistration;
+use super::registration::CandidateRegistrationInputs;
+use super::{CandidateArtifactSelection, SelectedCandidateSymbols};
 use super::{CommitPhaseBacking, HistoryPreparedCandidate};
-use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
 struct CandidateContext {
-    runtime: RelationalPreparationRuntime,
     registration: CandidateRegistration,
-    diagnostic: crate::runtime::RelationalDiagnosticOperationCapture,
+    diagnostic: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
 struct PublicationInputs {
-    publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
     materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
-    caller: Option<crate::mvcc::RelationalCallerAssociation>,
+    caller: Option<crate::history::data::RelationalCallerAssociation>,
 }
-pub(super) struct ValidatedCandidate {
+pub(in crate::authority::commit::pipeline) struct ValidatedCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
     validated: CommitPhaseBacking<snapshot_validation::SnapshotValidatedCommitExecution>,
 }
-pub(super) struct AssembledCandidate {
+pub(in crate::authority::commit::pipeline) struct AssembledCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
     assembled: CommitPhaseBacking<artifact_execution::AssembledCommitExecution>,
 }
-pub(super) struct PublishedCandidate {
-    runtime: RelationalPreparationRuntime,
+pub(in crate::authority::commit::pipeline) struct PublishedCandidate {
     registration: CandidateRegistration,
     prepared: CommitPhaseBacking<super::super::PreparedCommitPublicationExecution>,
 }
 #[inline(never)]
-pub(super) fn validate(
+pub(in crate::authority::commit::pipeline) fn validate(
     request: &ExecutionRequest<'_, '_>,
     history: CommitPhaseBacking<HistoryPreparedCandidate<'_, '_>>,
-) -> Result<CommitPhaseBacking<ValidatedCandidate>, TransactionCommitError> {
+) -> Result<
+    (
+        SelectedCandidateSymbols,
+        CommitPhaseBacking<ValidatedCandidate>,
+    ),
+    TransactionCommitError,
+> {
     let HistoryPreparedCandidate {
-        recovered_runtime,
-        scope_control,
+        scope_control: _scope_control,
         history_bound,
         runtime_instance_id,
         publication_binding,
@@ -57,19 +64,16 @@ pub(super) fn validate(
         caller_association,
         diagnostic_capture,
     } = history.into_inner();
-    let runtime =
-        recovered_runtime.with_candidate_symbols(history_bound.value().candidate_symbols());
-    let validated = snapshot_validation::validate_snapshot_publication(
-        request,
-        &runtime,
-        history_bound,
-        &scope_control,
-    )?;
-    CommitPhaseBacking::new(
+    let pending = history_bound.value().candidate_symbols();
+    let symbols = SelectedCandidateSymbols {
+        dictionary: pending.binding(),
+        references: pending.required_references().clone(),
+    };
+    let validated = snapshot_validation::validate_snapshot_publication(request, history_bound)?;
+    let validated = CommitPhaseBacking::new(
         request,
         ValidatedCandidate {
             context: CandidateContext {
-                runtime,
                 registration: CandidateRegistration {
                     runtime_instance_id,
                     publication_binding,
@@ -92,11 +96,13 @@ pub(super) fn validate(
             },
             validated,
         },
-    )
+    )?;
+    Ok((symbols, validated))
 }
 #[inline(never)]
-pub(super) fn assemble(
+pub(in crate::authority::commit::pipeline) fn assemble(
     request: &ExecutionRequest<'_, '_>,
+    inputs_for_assembly: CandidateArtifactSelection<'_>,
     checked: CommitPhaseBacking<ValidatedCandidate>,
 ) -> Result<CommitPhaseBacking<AssembledCandidate>, TransactionCommitError> {
     let ValidatedCandidate {
@@ -115,7 +121,8 @@ pub(super) fn assemble(
             .is_some();
     let assembled = artifact_execution::assemble_commit_artifacts(
         request,
-        &context.runtime,
+        inputs_for_assembly.owners,
+        inputs_for_assembly.max_patch_records,
         validated,
         lineage_deferred,
     )?;
@@ -129,8 +136,11 @@ pub(super) fn assemble(
     )
 }
 #[inline(never)]
-pub(super) fn publish(
+pub(in crate::authority::commit::pipeline) fn publish<
+    Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture),
+>(
     request: &ExecutionRequest<'_, '_>,
+    owners: PublicationPhaseOwners<'_, Attach>,
     source: CommitPhaseBacking<AssembledCandidate>,
 ) -> Result<CommitPhaseBacking<PublishedCandidate>, TransactionCommitError> {
     let AssembledCandidate {
@@ -140,7 +150,7 @@ pub(super) fn publish(
     } = source.into_inner();
     let mut prepared = publication_execution::prepare_commit_publication_execution(
         request,
-        &context.runtime,
+        owners,
         assembled,
         inputs.publication,
         inputs.materialization,
@@ -152,21 +162,20 @@ pub(super) fn publish(
     CommitPhaseBacking::new(
         request,
         PublishedCandidate {
-            runtime: context.runtime,
             registration: context.registration,
             prepared,
         },
     )
 }
 #[inline(never)]
-pub(super) fn register(
+pub(in crate::authority::commit::pipeline) fn register(
     request: &ExecutionRequest<'_, '_>,
+    inputs: CandidateRegistrationInputs<'_>,
     source: CommitPhaseBacking<PublishedCandidate>,
-) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let PublishedCandidate {
-        runtime,
         registration,
         prepared,
     } = source.into_inner();
-    registration.register(request, &runtime, prepared.into_inner())
+    registration.register(request, inputs, prepared.into_inner())
 }

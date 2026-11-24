@@ -3,7 +3,6 @@ use std::cell::{Cell, RefCell};
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::RelationalPinnedRead;
 use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::{KindId, PartitionId};
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
@@ -18,14 +17,13 @@ type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_scan_fragment(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    reader: &RelationalPinnedRead,
+    projection: &impl ProjectionRecordSource,
     packet: &PlannedQueryPacket,
     work: &PacketizedQueryWork,
     ordinal: u64,
     ceiling: &QueryPacketMemory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<QueryWorkerFragment, PacketFailure> {
-    let projection = reader;
     let meter = RefCell::new(QueryPacketBudget::new(context, ceiling)?);
     let candidate_bytes = Cell::new(0);
     let mut entities = Vec::new();

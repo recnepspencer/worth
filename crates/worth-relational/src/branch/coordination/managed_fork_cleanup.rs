@@ -9,7 +9,7 @@ use crate::mvcc::RelationalPublicationCompanion;
 use crate::tests::support::{
     create_entity, durable_runtime_for_medium, OwnedTestDurableMedium, ScriptedPublication,
 };
-use crate::validation::candidate_source::ManagedIndexBranchImage;
+use crate::validation::candidate_source::image::ManagedIndexBranchImage;
 use std::collections::BTreeMap;
 use std::sync::atomic::AtomicUsize;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};

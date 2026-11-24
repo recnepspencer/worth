@@ -3,7 +3,8 @@ use super::SchemaContractRuntimeSubsystem;
 use crate::execution::RelationalExecutionDenialCause as Denial;
 use crate::identity::data::KindId;
 use crate::schema::{data::*, SchemaCompilationControl};
-use crate::validation::data::InvariantRegistration;
+use crate::validation::data::catalog::relation_integrity_registration_plan::append_relation_integrity_registrations;
+use crate::validation::data::catalog::InvariantRegistration;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
 
@@ -44,11 +45,7 @@ impl NativeRelationIntegrityInventory {
         let mut registrations = Vec::with_capacity(capacity);
         for plan in plans.relation_plans.values() {
             control.checkpoint()?;
-            crate::validation::data::append_relation_integrity_registrations(
-                plan,
-                &mut registrations,
-                control,
-            )?;
+            append_relation_integrity_registrations(plan, &mut registrations, control)?;
         }
         control.checkpoint()?;
         let inventory = Arc::new(Self {
@@ -77,9 +74,10 @@ impl NativeRegistrationQuote {
         control: SchemaCompilationControl<'_, '_>,
     ) -> Result<Self, Denial> {
         let mut plan = usize::try_from(
-            crate::branch::retained_compilation_tree_bytes::<KindId, LoweredRelationIntegrityPlan>(
-                registry.relation_kinds.len(),
-            )
+            crate::branch::root::schema::retained_compilation_tree_bytes::<
+                KindId,
+                LoweredRelationIntegrityPlan,
+            >(registry.relation_kinds.len())
             .map_err(|_| Denial::MemoryOverflow)?,
         )
         .map_err(|_| Denial::MemoryOverflow)?;

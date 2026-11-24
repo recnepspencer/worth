@@ -1,4 +1,5 @@
 //! Closed version-one directory; all ranges remain in the actual owned input.
+use super::read_image::{AdmissionRowIndex, AdmissionRowKey, DecodedDirectory};
 use super::{
     authentication, refusal::CANONICAL_MEANINGS,
     CheckpointAdmissionAuthenticationMismatch as Authentication,
@@ -9,8 +10,7 @@ pub(super) use emission::encode;
 use sha2::{Digest, Sha256};
 use std::ops::Range;
 use worth_execution::{
-    ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
-    ExecutionRequestArrayBuilder,
+    ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 use worth_foundational::facade::{
     BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion, CheckpointAdmissionCut,
@@ -24,29 +24,9 @@ const MINIMUM_ROW: usize = 16 + 8 * GROUP_HEADER;
 // The cut contains only closed field names, fixed arrays and bounded integers.
 const MAXIMUM_CUT: usize = 1024;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct AdmissionRowKey {
-    pub(crate) position: u64,
-    pub(crate) commit: u64,
-}
-#[derive(Debug, Clone)]
-pub(crate) struct AdmissionRowIndex {
-    pub(crate) key: AdmissionRowKey,
-    pub(crate) groups: [Range<usize>; 8],
-}
 pub(crate) struct EncodedAdmissionRow {
     pub(crate) key: AdmissionRowKey,
     pub(crate) groups: [ExecutionImmutableBytes; 8],
-}
-pub(super) struct DecodedDirectory {
-    pub(super) cut: CheckpointAdmissionCut,
-    pub(super) roots: Range<usize>,
-    pub(super) rows: ExecutionArray<AdmissionRowIndex>,
-    pub(super) commits: ExecutionOrderedMap<u64, usize>,
-    pub(super) positions: ExecutionOrderedMap<
-        crate::history::data::CommitId,
-        crate::history::data::RequiredOutputPublicationPositions,
-    >,
 }
 
 pub(super) fn read(

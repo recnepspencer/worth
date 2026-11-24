@@ -69,7 +69,3 @@ impl VisibilityProjectionView {
 #[cfg(test)]
 #[path = "field_revisions/restore_tests.rs"]
 mod restore_tests;
-
-#[cfg(test)]
-#[path = "field_revisions/tests.rs"]
-mod tests;

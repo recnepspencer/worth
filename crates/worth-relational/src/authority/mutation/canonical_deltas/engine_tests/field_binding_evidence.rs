@@ -12,8 +12,9 @@ use crate::schema::data::{
 };
 use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaFailureFields;
 
+use super::super::super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use super::super::data::CanonicalAspectDeltaEvidence;
-use super::super::{canonical_delta_for_mutation, CanonicalDeltaError};
+use super::super::CanonicalDeltaError;
 use super::support::{
     assert_authoritative_whole_aspect_locator, empty_working_state, empty_workspace,
     mutation_config,

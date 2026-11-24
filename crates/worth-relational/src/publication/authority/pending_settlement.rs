@@ -1,16 +1,16 @@
-use crate::runtime::state::subsystems::history::history_canonical_routes::{
-    mark_publication_settled, publication_requires_settlement,
-};
+use crate::runtime::state::subsystems::history::history_canonical_routes::mark_publication_settled;
 use std::sync::Arc;
 
-use crate::authority::commit::pipeline::{assemble_commit_result, publish_commit_execution};
-use crate::history::data::{CommitId, RelationalCommitReceipt};
-use crate::publication::data::PublicationSettlementRepairError;
-use crate::runtime::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement, RelationalRuntime,
+use super::PublicationAuthority;
+use crate::authority::commit::pipeline::PublishedCommitExecution;
+use crate::history::data::RelationalCommitReceipt;
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::state::runtime_state::publication_settlement_registry::record::{
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalSettlementClaim,
 };
-use crate::transactions::data::CommitResult;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Terminal answer produced by the one executor of a pending settlement.
 pub(crate) enum RelationalSettlementCompletion {
@@ -53,7 +53,33 @@ impl RelationalSettlementCompletion {
     }
 }
 
-impl RelationalRuntime {
+/// One admitted installation, bound to the movement proof that supplied it.
+pub(crate) struct SettlementPublication {
+    completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
+    snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
+    positioned: Arc<crate::history::data::PositionedCanonicalCommit>,
+    envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+}
+
+impl SettlementPublication {
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
+        crate::history::retention::VisibilitySnapshotBasis,
+        Arc<crate::history::data::PositionedCanonicalCommit>,
+        Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+    ) {
+        (
+            self.completion,
+            self.snapshot_basis,
+            self.positioned,
+            self.envelope_cell,
+        )
+    }
+}
+
+impl PublicationAuthority<'_> {
     /// Run the one outstanding settlement for a pending record.
     ///
     /// Immediate settlement and commit-identity repair both enter here, so they
@@ -63,12 +89,20 @@ impl RelationalRuntime {
         &self,
         record: &Arc<PendingRelationalPublicationSettlement>,
         result_owner: RelationalSettlementResultOwner,
+        history: &HistorySubsystem,
+        binding: &RelationalRuntimePublicationBinding,
+        publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> Result<RelationalSettlementCompletion, RelationalSettlementNotYetPerformed> {
         let execution = record.enter_execution();
         match record.claim(&execution) {
-            RelationalSettlementClaim::Immediate(performed) => {
-                Ok(self.settle_claimed_performed(record, *performed, result_owner))
-            }
+            RelationalSettlementClaim::Immediate(performed) => Ok(self.settle_claimed_performed(
+                record,
+                *performed,
+                result_owner,
+                history,
+                binding,
+                publish,
+            )),
             RelationalSettlementClaim::AlreadySettled(settled) => {
                 let receipt = settled.receipt.clone();
                 match result_owner {
@@ -103,6 +137,9 @@ impl RelationalRuntime {
         record: &Arc<PendingRelationalPublicationSettlement>,
         performed: PerformedRelationalSettlement,
         result_owner: RelationalSettlementResultOwner,
+        history: &HistorySubsystem,
+        binding: &RelationalRuntimePublicationBinding,
+        publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> RelationalSettlementCompletion {
         let PerformedRelationalSettlement {
             completion,
@@ -115,23 +152,33 @@ impl RelationalRuntime {
         } = performed;
         let commit_id = positioned.envelope().commit.commit_id;
         let diagnostic_capture = self.publication.diagnostics.begin_operation_capture();
-        let mut published = publish_commit_execution(
-            self,
+        let mut published = publish(SettlementPublication {
             completion,
-            published_snapshot_basis,
-            Arc::clone(&positioned),
+            snapshot_basis: published_snapshot_basis,
+            positioned: Arc::clone(&positioned),
             envelope_cell,
-        );
+        });
         published.append_diagnostics(diagnostic_capture.finish());
         let late_interruption = late_interruption.or_else(|| {
-            let event = control.observe(crate::runtime::RelationalInterruptionBoundary::Settlement);
+            let event = control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::Settlement);
             if let Some(event) = event {
                 settlement_retention.record_interruption(event);
             }
             event
         });
-        let committed = assemble_commit_result(self, published, late_interruption);
-        mark_publication_settled(&self.history, commit_id);
+        let complexity_after = self.instrumentation.complexity_snapshot();
+        let snapshot_release = self
+            .visibility
+            .published_release_observation(published.snapshot_id())
+            .expect("the newly installed snapshot is private until the commit result is sealed");
+        let committed =
+            crate::transactions::data::outcomes::commit_result::assembly::assemble_commit_result(
+                published,
+                complexity_after,
+                late_interruption,
+                snapshot_release,
+            );
+        mark_publication_settled(history, commit_id);
         let receipt = positioned.envelope().commit.clone();
         // A receipt-only executor keeps the published snapshot open, because a
         // performed witness may still be live and owed this exact result.
@@ -148,8 +195,7 @@ impl RelationalRuntime {
             closeout,
             result_owner,
         );
-        self.publication_binding()
-            .release_pending_settlement(record);
+        binding.release_pending_settlement(record);
         completion
     }
 
@@ -165,7 +211,7 @@ impl RelationalRuntime {
         record: &Arc<PendingRelationalPublicationSettlement>,
         receipt: RelationalCommitReceipt,
         committed: Arc<CommitResult>,
-        closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+        closeout: Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
         result_owner: RelationalSettlementResultOwner,
     ) -> RelationalSettlementCompletion {
         match result_owner {
@@ -188,51 +234,5 @@ impl RelationalRuntime {
                 }
             }
         }
-    }
-
-    /// Resolve a settled commit identity that no longer has a pending record.
-    ///
-    /// Return the original receipt from settled performed custody or the actual
-    /// recovery-admitted checkpoint catalog. This does not promote recovered
-    /// meaning to a live performed effect or execute derived work again.
-    pub(crate) fn settled_receipt_without_record(
-        &self,
-        commit_id: CommitId,
-    ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {
-        if publication_requires_settlement(&self.history, commit_id) {
-            return Err(PublicationSettlementRepairError::RecoveryUnavailable { commit_id });
-        }
-        if let Some(artifact) = self.history.commit_artifact(commit_id) {
-            let cell = artifact.envelope_residency();
-            if let Some((entry, source)) = cell.source_placement()
-                && let Some(admitted) = self
-                    .durability
-                    .checkpoint_selection()
-                    .admitted_commit(&entry)
-                    .map_err(|_| PublicationSettlementRepairError::RecoveryUnavailable {
-                        commit_id,
-                    })?
-            {
-                if !self
-                    .durability
-                    .checkpoint_selection()
-                    .matches_admitted_source(&admitted, &source)
-                    || !matches!(
-                        self.history.associated_effect_settlement(&entry, &cell),
-                        Some(crate::durability::authority::RelationalAssociatedEffectSettlement::CheckpointReadmitted)
-                    )
-                {
-                    return Err(PublicationSettlementRepairError::RecoveryUnavailable {
-                        commit_id,
-                    });
-                }
-                return Ok(admitted.index().commit.clone());
-            }
-        }
-        let positioned = self
-            .history
-            .positioned_canonical_commit(commit_id)
-            .ok_or(PublicationSettlementRepairError::RecoveryUnavailable { commit_id })?;
-        Ok(positioned.envelope().commit.clone())
     }
 }

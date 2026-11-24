@@ -3,10 +3,7 @@ use super::*;
 use crate::runtime::builder::RelationalRuntimeDefinition;
 use crate::runtime::RelationalRuntimeConfig;
 
-#[derive(Debug)]
-pub(in crate::runtime) struct HomeConfigurationBacking {
-    _memory: Option<ExecutionMemoryReservation>,
-}
+use crate::runtime::state::subsystems::schema_contract_runtime::HomeConfigurationBacking;
 
 impl PreparedRelationalHomeProgramContracts {
     pub fn receiver_configuration(&self) -> Option<&RelationalRuntimeConfig> {

@@ -22,7 +22,7 @@ impl<'runtime> InvariantEngine<'runtime> {
     #[cfg(test)]
     pub(crate) fn new(runtime: &'runtime crate::runtime::RelationalRuntime) -> Self {
         Self {
-            runtime: InvariantRuntimeView::from_runtime(runtime),
+            runtime: runtime.invariant_validation_view(),
         }
     }
 

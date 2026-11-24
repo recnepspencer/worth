@@ -2,7 +2,7 @@
 use super::*;
 mod admission;
 mod touched;
-use crate::transactions::data::{
+use crate::transactions::data::outcomes::commit_semantic_result::validation::{
     RelationalInvariantCheckMeaning, RelationalInvariantDecisionMeaning,
 };
 pub(in super::super) use admission::prepare_canonical_readmission;
@@ -61,7 +61,7 @@ fn metadata(
         "proof_scope" => optional(value, |scope| {
             let mut bytes = OwnerAllocation::default();
             scope.fields(request, |field, value| {
-                if field == "widened_causes" { add(&mut bytes, vector::<crate::validation::engine::InvariantScopeWideningCause>(value, request, |_| Ok(OwnerAllocation::default()))?)?; }
+                if field == "widened_causes" { add(&mut bytes, vector::<crate::validation::data::execution_posture::InvariantScopeWideningCause>(value, request, |_| Ok(OwnerAllocation::default()))?)?; }
                 Ok(())
             })?;
             Ok(bytes)
@@ -80,7 +80,7 @@ fn identity(
             add(&mut bytes, shared_text(value, request)?)?;
             add(
                 &mut bytes,
-                crate::validation::data::CustomInvariantRuleId::control_bytes()
+                crate::validation::data::rule_id::CustomInvariantRuleId::control_bytes()
                     .ok_or_else(malformed)?,
             )?;
         }

@@ -1,6 +1,6 @@
 //! Observe both original streams under their existing position reservation.
 use super::RelationalCanonicalPublicationRoutes;
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::publication::patch::data::PatchStreamPosition;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 

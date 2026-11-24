@@ -15,8 +15,7 @@ pub use crate::storage::authority::RelationalRetentionPassStop;
 pub use maintenance::{RelationalRetentionPassProgress, RelationalStoppedRetentionPass};
 
 use partition_pass::{
-    inspect_partition_retention, refresh_entity_retention_state, refresh_relation_retention_state,
-    run_partition_retention_pass, PartitionRetentionPass,
+    inspect_partition_retention, run_partition_retention_pass, PartitionRetentionPass,
 };
 
 pub struct VisibilityRetentionAuthority<'runtime> {
@@ -231,59 +230,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             .oldest_branch_head_version()
             .unwrap_or(current);
         visibility.min(branch)
-    }
-
-    pub(crate) fn reconcile_changed_record_states(
-        &self,
-        changed_records: &[crate::transactions::data::RecordRef],
-        published_version: crate::identity::data::VersionId,
-    ) {
-        let retention_fence = self
-            .runtime
-            .visibility
-            .retention_fence_version(published_version);
-        for record in changed_records {
-            match record {
-                crate::transactions::data::RecordRef::Entity(entity_id) => {
-                    let retired_at = self
-                        .runtime
-                        .edit_partitions()
-                        .current_lease(entity_id.partition_id)
-                        .and_then(|lease| {
-                            lease
-                                .head_view()
-                                .entity(*entity_id)
-                                .and_then(|slot| slot.retired_at())
-                        });
-                    refresh_entity_retention_state(
-                        self.runtime,
-                        entity_id.partition_id,
-                        entity_id.slot_index(),
-                        retired_at,
-                        retention_fence,
-                    );
-                }
-                crate::transactions::data::RecordRef::Relation(relation_id) => {
-                    let retired_at = self
-                        .runtime
-                        .edit_partitions()
-                        .current_lease(relation_id.partition_id)
-                        .and_then(|lease| {
-                            lease
-                                .head_view()
-                                .relation(*relation_id)
-                                .and_then(|slot| slot.retired_at())
-                        });
-                    refresh_relation_retention_state(
-                        self.runtime,
-                        relation_id.partition_id,
-                        relation_id.slot_index(),
-                        retired_at,
-                        retention_fence,
-                    );
-                }
-            }
-        }
     }
 }
 

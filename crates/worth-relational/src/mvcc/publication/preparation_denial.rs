@@ -1,5 +1,5 @@
 //! Preserve storage refusals across pre-effect publication preparation.
-use crate::branch::RelationalBranchRootCaptureDenial;
+use crate::branch::root::RelationalBranchRootCaptureDenial;
 use crate::storage::data::RelationalStorageUnavailable;
 
 #[derive(Debug)]

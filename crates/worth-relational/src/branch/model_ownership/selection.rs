@@ -109,7 +109,12 @@ impl RelationalModelOwnership {
     ) -> Result<BTreeSet<EntityId>, RelationalModelOwnershipDenial> {
         let mut entities = BTreeSet::new();
         let mut declared = false;
-        for domain in self.domains.iter().filter(|domain| domain.root == kind) {
+        for domain in self
+            .plan
+            .domains
+            .iter()
+            .filter(|domain| domain.root == kind)
+        {
             declared = true;
             for entity in traversal::walk(read, model, true, &domain.relations)? {
                 if !entities.contains(&entity) {

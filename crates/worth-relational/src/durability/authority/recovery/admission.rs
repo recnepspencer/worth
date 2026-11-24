@@ -1,13 +1,10 @@
 //! Side-effect-free recovery admission and terminal rejection evidence.
 
-use crate::capabilities::{RuntimeIdentitySource, SchemaSource, SchemaVersionSource};
-use crate::diagnostics::data::{
-    DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsEntry,
-};
+use crate::config::data::RelationalRuntimeConfig;
+use crate::diagnostics::data::{DiagnosticsArtifactKind, RelationalDiagnosticsEntry};
 use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
 };
-use crate::runtime::RelationalRuntime;
 
 use super::super::authority_continuity::{
     recovery_authority_continuity_diagnostic, validate_recovery_authority_continuity,
@@ -54,16 +51,12 @@ impl RecoveryAdmission {
         self.artifact_kind
     }
 
-    pub(super) fn into_entry(self) -> RelationalDiagnosticsEntry {
-        self.entry
+    pub(super) fn entry(&self) -> &RelationalDiagnosticsEntry {
+        &self.entry
     }
 
-    pub(super) fn emit(&self, runtime: &RelationalRuntime) {
-        runtime.publication_authority().push_bounded_diagnostic(
-            DiagnosticsScope::History,
-            self.artifact_kind,
-            vec![self.entry.clone()],
-        );
+    pub(super) fn into_entry(self) -> RelationalDiagnosticsEntry {
+        self.entry
     }
 }
 
@@ -79,8 +72,8 @@ impl RecoveryRejection {
         self.record_verification_counters
     }
 
-    pub(super) fn emit(&self, runtime: &RelationalRuntime) {
-        self.admission.emit(runtime);
+    pub(super) fn diagnostic(&self) -> &RecoveryAdmission {
+        &self.admission
     }
 
     pub(super) fn into_error(self) -> DurabilityError {
@@ -95,13 +88,9 @@ impl RecoveryRejection {
 }
 
 pub(super) fn admit_recovery(
-    runtime: &RelationalRuntime,
-    mut plan: RecoveryPlan,
+    config: &RelationalRuntimeConfig,
+    plan: RecoveryPlan,
 ) -> Result<AdmittedRecoveryPlan, RecoveryRejection> {
-    plan.home_world_selection = runtime
-        .durability
-        .medium()
-        .and_then(|medium| medium.home_world_selection());
     let rejected = matches!(
         plan.authority_continuity.verification_outcome,
         crate::durability::data::RecoveryVerificationOutcome::Rejected { .. }
@@ -114,8 +103,8 @@ pub(super) fn admit_recovery(
         },
         entry: recovery_authority_continuity_diagnostic(&plan),
     };
-    let result = validate_recovery_authority_continuity(runtime, &plan)
-        .and_then(|()| validate_reported_parity(runtime, &plan))
+    let result = validate_recovery_authority_continuity(config, &plan)
+        .and_then(|()| validate_reported_parity(config, &plan))
         .and_then(|()| validate_world_source(&plan));
     match result {
         Ok(()) => Ok(AdmittedRecoveryPlan {
@@ -133,7 +122,7 @@ pub(super) fn admit_recovery(
 }
 
 fn validate_reported_parity(
-    runtime: &RelationalRuntime,
+    config: &RelationalRuntimeConfig,
     plan: &RecoveryPlan,
 ) -> Result<(), DurabilityError> {
     if !plan.authority_continuity.schema_parity.is_verified() {
@@ -143,12 +132,16 @@ fn validate_reported_parity(
         )
         .with_authority_continuity_mismatch(
             RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
-                expected_primary_schema_version: plan.config.primary_schema_version_id(),
-                found_primary_schema_version: runtime.primary_schema_version_id(),
+                expected_primary_schema_version: plan
+                    .config
+                    .schema
+                    .registry
+                    .primary_schema_version_id(),
+                found_primary_schema_version: config.schema.registry.primary_schema_version_id(),
                 expected_entity_kind_count: plan.config.schema.registry.entity_kinds.len(),
-                found_entity_kind_count: runtime.schema_registry().entity_kinds.len(),
+                found_entity_kind_count: config.schema.registry.entity_kinds.len(),
                 expected_relation_kind_count: plan.config.schema.registry.relation_kinds.len(),
-                found_relation_kind_count: runtime.schema_registry().relation_kinds.len(),
+                found_relation_kind_count: config.schema.registry.relation_kinds.len(),
             },
         ));
     }
@@ -160,7 +153,7 @@ fn validate_reported_parity(
         .with_authority_continuity_mismatch(
             RecoveryAuthorityContinuityMismatch::RuntimeProfile {
                 expected: format!("{:?}", plan.config.profile),
-                found: format!("{:?}", runtime.runtime_profile()),
+                found: format!("{:?}", config.profile),
             },
         ));
     }
@@ -172,7 +165,7 @@ fn validate_reported_parity(
         .with_authority_continuity_mismatch(
             RecoveryAuthorityContinuityMismatch::RuntimeName {
                 expected: plan.config.execution.runtime_name.clone(),
-                found: runtime.runtime_name().to_string(),
+                found: config.execution.runtime_name.clone(),
             },
         ));
     }

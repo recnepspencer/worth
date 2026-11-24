@@ -23,7 +23,9 @@ impl PreparedCommitPublicationExecution {
             .map(|graph| graph.model())
     }
 
-    pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
+    pub(crate) fn caller_association(
+        &self,
+    ) -> Option<crate::history::data::RelationalCallerAssociation> {
         self.publication.value().caller_association()
     }
     pub(crate) fn descriptive_touches(
@@ -34,7 +36,7 @@ impl PreparedCommitPublicationExecution {
     pub(crate) fn changed_record_count(&self) -> usize {
         self.publication.value().changed_record_count()
     }
-    pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
+    pub(crate) fn changed_records(&self) -> &[crate::transactions::data::primitives::RecordRef] {
         &self.publication.value().changed_records
     }
     pub(crate) fn attach_prepared_indexes(
@@ -54,7 +56,8 @@ impl PreparedCommitPublicationExecution {
     }
     pub(crate) fn recovered_codec_publication_custody(
         &self,
-    ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+    ) -> Option<&std::sync::Arc<crate::durability::authority::RecoveredCodecPublicationCustody>>
+    {
         self.admitted
             .value()
             .validation_input()
@@ -63,13 +66,18 @@ impl PreparedCommitPublicationExecution {
 
     pub(crate) fn home_step(
         &self,
-    ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+    ) -> Option<&std::sync::Arc<crate::branch::home_program_step::AdmittedRelationalHomeProgramStep>>
+    {
         self.admitted.value().validation_input().home_step()
     }
 
     pub(crate) fn home_index_definitions(
         &self,
-    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+    ) -> Option<
+        std::sync::Arc<
+            crate::runtime::state::subsystems::indexing::PreparedRelationalIndexDefinitions,
+        >,
+    > {
         self.admitted
             .value()
             .validation_input()
@@ -79,7 +87,7 @@ impl PreparedCommitPublicationExecution {
 
     pub(crate) fn covers_home_definitions(
         &self,
-        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        definitions: &crate::runtime::state::subsystems::indexing::PreparedRelationalIndexDefinitions,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, worth_execution::WorkCeilingDenial> {
         match &self.prepared_indexes {
@@ -96,8 +104,20 @@ impl PreparedCommitPublicationExecution {
         self.publication.value().reservation_count()
     }
 
-    pub(crate) fn prepared_root(&self) -> &std::sync::Arc<crate::branch::RelationalBranchRoot> {
+    pub(crate) fn prepared_root(
+        &self,
+    ) -> &std::sync::Arc<crate::branch::root::RelationalBranchRoot> {
         self.publication.value().prepared_root()
+    }
+
+    pub(crate) fn take_live_publication_inputs(
+        &mut self,
+    ) -> crate::publication::live_publication_inputs::BoundLivePublicationInputs {
+        self.publication
+            .value_mut()
+            .live_inputs
+            .take()
+            .expect("registration consumes the original prepared route inputs")
     }
 
     /// The parents its commit receipt names, resolved before publication.
@@ -122,9 +142,9 @@ impl PreparedCommitPublicationExecution {
 
     pub(crate) fn split(
         self,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+        published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     ) -> (
-        crate::mvcc::PreparedCanonicalBranchMovement,
+        crate::mvcc::publication::PreparedCanonicalBranchMovement,
         PreparedCommitPublicationCompletion,
     ) {
         let (movement, publication) = self.publication.into_inner().split();
@@ -133,7 +153,6 @@ impl PreparedCommitPublicationExecution {
             admitted: self.admitted,
             public_structural_summary: self.public_structural_summary,
             invariant_executions: self.invariant_executions,
-            version_id: self.version_id,
             created_entities: self.created_entities,
             created_relations: self.created_relations,
             history: self.history,

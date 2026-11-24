@@ -1,15 +1,18 @@
 //! The semantic Arc can escape independently; quote its actual nested owners.
 use super::*;
-use crate::transactions::data::{
-    RecordRef, RelationalCreatedEntityCorrespondence, RelationalCreatedRelationCorrespondence,
-    RelationalInvariantExecutionMeaning,
+use crate::transactions::data::outcomes::commit_semantic_result::creation_correspondence::{
+    RelationalCreatedEntityCorrespondence, RelationalCreatedRelationCorrespondence,
 };
+use crate::transactions::data::outcomes::commit_semantic_result::validation::RelationalInvariantExecutionMeaning;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn quote(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
-    let mut bytes = shared_root::<crate::transactions::data::RelationalCommitSemanticResult>()?;
+    let mut bytes = shared_root::<
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
+    >()?;
     value.fields(request, |field, value| {
         if matches!(field, "created_entities" | "created_relations") {
             let count = value.elements(request, |_| Ok(()))?;

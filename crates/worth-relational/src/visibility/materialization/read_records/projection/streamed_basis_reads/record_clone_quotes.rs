@@ -34,8 +34,8 @@ pub(super) fn candidate_entity_bytes(
         return 0;
     };
     let names = source
-        .selected_schema_authority()
-        .and_then(|authority| authority.registry().entity_registration(kind_id).ok())
+        .selected_schema_registry()
+        .and_then(|registry| registry.entity_registration(kind_id).ok())
         .map_or(0, |registration| {
             registration
                 .kind_name
@@ -76,8 +76,8 @@ pub(super) fn candidate_relation_bytes(
         return 0;
     };
     let names = source
-        .selected_schema_authority()
-        .and_then(|authority| authority.registry().relation_registration(kind_id).ok())
+        .selected_schema_registry()
+        .and_then(|registry| registry.relation_registration(kind_id).ok())
         .map_or(0, |registration| {
             registration
                 .kind_name

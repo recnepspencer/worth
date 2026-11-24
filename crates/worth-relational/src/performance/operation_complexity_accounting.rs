@@ -1,4 +1,4 @@
-use crate::performance::data::RuntimeComplexityCounters;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 
 macro_rules! complexity_operations {
     ($($field:ident),+ $(,)?) => {

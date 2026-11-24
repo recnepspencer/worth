@@ -3,8 +3,10 @@ mod expression;
 pub(in crate::derived_relation) mod lifecycle;
 
 use super::evaluation::SourceRead;
-use super::{DerivedRelationData, DerivedRelationHandle, DerivedRelationReadDenial};
 use crate::authority::mutation::AdjacencyDelta;
+use crate::derived_relation::definition::DerivedRelationHandle;
+use crate::derived_relation::read::DerivedRelationData;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::graph_member::NativeMemberKey;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::primitives::RecordRef;
@@ -27,7 +29,9 @@ pub(crate) fn collect(
     after: &mut impl SourceRead,
 ) -> Result<DerivedAffectedRoots, DerivedRelationReadDenial> {
     if !registry.admits_derived_relation(definition) {
-        return Err(super::DerivedRelationDenial::ForeignDefinition.into());
+        return Err(
+            crate::derived_relation::definition::DerivedRelationDenial::ForeignDefinition.into(),
+        );
     }
     let lifecycle = lifecycle::observe(records, before, after)?;
     let (mut roots, mut support) = expression::collect(

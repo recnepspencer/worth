@@ -1,9 +1,15 @@
-use crate::mvcc::RelationalOperationControl;
 use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionAllocationPolicy;
+
+/// The original operation and retention binding selected by the transaction owner.
+pub(crate) struct InvariantPreparationSource<'a> {
+    pub(crate) operation: &'a RelationalOperationControl,
+    pub(crate) retention: &'a crate::history::retention::RelationalBranchRetentionBinding,
+}
 
 /// Control for complete scope preparation. It does not charge the scope's
 /// existing BTree/Vec heaps or mint execution authority.
@@ -37,16 +43,17 @@ impl<'scope, 'authority> InvariantPreparationControl<'scope, 'authority> {
         }
     }
 
-    pub(crate) fn for_transaction(
-        input: &crate::mvcc::RelationalTransactionValidationInput,
+    pub(crate) fn for_transaction<'a>(
+        source: impl Into<InvariantPreparationSource<'a>>,
         allocation: ExecutionAllocationPolicy<'scope, 'authority>,
         boundary: RelationalInterruptionBoundary,
     ) -> Self {
+        let source = source.into();
         Self {
-            operation: input.control().clone(),
+            operation: source.operation.clone(),
             allocation,
             boundary,
-            retention: Some(input.basis().inner.retention_binding.clone()),
+            retention: Some(source.retention.clone()),
         }
     }
 

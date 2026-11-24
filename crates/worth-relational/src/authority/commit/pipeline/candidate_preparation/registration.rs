@@ -1,19 +1,36 @@
 //! Register one completely prepared publication after artifact-assembly frames expire.
 use super::super::{consult_stage, CommitStage};
-use crate::transactions::data::TransactionCommitError;
+use crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
+use crate::runtime::state::subsystems::services::{
+    instrumentation::RuntimeInstrumentation, symbol_table::RuntimeSymbolTable,
+};
+use crate::runtime::state::subsystems::visibility::PublishedSnapshotCapacityOwner;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+
+pub(crate) struct CandidateRegistrationInputs<'a> {
+    pub(crate) snapshot_capacity: &'a std::sync::Arc<PublishedSnapshotCapacityOwner>,
+    pub(crate) receiver_epoch: &'a RelationalRuntimeConfigurationSnapshot,
+    pub(crate) invariant_generation: u64,
+    pub(crate) maximum_candidates: Option<usize>,
+    pub(crate) symbols: &'a RuntimeSymbolTable,
+    pub(crate) instrumentation: &'a RuntimeInstrumentation,
+    pub(crate) history: &'a RelationalPreparationHistory,
+}
 
 pub(super) struct CandidateRegistration {
     pub(super) runtime_instance_id: u64,
-    pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
-    pub(super) transaction_id: crate::transactions::data::TransactionId,
+    pub(super) publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
+    pub(super) transaction_id: crate::transactions::data::primitives::TransactionId,
     pub(super) branch_id: crate::history::data::BranchId,
-    pub(super) control: crate::mvcc::RelationalOperationControl,
+    pub(super) control: crate::runtime::operation_control::RelationalOperationControl,
     pub(super) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
-    pub(super) decision_basis: crate::branch::AdmittedRelationalBranchBasis,
-    pub(super) coupled_proposal: Option<crate::mvcc::RelationalMutationProposalIdentity>,
-    pub(super) expected_basis: crate::branch::RelationalBranchBasisDescriptor,
-    pub(super) expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
-    pub(super) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    pub(super) decision_basis: crate::branch::basis::AdmittedRelationalBranchBasis,
+    pub(super) coupled_proposal:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
+    pub(super) expected_basis: crate::branch::basis::RelationalBranchBasisDescriptor,
+    pub(super) expected_root: std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
+    pub(super) publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
 }
 
 impl CandidateRegistration {
@@ -21,9 +38,10 @@ impl CandidateRegistration {
     pub(super) fn register(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        inputs: CandidateRegistrationInputs<'_>,
         mut prepared: super::super::PreparedCommitPublicationExecution,
-    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError>
+    {
         let Self {
             runtime_instance_id,
             publication_binding,
@@ -38,28 +56,28 @@ impl CandidateRegistration {
             publication_cell,
         } = self;
         if let Some(interruption) =
-            control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
+            control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation)
         {
             retention_binding.record_interruption(interruption);
             return Err(TransactionCommitError::interrupted(interruption));
         }
         consult_stage(execution, CommitStage::CandidateRegistration)?;
-        let published_snapshot_slot = runtime.reserve_published_snapshot_slot().map_err(|denial| {
+        let published_snapshot_slot = inputs.snapshot_capacity.reserve().map_err(|denial| {
             match denial {
-                crate::runtime::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
+                crate::runtime::state::subsystems::visibility::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
                     TransactionCommitError::publication_deferred(
-                        crate::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { maximum_handles },
+                        crate::mvcc::publication::outcome::refusals::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { maximum_handles },
                     )
                 }
-                crate::runtime::PublishedSnapshotReservationDenial::CounterOverflow => {
-                    TransactionCommitError::publication_failed(crate::mvcc::RelationalPublicationFailure::new(
-                        crate::mvcc::RelationalPublicationFailureKind::SnapshotCountOverflow,
+                crate::runtime::state::subsystems::visibility::PublishedSnapshotReservationDenial::CounterOverflow => {
+                    TransactionCommitError::publication_failed(crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
+                        crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::SnapshotCountOverflow,
                         "published snapshot custody counter overflow before effects",
                     ))
                 }
             }
         })?;
-        let publication_bases = crate::history::retention::PublicationBasisImage::prepare(
+        let publication_bases = prepared.take_live_publication_inputs().prepare(
             execution,
             &decision_basis,
             prepared.prepared_root(),
@@ -75,43 +93,43 @@ impl CandidateRegistration {
             .map_err(|denial| match denial {
                 crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
                     TransactionCommitError::publication_deferred(
-                        crate::mvcc::RelationalPublicationDeferred::RetentionBackpressure,
+                        crate::mvcc::publication::outcome::refusals::RelationalPublicationDeferred::RetentionBackpressure,
                     )
                 }
                 crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable => {
                     TransactionCommitError::publication_denied(
-                        crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
+                        crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::OwnerUnavailable {
                             runtime_instance_id,
                         },
                     )
                 }
                 crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
                     TransactionCommitError::publication_failed(
-                        crate::mvcc::RelationalPublicationFailure::new(
-                            crate::mvcc::RelationalPublicationFailureKind::RetentionIdentityExhausted,
+                        crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
+                            crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::RetentionIdentityExhausted,
                             "prepared candidate retention identity exhausted before effects",
                         ),
                     )
                 }
                 other @ (crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
                 | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch) => TransactionCommitError::publication_failed(
-                    crate::mvcc::RelationalPublicationFailure::new(
-                        crate::mvcc::RelationalPublicationFailureKind::RetentionOwner,
+                    crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
+                        crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::RetentionOwner,
                         format!("prepared candidate retention admission failed: {other:?}"),
                     ),
                 ),
             })?;
         if let Some(interruption) =
-            control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
+            control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation)
         {
             retention_binding.record_interruption(interruption);
             return Err(TransactionCommitError::interrupted(interruption));
         }
         prepared.release_transaction_retention();
-        let mut candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
+        let mut candidate = crate::mvcc::publication::PreparedRelationalCommitCandidate::new(
             runtime_instance_id,
-            runtime.configuration_generation,
-            runtime.configuration_epoch.clone(),
+            inputs.invariant_generation,
+            inputs.receiver_epoch.clone(),
             publication_binding,
             transaction_id,
             branch_id,
@@ -122,20 +140,25 @@ impl CandidateRegistration {
             candidate_retention,
             published_snapshot_slot,
             control,
-            runtime.config.publication.policy.max_prepared_candidates,
+            inputs.maximum_candidates,
         )
         .map_err(|stop| match stop {
-            crate::mvcc::PreparedRelationalCandidateAdmissionStop::Deferred(deferred) => {
-                TransactionCommitError::publication_deferred(deferred)
-            }
-            crate::mvcc::PreparedRelationalCandidateAdmissionStop::Failed(failure) => {
+            crate::mvcc::publication::PreparedRelationalCandidateAdmissionStop::Deferred(
+                deferred,
+            ) => TransactionCommitError::publication_deferred(deferred),
+            crate::mvcc::publication::PreparedRelationalCandidateAdmissionStop::Failed(failure) => {
                 TransactionCommitError::publication_failed(failure)
             }
         })?;
         if let Some(proposal) = coupled_proposal {
-            candidate.retain_coupled_read(runtime, decision_basis, proposal);
+            candidate.retain_coupled_read(
+                inputs.symbols.clone(),
+                inputs.instrumentation.clone(),
+                decision_basis,
+                proposal,
+            );
         }
-        runtime
+        inputs
             .history
             .record_candidate_preparation(candidate.branch());
         Ok(candidate)

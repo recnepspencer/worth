@@ -25,6 +25,7 @@ impl RelationalPinnedRead {
         self.count_query_backing(lease);
         let (fragments, report) = execute_explicit_query_fragments_from_exact_basis(
             self,
+            self.pinned_current_version(),
             &plan,
             packets,
             basis,

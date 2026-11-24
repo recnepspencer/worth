@@ -9,7 +9,10 @@ use crate::storage::data::RelationalStorageUnavailable;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
-use crate::transactions::data::*;
+use crate::transactions::data::outcomes::transaction_commit_error::{
+    CommitExecutionDenialKind, TransactionCommitError,
+};
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::HashMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -64,7 +67,7 @@ pub(crate) fn validate(
                 let bad = |source| corrupt(publication, source, id);
                 if kind == storage.catalog_kind {
                     let value: record::Catalog =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),
@@ -77,7 +80,7 @@ pub(crate) fn validate(
                     catalogs.push((id, value));
                 } else if kind == storage.position_kind {
                     let value: RoutePresence =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),
@@ -98,7 +101,7 @@ pub(crate) fn validate(
                     }
                 } else {
                     let value: record::Publication =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),

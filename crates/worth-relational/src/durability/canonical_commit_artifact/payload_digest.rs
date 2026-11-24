@@ -51,7 +51,7 @@ impl RelationalCanonicalCommitArtifactDigest {
             .map_err(RequestDigestDenial::Request)
     }
 
-    pub(super) fn from_leaves_for_request(
+    pub(crate) fn from_leaves_for_request(
         position: u64,
         commit: u64,
         position_leaf: [u8; 32],

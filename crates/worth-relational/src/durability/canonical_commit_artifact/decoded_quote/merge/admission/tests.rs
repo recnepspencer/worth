@@ -7,10 +7,10 @@ use crate::history::data::{
 };
 use crate::identity::data::{EntityId, PartitionId, VersionId};
 use crate::merge::data::*;
-use crate::transactions::data::{
+use crate::transactions::data::outcomes::plan_artifacts::{
     MergeExecutionStructuralSummary, MergeExecutionSummary, PublishedMergeExecutionAuthority,
-    RecordRef,
 };
+use crate::transactions::data::primitives::RecordRef;
 use serde::Serialize;
 use std::sync::Arc;
 use worth_execution::{

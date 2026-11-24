@@ -101,7 +101,7 @@ pub(crate) fn digest_snapshot_surface(surface: &ReplaySnapshotSurface) -> [u8; 3
         .usize(surface.entities.len())
         .usize(surface.relations.len());
     for entity in &surface.entities {
-        builder = builder.record_ref(&crate::transactions::data::RecordRef::Entity(
+        builder = builder.record_ref(&crate::transactions::data::primitives::RecordRef::Entity(
             entity.entity_id,
         ));
         if let Some(state) = entity.authoritative_aspect_state.as_ref() {
@@ -113,7 +113,7 @@ pub(crate) fn digest_snapshot_surface(surface: &ReplaySnapshotSurface) -> [u8; 3
         }
     }
     for relation in &surface.relations {
-        builder = builder.record_ref(&crate::transactions::data::RecordRef::Relation(
+        builder = builder.record_ref(&crate::transactions::data::primitives::RecordRef::Relation(
             relation.relation_id,
         ));
         if let Some(state) = relation.authoritative_aspect_state.as_ref() {

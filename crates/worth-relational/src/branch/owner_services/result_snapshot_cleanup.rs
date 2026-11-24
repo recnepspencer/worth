@@ -1,6 +1,9 @@
 //! Request-bounded progress for one immutable result's original registration.
 use super::owner_binding::RelationalOwnerServiceBinding;
-use super::{RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial};
+use super::{
+    RelationalCommitResultSnapshotCleanupDenial, RelationalCommitResultSnapshotCleanupPending,
+    RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial,
+};
 use crate::{runtime::RelationalRuntime, transactions::data::CommitResult};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -21,20 +24,6 @@ pub struct RelationalCommitResultSnapshotCleanup {
     owner: RelationalOwnerServiceBinding,
     result: Arc<CommitResult>,
     removed_here: bool,
-}
-
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotCleanupPending {
-    Advanced,
-    Busy,
-    Stopped(worth_execution::WorkCeilingDenial),
-}
-
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotCleanupDenial {
-    NotOwner,
-    OwnerBindingMismatch,
-    Release(RelationalCommitResultSnapshotReleaseDenial),
 }
 
 #[derive(Debug)]
@@ -90,7 +79,7 @@ impl RelationalCommitResultSnapshotCleanup {
             Err(()) => {
                 return self.refused(Denial::Release(
                     RelationalCommitResultSnapshotReleaseDenial::RetirementInterrupted,
-                ))
+                ));
             }
         }
         if let Err(cause) = request.consult() {
@@ -106,7 +95,7 @@ impl RelationalCommitResultSnapshotCleanup {
                 Err(()) => {
                     return self.refused(Denial::Release(
                         RelationalCommitResultSnapshotReleaseDenial::RegistrationMismatch,
-                    ))
+                    ));
                 }
             }
         }

@@ -174,7 +174,7 @@ pub(crate) fn prepare(
         committed: root.committed.clone(),
         proposed: root.proposed.clone(),
         availability: root.availability,
-        committed_available: owner.home_target.is_none()
+        committed_available: owner.home_target_step.is_none()
             && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
         sources: Arc::clone(sources),
@@ -290,7 +290,7 @@ fn association(
     // definition. Committed target reads explicitly remain unavailable.
     for view in [committed, proposed]
         .into_iter()
-        .skip(usize::from(owner.home_target.is_some()))
+        .skip(usize::from(owner.home_target_step.is_some()))
     {
         for path in program.paths() {
             view.require_derived_relation(path)?;

@@ -59,7 +59,7 @@ pub(super) fn entity_keys(
 ) -> Result<(), Denial> {
     let old = super::field_keys::entity(execution, before, id, locator, work)?;
     let new = super::field_keys::entity(execution, Some(after), id, locator, work)?;
-    super::field::prepare_key_comparison(
+    super::field_keys::prepare_key_comparison(
         old.as_ref().map(|(key, _)| key),
         new.as_ref().map(|(key, _)| key),
         work,

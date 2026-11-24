@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 
 #[test]
 fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     create_entity(&execution, &runtime, "binary-digest-checkpoint");
@@ -56,7 +56,7 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
 #[test]
 fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() {
     for dimension in 0..4 {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         let source = create_entity_in_partition(&execution, &runtime, "source", PartitionId(1));

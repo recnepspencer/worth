@@ -2,8 +2,26 @@
 use super::*;
 use crate::history::commit::RelationalCommitArtifact;
 use crate::history::commit::RelationalCommitIndexEntry;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 impl ObservedRelationalMemoryComponent {
+    pub(crate) fn export_from_capture(
+        &self,
+        origin: &RelationalRuntimeOrigin,
+        history: &HistorySubsystem,
+        request: &ExecutionRequest<'_, '_>,
+        captured: Option<(&RelationalCommitIndexEntry, &RelationalCommitArtifact)>,
+    ) -> Result<RecordedRelationalComponentReference, Refusal> {
+        crate::execution::request_custody::check_request(request).map_err(Refusal::Request)?;
+        match self.original.as_ref() {
+            MemoryComponentOrigin::Live(meaning) => {
+                require_origin(&meaning.owner, origin)?;
+                copy_bound_original(request, meaning, captured)
+            }
+            MemoryComponentOrigin::Interim(meaning) => meaning.export(origin, history),
+        }
+    }
+
     pub(crate) fn capture_commit_id(&self) -> Option<crate::history::data::CommitId> {
         let descriptor = match self.original.as_ref() {
             MemoryComponentOrigin::Live(value) => &value.descriptor,
@@ -16,7 +34,39 @@ impl ObservedRelationalMemoryComponent {
             .map(|target| crate::history::data::CommitId(target.selected_commit_id()))
     }
 }
-pub(super) fn copy_bound_original(
+impl InterimComponentMeaning {
+    pub(super) fn export(
+        &self,
+        origin: &RelationalRuntimeOrigin,
+        history: &HistorySubsystem,
+    ) -> Result<RecordedRelationalComponentReference, Refusal> {
+        require_origin(&self.owner, origin)?;
+        if let Some(row) = &self.canonical {
+            let commit_id = row.index().commit.commit_id;
+            let artifact = history
+                .commit_artifact(commit_id)
+                .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
+            if !row.links_artifact(&artifact) {
+                return Err(Refusal::CanonicalMismatch { commit_id });
+            }
+        }
+        Ok(self.description.clone())
+    }
+}
+
+pub(super) fn require_origin(
+    expected: &RelationalRuntimeOrigin,
+    actual: &RelationalRuntimeOrigin,
+) -> Result<(), Refusal> {
+    if !expected.same_origin(actual) {
+        return Err(Refusal::Basis(
+            crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
+        ));
+    }
+    Ok(())
+}
+
+fn copy_bound_original(
     request: &ExecutionRequest<'_, '_>,
     meaning: &MemoryComponentMeaning,
     captured: Option<(&RelationalCommitIndexEntry, &RelationalCommitArtifact)>,

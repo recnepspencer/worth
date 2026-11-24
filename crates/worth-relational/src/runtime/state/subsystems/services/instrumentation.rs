@@ -12,6 +12,10 @@ pub(crate) struct RuntimeInstrumentation {
 }
 
 impl RuntimeInstrumentation {
+    pub(crate) fn count_descriptor_version_mismatch(&self) {
+        self.count(RuntimeComplexityCounters::count_descriptor_version_mismatch);
+    }
+
     pub(crate) fn preparation_round(&self) -> Self {
         Self {
             complexity_counters: Arc::default(),
@@ -40,6 +44,13 @@ impl RuntimeInstrumentation {
             basis_counters: Arc::new(Mutex::new(self.basis_counters())),
             external_retention_terminals: Arc::new(Default::default()),
         }
+    }
+
+    pub(crate) fn complexity_snapshot(&self) -> RuntimeComplexityCounters {
+        crate::performance::complexity_counter_sink::ComplexityCounterSink::new(
+            &self.complexity_counters,
+        )
+        .snapshot()
     }
 
     pub(crate) fn count(&self, update: impl FnOnce(&mut RuntimeComplexityCounters)) {
@@ -85,6 +96,14 @@ impl RuntimeInstrumentation {
             counters.query_authoritative_entity_records_emitted += entities;
             counters.query_authoritative_relation_records_emitted += relations;
         });
+    }
+
+    pub(crate) fn count_query_serial_strategy(&self) {
+        self.count(RuntimeComplexityCounters::count_query_serial_strategy);
+    }
+
+    pub(crate) fn count_query_staged_parallel_strategy(&self) {
+        self.count(RuntimeComplexityCounters::count_query_staged_parallel_strategy);
     }
 
     pub(crate) fn count_query_index_attempt(&self) {
@@ -134,3 +153,7 @@ impl RuntimeInstrumentation {
         Arc::clone(&self.external_retention_terminals)
     }
 }
+
+mod bulk_mutation_counters;
+
+mod merge_execution_counters;

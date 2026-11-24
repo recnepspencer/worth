@@ -59,7 +59,9 @@ impl RelationalSourceInitialInputsArtifact {
             return Err(Refusal::Malformed);
         }
         for (schema, admission) in image.schemas.iter_mut().zip(admissions) {
-            admission.attach(schema).map_err(Refusal::Payload)?;
+            admission
+                .attach(schema.recorded_for_decode())
+                .map_err(Refusal::Payload)?;
         }
         image.validate()?;
         image.artifact = Some(self.clone());

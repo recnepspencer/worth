@@ -1,8 +1,6 @@
 //! Recovery/runtime affinity admission before associated inventory discovery.
-use super::{
-    RecoveredRelationalRuntimeAuthority, RelationalAssociatedEffectRefusal,
-    RelationalAssociatedEffectSubject,
-};
+use super::{RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSubject};
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 

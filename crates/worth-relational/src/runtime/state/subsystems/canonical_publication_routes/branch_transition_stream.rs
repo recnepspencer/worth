@@ -10,10 +10,11 @@
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::branch::{
-    PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionDurableStep,
-    RelationalBranchTransitionSequence, RelationalTransitionPublication,
-};
+use crate::branch::transition::durable_step::RelationalBranchTransitionDurableStep;
+use crate::branch::transition::durable_step::RelationalTransitionPublication;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
+use crate::branch::transition::PositionedBranchTransition;
+use crate::branch::transition::RelationalBranchTransition;
 
 pub(crate) use crate::branch::transition::original_inputs::{
     OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
@@ -30,7 +31,9 @@ mod retained_log;
 mod schema_inputs;
 #[path = "branch_transition_stream/source_recovery.rs"]
 mod source_recovery;
-pub(crate) use schema_inputs::{OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial};
+pub(crate) use crate::durability::source_initial_inputs::producer_roster::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
 
 #[derive(Debug, Default)]
 pub(super) struct BranchTransitionStream {
@@ -52,11 +55,38 @@ struct BranchTransitionStreamState {
     home_world_selection: Option<
         Arc<
             worth_proof::VerifiedHomeWorldSelection<
-                Arc<crate::durability::RelationalWorldSourceCatalog>,
+                Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
             >,
         >,
     >,
     _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+/// Exact transition stream attached to the installed fork port.
+#[derive(Debug, Clone)]
+pub(crate) struct ForkTransitionRoutes(Arc<RelationalCanonicalPublicationRoutes>);
+
+impl ForkTransitionRoutes {
+    pub(crate) fn new(owner: Arc<RelationalCanonicalPublicationRoutes>) -> Self {
+        Self(owner)
+    }
+
+    pub(crate) fn observe_original_frontiers(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            crate::publication::patch::data::PatchStreamPosition,
+            RelationalBranchTransitionSequence,
+        ),
+        worth_execution::WorkCeilingDenial,
+    > {
+        self.0.observe_fork_original_frontiers(execution)
+    }
+
+    pub(crate) fn begin_branch_transition(&self) -> BranchTransitionPublication<'_> {
+        self.0.begin_branch_transition()
+    }
 }
 
 /// Lifecycle admission acquired before any live branch coordination or state.
@@ -119,12 +149,14 @@ impl BranchTransitionPublication<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         step: &S,
-        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
         prepare: impl FnOnce() -> Result<RelationalBranchTransition, D>,
         cutover: impl FnOnce(
             &PositionedBranchTransition,
             Option<
-                worth_proof::DurablyCommitted<crate::branch::RelationalCommittedTransitionEvidence>,
+                worth_proof::DurablyCommitted<
+                    crate::branch::transition::RelationalCommittedTransitionEvidence,
+                >,
             >,
         ) -> R,
     ) -> Result<R, BranchTransitionRecordError<D, S::Stop>> {
@@ -288,7 +320,7 @@ impl BranchTransitionStream {
     fn append(
         &self,
         positioned: PositionedBranchTransition,
-        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
         retained: Option<usize>,
     ) -> Arc<PositionedBranchTransition> {
         let mut state = self.state();

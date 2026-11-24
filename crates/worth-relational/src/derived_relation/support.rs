@@ -1,7 +1,7 @@
 //! Capacity-funded retention of every positive and negative inverse Source read.
 use super::evaluation::SourceRead;
-use super::DerivedRelationData as Data;
-use super::DerivedRelationReadDenial as Denial;
+use crate::derived_relation::read::DerivedRelationData as Data;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 
 pub(crate) fn push(
     read: &mut impl SourceRead,

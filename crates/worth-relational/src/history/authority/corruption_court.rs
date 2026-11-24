@@ -47,18 +47,19 @@ impl<'a> Restore<'a> {
                     .expect("court commit exists"),
             )
         });
-        let frame = original
-            .export_artifact(execution)
+        let frame =
+            crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+                &original, execution,
+            )
             .expect("court copies its actual recorded original frame");
         let admitted = frame
-            .readmit_framed(execution)
-            .expect("court original frame readmits under its genuine request")
-            .into_positioned();
+            .readmitted_body(execution)
+            .expect("court original frame readmits under its genuine request");
         let copied = Arc::clone(admitted.canonical_arc());
         drop(admitted);
         let mut envelope = Arc::try_unwrap(copied)
             .expect("the newly readmitted court original has unique body custody");
-        envelope.corrupt_output_origin_header_for_test(corruption);
+        header::corrupt(&mut envelope, corruption);
         assert_eq!(
             envelope.commit.commit_id, commit,
             "corruption preserves commit identity"

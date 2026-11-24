@@ -9,5 +9,6 @@ use crate::identity::data::VersionId;
 pub struct CheckpointCoverage {
     pub up_to_commit: Option<RelationalCommitReceipt>,
     pub up_to_version: Option<VersionId>,
-    pub up_to_branch_transition: crate::branch::RelationalBranchTransitionSequence,
+    pub up_to_branch_transition:
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
 }

@@ -1,6 +1,6 @@
 use crate::publication::bundle::PublicationBundle;
 use crate::replay::data::RelationalReplayRecord;
-use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -20,9 +20,9 @@ struct PublishedBundles {
 
 #[derive(Debug)]
 pub(crate) struct PublicationSubsystem {
-    pub(crate) diagnostics: super::publication_diagnostics::RelationalDiagnosticArtifactStore,
+    pub(crate) diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     bundles: RuntimeOwnedState<PublishedBundles>,
-    pub(crate) post_commit_consumer: Arc<dyn crate::publication::PostCommitConsumer>,
+    pub(crate) post_commit_consumer: Arc<dyn crate::publication::authority::PostCommitConsumer>,
 }
 
 impl Default for PublicationSubsystem {
@@ -30,7 +30,7 @@ impl Default for PublicationSubsystem {
         Self {
             diagnostics: Default::default(),
             bundles: RuntimeOwnedState::default(),
-            post_commit_consumer: crate::publication::production_post_commit_consumer(),
+            post_commit_consumer: crate::publication::authority::production_post_commit_consumer(),
         }
     }
 }
@@ -49,16 +49,8 @@ impl PublicationSubsystem {
             }
         }
     }
-}
 
-impl RuntimeSubsystem for PublicationSubsystem {
-    type Config = ();
-
-    fn new(_: &Self::Config) -> Self {
-        Self::default()
-    }
-
-    fn fork(&self) -> Self {
+    pub(crate) fn fork(&self) -> Self {
         Self {
             diagnostics: self.diagnostics.detached_owner_snapshot(),
             bundles: RuntimeOwnedState::new(PublishedBundles {

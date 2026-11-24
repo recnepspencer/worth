@@ -1,8 +1,8 @@
 mod normalized_continuation_proof;
 mod subscriber_checkpoint;
-mod subscriber_contract;
+pub(crate) mod subscriber_contract;
 pub use normalized_continuation_proof::NormalizedContinuationProof;
-mod subscriber_decision;
+pub(crate) mod subscriber_decision;
 mod subscriber_failure;
 mod subscriber_recovery_plan;
 mod subscriber_resume_request;

@@ -5,9 +5,9 @@ use super::retention_extent as extent;
 use crate::branch::root::RelationalBranchRootState;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::graph_member::{NativeMemberKey, ProjectedMemberCoordinate};
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::identity::data::{EntityId, KindId};
 use crate::validation::engine::state_view::InvariantStateView;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 use worth_execution::{ExecutionRequest, MapKernelFailure};
 
 use super::selection::AggregateSelection;

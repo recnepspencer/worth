@@ -1,5 +1,5 @@
 use super::RelationalBranchTransitionArtifactFrameRefusal;
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::execution::RelationalExecutionDenialCause;
 use crate::publication::patch::data::PatchStreamPosition;
 

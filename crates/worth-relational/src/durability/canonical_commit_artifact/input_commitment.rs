@@ -1,7 +1,7 @@
 //! Result-image-first v8 input commitments reuse one funded SHA state per carrier.
-use super::commitment_writer::{in_context, CommitmentWriter};
 use crate::config::data::MutationConfig;
 use crate::durability::data::{DurableBranchRootSchemaImage, RelationalRecoveryStop};
+use crate::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 

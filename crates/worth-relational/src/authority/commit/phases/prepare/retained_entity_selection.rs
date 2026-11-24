@@ -1,30 +1,41 @@
 //! Prepare the real selection scope without inventing an authored command.
-use super::{PreparedWorkingStateScope, RelationalPreparationRuntime};
+use super::PreparedWorkingStateScope;
 use crate::authority::commit::semantic_plan::{
     PreparedRelationalCommitPlan, PreparedRetainedEntityPayload,
 };
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
-use crate::branch::SelectedRelationalBranchRead;
-use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::storage::overlay::{EntityWorkingSetLayout, PartitionCloneMode, WorkingState};
-use crate::transactions::data::{CommitPhaseTiming, CommitTopology, TransactionCommitError};
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 
-pub(crate) fn prepare(
-    runtime: &RelationalPreparationRuntime,
-    transaction: &mut BranchBoundRelationalTransaction,
+pub(crate) struct SelectionInputs<'a>(
+    pub(crate) super::working_state_inputs::SelectionTransaction<'a>,
+);
+
+pub(crate) fn prepare<'a, Transaction>(
+    inputs: impl Into<super::working_state_inputs::WorkingStatePreparation<'a>>,
+    transaction: &mut Transaction,
     selected: SelectedRelationalBranchRead<'_>,
     retained: &PreparedRetainedEntityPayload,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
+) -> Result<PreparedWorkingStateScope, TransactionCommitError>
+where
+    for<'t> &'t mut Transaction: Into<SelectionInputs<'t>>,
+{
+    let inputs = inputs.into();
+    let transaction = transaction.into().0;
     let entity = retained.meaning.entity();
     transaction
         .footprint
         .record_retained_entity_selection(entity, retained.meaning.kind(), policy)
         .map_err(|denial| TransactionCommitError::conflict(denial.into_conflict()))?;
     let plan = PreparedRelationalCommitPlan::RetainedEntitySelection {
-        commands: crate::mvcc::OwnedNormalizedPlan::empty(transaction.transaction_id),
+        commands: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::empty(
+            transaction.transaction_id,
+        ),
         retained: retained.clone(),
     };
     let partitions = BTreeSet::from([entity.partition_id]);
@@ -32,7 +43,7 @@ pub(crate) fn prepare(
     let working_state = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
         &selected,
         partitions.iter().copied(),
-        runtime.config.storage.adjacency_policy.clone(),
+        inputs.adjacency_policy.clone(),
         PartitionCloneMode::EntityOnly,
         EntityWorkingSetLayout::CanonicalSoA,
         Some(&slots),
@@ -52,6 +63,6 @@ pub(crate) fn prepare(
         working_state,
         phase_timing: CommitPhaseTiming::default(),
         footprint: transaction.footprint.clone(),
-        schema_authority: Arc::clone(&transaction.schema_authority),
+        schema_authority: transaction.schema,
     })
 }

@@ -1,6 +1,5 @@
-use crate::authority::mutation::canonical_deltas::{
-    authoritative_patch_with_delta_supplements, canonical_delta_for_mutation,
-};
+use super::canonical_deltas::canonical_publication_fragment;
+use super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use crate::authority::mutation::patch_details::{
     patch_detail_for_entity, patch_detail_for_relation, EntityPatchDetailKind,
     RelationPatchDetailKind,
@@ -283,42 +282,4 @@ fn record_patch_fragment(
     effect.publication.canonical_deltas.push(canonical_delta);
     effect.publication.patch_fragments.push(patch_fragment);
     Ok(())
-}
-
-pub(super) fn canonical_publication_fragment(
-    canonical_delta: &crate::authority::mutation::CanonicalRecordAspectDelta,
-    detail: PatchDetail,
-    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<
-    crate::authority::mutation::FoundationalPatchFragment,
-    crate::transactions::data::outcomes::commit_conflict::CommitConflict,
-> {
-    Ok(match authoritative_patch {
-        Some(patch) => {
-            let patch = authoritative_patch_with_delta_supplements(canonical_delta, patch)
-                .map_err(|error| error.to_commit_conflict())?;
-            let published_patch =
-                crate::authority::mutation::canonical_deltas::published_patch_for_delta(
-                    canonical_delta,
-                    &patch,
-                )
-                .map_err(|error| error.to_commit_conflict())?;
-            crate::authority::mutation::FoundationalPatchFragment {
-                target: canonical_delta.target.clone(),
-                structural_change: canonical_delta.structural_change,
-                semantic_changes: crate::authority::mutation::canonical_deltas::semantic_changes(
-                    canonical_delta,
-                ),
-                contains_opaque_aspect: canonical_delta.contains_opaque_aspect,
-                detail,
-                relation_birth: None,
-                patch,
-                published_patch,
-            }
-        }
-        None => canonical_delta
-            .clone()
-            .into_foundational_patch_fragment(detail)
-            .map_err(|error| error.to_commit_conflict())?,
-    })
 }

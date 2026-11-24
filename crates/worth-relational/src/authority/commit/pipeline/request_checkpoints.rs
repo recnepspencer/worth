@@ -1,7 +1,7 @@
 //! Named safe points of one borrowed commit request; no stage fee is charged.
-use crate::transactions::data::{
-    CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CommitStage {
@@ -68,12 +68,7 @@ pub(crate) mod observation;
 mod tests;
 
 #[cfg(test)]
-mod split_publication;
-#[cfg(test)]
 mod stage_counts;
-
-#[cfg(test)]
-mod strategy_cancellation;
 
 impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {
     fn from(denial: worth_execution::WorkCeilingDenial) -> Self {

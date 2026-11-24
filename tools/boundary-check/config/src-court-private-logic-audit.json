@@ -155,29 +155,6 @@
     {
       "constructors": [
         "ExecutionRequest",
-        "RelationalRuntime",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
-      "test": "public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_is_cold",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "RelationalRuntime",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
-      "test": "public_cache_native_successor_is_cold_and_selected_predecessor_keeps_its_own_slot",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "RelationalRuntime",
         "SerialRequest"
       ],
       "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",

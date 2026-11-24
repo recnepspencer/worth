@@ -63,7 +63,7 @@ pub(super) fn prepare(
                 .difference(entities.selected_entities())
             {
                 if read.kind(entity)?.is_some()
-                    && let Some(owner) = installed.owner(read, entity)?
+                    && let Some(owner) = installed.plan.owner(read, entity)?
                 {
                     read.retain()?;
                     selected.insert(entity);
@@ -105,7 +105,7 @@ pub(super) fn prepare(
                         selected.insert(entity);
                     }
                     if !entities.selected_entities().contains(&entity)
-                        && let Some(owner) = installed.owner(read, entity)?
+                        && let Some(owner) = installed.plan.owner(read, entity)?
                     {
                         if let std::collections::btree_map::Entry::Vacant(entry) =
                             transferred.entry(entity)
@@ -195,7 +195,7 @@ fn observation(
     entity: EntityId,
 ) -> Result<OwnershipObservation, Denial> {
     let owner = if read.kind(entity)?.is_some() {
-        installed.owner(read, entity)?
+        installed.plan.owner(read, entity)?
     } else {
         None
     };

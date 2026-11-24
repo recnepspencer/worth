@@ -1,43 +1,17 @@
 //! Rejudge every unchanged source row without inventing a write or event.
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
-use crate::mvcc::{BranchBoundRelationalTransaction, RelationalTransactionStagingDenial};
+use crate::mvcc::BranchBoundRelationalTransaction;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::*;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::sync::Arc;
 use worth_execution::{
-    ExecutionArray, ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionOrderedMapDenial,
-    ExecutionRequest, ExecutionRequestArrayBuilder, ExecutionRequestArrayDenial,
+    ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 
-#[derive(Debug)]
-pub(crate) struct RelationalHomeTargetCoverage {
-    pub(crate) authored_batches: usize,
-    pub(crate) rejudgment_body: worth_foundational::facade::HomeProgramTransitionBodyDigest,
-    pub(crate) records: ExecutionArray<RecordRef>,
-    _batch_memory: Option<ExecutionMemoryReservation>,
-}
-
-impl RelationalHomeTargetCoverage {
-    pub(crate) fn include_changed(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        changed: &[RecordRef],
-    ) -> Result<ExecutionArray<RecordRef>, TransactionCommitError> {
-        let mut records = ExecutionOrderedMap::default();
-        for record in self.records.iter().chain(changed) {
-            records
-                .insert_cloned_native_for_request(record, &(), *request)
-                .map_err(ordered)?;
-        }
-        let mut captured =
-            ExecutionRequestArrayBuilder::allocate(*request, records.len()).map_err(array)?;
-        for (record, ()) in records.iter() {
-            captured.push(record.clone()).map_err(array)?;
-        }
-        captured.seal().map_err(array)
-    }
-}
+pub(crate) mod captured_records;
+pub(crate) use captured_records::RelationalHomeTargetCoverage;
+use captured_records::{array, ordered, overflow, staging};
 
 impl BranchBoundRelationalTransaction {
     pub(crate) fn prepare_home_target_coverage(
@@ -189,35 +163,6 @@ fn charge(request: &ExecutionRequest<'_, '_>, work: u64) -> Result<(), Transacti
                 worth_execution::WorkCeilingDenial::Stopped(cause).into(),
             )
         })
-}
-fn staging(cause: RelationalTransactionStagingDenial) -> TransactionCommitError {
-    crate::execution::allocation_commit_error(TransactionCommitError::conflict(
-        cause.into_conflict(),
-    ))
-}
-fn overflow() -> TransactionCommitError {
-    staging(RelationalTransactionStagingDenial::CardinalityOverflow)
-}
-fn array(cause: ExecutionRequestArrayDenial) -> TransactionCommitError {
-    match cause {
-        ExecutionRequestArrayDenial::Request(cause) => {
-            TransactionCommitError::execution(cause.into())
-        }
-        ExecutionRequestArrayDenial::Allocation(cause) => {
-            staging(RelationalTransactionStagingDenial::AllocationDenied(cause))
-        }
-    }
-}
-fn ordered(cause: ExecutionOrderedMapDenial) -> TransactionCommitError {
-    match cause {
-        ExecutionOrderedMapDenial::Request(cause) => {
-            TransactionCommitError::execution(cause.into())
-        }
-        ExecutionOrderedMapDenial::Allocation(cause) => {
-            staging(RelationalTransactionStagingDenial::AllocationDenied(cause))
-        }
-        ExecutionOrderedMapDenial::CapacityOverflow => overflow(),
-    }
 }
 #[cfg(test)]
 #[path = "coverage_inline_type_budget.rs"]

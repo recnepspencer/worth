@@ -1,9 +1,10 @@
 //! Install the authored prefix's actual posture without inventing a retirement.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
-use crate::mvcc::CoupledSource;
-use crate::mvcc::RelationalAuthoredRetirement;
-use crate::mvcc::RelationalCoupledAuthoredPublication;
+use crate::mvcc::publication::application_publication::CoupledSource;
+use crate::mvcc::publication::application_publication::RelationalAuthoredRetirement;
+use crate::mvcc::publication::application_publication::RelationalCoupledAuthoredPublication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
@@ -15,12 +16,12 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 pub(super) fn install_empty(
     envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     group: &RelationalCoupledAuthoredPublication,
     lease: Option<&ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,
@@ -28,7 +29,7 @@ pub(super) fn install_empty(
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let custody = &group.binding.owners;
     if let Some(plan) = custody.source.restoration() {
-        return super::authored_restoration::install(
+        return super::authored_restoration_install::install(
             envelope,
             runtime,
             basis,
@@ -60,7 +61,7 @@ pub(super) fn install_empty(
         Some(admission),
     ) = (&custody.source, &group.binding.retirement_admission)
     {
-        return super::authored_cascade::install(
+        return super::authored_cascade_install::install(
             envelope,
             execution,
             runtime,
@@ -91,12 +92,12 @@ pub(super) fn install_empty(
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     group: &RelationalCoupledAuthoredPublication,
     lease: Option<&ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,
@@ -112,7 +113,7 @@ pub(super) fn install(
         }),
         CoupledSource::Restoration { plan, .. }
         | CoupledSource::MemberEditRestoration { plan, .. } => {
-            super::authored_restoration::install(
+            super::authored_restoration_install::install(
                 envelope,
                 runtime,
                 basis,

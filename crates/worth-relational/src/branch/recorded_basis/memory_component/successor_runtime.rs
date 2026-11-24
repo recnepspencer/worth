@@ -33,7 +33,7 @@ impl RelationalRuntime {
             ))??;
         let funding = fund_and_charge(execution, bytes)?;
         Ok(AdmittedRelationalMemoryComponent {
-            owner: self.state_binding(),
+            owner: self.services.origin_identity(),
             expected_root_id,
             expected_commit_id,
             bytes,
@@ -48,7 +48,7 @@ impl RelationalRuntime {
         admitted: AdmittedRelationalMemoryComponent,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<ObservedRelationalMemoryComponent, Refusal> {
-        if !Weak::ptr_eq(&admitted.owner, &self.state_binding()) {
+        if !admitted.owner.same_origin(&self.services.origin_identity()) {
             return Err(Refusal::Basis(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));

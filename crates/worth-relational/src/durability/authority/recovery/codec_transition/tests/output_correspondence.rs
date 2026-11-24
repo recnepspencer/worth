@@ -1,6 +1,9 @@
 //! Actual surviving native publication, exact probes and original request stops.
 use super::{fixture::*, recovered, RelationalOperationControl};
 use crate::identity::data::{EntityId, KindId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture, RequiredOutputRolePosture,
+};
 fn independent(execution: &worth_execution::ExecutionRequest<'_, '_>) -> (World, EntityId) {
     let (runtime, receipt) = installed(1);
     let (owner, installed) = receipt.clone().issue_application_publication_owner();
@@ -57,7 +60,7 @@ fn staged(
 }
 #[test]
 fn companion_native_association_requires_exact_identity_kind_and_original_payload() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
@@ -70,11 +73,8 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(
-                &[(companion, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create,
-            ),
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[(companion, KindId(1))], RequiredOutputRolePosture::Create),
         )
         .unwrap();
     for roles in [
@@ -94,11 +94,8 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
                 &selected,
                 "native.fixture.companion",
                 &[10; 32],
-                &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-                &crate::mvcc::native_roles_fixture(
-                    &roles,
-                    crate::mvcc::RequiredOutputRolePosture::Create
-                )
+                &native_meaning_fixture("native.fixture.companion"),
+                &native_roles_fixture(&roles, RequiredOutputRolePosture::Create)
             )
             .is_err());
     }
@@ -110,11 +107,8 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "copied.description",
             &[10; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(
-                &[(companion, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create
-            )
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[(companion, KindId(1))], RequiredOutputRolePosture::Create)
         )
         .is_err());
     assert_eq!(capture(execution, &target), before);
@@ -163,17 +157,14 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(
-                &[(companion, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create
-            )
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[(companion, KindId(1))], RequiredOutputRolePosture::Create)
         )
         .is_err());
 }
 #[test]
 fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh_retry() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
@@ -191,11 +182,8 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(
-                &[(companion, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create,
-            ),
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[(companion, KindId(1))], RequiredOutputRolePosture::Create),
         )
         .unwrap_err();
     assert!(
@@ -217,8 +205,8 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "wrong producer",
             &[0; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(&[], crate::mvcc::RequiredOutputRolePosture::Create),
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[], RequiredOutputRolePosture::Create),
         )
         .unwrap_err();
     assert_eq!(
@@ -235,11 +223,8 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
             &selected,
             "native.fixture.companion",
             &[10; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.companion"),
-            &crate::mvcc::native_roles_fixture(
-                &[(companion, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create,
-            ),
+            &native_meaning_fixture("native.fixture.companion"),
+            &native_roles_fixture(&[(companion, KindId(1))], RequiredOutputRolePosture::Create),
         )
         .unwrap();
 }

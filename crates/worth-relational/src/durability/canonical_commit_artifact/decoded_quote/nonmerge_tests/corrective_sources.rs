@@ -37,7 +37,6 @@ fn group(sources: Sources) -> CanonicalCoupledAuthoredPublication {
     CanonicalCoupledAuthoredPublication {
         sources,
         participants: vec![],
-        live_inputs: Default::default(),
         _decoded_memory: None,
     }
 }

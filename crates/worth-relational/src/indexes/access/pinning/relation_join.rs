@@ -4,7 +4,7 @@ use crate::indexes::data::{
     BoundedIndexParityMode, BoundedRelationJoinLookupDenial, BoundedRelationJoinLookupDenialKind,
     BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupRequest,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
 fn denial(
     kind: BoundedRelationJoinLookupDenialKind,
     request: &BoundedRelationJoinLookupRequest,

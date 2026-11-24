@@ -1,10 +1,13 @@
 //! Complete source support from the same frontier used by Native components.
-use crate::derived_relation::evaluation::SourceRead;
-use crate::derived_relation::{
-    DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data,
+use crate::derived_relation::definition::{
     DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
-    DerivedRelationReadDenial as Denial, DerivedRelationWalkStep,
 };
+use crate::derived_relation::evaluation::SourceRead;
+use crate::derived_relation::proof::DerivedRelationWalkStep;
+use crate::derived_relation::read::{
+    DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data,
+};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::RelationalSchemaRegistry;

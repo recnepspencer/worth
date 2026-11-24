@@ -92,7 +92,7 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
     let observation = crate::validation::engine::InvariantObservation::committed(
         runtime.storage_access().current_edition(),
     );
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     for leased in [false, true] {
         for expected in [Ok(()), Err(Stop::Cancelled), Err(Stop::DeadlineElapsed)] {
             let cancellation = CancellationSource::new();

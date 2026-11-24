@@ -7,7 +7,7 @@ impl RelationalPreparationHistory {
         previous: &Arc<RelationalBranchRoot>,
         state: &crate::storage::overlay::WorkingState,
         content: &crate::content::publication::ContentPublication,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
         let committed = state.clone().into_partition_commits().1;
         let delta = crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(

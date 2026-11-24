@@ -1,13 +1,15 @@
 //! Exact authored membership comes from live owner adjacency at the admitted basis.
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    identity::data::{EntityId, KindId},
-    mvcc::{RequiredOutputRolePosture, RequiredOutputRoleTarget},
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::{RecordRef, TransactionCommitError},
-    validation::engine::state_view::InvariantStateView,
-};
+use super::AuthoredPublicationReads;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::ExecutionRequest;
 mod roster;
 use roster::OwnedMemberRoster;
@@ -19,11 +21,11 @@ pub struct AuthoredOwnedMemberKind {
     pub owner_relation: KindId,
 }
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// O((A + R) K + A log A + R log R) over incoming owner adjacency A,
     /// submitted member roles R and declared member kinds K. Membership has no second authoritative list.
     /// A request with no work account is polled, not charged.
-    pub fn validate_authored_owned_members(
+    pub(crate) fn validate_authored_owned_members(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,

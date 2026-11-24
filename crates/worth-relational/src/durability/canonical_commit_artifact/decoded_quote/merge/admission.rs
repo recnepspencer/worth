@@ -1,9 +1,11 @@
 //! Predecode admissions mirror only the actual escaping merge leaf owners.
 use super::*;
 use crate::history::data::MergeBasisAncestors;
-use crate::merge::data::{
-    MergeBasisMemory, MergeIdentityMemory, MergeLeafMemory, MergeReadmissionMemory,
+use crate::merge::data::artifacts::{
     RelationalMergeCorrespondenceWitnessRow, RelationalSchemaReconciliationWitnessRow,
+};
+use crate::merge::data::readmission_memory::{
+    MergeBasisMemory, MergeIdentityMemory, MergeLeafMemory, MergeReadmissionMemory,
 };
 mod policies;
 #[cfg(test)]
@@ -99,12 +101,13 @@ pub(in super::super::super) fn prepare_canonical_readmission(
     let strategy = policies::prepare(strategy, request)?;
     let packet = field(summary, "proof_packet", request)?;
     let packet_basis = basis(field(packet, "branch_basis", request)?, request)?;
-    let packet_surface = row_memory::<crate::merge::data::RelationalMergeAdmittedSurfaceRow>(
-        field(packet, "admitted_merge_surface", request)?,
-        request,
-        |_| Ok(OwnerAllocation::default()),
-        0,
-    )?;
+    let packet_surface =
+        row_memory::<crate::merge::data::artifacts::RelationalMergeAdmittedSurfaceRow>(
+            field(packet, "admitted_merge_surface", request)?,
+            request,
+            |_| Ok(OwnerAllocation::default()),
+            0,
+        )?;
     Ok(Some(MergeReadmissionMemory {
         basis: basis_memory,
         correspondence,
@@ -159,7 +162,7 @@ pub(super) fn retained_leaf_bytes(
     )?;
     checked_sum(
         &mut bytes,
-        shared_rows::<crate::merge::data::RelationalMergeAdmittedSurfaceRow>(
+        shared_rows::<crate::merge::data::artifacts::RelationalMergeAdmittedSurfaceRow>(
             field(packet, "admitted_merge_surface", request)?,
             request,
             |_| Ok(OwnerAllocation::default()),

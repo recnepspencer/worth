@@ -1,17 +1,18 @@
 //! Selected Native predecessor, exact before-image and complete relation custody.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 pub(super) fn validate<'a>(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
-    predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
+    predecessor: &'a crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
-    if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
+    if predecessor.runtime_instance_id != runtime.runtime_instance_id {
         return Err(
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                 "foreign native predecessor publication custody",
@@ -60,7 +61,7 @@ pub(super) fn validate<'a>(
             .iter()
             .any(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
     {
-        let current = runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
+        let current = runtime.current_ownership.as_ref().ok_or_else(|| {
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial("live owned predecessor requires current Native custody")
         })?;
         let canonical = current
@@ -72,7 +73,7 @@ pub(super) fn validate<'a>(
                 )
             })?;
         compare_retained_origin(origin, canonical, context)?;
-        if let crate::publication::ownership::PublicationEvidence::Current(retained) =
+        if let crate::publication::ownership::evidence::PublicationEvidence::Current(retained) =
             &predecessor.evidence
             && retained.basis.as_ref() != Some(basis.descriptor())
         {
@@ -85,7 +86,7 @@ pub(super) fn validate<'a>(
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
     crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
-    let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
+    let crate::publication::ownership::evidence::PublicationEvidence::Canonical(envelope) =
         &predecessor.evidence
     else {
         return Err(
@@ -143,7 +144,7 @@ pub(super) fn validate<'a>(
         &runtime.history.execution(),
         context,
     )
-    .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;
+    .map_err(|stop| super::relation_context(stop, "predecessor", basis.descriptor(), candidate))?;
     Ok(origin.as_ref())
 }
 

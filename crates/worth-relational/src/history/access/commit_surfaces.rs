@@ -90,26 +90,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     /// is immutable evidence and cannot select a branch cell or mint
     /// currentness authority.
     pub fn historical_latest_commit(&self) -> Option<RelationalCommitReceipt> {
-        self.latest_patch_stream_position()
-            .and_then(|position| {
-                self.runtime
-                    .history
-                    .canonical_envelope_at_patch(position)
-                    .map(|envelope| envelope.commit.clone())
-                    .or_else(|| {
-                        self.runtime
-                            .history
-                            .recorded_commit_at_patch_position(position)
-                            .and_then(|commit_id| self.runtime.history.commit_artifact(commit_id))
-                            .map(|artifact| artifact.receipt())
-                    })
-            })
-            .or_else(|| {
-                self.runtime
-                    .history
-                    .latest_commit_artifact()
-                    .map(|artifact| artifact.receipt())
-            })
+        self.runtime.history.historical_latest_commit()
     }
 
     /// Resolve immutable version identity from the catalog index without loading a body.
@@ -119,14 +100,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     ) -> Option<RelationalCommitReceipt> {
         self.runtime
             .history
-            .commit_artifact_for_version(version_id)
-            .map(|artifact| artifact.receipt())
-            .or_else(|| {
-                self.runtime
-                    .history
-                    .canonical_envelope_for_version(version_id)
-                    .map(|envelope| envelope.commit.clone())
-            })
+            .immutable_commit_receipt_for_version(version_id)
     }
 
     /// The durable ledger's latest patch-stream position.
@@ -136,13 +110,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     /// same position it held before. Patch-stream reads resolve against this
     /// position; a reader that resumes the stream starts after it.
     pub fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition> {
-        let projected = self.runtime.history.latest_recorded_patch_position();
-        projected.max(
-            self.runtime
-                .history
-                .latest_canonical_patch_route()
-                .map(|(position, _)| position),
-        )
+        self.runtime.history.latest_patch_stream_position()
     }
 
     pub(crate) fn canonical_stream_position(

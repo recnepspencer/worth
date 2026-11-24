@@ -1,6 +1,6 @@
 mod canonical_registration_identity;
 mod canonical_registration_tags;
-mod relation_integrity_registration_plan;
+pub(crate) mod relation_integrity_registration_plan;
 
 #[cfg(test)]
 mod registration_examples;

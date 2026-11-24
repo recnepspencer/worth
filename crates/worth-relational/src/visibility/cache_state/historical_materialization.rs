@@ -1,27 +1,27 @@
 //! Full-history admission and cache publication under the caller's request.
 use super::*;
+use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
 
-pub(crate) fn ensure_historical_state(
+pub(crate) fn ensure_historical_state<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    inputs: impl Into<VisibilityCacheInputs<'a>>,
     basis: HistoricalVisibilityBasis,
     recent_candidate: bool,
 ) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    let inputs = inputs.into();
     crate::execution::request_custody::check_request(execution)?;
     if let Some(root) = basis.root() {
-        root.demand_all_full(execution, &runtime.services.symbols)
+        root.demand_all_full(execution, inputs.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);
-    if let Some(state) = runtime.visibility.cache.state(&key) {
-        runtime
-            .services
+    if let Some(state) = inputs.cache.state(&key) {
+        inputs
             .instrumentation
             .count(|counters| counters.visibility_cache_hits += 1);
         return Ok(state);
     }
-    runtime
-        .services
+    inputs
         .instrumentation
         .count(|counters| counters.visibility_cache_miss_reconstructions += 1);
     let state = crate::visibility::materialization::read_records::read_work::metered_with_memory(
@@ -32,7 +32,8 @@ pub(crate) fn ensure_historical_state(
                 basis.branch_id().0.len() as u64,
             )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
-                runtime,
+                inputs.records,
+                inputs.runtime_identity,
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
@@ -42,44 +43,43 @@ pub(crate) fn ensure_historical_state(
         },
         |answer| answer.as_ref().map_or(0, historical_pin_bytes),
     )??;
-    insert_state(runtime, state.clone());
+    insert_state(inputs, state.clone());
     if recent_candidate {
-        mark_recent_state_key(runtime, &key);
+        mark_recent_state_key(inputs, &key);
     }
     Ok(state)
 }
 
-pub(crate) fn materialize_historical_visibility(
+pub(crate) fn materialize_historical_visibility<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    inputs: impl Into<VisibilityCacheInputs<'a>>,
     version_id: crate::identity::data::VersionId,
     allow_recent_admission: bool,
 ) -> Result<Option<SnapshotState>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    let inputs = inputs.into();
     crate::execution::request_custody::check_request(execution)?;
-    let Ok(basis) = historical_basis_for_retained_version(runtime, version_id) else {
+    let Ok(basis) = historical_basis_for_retained_version(inputs, version_id) else {
         return Ok(None);
     };
     if let Some(root) = basis.root() {
-        root.demand_all_full(execution, &runtime.services.symbols)
+        root.demand_all_full(execution, inputs.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);
-    if let Some(state) = runtime.visibility.cache.state(&key) {
-        runtime
-            .services
+    if let Some(state) = inputs.cache.state(&key) {
+        inputs
             .instrumentation
             .count(|counters| counters.visibility_cache_hits += 1);
         return Ok(Some(state));
     }
     let recent_candidate = allow_recent_admission
-        && runtime.config.visibility.cache_policy.enabled
-        && runtime.visibility.cache.recent_window() > 0
-        && !is_key_protected(runtime, &key);
-    if recent_candidate || is_key_protected(runtime, &key) {
-        return ensure_historical_state(execution, runtime, basis, recent_candidate).map(Some);
+        && inputs.policy.enabled
+        && inputs.cache.recent_window() > 0
+        && !is_key_protected(inputs, &key);
+    if recent_candidate || is_key_protected(inputs, &key) {
+        return ensure_historical_state(execution, inputs, basis, recent_candidate).map(Some);
     }
-    runtime
-        .services
+    inputs
         .instrumentation
         .count(|counters| counters.visibility_cache_miss_reconstructions += 1);
     crate::visibility::materialization::read_records::read_work::metered_with_memory(
@@ -90,7 +90,8 @@ pub(crate) fn materialize_historical_visibility(
                 basis.branch_id().0.len() as u64,
             )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
-                runtime,
+                inputs.records,
+                inputs.runtime_identity,
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,

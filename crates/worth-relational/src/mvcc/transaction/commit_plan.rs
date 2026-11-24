@@ -1,21 +1,7 @@
-use std::collections::BTreeMap;
-
-use crate::authority::intent_merge::{
-    collect_created_entity_refs, collect_deleted_relation_ids, detect_conflicting_updates,
-    validate_branch_locality, validate_intent,
-};
-use crate::capabilities::{InstrumentationSource, RuntimeConfigSource};
+use super::staged_plan::{MergedPlanPreparationTiming, StagedPlanValidation};
+use crate::authority::intent_merge::validate_branch_locality;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::canonical_intent_key::canonical_intent_key;
-use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan};
-use std::time::Instant;
-
-#[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct MergedPlanPreparationTiming {
-    pub(crate) validation_micros: u64,
-    pub(crate) sort_micros: u64,
-    pub(crate) conflict_detection_micros: u64,
-}
+use crate::transactions::data::{CommitConflict, ConflictClass};
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn validate_staged_branch_locality(
@@ -41,65 +27,22 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         &self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         current_state: &impl CurrentPartitionAccess,
-        mut intents: super::OwnedNormalizedPlan,
+        intents: super::OwnedNormalizedPlan,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (super::OwnedNormalizedPlan, MergedPlanPreparationTiming),
         crate::transactions::data::TransactionCommitError,
     > {
-        let created_entities = collect_created_entity_refs(&intents.plan().merged_intents);
-        let deleted_relations = collect_deleted_relation_ids(&intents.plan().merged_intents);
-        let validation_started = Instant::now();
-        for intent in &intents.plan().merged_intents {
-            let mut candidates_scanned = 0;
-            let validation = validate_intent(
-                current_state,
-                self.mutation_schema_authority().registry(),
-                runtime.runtime_config().storage.cross_context_policy,
-                &mut candidates_scanned,
-                &created_entities,
-                &deleted_relations,
-                intent,
-            );
-            if candidates_scanned != 0 {
-                runtime.runtime_instrumentation().count(|counters| {
-                    counters.relation_identity_candidates_scanned += candidates_scanned;
-                });
-            }
-            validation?;
+        StagedPlanValidation {
+            schema: self.mutation_schema_authority().registry(),
+            cross_context: runtime.config.storage.cross_context_policy,
+            instrumentation: &runtime.services.instrumentation,
+            coupled_commands: self
+                .authored_coupling
+                .as_ref()
+                .map(|_| &self.prepared_coupled_commands),
         }
-        let validation_micros = validation_started.elapsed().as_micros() as u64;
-        let sort_started = Instant::now();
-        intents.intents_mut().sort_by_key(canonical_intent_key);
-        let sort_micros = sort_started.elapsed().as_micros() as u64;
-        let conflict_started = Instant::now();
-        detect_conflicting_updates(&intents.plan().merged_intents)?;
-        if self.authored_coupling.is_some() {
-            let needs_copy = self
-                .prepared_coupled_commands
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .is_none();
-            if needs_copy {
-                let prepared =
-                    super::OwnedNormalizedPlan::shared_copy_for_request(intents.plan(), request)?;
-                let mut slot = self
-                    .prepared_coupled_commands
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
-                if slot.is_none() {
-                    *slot = Some(prepared);
-                }
-            }
-        }
-        Ok((
-            intents,
-            MergedPlanPreparationTiming {
-                validation_micros,
-                sort_micros,
-                conflict_detection_micros: conflict_started.elapsed().as_micros() as u64,
-            },
-        ))
+        .validate(current_state, intents, request)
     }
 
     pub(crate) fn normalized_intents_for_merge(
@@ -107,31 +50,12 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         runtime: &crate::runtime::RelationalPreparationRuntime,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<super::OwnedNormalizedPlan, crate::transactions::data::TransactionCommitError> {
-        self.normalize_intents_for_merge(runtime, request)?;
-        super::OwnedNormalizedPlan::copy_batches(self.transaction_id, self.batches(), request)
-    }
-
-    fn normalize_intents_for_merge(
-        &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
-        request
-            .consult()
-            .map_err(super::normalized_plan::request_denial)?;
-        let policy = runtime.runtime_config().identity.client_key_symbol_policy;
-        if !policy.interns_requested_strings() {
-            return Ok(());
-        }
-        let mut result = Ok(());
-        runtime.services.symbols.normalize_client_keys(|symbols| {
-            let (entries, outcome) =
-                self.overlay
-                    .normalize_client_keys(&mut self.footprint, symbols, policy, request);
-            result = outcome;
-            entries
-        });
-        result
+        runtime.staged_plan_normalization().normalized(
+            self.transaction_id,
+            &mut self.overlay,
+            &mut self.footprint,
+            request,
+        )
     }
 
     pub(crate) fn ensure_runtime_affinity(
@@ -189,24 +113,4 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             }))
         }
     }
-}
-
-pub(crate) fn bulk_reservations_for_plan(
-    _state: &impl CurrentPartitionAccess,
-    plan: &MergedCommitPlan,
-) -> (usize, usize) {
-    let mut entity_requests = BTreeMap::new();
-    let mut relation_requests = BTreeMap::new();
-    for intent in &plan.merged_intents {
-        if let Some((partition_id, requested)) = intent.bulk_entity_reservation() {
-            *entity_requests.entry(partition_id).or_insert(0usize) += requested;
-        }
-        if let Some((partition_id, requested)) = intent.bulk_relation_reservation() {
-            *relation_requests.entry(partition_id).or_insert(0usize) += requested;
-        }
-    }
-
-    let entity_reserved = entity_requests.into_values().sum();
-    let relation_reserved = relation_requests.into_values().sum();
-    (entity_reserved, relation_reserved)
 }

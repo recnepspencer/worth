@@ -10,7 +10,7 @@ pub struct RelationalOwnerServicePorts {
     preparation: crate::mvcc::RelationalPreparationPort,
     pub(super) fork: crate::branch::RelationalForkPort,
     pub(super) publication: crate::mvcc::RelationalPublicationPort,
-    settlement: crate::publication::RelationalSettlementPort,
+    settlement: crate::runtime::RelationalSettlementPort,
     pub(super) basis: RelationalBranchBasisPort,
     lifecycle: RelationalBranchLifecyclePort,
     transaction_admission: RelationalBranchTransactionAdmissionPort,
@@ -30,7 +30,7 @@ impl RelationalOwnerServicePorts {
         self.publication.clone()
     }
 
-    pub fn settlement_port(&self) -> crate::publication::RelationalSettlementPort {
+    pub fn settlement_port(&self) -> crate::runtime::RelationalSettlementPort {
         self.settlement.clone()
     }
 

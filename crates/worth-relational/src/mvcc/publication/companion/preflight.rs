@@ -1,13 +1,14 @@
+use crate::branch::projection_view::companion_slot::transfer::PreparedCompanionSlotSwap;
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::{RelationalInterruptionBoundary, RelationalOperationControl};
+use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary;
+use crate::runtime::operation_control::RelationalOperationControl;
 
 use super::cell::publication_admission::PublicationCellAdmission;
-use super::cell::{CompanionBranchCellCore, CompanionRootImage};
+use super::cell::CompanionBranchCellCore;
 use super::{PreparedCompanionBranchCell, ReservedCompanionBranchCell};
 mod cell_swap;
 mod cutover;
@@ -95,7 +96,14 @@ impl<'a> PublicationCompanionPreflight<'a> {
         if source.proposed_version() != envelope.commit.version_id {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
-        let sources = source.prepare_publication_loan(&binding)?;
+        let sources = source.prepare_publication_loan(
+            crate::validation::candidate_source::publication::ManagedSourcePublicationSelection {
+                runtime_instance_id: binding.runtime_instance_id,
+                branch_id: &binding.branch_id,
+                expected_root_id: binding.expected_root_id,
+                registration_generation: binding.registration_generation,
+            },
+        )?;
         Ok(Self {
             binding,
             envelope,
@@ -165,12 +173,12 @@ impl<'a> PublicationCompanionPreflight<'a> {
         &self,
         cell: &CompanionBranchCellCore,
     ) -> Result<(), CompanionPreflightStop> {
-        if cell.runtime_instance_id != self.binding.runtime_instance_id
-            || cell.branch_id != self.binding.branch_id
+        if cell.runtime_instance_id() != self.binding.runtime_instance_id
+            || cell.branch_id() != &self.binding.branch_id
         {
             return Err(CompanionPreflightStop::ForeignCell);
         }
-        if cell.registration_generation != self.binding.registration_generation {
+        if cell.registration_generation() != self.binding.registration_generation {
             return Err(CompanionPreflightStop::RegistrationChanged);
         }
         Ok(())
@@ -181,7 +189,7 @@ impl<'a> PublicationCompanionPreflight<'a> {
         mut reserved: ReservedCompanionBranchCell<T>,
         prepared: Arc<T>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        self.validate_cell(&reserved.core)?;
+        self.validate_cell(reserved.core())?;
         if reserved.candidate_id != self.binding.candidate_id
             || reserved.current().root_id() != self.binding.expected_root_id
             || reserved.current().commit_id() != self.binding.expected_commit_id
@@ -190,34 +198,22 @@ impl<'a> PublicationCompanionPreflight<'a> {
         }
         self.checkpoint()?;
         self.checkpoint()?;
-        if reserved.core.topology_generation.load(Ordering::Acquire)
-            != reserved.current().topology_generation()
-        {
-            return Err(CompanionPreflightStop::RegistrationChanged);
-        }
-        let next_topology_generation = reserved
-            .current()
-            .topology_generation()
-            .checked_add(1)
-            .ok_or(CompanionPreflightStop::RegistrationChanged)?;
-        let next = Arc::new(CompanionRootImage {
-            root_id: self.binding.next_root_id,
-            commit_id: Some(self.binding.next_commit_id),
-            position: AtomicU64::new(0),
-            payload: prepared,
-        });
+        let pinned_generation = reserved.current().topology_generation();
         let pinned_image = Arc::clone(&reserved.current().image);
         let publication_admission = reserved.publication_admission.take();
-        let core = reserved.into_core();
+        let reservation = reserved.into_reservation();
+        let native = PreparedCompanionSlotSwap::prepare(
+            reservation,
+            pinned_image,
+            self.binding.next_root_id,
+            self.binding.next_commit_id,
+            prepared,
+            pinned_generation,
+        )?;
         Ok(PreparedPublicationCompanionEffect {
             binding: self.binding.clone(),
             primary: Some(cell_swap::PreparedCellSwap {
-                pinned_topology_generation: next_topology_generation - 1,
-                pinned_image,
-                cell: core,
-                next,
-                retired: None,
-                next_topology_generation,
+                native,
                 publication_admission,
             }),
             managed: None,
@@ -244,10 +240,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
         managed: ReservedCompanionBranchCell<Managed>,
         next_managed: Arc<Managed>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        if Arc::ptr_eq(&marks.core, &managed.core) {
+        if Arc::ptr_eq(marks.core(), managed.core()) {
             return Err(CompanionPreflightStop::ForeignCell);
         }
-        managed.core.retain_source_affinity(self.execution)?;
+        managed.core().retain_source_affinity(self.execution)?;
         let mut effect = self.seal_replacement(marks, next_marks)?;
         let mut source = self.seal_replacement(managed, next_managed)?;
         effect.managed = source.primary.take();

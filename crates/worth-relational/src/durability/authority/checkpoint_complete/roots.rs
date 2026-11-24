@@ -1,6 +1,8 @@
 //! Actual owner-held current/external roots, never a historical mutation fold.
 use super::Denial;
-use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
+use crate::branch::{
+    basis_descriptor::RelationalBranchBasisDescriptor, root::RelationalBranchRoot,
+};
 use crate::history::data::CommitId;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};

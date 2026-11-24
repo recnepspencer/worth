@@ -34,7 +34,7 @@ impl DerivedRelationChangeData {
     }
     /// Retains every before/after inverse-prefix acquisition, including empty
     /// adjacency. A consumer must not interpret only positive endpoints as scope.
-    pub fn support(&self) -> &[crate::derived_relation::DerivedRelationData] {
+    pub fn support(&self) -> &[crate::derived_relation::read::DerivedRelationData] {
         &self.affected.support
     }
 }

@@ -9,7 +9,8 @@ pub(super) fn touched_entities(
     })?;
     add(
         &mut bytes,
-        crate::validation::data::InvariantEntityIds::control_bytes().ok_or_else(malformed)?,
+        crate::validation::data::custom_rule::touched_scope::InvariantEntityIds::control_bytes()
+            .ok_or_else(malformed)?,
     )?;
     Ok(bytes)
 }
@@ -22,7 +23,8 @@ pub(super) fn touched_relations(
     })?;
     add(
         &mut bytes,
-        crate::validation::data::InvariantRelationIds::control_bytes().ok_or_else(malformed)?,
+        crate::validation::data::custom_rule::touched_scope::InvariantRelationIds::control_bytes()
+            .ok_or_else(malformed)?,
     )?;
     Ok(bytes)
 }
@@ -35,7 +37,8 @@ pub(super) fn touched_partitions(
     })?;
     add(
         &mut bytes,
-        crate::validation::data::InvariantPartitionIds::control_bytes().ok_or_else(malformed)?,
+        crate::validation::data::custom_rule::touched_scope::InvariantPartitionIds::control_bytes()
+            .ok_or_else(malformed)?,
     )?;
     Ok(bytes)
 }

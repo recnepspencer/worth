@@ -53,7 +53,8 @@ struct RelationalBranchRetentionLaneState {
     root_obligations: ExecutionOrderedMap<u64, usize>,
     active_operations: u64,
     counters: RelationalRetentionCostCounters,
-    interruption_counters: crate::runtime::RelationalInterruptionCostCounters,
+    interruption_counters:
+        crate::runtime::interruption_counters::RelationalInterruptionCostCounters,
 }
 
 #[derive(Debug)]
@@ -143,7 +144,7 @@ impl RelationalBranchRetentionBinding {
 
     pub(crate) fn interruption_counters(
         &self,
-    ) -> crate::runtime::RelationalInterruptionCostCounters {
+    ) -> crate::runtime::interruption_counters::RelationalInterruptionCostCounters {
         lock_lane(&self.lane).interruption_counters
     }
 

@@ -1,7 +1,8 @@
 //! Settlement descriptions require the same actual registered subject.
 use super::RelationalCanonicalPublicationRoutes;
 use crate::durability::authority::RelationalAssociatedEffectSettlement as Settlement;
-use crate::history::{RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry};
+use crate::history::commit::RelationalCommitEnvelopeResidency;
+use crate::history::commit::RelationalCommitIndexEntry;
 use std::sync::Arc;
 
 impl RelationalCanonicalPublicationRoutes {

@@ -1,32 +1,16 @@
 //! Match original source and recorded component axes without predicting IDs.
 use super::RelationalRecoveredPublicationAdmissionCause as Cause;
-use crate::branch::{
+use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };
-use crate::durability::authority::{
-    ReadmittedRelationalAssociatedEffect, RecoveredRelationalRuntimeAuthority,
-    RelationalAssociatedEffectSettlement as Settlement,
-};
-use crate::runtime::RelationalRuntime;
+use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
 
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    recovered: &RecoveredRelationalRuntimeAuthority,
-    runtime: &RelationalRuntime,
     effect: &ReadmittedRelationalAssociatedEffect,
     predecessor: &Recorded,
     successor: &Recorded,
 ) -> Result<(), Cause> {
-    if recovered.runtime_instance_id != runtime.runtime_instance_id()
-        || !effect.subject().belongs_to_runtime(runtime)
-    {
-        return Err(Cause::ForeignRecoveryRuntime);
-    }
-    match effect.subject().current_settlement(runtime) {
-        Some(Settlement::PerformedPending) => return Err(Cause::PendingSettlement),
-        Some(Settlement::PerformedSettled | Settlement::CheckpointReadmitted) => {}
-        None => return Err(Cause::MissingSettlementEvidence),
-    }
     match effect.origin() {
         super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
             let source = source.envelope();
@@ -64,23 +48,11 @@ pub(super) fn validate(
 
 pub(super) fn validate_pruned_predecessor(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    recovered: &RecoveredRelationalRuntimeAuthority,
-    runtime: &RelationalRuntime,
     effect: &ReadmittedRelationalAssociatedEffect,
     expected_branch: &crate::history::data::BranchId,
     expected_predecessor_commit: crate::history::data::CommitId,
     successor: &Recorded,
 ) -> Result<(), Cause> {
-    if recovered.runtime_instance_id != runtime.runtime_instance_id()
-        || !effect.subject().belongs_to_runtime(runtime)
-    {
-        return Err(Cause::ForeignRecoveryRuntime);
-    }
-    match effect.subject().current_settlement(runtime) {
-        Some(Settlement::PerformedPending) => return Err(Cause::PendingSettlement),
-        Some(Settlement::PerformedSettled | Settlement::CheckpointReadmitted) => {}
-        None => return Err(Cause::MissingSettlementEvidence),
-    }
     if &effect.subject().receipt().branch_id != expected_branch
         || !effect
             .subject()
@@ -168,9 +140,9 @@ fn validate_successor_target(
 /// Bind Original successor axes with the exact same transition rule used to
 /// project checkpoint admission rows (`admission_projection/row.rs`).
 fn validate_original_successor_axes(
-    original: &crate::branch::RelationalBranchCellCheckpoint,
+    original: &crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint,
     branch_context: &crate::history::data::BranchId,
-    successor: &crate::branch::RelationalBranchBasisDescriptor,
+    successor: &crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
 ) -> Result<(), Cause> {
     let expected_generation = original
         .observation
@@ -184,7 +156,8 @@ fn validate_original_successor_axes(
     if successor.branch_id() != branch_context
         || successor.reference().generation() != expected_generation
         || successor.truth_version() != expected_truth
-        || successor.posture() != crate::branch::RelationalBranchBasisPosture::Live
+        || successor.posture()
+            != crate::branch::basis_descriptor::RelationalBranchBasisPosture::Live
     {
         return Err(Cause::SubjectMismatch);
     }

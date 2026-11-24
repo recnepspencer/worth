@@ -155,7 +155,7 @@ pub(super) fn validate(
     }
     let oldest = oldest.ok_or("maintenance producers absent")?;
     let mut next = Some(event.source_commit);
-    for _ in 0..runtime.runtime.history.catalog_len() {
+    for _ in 0..runtime.input.projection.history.catalog_len() {
         charge(context, 1)?;
         let previous = runtime
             .commit(next.ok_or("maintenance source ancestry absent")?)?
@@ -252,9 +252,8 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance entity absent")?;
             let plan = runtime
-                .runtime
-                .schema_contract_runtime
-                .aspect_contract_plans
+                .input
+                .plans
                 .entity_plans
                 .get(&entry.kind)
                 .ok_or("maintenance entity contract absent")?;
@@ -284,9 +283,8 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance relation absent")?;
             let plan = runtime
-                .runtime
-                .schema_contract_runtime
-                .aspect_contract_plans
+                .input
+                .plans
                 .relation_plans
                 .get(&entry.kind)
                 .ok_or("maintenance relation contract absent")?;

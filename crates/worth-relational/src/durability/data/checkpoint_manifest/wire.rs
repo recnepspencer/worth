@@ -7,7 +7,7 @@ struct ManifestView<'a> {
     coverage: &'a CheckpointCoverage,
     covered_position: &'a PatchStreamPosition,
     runtime_name: &'a str,
-    branch_cells: &'a [crate::branch::RelationalBranchCellCheckpoint],
+    branch_cells: &'a [crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint],
     branch_lifecycle: &'a [DurableBranchLifecycleImage],
     retired_branch_names: &'a [crate::history::data::BranchId],
     schemas: &'a super::CheckpointSchemaImages,
@@ -39,7 +39,7 @@ struct ManifestWire {
     coverage: CheckpointCoverage,
     covered_position: PatchStreamPosition,
     runtime_name: String,
-    branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    branch_cells: Vec<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     branch_lifecycle: Vec<DurableBranchLifecycleImage>,
     retired_branch_names: Vec<crate::history::data::BranchId>,
     schemas: Vec<DurableBranchRootSchemaImage>,
@@ -102,7 +102,7 @@ impl<'de> Deserialize<'de> for RelationalCheckpointManifestDraft {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let wire = ManifestWire::deserialize(deserializer)?;
         Ok(RelationalCheckpointManifestDraft {
-            branch_data: crate::branch::CheckpointBranchMetadata::from_ordinary_parts(
+            branch_data: crate::branch::registry::CheckpointBranchMetadata::from_ordinary_parts(
                 wire.runtime_name,
                 wire.branch_cells,
                 wire.branch_lifecycle,

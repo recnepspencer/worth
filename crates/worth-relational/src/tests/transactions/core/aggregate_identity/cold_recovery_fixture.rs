@@ -164,9 +164,7 @@ pub(super) fn reopen(
         .commit_artifacts()
         .iter()
         .map(|entry| {
-            entry
-                .envelope_residency()
-                .require_original_artifact(execution, None)
+            crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&entry.envelope_residency(), execution, None)
                 .unwrap()
         })
         .collect::<Vec<_>>();

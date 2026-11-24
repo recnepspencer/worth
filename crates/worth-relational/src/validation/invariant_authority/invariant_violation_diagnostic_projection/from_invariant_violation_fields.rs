@@ -1,4 +1,4 @@
-use crate::validation::data::InvariantViolationFields;
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::{AspectFieldDiagnosticProjection, InvariantViolationDiagnosticProjection};
 

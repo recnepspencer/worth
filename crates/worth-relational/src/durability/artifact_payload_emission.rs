@@ -143,7 +143,7 @@ fn stopped() -> io::Error {
 }
 
 impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial>
-    for crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial
+    for crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial
 {
     fn from(
         denial: crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial,
@@ -158,7 +158,7 @@ impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionD
 }
 
 impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial>
-    for crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactEncodeDenial
+    for crate::durability::branch_transition_artifact::encode_denial::RelationalBranchTransitionArtifactEncodeDenial
 {
     fn from(
         denial: crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial,

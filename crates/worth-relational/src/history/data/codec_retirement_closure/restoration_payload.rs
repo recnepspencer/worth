@@ -27,7 +27,7 @@ pub(super) fn validate_member(
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
         context,
-        event.entities.len() + runtime.runtime.history.catalog_len(),
+        event.entities.len() + runtime.input.projection.history.catalog_len(),
     )?;
     let old = event
         .entities
@@ -125,7 +125,7 @@ pub(super) fn validate_groups(
     let Some(event) = current.authored_source_restoration() else {
         return Ok(());
     };
-    charge(context, runtime.runtime.history.catalog_len())?;
+    charge(context, runtime.input.projection.history.catalog_len())?;
     let retired = validated_history
         .by_commit(
             event.retirement,
@@ -196,7 +196,7 @@ pub(super) fn validate_groups(
         {
             return Err("restoration changes producer provenance or membership".into());
         }
-        charge(context, runtime.runtime.history.catalog_len())?;
+        charge(context, runtime.input.projection.history.catalog_len())?;
         let live = validated_history
             .by_commit(
                 predecessor,
@@ -283,7 +283,7 @@ pub(super) fn validate_relation(
     }
     charge(
         context,
-        event.relations.len() + runtime.runtime.history.catalog_len(),
+        event.relations.len() + runtime.input.projection.history.catalog_len(),
     )?;
     let old = event
         .relations

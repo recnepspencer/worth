@@ -156,7 +156,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             Some(&plan),
             None,
         );
-        let view = InvariantRuntimeView::from_runtime(&runtime);
+        let view = runtime.invariant_validation_view();
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         let selected = eligible_registrations(
             &view,
@@ -249,7 +249,7 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
         );
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         eligible_registrations(
-            &InvariantRuntimeView::from_runtime(&runtime),
+            &runtime.invariant_validation_view(),
             ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),

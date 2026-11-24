@@ -14,10 +14,10 @@ use super::{Failure, TouchBudget};
 /// the complete version columns at every selected slot, including revisions
 /// inherited from a parent that had no local patch fragment.
 pub(super) fn append(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     adjacency: &[AdjacencyDelta],
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
@@ -39,7 +39,7 @@ pub(super) fn append(
         for &slot in &journal.entity_slots {
             budget.checkpoint(1)?;
             if !records::entity(
-                runtime,
+                symbol_table,
                 catalog,
                 selected,
                 working,
@@ -56,7 +56,7 @@ pub(super) fn append(
         for &slot in &journal.relation_slots {
             budget.checkpoint(1)?;
             if !records::relation(
-                runtime,
+                symbol_table,
                 catalog,
                 selected,
                 working,

@@ -4,7 +4,7 @@
 
 use super::payload_digest::RelationalBranchTransitionArtifactDigest as Digest;
 use super::RelationalBranchTransitionArtifactFrameRefusal as Refusal;
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRBTA";

@@ -4,7 +4,7 @@ mod fragment_charge;
 mod fragment_execution;
 mod leased_completion;
 mod leased_explicit;
-mod leased_map;
+pub(crate) mod leased_map;
 mod leased_scan;
 mod leased_traversal;
 mod outcome;

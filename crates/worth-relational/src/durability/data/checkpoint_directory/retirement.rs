@@ -15,9 +15,6 @@ pub(crate) struct CheckpointDirectoryRetirement {
     payload: Box<DirectoryRetirementPayload>,
 }
 struct DirectoryRetirementPayload {
-    _admission_owner: std::sync::OnceLock<
-        std::sync::Weak<crate::durability::checkpoint_admission::AdmissionCustody>,
-    >,
     _admission_image:
         Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     _source_schemas: std::sync::OnceLock<
@@ -62,8 +59,9 @@ impl RelationalCheckpointDirectory {
             _basis,
             retirement,
         } = self;
+        // A retired directory must no longer prove live selected custody.
+        drop(admission_owner);
         let payload = DirectoryRetirementPayload {
-            _admission_owner: admission_owner,
             _admission_image: admission_image,
             _source_schemas: source_schemas,
             manifest,

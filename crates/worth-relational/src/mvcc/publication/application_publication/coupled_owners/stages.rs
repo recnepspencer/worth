@@ -1,13 +1,13 @@
 //! One edit envelope admits every authored stage's source before any handler runs.
 use super::*;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Admit synchronous writers for an edit envelope. `prefix` is the authored
     /// prefix's source; `later` are the sources of stages 2..k, which Native
     /// then accepts once each, in this order. Each source is admitted exactly
     /// as a single edit is; the owner set is their union, with a route current
     /// for two sources admitted once.
-    pub fn readmit_edit_coupled_stage_owners(
+    pub(crate) fn readmit_edit_coupled_stage_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -21,7 +21,7 @@ impl RelationalRuntime {
 
     /// Admit the complete later-source roster without replacing the prefix's
     /// actual Edit/Retirement/Restoration custody. Every source uses the same C.
-    pub fn readmit_later_authored_stage_owners(
+    pub(crate) fn readmit_later_authored_stage_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,

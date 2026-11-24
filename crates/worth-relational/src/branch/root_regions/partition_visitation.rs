@@ -1,4 +1,9 @@
-use super::*;
+use super::backing::{
+    RelationalPersistentRegionLeaf, RelationalPersistentRegionNode, RelationalPersistentRegionSet,
+    PARTITION_KEY_BITS,
+};
+use crate::identity::data::PartitionId;
+use std::sync::Arc;
 
 pub(crate) enum RelationalPartitionVisit {
     RadixNode,

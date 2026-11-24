@@ -1,4 +1,5 @@
 use super::*;
+use crate::history::retention::VisibilitySnapshotBasis;
 use worth_execution::ExecutionRequest;
 
 #[path = "replay_relations/cold_recovery.rs"]
@@ -135,9 +136,7 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
         RelationalStorageSubject, RelationalStorageUnavailableCause as Cause,
     };
     use crate::storage::partition::DenseSlotBitSet;
-    use crate::visibility::snapshot_states::{
-        SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis,
-    };
+    use crate::visibility::snapshot_states::{SnapshotState, SnapshotStateBasis};
     use std::sync::atomic::Ordering;
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
@@ -289,9 +288,8 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
             .root()
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();
-        let source_state = crate::visibility::snapshot_states::build_visibility_state(
-            &runtime,
-            basis,
+        let source_state = basis.build_visibility_state(
+            runtime.runtime_instance_id(),
             crate::snapshots::data::SnapshotId(0),
             crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );

@@ -13,7 +13,7 @@ use crate::schema::data::{
     DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion, SchemaBoundaryFingerprint,
     SchemaVersionId,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[path = "primitive_terms/diagnostic_value_terms.rs"]
 mod diagnostic_value_terms;

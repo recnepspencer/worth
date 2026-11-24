@@ -11,7 +11,7 @@ use super::{
 };
 
 pub(super) mod capture;
-mod currentness;
+pub(super) mod currentness;
 mod storage;
 mod wire;
 use std::sync::Arc;

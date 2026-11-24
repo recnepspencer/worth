@@ -1,29 +1,23 @@
 //! Immutable native custody independent of the installed runtime's borrow.
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::indexes::access::selected_index::PinnedIndex;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
 use crate::query::data::QueryPlanContextId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::snapshots::data::SnapshotHandle;
 use crate::symbols::data::StringInterner;
-use crate::visibility::snapshot_states::{
-    ResidentVisibilitySnapshotBasis, VisibilitySnapshotBasis,
-};
+use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
 use std::{collections::BTreeMap, sync::Arc};
 
 mod aggregate_reads;
-mod candidate;
-#[cfg(test)]
-mod commit_tests;
+pub(crate) mod candidate;
 mod derived_source;
 mod frontier_reads;
-#[cfg(test)]
-mod historical_relations_tests;
 mod index_lookups;
 mod pinning;
 use crate::indexes::data::applied_candidate_qualification::CandidateReadPhase;
 pub use crate::indexes::data::applied_candidate_qualification::RelationalAppliedCandidateReadQualification;
 pub use candidate::RelationalAppliedCandidateReadIdentity;
-mod record_reads;
 #[cfg(test)]
 mod tests;
 
@@ -67,7 +61,8 @@ mod tests;
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) applied_changes: Option<Arc<candidate::AppliedReadChanges>>,
     pub(super) current_version: crate::identity::data::VersionId,
-    pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
+    pub(super) instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
     pub(super) basis: ResidentVisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
@@ -120,7 +115,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
-        self.basis.root().schema_authority().registry()
+        self.basis.projection_root().schema_authority().registry()
     }
     /// Persistent snapshot of this pin's resident dictionary meanings. Record
     /// reads admit their region's symbol closure; later outside interns or
@@ -189,16 +184,13 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub(crate) fn pinned_current_version(&self) -> crate::identity::data::VersionId {
         self.current_version
     }
-    pub(crate) fn pinned_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
+    pub(crate) fn pinned_instrumentation(
+        &self,
+    ) -> &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation {
         &self.instrumentation
     }
 }
 
-impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
-        crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
-    }
-}
 impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPinnedRead<Snapshot> {
     // A pin retains the exact root and its dictionary. Each operation admits
     // only the regions it reaches before borrowing their materialized rows.
@@ -207,7 +199,7 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         self.basis
-            .demand_regions_full(execution, self.basis.root().partition_ids_iter())
+            .demand_regions_full(execution, self.basis.projection_root().partition_ids_iter())
             .map_err(Into::into)
     }
     fn demand_regions_head(
@@ -238,8 +230,46 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
         Some(&self.basis)
     }
-    fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
-        Some(self.basis.root())
+    fn selected_schema_registry(&self) -> Option<&crate::schema::data::RelationalSchemaRegistry> {
+        Some(self.schema())
+    }
+
+    fn try_for_each_selected_partition<E>(
+        &self,
+        visit: impl FnMut(crate::identity::data::PartitionId) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.basis
+            .projection_root()
+            .try_for_each_partition_id(visit)
+    }
+
+    fn selected_entity_ids(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<crate::identity::data::PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+        self.basis
+            .projection_root()
+            .entity_ids_of_kind(kind, partition)
+    }
+
+    fn selected_relation_ids(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<crate::identity::data::PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+        self.basis
+            .projection_root()
+            .relation_ids_of_kind(kind, partition)
+    }
+
+    fn retained_head_region(
+        &self,
+        partition: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.basis
+            .projection_root()
+            .accepted_head_region_view(partition)
     }
     fn is_exact_basis(&self) -> bool {
         true
@@ -249,15 +279,23 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     }
 }
 
+impl<'a, Snapshot> From<&'a RelationalPinnedRead<Snapshot>>
+    for super::super::projection::pinned::PinnedProjectionSource<'a>
+{
+    fn from(read: &'a RelationalPinnedRead<Snapshot>) -> Self {
+        Self {
+            resident: read.resident_basis(),
+            runtime_identity: read.runtime_instance_id(),
+            current_version: read.pinned_current_version(),
+            instrumentation: read.pinned_instrumentation(),
+        }
+    }
+}
+
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// Project the exact retained physical root without a snapshot claim.
     pub fn project_read(&self) -> super::super::projection::VisibilityProjectionView {
-        super::super::projection::VisibilityProjectionView::from_resident_basis(
-            self.resident_basis(),
-            self.runtime_instance_id(),
-            self.pinned_current_version(),
-            self.pinned_instrumentation(),
-        )
+        super::super::projection::VisibilityProjectionView::from_pinned(self)
     }
 }
 

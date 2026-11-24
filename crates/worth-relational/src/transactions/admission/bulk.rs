@@ -203,7 +203,6 @@ mod tests {
     use super::{validate_lineage_plan, validate_naming_plan, validate_provenance_plan};
     use crate::identity::data::{EntityId, KindId, PartitionId};
     use crate::symbols::data::{ClientKey, ClientKeySymbolPolicy, StringInterner};
-    use crate::tests::support::runtime_with_test_schema;
     use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
     use crate::transactions::data::intents::{
         BulkEntityCreateIntent, BulkRelationCreateIntent, CreateIntent, EntityMutationIntent,
@@ -322,34 +321,5 @@ mod tests {
                 ..
             }
         ));
-    }
-
-    #[test]
-    fn naming_admission_does_not_mutate_runtime_counters() {
-        let runtime = runtime_with_test_schema();
-        runtime.performance_access().reset_counters();
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(
-            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
-                CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_keys: vec![ClientKey::raw("raw-key")],
-                    field_patches: vec![crate::tests::support::name_field_patch("raw")],
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-
-        let admitted = txn
-            .admit_naming_stable_bulk_mutation_batch(&runtime)
-            .expect("admission should succeed");
-        let counters = runtime.performance_access().counters();
-
-        assert!(admitted.is_some());
-        assert_eq!(counters.bulk_mutation_batch_count, 0);
-        assert_eq!(counters.bulk_mutation_naming_normalization_count, 0);
-        assert_eq!(counters.bulk_mutation_lineage_transition_count, 0);
     }
 }

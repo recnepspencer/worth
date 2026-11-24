@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::history::commit::RelationalCommitIdentity;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::history::RelationalCommitIdentity;
 
 pub(crate) mod failure;
 pub use failure::{RelationalPublicationFailure, RelationalPublicationFailureKind};
@@ -46,11 +47,12 @@ struct PerformedRelationalCommitData {
 pub struct PerformedRelationalCommit {
     performed: worth_proof::Performed<
         PublishRelationalCommit,
-        crate::branch::RelationalBranchPublicationAuthorityMarker,
+        crate::branch::authority::RelationalBranchPublicationAuthorityMarker,
         PerformedRelationalCommitData,
     >,
     capability: PerformedSettlementCapability,
-    late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+    late_interruption:
+        Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>,
 }
 
 /// Borrowed view of the runtime-owned pending settlement record.
@@ -59,7 +61,7 @@ pub struct PerformedRelationalCommit {
 /// witness must be observable without letting a partial move of the proof
 /// suppress that accounting.
 struct PerformedSettlementCapability {
-    record: Arc<crate::runtime::PendingRelationalPublicationSettlement>,
+    record: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
     consumed: bool,
 }
 
@@ -97,12 +99,14 @@ impl PerformedRelationalCommit {
     pub(crate) fn record(
         positioned_commit: Arc<PositionedCanonicalCommit>,
         next_basis: AdmittedRelationalBranchBasis,
-        record: Arc<crate::runtime::PendingRelationalPublicationSettlement>,
-        late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        record: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
+        late_interruption: Option<
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
     ) -> Self {
         Self {
             performed: worth_proof::Performed::record(
-                &crate::branch::issue_relational_branch_publication_authority(),
+                &crate::branch::authority::issue_relational_branch_publication_authority(),
                 PerformedRelationalCommitData {
                     positioned_commit,
                     next_basis,
@@ -147,8 +151,8 @@ impl PerformedRelationalCommit {
         mut self,
     ) -> (
         Arc<PositionedCanonicalCommit>,
-        Arc<crate::runtime::PendingRelationalPublicationSettlement>,
-    ) {
+        Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
+    ){
         self.capability.consumed = true;
         let record = Arc::clone(&self.capability.record);
         let outcome = self.performed.into_outcome();
@@ -163,7 +167,10 @@ impl PerformedRelationalCommit {
         RelationalPublicationDurabilityPosture::OwnerAcknowledgementDeferred
     }
 
-    pub const fn late_interruption(&self) -> Option<crate::runtime::RelationalInterruptionEvent> {
+    pub const fn late_interruption(
+        &self,
+    ) -> Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>
+    {
         self.late_interruption
     }
 }
@@ -201,7 +208,7 @@ pub enum RelationalPublicationOutcome {
     Performed(PerformedRelationalCommit),
     Stale(StaleRelationalBranchObservation),
     Denied(RelationalPublicationDenial),
-    Interrupted(crate::runtime::RelationalInterruptionEvent),
+    Interrupted(crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent),
     Deferred(RelationalPublicationDeferred),
     Failed(RelationalPublicationFailure),
     /// The medium could not say whether the commit became durable. It was not
@@ -222,7 +229,9 @@ impl RelationalPublicationOutcome {
         Self::Denied(denial)
     }
 
-    pub(crate) fn interrupted(interruption: crate::runtime::RelationalInterruptionEvent) -> Self {
+    pub(crate) fn interrupted(
+        interruption: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) -> Self {
         Self::Interrupted(interruption)
     }
 

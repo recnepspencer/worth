@@ -14,7 +14,7 @@ pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssoci
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,
 };
-mod codec_retirement_closure;
+pub(crate) mod codec_retirement_closure;
 pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
 pub(crate) use canonical_commit_envelope::{
@@ -26,9 +26,9 @@ pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
-    readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
-    validate_codec_output_correspondence, AuthoredRetirementSelection, CodecRetirementClosureStop,
-    OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
+    readmit_required_output_route, select_authored_retirement,
+    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 pub(crate) mod canonical_record_allocation;
@@ -141,7 +141,6 @@ pub(crate) use canonical_commit_envelope::EnvelopeProjection;
 
 pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;
 pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;
-pub(crate) use canonical_commit_envelope::{AppliedPublicationInputAccess, LivePublicationInputs};
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

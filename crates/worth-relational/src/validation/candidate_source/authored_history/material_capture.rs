@@ -5,6 +5,7 @@ use super::{
     material::{HistoricalSourcePair, RetainedSourceHistoryMaterial},
     ManagedSourceImpactKey, PreparedSourceImpactHistory,
 };
+use crate::validation::candidate_source::history_material::retained_history_receipt;
 use crate::validation::candidate_source::{
     denial::ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceAvailability,
     NativeManagedSourceInterpretation,
@@ -69,14 +70,15 @@ pub(crate) fn capture(
                     (Some(before), Some(after), ManagedIndexSourceAvailability::Available) => {
                         // Eligibility of BOTH actual prepared sides was
                         // established before consulting the selected cache.
-                        let before = match image
-                            .ok_or(Denial::ForeignSource)?
-                            .history_payload_receipt(
-                                &execution,
-                                &program.program,
-                                root.scope,
-                                budget,
-                            )? {
+                        let before = match retained_history_receipt(
+                            image
+                                .ok_or(Denial::ForeignSource)?
+                                .selected_source_image()?,
+                            &execution,
+                            &program.program,
+                            root.scope,
+                            budget,
+                        )? {
                             Some(receipt) => receipt,
                             None => FundedSourceMaterialReceipt::retain(&execution, before)
                                 .map_err(admission::storage)?,
@@ -108,9 +110,15 @@ pub(crate) fn capture(
                 .catalog
                 .program(key.program)
                 .ok_or(Denial::ForeignSource)?;
-            let payload = image
-                .ok_or(Denial::ForeignSource)?
-                .history_payload_receipt(&execution, program, key.scope, budget)?;
+            let payload = retained_history_receipt(
+                image
+                    .ok_or(Denial::ForeignSource)?
+                    .selected_source_image()?,
+                &execution,
+                program,
+                key.scope,
+                budget,
+            )?;
             let pair = match payload {
                 Some(payload) => HistoricalSourcePair::Complete {
                     before: payload.clone(),

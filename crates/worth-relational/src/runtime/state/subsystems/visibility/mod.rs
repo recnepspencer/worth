@@ -1,4 +1,4 @@
-mod cache;
+pub(crate) mod cache;
 mod replay_retention;
 mod snapshot_handle_binding;
 mod snapshot_handles;
@@ -9,10 +9,10 @@ pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
     PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandles,
+    SnapshotIdentityAllocator,
 };
 
 use crate::config::data::runtime_config::RelationalRuntimeConfig;
-use crate::runtime::state::subsystems::RuntimeSubsystem;
 use crate::snapshots::data::SnapshotId;
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl VisibilitySubsystem {
             .is_empty();
         Ok((active, published, capacity, replay))
     }
-    pub(crate) fn snapshot_identity_binding(&self) -> std::sync::Arc<std::sync::atomic::AtomicU64> {
+    pub(crate) fn snapshot_identity_binding(&self) -> std::sync::Arc<SnapshotIdentityAllocator> {
         self.handles.snapshot_identity_binding()
     }
 
@@ -47,7 +47,7 @@ impl VisibilitySubsystem {
     ) -> std::sync::Arc<PublishedSnapshotCapacityOwner> {
         std::sync::Arc::clone(&self.published_snapshot_capacity)
     }
-    fn build_from_config(config: &RelationalRuntimeConfig) -> Self {
+    pub(crate) fn new(config: &RelationalRuntimeConfig) -> Self {
         Self {
             handles: SnapshotHandles::new(),
             cache: std::sync::Arc::new(VisibilityCache::new(config)),
@@ -59,16 +59,8 @@ impl VisibilitySubsystem {
             ),
         }
     }
-}
 
-impl RuntimeSubsystem for VisibilitySubsystem {
-    type Config = RelationalRuntimeConfig;
-
-    fn new(config: &Self::Config) -> Self {
-        Self::build_from_config(config)
-    }
-
-    fn fork(&self) -> Self {
+    pub(crate) fn fork(&self) -> Self {
         Self {
             handles: self.handles.fork(),
             cache: std::sync::Arc::new(self.cache.fork()),
@@ -140,11 +132,14 @@ impl VisibilitySubsystem {
         self.handles.active_binding(snapshot_id)
     }
 
-    pub(crate) fn selected_snapshot_root(
+    pub(crate) fn with_selected_snapshot_head<R>(
         &self,
         snapshot_id: SnapshotId,
-    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.handles.selected_root(snapshot_id)
+        partition: crate::identity::data::PartitionId,
+        read: impl FnOnce(crate::branch::projection_view::snapshot_head::SelectedSnapshotHead<'_>) -> R,
+    ) -> Option<R> {
+        self.handles
+            .with_selected_head(snapshot_id, partition, read)
     }
 
     pub(crate) fn is_known_snapshot(&self, snapshot_id: SnapshotId) -> bool {

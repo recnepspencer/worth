@@ -3,7 +3,7 @@ pub use basis::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
 };
-mod authority;
+pub(crate) mod authority;
 mod custody_witness;
 pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
 pub(crate) mod basis;
@@ -14,30 +14,35 @@ pub(crate) mod basis_counters;
 mod basis_currentness;
 mod basis_currentness_runtime;
 pub(crate) mod basis_denial;
+#[path = "envelope/basis_descriptor.rs"]
+pub(crate) mod basis_descriptor;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
 mod basis_observation;
+pub(crate) mod basis_observation_inputs;
 mod basis_readmission;
+mod basis_readmission_inputs;
 pub(crate) mod basis_registry;
-pub(crate) mod home_program_step;
-#[cfg(test)]
-pub(crate) use basis_registry::{
-    assert_original_registry_busy, assert_pruned_original_registration,
-    assert_successor_registration_preserved,
-};
 pub(crate) mod basis_retention;
 mod basis_retention_runtime;
 mod canonical_runtime_frame;
 pub(crate) mod checkpoint_visibility;
 mod commit_change;
-mod coordination;
-mod fork;
+pub(crate) mod coordination;
+pub(crate) mod fork;
 mod fork_materialization;
 mod fork_port;
 mod fork_source_basis;
+pub(crate) mod head_visibility_inputs;
+pub(crate) mod historical_selection;
+pub(crate) mod home_program_step;
 pub mod maintenance;
+#[path = "envelope/retained_allocation.rs"]
+pub(crate) mod retained_allocation;
 mod retained_fork_admission;
 mod retained_fork_source;
+pub(crate) mod root_capture_denial;
+mod root_snapshot_custody;
 pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 pub(crate) mod identity;
 pub(crate) mod lifecycle;
@@ -68,15 +73,17 @@ pub use recorded_basis::{
     RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
     RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
 };
-mod reference_publication_cell;
+pub(crate) mod reference_publication_cell;
 mod reference_state;
 pub(crate) mod registry;
 pub(crate) use registry::RelationalSourceRootSlot;
+pub(crate) mod projection_view;
 pub(crate) mod root;
-mod root_checkpoint;
+pub(crate) mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
 pub(crate) mod root_regions;
+pub(crate) mod structural_state;
 pub(crate) use root::{
     retained_compilation_tree_bytes, RelationalBranchVisibilityCommitment,
     RelationalOriginalRootCommitEvidence, RelationalRootAllocationVisitor,
@@ -85,6 +92,7 @@ pub(crate) use root::{
     RetainedRelationalSchemaRegistry,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
+pub(crate) mod result_snapshot_outcome;
 mod root_runtime_access;
 pub(crate) mod root_selection;
 mod root_selection_admission;
@@ -187,13 +195,12 @@ pub use version::RelationalBranchVersion;
 
 #[cfg(test)]
 #[path = "basis_admission_tests.rs"]
-mod basis_admission_tests;
+pub(crate) mod basis_admission_tests;
 
-pub(crate) mod symbol_publication;
-pub(crate) mod symbol_read;
-pub(crate) use symbol_read::SymbolAdmittedRootRead;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+pub(crate) mod symbol_publication;
+pub(crate) mod symbol_read;
 
 pub(crate) use model_ownership::validate_candidate_ownership;

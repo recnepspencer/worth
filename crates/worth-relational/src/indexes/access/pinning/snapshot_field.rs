@@ -4,7 +4,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
     BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
 impl IndexAccess<'_> {
     pub(in crate::indexes::access) fn lookup_snapshot(
         &self,

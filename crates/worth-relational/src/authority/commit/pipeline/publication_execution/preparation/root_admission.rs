@@ -1,6 +1,7 @@
 //! Settle root reconstruction once into the existing commit Work account.
 use crate::execution::{RelationalExecutionDenialCause as Cause, RequestWorkBudget};
-use crate::mvcc::{PreparedRelationalPublication, PublicationPreparationDenial as Denial};
+use crate::mvcc::publication::authority::PreparedRelationalPublication;
+use crate::mvcc::publication::PublicationPreparationDenial as Denial;
 
 pub(super) fn run(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

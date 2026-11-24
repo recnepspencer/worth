@@ -162,7 +162,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
         .clone();
 
     let request = request_for_plan(&runtime, &plan);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,
@@ -220,7 +220,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
         .clone();
 
     let request = request_for_plan(&runtime, &plan);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,
@@ -254,7 +254,7 @@ fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available
         None,
     );
 
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,

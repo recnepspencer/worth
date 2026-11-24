@@ -68,7 +68,7 @@ pub(super) fn validate_semantics(
     validate_header(
         envelope,
         &mut |id| runtime.commit(id),
-        runtime.runtime.history.catalog_len(),
+        runtime.input.projection.history.catalog_len(),
         &runtime.execution(),
         context,
     )?;

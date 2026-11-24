@@ -1,4 +1,4 @@
-mod mutation_aspect_patch;
+pub(crate) mod mutation_aspect_patch;
 pub(crate) use mutation_aspect_patch::MutationAspectPatch;
 mod mutation_event;
 mod mutation_outcome;

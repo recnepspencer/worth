@@ -1,6 +1,6 @@
 //! Visit protected branch originals without replaying or admitting a live fork.
-use super::super::RecoveredRelationalRuntimeAuthority;
 use super::fork_effect::RelationalForkReadmissionCause as Denial;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::{branch::RelationalBranchTransitionSequence, runtime::RelationalRuntime};
 use std::ops::ControlFlow;
 use worth_execution::ExecutionRequest;

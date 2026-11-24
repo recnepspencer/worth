@@ -1,6 +1,7 @@
 //! Actual head-cell contention must preserve the owner-issued obligation/root.
 use super::*;
-use crate::change_source::{RelationalMemoryCloseObservation as O, RelationalRuntimeHandle};
+use crate::change_source::memory_close_observation::RelationalMemoryCloseObservation as O;
+use crate::change_source::RelationalRuntimeHandle;
 use crate::tests::support::runtime_with_test_schema;
 
 #[test]

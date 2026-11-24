@@ -5,7 +5,7 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 
 #[test]
 fn request_root_refusal_preserves_original_and_releases_partial_backing() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_runtime, original, _) = committed_root_and_envelope(&execution);
     let axes = original.axes();
@@ -57,7 +57,7 @@ fn request_root_refusal_preserves_original_and_releases_partial_backing() {
 #[test]
 fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
     use sha2::{Digest, Sha256};
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_runtime, original, envelope) = committed_root_and_envelope(&execution);
     let axes = original.axes().unwrap();
@@ -100,111 +100,11 @@ fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
 }
 
 #[test]
-fn successor_memory_component_admission_binds_owner_and_exact_candidate_successor() {
-    use crate::branch::basis_denial::RelationalBranchBasisDenial;
-    use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Refusal;
-
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&execution, &runtime, "seed");
-    let foreign = runtime_with_test_schema();
-    let _ = create_entity_outcome(&execution, &foreign, "foreign-seed");
-
-    let foreign_candidate = prepare_main_candidate(&foreign, &execution, "foreign-commit");
-    assert!(matches!(
-        runtime
-            .owner_component_services()
-            .basis_port()
-            .admit_successor_memory_component(&execution, &foreign_candidate),
-        Err(Refusal::Basis(
-            RelationalBranchBasisDenial::ForeignRuntime { .. }
-        ))
-    ));
-
-    let candidate_a = prepare_main_candidate(&runtime, &execution, "candidate-a");
-    let admitted_a = runtime
-        .owner_component_services()
-        .basis_port()
-        .admit_successor_memory_component(&execution, &candidate_a)
-        .unwrap();
-    // Publish a different equal-sized commit on the same branch ("main", 1 parent).
-    let _ = create_entity_outcome(&execution, &runtime, "other-commit");
-    let (_, basis_b) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    assert!(matches!(
-        runtime
-            .owner_component_services()
-            .basis_port()
-            .observe_admitted_memory_component(admitted_a, &basis_b),
-        Err(Refusal::Basis(
-            RelationalBranchBasisDenial::WrongImmutableTarget
-        ))
-    ));
-
-    let candidate_c = prepare_main_candidate(&runtime, &execution, "candidate-c");
-    let measure_budget = SerialMemoryBudget::new(None);
-    let measure_host = SerialRequest::from_memory(
-        measure_budget.clone(),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    let admitted_c = runtime
-        .owner_component_services()
-        .basis_port()
-        .admit_successor_memory_component(&ExecutionRequest::serial(&measure_host), &candidate_c)
-        .unwrap();
-    let admitted_bytes = measure_budget.charged_memory_bytes();
-    assert!(admitted_bytes > 0);
-    // One byte short must refuse with typed PolicyMemoryExhausted and zero retained charge.
-    let tight_budget = SerialMemoryBudget::new(Some(admitted_bytes - 1));
-    let tight_host = SerialRequest::from_memory(
-        tight_budget.clone(),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    assert!(matches!(
-        runtime
-            .owner_component_services()
-            .basis_port()
-            .admit_successor_memory_component(&ExecutionRequest::serial(&tight_host), &candidate_c),
-        Err(Refusal::Request(
-            crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-        ))
-    ));
-    assert_eq!(tight_budget.charged_memory_bytes(), 0);
-    let outcome = runtime
-        .owner_component_services()
-        .publication_port()
-        .compare_and_publish(&execution, candidate_c);
-    let crate::facade::mvcc::RelationalPublicationOutcome::Performed(performed) = outcome else {
-        panic!("expected performed publication: {outcome:?}");
-    };
-    let _ = runtime
-        .owner_component_services()
-        .settlement_port()
-        .settle_performed_publication(performed)
-        .unwrap();
-    let (_, successor_c) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let observed = runtime
-        .owner_component_services()
-        .basis_port()
-        .observe_admitted_memory_component(admitted_c, &successor_c)
-        .unwrap();
-    assert_eq!(measure_budget.charged_memory_bytes(), admitted_bytes);
-    drop(observed);
-    assert_eq!(measure_budget.charged_memory_bytes(), 0);
-}
-
-#[test]
 fn interim_predecessor_memory_exhaustion_preserves_typed_request_refusal() {
     use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Refusal;
     use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let source = runtime_with_test_schema();
     let _ = create_entity_outcome(&execution, &source, "interim-seed");

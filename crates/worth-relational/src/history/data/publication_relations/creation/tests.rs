@@ -78,7 +78,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
-    let mut publication = crate::mvcc::native_birth_fixture(
+    let mut publication = crate::mvcc::publication::application_publication::native_birth_fixture(
         owner.admit_required_output("native.trimmed.producer", [19; 32]),
         vec![output.clone()],
     );

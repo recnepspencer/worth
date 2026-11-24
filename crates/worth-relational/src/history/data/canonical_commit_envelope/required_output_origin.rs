@@ -1,28 +1,31 @@
 //! Complete producer publication membership, independent of member data patches.
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
+mod authored_cascade_install;
 mod coupled_authored;
 mod coupled_authored_header;
+mod coupled_authored_install;
 mod coupled_source;
 pub(crate) use coupled_authored::{
     CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
 };
 mod authored_restoration;
+mod authored_restoration_install;
 mod historical_selection;
-mod history_request;
+pub(crate) mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod inputs;
-mod installation;
+pub(crate) mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
-mod header_corruption;
+pub(in crate::history) mod header_corruption;
 mod header_work;
 mod origin_history;
 pub(crate) use group_selection::{OwnedValidatedOutputOrigins, ValidatedOutputOrigins};
@@ -31,13 +34,15 @@ mod members;
 mod payload_coverage;
 mod producer_retirement_header;
 mod readmission;
+mod relation_installation;
 mod relations;
-mod restoration_candidate;
+pub(crate) mod restoration_candidate;
 pub(crate) use restoration_candidate::validate as validate_authored_restoration_candidate;
 mod restoration_header;
 mod retention;
+mod retention_budget;
 pub(crate) use relations::CanonicalRequiredOutputRelation;
-use retention::{origin_request, origin_retention_bytes};
+use retention::origin_request;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum CanonicalOutputPublication {

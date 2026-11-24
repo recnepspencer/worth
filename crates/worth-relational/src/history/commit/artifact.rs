@@ -1,8 +1,10 @@
 mod original_inputs;
 mod readmission;
 mod reconstructed_inputs;
-pub(crate) use original_inputs::OriginalCanonicalInputs;
+pub(crate) use original_inputs::{CapturedOriginalCanonicalInputs, OriginalCanonicalInputs};
 mod retained_entity_selection;
+#[path = "../../branch/root_artifact_linkage.rs"]
+mod root_linkage;
 pub use retained_entity_selection::RelationalRetainedSelectionArtifactDenial;
 
 use std::sync::Arc;
@@ -26,7 +28,7 @@ pub(crate) struct RelationalCommitArtifact {
     roots: RelationalCommitRootDescriptor,
     schema_version: crate::schema::data::SchemaVersionId,
     envelope: Arc<super::RelationalCommitEnvelopeResidency>,
-    original_inputs: Option<OriginalCanonicalInputs>,
+    original_inputs: Option<CapturedOriginalCanonicalInputs>,
     allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -80,7 +82,9 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn from_preencoded(
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         let envelope = original.envelope();
         retained_entity_selection::validate(envelope)?;
@@ -108,26 +112,10 @@ impl RelationalCommitArtifact {
         })
     }
 
-    pub(crate) fn from_envelope_with_root(
-        envelope: Arc<CanonicalCommitEnvelope>,
-        branch_root: Arc<crate::branch::RelationalBranchRoot>,
-    ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if !branch_root.links_envelope(&envelope) {
-            return Err(RelationalCommitArtifactDenial::RootLinkage);
-        }
-        let canonical_payload = branch_root
-            .canonical_payload()
-            .ok_or(RelationalCommitArtifactDenial::RootLinkage)?;
-        let mut artifact = Self::from_preencoded(canonical_payload)?;
-        artifact.roots = branch_root
-            .descriptor()
-            .cloned()
-            .ok_or(RelationalCommitArtifactDenial::RootLinkage)?;
-        Ok(artifact)
-    }
-
     pub(crate) fn from_preencoded_with_descriptor(
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
         roots: RelationalCommitRootDescriptor,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         let envelope = original.envelope();
@@ -141,50 +129,6 @@ impl RelationalCommitArtifact {
         let mut artifact = Self::from_preencoded(original)?;
         artifact.roots = roots;
         Ok(artifact)
-    }
-
-    /// Recovery first seals the canonical payload while admitting durable
-    /// envelopes. Relinking checkpoint roots must not serialize it again.
-    pub(crate) fn relink_preencoded_recovery(
-        &self,
-        envelope: &Arc<CanonicalCommitEnvelope>,
-        root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
-        descriptor: Option<&RelationalCommitRootDescriptor>,
-    ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if self
-            .resident_envelope()
-            .is_none_or(|resident| !Arc::ptr_eq(&resident, envelope))
-        {
-            return Err(RelationalCommitArtifactDenial::RootLinkage);
-        }
-        let roots = if let Some(root) = root {
-            if !root.links_envelope(envelope) {
-                return Err(RelationalCommitArtifactDenial::RootLinkage);
-            }
-            root.descriptor()
-                .cloned()
-                .ok_or(RelationalCommitArtifactDenial::RootLinkage)?
-        } else if let Some(descriptor) = descriptor {
-            if descriptor.schema_root()
-                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    &envelope.schema_authority,
-                )
-            {
-                return Err(RelationalCommitArtifactDenial::RootLinkage);
-            }
-            descriptor.clone()
-        } else {
-            self.roots.clone()
-        };
-        Ok(Self {
-            identity: self.identity.clone(),
-            parentage: self.parentage.clone(),
-            roots,
-            schema_version: self.schema_version,
-            original_inputs: self.original_inputs.clone(),
-            allocation_memory: None,
-            envelope: Arc::clone(&self.envelope),
-        })
     }
 
     pub(crate) fn from_index(
@@ -306,20 +250,6 @@ impl RelationalCommitArtifact {
             diagnostic_bytes: inventory.diagnostic_bytes,
             optional_cache_bytes: inventory.optional_cache_bytes,
         }
-    }
-
-    pub(crate) fn links_root(&self, root: &Arc<crate::branch::RelationalBranchRoot>) -> bool {
-        root.descriptor() == Some(&self.roots)
-            && match root.commit_evidence() {
-                Some(crate::branch::RelationalRootCommitEvidence::Original(_)) => self
-                    .envelope
-                    .get()
-                    .is_some_and(|envelope| root.links_envelope(&envelope)),
-                Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
-                    commit.links_artifact(self)
-                }
-                None => false,
-            }
     }
 
     pub(crate) fn commit_id(&self) -> CommitId {

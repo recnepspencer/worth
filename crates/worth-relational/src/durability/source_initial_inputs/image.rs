@@ -10,7 +10,7 @@ pub(crate) enum InitialInputEntry {
     Installation {
         before: RecordedEmptySchemaObservation,
         after: RecordedEmptySchemaObservation,
-        follows_transition: crate::branch::RelationalBranchTransitionSequence,
+        follows_transition: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     },
 }
 
@@ -46,8 +46,8 @@ impl InitialInputsImage {
             return Err(Refusal::Malformed);
         };
         if birth.generation != worth_foundational::FoundationalBranchReferenceGeneration::initial()
-            || birth.truth_version != crate::branch::RelationalBranchVersion::initial()
-            || birth.lifecycle != crate::branch::RelationalBranchLifecyclePosture::Live
+            || birth.truth_version != crate::branch::version::RelationalBranchVersion::initial()
+            || birth.lifecycle != crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
         {
             return Err(Refusal::Malformed);
         }

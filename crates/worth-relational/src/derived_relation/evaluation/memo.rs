@@ -58,7 +58,7 @@ impl Key {
     fn ordering_key(
         &self,
     ) -> (
-        Option<&crate::derived_relation::DerivedRelationIdentity>,
+        Option<&crate::derived_relation::definition::DerivedRelationIdentity>,
         usize,
         &Member,
         bool,

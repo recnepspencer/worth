@@ -24,7 +24,7 @@ pub(super) fn latest(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound.saturating_add(1))?;
         let commit = next.ok_or("output correspondence has no complete native publication")?;
@@ -133,7 +133,7 @@ pub(super) fn validate_member(
             write,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )?

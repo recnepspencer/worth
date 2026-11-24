@@ -8,7 +8,7 @@ use crate::tests::support::*;
 
 #[test]
 fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -147,7 +147,7 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
 
 #[test]
 fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-roundtrip");
@@ -190,7 +190,7 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
 
 #[test]
 fn current_directory_rejects_damaged_duplicate_and_missing_members() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-damage");
@@ -235,7 +235,7 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
 
 #[test]
 fn native_capture_sections_count_current_directory_values() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-sections");
@@ -315,7 +315,7 @@ fn native_capture_sections_count_current_directory_values() {
 
 #[test]
 fn chk6_and_retired_inner_partition_grammars_are_refused() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "retired-checkpoint");

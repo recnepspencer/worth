@@ -1,7 +1,7 @@
 //! Diagnostic comparison of allocator state against actual reservation evidence.
 use super::{CheckpointRecordFrontier, CheckpointRecordIdentity};
 use crate::history::data::RecordAllocationClass;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeMap;
 
 /// Read-only allocator coordinates from a decoded checkpoint. No allocation authority.

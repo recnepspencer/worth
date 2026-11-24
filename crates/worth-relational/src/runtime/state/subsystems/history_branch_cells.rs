@@ -64,7 +64,7 @@ impl HistorySubsystem {
         recovered_provenance_root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<(), super::history_catalog_recovery::RelationalHistoryRecoveryDenial> {
+    ) -> Result<(), super::history_recovery_denial::RelationalHistoryRecoveryDenial> {
         // A replayed commit's prior cell state that equals a cell recovery
         // already admitted (from the checkpoint or an earlier tail commit),
         // once rebound to this runtime, was validated then, including its fork

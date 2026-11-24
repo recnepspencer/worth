@@ -18,7 +18,7 @@ pub(super) fn published_patch_from_authoritative_delta_operation(
     ])
 }
 
-pub(super) fn published_patch_from_foundational_patch(
+pub(in crate::authority::mutation) fn published_patch_from_foundational_patch(
     patch: &AuthoritativeRecordAspectPatch,
     binding_for: impl Fn(&AspectKey) -> Option<AspectBinding>,
 ) -> Result<PublishedAuthoritativePatch, AspectKey> {

@@ -1,7 +1,6 @@
 //! Original admitted-basis custody retires through Native's observation owner.
 use super::AdmittedRelationalBranchBasis;
 use crate::mvcc::observation::RelationalObservationRetirement;
-use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 
 #[derive(Debug)]
@@ -45,16 +44,32 @@ impl AdmittedRelationalBranchBasis {
         }
     }
 }
+/// The runtime identity used to release one exact retained observation.
+#[doc(hidden)]
+pub struct BranchBasisRetirementOwner {
+    runtime_instance_id: u64,
+}
+
+impl BranchBasisRetirementOwner {
+    pub(crate) const fn installed(runtime_instance_id: u64) -> Self {
+        Self {
+            runtime_instance_id,
+        }
+    }
+}
+
 impl RelationalBranchBasisRetirement {
-    pub fn advance(
+    pub fn advance<'a, Owner>(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
-        owner: &RelationalRuntime,
+        owner: &'a Owner,
     ) -> Result<RelationalBranchBasisRetirementProgress, RelationalBranchBasisRetirementDenial>
+    where
+        &'a Owner: Into<BranchBasisRetirementOwner>,
     {
         use RelationalBranchBasisRetirementDenial as Denial;
         use RelationalBranchBasisRetirementProgress as Progress;
-        if owner.runtime_instance_id() != self.owner {
+        if owner.into().runtime_instance_id != self.owner {
             return Err(Denial::ForeignOwner);
         }
         if self.complete {

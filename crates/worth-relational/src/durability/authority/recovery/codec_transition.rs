@@ -1,6 +1,6 @@
 //! Restore historical source meaning while retaining a distinct native target.
 mod output_correspondence;
-mod publication_custody;
+pub(crate) mod publication_custody;
 mod retirement_preparation;
 pub(crate) use publication_custody::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
@@ -13,10 +13,14 @@ mod target_publication;
 mod tests;
 mod transition_admission;
 
-use super::super::{DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority};
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::data::{RelationalNativeCheckpoint, RelationalRecoveryStop};
-use crate::runtime::{RecoveredCheckpointProgramActivationUpdate, RelationalRuntime};
 use crate::schema::data::RelationalSchemaRegistry;
+use crate::{
+    runtime::RelationalRuntime,
+    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
+};
 
 #[derive(Debug)]
 pub(in crate::durability::authority) struct RecoveredCodecTransitionState {
@@ -25,7 +29,7 @@ pub(in crate::durability::authority) struct RecoveredCodecTransitionState {
     pub(in crate::durability::authority) retirement:
         Option<crate::history::data::OwnedCodecRetirementClosure>,
     pub(super) publication_custody: Option<std::sync::Arc<RecoveredCodecPublicationCustody>>,
-    pub(super) transaction_id: Option<crate::transactions::data::TransactionId>,
+    pub(super) transaction_id: Option<crate::transactions::data::primitives::TransactionId>,
 }
 
 impl DurabilityRecoveryAuthority<'_> {
@@ -38,7 +42,7 @@ impl DurabilityRecoveryAuthority<'_> {
         native: &RelationalNativeCheckpoint,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -67,7 +71,7 @@ impl DurabilityRecoveryAuthority<'_> {
         origin: &super::super::CapturedNativeInterimOrigin,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -96,7 +100,7 @@ impl DurabilityRecoveryAuthority<'_> {
         native_bytes_read: usize,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -125,7 +129,7 @@ impl DurabilityRecoveryAuthority<'_> {
         target_registry: RelationalSchemaRegistry,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,

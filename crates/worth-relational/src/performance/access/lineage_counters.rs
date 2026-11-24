@@ -14,28 +14,6 @@ impl PerformanceAccess<'_> {
         });
     }
 
-    pub(crate) fn count_lineage_finalization(
-        &self,
-        event_batch_width: usize,
-        decision_log_width: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.lineage_finalization_event_batch_width += event_batch_width;
-            counters.lineage_finalization_decision_log_width += decision_log_width;
-        });
-    }
-
-    pub(crate) fn count_lineage_publication_artifact(
-        &self,
-        event_width: usize,
-        decision_width: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.lineage_publication_event_width += event_width;
-            counters.lineage_publication_decision_width += decision_width;
-        });
-    }
-
     #[cfg(test)]
     pub(crate) fn count_lineage_graph_snapshot_visibility_cache(&self, hit: bool) {
         self.counters.count(|counters| {

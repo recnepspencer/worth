@@ -20,9 +20,9 @@ pub(crate) fn storage_read_denial(
             })
         }
         RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
-            if let crate::storage::data::RelationalStorageUnavailableCause::CorruptCurrentOwnership{publication,source,record}=failure.cause {
-                let mut error=crate::publication::data::PublicationError::authored_retirement(
-                    crate::publication::data::AuthoredRetirementRefusal::CorruptCurrentOwnership{publication},crate::transactions::data::primitives::RecordRef::Entity(source));
+            if let crate::storage::data::storage_unavailable::RelationalStorageUnavailableCause::CorruptCurrentOwnership{publication,source,record}=failure.cause {
+                let mut error=crate::publication::data::publication_error::PublicationError::authored_retirement(
+                    crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal::CorruptCurrentOwnership{publication},crate::transactions::data::primitives::RecordRef::Entity(source));
                 if source!=record {error.context.affected_records.push(crate::transactions::data::primitives::RecordRef::Entity(record));}
                 return TransactionCommitError::publication(error);
             }

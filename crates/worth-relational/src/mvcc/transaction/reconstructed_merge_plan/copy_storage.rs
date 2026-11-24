@@ -1,7 +1,7 @@
 //! Only independent merge header/string/parent storage; intrinsic leaves share.
 use crate::history::data::{RelationalCommitReceipt, RelationalMergeBranchBasis};
-use crate::merge::data::NormalizedRelationalMergeRequest;
-use crate::transactions::data::MergeExecutionSummary;
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
+use crate::transactions::data::outcomes::plan_artifacts::MergeExecutionSummary;
 
 pub(super) fn arc_slots<T>(count: usize) -> Option<usize> {
     Some(

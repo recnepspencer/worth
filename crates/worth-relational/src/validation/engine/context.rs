@@ -226,6 +226,6 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     }
 
     pub fn metrics(&self) -> InvariantMetrics<'runtime> {
-        InvariantMetrics::new(self.runtime.performance_access())
+        self.runtime.performance_access()
     }
 }

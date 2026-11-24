@@ -278,7 +278,7 @@ fn refresh_relations(
                 super::field_keys::relation(execution, before, *id, locator, work)?,
                 super::field_keys::relation(execution, Some(after), *id, locator, work)?,
             );
-            prepare_key_comparison(
+            super::field_keys::prepare_key_comparison(
                 old_key.as_ref().map(|(key, _)| key),
                 new_key.as_ref().map(|(key, _)| key),
                 work,
@@ -295,21 +295,4 @@ fn refresh_relations(
         }
     }
     Ok(())
-}
-
-pub(super) fn prepare_key_comparison(
-    old: Option<&AuthoritativeFieldComparisonKey>,
-    new: Option<&AuthoritativeFieldComparisonKey>,
-    work: &mut MaintenanceWork,
-) -> Result<(), Denial> {
-    let width = match (old, new) {
-        (Some(old), Some(new)) => {
-            old.canonical_value_bytes()
-                .len()
-                .min(new.canonical_value_bytes().len())
-                + 1
-        }
-        _ => 1,
-    };
-    work.prepare(width as u64, 0)
 }

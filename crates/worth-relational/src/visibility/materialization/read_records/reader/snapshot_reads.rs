@@ -1,5 +1,15 @@
-use super::*;
-use crate::visibility::snapshot_states::build_visibility_state;
+use super::context::VisibilityReadContext;
+use crate::query::data::QueryPlanContextId;
+use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
+use crate::visibility::cache_state::materialize_historical_visibility;
+use crate::visibility::snapshot_read_view::RelationalReadView;
+use crate::visibility::snapshot_states::{
+    read_view_from_snapshot_state,
+    resolution::{
+        resolve_snapshot_basis, resolve_snapshot_handle, resolve_snapshot_inspection,
+        resolve_snapshot_state,
+    },
+};
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_snapshot(
@@ -41,7 +51,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     > {
         if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
             basis
-                .root()
+                .projection_root()
                 .demand_all_full(execution, &self.runtime.services.symbols)
                 .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         }
@@ -60,7 +70,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     return Ok(None);
                 }
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &resolved.state,
                     &resolved.handle,
                     &mut |units| context.checkpoint(units),
@@ -107,7 +117,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),
@@ -122,12 +132,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn query_plan_context(&self, handle: &SnapshotHandle) -> Option<QueryPlanContextId> {
         let snapshot = self.resolved_snapshot_handle(handle)?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)?;
-        if basis.root().has_materialization_unavailable() {
+        if basis.projection_root().has_materialization_unavailable() {
             return None;
         }
-        let root = basis.root();
+        let root = basis.projection_root();
         let (schema_version, descriptor_semantics_version, evidence_basis) =
-            query_schema_context_for_root(root);
+            root.query_schema_context();
         Some(QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             snapshot_id: snapshot.snapshot_id,
@@ -164,11 +174,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .selected_root()
             .demand_all_full(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        let state = build_visibility_state(
-            self.runtime,
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-                observation,
-            ),
+        let state = observation.build_visibility_state(
+            self.runtime.runtime_instance_id(),
             crate::snapshots::data::SnapshotId(0),
             SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );
@@ -176,7 +183,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),
@@ -211,7 +218,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
     ) -> Option<crate::schema::data::SchemaVersionId> {
         let basis = resolve_snapshot_basis(self.runtime, handle)?;
-        Some(basis.root().schema_authority().schema_version())
+        Some(basis.projection_root().schema_authority().schema_version())
     }
 
     pub(super) fn resolved_snapshot_handle(
@@ -235,33 +242,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
         Ok(())
     }
-}
-
-pub(super) fn query_schema_context_for_root(
-    root: &crate::branch::RelationalBranchRoot,
-) -> (
-    crate::schema::data::SchemaVersionId,
-    crate::schema::data::DescriptorSemanticsVersion,
-    QueryPlanEvidenceBasis,
-) {
-    let evidence_basis = match root.commit_evidence() {
-        None => QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
-        Some(crate::branch::RelationalRootCommitEvidence::Original(envelope)) => {
-            QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
-                commit_id: envelope.envelope().commit.commit_id,
-            }
-        }
-        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
-            QueryPlanEvidenceBasis::CheckpointAdmissionImage {
-                commit_id: commit.index().commit.commit_id,
-            }
-        }
-    };
-    (
-        root.schema_authority().schema_version(),
-        root.schema_authority().descriptor_semantics_version(),
-        evidence_basis,
-    )
 }
 
 fn read_view_bytes(view: &RelationalReadView) -> u64 {

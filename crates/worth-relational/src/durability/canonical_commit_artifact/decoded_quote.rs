@@ -1,12 +1,13 @@
 //! Checked quotes of the concrete canonical owners, before their decode grows.
 use super::borrowed_payload::{malformed, BorrowedPayload};
-use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
+use super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use worth_execution::ExecutionRequest;
 
 mod admission;
 mod checkpoint_effect;
+pub(crate) mod checkpoint_effect_data;
 pub(super) use admission::admit_canonical;
-pub(crate) use checkpoint_effect::{decode_checkpoint_effect, CheckpointEffectData};
+pub(crate) use checkpoint_effect::decode_checkpoint_effect;
 mod aspects;
 mod branches;
 mod cascades;

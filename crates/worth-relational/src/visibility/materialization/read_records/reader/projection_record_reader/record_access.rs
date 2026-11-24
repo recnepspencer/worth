@@ -1,5 +1,11 @@
 //! Read records and visibility slots using carried version metadata.
-use super::super::*;
+use super::ProjectionRecordReader;
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
+use crate::storage::partition::DenseSlotBitSet;
+use crate::visibility::materialization::read_records::visibility::{
+    visible_relation_slots_in_partition_from_state, visible_slots_in_partition_from_state,
+};
 
 impl ProjectionRecordReader<'_> {
     pub(crate) fn authoritative_entity_record_for_id_from_exact_state(

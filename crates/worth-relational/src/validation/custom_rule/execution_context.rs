@@ -14,7 +14,7 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     pub(super) managed_scope:
         std::sync::Mutex<Option<super::managed_source::ManagedSourceInvocation>>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    performance: crate::performance::PerformanceAccess<'runtime>,
+    performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
     observation_kind: InvariantObservationKind,
     version_id: VersionId,
     current_version_id: VersionId,
@@ -213,7 +213,9 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         self.observation_kind
     }
 
-    pub(crate) fn performance_access(&self) -> &crate::performance::PerformanceAccess<'runtime> {
+    pub(crate) fn performance_access(
+        &self,
+    ) -> &crate::validation::engine::metrics::InvariantMetrics<'runtime> {
         &self.performance
     }
 

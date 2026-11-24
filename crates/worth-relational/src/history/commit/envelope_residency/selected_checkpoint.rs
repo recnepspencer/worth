@@ -137,47 +137,6 @@ impl RelationalCommitEnvelopeResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        let artifact = Self::selected_artifact(entry, directory, execution, limit)?;
-        Self::readmit_owned_artifact(entry, artifact, execution)
-    }
-    pub(super) fn selected_artifact(
-        entry: &RelationalCommitIndexEntry,
-        directory: &RelationalCheckpointDirectory,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<RelationalCanonicalCommitArtifact, RelationalRecoveryStop> {
-        let member = directory
-            .manifest
-            .canonical_members
-            .member(entry.position)
-            .ok_or(RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Envelope(entry.position),
-                cause: Cause::MissingMember,
-            })?;
-        let bytes = directory
-            .canonical_read
-            .read_member(&directory.source, execution, member, limit)
-            .map_err(|cause| {
-                crate::durability::medium::owned_read_stop::owned_stop(
-                    cause,
-                    RelationalStorageSubject::Envelope(entry.position),
-                )
-            })?;
-        // Only this consumer read a canonical body; generic selected reads
-        // also carry derived-index members and cannot certify this event.
-        directory.source.observe_canonical_member_read(member);
-        if crate::storage::data::member_frame::locator_for_request(execution, bytes.bytes())?
-            != member
-        {
-            return Err(RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Envelope(entry.position),
-                cause: Cause::IntegrityMismatch,
-            }
-            .into());
-        }
-        let artifact = RelationalCanonicalCommitArtifact::from_owned_original(bytes, execution)
-            .map_err(super::artifact_export::original_frame_stop)?;
-        Self::check_frame(entry, &artifact)?;
-        Ok(artifact)
+        directory.readmit_canonical_member(entry, execution, limit)
     }
 }

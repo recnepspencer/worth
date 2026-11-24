@@ -1,10 +1,13 @@
 //! Native-owned inverse preparation for one exact recorded cascade retirement.
 use super::*;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::CanonicalCommitEnvelope,
-    identity::data::{EntityId, RelationId},
-    transactions::data::*,
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, WorkerIntentBatch,
 };
 use std::sync::Arc;
 
@@ -20,6 +23,27 @@ pub struct RelationalAuthoredRestoration {
     pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) aggregate_memberships: Vec<crate::aggregate_identity::RestoredMembership>,
 }
+impl<'restoration> From<&'restoration RelationalAuthoredRestoration>
+    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::AuthoredRestorationFacts<'restoration>
+{
+    fn from(restoration: &'restoration RelationalAuthoredRestoration) -> Self {
+        Self {
+            retirement: &restoration.retirement,
+            inverse: &restoration.inverse,
+            entities: &restoration.entities,
+            relations: &restoration.relations,
+        }
+    }
+}
+
+impl<'restoration> From<&'restoration Arc<RelationalAuthoredRestoration>>
+    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::AuthoredRestorationFacts<'restoration>
+{
+    fn from(restoration: &'restoration Arc<RelationalAuthoredRestoration>) -> Self {
+        restoration.as_ref().into()
+    }
+}
+
 impl std::fmt::Debug for RelationalAuthoredRestoration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RelationalAuthoredRestoration")

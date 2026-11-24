@@ -1,6 +1,6 @@
 //! Original artifact attribution is installed once before positioned emission.
+use super::recorded_inputs::RecordedCanonicalInputs;
 use super::CanonicalCommitEnvelope;
-use crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs;
 
 impl CanonicalCommitEnvelope {
     pub(crate) fn recorded_original_inputs(&self) -> Option<&RecordedCanonicalInputs> {

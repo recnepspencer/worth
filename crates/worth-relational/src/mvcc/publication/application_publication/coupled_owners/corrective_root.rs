@@ -1,13 +1,13 @@
 //! An authenticated correction's root mapping does not depend on a cascade event.
 use super::*;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
-use crate::transactions::data::CreatedEntityRef;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Retain correspondence for the actual corrective prefix. The caller has
     /// already authenticated its original correction meaning. This data grants
     /// no retirement/publication authority and selects no arbitrary draft subset.
-    pub fn bind_authored_coupled_corrective_root(
+    pub(crate) fn bind_authored_coupled_corrective_root(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -22,7 +22,8 @@ impl RelationalRuntime {
         let refuse = || origin_denial("corrective root correspondence differs from its original");
         let allocation_stop = |cause: worth_execution::ExecutionAllocationDenial| {
             crate::execution::denial::allocation_commit_error(TransactionCommitError::conflict(
-                crate::mvcc::RelationalTransactionStagingDenial::from(cause).into_conflict(),
+                crate::mvcc::transaction::staging::RelationalTransactionStagingDenial::from(cause)
+                    .into_conflict(),
             ))
         };
         if installed.runtime_instance_id != self.runtime_instance_id()
@@ -37,7 +38,9 @@ impl RelationalRuntime {
             return Err(refuse());
         }
         let original = self
-            .history_access()
+            .history
+            .projection
+            .history
             .demand_commit_envelope(execution, original_commit)
             .map_err(custody::execution_stop)?
             .ok_or_else(refuse)?;

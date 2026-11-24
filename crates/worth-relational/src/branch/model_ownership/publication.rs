@@ -6,18 +6,18 @@ use super::{
 };
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
+use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
 use crate::validation::data::results::InvariantViolationFields;
 use worth_execution::ExecutionRequest;
 
 pub(crate) fn validate_candidate_ownership(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    invariants: &FrozenCustomInvariantRegistry,
     root: &RelationalBranchRoot,
     candidate: &CanonicalCommitEnvelope,
 ) -> Result<(), TransactionCommitError> {
@@ -29,11 +29,7 @@ pub(crate) fn validate_candidate_ownership(
     {
         return Ok(());
     }
-    let Some((registration, ownership)) = runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .model_ownership()
-    else {
+    let Some((registration, ownership)) = invariants.model_ownership() else {
         return Ok(());
     };
     execution.run_native_with_checkpoint(|context| {
@@ -50,9 +46,9 @@ pub(crate) fn validate_candidate_ownership(
                     };
                     let Some(subject) = subject else { continue; };
                     if read.kind(subject)?.is_none() { continue; }
-                    for domain in &ownership.domains {
+                    for domain in &ownership.plan.domains {
                         for entity in traversal::walk(read, subject, true, &domain.relations)? {
-                            ownership.owner(read, entity)?;
+                            ownership.plan.owner(read, entity)?;
                         }
                     }
                 }

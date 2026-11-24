@@ -1,3 +1,4 @@
+mod head_selection;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
@@ -89,17 +90,6 @@ impl ActiveSnapshotHandleRegistry {
             .handles
             .get(&snapshot_id)
             .map(|binding| binding.basis.branch_id().0.len())
-    }
-
-    pub(super) fn selected_root(
-        &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.key_lookups.fetch_add(1, Ordering::Relaxed);
-        self.lock()
-            .handles
-            .get(&snapshot_id)
-            .map(|binding| std::sync::Arc::clone(binding.basis.root()))
     }
 
     pub(super) fn retains_handle(&self, snapshot_id: SnapshotId) -> bool {

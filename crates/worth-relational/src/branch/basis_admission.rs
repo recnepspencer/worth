@@ -64,7 +64,7 @@ pub(crate) fn descriptor_for_cell(
         }
     };
     Ok(RelationalBranchBasisDescriptor::with_posture(
-        super::basis::RelationalLiveBranchBasisDescriptorAxes {
+        super::basis_descriptor::RelationalLiveBranchBasisDescriptorAxes {
             runtime_instance_id: cell.identity().runtime_instance_id(),
             branch_id: cell.identity().branch_id().clone(),
             reference: cell.observation().clone(),

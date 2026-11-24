@@ -8,7 +8,7 @@ use crate::durability::{
     data::*,
     medium::RelationalDurableMemberLocator,
 };
-use crate::history::RelationalCommitEnvelopeResidency;
+use crate::history::commit::RelationalCommitEnvelopeResidency;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
@@ -22,7 +22,7 @@ pub(super) struct CanonicalOutput {
 impl CanonicalOutput {
     pub(super) fn prepare(
         commits: &[OriginalCanonicalCommit],
-        artifacts: &[Arc<crate::history::RelationalCommitArtifact>],
+        artifacts: &[Arc<crate::history::commit::RelationalCommitArtifact>],
         prior: Option<&RelationalCheckpointManifest>,
         members: &mut ExecutionOrderedMap<
             RelationalDurableMemberLocator,

@@ -1,7 +1,7 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 use super::*;
 
-pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     {
         let mut owner = census.owner::<MutatedCommitExecution>(
             "crates/worth-relational/src/authority/commit/pipeline/mutation_execution.rs",

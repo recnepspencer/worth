@@ -1,7 +1,7 @@
 pub(crate) use application_publication::BoundAuthoredCoupling;
 pub(crate) use application_publication::CoupledSource;
 pub(crate) mod application_publication;
-mod authority;
+pub(crate) mod authority;
 mod caller_association;
 mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
@@ -10,8 +10,10 @@ pub(crate) use application_publication::{
 };
 pub(crate) fn custody_stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
-) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::execution(cause.into().into())
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        cause.into().into(),
+    )
 }
 pub use application_publication::{
     AuthoredOwnedMemberKind, ManagedIndexParentReadFootprint, RecordedRequiredOutputRole,
@@ -32,16 +34,15 @@ pub use application_publication::{
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
-mod candidate;
-mod candidate_consumption;
-mod candidate_preparation;
+pub(crate) mod candidate;
 pub(crate) mod companion;
 mod current_read;
 pub(crate) mod read_dependency_denial;
 pub use current_read::RelationalPublicationReadDependencyDenial;
+mod movement;
 pub(crate) mod outcome;
-mod port;
-mod validation;
+pub(crate) mod port;
+pub(crate) mod validation;
 
 pub(crate) use authority::{
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
@@ -53,7 +54,7 @@ pub use candidate::{
 };
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
-    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    PreparedManagedIndexSourceFork,
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
@@ -61,28 +62,22 @@ pub use companion::{
     CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement, ManagedIndexSourceForkPreparation,
-    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PendingCompanionRegistration,
-    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
-    PublicationCompanionPreflight, PublicationCompanionRegistration,
-    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    PublicationCompanionRetirementDenial, RelationalPublicationCompanion,
-    ReservedCompanionBranchCell, RetiredPublicationCompanionRegistration,
+    ManagedIndexSourceObservation, ManagedIndexSourceRebuild, PreparedCompanionBranchCell,
+    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    PublicationCompanionPreflight, PublicationCompanionRegistrationStop,
+    RelationalPublicationCompanion, ReservedCompanionBranchCell,
 };
+pub(crate) use movement::PreparedCanonicalBranchMovement;
 pub use outcome::{
     PerformedRelationalCommit, PublishRelationalCommit, RelationalPublicationDeferred,
     RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
     RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
     RelationalPublicationProjectionPosture, StaleRelationalBranchObservation,
 };
-pub(crate) use port::PreparedCanonicalBranchMovement;
-pub use port::RelationalPublicationPort;
-pub use port::{PreparedMemoryRelationalCutover, ScopedRelationalPublication};
 
 #[cfg(test)]
-pub(crate) use application_publication::{native_birth_fixture, native_meaning_fixture};
+pub(crate) use application_publication::native_birth_fixture;
 
-#[cfg(test)]
-pub(crate) use application_publication::native_roles_fixture;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

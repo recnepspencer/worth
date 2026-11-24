@@ -2,7 +2,8 @@ use std::collections::BTreeSet;
 
 use crate::authority::mutation::BranchLocalDeleteAllowance;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{MergedCommitPlan, MutationIntent};
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 pub(crate) fn branch_local_delete_allowance_for_plan(
     selected_state: &impl CurrentPartitionAccess,
@@ -14,7 +15,7 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
 
     for intent in &merged_plan.merged_intents {
         match intent {
-            MutationIntent::Entity(crate::transactions::data::EntityMutationIntent::Delete(
+            MutationIntent::Entity(crate::transactions::data::intents::mutation_intent::EntityMutationIntent::Delete(
                 spec,
             )) => {
                 if !crate::authority::intent_merge::entity_exists_in_state(
@@ -28,7 +29,7 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
                 }
             }
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::UpdateEndpoints(spec),
+                crate::transactions::data::intents::mutation_intent::RelationMutationIntent::UpdateEndpoints(spec),
             ) => {
                 let relation_id = spec.relation_id;
                 if !crate::authority::intent_merge::relation_exists_in_state(
@@ -42,10 +43,10 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
                 }
             }
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::ApplyAspectPatch(_),
+                crate::transactions::data::intents::mutation_intent::RelationMutationIntent::ApplyAspectPatch(_),
             ) => {}
             MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::Delete(spec),
+                crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Delete(spec),
             ) => {
                 let relation_id = spec.relation_id;
                 if !crate::authority::intent_merge::relation_exists_in_state(
@@ -62,7 +63,7 @@ pub(crate) fn branch_local_delete_allowance_for_plan(
             | MutationIntent::Entity(_)
             | MutationIntent::Materialization(_)
             | MutationIntent::Relation(
-                crate::transactions::data::RelationMutationIntent::Revalidate(_),
+                crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Revalidate(_),
             ) => {}
         }
     }

@@ -1,9 +1,9 @@
 //! Borrowed original attribution DATA; no root, admission or publication authority.
+use super::RecordedCanonicalInputs;
 use crate::config::data::{
     AdjacencyPolicy, CascadeDeletePolicy, CrossContextPolicy, MutationConfig,
 };
-use crate::durability::data::DurableBranchRootSchemaImage;
-use crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs;
+use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::schema::data::DescriptorSemanticsVersion;
 use worth_foundational::CanonicalDigestId;
@@ -26,7 +26,7 @@ pub struct RelationalOriginalInputObservation<'a> {
 /// A borrowed observation of the original introduced schema, with no wire door.
 /// Whole-image equality compares its declarations and content as well as metadata.
 #[derive(PartialEq, Eq)]
-pub struct RelationalIntroducedSchemaObservation<'a>(&'a DurableBranchRootSchemaImage);
+pub struct RelationalIntroducedSchemaObservation<'a>(&'a RecordedBranchSchemaImage);
 
 impl CanonicalCommitEnvelope {
     pub fn original_input_observation(&self) -> Option<RelationalOriginalInputObservation<'_>> {

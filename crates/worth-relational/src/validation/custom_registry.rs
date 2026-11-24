@@ -117,6 +117,9 @@ mod tests {
     use crate::validation::custom_rule::CustomInvariantRegistration;
     use crate::validation::custom_rule::CustomInvariantRule;
     use crate::validation::custom_rule::CustomInvariantScopePlanner;
+    use crate::validation::data::custom_rule::errors::CustomInvariantExecutionError;
+    use crate::validation::data::custom_rule::errors::CustomInvariantPreparationError;
+    use crate::validation::data::custom_rule::errors::CustomInvariantVerdict;
     use crate::validation::data::descriptor::CustomInvariantDescriptor;
     use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
     use crate::validation::data::execution::InvariantExecutionPoint;
@@ -127,9 +130,6 @@ mod tests {
     use crate::validation::data::rule_id::CustomInvariantRuleId;
     use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
     use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
-    use crate::validation::data::CustomInvariantExecutionError;
-    use crate::validation::data::CustomInvariantPreparationError;
-    use crate::validation::data::CustomInvariantVerdict;
 
     #[derive(Clone, Copy)]
     struct RegistryRule {

@@ -1,13 +1,13 @@
 //! Lend an actual verified original's weak position to its admitted image cell.
 use super::*;
+use crate::durability::checkpoint_admission::read_image::CheckpointOriginalRow;
 use crate::durability::checkpoint_admission::refusal::CheckpointAdmissionBindingMismatch;
 use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
-use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
 
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn bind_interim_original(
         &self,
-        admitted: &CheckpointAdmittedCommit,
+        admitted: CheckpointOriginalRow<'_>,
         original: &PositionedCanonicalCommit,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {

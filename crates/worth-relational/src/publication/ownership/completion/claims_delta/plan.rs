@@ -1,9 +1,8 @@
 //! Ordered desired-state reconciliation retains physical custody on equality.
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
 use crate::publication::ownership::record::RelationClaim;
-use crate::{
-    identity::data::{EntityId, RelationId},
-    transactions::data::RecordRef,
-};
+use crate::transactions::data::primitives::RecordRef;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Claim {
     Member(EntityId),

@@ -51,11 +51,9 @@ fn image() -> (
     )
 }
 fn damage(error: TransactionCommitError) {
-    use crate::{
-        execution::RelationalExecutionDenialCause,
-        storage::data::RelationalStorageUnavailableCause,
-        transactions::data::CommitExecutionDenialKind,
-    };
+    use crate::execution::RelationalExecutionDenialCause;
+    use crate::storage::data::RelationalStorageUnavailableCause;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
     assert!(
         matches!(error,TransactionCommitError::Execution{denial,..}
         if matches!(denial.kind,CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::StorageUnavailable(f)) if f.cause==RelationalStorageUnavailableCause::Damaged)),
@@ -77,8 +75,8 @@ fn live_metadata_loss_cannot_be_healed_from_the_candidate_after_image() {
         .set(0, Default::default());
     assert!(state.entity_arena.get(&entity).unwrap().is_live());
     assert!(state.relation_arena.get(&relation_id).unwrap().is_live());
-    let before = InvariantStateView::new(&damaged, crate::identity::data::VersionId(1));
-    let after = InvariantStateView::new(&healthy, crate::identity::data::VersionId(1));
+    let before = StructuralStateView::new(&damaged, crate::identity::data::VersionId(1));
+    let after = StructuralStateView::new(&healthy, crate::identity::data::VersionId(1));
     damage(entity_kind(&before, Some(&after), entity).unwrap_err());
     damage(relation(&before, Some(&after), relation_id).unwrap_err());
     damage(
@@ -111,8 +109,8 @@ fn suspended_selectors_use_only_restored_candidate_metadata() {
         .relation_arena
         .suspend_materialization(relation_id.slot_index())
         .unwrap();
-    let before = InvariantStateView::new(&suspended, crate::identity::data::VersionId(1));
-    let after = InvariantStateView::new(&healthy, crate::identity::data::VersionId(1));
+    let before = StructuralStateView::new(&suspended, crate::identity::data::VersionId(1));
+    let after = StructuralStateView::new(&healthy, crate::identity::data::VersionId(1));
     assert!(before.entity_metadata(entity).is_none());
     assert!(before.relation_metadata(relation_id).is_none());
     assert_eq!(
@@ -127,7 +125,7 @@ fn suspended_selectors_use_only_restored_candidate_metadata() {
     ] {
         assert!(
             matches!(&error,TransactionCommitError::Conflict{error:conflict,..}
-            if matches!(&conflict.class,crate::transactions::data::ConflictClass::MutationStateInconsistency{evidence:crate::transactions::data::MutationStateInconsistencyEvidence::MaterializationTransition{..},..})),
+            if matches!(&conflict.class,crate::transactions::data::outcomes::conflict_class::ConflictClass::MutationStateInconsistency{evidence:crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence::MaterializationTransition{..},..})),
             "{error:?}"
         );
     }
@@ -150,8 +148,8 @@ fn retired_and_audit_retained_relations_route_only_through_the_restored_candidat
             .retire(relation_id.slot_index(), VersionId(2))
             .unwrap();
         arena.set_lifecycle_for_slot(relation_id.slot_index(), lifecycle);
-        let before = InvariantStateView::new(&retired, VersionId(2));
-        let after = InvariantStateView::new(&healthy, VersionId(3));
+        let before = StructuralStateView::new(&retired, VersionId(2));
+        let after = StructuralStateView::new(&healthy, VersionId(3));
         assert!(before.relation_metadata(relation_id).is_none());
         let restored = relation(&before, Some(&after), relation_id).unwrap();
         assert_eq!(

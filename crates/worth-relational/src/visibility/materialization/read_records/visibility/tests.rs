@@ -1,9 +1,11 @@
+use super::super::reader::{
+    kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
+};
 use crate::config::data::runtime_config::RelationalRuntimeConfig;
 use crate::config::data::CascadeDeletePolicy;
 use crate::config::data::CrossContextPolicy;
-use crate::facade::runtime::RelationalRuntimeApi;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::data::EntityKindRegistration;
 use crate::schema::data::KindAspectContractDeclarations;
 use crate::schema::data::RelationIntegrityDeclarations;
@@ -15,6 +17,7 @@ use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencySet;
 use crate::storage::substrate::{EntityExtra, RelationEndpoints, RelationExtra};
+use std::collections::BTreeMap;
 
 fn visibility_regression_schema_registry() -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
@@ -61,19 +64,10 @@ fn visibility_regression_schema_registry() -> RelationalSchemaRegistry {
         .unwrap()
 }
 
-fn visibility_regression_runtime() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(visibility_regression_schema_registry())
-        .build()
-        .expect("valid native runtime configuration")
-}
-
 #[test]
 fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
-    let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default())
-        .expect("valid native runtime configuration");
     let partition_id = PartitionId(7);
-    let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
+    let adjacency_policy = RelationalRuntimeConfig::default().storage.adjacency_policy;
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);
     let (slot, generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
         partition_id,
@@ -97,10 +91,7 @@ fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
     });
     assert_eq!(reused_generation, 2);
 
-    runtime
-        .history
-        .with_ledger_mut(|ledger| ledger.next_version_id = 4);
-    runtime.edit_partitions().insert(
+    let state = BTreeMap::from([(
         partition_id,
         PartitionState {
             partition_id,
@@ -111,28 +102,37 @@ fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
             adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
             reverse_adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
         },
+    )]);
+    let registry = visibility_regression_schema_registry();
+    let current_version = VersionId(3);
+    let instrumentation = RuntimeInstrumentation::new();
+    let read = ProjectionRecordReader::new(current_version, &instrumentation);
+    let reused_id = EntityId::new(partition_id, slot as u64, reused_generation);
+    assert_eq!(
+        read.authoritative_entity_record_for_id_at_version_with_registry(
+            &state,
+            &registry,
+            reused_id,
+            current_version,
+        )
+        .unwrap()
+        .entity_id,
+        reused_id,
     );
-
-    let current_state = runtime
-        .storage_access()
-        .current_edition()
-        .resident_full()
-        .expect("memory fixture retains Full custody");
-    assert!(runtime
-        .read_truth()
-        .authoritative_entity_record_for_id_at_version(
-            &current_state,
+    assert!(read
+        .authoritative_entity_record_for_id_at_version_with_registry(
+            &state,
+            &registry,
             stale_id,
-            runtime.current_version_id()
+            current_version,
         )
         .is_none());
 }
 
 #[test]
 fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() {
-    let runtime = visibility_regression_runtime();
     let partition_id = PartitionId(7);
-    let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
+    let adjacency_policy = RelationalRuntimeConfig::default().storage.adjacency_policy;
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);
     let (slot, first_generation, _) = entity_arena.push_slot(crate::storage::substrate::SlotInit {
         partition_id,
@@ -155,10 +155,7 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     });
     assert_eq!(reused_generation, 2);
 
-    runtime
-        .history
-        .with_ledger_mut(|ledger| ledger.next_version_id = 4);
-    runtime.edit_partitions().insert(
+    let state = BTreeMap::from([(
         partition_id,
         PartitionState {
             partition_id,
@@ -169,24 +166,22 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
             adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
             reverse_adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
         },
-    );
-
-    let state = runtime
-        .storage_access()
-        .current_edition()
-        .resident_full()
-        .expect("memory fixture retains Full custody");
+    )]);
+    let registry = visibility_regression_schema_registry();
+    let current_version = VersionId(3);
+    let instrumentation = RuntimeInstrumentation::new();
+    let read = ProjectionRecordReader::new(current_version, &instrumentation);
     let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(
         &execution,
         |context, memory| {
-            runtime.read_truth().paid_entities_in_partition(
+            read.paid_entities_in_partition(
                 &state,
-                &runtime.config.schema.registry,
+                &registry,
                 partition_id,
                 Some(KindId(11)),
-                crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(runtime.current_version_id(), VersionId(1)),
+                KindScanVisibility::for_selected_version(current_version, VersionId(1)),
                 &mut |units| context.checkpoint(units),
                 memory,
             )
@@ -204,12 +199,12 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
     let reused_kind_records = super::super::read_work::metered_with_memory(
         &execution,
         |context, memory| {
-            runtime.read_truth().paid_entities_in_partition(
+            read.paid_entities_in_partition(
                 &state,
-                &runtime.config.schema.registry,
+                &registry,
                 partition_id,
                 Some(KindId(12)),
-                crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(runtime.current_version_id(), VersionId(1)),
+                KindScanVisibility::for_selected_version(current_version, VersionId(1)),
                 &mut |units| context.checkpoint(units),
                 memory,
             )
@@ -234,9 +229,8 @@ fn historical_entity_kind_reads_follow_visible_metadata_not_current_slot_kind() 
 
 #[test]
 fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind() {
-    let runtime = visibility_regression_runtime();
     let partition_id = PartitionId(9);
-    let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
+    let adjacency_policy = RelationalRuntimeConfig::default().storage.adjacency_policy;
     let mut relation_arena = crate::storage::substrate::RelationArena::with_capacity(1);
     let first_endpoints = RelationEndpoints {
         source: EntityId::new(partition_id, 1, 1),
@@ -268,10 +262,7 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     });
     assert_eq!(reused_generation, 2);
 
-    runtime
-        .history
-        .with_ledger_mut(|ledger| ledger.next_version_id = 4);
-    runtime.edit_partitions().insert(
+    let state = BTreeMap::from([(
         partition_id,
         PartitionState {
             partition_id,
@@ -282,24 +273,22 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
             adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
             reverse_adjacency: vec![AdjacencySet::new(&adjacency_policy)].into(),
         },
-    );
-
-    let state = runtime
-        .storage_access()
-        .current_edition()
-        .resident_full()
-        .expect("memory fixture retains Full custody");
+    )]);
+    let registry = visibility_regression_schema_registry();
+    let current_version = VersionId(3);
+    let instrumentation = RuntimeInstrumentation::new();
+    let read = ProjectionRecordReader::new(current_version, &instrumentation);
     let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let historical_records = super::super::read_work::metered_with_memory(
         &execution,
         |context, memory| {
-            runtime.read_truth().paid_relations_in_partition(
+            read.paid_relations_in_partition(
                 &state,
-                &runtime.config.schema.registry,
+                &registry,
                 partition_id,
                 Some(KindId(21)),
-                crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(runtime.current_version_id(), VersionId(1)),
+                KindScanVisibility::for_selected_version(current_version, VersionId(1)),
                 &mut |units| context.checkpoint(units),
                 memory,
             )
@@ -317,12 +306,12 @@ fn historical_relation_kind_reads_follow_visible_metadata_not_current_slot_kind(
     let reused_kind_records = super::super::read_work::metered_with_memory(
         &execution,
         |context, memory| {
-            runtime.read_truth().paid_relations_in_partition(
+            read.paid_relations_in_partition(
                 &state,
-                &runtime.config.schema.registry,
+                &registry,
                 partition_id,
                 Some(KindId(22)),
-                crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(runtime.current_version_id(), VersionId(1)),
+                KindScanVisibility::for_selected_version(current_version, VersionId(1)),
                 &mut |units| context.checkpoint(units),
                 memory,
             )

@@ -11,6 +11,7 @@ mod consistency_expectations;
 mod consistency_tests;
 mod exact_reads;
 mod lineage_at_observation;
+pub(crate) mod memory_close_observation;
 mod names_at_observation;
 mod observation_read;
 mod partition_projection;

@@ -1,10 +1,6 @@
-//! Hold one existing retention gate of a lane binding around one caller step.
-//!
-//! The gates are the owner's external cut and the lane's own state lock; this
-//! module adds no gate, state or ordering. A trial reads the lane census before
-//! the step and again while the same gate is still held, exactly where the
-//! original in-crate fixture read them.
-use super::{lock_lane, RelationalBranchRetentionBinding, RelationalRetentionCostCounters};
+//! Observe an admitted basis while its existing external or lane gate is held.
+use super::{lock_lane, RelationalBranchRetentionLaneState, RelationalRetentionCostCounters};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 /// Which existing retention gate a trial holds.
 #[doc(hidden)]
@@ -26,55 +22,58 @@ pub struct RelationalRetentionCensusForTest {
     pub root_obligations: Option<usize>,
 }
 
-impl RelationalBranchRetentionBinding {
-    pub(crate) fn census_for_test(&self, root_id: u64) -> RelationalRetentionCensusForTest {
-        let lane = lock_lane(&self.lane);
-        RelationalRetentionCensusForTest {
-            counters: lane.counters,
-            lane_obligations: lane.obligations.len(),
-            root_obligations: lane.root_obligations.get(&root_id).copied(),
-        }
+fn census(
+    lane: &RelationalBranchRetentionLaneState,
+    root_id: u64,
+) -> RelationalRetentionCensusForTest {
+    RelationalRetentionCensusForTest {
+        counters: lane.counters,
+        lane_obligations: lane.obligations.len(),
+        root_obligations: lane.root_obligations.get(&root_id).copied(),
+    }
+}
+
+impl AdmittedRelationalBranchBasis {
+    #[doc(hidden)]
+    pub fn retention_census_for_test(&self) -> RelationalRetentionCensusForTest {
+        let lane = lock_lane(&self.inner.retention_binding.lane);
+        census(&lane, self.inner.root.id())
     }
 
     /// Run `step` once with `gate` held. Returns the census read before the
     /// gate was taken (external cut) or right after it (lane lock), then again
     /// while it is still held, or `None` without running `step` when the
     /// retention owner is gone.
-    pub(crate) fn with_gate_held_for_test<R>(
+    #[doc(hidden)]
+    pub fn with_gate_held_for_test<R>(
         &self,
         gate: RelationalRetentionGateForTest,
-        root_id: u64,
         step: impl FnOnce() -> R,
     ) -> Option<(
         R,
         RelationalRetentionCensusForTest,
         RelationalRetentionCensusForTest,
     )> {
-        let owner = self.owner.upgrade()?;
+        let binding = &self.inner.retention_binding;
+        let root_id = self.inner.root.id();
+        let owner = binding.owner.upgrade()?;
         Some(match gate {
             RelationalRetentionGateForTest::ExternalCut => {
-                let before = self.census_for_test(root_id);
+                let before = self.retention_census_for_test();
                 let cut = owner
                     .external_cut
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let result = step();
-                let after = self.census_for_test(root_id);
+                let after = self.retention_census_for_test();
                 drop(cut);
                 (result, before, after)
             }
             RelationalRetentionGateForTest::Lane => {
-                let lane = lock_lane(&self.lane);
-                let census = |lane: &super::RelationalBranchRetentionLaneState| {
-                    RelationalRetentionCensusForTest {
-                        counters: lane.counters,
-                        lane_obligations: lane.obligations.len(),
-                        root_obligations: lane.root_obligations.get(&root_id).copied(),
-                    }
-                };
-                let before = census(&lane);
+                let lane = lock_lane(&binding.lane);
+                let before = census(&lane, root_id);
                 let result = step();
-                let after = census(&lane);
+                let after = census(&lane, root_id);
                 drop(lane);
                 (result, before, after)
             }

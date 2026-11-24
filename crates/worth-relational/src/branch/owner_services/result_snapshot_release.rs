@@ -1,23 +1,9 @@
 //! Explicit same-result cleanup through the actual published snapshot owner.
+use super::{RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial};
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::CommitResult;
-use crate::visibility::{RelationalSnapshotReleaseDenial, RelationalSnapshotReleaseReceipt};
+use crate::visibility::snapshot_release::RelationalSnapshotReleaseDenial;
 
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotRelease {
-    Released(RelationalSnapshotReleaseReceipt),
-    AlreadyReleased {
-        snapshot_id: crate::snapshots::data::SnapshotId,
-    },
-}
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotReleaseDenial {
-    Owner(crate::branch::RelationalBranchBasisDenial),
-    Snapshot(RelationalSnapshotReleaseDenial),
-    ResultBindingMismatch,
-    RegistrationMismatch,
-    RetirementInterrupted,
-}
 pub(super) fn release(
     runtime: &RelationalRuntime,
     result: &CommitResult,
@@ -32,7 +18,7 @@ pub(super) fn release(
         .published_release_observation(handle.snapshot_id())
     {
         Some(current) if !std::sync::Arc::ptr_eq(&current, original) => {
-            return Err(Denial::RegistrationMismatch)
+            return Err(Denial::RegistrationMismatch);
         }
         None if original.was_released() => {
             if !original.finish_retirement_blocking() {
@@ -45,7 +31,7 @@ pub(super) fn release(
         None => {
             return Err(Denial::Snapshot(
                 RelationalSnapshotReleaseDenial::UnknownSnapshot,
-            ))
+            ));
         }
         Some(_) => {}
     }

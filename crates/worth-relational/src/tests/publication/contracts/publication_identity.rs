@@ -65,8 +65,7 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
     );
 
     let error = preparation_runtime
-        .mvcc_publication_authority()
-        .prepare_commit(
+        .prepare_commit_publication(
             execution,
             committed.commit.commit_id,
             committed.commit.clone(),
@@ -159,8 +158,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
     let schema_registry = runtime.config.schema.registry.clone();
     let preparation_runtime = runtime.preparation_runtime_snapshot();
     let error = preparation_runtime
-        .mvcc_publication_authority()
-        .prepare_commit(
+        .prepare_commit_publication(
             execution,
             commit_id,
             future_envelope.body_mut_for_test().commit.clone(),

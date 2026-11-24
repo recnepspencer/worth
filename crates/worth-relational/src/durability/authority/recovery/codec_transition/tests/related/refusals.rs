@@ -4,12 +4,16 @@ use super::{
     fixture::*,
 };
 use crate::identity::data::{KindId, PartitionId};
-use crate::mvcc::{RelationalOperationControl, RelationalTransactionIntent};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture, RequiredOutputRolePosture,
+};
+use crate::mvcc::RelationalTransactionIntent;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::transactions::data::*;
 
 #[test]
 fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     for variant in 0..3 {
         let world = world(execution);
@@ -93,7 +97,7 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
         .unwrap_err();
         assert_eq!(
             denied.kind(),
-            crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+            crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
         );
         assert!(denied.detail().contains("incident relation"), "{denied:?}");
         assert!(selected.is_current());
@@ -124,10 +128,10 @@ pub(super) fn complete_association(
         &basis(&world.runtime),
         "native.closed.producer",
         &[19; 32],
-        &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-        &crate::mvcc::native_roles_fixture(
+        &native_meaning_fixture("native.closed.producer"),
+        &native_roles_fixture(
             &world.outputs.map(|id| (id, KindId(3))),
-            crate::mvcc::RequiredOutputRolePosture::Create,
+            RequiredOutputRolePosture::Create,
         ),
     )
     .map(|_| ())
@@ -135,7 +139,7 @@ pub(super) fn complete_association(
 
 #[test]
 fn changed_ordering_key_meaning_refuses_before_destination_restore() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
     // Replace the actual registered definition with the changed payload key,
@@ -179,7 +183,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
 
 #[test]
 fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     for rewire in [false, true] {
         let (runtime, receipt) = super::incoming_reference::installed_references(1);
@@ -252,9 +256,9 @@ fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
                     admission,
                     predecessor: previous,
                     meaning,
-                    roles: crate::mvcc::native_roles_fixture(
+                    roles: native_roles_fixture(
                         &world.outputs.map(|id| (id, KindId(3))),
-                        crate::mvcc::RequiredOutputRolePosture::Preserve,
+                        RequiredOutputRolePosture::Preserve,
                     ),
                 },
             )

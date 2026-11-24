@@ -1,3 +1,7 @@
+use crate::publication::close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
@@ -21,7 +25,7 @@ pub(super) struct RelationalRuntimePublicationLifecycle {
     pub(super) companion: Arc<crate::mvcc::publication::CompanionRegistry>,
     next_candidate_id: AtomicU64,
     candidates: Mutex<HashMap<u64, RegisteredCandidate>>,
-    pub(super) settlements: Arc<super::RelationalPublicationSettlementRegistry>,
+    pub(super) settlements: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::RelationalPublicationSettlementRegistry>,
 }
 
 /// A live candidate's registration. The candidate handle holds the payload's
@@ -42,27 +46,25 @@ impl RelationalRuntimePublicationOwner {
     /// A retained candidate owns real reservations until its holder drops it.
     pub(super) fn try_memory_close_custody(
         &self,
-    ) -> Result<Option<super::RelationalPublicationCustodyHolders>, ()> {
+    ) -> Result<Option<RelationalPublicationCustodyHolders>, ()> {
         let candidates = match self.binding.lifecycle.candidates.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(()),
         };
-        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+        let candidate_custody = RelationalPublicationRegistryCustody::observed(
             candidates.len(),
             candidates.keys().next().copied(),
         );
         drop(candidates);
-        super::RelationalPublicationCustodyHolders {
+        RelationalPublicationCustodyHolders {
             candidates: candidate_custody,
             settlements: self.binding.lifecycle.settlements.try_close_custody(),
             companion: self.companion_close_custody(),
         }
         .memory_result()
     }
-    pub(super) fn live_publication_custody(
-        &self,
-    ) -> Option<super::RelationalPublicationCustodyHolders> {
+    pub(super) fn live_publication_custody(&self) -> Option<RelationalPublicationCustodyHolders> {
         self.binding.reap_abandoned_candidates();
         let candidates = self
             .binding
@@ -70,12 +72,12 @@ impl RelationalRuntimePublicationOwner {
             .candidates
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+        let candidate_custody = RelationalPublicationRegistryCustody::observed(
             candidates.len(),
             candidates.keys().next().copied(),
         );
         drop(candidates);
-        super::RelationalPublicationCustodyHolders {
+        RelationalPublicationCustodyHolders {
             candidates: candidate_custody,
             settlements: self.binding.lifecycle.settlements.close_custody(),
             companion: self.companion_close_custody(),
@@ -83,10 +85,10 @@ impl RelationalRuntimePublicationOwner {
         .retained()
     }
 
-    fn companion_close_custody(&self) -> super::RelationalPublicationCompanionCustody {
+    fn companion_close_custody(&self) -> RelationalPublicationCompanionCustody {
         match self.binding.lifecycle.companion.enter() {
             Ok(epoch) => epoch.close_custody(),
-            Err(stop) => super::RelationalPublicationCompanionCustody::Unavailable(stop),
+            Err(stop) => RelationalPublicationCompanionCustody::Unavailable(stop),
         }
     }
 
@@ -105,7 +107,7 @@ impl RelationalRuntimePublicationOwner {
                     companion: Arc::new(companion),
                     next_candidate_id: AtomicU64::new(1),
                     candidates: Mutex::new(HashMap::new()),
-                    settlements: Arc::new(super::RelationalPublicationSettlementRegistry::default()),
+                    settlements: Arc::new(crate::runtime::state::runtime_state::publication_settlement_registry::RelationalPublicationSettlementRegistry::default()),
                 }),
             },
         }
@@ -151,8 +153,8 @@ impl RelationalRuntimePublicationBinding {
         &self,
     ) -> Result<
         crate::mvcc::publication::CompanionRegistrationEpoch<'_>,
-        crate::mvcc::PublicationCompanionRegistrationStop,
-    > {
+        crate::mvcc::publication::companion::registration_stop::PublicationCompanionRegistrationStop,
+    >{
         self.lifecycle.companion.enter()
     }
     /// Close settlement admission and resolve remaining retention with typed
@@ -268,12 +270,12 @@ impl RelationalRuntimePublicationBinding {
         &self,
         commit_id: crate::history::data::CommitId,
         runtime_instance_id: u64,
-        reserved: super::ReservedRelationalSettlement,
+        reserved: crate::runtime::state::runtime_state::publication_settlement_registry::ReservedRelationalSettlement,
     ) -> Result<
-        super::RelationalPendingSettlementReservation,
-        super::RelationalSettlementReservationDenial,
-    > {
-        super::RelationalPublicationSettlementRegistry::reserve(
+        crate::runtime::state::runtime_state::publication_settlement_registry::RelationalPendingSettlementReservation,
+        crate::runtime::state::runtime_state::publication_settlement_registry::RelationalSettlementReservationDenial,
+    >{
+        crate::runtime::state::runtime_state::publication_settlement_registry::RelationalPublicationSettlementRegistry::reserve(
             &self.lifecycle.settlements,
             commit_id,
             runtime_instance_id,
@@ -284,7 +286,7 @@ impl RelationalRuntimePublicationBinding {
     pub(crate) fn pending_settlement(
         &self,
         commit_id: crate::history::data::CommitId,
-    ) -> Option<Arc<super::PendingRelationalPublicationSettlement>> {
+    ) -> Option<Arc<crate::runtime::state::runtime_state::publication_settlement_registry::PendingRelationalPublicationSettlement>>{
         self.lifecycle.settlements.record(commit_id)
     }
 
@@ -298,7 +300,7 @@ impl RelationalRuntimePublicationBinding {
 
     pub(crate) fn release_pending_settlement(
         &self,
-        record: &Arc<super::PendingRelationalPublicationSettlement>,
+        record: &Arc<crate::runtime::state::runtime_state::publication_settlement_registry::PendingRelationalPublicationSettlement>,
     ) {
         self.lifecycle.settlements.release(record);
     }

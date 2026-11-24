@@ -13,8 +13,10 @@ use super::HistorySubsystem;
 impl HistorySubsystem {
     pub(crate) fn readmit_checkpoint_region_directory(
         &self,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
-        commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        commit: crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
         content_records: &crate::content::RelationalContentAttachments,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
@@ -30,7 +32,9 @@ impl HistorySubsystem {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
         original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
         descriptor: crate::branch::target::RelationalBranchRootDescriptor,
         schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
@@ -55,7 +59,7 @@ impl HistorySubsystem {
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
@@ -73,7 +77,7 @@ impl HistorySubsystem {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
 
@@ -117,9 +121,9 @@ impl HistorySubsystem {
         commit: crate::history::data::CommitId,
     ) -> Result<
         Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
-        super::history_catalog_recovery::RelationalHistoryRecoveryDenial,
+        super::history_recovery_denial::RelationalHistoryRecoveryDenial,
     > {
-        use super::history_catalog_recovery::RelationalHistoryRecoveryDenial as Denial;
+        use super::history_recovery_denial::RelationalHistoryRecoveryDenial as Denial;
         let artifact = self
             .commit_artifact(commit)
             .ok_or_else(|| Denial::Invalid("root has no actual admitted catalog entry".into()))?;

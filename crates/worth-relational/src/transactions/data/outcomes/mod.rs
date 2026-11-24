@@ -1,7 +1,7 @@
 pub(crate) mod aspect_delta_failure_fields;
 pub(crate) mod commit_conflict;
 pub(crate) mod commit_preparation;
-mod commit_result;
+pub(crate) mod commit_result;
 pub(crate) mod commit_semantic_result;
 pub(crate) mod commit_summaries;
 pub use commit_semantic_result::{

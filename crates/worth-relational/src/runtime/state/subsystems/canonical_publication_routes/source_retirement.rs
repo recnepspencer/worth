@@ -12,7 +12,7 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Result<
         Option<(
             CommitId,
-            Arc<crate::history::RelationalCommitEnvelopeResidency>,
+            Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
         )>,
         (),
     > {

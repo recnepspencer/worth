@@ -1,14 +1,14 @@
 //! Native custody for the surviving writers that consume an authored retirement.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CommitId, SelectedAuthoredRetirement},
-    identity::data::{EntityId, RelationId},
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::RecordRef,
-};
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::publication::ownership::authored_retirement::SelectedAuthoredRetirement;
+use crate::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
 mod corrective_root;
@@ -19,7 +19,12 @@ mod stages;
 // Request-local correspondence only. It never admits a retirement or publication.
 pub(crate) type AuthoredRootCorrespondence = (
     CommitId,
-    Arc<worth_execution::ExecutionArray<(EntityId, crate::transactions::data::CreatedEntityRef)>>,
+    Arc<
+        worth_execution::ExecutionArray<(
+            EntityId,
+            crate::transactions::data::primitives::CreatedEntityRef,
+        )>,
+    >,
 );
 
 /// Canonical predecessor facts, issued only after the shared closure selection.
@@ -193,10 +198,10 @@ impl RelationalAuthoredCoupledOwners {
     }
 }
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// The closure owner authenticates all anchors and current publications once.
     /// Surviving edge consumers are readmitted through the existing custody owner.
-    pub fn readmit_authored_coupled_owners(
+    pub(crate) fn readmit_authored_coupled_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -213,15 +218,15 @@ impl RelationalRuntime {
                     retirements,
                     coupled_owners,
                     current,
-                } = crate::history::data::select_authored_source_retirement(
+                } = crate::publication::ownership::authored_retirement::select_authored_source_retirement(
                     execution,
-                    self,
+                    self.history,
                     installed,
                     basis,
                     anchor,
                     co_anchors,
                     roles,
-                    crate::history::data::AuthoredRetirementSelection::ClosureAndLinkedOwners,
+                    crate::publication::ownership::authored_retirement::AuthoredRetirementSelection::ClosureAndLinkedOwners,
                 )?;
                 let readmit = |selected: &crate::history::data::SelectedOutputPublication| {
                     self.readmit_canonical_publication(

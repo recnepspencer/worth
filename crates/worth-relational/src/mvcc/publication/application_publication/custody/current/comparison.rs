@@ -7,7 +7,7 @@ impl RelationalRequiredOutputPublication {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &super::super::super::RelationalInstalledApplicationPublicationAuthority,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Result<bool, TransactionCommitError> {
         if !self.origin.source_scope_owned {
             return Ok(false);

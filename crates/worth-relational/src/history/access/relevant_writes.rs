@@ -3,7 +3,7 @@ mod cursor;
 pub(crate) mod generation;
 pub(super) mod live_cursor;
 mod maintenance;
-mod managed_source;
+pub(crate) mod managed_source;
 mod page;
 pub(crate) mod posting_key;
 mod selection;

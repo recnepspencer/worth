@@ -1,9 +1,17 @@
 //! An actual completed closure can cross only within its one live Source stage.
-use super::*;
+use super::context::SourcePreparationContext;
 use crate::authority::mutation::AdjacencyDelta;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::storage::overlay::OverlayStateView;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::candidate_source::scope_closure::PreparedManagedIndexScopeClosure;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
+use crate::validation::candidate_source::{
+    ManagedIndexSourcePreparationDenial as Denial, SourcePreparationGroup,
+};
+use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::custom_rule::CustomPreparationBudget;
+use crate::validation::engine::state_view::InvariantStateView;
 
 pub(in crate::validation::candidate_source) struct DiscoveredSource<'a> {
     context: &'a SourcePreparationContext<'a>,
@@ -50,14 +58,14 @@ impl<'a> DiscoveredSource<'a> {
             .ok_or_else(exhausted)?;
         admit(budget, units)?;
         let before = InvariantStateView::new(&context.selected, context.selected.version_id());
-        let overlay = OverlayStateView::new(&context.selected, context.draft.state());
+        let overlay = OverlayStateView::new(&context.selected, context.state);
         let after = InvariantStateView::new(&overlay, context.proposal.proposed_version_id());
         let physical = context
             .records
             .iter()
             .filter(|record| source_record_is_relevant(program, record, &before, &after));
         let same_records = physical.eq(records.iter());
-        let same_adjacency = adjacency == context.draft.outcome.effect.adjacency.deltas;
+        let same_adjacency = adjacency == context.outcome.effect.adjacency.deltas;
         let same = same_records && same_adjacency;
         context
             .execution
@@ -112,4 +120,25 @@ fn exhausted() -> Denial {
         crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
     )
     .into()
+}
+
+pub(super) fn source_record_is_relevant(
+    program: &ManagedIndexSourceProgram,
+    record: &RecordRef,
+    before: &InvariantStateView<'_>,
+    after: &InvariantStateView<'_>,
+) -> bool {
+    let RecordRef::Entity(id) = record else {
+        return false;
+    };
+    [before, after]
+        .into_iter()
+        .filter_map(|view| view.entity_metadata(*id))
+        .any(|metadata| {
+            metadata.kind_id == program.scope_kind()
+                || metadata.kind_id == program.row_kind()
+                || program
+                    .physical_sources()
+                    .any(|&(_, from, to)| metadata.kind_id == from || metadata.kind_id == to)
+        })
 }

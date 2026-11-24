@@ -1,4 +1,3 @@
-use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::data::{AspectContractPlanCatalog, LoweredAspectContractPlan, SchemaVersionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
@@ -48,30 +47,27 @@ impl<'view> IndexProjectionSource<'view> {
         })
     }
 
-    fn schema_authority(&self) -> Option<&RelationalBranchRootSchemaAuthority> {
-        self.projection.selected_schema_authority()
-    }
-
     pub(in crate::indexes) fn schema_version(&self) -> Option<SchemaVersionId> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::schema_version)
+        self.projection
+            .selected_schema()
+            .map(|schema| schema.version)
     }
 
     pub(in crate::indexes) fn schema_authority_digest(&self) -> Option<[u8; 32]> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::authority_digest)
+        self.projection
+            .selected_schema()
+            .map(|schema| schema.authority_digest)
     }
 
     pub(in crate::indexes) fn aspect_plans(&self) -> Option<&AspectContractPlanCatalog> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::aspect_plans)
+        self.projection.selected_schema().map(|schema| schema.plans)
     }
 
     pub(in crate::indexes) fn entity_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&LoweredAspectContractPlan> {
-        self.schema_authority()?.entity_aspect_plan(kind_id)
+        self.aspect_plans()?.entity_plans.get(&kind_id)
     }
 
     /// Cost: the selected endpoint's adjacency, never the complete relation kind.

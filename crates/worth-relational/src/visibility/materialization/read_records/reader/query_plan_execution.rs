@@ -42,10 +42,9 @@ impl RelationalPinnedRead {
 
     fn count_query_backing(&self, lease: Option<&ExecutionResourceLease<'_>>) {
         if lease.is_some() {
-            self.performance_access()
-                .count_query_staged_parallel_strategy();
+            self.instrumentation.count_query_staged_parallel_strategy();
         } else {
-            self.performance_access().count_query_serial_strategy();
+            self.instrumentation.count_query_serial_strategy();
         }
     }
 

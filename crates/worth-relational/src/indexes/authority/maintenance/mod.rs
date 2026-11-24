@@ -14,7 +14,7 @@ mod changes;
 mod entry_edits;
 mod entry_refresh;
 use entry_refresh::{empty_entries, update_entries};
-mod applied_field;
+pub(crate) mod applied_field;
 mod field;
 mod field_delta;
 pub(crate) use applied_field::AppliedFieldImage;

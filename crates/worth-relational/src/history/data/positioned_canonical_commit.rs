@@ -63,7 +63,7 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(
+    pub(crate) fn positioned_envelope_mut_for_test(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> &mut super::CanonicalCommitEnvelopeBody {

@@ -9,12 +9,13 @@ use std::sync::{atomic::Ordering, Arc};
 
 #[derive(Default)]
 pub(super) struct IndexedPublicationCatalog {
-    entries: std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>,
-    pub(super) head: Option<crate::history::RetainedCanonicalIndex>,
+    entries:
+        std::collections::BTreeMap<CommitId, Arc<crate::history::commit::RelationalCommitArtifact>>,
+    pub(super) head: Option<crate::history::commit::RetainedCanonicalIndex>,
 }
 impl std::ops::Deref for IndexedPublicationCatalog {
     type Target =
-        std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>;
+        std::collections::BTreeMap<CommitId, Arc<crate::history::commit::RelationalCommitArtifact>>;
     fn deref(&self) -> &Self::Target {
         &self.entries
     }
@@ -23,7 +24,7 @@ impl std::ops::Deref for IndexedPublicationCatalog {
 impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_checkpoint_catalog(
         &self,
-        entries: Vec<Arc<crate::history::RelationalCommitArtifact>>,
+        entries: Vec<Arc<crate::history::commit::RelationalCommitArtifact>>,
     ) {
         let head = entries
             .iter()
@@ -51,7 +52,7 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn performed_envelope_residency(
         &self,
         id: CommitId,
-    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+    ) -> Option<Arc<crate::history::commit::RelationalCommitEnvelopeResidency>> {
         self.by_commit
             .get(&id)
             .filter(|route| route.is_visible())

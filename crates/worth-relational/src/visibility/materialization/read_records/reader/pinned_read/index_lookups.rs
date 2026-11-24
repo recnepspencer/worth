@@ -38,7 +38,7 @@ impl RelationalPinnedRead {
                 request.index_id(),
             )
         })?;
-        self.performance_access().count_query_index_attempt();
+        self.instrumentation.count_query_index_attempt();
         self.lookup_pinned_entity_field(request, parity_mode, execution)
     }
     pub(crate) fn lookup_pinned_entity_field(
@@ -82,7 +82,7 @@ impl RelationalPinnedRead {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupDenial>
     {
-        self.performance_access().count_query_index_attempt();
+        self.instrumentation.count_query_index_attempt();
         execution.check_live().map_err(|stop| {
             bounded_related_entity_ordered_lookup::denial(
                 BoundedRelatedEntityOrderedLookupDenialKind::Execution(
@@ -114,7 +114,7 @@ impl RelationalPinnedRead {
         parity_mode: BoundedIndexParityMode,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
-        self.performance_access().count_query_index_attempt();
+        self.instrumentation.count_query_index_attempt();
         self.lookup_pinned_relation_join(request, parity_mode, execution)
     }
     pub(crate) fn lookup_pinned_relation_join(

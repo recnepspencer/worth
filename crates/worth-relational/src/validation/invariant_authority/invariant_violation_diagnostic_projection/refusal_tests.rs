@@ -1,8 +1,9 @@
 //! Retention projection preserves the original canonical carrier as bytes.
 use super::{InvariantViolationDiagnosticProjection, RelationalDiagnosticValue};
-use crate::validation::data::{
-    CustomInvariantRefusal, CustomInvariantRuleId, CustomInvariantSemanticIdentity,
-    CustomInvariantSemanticVersion, InvariantViolationFields,
+use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::rule_id::{
+    CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
 };
 
 #[test]
@@ -44,8 +45,9 @@ fn partition_diagnostics_and_witnesses_retain_distinct_original_endpoints() {
     use crate::identity::data::{EntityId, KindId, PartitionId};
     use crate::schema::data::ContractId;
     use crate::symbols::data::ClientKey;
-    use crate::transactions::data::{CreatedEntityRef, EntityReference};
-    use crate::validation::data::{InvariantClass, InvariantViolation};
+    use crate::transactions::data::primitives::{CreatedEntityRef, EntityReference};
+    use crate::validation::data::execution::InvariantClass;
+    use crate::validation::data::results::InvariantViolation;
     let source = EntityReference::Existing(EntityId::new(PartitionId(1), 3, 1));
     let target = EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId(2),

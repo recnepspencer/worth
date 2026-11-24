@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::{projection::SnapshotProjectionRoot, RelationalBranchRoot};
 
 /// Why an immutable branch root remains retained by the Relational owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -105,6 +105,10 @@ impl RelationalRetainedHistoricalRoot {
                     _obligation: RelationalObservationRetentionObligation { _guard: guard },
                 })
             })
+    }
+
+    pub(crate) fn projection_root(&self) -> SnapshotProjectionRoot<'_> {
+        self.root.project_snapshot()
     }
 
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {

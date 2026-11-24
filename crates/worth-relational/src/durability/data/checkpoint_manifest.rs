@@ -94,7 +94,7 @@ impl RelationalCheckpointManifest {
 }
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct RelationalCheckpointManifestDraft {
-    pub(crate) branch_data: crate::branch::CheckpointBranchMetadata,
+    pub(crate) branch_data: crate::branch::registry::CheckpointBranchMetadata,
     pub(crate) coverage: CheckpointCoverage,
     pub(crate) covered_position: PatchStreamPosition,
     pub(crate) schemas: super::CheckpointSchemaImages,
@@ -139,7 +139,7 @@ impl Eq for ManifestMetadataAllocations {}
 mod wire;
 
 impl std::ops::Deref for RelationalCheckpointManifestDraft {
-    type Target = crate::branch::CheckpointBranchMetadataFields;
+    type Target = crate::branch::registry::CheckpointBranchMetadataFields;
     fn deref(&self) -> &Self::Target {
         &self.branch_data
     }
@@ -254,7 +254,7 @@ pub(crate) struct RelationalCheckpointRegion {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RelationalCheckpointEmptyComponent {
-    pub(crate) descriptor: crate::branch::RelationalBranchBasisDescriptor,
+    pub(crate) descriptor: crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
     pub(crate) schema_carrier_digest: [u8; 32],
 }
 

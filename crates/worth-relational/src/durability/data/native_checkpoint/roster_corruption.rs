@@ -5,6 +5,7 @@ use crate::{
     history::data::CommitId,
 };
 mod commitments;
+mod portable_rows;
 impl RelationalNativeCheckpoint {
     /// Closed certification corruption. The result is untrusted checkpoint bytes,
     /// never admitted state or a metadata-writing grant. Zero drops a route, one
@@ -67,12 +68,7 @@ impl RelationalNativeCheckpoint {
         let mut changed = false;
         for root in &mut checkpoint.branch_roots {
             for partition in &mut root.partition_images {
-                changed |= crate::publication::ownership::corruption::alter(
-                    partition,
-                    publication,
-                    change,
-                    &storage,
-                );
+                changed |= portable_rows::alter(partition, publication, change, &storage);
             }
             root.partition_image_digest =
                 crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
@@ -96,12 +92,7 @@ impl RelationalNativeCheckpoint {
                 );
         }
         for partition in &mut checkpoint.partition_images {
-            changed |= crate::publication::ownership::corruption::alter(
-                partition,
-                publication,
-                change,
-                &storage,
-            );
+            changed |= portable_rows::alter(partition, publication, change, &storage);
         }
         if !changed {
             return Err(DurabilityError::new(

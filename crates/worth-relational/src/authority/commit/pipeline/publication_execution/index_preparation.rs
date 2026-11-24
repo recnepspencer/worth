@@ -1,18 +1,20 @@
 //! Attach the index owner's funded result to the exact prepared publication.
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::indexes::authority::PreparedCandidateIndexPublication;
 use crate::indexes::data::{DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceWork};
 use crate::publication::{bundle::PublicationStage, data::PublicationError};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::Arc;
 
 pub(super) fn prepare(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    indexes: &crate::runtime::IndexDefinitionReadBinding,
+    indexes: &crate::runtime::state::subsystems::indexing::IndexDefinitionReadBinding,
     budget: Option<&crate::execution::RequestWorkBudget>,
     predecessor: &Arc<RelationalBranchRoot>,
     successor: &Arc<RelationalBranchRoot>,
-    definitions: Option<&crate::runtime::PreparedRelationalIndexDefinitions>,
+    definitions: Option<
+        &crate::runtime::state::subsystems::indexing::PreparedRelationalIndexDefinitions,
+    >,
     maintenance_budget: Option<crate::indexes::data::DerivedIndexMaintenanceBudget>,
 ) -> Result<Option<PreparedCandidateIndexPublication>, TransactionCommitError> {
     let change = successor.commit_change().ok_or_else(|| {
@@ -34,8 +36,8 @@ pub(super) fn prepare(
             .map_err(|denial| match denial.kind {
                 DerivedIndexMaintenanceDenialKind::Execution(cause) => {
                     TransactionCommitError::execution(
-                        crate::transactions::data::CommitExecutionDenial {
-                            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                                 cause,
                             ),
                             partition_identity: None,

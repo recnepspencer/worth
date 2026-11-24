@@ -1,18 +1,19 @@
 //! A compiled Source loan over one real, unpublished coupled assembly prefix.
+use super::applied_affinity::AppliedSourceAffinity;
 mod publication;
 use super::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
-    ManagedIndexSourceProjection, ManagedIndexSourceRows, NativeManagedSourceInterpretation,
+    ManagedIndexSourceRows, NativeManagedSourceInterpretation,
 };
-use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::identity::data::EntityId;
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use crate::runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead};
-use crate::visibility::materialization::read_records::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 pub use publication::ManagedIndexAppliedSourcePublication;
-use std::{
-    cell::{Cell, RefCell},
-    sync::Arc,
-};
+use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 /// Physical Source custody for an exact applied image. It grants neither
@@ -20,25 +21,17 @@ use worth_execution::ExecutionRequest;
 /// Only the coupled assembly owner can issue it; every row operation borrows
 /// the caller's original request and the compiled Source projection machinery.
 pub struct ManagedIndexAppliedSourceRead<'candidate> {
-    _owner: &'candidate crate::mvcc::RelationalMutationProposalIdentity,
+    _owner: &'candidate RelationalMutationProposalIdentity,
     pub(crate) projection: VisibilityProjectionView,
     pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(super) affinity: Arc<AppliedSourceAffinity>,
     interpretation: Arc<NativeManagedSourceInterpretation>,
 }
 
-pub(super) struct AppliedSourceAffinity {
-    pub(super) candidate: RelationalAppliedCandidateReadIdentity,
-    pub(super) program: ManagedIndexSourceProgram,
-    pub(super) scope: EntityId,
-    generation: u64,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
-}
-
 impl<'candidate> ManagedIndexAppliedSourceRead<'candidate> {
     pub(crate) fn issue(
         execution: &ExecutionRequest<'_, '_>,
-        owner: &'candidate crate::mvcc::RelationalMutationProposalIdentity,
+        owner: &'candidate RelationalMutationProposalIdentity,
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
@@ -63,7 +56,7 @@ impl<'candidate> ManagedIndexAppliedSourceRead<'candidate> {
             _owner: owner,
             projection,
             affinity: Arc::new(AppliedSourceAffinity {
-                candidate: pin.candidate_identity().clone(),
+                proposal: pin.candidate_identity().proposal().clone(),
                 program: program.clone(),
                 scope,
                 generation,
@@ -82,11 +75,11 @@ impl<'candidate> ManagedIndexAppliedSourceRead<'candidate> {
     /// Retain the real loan's publication affinity. This is still unpublished
     /// Source custody; only observation of its actual commit can position it.
     pub fn publication_support(&self) -> ManagedIndexAppliedSourcePublication {
-        ManagedIndexAppliedSourcePublication::from_loan(self)
+        ManagedIndexAppliedSourcePublication::new(Arc::clone(&self.affinity))
     }
 
     pub fn candidate_identity(&self) -> &RelationalAppliedCandidateReadIdentity {
-        &self.affinity.candidate
+        self.pin.candidate_identity()
     }
     /// The exact image already borrowed by this Source loan, without any
     /// committed position or completed Query read authority.
@@ -105,23 +98,16 @@ impl<'candidate> ManagedIndexAppliedSourceRead<'candidate> {
     ) -> Result<ManagedIndexSourceRows<'a>, Denial> {
         if self.interpretation.current_registration_generation()? != self.affinity.generation {
             return Err(Denial::Publication(
-                crate::mvcc::CompanionPreflightStop::RegistrationChanged,
+                CompanionPreflightStop::RegistrationChanged,
             ));
         }
         execution
             .check_live()
             .map_err(|cause| DerivedRelationReadDenial::Request(cause.into()))?;
-        Ok(ManagedIndexSourceRows {
-            scope: self.scope(),
-            projection: ManagedIndexSourceProjection {
-                program: self.program(),
-                backing: super::projection::SourceProjectionBacking::Applied {
-                    loan: self,
-                    execution,
-                    memory: RefCell::new(None),
-                    bytes: Cell::new(0),
-                },
-            },
-        })
+        Ok(super::projection::applied_rows(
+            &self.projection,
+            &self.affinity,
+            execution,
+        ))
     }
 }

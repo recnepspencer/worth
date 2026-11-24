@@ -79,7 +79,7 @@ fn reconstruct_chain(
         .iter()
         .find(|member| member.id == id)
         .ok_or("publication omits exact member")?;
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     let _chain_memory = reserve(
         lease,
         bound
@@ -150,7 +150,7 @@ fn reconstruct_chain(
             }
             CanonicalOutputPublication::HistoricalSelection { .. } => {
                 current = super::super::historical_selection::antecedent(
-                    runtime.runtime,
+                    runtime.input.projection.history,
                     &runtime.execution(),
                     &current,
                     current_origin,

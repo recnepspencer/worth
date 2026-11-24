@@ -47,7 +47,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 super::super::read_work::record_memory::release(memory, clone_bytes)?;
                 Ok(Some(
                     super::aspect_catalog::declared_aspects_for_entity_kind(
-                        self.runtime,
+                        &self.runtime.schema_contract_runtime.aspect_contract_plans,
                         kind,
                         &mut |units| context.checkpoint(units),
                         memory,
@@ -120,7 +120,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 super::super::read_work::record_memory::release(memory, clone_bytes)?;
                 Ok(Some(
                     super::aspect_catalog::declared_aspects_for_relation_kind(
-                        self.runtime,
+                        &self.runtime.schema_contract_runtime.aspect_contract_plans,
                         kind,
                         &mut |units| context.checkpoint(units),
                         memory,

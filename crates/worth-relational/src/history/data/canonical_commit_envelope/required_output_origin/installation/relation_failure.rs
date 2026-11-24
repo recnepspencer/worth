@@ -15,7 +15,7 @@ pub(in super::super) fn relation_stop(
 pub(super) fn relation_context(
     stop: crate::history::data::CodecRetirementClosureStop,
     stage: &str,
-    basis: &AdmittedRelationalBranchBasis,
+    before: &RelationalBranchBasisDescriptor,
     candidate: &CanonicalCommitEnvelopeBody,
 ) -> TransactionCommitError {
     match stop {
@@ -23,8 +23,7 @@ pub(super) fn relation_context(
         crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
                 "{detail}; publication_stage={stage}; before={:?}; candidate={:?}",
-                basis.descriptor(),
-                candidate.commit
+                before, candidate.commit
             ))
         }
     }

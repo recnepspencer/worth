@@ -1,8 +1,7 @@
 //! Pure descriptive counterexamples; none constructs a runtime or live cell.
 use super::*;
-use crate::branch::{
-    RelationalBranchRootDescriptor, RelationalBranchTarget, RelationalBranchVersion,
-};
+use crate::branch::target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
+use crate::branch::version::RelationalBranchVersion;
 use worth_foundational::{
     FoundationalBranchReferenceGeneration as Generation, FoundationalBranchTarget,
 };

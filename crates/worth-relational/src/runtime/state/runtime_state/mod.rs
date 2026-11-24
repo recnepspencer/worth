@@ -6,6 +6,7 @@ mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
 mod configuration_epoch_control;
+pub(crate) mod configuration_snapshot;
 mod core_access;
 mod memory_close;
 mod snapshot_visibility;
@@ -14,23 +15,22 @@ pub use source_close::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
-mod court_doors_for_test;
 pub(crate) mod indexing;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
 mod preparation_home_contracts;
 mod preparation_round;
-mod preparation_runtime;
+pub(crate) mod preparation_runtime;
 mod prepared_close;
-mod publication_close_custody;
-mod publication_lifecycle;
+pub(crate) mod publication_lifecycle;
 mod record_allocation_frontier;
-pub use publication_close_custody::{
+mod runtime_court_doors_for_test;
+pub use crate::publication::close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,
 };
-mod publication_settlement_registry;
+pub(crate) mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
 mod test_support;

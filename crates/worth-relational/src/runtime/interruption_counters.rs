@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
+use super::operation_control::interruption_event::{
     RelationalInterruptionBoundary, RelationalInterruptionEvent, RelationalOperationInterruption,
 };
 

@@ -61,7 +61,7 @@ pub(super) fn field<'a>(
         }
     }
     Ok(
-        crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
+        crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(
             state, locator,
         ),
     )

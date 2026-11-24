@@ -6,8 +6,7 @@ use super::super::materialization::materialize_authoritative_relation_record_at_
 use super::super::native_scan_stop::NativeScanStop;
 use super::super::visibility::relation_slot_matches_kind_at_version;
 use super::{
-    context::VisibilityReadContext, kind_scan_visibility::KindScanVisibility,
-    projection_record_reader::ProjectionRecordReader,
+    kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
 };
 use crate::{storage::data::RelationReadRecord, storage::overlay::PartitionAccess};
 use budget::RelationKindScan;
@@ -34,47 +33,8 @@ pub enum RelationKindTruthReadDenial {
     },
 }
 
-impl<'runtime> VisibilityReadContext<'runtime> {
-    /// Scans one relation kind at a version, refusing before spending more
-    /// than the declared slot-examination and record-materialization work.
-    pub fn bounded_visible_relations_of_kind(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        maximum_work_units: usize,
-    ) -> Result<
-        Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
-        crate::execution::denial_cause::RelationalExecutionDenialCause,
-    > {
-        let edition = self.runtime.storage_access().current_edition();
-        let state = edition
-            .demand_all(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        crate::visibility::materialization::read_records::read_work::scan_with_memory(
-            execution,
-            |context, memory| {
-                ProjectionRecordReader::new(
-                    self.runtime.current_version_id(),
-                    &self.runtime.services.instrumentation,
-                )
-                .bounded_relations_of_kind_in_state(
-                    &state,
-                    &self.runtime.config.schema.registry,
-                    kind_id,
-                    KindScanVisibility::for_selected_version(
-                        self.runtime.current_version_id(),
-                        version_id,
-                    ),
-                    maximum_work_units,
-                    &mut |units| context.checkpoint(units),
-                    memory,
-                )
-            },
-            |result| super::super::read_footprint::relations(&result.records),
-        )
-    }
-}
+#[path = "truth_relation_kind_scan/runtime_reads.rs"]
+mod runtime_reads;
 
 impl BoundedRelationKindTruthRead {
     pub(crate) fn owned_bytes(&self) -> u64 {

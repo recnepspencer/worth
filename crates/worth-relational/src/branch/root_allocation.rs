@@ -1,8 +1,10 @@
 #[path = "root_allocation/request.rs"]
 mod request;
+pub(in crate::branch) use super::super::retained_allocation::{
+    reserve_arc_memory, reserve_box_memory,
+};
 use super::RelationalBranchRoot;
 use crate::branch::root_regions::RelationalPersistentRegionNodeObservation;
-pub(in crate::branch) use request::{reserve_arc_memory, reserve_box_memory};
 #[path = "root_allocation/union.rs"]
 mod union;
 

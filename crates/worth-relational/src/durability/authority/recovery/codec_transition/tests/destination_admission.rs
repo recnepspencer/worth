@@ -39,7 +39,7 @@ fn assert_destination_refused_unchanged(
 
 #[test]
 fn fresh_destination_publication_binding_refuses_then_unbound_retry_restores() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
     let native = capture(execution, &source.runtime);
@@ -64,7 +64,7 @@ fn fresh_destination_publication_binding_refuses_then_unbound_retry_restores() {
 
 #[test]
 fn fresh_destination_preparation_port_remains_usable_and_unbound_retry_restores() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
     let native = capture(execution, &source.runtime);
@@ -100,7 +100,7 @@ fn fresh_destination_preparation_port_remains_usable_and_unbound_retry_restores(
 
 #[test]
 fn fresh_destination_actual_weak_state_binding_refuses_without_closing_settlement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
     let native = capture(execution, &source.runtime);
@@ -128,7 +128,7 @@ fn fresh_destination_actual_weak_state_binding_refuses_without_closing_settlemen
 
 #[test]
 fn empty_destination_retained_native_basis_refuses_then_drop_allows_funded_retry() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
     let native = capture(execution, &source.runtime);
@@ -154,7 +154,7 @@ fn empty_destination_retained_native_basis_refuses_then_drop_allows_funded_retry
 
 #[test]
 fn published_destination_keeps_raw_source_exact_basis_and_usable_snapshot_after_refusal() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
     let native = capture(execution, &source.runtime);

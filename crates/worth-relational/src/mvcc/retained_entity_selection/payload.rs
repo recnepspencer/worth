@@ -30,9 +30,9 @@ pub(in crate::mvcc) fn prepare(
         },
     )
     .map_err(|failure| storage(&input.historical, failure))??;
-    let meaning = CanonicalRetainedEntitySelection::from_admitted(
+    let meaning = CanonicalRetainedEntitySelection::from_selected_descriptor(
         execution,
-        &input.historical,
+        input.historical.descriptor(),
         input.entity,
         payload.0,
     )

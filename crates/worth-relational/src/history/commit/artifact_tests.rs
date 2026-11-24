@@ -32,7 +32,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .cloned()
         .expect("committed root carries its canonical envelope");
     let preencoded = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::clone(&envelope),
         )
@@ -76,21 +76,55 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     ));
 }
 
+fn canonical_accounting_fixture() -> crate::history::data::CanonicalCommitEnvelope {
+    use crate::branch::reference::observation::relational_branch_observation;
+    use crate::branch::reference_checkpoint_data::{
+        RelationalBranchCellCheckpoint, CANONICAL_RUNTIME_INSTANCE_ID,
+    };
+    use crate::branch::target::RelationalBranchTarget;
+    use crate::branch::version::RelationalBranchVersion;
+    use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+    use crate::identity::data::{EntityId, PartitionId};
+    use crate::transactions::data::primitives::RecordRef;
+    use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
+
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let mut envelope = envelope_with_patch_and_update(RecordRef::Entity(entity), entity);
+    let receipt = &envelope.commit;
+    let branch_id = receipt.branch_id.clone();
+    let target = RelationalBranchTarget::new(
+        CANONICAL_RUNTIME_INSTANCE_ID,
+        receipt.commit_id.0,
+        receipt.version_id.as_u64(),
+        Vec::new(),
+        RelationalBranchTarget::roots_for_commit(receipt),
+    );
+    let observation = relational_branch_observation(
+        CANONICAL_RUNTIME_INSTANCE_ID,
+        &branch_id.0,
+        FoundationalBranchTarget::basis(target),
+        FoundationalBranchReferenceGeneration::new(1),
+    )
+    .unwrap();
+    envelope.body_mut_for_test().branch_cell_checkpoint = Some(RelationalBranchCellCheckpoint {
+        runtime_instance_id: CANONICAL_RUNTIME_INSTANCE_ID,
+        branch_id,
+        observation,
+        truth_version: RelationalBranchVersion::new(1),
+        fork_provenance: None,
+        fork_source_branch_id: None,
+    });
+    envelope
+}
+
 #[test]
 fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
-    let mut envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
-        .unwrap()
-        .expect("the performed commit owns one canonical envelope")
-        .copy_original_for_test(execution);
+    let mut envelope = canonical_accounting_fixture();
     let baseline_artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::new(envelope.copy_original_for_test(execution)),
         )
@@ -146,8 +180,11 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
             .canonicalized(),
         );
     let artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
-            .unwrap(),
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
     )
     .expect("the owner seals the canonical payload allocation");
 
@@ -194,17 +231,11 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &runtime, "derived-index-allocation-basis");
-    let mut envelope = runtime
-        .replay()
-        .canonical_commit_envelope(execution, committed.commit.commit_id)
-        .unwrap()
-        .expect("the performed commit owns one canonical envelope")
-        .copy_original_for_test(execution);
+    let mut envelope = canonical_accounting_fixture();
+    let receipt = envelope.commit.clone();
     envelope.body_mut_for_test().derived_index_artifacts = DerivedIndexArtifacts::default();
     let baseline = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::new(envelope.copy_original_for_test(execution)),
         )
@@ -221,19 +252,22 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         DerivedIndexArtifacts::new(vec![DerivedIndexGeneration {
             generation_id: DerivedIndexGenerationId(9_001),
             index_id: DerivedIndexId(7_001),
-            source_commit_id: committed.commit.commit_id,
-            source_branch_id: committed.commit.branch_id.clone(),
+            source_commit_id: receipt.commit_id,
+            source_branch_id: receipt.branch_id.clone(),
             applicability: DerivedIndexApplicability {
-                branch_id: committed.commit.branch_id.clone(),
-                version_id: committed.commit.version_id,
+                branch_id: receipt.branch_id.clone(),
+                version_id: receipt.version_id,
                 schema_version: envelope.schema_version,
             },
             status: DerivedIndexPublicationStatus::Published,
             entries: DerivedIndexEntries::EntityField(Default::default()),
         }]);
     let perturbed = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
-            .unwrap(),
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
     )
     .expect("derived artifacts remain outside canonical authority encoding");
 

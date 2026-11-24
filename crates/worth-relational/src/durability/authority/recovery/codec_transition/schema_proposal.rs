@@ -1,9 +1,10 @@
 //! Derive native continuity meaning from proven physical canonical field changes.
-use crate::runtime::{
-    CodecFieldLocus, RelationalSchemaTransitionAdmissionDenial as Denial,
-    RelationalSchemaTransitionAdmissionDenialKind as Kind,
-};
 use crate::schema::data::*;
+use crate::{
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    schema::codec_field_comparison::CodecFieldLocus,
+};
 
 pub(super) fn derive_codec_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -21,8 +22,9 @@ pub(super) fn derive_codec_transition(
         .in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
-                    let mut bytes = std::mem::size_of::<super::RecoveredCodecPublicationCustody>()
-                        + 2 * std::mem::size_of::<usize>();
+                    let mut bytes = std::mem::size_of::<
+                        super::publication_custody::RecoveredCodecPublicationCustody,
+                    >() + 2 * std::mem::size_of::<usize>();
                     for registry in [source, target] {
                         // Includes the two top-level basis copies and the source-owned
                         // target schema identifier copied into each diff atom.

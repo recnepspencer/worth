@@ -1,10 +1,10 @@
 //! Re-admit governed complete codec retirement before it can end a route generation.
 use super::{charge, request, CodecRetirementClosureStop as Stop};
-use crate::capabilities::AspectPlanSource;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::{
     canonical_commit_envelope::*, CanonicalCommitEnvelope, RequiredOutputRoutePosition,
 };
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
@@ -12,7 +12,7 @@ use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 mod activation;
-mod deletion_grammar;
+pub(crate) mod deletion_grammar;
 mod effect_coverage;
 mod metadata;
 
@@ -197,6 +197,7 @@ fn validate_group(
             return Err("codec disposition retires a protected or omitted unchanged member".into());
         }
         deletion_grammar::entity(
+            &runtime.input.deletion_grammar,
             envelope,
             member,
             present,
@@ -232,7 +233,8 @@ fn validate_group(
             .find(|kind| kind.kind_id == relation.kind)
             .ok_or("codec relation target contract absent")?;
         let plan = runtime
-            .runtime
+            .input
+            .plans
             .relation_aspect_plan(relation.kind)
             .ok_or("codec relation native contract absent")?;
         if before != after || plan.plan_revision != before.aspect_plan_revision {

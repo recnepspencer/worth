@@ -1,15 +1,19 @@
 //! Current-version required-input meaning follows genuine restoration identity.
 use super::*;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
-use crate::mvcc::RequiredOutputInputs;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+
+pub(super) struct CopiedOutputInputs {
+    pub(super) meanings: Vec<RequiredOutputPublicationMeaning>,
+    pub(super) memory: Option<ExecutionMemoryReservation>,
+}
 
 pub(super) fn copy(
     inputs: &[RequiredOutputPublicationMeaning],
     correspondence: &[(EntityId, EntityId)],
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<RequiredOutputInputs, TransactionCommitError> {
+) -> Result<CopiedOutputInputs, TransactionCommitError> {
     let bytes = inputs
         .iter()
         .fold(
@@ -51,7 +55,7 @@ pub(super) fn copy(
         .checkpoint(comparisons.saturating_mul(width) as u64)
         .map_err(origin_request)?;
     meanings.sort_by(|a, b| key(a).cmp(&key(b)));
-    Ok(RequiredOutputInputs {
+    Ok(CopiedOutputInputs {
         meanings,
         memory: Some(memory),
     })

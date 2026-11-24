@@ -1,9 +1,10 @@
 //! New authored admission refuses incomplete, foreign, sibling, stale and stopped custody.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::native_roles_fixture;
 
 #[test]
 fn authored_retirement_refuses_partial_missing_and_foreign_members_before_publication() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -17,10 +18,8 @@ fn authored_retirement_refuses_partial_missing_and_foreign_members_before_public
     release_test_commit_snapshot(&runtime, &born);
     let unowned = create_entity(execution, &runtime, "ordinary-unowned-retirement");
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let ordinary_roles = crate::mvcc::native_roles_fixture(
-        &[(unowned, KindId(1))],
-        RequiredOutputRolePosture::Retire,
-    );
+    let ordinary_roles =
+        native_roles_fixture(&[(unowned, KindId(1))], RequiredOutputRolePosture::Retire);
     assert!(
         runtime
             .readmit_authored_output_retirement(execution, &installed, &basis, &ordinary_roles)
@@ -127,7 +126,7 @@ fn authored_retirement_refuses_partial_missing_and_foreign_members_before_public
 
 #[test]
 fn authored_retirement_refuses_sibling_and_stale_predecessors_and_original_cancellation() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -167,9 +166,10 @@ fn authored_retirement_refuses_sibling_and_stale_predecessors_and_original_cance
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("the real sibling publication must perform")
     };

@@ -8,7 +8,7 @@ impl super::PreparedRelationalCommitCandidate {
     ///     candidate.bind_caller_association(association);
     /// }
     /// ```
-    pub fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
+    pub fn caller_association(&self) -> Option<crate::history::data::RelationalCallerAssociation> {
         self._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

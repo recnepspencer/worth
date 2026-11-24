@@ -1,8 +1,10 @@
 //! Structural ownership at an admitted immutable branch basis; never today's root.
-use super::{traversal::Read, *};
+use super::read_denial::RelationalModelOwnershipDenial;
+use super::traversal::Read;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::structural_state::StructuralStateView;
+use crate::identity::data::{EntityId, KindId};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 #[path = "custody_read.rs"]
 mod custody_read;
@@ -55,7 +57,7 @@ pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
         root: &basis.inner.root,
         memory: Vec::new(),
         custody: None,
-        state: InvariantStateView::new(
+        state: StructuralStateView::new(
             basis.inner.root.as_ref(),
             crate::identity::data::VersionId(version),
         ),
@@ -66,7 +68,7 @@ pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
 pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {
     execution: &'a ExecutionRequest<'execution, 'request>,
     context: &'a mut MapKernelContext<'context, 'kernel>,
-    state: InvariantStateView<'basis>,
+    state: StructuralStateView<'basis>,
     basis: Option<&'basis AdmittedRelationalBranchBasis>,
     root: &'basis crate::branch::root::RelationalBranchRoot,
     memory: Vec<worth_execution::ExecutionMemoryReservation>,
@@ -128,7 +130,7 @@ impl Read for BasisRead<'_, '_, '_, '_, '_, '_> {
                 .saturating_add(relations.len())
                 .saturating_add(1),
         )?;
-        let ids = self.state.relation_candidates(entity, outgoing);
+        let ids = self.state.gather_relation_candidates(entity, outgoing);
         let mut neighbors = Vec::new();
         for &id in ids.iter() {
             self.demand(id.partition_id)?;
@@ -183,7 +185,7 @@ pub(super) fn read_candidate<R>(
         root,
         memory: Vec::new(),
         custody: Some(std::collections::BTreeMap::new()),
-        state: InvariantStateView::new(
+        state: StructuralStateView::new(
             root,
             crate::identity::data::VersionId(
                 root.axes()

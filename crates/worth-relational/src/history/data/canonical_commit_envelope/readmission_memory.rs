@@ -20,7 +20,7 @@ pub(crate) struct CanonicalEnvelopeReadmissionMemory {
 
 /// Only the canonical codec declarations consumed by this decode.
 pub(crate) struct CodecDeclarationsReadmissionMemory {
-    pub(crate) declarations: Vec<crate::durability::data::DurableSchemaDeclarationMemory>,
+    pub(crate) declarations: Vec<super::schema_carrier::DurableSchemaDeclarationMemory>,
     pub(crate) _tree_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl CodecDeclarationsReadmissionMemory {

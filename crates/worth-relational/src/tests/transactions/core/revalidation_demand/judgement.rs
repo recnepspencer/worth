@@ -5,6 +5,7 @@ use super::fixtures::*;
 use crate::tests::support::*;
 use crate::transactions::data::{ConflictClass, RevalidateEntityIntent};
 use crate::validation::data::InvariantViolationFields;
+use crate::visibility::materialization::read_records::reader::aspect_version_access::entity_aspect_versions;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
 
 #[test]
@@ -90,11 +91,14 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
     let runtime = strictness_runtime();
     let compliant = create_entity(execution, &runtime, COMPLIANT_NAME);
     let before_state = committed_name(execution, &runtime, compliant);
-    let before_versions = runtime
-        .read_truth()
-        .entity_aspect_versions(execution, compliant)
-        .expect("aspect-version request remains live")
-        .expect("aspect versions before the demand");
+    let before_versions = entity_aspect_versions(
+        &runtime.partitions,
+        &runtime.services.symbols,
+        execution,
+        compliant,
+    )
+    .expect("aspect-version request remains live")
+    .expect("aspect versions before the demand");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -119,11 +123,14 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
     release_test_commit_snapshot(&runtime, &outcome);
     assert_eq!(committed_name(execution, &runtime, compliant), before_state);
     assert_eq!(
-        runtime
-            .read_truth()
-            .entity_aspect_versions(execution, compliant)
-            .expect("aspect-version request remains live")
-            .expect("aspect versions after the demand"),
+        entity_aspect_versions(
+            &runtime.partitions,
+            &runtime.services.symbols,
+            execution,
+            compliant
+        )
+        .expect("aspect-version request remains live")
+        .expect("aspect versions after the demand"),
         before_versions,
         "no aspect version may move for a record nothing was written to"
     );
