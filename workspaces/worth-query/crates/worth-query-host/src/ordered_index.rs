@@ -41,7 +41,8 @@ where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
 {
-    type Summary: Clone + Eq + Send + Sync + 'static;
+    /// Bounded inline summary copied without heap allocation during tree maintenance.
+    type Summary: Copy + Eq + Send + Sync + 'static;
     type Denial: Copy + Eq + std::error::Error + Send + Sync + 'static;
     const IDENTITY: &'static str;
     const VERSION: u32;

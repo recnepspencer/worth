@@ -1,10 +1,10 @@
-//! Watch handle custody and oracle-checked delivery polling for the ordered-index DST.
+//! Watch handle custody and exact Idle/Pending/Delivered verification for ordered-index DST.
 use super::super::queries::{FindFocusOverlap, FindTitlePrefix, TaskRow};
 use super::super::schema::{DaymarkSchema, FocusIntervalIndex, FocusWindow, TitlePrefixIndex};
 use super::super::{keys, Host};
-use super::model::SortedScanOracle;
-use super::trace::Trace;
-use std::collections::BTreeSet;
+use super::model::{OracleTask, SortedScanOracle};
+use super::trace::{PostState, Trace};
+use std::collections::BTreeMap;
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::*;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
@@ -13,12 +13,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::op
 
 type TitleWatch = (
     String,
-    Vec<u64>,
     WorthQueryManagedIndexWatch<DaymarkSchema, TitlePrefixIndex>,
 );
 type FocusWatch = (
     (i64, i64),
-    Vec<u64>,
     WorthQueryManagedIndexWatch<DaymarkSchema, FocusIntervalIndex>,
 );
 
@@ -42,35 +40,47 @@ fn focus_q(lo: i64, hi: i64) -> FindFocusOverlap {
     }
 }
 
-fn check_watch_outcome<Q>(
+fn drain_watch<Q, F>(
     label: &str,
-    outcome: WorthQueryManagedIndexWatchOutcome<Q, TaskRow>,
-    last: &mut Vec<u64>,
-    expected: &[u64],
-) -> Result<Option<Vec<u64>>, String> {
-    match outcome {
-        WorthQueryManagedIndexWatchOutcome::Delivered(upd) => {
-            let got = keys(upd.read().rows());
-            if got != expected {
-                return Err(format!(
-                    "{label} watch deliver: got {got:?}, oracle {expected:?}"
-                ));
+    expected_pending: bool,
+    expected_rows: &[u64],
+    mut poll_once: F,
+) -> Result<Option<Vec<u64>>, String>
+where
+    F: FnMut() -> Result<WorthQueryManagedIndexWatchOutcome<Q, TaskRow>, String>,
+{
+    let mut delivered: Option<Vec<u64>> = None;
+    loop {
+        match poll_once()? {
+            WorthQueryManagedIndexWatchOutcome::Delivered(upd) => {
+                if !expected_pending && delivered.is_none() {
+                    return Err(format!("{label} watch spuriously delivered while Idle"));
+                }
+                let got = keys(upd.read().rows());
+                if got != expected_rows {
+                    return Err(format!(
+                        "{label} watch deliver: got {got:?}, oracle {expected_rows:?}"
+                    ));
+                }
+                delivered = Some(got);
             }
-            *last = got.clone();
-            Ok(Some(got))
-        }
-        WorthQueryManagedIndexWatchOutcome::Pending if *last != expected => Err(format!(
-            "{label} watch missed update: last {last:?}, oracle {expected:?}"
-        )),
-        WorthQueryManagedIndexWatchOutcome::Pending => Ok(None),
-        WorthQueryManagedIndexWatchOutcome::Overflow {
-            missed_commit_batches,
-        } => Err(format!("{label} watch overflow: {missed_commit_batches}")),
-        WorthQueryManagedIndexWatchOutcome::Unavailable => {
-            Err(format!("{label} watch unavailable"))
-        }
-        WorthQueryManagedIndexWatchOutcome::Closed => {
-            Err(format!("{label} watch unexpectedly closed"))
+            WorthQueryManagedIndexWatchOutcome::Pending => {
+                if expected_pending && delivered.is_none() {
+                    return Err(format!(
+                        "{label} watch stayed Pending when delivery expected"
+                    ));
+                }
+                return Ok(delivered);
+            }
+            WorthQueryManagedIndexWatchOutcome::Overflow {
+                missed_commit_batches,
+            } => return Err(format!("{label} watch overflow: {missed_commit_batches}")),
+            WorthQueryManagedIndexWatchOutcome::Unavailable => {
+                return Err(format!("{label} watch unavailable"));
+            }
+            WorthQueryManagedIndexWatchOutcome::Closed => {
+                return Err(format!("{label} watch unexpectedly closed"));
+            }
         }
     }
 }
@@ -81,19 +91,19 @@ impl WatchPair {
     }
 
     pub fn close_quietly(&mut self) {
-        if let Some((_, _, w)) = self.title.take() {
+        if let Some((_, w)) = self.title.take() {
             let _ = w.close();
         }
-        if let Some((_, _, w)) = self.focus.take() {
+        if let Some((_, w)) = self.focus.take() {
             let _ = w.close();
         }
     }
 
     pub fn close(&mut self) -> bool {
-        if let Some((_, _, w)) = self.title.take() {
+        if let Some((_, w)) = self.title.take() {
             w.close().unwrap();
         }
-        if let Some((_, _, w)) = self.focus.take() {
+        if let Some((_, w)) = self.focus.take() {
             w.close().unwrap();
             return true;
         }
@@ -106,8 +116,8 @@ impl WatchPair {
         prefix: &str,
         lo: i64,
         hi: i64,
-        oracle: &SortedScanOracle,
-    ) -> Result<Vec<u64>, String> {
+        oracle: &mut SortedScanOracle,
+    ) -> Result<(Vec<u64>, Vec<u64>), String> {
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let req = host.runtime().request(&principal, &scope);
@@ -129,43 +139,77 @@ impl WatchPair {
         if got_f != exp_f {
             return Err(format!("focus watch init: got {got_f:?}, oracle {exp_f:?}"));
         }
-        self.title = Some((prefix.to_owned(), got_t, tw));
-        self.focus = Some(((lo, hi), got_f.clone(), fw));
-        Ok(got_f)
+        self.title = Some((prefix.to_owned(), tw));
+        self.focus = Some(((lo, hi), fw));
+        oracle.on_open_watches(prefix, lo, hi);
+        Ok((got_t, got_f))
     }
 
     pub fn poll(
         &mut self,
         host: &Host,
-        oracle: &SortedScanOracle,
-        live: Option<&BTreeSet<u64>>,
+        oracle: &mut SortedScanOracle,
+        observed_rows: Option<&BTreeMap<u64, OracleTask>>,
         trace: &mut Trace,
-    ) -> Result<bool, String> {
+    ) -> Result<usize, String> {
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let req = host.runtime().request(&principal, &scope);
-        if let Some((prefix, last, tw)) = self.title.as_mut() {
+        let both_idle = !oracle.title_watch_pending && !oracle.focus_watch_pending;
+        let mut deliveries = 0;
+
+        if let Some((prefix, tw)) = self.title.as_mut() {
             let exp = oracle.prefix_matches(prefix);
-            let out = req
-                .query(prefix_q(prefix))
-                .next_watch(tw)
-                .map_err(|e| format!("title next_watch: {e:?}"))?;
-            check_watch_outcome("title", out, last, &exp)?;
-        }
-        let mut focus_delivered = false;
-        if let Some(((lo, hi), last, fw)) = self.focus.as_mut() {
-            let exp = oracle.focus_matches(*lo, *hi);
-            let out = req
-                .query(focus_q(*lo, *hi))
-                .next_watch(fw)
-                .map_err(|e| format!("focus next_watch: {e:?}"))?;
-            if let Some(got) = check_watch_outcome("focus", out, last, &exp)? {
-                focus_delivered = true;
-                if let Some(live) = live {
-                    trace.record_watch_deliver(&got, "Ready", live);
+            if let Some(got) = drain_watch("title", oracle.title_watch_pending, &exp, || {
+                req.query(prefix_q(prefix))
+                    .next_watch(tw)
+                    .map_err(|e| format!("title next_watch: {e:?}"))
+            })? {
+                oracle.title_watch_pending = false;
+                deliveries += 1;
+                if let Some(rows) = observed_rows {
+                    let state = PostState {
+                        lifecycle: "Ready",
+                        rows,
+                        watch_active: true,
+                        title_watch_pending: oracle.title_watch_pending,
+                        focus_watch_pending: oracle.focus_watch_pending,
+                    };
+                    trace.record_watch_deliver_title(&got, &state);
                 }
             }
         }
-        Ok(focus_delivered)
+        if let Some(((lo, hi), fw)) = self.focus.as_mut() {
+            let exp = oracle.focus_matches(*lo, *hi);
+            if let Some(got) = drain_watch("focus", oracle.focus_watch_pending, &exp, || {
+                req.query(focus_q(*lo, *hi))
+                    .next_watch(fw)
+                    .map_err(|e| format!("focus next_watch: {e:?}"))
+            })? {
+                oracle.focus_watch_pending = false;
+                deliveries += 1;
+                if let Some(rows) = observed_rows {
+                    let state = PostState {
+                        lifecycle: "Ready",
+                        rows,
+                        watch_active: true,
+                        title_watch_pending: oracle.title_watch_pending,
+                        focus_watch_pending: oracle.focus_watch_pending,
+                    };
+                    trace.record_watch_deliver_focus(&got, &state);
+                }
+            }
+        }
+        if both_idle && let Some(rows) = observed_rows {
+            let state = PostState {
+                lifecycle: "Ready",
+                rows,
+                watch_active: true,
+                title_watch_pending: false,
+                focus_watch_pending: false,
+            };
+            trace.record_watch_poll_idle(&state);
+        }
+        Ok(deliveries)
     }
 }

@@ -86,7 +86,10 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, FocusIntervalIndex> for FocusIn
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         control.checkpoint(1)?;
-        Ok(summary.min_start < probe.end && probe.start < summary.max_end)
+        Ok(probe.start < probe.end
+            && summary.min_start < summary.max_end
+            && summary.min_start < probe.end
+            && probe.start < summary.max_end)
     }
     fn matches_source(
         &self,
@@ -95,7 +98,21 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, FocusIntervalIndex> for FocusIn
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         let (start, end) = read_span(&row, control)?;
-        Ok(start < probe.end && probe.start < end)
+        Ok(start < end && probe.start < probe.end && start < probe.end && probe.start < end)
+    }
+    fn validate_probe(
+        &self,
+        probe: &FocusWindow,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<(), WorthQueryManagedIndexProviderStop<Self::Denial>> {
+        control.checkpoint(1)?;
+        if probe.start < probe.end {
+            Ok(())
+        } else {
+            Err(WorthQueryManagedIndexProviderStop::Domain(
+                FocusIntervalDenial,
+            ))
+        }
     }
 }
 
@@ -131,6 +148,9 @@ impl WorthQueryOrderedIndexPredicateDomain<DaymarkSchema, FocusIntervalIndex>
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         let (start, end) = read_span(&row, control)?;
-        Ok(start < summary.max_end && summary.min_start < end)
+        Ok(start < end
+            && summary.min_start < summary.max_end
+            && start < summary.max_end
+            && summary.min_start < end)
     }
 }

@@ -3,6 +3,7 @@
 //! `WORTH_DST_SEEDS` (default 64) controls seed count, `WORTH_DST_SEED` runs one seed,
 //! and `WORTH_DST_TRACE_DIR` writes NDJSON traces (`ordered_index_adapter.ndjson` for seed 0
 //! and `seed-<N>.ndjson`) validated by `specs/tla/ordered_index_adapter/OrderedIndexAdapterTrace.tla`.
+mod checks;
 mod driver;
 mod model;
 mod trace;
@@ -52,6 +53,7 @@ struct Coverage {
     cold_refusals: usize,
     watch_opens: usize,
     watch_deliveries: usize,
+    watch_idle_polls: usize,
     budget_refusals: usize,
 }
 
@@ -66,11 +68,133 @@ impl Coverage {
         self.cold_refusals += other.cold_refusals;
         self.watch_opens += other.watch_opens;
         self.watch_deliveries += other.watch_deliveries;
+        self.watch_idle_polls += other.watch_idle_polls;
         self.budget_refusals += other.budget_refusals;
     }
 }
 
-fn run_seed_with_driver(
+/// Rich durable Directory Home journey for seed 0: multi-node AVL tree (>= 4 live rows),
+/// watch Open -> unrelated mutation -> Idle poll -> matching mutation -> Deliver ->
+/// same-host budget refusal -> WatchClose -> 2-child Delete -> ColdReopen -> typed
+/// NotReady refusal -> RebuildIndex -> Query.
+fn run_durable_seed_zero(
+    trace_dir: Option<&std::path::Path>,
+    record_trace: bool,
+) -> Result<Coverage, String> {
+    let mut oracle = SortedScanOracle::default();
+    let mut driver = DstDriver::new(0, Some(None), record_trace);
+    let mut trace = Trace::default();
+    let mut cov = Coverage::default();
+
+    driver.rebuild(&oracle, &mut trace)?;
+    cov.rebuilds += 1;
+
+    // 1. Insert 4 live rows across distinct title families & overlapping/wide intervals.
+    for (id, title, lo, hi) in [
+        (1_u64, "Alpha", 2_i64, 5_i64),
+        (2, "Beta", 8, 12),
+        (3, "delta", 1, 14),
+        (4, "Focus", 13, 15),
+    ] {
+        driver.insert(
+            id,
+            OracleTask {
+                title: title.to_owned(),
+                lo,
+                hi,
+            },
+            &mut oracle,
+            &mut trace,
+        )?;
+        cov.inserts += 1;
+    }
+    driver.query_both("al", 4, 9, &oracle, &mut trace)?;
+    cov.queries += 1;
+
+    // 2. Open watches on title "al" and focus [4, 9].
+    driver.open_watches("al", 4, 9, &mut oracle, &mut trace)?;
+    cov.watch_opens += 1;
+
+    // 3. Unrelated insert: row 5 ("élan", [15, 16]) matches NEITHER watch -> must remain Idle.
+    driver.insert(
+        5,
+        OracleTask {
+            title: "élan".to_owned(),
+            lo: 15,
+            hi: 16,
+        },
+        &mut oracle,
+        &mut trace,
+    )?;
+    cov.inserts += 1;
+    let delivered = driver.poll_watches(&mut oracle, &mut trace)?;
+    if delivered != 0 {
+        return Err(format!("unrelated insert woke {delivered} watches"));
+    }
+    cov.watch_idle_polls += 1;
+
+    // 4. Related update: row 2 becomes ("alpine", [10, 11]) -> enters "al" AND leaves [4, 9].
+    driver.update(
+        2,
+        OracleTask {
+            title: "alpine".to_owned(),
+            lo: 10,
+            hi: 11,
+        },
+        &mut oracle,
+        &mut trace,
+    )?;
+    cov.updates += 1;
+    cov.watch_deliveries += driver.poll_watches(&mut oracle, &mut trace)?;
+
+    // 5. Same-host budget refusal on live row 1 -> rows, queries, and watches stay unchanged.
+    driver.probe_same_host_budget_refusal(
+        1,
+        &OracleTask {
+            title: "Alpha".to_owned(),
+            lo: 2,
+            hi: 5,
+        },
+        "al",
+        4,
+        9,
+        &oracle,
+        &mut trace,
+    )?;
+    cov.budget_refusals += 1;
+    let post_refusal_delivered = driver.poll_watches(&mut oracle, &mut trace)?;
+    if post_refusal_delivered != 0 {
+        return Err("refused budget edit spuriously woke a watch".to_owned());
+    }
+    cov.watch_idle_polls += 1;
+
+    // 6. Close watches and exercise 2-child deletes across the 5-node AVL tree.
+    driver.close_watches(&mut oracle, &mut trace)?;
+    driver.delete(2, &mut oracle, &mut trace)?;
+    driver.delete(3, &mut oracle, &mut trace)?;
+    cov.deletes += 2;
+    driver.query_both("al", 0, 16, &oracle, &mut trace)?;
+    cov.queries += 1;
+
+    // 7. Cold Directory Home reopen -> typed NotReady refusal -> RebuildIndex -> Query.
+    driver.cold_reopen(&mut oracle, &mut trace)?;
+    cov.reopens += 1;
+    driver.query_both("al", 0, 16, &oracle, &mut trace)?;
+    cov.cold_refusals += 1;
+    driver.rebuild(&oracle, &mut trace)?;
+    cov.rebuilds += 1;
+    driver.query_both("al", 0, 16, &oracle, &mut trace)?;
+    cov.queries += 1;
+
+    if record_trace && let Some(dir) = trace_dir {
+        trace
+            .write(dir, 0)
+            .map_err(|e| format!("seed 0 trace write: {e}"))?;
+    }
+    Ok(cov)
+}
+
+fn run_memory_seed(
     seed: u64,
     driver: &mut DstDriver,
     trace_dir: Option<&std::path::Path>,
@@ -80,52 +204,26 @@ fn run_seed_with_driver(
     let mut oracle = SortedScanOracle::default();
     driver.set_tracing(record_trace);
     let mut trace = Trace::default();
+
     let result = (|| -> Result<Coverage, String> {
         let mut cov = Coverage::default();
-        let mut reopened_once = false;
-        let mut budget_checked = false;
-
-        driver.rebuild(&mut trace);
+        driver.rebuild(&oracle, &mut trace)?;
         cov.rebuilds += 1;
 
-        let steps = if driver.is_durable() { 6 } else { STEPS };
-        for step in 0..steps {
+        for step in 0..STEPS {
             let fail = |cause: String| format!("seed {seed} step {step}: {cause}");
             let roll = rng.range(100);
-            if driver.is_durable() && !reopened_once && step == steps / 2 {
-                driver.cold_reopen(&mut trace);
-                cov.reopens += 1;
-                reopened_once = true;
-                let (q_lo, q_hi) = rng.interval();
-                driver
-                    .query_both(
-                        PREFIXES[rng.range(PREFIXES.len())],
-                        q_lo,
-                        q_hi,
-                        &oracle,
-                        &mut trace,
-                    )
-                    .map_err(fail)?;
-                cov.cold_refusals += 1;
-                driver.rebuild(&mut trace);
-                cov.rebuilds += 1;
-                continue;
-            }
-            if !budget_checked && step == steps - 2 && seed < 2 {
-                driver
-                    .probe_budget_refusal(&oracle, &mut trace)
-                    .map_err(fail)?;
-                cov.budget_refusals += 1;
-                budget_checked = true;
-            } else if !driver.has_watch() && roll < 18 {
+            if !driver.has_watch() && roll < 18 {
                 let prefix = PREFIXES[rng.range(PREFIXES.len())];
                 let (w_lo, w_hi) = rng.interval();
                 driver
-                    .open_watches(prefix, w_lo, w_hi, &oracle, &mut trace)
+                    .open_watches(prefix, w_lo, w_hi, &mut oracle, &mut trace)
                     .map_err(fail)?;
                 cov.watch_opens += 1;
             } else if driver.has_watch() && roll < 10 {
-                driver.close_watches(&mut trace);
+                driver
+                    .close_watches(&mut oracle, &mut trace)
+                    .map_err(fail)?;
             } else {
                 let existing: Vec<u64> = oracle.rows.keys().copied().collect();
                 let absent: Vec<u64> = (1..=MAX_ROWS)
@@ -133,41 +231,33 @@ fn run_seed_with_driver(
                     .collect();
                 if !absent.is_empty() && (existing.is_empty() || roll < 50) {
                     let key = absent[rng.range(absent.len())];
-                    let title = TITLES[rng.range(TITLES.len())];
+                    let title = TITLES[rng.range(TITLES.len())].to_owned();
                     let (lo, hi) = rng.interval();
-                    driver.insert(key, title, lo, hi, &mut trace);
-                    oracle.rows.insert(
-                        key,
-                        OracleTask {
-                            title: title.to_owned(),
-                            lo,
-                            hi,
-                        },
-                    );
+                    driver
+                        .insert(key, OracleTask { title, lo, hi }, &mut oracle, &mut trace)
+                        .map_err(fail)?;
                     cov.inserts += 1;
                 } else if !existing.is_empty() && roll < 80 {
                     let key = existing[rng.range(existing.len())];
-                    let title = TITLES[rng.range(TITLES.len())];
+                    let title = TITLES[rng.range(TITLES.len())].to_owned();
                     let (lo, hi) = rng.interval();
-                    driver.update(key, title, lo, hi, &mut trace);
-                    oracle.rows.insert(
-                        key,
-                        OracleTask {
-                            title: title.to_owned(),
-                            lo,
-                            hi,
-                        },
-                    );
+                    driver
+                        .update(key, OracleTask { title, lo, hi }, &mut oracle, &mut trace)
+                        .map_err(fail)?;
                     cov.updates += 1;
                 } else if !existing.is_empty() {
                     let key = existing[rng.range(existing.len())];
-                    driver.delete(key, &mut trace);
-                    oracle.rows.remove(&key);
+                    driver.delete(key, &mut oracle, &mut trace).map_err(fail)?;
                     cov.deletes += 1;
                 }
             }
-            if driver.has_watch() && driver.poll_watches(&oracle, &mut trace).map_err(fail)? {
-                cov.watch_deliveries += 1;
+            if driver.has_watch() {
+                let deliveries = driver.poll_watches(&mut oracle, &mut trace).map_err(fail)?;
+                if deliveries == 0 {
+                    cov.watch_idle_polls += 1;
+                } else {
+                    cov.watch_deliveries += deliveries;
+                }
             }
             let prefix = PREFIXES[rng.range(PREFIXES.len())];
             let (q_lo, q_hi) = rng.interval();
@@ -184,10 +274,8 @@ fn run_seed_with_driver(
         }
         Ok(cov)
     })();
-    if !driver.is_durable() {
-        let remaining: Vec<u64> = oracle.rows.keys().copied().collect();
-        driver.reset_empty(&remaining);
-    }
+    let remaining: Vec<u64> = oracle.rows.keys().copied().collect();
+    driver.reset_empty(&remaining);
     result
 }
 
@@ -210,11 +298,10 @@ fn seeded_ordered_index_walks_agree_with_sorted_scan_oracle() {
     for &seed in &seeds {
         let record_trace = trace_dir.is_some() && (seed == 0 || single_seed);
         let result = if seed == 0 {
-            let mut durable = DstDriver::new(seed, true, record_trace);
-            run_seed_with_driver(seed, &mut durable, trace_dir.as_deref(), record_trace)
+            run_durable_seed_zero(trace_dir.as_deref(), record_trace)
         } else {
-            let driver = mem_driver.get_or_insert_with(|| DstDriver::new(seed, false, false));
-            run_seed_with_driver(seed, driver, trace_dir.as_deref(), record_trace)
+            let driver = mem_driver.get_or_insert_with(|| DstDriver::new(seed, None, false));
+            run_memory_seed(seed, driver, trace_dir.as_deref(), record_trace)
         };
         match result {
             Ok(cov) => total.add(cov),
@@ -242,6 +329,7 @@ fn seeded_ordered_index_walks_agree_with_sorted_scan_oracle() {
             ("cold NotReady refusals", total.cold_refusals),
             ("watch opens", total.watch_opens),
             ("watch deliveries", total.watch_deliveries),
+            ("watch idle polls", total.watch_idle_polls),
             ("budget refusals", total.budget_refusals),
         ] {
             assert!(count > 0, "64 seeds never exercised {label}");

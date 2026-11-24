@@ -69,7 +69,7 @@ pub(super) fn open_directory_home_with_limits(
         program,
         WorthQueryApplicationProgramRoster::new(),
         declaration,
-        ((),),
+        (None,),
         ApplicationBuildIdentity::parse("7b7b7b7b-7b7b-7b7b-7b7b-7b7b7b7b7b7b").unwrap(),
         app_limits,
         move |_, graph, installed| {
@@ -86,18 +86,22 @@ pub(super) fn open_directory_home_with_limits(
         .unwrap_or_else(|refused| panic!("directory Home open failed: {refused:?}"))
 }
 
-pub(super) fn create_task(
+pub(super) type TaskMutationOutcome = WorthQueryApplicationMutationOutcome<
+    worth_query_host::facade::primary_graph::WorthQueryOperationBodyDenial,
+    (),
+>;
+
+pub(super) fn try_create_task(
     host: &Host,
     key: u64,
     title: &str,
     start_min: i64,
     end_min: i64,
     idem: u64,
-) {
+) -> Result<TaskMutationOutcome, WorthQueryApplicationRequestMutationDenial> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let outcome = host
-        .runtime()
+    host.runtime()
         .request(&principal, &scope)
         .advanced()
         .mutate(CreateTask {
@@ -110,7 +114,17 @@ pub(super) fn create_task(
         .without_source()
         .idempotency(&idem)
         .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+}
+
+pub(super) fn create_task(
+    host: &Host,
+    key: u64,
+    title: &str,
+    start_min: i64,
+    end_min: i64,
+    idem: u64,
+) {
+    let outcome = try_create_task(host, key, title, start_min, end_min, idem).unwrap();
     assert!(
         matches!(
             outcome,
@@ -120,11 +134,16 @@ pub(super) fn create_task(
     );
 }
 
-pub(super) fn rename_task(host: &Host, key: u64, title: &str, idem: u64) {
+pub(super) fn try_rename_task_with_policy(
+    host: &Host,
+    key: u64,
+    title: &str,
+    idem: u64,
+    policy: ExecutionAllocationPolicy<'_, '_>,
+) -> Result<TaskMutationOutcome, WorthQueryApplicationRequestMutationDenial> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let outcome = host
-        .runtime()
+    host.runtime()
         .request(&principal, &scope)
         .advanced()
         .mutate(RenameTask {
@@ -133,8 +152,26 @@ pub(super) fn rename_task(host: &Host, key: u64, title: &str, idem: u64) {
         })
         .without_source()
         .idempotency(&idem)
-        .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+        .execute_in_program(host, policy)
+}
+
+pub(super) fn try_rename_task(
+    host: &Host,
+    key: u64,
+    title: &str,
+    idem: u64,
+) -> Result<TaskMutationOutcome, WorthQueryApplicationRequestMutationDenial> {
+    try_rename_task_with_policy(
+        host,
+        key,
+        title,
+        idem,
+        ExecutionAllocationPolicy::SystemAllocation,
+    )
+}
+
+pub(super) fn rename_task(host: &Host, key: u64, title: &str, idem: u64) {
+    let outcome = try_rename_task(host, key, title, idem).unwrap();
     assert!(
         matches!(
             outcome,
@@ -144,11 +181,16 @@ pub(super) fn rename_task(host: &Host, key: u64, title: &str, idem: u64) {
     );
 }
 
-pub(super) fn reschedule_task(host: &Host, key: u64, start_min: i64, end_min: i64, idem: u64) {
+pub(super) fn try_reschedule_task(
+    host: &Host,
+    key: u64,
+    start_min: i64,
+    end_min: i64,
+    idem: u64,
+) -> Result<TaskMutationOutcome, WorthQueryApplicationRequestMutationDenial> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let outcome = host
-        .runtime()
+    host.runtime()
         .request(&principal, &scope)
         .advanced()
         .mutate(RescheduleTask {
@@ -159,7 +201,10 @@ pub(super) fn reschedule_task(host: &Host, key: u64, start_min: i64, end_min: i6
         .without_source()
         .idempotency(&idem)
         .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+}
+
+pub(super) fn reschedule_task(host: &Host, key: u64, start_min: i64, end_min: i64, idem: u64) {
+    let outcome = try_reschedule_task(host, key, start_min, end_min, idem).unwrap();
     assert!(
         matches!(
             outcome,

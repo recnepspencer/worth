@@ -8610,9 +8610,10 @@ to author a balanced binary source tree by hand. Use
 `host::ordered_index::WorthQueryOrderedIndexAdapter` and implement
 `WorthQueryOrderedIndexDomain` (plus `WorthQueryOrderedIndexPredicateDomain`
 when live watches are needed). Your domain supplies only metered row ordering,
-a source summary with associative summary combination, and the exact metered
-probe predicate (with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and
-the metered text/prefix helpers in `host::ordered_index` for string keys). The
+a bounded `Copy + Eq` source summary with associative summary combination, and
+the exact metered probe predicate (with `WorthQueryOrderedSlotBounds`,
+`read_ordered_field`, and the metered text/prefix helpers in `host::ordered_index`
+for string keys). The
 adapter owns the height-balanced binary source tree, incremental
 insert/update/delete, deterministic slot tie-breaking, bottom-up summary
 propagation, and checked `WorthQueryManagedIndexProvider` /
