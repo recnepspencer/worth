@@ -70,12 +70,12 @@ pub(self) fn phase_label(phase: WorthQuerySourceCustodyPhase) -> &'static str {
     }
 }
 
-/// Queries the Home's actual `QueryObligationHistory` durable original ledger for an exact
-/// `ProgramSupportObligationIdentity`. Returns `true` iff that exact original is still live in
-/// the ledger, and `false` if it was discharged (`UnknownObligation`) or never issued.
+/// Passively inspects the Home's already-acknowledged `QueryObligationHistory` durable original
+/// ledger for an exact `ProgramSupportObligationIdentity` without driving `finish_pending`.
+/// Returns `true` iff that exact original is still live in the folded ledger.
 pub(self) fn ledger_has_original<S, P>(
     home: &WorthQueryApplicationHome<S, P>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     identity: Option<ProgramSupportObligationIdentity>,
 ) -> bool
 where
@@ -92,15 +92,15 @@ where
     let Some(identity) = identity else {
         return false;
     };
-    match support.lifecycle().original_operation(execution, identity) {
-        Ok(row) => {
+    match support
+        .lifecycle()
+        .acknowledged_original_operation_for_test(identity)
+    {
+        Some(row) => {
             assert_eq!(row.identity, identity);
             true
         }
-        Err(
-            worth_query_execution::facade::query_obligations::QueryObligationDenial::UnknownObligation,
-        ) => false,
-        Err(denial) => panic!("unexpected durable original ledger probe denial: {denial:?}"),
+        None => false,
     }
 }
 
