@@ -1,7 +1,6 @@
 //! Concrete memory installation successors retain only their own phase state.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_checkpoint::DecodedApplicationCheckpoint,
     application_contribution::{
         WorthQueryInstalledApplicationConditionalRegistry,
         WorthQueryInstalledApplicationProducerRegistry,
@@ -15,9 +14,6 @@ pub(super) struct MemoryPublicationCompletion<S: ApplicationSchemaComposition> {
     pub(super) build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     pub(super) admitted_program_support: Option<WorthQueryAdmittedProgramSupport<S>>,
     pub(super) activation: WorthQueryProgramActivationCell,
-    pub(super) decoded_checkpoint: Option<DecodedApplicationCheckpoint>,
-    pub(super) interim_continuation:
-        Option<worth_relational::facade::durability::NativeInterimBootstrapContinuation>,
 }
 pub(super) struct PlainMemoryService<S: ApplicationSchemaComposition> {
     pub(super) graph: WorthQueryPrimaryGraphBootstrap<S>,

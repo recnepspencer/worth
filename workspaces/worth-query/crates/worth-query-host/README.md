@@ -283,8 +283,11 @@ been recorded.
 
 #### Interrupted transitions
 
-Resume, plan-drift qualification, interrupted binding and process-kill courts
-remain cleanup work; the graceful workflow above does not qualify them.
+Reopening an interrupted or process-killed relational transition with the same
+successor transition request resumes it (a changed plan refuses
+`TransitionPlanDrift`, and a different successor refuses `TransitionPending`).
+Authored Signal programme migration remains deferred to its later migration
+phase.
 
 ### Durable branch creation, retirement, and history disposal
 
@@ -526,56 +529,28 @@ Its `require_current_output_demand` checks a direct root/dependent settlement;
 native source lineage at that same observation, including receipt-free checkpoint
 reuse. Read the descriptive fields through that retained request after admission.
 
-Checkpoint capture retains the selected native output's producer/source locator
-even when its cached Ready demand has been reclaimed. A locator without accepted
-source facts is prior-output custody only: after reopen the installed Preserve
-producer must read and revalidate its inputs before current delivery. Capturing a
-stored output does not establish that it is current. Family publication order
-selects the active output, so an older Initial row cannot displace its Preserve
-successor or a distinct output family.
-Capture keeps accepted payloads only for that selected native family head, across
-both newly accepted and recovered records. Canonical checkpoint row order is not
-publication order. After fresh installation, an ordinary `current_output` read
-can verify the retained head before any output demand. Its source facts and
-native output witness must still agree with the selected observation; changed
-tracked source facts or native output evidence deny the stale publication rather
-than reviving an older Initial row.
-Earlier checkpoints that retained competing bindings without their publication
-order do not acquire ordering proof from a new reader. This capture rule does not
-retrospectively reconstruct lost lineage or guarantee repair of those archives.
-Capture admits the required native prior locators before best-effort reuse facts.
-If those optional facts exhaust their remaining allowance, the checkpoint retains
-prior custody and the output starts fresh after reopening.
+Directory Home durability retains the selected native output's producer/source
+locator even when its cached Ready demand has been reclaimed. A locator without
+accepted source facts is prior-output custody only: after reopen the installed
+Preserve producer must read and revalidate its inputs before current delivery.
+Persisting a stored output does not establish that it is current. Family
+publication order selects the active output, so an older Initial row cannot
+displace its Preserve successor or a distinct output family. Accepted payloads
+are retained only for that selected native family head, across both newly
+accepted and recovered records. After reopening a Directory Home, an ordinary
+`current_output` read can verify the retained head before any output demand;
+changed tracked source facts or native output evidence deny the stale
+publication rather than reviving an older Initial row.
 
-Capture and transition installation require an explicit
-`application_installation::WorthQueryCheckpointCapturePolicy`. Choose
-`SystemAllocation` for fallible uncharged storage or `Execution(&lease)` for
-admitted final-frame payload backing. The same immutable bytes and their one
-charge survive Query clones and embedded native-region ownership. The last
-byte owner frees the backing before releasing its charge; imports and native
-codec temporaries remain uncharged. No exhausted or stopped lease falls back
-to system allocation. Typed capture denials retain native durability errors or
-the lower physical refusal and available checked payload quote. An
-`Execution(&lease)` lease is the call's one budget: open capture with
-`with_funded_host_advancement`, and a lease the call's workers do not descend
-from refuses `UnrelatedNestedLease`.
-
-Every consuming `repair_to_checkpoint(policy)` attempt selects its policy anew.
-An early stopped policy preserves the unpublished native settlement phase.
-Capture refusal after acknowledgment retains the exact successor in its repair
-capsule, with the current cause available through `capture_denial()`. Repair
-never reruns authoring and returns no World; ordinary target admission still
-authenticates a successfully captured successor.
-
-Query frames a captured native checkpoint directly in its final byte buffer,
-preserving the format-8 wire layout and checksum. Capture reports
-`CheckpointSizeOverflow` when encoded lengths cannot fit this host or wire
-format, and `CheckpointAllocationUnavailable` when reserving that buffer fails.
-Both are write failures and do not suggest repairing the saved store. This
-removes the intermediate full Query body copy; native capture, accepted fact
-payloads, boxed-slice conversion and host compression have separate allocations.
-An internal difference between reserved and emitted frame size reports
-`CheckpointFrameSizeMismatch` before any checkpoint is returned.
+Derived checkpoints and recovery on Directory Homes are driven through
+`home.checkpoint(&request)`, `home.inspect_checkpoint(&request)`, and
+`home.recover_checkpoint(&request)` under the caller's admitted
+`ExecutionRequest`. Relational program transitions use
+`WorthQueryApplicationHomeRequest::with_program_transition(...)` (including
+reopening an interrupted or process-killed relational transition with the same
+successor request); authored Signal programme migration remains deferred to its
+later migration phase. The interim D13 byte-blob checkpoint
+capture/restore/repair surface has been retired.
 
 A family read rejects an older candidate when its own recorded facts or native
 output witness prove it changed, even if its upstream is pending. Unchanged own

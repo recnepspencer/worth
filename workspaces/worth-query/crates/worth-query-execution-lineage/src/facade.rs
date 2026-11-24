@@ -14,9 +14,6 @@ pub mod ports {
     pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::cleanup_required::internal_port::ApplicationCleanupRequiredInternalPort;
     pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::committed_publication::readmitted::CommittedProductPublicationInternalPort;
     pub use crate::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::family_entry::ApplicationOutputFamilyEntryInternalPort;
-    pub use crate::domain_computation::primary_graph::application_checkpoint::internal_port::{
-        ApplicationCheckpointInternalPort, InterimCheckpointOriginInternalPort,
-    };
     pub use crate::domain_computation::primary_graph::application_contribution::computation::checkpoint::{
         ManagedComputationCheckpointInternalPort, ManagedComputationExecutionInternalPort,
     };

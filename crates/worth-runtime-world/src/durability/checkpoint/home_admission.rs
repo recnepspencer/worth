@@ -43,10 +43,7 @@ impl PreparedWorldCheckpoint {
             world_through,
             world_image_digest,
             ..
-        } = image.cut().scope()
-        else {
-            return Err(Refusal::BindingMismatch(Binding::Scope));
-        };
+        } = image.cut().scope();
         if observed != &home {
             return Err(Refusal::BindingMismatch(Binding::Home));
         }
@@ -98,10 +95,7 @@ impl WorldCheckpointSubject {
             home: recorded,
             world_image_digest,
             ..
-        } = image.cut().scope()
-        else {
-            return Err(Refusal::BindingMismatch(Binding::Scope));
-        };
+        } = image.cut().scope();
         if recorded != &home {
             return Err(Refusal::BindingMismatch(Binding::Home));
         }
@@ -131,10 +125,7 @@ fn payload(image: &Image, request: &ExecutionRequest<'_, '_>) -> Result<[u8; PAY
         complete_source_digest,
         world_through,
         world_image_digest,
-    } = image.cut().scope()
-    else {
-        return Err(Refusal::BindingMismatch(Binding::Scope));
-    };
+    } = image.cut().scope();
     let native_image = digest(image.as_bytes(), request)?;
     let mut bytes = [0; PAYLOAD];
     let mut cursor = 0;

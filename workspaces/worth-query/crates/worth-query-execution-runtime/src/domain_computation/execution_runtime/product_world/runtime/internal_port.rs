@@ -18,7 +18,6 @@ use worth_runtime_world::facade::{
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchPort, RuntimeWorldExecutionPlacement,
     RuntimeWorldInspectionPort, RuntimeWorldObservationPort, RuntimeWorldOwnerIdentity,
     RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort, RuntimeWorldServiceDenial,
-    WorldInterimCheckpointPort,
 };
 
 use super::super::activation::WorthQueryProductActivationRegistry;
@@ -97,8 +96,6 @@ pub trait ProductRuntimeInternalPort: Sized {
         &self,
         observation: ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding;
-
-    fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort>;
 
     fn with_execution_placement<R>(
         &self,
@@ -268,10 +265,6 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
         observation: ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
         Self::publication_binding(self, observation)
-    }
-
-    fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort> {
-        Self::interim_checkpoint_port(self)
     }
 
     fn with_execution_placement<R>(

@@ -326,10 +326,7 @@ pub mod checkpoint;
 pub mod checkpoint_transition;
 #[path = "contribution_installation/publication_limit.rs"]
 pub mod publication_limit;
-pub use checkpoint::{
-    application_checkpoint_denies_corrupt_incompatible_and_forged_bytes,
-    application_checkpoint_restores_fresh_editable_authority,
-};
+pub use checkpoint::application_checkpoint_restores_fresh_editable_authority;
 
 #[path = "contribution_installation/application_fixture.rs"]
 pub mod application_fixture;

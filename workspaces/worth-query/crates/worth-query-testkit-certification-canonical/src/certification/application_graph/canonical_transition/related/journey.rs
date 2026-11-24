@@ -7,33 +7,19 @@ pub use worth_query_host::facade::application_installation::ApplicationBuildIden
 pub use worth_query_host::facade::{
     application_entry::*, application_installation as installation,
 };
-pub fn successor(
-    checkpoint: installation::WorthQueryApplicationCheckpoint,
-) -> successor::host::Host {
+pub fn successor_install(value: model::NestedValue) -> successor::host::Host {
     successor::output::reset_decodes();
-    let funding = worth_execution::ExecutionResourceLease::serial(
-        super::super::capture_child::complete_capture_funding(),
-    )
-    .unwrap();
-    installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
-        successor::host::program(),
-        installation::WorthQueryApplicationProgramRoster::new().support(
-            successor::companion::host::program::<successor::companion::program::TargetProgram>(),
-        ),
-        successor::schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        successor::host::limits(),
-        checkpoint,
-        installation::WorthQueryCheckpointProgramPredecessor::new(
-            &host::program().revision().to_string(),
-        )
-        .unwrap(),
-        installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536).unwrap(),
-        installation::WorthQueryCheckpointCapturePolicy::Execution(&funding),
-        |_, _| Ok(()),
-    )
-    .expect("the real complete native output closure admits the target")
+    successor::host::install(value).expect("independent V2 successor host installs")
+}
+pub fn successor_directory(
+    directory: std::path::PathBuf,
+    value: model::NestedValue,
+) -> worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<
+    successor::schema::CanonicalSchema,
+    successor::program::Program,
+> {
+    successor::output::reset_decodes();
+    successor::host::open_directory(directory, value)
 }
 pub fn edited() -> model::NestedValue {
     let mut value = model::authored_value();

@@ -346,9 +346,9 @@ the Home's durable derived checkpoint (`home.checkpoint` and its anchored
 members) so reopen reconstructs strictly from authoritative journals and
 recomputes derived state only on demand.
 
-`host::application_installation::WorthQueryInterimCheckpointRestore` is an
-internal certification door scheduled for deletion. Applications reopen their
-Directory instead.
+The interim D13 application-checkpoint restore surface has been retired.
+Applications reopen their Directory Home directly through
+`WorthQueryApplicationHomeRequest`.
 
 ## Examples
 

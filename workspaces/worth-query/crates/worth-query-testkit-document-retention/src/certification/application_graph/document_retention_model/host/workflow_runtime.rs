@@ -209,7 +209,7 @@ where
     pub fn close_for_reopen(mut self) -> std::path::PathBuf {
         self.cleanup_dir = false;
         let workflow = self.workflow.take().expect("workflow directory Home is open");
-        let lease = crate::facade::directory_home::directory_lease();
+        let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
         workflow
             .close(&worth_execution::ExecutionRequest::leased(&lease))
             .unwrap_or_else(|refused| panic!("workflow directory Home close refused: {refused:?}"))
@@ -255,7 +255,7 @@ where
 {
     fn drop(&mut self) {
         if let Some(workflow) = self.workflow.take() {
-            let lease = crate::facade::directory_home::directory_lease();
+            let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
             if let Ok(closed) = workflow.close(&worth_execution::ExecutionRequest::leased(&lease)) {
                 closed.reclaim();
             }

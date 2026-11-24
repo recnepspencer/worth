@@ -2,7 +2,10 @@ pub(crate) use worth_query_testkit_certification_canonical::facade::certificatio
 
 #[test]
 fn sufficient_native_admission_commits_nondefault_root_child_reads_and_restores() {
-    let host = host::install(FUNDED_WORK);
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-admission-commit",
+    );
+    let host = host::open_directory(dir, FUNDED_WORK);
     assert_committed(host::advance(&host, Reads::Both, 71_001), 1);
     assert_eq!(
         observed(),
@@ -14,9 +17,8 @@ fn sufficient_native_admission_commits_nondefault_root_child_reads_and_restores(
         }
     );
     assert_source(&host, 1);
-    let checkpoint = host::capture(&host);
-    drop(host);
-    let restored = host::restore(checkpoint, FUNDED_WORK);
+    let dir = host.close_for_reopen();
+    let restored = host::open_directory(dir, FUNDED_WORK);
     assert_source(&restored, 1);
     assert_committed(host::advance(&restored, Reads::Both, 71_002), 2);
     assert_source(&restored, 2);
@@ -32,7 +34,10 @@ fn cumulative_refusal_survives_a_swallowing_handler_and_does_not_poison_fresh_re
         .get()
         .expect("funded handler reached its second seed");
     drop(probe);
-    let mut host = host::install(FUNDED_WORK);
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-admission-refusal",
+    );
+    let mut host = host::open_directory(dir, FUNDED_WORK);
     assert_source(&host, 0);
     host.request_work = work;
     // Ordinary root and child reads each fund this exact nondefault decoder
@@ -61,9 +66,8 @@ fn cumulative_refusal_survives_a_swallowing_handler_and_does_not_poison_fresh_re
     // Fresh ordinary requests must not inherit the previous refusal, and the
     // authored source remains unchanged after the swallowed mutation failure.
     assert_source(&host, 0);
-    let checkpoint = host::capture(&host);
-    drop(host);
-    let restored = host::restore(checkpoint, FUNDED_WORK);
+    let dir = host.close_for_reopen();
+    let restored = host::open_directory(dir, FUNDED_WORK);
     assert_source(&restored, 0);
     // Retry the refused command itself with a fresh sufficient request.
     assert_committed(host::advance(&restored, Reads::Both, 71_103), 1);

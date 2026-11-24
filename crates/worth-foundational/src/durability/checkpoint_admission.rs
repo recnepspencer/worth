@@ -13,11 +13,6 @@ pub enum CheckpointAdmissionScope {
         world_through: [u64; 3],
         world_image_digest: [u8; 32],
     },
-    Interim {
-        transport_origin: [u8; 32],
-        registry_revision: u64,
-        world_snapshot_body_digest: [u8; 32],
-    },
 }
 
 /// The same base Native and World cut, before the outer package is sealed.

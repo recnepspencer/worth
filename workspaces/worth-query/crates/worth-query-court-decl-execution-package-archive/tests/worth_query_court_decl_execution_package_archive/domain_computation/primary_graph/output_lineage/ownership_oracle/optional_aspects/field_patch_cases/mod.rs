@@ -134,7 +134,7 @@ fn present_parent_patch_preserves_unwritten_required_content() {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     runtime
         .with_application_advancement(&request, |phase| {
-            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::retained_recovery::materialize_source_in_phase(&runtime, &phase);
+            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::materialize_source_in_phase(&runtime, &phase);
         })
         .unwrap();
     let before = source_values(&runtime);

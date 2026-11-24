@@ -16,7 +16,10 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
         .expect("funded observations reached the second seed");
     drop(funded);
 
-    let mut bounded = host::install(super::FUNDED_WORK);
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-admission-ordinary-attempt",
+    );
+    let mut bounded = host::open_directory(dir, super::FUNDED_WORK);
     assert_eq!(host::read(&bounded, "root").value, super::value());
     bounded.request_work = work;
     let refused = observe_twice(&bounded);
@@ -43,9 +46,8 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
         super::value(),
         "a fresh single-decode request is not poisoned"
     );
-    let checkpoint = host::capture(&bounded);
-    drop(bounded);
-    let restored = host::restore(checkpoint, super::FUNDED_WORK);
+    let dir = bounded.close_for_reopen();
+    let restored = host::open_directory(dir, super::FUNDED_WORK);
     let retried = observe_twice(&restored);
     assert!(!retried.second_refused);
     retried

@@ -153,6 +153,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
                 readiness_routes: Default::default(),
                 definition_routes: Default::default(),
                 operations: Default::default(),
+                metadata_readmission_authority: None,
             }),
             publication: Some(publication),
         };

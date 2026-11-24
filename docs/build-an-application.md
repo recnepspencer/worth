@@ -706,7 +706,7 @@ Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Nati
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
-[native codec journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/adoption.rs)
+[native codec journey](../crates/worth-relational/src/durability/authority/recovery/codec_transition/tests.rs)
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
@@ -3165,44 +3165,28 @@ an owning refusal if opening fails after recording the intent; inspect
 
 #### Interrupted Directory transitions
 
-Resume, drift, interrupted binding and process-kill qualification remain pending.
+Interrupted or process-killed relational transitions resume cleanly when the
+Directory Home is reopened with the same successor transition request.
 
-### Internal checkpoint admission — cleanup track C5
+### Reopening and program transitions on Directory Home
 
-Ordinary applications reopen their Directory Home as described above. The
-remaining internal certification door is scheduled for deletion by C5; do not
-use it as application-owned byte transport. Its original-request option is:
-`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
-takes that bootstrap phase first, followed by the validated program, roster,
-declaration, configuration, build identity, unchanged World limits and checkpoint.
-It reconstructs through the ordinary restore core and accepts no seed or transition
-callback. Use a separately funded opening request for a large recovered population;
-its allowance does not increase later World business calls. Default ordinary
-checkpoint restoration continues to open from the World request policy.
+Ordinary applications reopen their Directory Home by constructing
+`WorthQueryApplicationHomeRequest::new` with
+`WorthQueryApplicationHomeLocation::Directory(dir)` and calling
+`.open_in_advancement(&phase)` inside `with_bootstrap_advancement` (or inside
+`host::application_contribution::with_bootstrap_advancement_from_request` for an
+already admitted execution request). The Directory Home's authoritative journals
+and derived checkpoint are the sole model source on reopen; `initial_state` is
+never replayed.
 
-When installation belongs to an already admitted execution attempt, borrow its
-`ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
-and pass the resulting phase to
-`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`.
-This variant takes the existing transition arguments with the phase first and a
-required capture policy. It borrows the original cancellation/deadline and
-remaining cumulative work through construction, roster admission, native transition,
-final assembly and capture. Native nested scopes charge the original parent; they
-do not renew its allowance. Capture is capped by the caller-named policy, which must
-be `Execution(&lease)` for the funding lease itself or a lease descending from it,
-for example a child with its own smaller memory limit; there is no default and no
-silent inheritance. Entry checks that descent before any work or charge: a sibling,
-a parent or another lineage's lease refuses with
-`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
-out after the native ACK returns the acknowledged capsule with the child's own
-refusal (`Policy { ancestor: 0 }`) for repair.
-`SystemAllocation` and bare serial backing have no admitted capture allocation policy and refuse before
-effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
-to SystemAllocation. The ordinary convenience constructor retains its explicit
-owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
-transition: the bootstrap runs on that lease, as if borrowed through
-`with_bootstrap_advancement_from_request`, so the lease carries the transition's
-work as well as the captured frame.
+To upgrade an existing Directory Home to a successor program, attach
+`.with_program_transition(...)` to `WorthQueryApplicationHomeRequest` and call
+`.open_in_advancement(&phase)`. Relational program transitions (including
+reopening after interruption or process kill with the same successor request)
+run on Directory Home; authored Signal programme migration remains deferred to
+its later migration phase and refuses cleanly before authoring while leaving the
+predecessor Directory Home reopenable. The retired D13 interim
+application-checkpoint restore/transition surface has been removed.
 
 ### Durable branch creation, retirement, and history disposal
 

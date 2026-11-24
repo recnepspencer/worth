@@ -72,18 +72,11 @@ impl SelectedCheckpointCaptureBase {
             .admission_image
             .as_ref()
             .ok_or(Refusal::MissingArtifact)?;
-        let (origin, digest) = match image.cut().scope() {
-            worth_foundational::facade::CheckpointAdmissionScope::Home {
-                native_origin,
-                complete_source_digest,
-                ..
-            } => (native_origin, complete_source_digest),
-            worth_foundational::facade::CheckpointAdmissionScope::Interim { .. } => {
-                return Err(Refusal::BindingMismatch(
-                    super::CheckpointAdmissionBindingMismatch::Scope,
-                ))
-            }
-        };
+        let worth_foundational::facade::CheckpointAdmissionScope::Home {
+            native_origin: origin,
+            complete_source_digest: digest,
+            ..
+        } = image.cut().scope();
         if source.covered() != directory.manifest.covered_position
             || source.covered_transitions() != directory.manifest.coverage.up_to_branch_transition
             || source.covered().0 != image.cut().canonical_through()

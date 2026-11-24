@@ -16,12 +16,9 @@ pub use worth_foundational::facade::{
     AspectValue, ValueCodecDenial, ValueDecodeBounds, ValueFieldShape, ValuePrimitive, ValueShape,
     ValueVariantShape,
 };
-pub use worth_query_host::facade::{
-    application_installation::WorthQueryCheckpointCapturePolicy,
-    declaration::application_schema::{
-        ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
-        ApplicationValueDecodeDenial,
-    },
+pub use worth_query_host::facade::declaration::application_schema::{
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationValueDecodeDenial,
 };
 
 pub fn assert_installed_contract(application: &host::Host) {

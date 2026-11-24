@@ -590,7 +590,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Declare distinct captured workflow target inputs | `graph.captured_operation_input(&proposal, &target)` and the component equivalent declare exact control/guarded correspondence. `prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)` publishes complete original target contracts through native proposal/replay/first-effect owners. Archive profile 8 carries the new edge; unchanged definitions keep profile 7. Recorded-actor admission and recovery retain the original proposal correspondence and require fresh grants. In-memory owning execution, not a durable whole-command runner. | [Workflow operation inputs](../workspaces/worth-query/docs/foundations/workflow-operation-inputs.md) |
 | Keep application data on disk (Home lifecycle in one page) | Open a `Directory(path)` Home through `host::WorthQueryApplicationHomeRequest`, write with stable idempotency keys, close with `home.close(&request)`, reopen in a fresh process, and discard with `host::discard_home`. The guide also lists crash behavior and the typed refusals. | [Use an Application Home](application-home.md) |
 | Install or reopen an application Home | `host::WorthQueryApplicationHomeRequest::new(..)` supplies the location, validated program, roster, schema, configuration, build UUID, limits and initializer; `open_in_advancement(&phase)` returns the owning Home. Borrow `home.runtime()` to serve. A changed recorded program/schema requires a transition; inspect `refused.transition_required()` for the typed recorded and requested bindings. | [Build §4](build-an-application.md#4-install-or-reopen) |
-| Edit a Directory Home's program or schema | Supply the actual old recipe with `successor.with_program_transition(predecessor, resources, author)`. The bounded read-only author returns the complete `WorthQueryHomeProgramTransitionPlan`; the Host records its intent, publishes positioned relational steps and acknowledges the binding before service. Fresh/current Homes skip the author; a completed transition closes and reopens with the successor alone. Inspect the owning refusal's `phase()`. Interrupted-transition recovery remains cleanup work. | [Directory development workflow](build-an-application.md#development-workflow-for-directory-homes), [Host transitions](../workspaces/worth-query/crates/worth-query-host/README.md#development-workflow-with-program-transitions) |
+| Edit a Directory Home's program or schema | Supply the actual old recipe with `successor.with_program_transition(predecessor, resources, author)`. The bounded read-only author returns the complete `WorthQueryHomeProgramTransitionPlan`; the Host records its intent, publishes positioned relational steps and acknowledges the binding before service. Fresh/current Homes skip the author; a completed transition closes and reopens with the successor alone. Inspect the owning refusal's `phase()`. Reopening an interrupted or process-killed relational transition with the same successor transition request resumes it (a changed plan refuses `TransitionPlanDrift`, a different successor `TransitionPending`); authored Signal programme migration remains deferred to its later migration phase. | [Directory development workflow](build-an-application.md#development-workflow-for-directory-homes), [Host transitions](../workspaces/worth-query/crates/worth-query-host/README.md#development-workflow-with-program-transitions) |
 | Identify a rejected operation declaration dependency | `decl::application_schema::ApplicationSchemaDeclarationDenial` preserves `MissingOperationProgramDependency`, `MissingOperationDecisionReadDependency` and `MissingOperationMutationPreconditionDependency` with owned `operation` and `ApplicationOperationDependencyLocus`. Target loci carry the original typed field/relation/precondition; whole-body failures remain explicitly `Body`. | [Declaration failures](build-an-application.md#45-declaration-failures) |
 | Configure invalidation retention | `host::runtime::WorthQueryInvalidationResources::new()` takes no policy. The subscription retains every delivered position, so no reader falls outside a window or reconstructs to catch up. | [Build: invalidation retention](build-an-application.md#invalidation-retention) |
 | Reclaim retired physical storage | `runtime.try_reclaim_retired_storage(&phase)` borrows the same application's advancement and original request controls. The installed retention policy governs reclamation; typed stops preserve actual completed progress. Save the result outside the advancement callback to retain it across a final request refusal. | [Storage retention](../workspaces/worth-query/docs/execution/storage-retention.md) |
@@ -607,7 +607,6 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Inspect and discharge managed work after Directory reopen | `managed_run_obligations()` retains the original logical identity, attempts, World association, first failure and actual terminal/release. `discharge_managed_run(&phase, identity)` needs fresh advancement and either a recorded actual live resource release or the row's `cold_release`, which Home preparation records before service for work the dead process still held (`Abandoned` or `ReleaseOutstanding`, never a completion). Abandoned work remains Failed; an unrecorded live release keeps close refused. | [Managed Directory handoff](../workspaces/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md#directory-handoff) |
 | Configure application compute placement | `host::runtime::ExecutionRequestPolicy::for_workers(posture, determinism, workers)` selects placement, determinism and width; start with Serial. Pass the policy through application resources. Platform stages use `ExecutionRequest::run_native`, `run_native_with_checkpoint` and `KernelContext::poll`; an operation that is one stage of its request uses `run_single_stage`, which its own nested stages join; scoped visitors use `KernelContext::work_loan` to charge the original account. Propagate typed request and allocation failures. | [One process execution service](build-an-application.md#one-process-execution-service), [Original-scoped work](../crates/worth-execution/README.md#original-scoped-work), [Single-stage operations](../crates/worth-execution/README.md#single-stage-operations) |
 | Fund automatic Directory Home upkeep after application advancement | Pass `host::WorthQueryApplicationHomeCheckpointLimits::new(entries, payload_bytes).with_maintenance_allowance(work, memory_bytes)` through the Home request's `with_checkpoint_limits`. Defaults are 1 Gi work units per advancement and 256 MiB shared retained/scratch memory; no wall-clock deadline applies. The Host owns this allowance; exhaustion leaves maintenance due or pending and preserves the business result. Explicit `checkpoint` and `recover_checkpoint` use their invoking request. | [Checkpoint limits](../workspaces/worth-store/crates/worth-store-application/src/checkpoint/limits.rs), [Host checkpoint calls](../workspaces/worth-query/crates/worth-query-host/src/application_home/checkpoint.rs) |
-| Restore a captured interim application checkpoint | `host::application_installation::WorthQueryInterimCheckpointRestore` is the single interim door. Keep the capture-issued `WorthQueryApplicationCheckpoint`, or transport its bytes together with its opaque `capture_origin()` and rebind with `with_capture_origin`. The Native image and World-original registry are authenticated by the actual capture owners. Format14 refuses predecessors and byte-only operational restore. This interim mechanism is distinct from filesystem Home reopen. | [Interim restore](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/program/checkpoint.rs) |
 | Share workers across applications and checkpoint reopen | Construct `ExecutionAuthority::try_construct(ExecutionAuthorityConfig::for_workers(workers))` once at process startup, retain its `Arc` above sessions, and pass clones through installation's `with_execution_authority`. A final handle drop does not authorize constructing another physical authority in that process. | [Shared service and runnable example](build-an-application.md#one-process-execution-service) |
 | Configure explicit request-memory accounting | `ExecutionBudget::new(workers, memory, work)` and `SerialMemoryBudget::new(memory)` accept optional memory ceilings. `Some(bytes)` selects a finite ceiling. Retain each reservation with its payload and handle finite-capacity or counter-overflow denials. | [Explicit request-memory policy](build-an-application.md#optional-request-memory-policy) |
 | Retain a result whose heap size is not known before evaluation | Original `ExecutionRequest::run_measured_result(ceiling, known_bytes, &mut reservation, kernel)` reuses Scope admission and lends `ExecutionResultMemory` on that same reservation for before-growth claims. It measures opaque callback results/errors before framework retention and leaves their actual heap charged until release. This is post-materialization admission unless the source cooperates before allocation; declared Scan/Map maxima remain separate real contracts. | [Request-memory policy](build-an-application.md#optional-request-memory-policy) |
@@ -1026,34 +1025,30 @@ and supply the clock after the callback. Setup spends the supplied request; the 
 its declared runtime request policy. Default installation entries still open setup
 from that policy. See [installation funding](build-an-application.md#4-install-or-reopen).
 
-For ordinary checkpoint restoration under a separately funded opening request,
-pass that same bootstrap phase first to
-`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`,
-then the validated program, roster, declaration, configuration, build identity,
-World limits and checkpoint. The checkpoint is the sole model source; no seed or
-transition callback is accepted. The installed World keeps its declared runtime
-request policy. Default checkpoint restore still opens from that policy.
+For durable reopening under a separately funded opening request, construct
+`WorthQueryApplicationHomeRequest::new` with
+`WorthQueryApplicationHomeLocation::Directory(dir)` (using the same validated
+program, roster, declaration, configuration, build identity, and World limits),
+then call `.open_in_advancement(&phase)` inside the appropriate bootstrap helper
+(`with_bootstrap_advancement` or `with_bootstrap_advancement_from_request`). The
+Directory Home's durable journals and derived checkpoint are the sole model
+source on reopen; `initial_state` is never replayed, and the installed World
+keeps its declared runtime request policy.
 
-For installation and checkpoint-transition work inside an already admitted original
-execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
-Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.
-Call `host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`
-with that phase and an explicit capture policy from
-`phase.execution_request().allocation_policy()` or a descendant of that funding lease.
-An unrelated lease refuses before effects with
-`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. Transition resources
-can further narrow capture alone with `WorthQueryCheckpointTransitionResources::with_capture_memory_limit(bytes)`;
-the runtime derives a descendant lease, preserving original controls and preparation funding.
-The capture-bearing path
-requires leased backing and refuses unsupported serial backing with the existing
-`ExecutionDenied(ResourceEnvelopeMismatch)` vocabulary, before effects. Bootstrap
-custody cannot admit installed-runtime execution. For a prepared ordinary mutation,
-`prepare_in_program_report_in_advancement` and `commit_report_in_advancement` borrow
-the installed application's phase and accept allocation from that request or a
-bounded descendant, without opening a foreign request. A performed recovery capsule's
-`repair_to_checkpoint_with_request(original)` returns that same capsule on opening,
-settlement or capture refusal. Existing convenience constructors still own their
-explicit bootstrap request and capture policy. See [original-request transitions](build-an-application.md#44-checkpoint-program-transitions).
+For a successor program transition on an existing Directory Home, attach
+`.with_program_transition(...)` on `WorthQueryApplicationHomeRequest` and call
+`.open_in_advancement(&phase)` inside `with_bootstrap_advancement` or
+`with_bootstrap_advancement_from_request`. Relational program transitions
+(including resuming an interrupted or process-killed relational transition by
+reopening with the same successor transition request) run on Directory Home;
+authored Signal programme migration remains deferred to its later migration
+phase and refuses before authoring. Bootstrap custody cannot admit
+installed-runtime execution. For a prepared ordinary mutation,
+`prepare_in_program_report_in_advancement` and `commit_report_in_advancement`
+borrow the installed application's phase and accept allocation from that request
+or a bounded descendant, without opening a foreign request. The interim D13
+application-checkpoint restore/transition surface has been retired. See
+[Directory Home reopening and transitions](build-an-application.md#4-install-or-reopen).
 
 ## Directory Home continuation limits
 
@@ -1538,27 +1533,21 @@ The execution receipt retains the admitted plan and executor observations.
 Use inline execution for supported synchronous reads; an asynchronous requirement
 returns its typed refusal when native asynchronous support is unavailable.
 
-### Retain privileged read authority when restoring a program
+### Retain privileged read authority when reopening a Directory Home
 
-The composition root calls `application_installation::WorthQueryInterimCheckpointRestore::program_with_projection`
-on `worth-query-host` to receive the restored runtime and its
-`WorthQueryApplicationInvariantProjectionAuthority`. This is the same read-only
-capability retained during bootstrap; it grants no initial-state authoring on
-restore. Ordinary runtime holders cannot mint it. Restoration and admission use
-the existing checkpoint owner and resource limits.
+The composition root reopens its `WorthQueryApplicationHome` and calls
+`home.retain_invariant_projection_authority()` to receive a
+`WorthQueryApplicationInvariantProjectionAuthority` bound to that readmitted
+installation. Each retained authority owns a distinct selector namespace and
+grants read-only invariant projection without replaying `initial_state`.
+Ordinary runtime holders cannot mint it from a bare `runtime()`.
 
-### Inspect checkpoints and rejected-proposal reservations
+### Inspect native checkpoints and rejected-proposal reservations
 
-`WorthQueryPrimaryGraphApplicationRuntime::inspect_application_checkpoint`
-accepts an advancement phase and checkpoint bytes. It returns a typed
-`WorthQueryApplicationCheckpointInspection`: exact non-allocator model value
-bytes, typed allocator frontiers/high-waters and the live entity/relation census.
-Query framing and native fields/arenas have their single codec owners. This is
-reconstructive diagnostic inspection, not recovery admission or mutation
-permission. Unknown fields fail closed; codec projections exhaustively classify
-their actual decoded types. Ordinary reads should use query/projection APIs.
-
-Native-owner diagnostic consumers use `RelationalNativeCheckpoint::inspect`.
+Query's interim application-checkpoint inspection surface has been retired with
+D13; ordinary application reads use query and invariant-projection APIs on the
+reopened Directory Home. Native-owner diagnostic consumers use
+`RelationalNativeCheckpoint::inspect`.
 `NativeCheckpointModelBytes` keeps exact byte equality for no-effect and
 atomicity comparisons within one runtime. Across known source and recovered
 owners, `RelationalCheckpointInspection::model_matches_rebound_runtime` takes

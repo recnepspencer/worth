@@ -5,7 +5,7 @@ fn changed_codec_pair_reconstruction_retains_old_owned_values_and_refuses_partia
     let original = host::install(journey::heavy()).unwrap();
     let _old = host::produce(&original);
     let retained = paired_native::reconstruct(&original, 96, false);
-    let target = journey::successor(host::capture(&original));
+    let target = journey::successor_install(journey::heavy());
     assert_eq!(successor::output::decodes(), 0);
     assert_eq!(
         retained

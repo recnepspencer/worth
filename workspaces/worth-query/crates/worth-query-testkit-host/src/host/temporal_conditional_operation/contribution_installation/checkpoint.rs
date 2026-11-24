@@ -1,92 +1,114 @@
 pub use super::*;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
-pub use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
+use worth_query_host::facade::{
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+
+fn unique_dir(label: &str) -> std::path::PathBuf {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    std::env::temp_dir().join(format!(
+        "worth-host-{label}-{}-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos(),
+        NEXT.fetch_add(1, Ordering::Relaxed),
+    ))
+}
 
 pub fn application_checkpoint_restores_fresh_editable_authority(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
+    let dir = unique_dir("temporal-restore");
+    let lease = crate::facade::host::checkpoint_capture::lease(128 * 1024 * 1024);
+    let open_execution = worth_execution::ExecutionRequest::leased(&lease);
+
     let contacts = ContactCounters::default();
     let (installation_predicate, _) = Predicate::controlled(contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
-    let application = application_installation::in_memory_program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (TemporalContributionConfiguration {
-            installation_predicate,
-            definition_predicate: Arc::new(definition_predicate),
-            clock_source,
-            clock_control,
-            contacts,
-            install_route: true,
-            definition_only: false,
-            multi_intent_targets: false,
-        },),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint_limits(),
-        |_phase, graph, installed| {
-            let principal = installed
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .unwrap();
-            seed_graph(graph, &principal, "checkpointed", 0, 1, true);
-            Ok(())
+    let home = worth_query_host::facade::application_contribution::with_bootstrap_advancement_from_request(
+        open_execution,
+        |phase| {
+            WorthQueryApplicationHomeRequest::new(
+                WorthQueryApplicationHomeLocation::Directory(dir.clone()),
+                validated_program(),
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                TemporalHostSchema::declaration().unwrap(),
+                (TemporalContributionConfiguration {
+                    installation_predicate,
+                    definition_predicate: Arc::new(definition_predicate),
+                    clock_source,
+                    clock_control,
+                    contacts,
+                    install_route: true,
+                    definition_only: false,
+                    multi_intent_targets: false,
+                },),
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                checkpoint_limits(),
+                |_phase, graph, installed| {
+                    let principal = installed
+                        .principal_binding(TemporalPrincipalBinding::reference())
+                        .unwrap();
+                    seed_graph(graph, &principal, "checkpointed", 0, 1, true);
+                    Ok(())
+                },
+            )
+            .open_in_advancement(&phase)
         },
     )
-    .expect("the checkpoint source application installs");
-    assert_eq!(application.checkpoint_restore_work(), None);
-    let original_world = application.current_world();
-    assert_live_relation_is_readable(&application, "source");
-    let (checkpoint, sections) = application
-        .with_host_advancement(|phase| {
-            application
-                .capture_application_checkpoint_with_sections(
-                    &phase,
-                    CapturePolicy::SystemAllocation,
-                )
-                .expect("the current committed world captures as opaque bytes")
-        })
-        .expect("installed host call opens");
-    assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
-    assert!(sections.native_bytes() > 0);
-    assert_eq!(
-        sections.accepted_output_count() == 0,
-        sections.accepted_output_bytes() == 0
-    );
-    drop(application);
+    .expect("bootstrap opens")
+    .expect("the checkpoint source Directory Home opens");
+    assert_eq!(home.runtime().checkpoint_restore_work(), None);
+    let original_world = home.runtime().current_world();
+    assert_live_relation_is_readable(home.runtime(), "source");
+    let _ = home
+        .checkpoint(&open_execution)
+        .expect("explicit Directory Home checkpoint publishes");
+    home.close(&open_execution)
+        .expect("Directory Home closes cleanly")
+        .reclaim();
 
     let restored_contacts = ContactCounters::default();
     let restored_execution_probe = restored_contacts.clone();
     let (installation_predicate, _) = Predicate::controlled(restored_contacts.clone());
     let (definition_predicate, _) = Predicate::controlled(restored_contacts.clone());
     let (clock_source, clock_control) = ClockSource::due();
-    let restored = application_installation::WorthQueryInterimCheckpointRestore::program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (TemporalContributionConfiguration {
-            installation_predicate,
-            definition_predicate: Arc::new(definition_predicate),
-            clock_source,
-            clock_control,
-            contacts: restored_contacts,
-            install_route: true,
-            definition_only: false,
-            multi_intent_targets: false,
-        },),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint_limits(),
-        checkpoint,
+    let restored_home = worth_query_host::facade::application_contribution::with_bootstrap_advancement_from_request(
+        open_execution,
+        |phase| {
+            WorthQueryApplicationHomeRequest::new(
+                WorthQueryApplicationHomeLocation::Directory(dir.clone()),
+                validated_program(),
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                TemporalHostSchema::declaration().unwrap(),
+                (TemporalContributionConfiguration {
+                    installation_predicate,
+                    definition_predicate: Arc::new(definition_predicate),
+                    clock_source,
+                    clock_control,
+                    contacts: restored_contacts,
+                    install_route: true,
+                    definition_only: false,
+                    multi_intent_targets: false,
+                },),
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                checkpoint_limits(),
+                |_, _, _| panic!("reopen cannot run initial_state"),
+            )
+            .open_in_advancement(&phase)
+        },
     )
-    .expect("the Query-issued application checkpoint restores");
+    .expect("bootstrap opens")
+    .expect("the checkpointed Directory Home reopens");
+    let restored = restored_home.runtime();
     let restore_work = restored
         .checkpoint_restore_work()
         .expect("native readmission reports its actual restore work");
-    assert_eq!(
-        restore_work.native_bytes_read,
-        Some(sections.native_bytes())
-    );
-    assert_eq!(restore_work.native_envelopes_readmitted, Some(0));
-    assert!(sections.native_admission_bytes() > 0);
-    assert!(sections.world_original_bytes() > 0);
     assert!(restore_work.root_images_verified > 0);
     assert!(restore_work.branch_cells_readmitted > 0);
     assert_eq!(
@@ -95,23 +117,30 @@ pub fn application_checkpoint_restores_fresh_editable_authority(
         "restore must not execute conditional application work",
     );
     assert_ne!(restored.current_world(), original_world);
-    assert_live_relation_is_readable(&restored, "restored");
-    let installed = restored
-        .conditional::<TemporalConditional>()
-        .expect("the restored contribution remains installed");
-    let installed = installed
-        .as_ref()
-        .as_ref()
-        .expect("the restored conditional route is live");
-    change_input(
-        request_execution,
-        &restored,
-        &installed.invariant,
-        restored.current_world(),
-        "post-restore-edit",
-    )
-    .require_committed()
-    .expect("fresh restored authority accepts a subsequent edit");
+    assert_live_relation_is_readable(restored, "restored");
+    {
+        let installed = restored
+            .conditional::<TemporalConditional>()
+            .expect("the restored contribution remains installed");
+        let installed = installed
+            .as_ref()
+            .as_ref()
+            .expect("the restored conditional route is live");
+        change_input(
+            request_execution,
+            restored,
+            &installed.invariant,
+            restored.current_world(),
+            "post-restore-edit",
+        )
+        .require_committed()
+        .expect("fresh restored authority accepts a subsequent edit");
+    }
+    restored_home
+        .close(&open_execution)
+        .expect("reopened Directory Home closes cleanly")
+        .reclaim();
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 pub fn assert_live_relation_is_readable(
@@ -183,159 +212,6 @@ pub fn assert_live_relation_is_readable(
         .expect("installed host call opens");
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].targets, vec!["intent-1"], "{phase}");
-}
-
-pub fn application_checkpoint_denies_corrupt_incompatible_and_forged_bytes() {
-    let contacts = ContactCounters::default();
-    let (installation_predicate, _) = Predicate::controlled(contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    let application = application_installation::in_memory_program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (TemporalContributionConfiguration {
-            installation_predicate,
-            definition_predicate: Arc::new(definition_predicate),
-            clock_source,
-            clock_control,
-            contacts,
-            install_route: true,
-            definition_only: false,
-            multi_intent_targets: false,
-        },),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint_limits(),
-        |_phase, graph, installed| {
-            let principal = installed
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .unwrap();
-            seed_graph(graph, &principal, "checkpoint-denial", 0, 1, true);
-            Ok(())
-        },
-    )
-    .expect("the denial courtroom source application installs");
-    let checkpoint = application
-        .with_host_advancement(|phase| {
-            application
-                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    let mut corrupt_payload = checkpoint.bytes().to_vec();
-    *corrupt_payload.last_mut().unwrap() ^= 0x01;
-    // Independent current grammar: format, workflow facts, workflow instances,
-    // then bootstrap u64 and native payload length u64.
-    const BOOTSTRAP: usize = 3 * std::mem::size_of::<u16>();
-    const NATIVE_LENGTH: usize = BOOTSTRAP + std::mem::size_of::<u64>();
-    let forged_commit = checkpoint
-        .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[BOOTSTRAP..BOOTSTRAP + 8].copy_from_slice(&u64::MAX.to_be_bytes());
-        })
-        .bytes()
-        .to_vec();
-    let unsupported_version = checkpoint
-        .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[..2].copy_from_slice(&u16::MAX.to_be_bytes());
-        })
-        .bytes()
-        .to_vec();
-    let unsupported_workflow = checkpoint
-        .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[2..4].copy_from_slice(&u16::MAX.to_be_bytes());
-            body[4..6].copy_from_slice(&u16::MAX.to_be_bytes());
-        })
-        .bytes()
-        .to_vec();
-    let invalid_payload_length = checkpoint
-        .rewrite_authenticated_checkpoint_body_for_test(|body| {
-            body[NATIVE_LENGTH..NATIVE_LENGTH + 8].copy_from_slice(&u64::MAX.to_be_bytes());
-        })
-        .bytes()
-        .to_vec();
-
-    use primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
-    for (invalid, expected, cause) in [
-        (
-            Vec::new(),
-            Kind::CheckpointRecoveryRejected,
-            "header is invalid",
-        ),
-        (
-            corrupt_payload,
-            Kind::CheckpointRecoveryRejected,
-            "checksum differs",
-        ),
-        (
-            forged_commit,
-            Kind::InterimCheckpointCaptureOriginMissing,
-            "requires its actual capture origin",
-        ),
-        (
-            unsupported_version,
-            Kind::UnsupportedCheckpointFormat {
-                observed: u16::MAX,
-                supported: 14,
-            },
-            "format 65535 is unsupported",
-        ),
-        (
-            unsupported_workflow,
-            Kind::UnsupportedCheckpointWorkflowContract {
-                facts: u16::MAX,
-                instances: u16::MAX,
-            },
-            "workflow contract is unsupported",
-        ),
-        (
-            invalid_payload_length,
-            Kind::CheckpointRecoveryRejected,
-            "checkpoint payload",
-        ),
-    ] {
-        checkpoint_bytes_are_denied(invalid, expected, cause);
-    }
-}
-
-pub fn checkpoint_bytes_are_denied(
-    corrupted_bytes: Vec<u8>,
-    expected: primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
-    cause: &str,
-) {
-    let corrupt = application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-        corrupted_bytes.into_boxed_slice(),
-    );
-    let contacts = ContactCounters::default();
-    let observed_contacts = contacts.clone();
-    let (installation_predicate, _) = Predicate::controlled(contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    let denial = match application_installation::WorthQueryInterimCheckpointRestore::program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (TemporalContributionConfiguration {
-            installation_predicate,
-            definition_predicate: Arc::new(definition_predicate),
-            clock_source,
-            clock_control,
-            contacts,
-            install_route: true,
-            definition_only: false,
-            multi_intent_targets: false,
-        },),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint_limits(),
-        corrupt,
-    ) {
-        Err(denial) => denial,
-        Ok(_) => panic!("corrupt checkpoint bytes cannot publish an application"),
-    };
-    let application_installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial
-    else {
-        panic!("corrupt checkpoint must be denied during graph recovery: {denial:?}")
-    };
-    assert_eq!(denial.kind(), expected, "{denial:?}");
-    assert!(denial.subject().contains(cause), "{denial:?}");
-    assert_eq!(observed_contacts.snapshot(), (0, 0, 0, 0));
 }
 
 pub fn checkpoint_limits() -> WorthQueryApplicationLimits {

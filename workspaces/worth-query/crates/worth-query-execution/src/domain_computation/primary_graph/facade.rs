@@ -61,11 +61,6 @@ pub use super::application_attempt::{
     WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
     WorthQueryWorkflowProposalAdapter,
 };
-pub use super::application_checkpoint::{
-    WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
-    WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
-    WorthQueryInterimCheckpointOrigin, WorthQueryNativeCheckpointSectionBytes,
-};
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
@@ -368,6 +363,4 @@ mod operation_body;
 pub use authorization::*;
 pub use operation_body::*;
 
-mod checkpoint_inspection;
 pub use super::application_attempt::WorthQueryManagedPhaseStorageForTest;
-pub use checkpoint_inspection::*;

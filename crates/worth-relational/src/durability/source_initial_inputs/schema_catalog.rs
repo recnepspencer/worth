@@ -72,24 +72,6 @@ impl ReadmittedSourceSchemaCatalog {
         Self::retain_image(catalog, image, registry, contracts, &expected, request)
     }
 
-    /// Immediate executable admission for callers with installed receiver codecs.
-    pub(crate) fn insert_image(
-        catalog: &mut Arc<Self>,
-        image: &crate::durability::data::DurableBranchRootSchemaImage,
-        configured: &RelationalSchemaRegistry,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalRecoveryStop> {
-        let Some((mut registry, contracts, expected)) =
-            Self::read_unseen_image(catalog, image, configured, request)?
-        else {
-            return Ok(());
-        };
-        registry.content_formats = registry
-            .content_formats
-            .bind_recorded(&configured.content_formats)?;
-        Self::retain_image(catalog, image, registry, contracts, &expected, request)
-    }
-
     fn read_unseen_image(
         catalog: &Self,
         image: &crate::durability::data::DurableBranchRootSchemaImage,

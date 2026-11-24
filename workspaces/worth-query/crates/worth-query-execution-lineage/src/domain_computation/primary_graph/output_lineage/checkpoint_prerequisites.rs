@@ -80,7 +80,7 @@ impl WorthQueryApplicationOutputLineage {
         let retained = self
             .checkpoint_identity_for_settlement(identity)?
             .ok_or_else(|| unavailable("consumed checkpoint root has no producer locator"))?;
-        checkpoint::encode::body::encode_accepted(&retained, execution.allocation_policy())
+        checkpoint::accepted_output::encode(&retained, execution.allocation_policy())
             .map_err(|_| unavailable("original accepted output cannot be encoded"))
     }
 }

@@ -9,7 +9,6 @@ mod covered_prefix;
 mod current_metadata;
 mod destination_members;
 mod draft;
-pub(in crate::durability::authority) mod interim;
 mod metadata;
 mod original_image;
 mod prepare;
@@ -21,10 +20,6 @@ mod symbols;
 mod verified_originals;
 use crate::durability::data::{
     RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial as Denial,
-};
-pub use interim::{
-    AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
-    CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
 };
 
 /// The all-root producer's strong result, retaining its original read and ACK custody.

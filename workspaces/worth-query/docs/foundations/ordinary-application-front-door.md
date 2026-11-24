@@ -1140,50 +1140,27 @@ explains a transition; it does not perform the transition.
 
 ## Capture And Reopen Cost Boundary
 
-An installed application runtime can capture its opaque Query checkpoint and
-encoder-owned section report together with
-`capture_application_checkpoint_with_sections(phase, policy)`, where `phase`
-is a `WorthQueryAdvancementPhase` lent by the same runtime (for example by
-`with_host_advancement`). The report splits Query
-framing, native Relational bytes and accepted-output identities; a locally
-captured native checkpoint also reports envelope, branch-root, branch-cell,
-partition-mirror, derived-index and framing bytes. These sizes describe the
-same encoding pass. They cannot validate received bytes or authorize restore.
+Directory Home durability owns checkpoint capture and reopen through
+`WorthQueryApplicationHome`: `home.checkpoint(&request)` writes the Home's
+derived checkpoint under the caller's admitted `ExecutionRequest`,
+`home.inspect_checkpoint(&request)` reports what is due, and
+`home.recover_checkpoint(&request)` completes an interrupted checkpoint attempt.
+The interim D13 byte-blob capture/restore/repair surface has been retired.
 
-The caller supplies `WorthQueryCheckpointCapturePolicy::SystemAllocation` or
-`Execution(&lease)` for capture, program transition and every repair attempt.
-System allocation is fallible and uncharged. Execution mode checks the live
-caller lease, reserves the checked exact final-frame payload before allocating,
-and retains that one charge until its last Query or embedded native byte owner
-drops. Neither mode charges native codec temporaries, decoded rows or allocator
-metadata. There is no fallback from an exhausted or stopped lease to system
-allocation.
-
-An `Execution(&lease)` lease is the call's one budget. Its workers must descend
-from it, so open an installed runtime's capture with
-`with_funded_host_advancement(policy, ..)`; the convenience transition runs its
-bootstrap on the lease itself, and `repair_to_checkpoint_with_request` repairs
-under the original request. A phase/policy repair or capture may name the
-caller lease that funds the call or one of its ancestors. Any other lease,
-including a caller lease inside `with_host_advancement`, whose workers descend
-from the World's placement, refuses with the typed allocation cause
-`UnrelatedNestedLease` before reserving. The lease therefore carries the call's
-work and transient worker charges as well as the retained frame.
-
-`WorthQueryCheckpointCaptureDenial` preserves either the native durability
-error or the typed physical allocation refusal and its available payload quote.
-An acknowledged transition whose capture fails returns its unpublished repair
-capsule, with `capture_denial()` identifying the latest capture failure. A later
-native settlement failure clears that obsolete capture cause. Repair takes a
-fresh explicit policy, retains its current phase on refusal and never reruns
-authoring; a captured successor still requires ordinary target readmission.
-
-The application owns the enclosing artifact, transport, compatibility check
-and fresh installed-schema readmission. Relational verifies and rebuilds
-committed truth; Query readmits accepted-output identities without rerunning
-producers. Retained views and handles are reconstructed separately. Compare
-work against the actual scene/dependency shape and report wall time with its
-hardware; an absolute seconds threshold is not a portable Query contract.
+On reopen, construct `WorthQueryApplicationHomeRequest::new` with
+`WorthQueryApplicationHomeLocation::Directory(dir)` and call
+`.open_in_advancement(&phase)` inside `with_bootstrap_advancement` or
+`with_bootstrap_advancement_from_request` without replaying `initial_state`.
+Relational verifies and rebuilds committed truth from durable journals and any
+valid derived checkpoint; Query readmits accepted-output identities without
+rerunning producers. Retained views, invariant projection authorities
+(`home.retain_invariant_projection_authority()`), and handles are reconstructed
+separately. Relational program transitions use `.with_program_transition(...)`
+on `WorthQueryApplicationHomeRequest` (including resuming an interrupted or
+process-killed relational transition with the same successor request); authored
+Signal programme migration remains deferred to its later migration phase.
+Compare work against the actual scene/dependency shape and report wall time with
+its hardware; an absolute seconds threshold is not a portable Query contract.
 
 ## Request and operation lifecycle
 

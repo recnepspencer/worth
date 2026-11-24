@@ -173,7 +173,6 @@ fn recovered_authority(
             .clone(),
     ));
     RecoveredRelationalRuntimeAuthority {
-        interim_bootstrap_phase: None,
         home_catalog_readmission: std::sync::Mutex::new(()),
         home_program_predecessor: None,
         runtime_instance_id: runtime.runtime_instance_id(),

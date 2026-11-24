@@ -1,5 +1,4 @@
 //! Root-free original Native coordinates captured from an actual admitted basis.
-mod capture;
 mod successor;
 pub use successor::AdmittedRelationalMemoryComponent;
 use super::{
@@ -16,19 +15,7 @@ use worth_foundational::FoundationalBranchTarget;
 /// Deserialized descriptions cannot construct this observation.
 #[derive(Debug, Clone)]
 pub struct ObservedRelationalMemoryComponent {
-    original: Arc<MemoryComponentOrigin>,
-}
-#[derive(Debug)]
-enum MemoryComponentOrigin {
-    Live(MemoryComponentMeaning),
-    Interim(InterimComponentMeaning),
-}
-#[derive(Debug)]
-struct InterimComponentMeaning {
-    owner: Weak<RelationalRuntimeState>,
-    description: RecordedRelationalComponentReference,
-    canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
-    _funding: Option<worth_execution::ExecutionMemoryReservation>,
+    original: Arc<MemoryComponentMeaning>,
 }
 #[derive(Debug)]
 struct MemoryComponentMeaning {
@@ -38,57 +25,14 @@ struct MemoryComponentMeaning {
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl ObservedRelationalMemoryComponent {
-    pub(crate) fn from_interim(
-        request: &ExecutionRequest<'_, '_>,
-        owner: Weak<RelationalRuntimeState>,
-        description: RecordedRelationalComponentReference,
-        canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
-    ) -> Result<Self, crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
-    {
-        use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Stop;
-        let layout = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<MemoryComponentOrigin>())
-            .map_err(|_| Stop::CapacityOverflow)?
-            .0
-            .pad_to_align();
-        let funding = request
-            .reserve_retained_memory(layout.size() as u64)
-            .map_err(|cause| Stop::Request(cause.into()))?;
-        Ok(Self {
-            original: Arc::new(MemoryComponentOrigin::Interim(InterimComponentMeaning {
-                owner,
-                description,
-                canonical,
-                _funding: funding,
-            })),
-        })
-    }
     pub fn matches_original(
         &self,
         original: &crate::durability::authority::ObservedRelationalMemoryCommit,
     ) -> bool {
-        match self.original.as_ref() {
-            MemoryComponentOrigin::Live(meaning) => meaning
-                .canonical
-                .as_ref()
-                .is_some_and(|canonical| original.matches_original_envelope(canonical)),
-            MemoryComponentOrigin::Interim(meaning) => meaning
-                .canonical
-                .as_ref()
-                .is_some_and(|canonical| original.matches_interim(&meaning.owner, canonical)),
-        }
-    }
-}
-fn map_interim_admission_refusal(
-    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
-) -> Refusal {
-    match cause {
-        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(
-            stop,
-        ) => Refusal::Request(stop),
-        other => Refusal::Source(
-            crate::durability::data::RelationalRecoveryStop::AdmissionImage(other),
-        ),
+        self.original
+            .canonical
+            .as_ref()
+            .is_some_and(|canonical| original.matches_original_envelope(canonical))
     }
 }
 
@@ -109,44 +53,11 @@ impl RelationalRuntime {
             && let Some(target) = descriptor.reference().target().as_basis()
         {
             let commit_id = crate::history::data::CommitId(target.selected_commit_id());
-            let artifact = self
+            let _ = self
                 .history
                 .commit_artifact(commit_id)
                 .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
-            let Some((entry, source)) = artifact.envelope_residency().source_placement() else {
-                return Err(Refusal::CanonicalMismatch { commit_id });
-            };
-            let row = self
-                .durability
-                .checkpoint_selection()
-                .admitted_commit(&entry)
-                .map_err(map_interim_admission_refusal)?
-                .ok_or(Refusal::CanonicalMismatch { commit_id })?;
-            let interim = match row.scope() {
-                worth_foundational::facade::CheckpointAdmissionScope::Interim { .. } => true,
-                worth_foundational::facade::CheckpointAdmissionScope::Home { .. } => false,
-            };
-            if !interim
-                || !row.links_artifact(&artifact)
-                || !self
-                    .durability
-                    .checkpoint_selection()
-                    .matches_admitted_source(&row, &source)
-                || row.index().commit.version_id.0 != target.version_id()
-                || &row.index().root != target.roots()
-            {
-                return Err(Refusal::CanonicalMismatch { commit_id });
-            }
-            let description = RecordedRelationalComponentReference::from_readmitted_source(
-                execution, descriptor, &entry,
-            )?;
-            return ObservedRelationalMemoryComponent::from_interim(
-                execution,
-                self.state_binding(),
-                description,
-                Some(row),
-            )
-            .map_err(map_interim_admission_refusal);
+            return Err(Refusal::CanonicalMismatch { commit_id });
         }
         let bytes = successor::live_bytes(descriptor, successor::parent_count(descriptor))?;
         let funding = successor::fund_and_charge(execution, bytes)?;
@@ -173,12 +84,12 @@ impl RelationalRuntime {
             });
         }
         Ok(ObservedRelationalMemoryComponent {
-            original: Arc::new(MemoryComponentOrigin::Live(MemoryComponentMeaning {
+            original: Arc::new(MemoryComponentMeaning {
                 owner: self.state_binding(),
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
                 _funding: funding,
-            })),
+            }),
         })
     }
     pub(crate) fn export_memory_component(
@@ -187,30 +98,7 @@ impl RelationalRuntime {
         component: &ObservedRelationalMemoryComponent,
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        let meaning = match component.original.as_ref() {
-            MemoryComponentOrigin::Live(meaning) => meaning,
-            MemoryComponentOrigin::Interim(meaning) => {
-                if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
-                    return Err(Refusal::Basis(
-                        crate::branch::RelationalBranchBasisDenial::OwnerUnavailable,
-                    ));
-                }
-                if let Some(row) = &meaning.canonical {
-                    let artifact = self
-                        .history
-                        .commit_artifact(row.index().commit.commit_id)
-                        .ok_or(Refusal::MissingPerformedCommit {
-                            commit_id: row.index().commit.commit_id,
-                        })?;
-                    if !row.links_artifact(&artifact) {
-                        return Err(Refusal::CanonicalMismatch {
-                            commit_id: row.index().commit.commit_id,
-                        });
-                    }
-                }
-                return Ok(meaning.description.clone());
-            }
-        };
+        let meaning = component.original.as_ref();
         if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
             return Err(Refusal::Basis(
                 crate::branch::RelationalBranchBasisDenial::OwnerUnavailable,

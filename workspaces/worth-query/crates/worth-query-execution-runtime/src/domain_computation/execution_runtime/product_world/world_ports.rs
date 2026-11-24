@@ -11,7 +11,6 @@ pub struct WorthQueryProductWorldPorts {
     inspection: RuntimeWorldInspectionPort,
     recovery: RuntimeWorldRecoveryPort,
     execution_authority: Option<Arc<worth_execution::ExecutionAuthority>>,
-    interim_checkpoint: Option<WorldInterimCheckpointPort>,
     // Passive memory custody is cloned with every product runtime. Directory
     // attachment supplies None; no operation dispatches through this keepalive.
     _memory_world_keepalive: Option<Arc<RuntimeWorldOwner<(), (), (), (), ()>>>,
@@ -24,7 +23,6 @@ impl WorthQueryProductWorldPorts {
             .execution_authority_handle()
             .expect("the newly installed memory World is available");
         Self {
-            interim_checkpoint: Some(owner.interim_checkpoint_port()),
             identity: owner.owner_identity(),
             publication: owner.publication_port(),
             branch: owner.branch_port(),
@@ -46,7 +44,6 @@ impl WorthQueryProductWorldPorts {
     ) -> Result<Self, RuntimeWorldOwnerUnavailable> {
         let execution_authority = publication.execution_authority_handle()?;
         Ok(Self {
-            interim_checkpoint: None,
             identity,
             publication,
             branch,
@@ -79,16 +76,9 @@ impl WorthQueryProductWorldPorts {
     pub fn execution_authority(&self) -> Option<&worth_execution::ExecutionAuthority> {
         self.execution_authority.as_deref()
     }
-
-    pub fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort> {
-        self.interim_checkpoint.clone()
-    }
 }
 
 impl super::WorthQueryProductRuntime {
-    pub(crate) fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort> {
-        self.owner.interim_checkpoint_port()
-    }
     pub(crate) fn with_execution_placement<R>(
         &self,
         body: impl for<'owner> FnOnce(RuntimeWorldExecutionPlacement<'owner>) -> R,

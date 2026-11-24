@@ -60,35 +60,6 @@ impl DurabilityRecoveryAuthority<'_> {
         self.restore_decoded_for_codec_transition(execution, checkpoint, native.bytes().len())
     }
 
-    pub(in crate::durability::authority) fn restore_decoded_interim_for_codec_transition(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: crate::durability::data::DurableCheckpoint,
-        origin: &super::super::CapturedNativeInterimOrigin,
-    ) -> Result<
-        (
-            crate::runtime::RecoveryOutcome,
-            RecoveredRelationalRuntimeAuthority,
-        ),
-        RelationalRecoveryStop,
-    > {
-        let target_registry = self.runtime.config().schema.registry;
-        let source_registry = source_schema::readmit_interim_current_source_schema(
-            execution,
-            origin,
-            &checkpoint,
-            self.runtime.main_branch_identity().branch_id(),
-            &target_registry.content_formats,
-        )?;
-        self.restore_codec_source(
-            execution,
-            checkpoint,
-            origin.native_len(),
-            source_registry,
-            target_registry,
-        )
-    }
-
     fn restore_decoded_for_codec_transition(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

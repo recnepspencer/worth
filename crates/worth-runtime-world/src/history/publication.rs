@@ -8,10 +8,6 @@ mod retirement;
 pub(crate) use retirement::PublicationFactsRetirement;
 mod home_observation;
 pub(super) mod memory_observation;
-pub(crate) use memory_observation::MemoryPublicationRecord;
-pub(crate) use memory_observation::{
-    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
-};
 mod readmission;
 pub use home_observation::WorldObservedHomePublication;
 pub use memory_observation::WorldObservedMemoryPublication;

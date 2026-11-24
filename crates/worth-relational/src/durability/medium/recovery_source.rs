@@ -70,10 +70,7 @@ impl RelationalDurableCheckpointSource {
             native_origin,
             complete_source_digest,
             ..
-        } = cut.scope()
-        else {
-            return Err(Refusal::BindingMismatch(Mismatch::Scope));
-        };
+        } = cut.scope();
         let complete = source
             .complete
             .as_ref()

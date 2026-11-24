@@ -62,7 +62,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             };
         }
         let payload =
-            checkpoint::encode::body::encode_accepted(&identity, execution.allocation_policy())
+            checkpoint::accepted_output::encode(&identity, execution.allocation_policy())
                 .map_err(|_| unavailable())?;
         let observation = self
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
@@ -130,7 +130,7 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
                         context
                             .checkpoint(1)
                             .map_err(|stop| map_stop(worth_execution::WorkCeilingDenial::Stopped(stop)))?;
-                        let payload = checkpoint::encode::body::encode_accepted(
+                        let payload = checkpoint::accepted_output::encode(
                             &item.identity,
                             execution.allocation_policy(),
                         )

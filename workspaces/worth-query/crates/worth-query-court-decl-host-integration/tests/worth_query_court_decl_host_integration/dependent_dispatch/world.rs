@@ -1,12 +1,17 @@
 use super::*;
 use std::{
     future::Future,
+    path::PathBuf,
     pin::pin,
     task::{Context, Poll, Waker},
     time::{Duration, SystemTime},
 };
 use worth_query_host::facade::{
     admission::authenticated_principal as auth, declaration::authentication::*,
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+use worth_query_testkit_document_retention::facade::directory_home::{
+    with_directory_bootstrap, DirectoryHomeGuard,
 };
 pub type App = installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub fn identity() -> WorthQueryExternalPrincipalIdentity {
@@ -16,26 +21,58 @@ pub fn install(width: u64, selections: Selections) -> App {
     install_with_cell(width, selections, false)
 }
 pub fn install_with_cell(width: u64, selections: Selections, self_supersede: bool) -> App {
-    install_source(width, selections, self_supersede, None)
-}
-pub fn restore(
-    checkpoint: installation::WorthQueryApplicationCheckpoint,
-    selections: Selections,
-) -> App {
-    install_source(1, selections, false, Some(checkpoint))
-}
-fn install_source(
-    width: u64,
-    selections: Selections,
-    self_supersede: bool,
-    checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
-) -> App {
     let schema = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    let limits = installation::WorthQueryApplicationLimits::new(
+    installation::in_memory_program(
+        program,
+        schema,
+        (Configuration {
+            selections,
+            self_supersede,
+        },),
+        installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
+            .unwrap(),
+        limits(),
+        move |_, graph, installed| seed_graph(width, self_supersede, graph, installed),
+    )
+    .unwrap()
+}
+pub fn open_directory(
+    directory: PathBuf,
+    width: u64,
+    selections: Selections,
+    self_supersede: bool,
+) -> DirectoryHomeGuard<Schema, Program> {
+    let schema = Schema::declaration().unwrap();
+    let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
+        .with_schema(&schema)
+        .validated_program()
+        .unwrap();
+    let home = with_directory_bootstrap(|phase| {
+        WorthQueryApplicationHomeRequest::new(
+            WorthQueryApplicationHomeLocation::Directory(directory.clone()),
+            program,
+            installation::WorthQueryApplicationProgramRoster::new(),
+            schema,
+            (Configuration {
+                selections,
+                self_supersede,
+            },),
+            installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
+                .unwrap(),
+            limits(),
+            move |_, graph, installed| seed_graph(width, self_supersede, graph, installed),
+        )
+        .open_in_advancement(phase)
+    })
+    .unwrap();
+    DirectoryHomeGuard::wrap(home, directory)
+}
+fn limits() -> installation::WorthQueryApplicationLimits {
+    installation::WorthQueryApplicationLimits::new(
         worth_query_testkit_document_retention::facade::document_world_resources::world_resources(
             256,
             4 * 1024 * 1024,
@@ -46,66 +83,44 @@ fn install_source(
             std::num::NonZeroUsize::new(128).unwrap(),
         ),
         SignalConditionalEvaluationBudget::development(),
-    );
-    if let Some(checkpoint) = checkpoint {
-        return installation::WorthQueryInterimCheckpointRestore::program(
-            program,
-            schema,
-            (Configuration {
-                selections,
-                self_supersede,
-            },),
-            installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
-                .unwrap(),
-            limits,
-            checkpoint,
-        )
-        .unwrap();
-    }
-    installation::in_memory_program(
-        program,
-        schema,
-        (Configuration {
-            selections,
-            self_supersede,
-        },),
-        installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
-            .unwrap(),
-        limits,
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed
-                    .principal_binding(PrincipalBinding::reference())
-                    .unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Node::reference(),
-                    WorthQueryApplicationEntityKey::new("root").unwrap(),
-                )
-                .field(Key::at("Key"), "root".to_string())
-                .field(ParentName::at("ParentName"), String::new())
-                .field(Value::at("Value"), 1)
-                .field(Width::at("Width"), width)
-                .field(Produced::at("Produced"), 0),
-            )?;
-            if self_supersede {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        producer_cell::ProducerCell::reference(),
-                        WorthQueryApplicationEntityKey::new("cell:root.0").unwrap(),
-                    )
-                    .field(producer_cell::CellKey::at("CellKey"), "root.0".to_string()),
-                )?;
-            }
-            Ok(())
-        },
     )
-    .unwrap()
+}
+fn seed_graph(
+    width: u64,
+    self_supersede: bool,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed
+            .principal_binding(PrincipalBinding::reference())
+            .unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Node::reference(),
+            WorthQueryApplicationEntityKey::new("root").unwrap(),
+        )
+        .field(Key::at("Key"), "root".to_string())
+        .field(ParentName::at("ParentName"), String::new())
+        .field(Value::at("Value"), 1)
+        .field(Width::at("Width"), width)
+        .field(Produced::at("Produced"), 0),
+    )?;
+    if self_supersede {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                producer_cell::ProducerCell::reference(),
+                WorthQueryApplicationEntityKey::new("cell:root.0").unwrap(),
+            )
+            .field(producer_cell::CellKey::at("CellKey"), "root.0".to_string()),
+        )?;
+    }
+    Ok(())
 }
 pub struct Local;
 impl auth::WorthQueryAuthenticationAdapter for Local {

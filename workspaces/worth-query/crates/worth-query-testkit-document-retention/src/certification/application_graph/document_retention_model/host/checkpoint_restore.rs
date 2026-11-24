@@ -1,5 +1,7 @@
 //! Opening and reopening document-retention Directory Homes under explicit rosters.
-use crate::facade::directory_home::{with_directory_bootstrap, DirectoryHomeGuard};
+use worth_query_testkit_document_retention::facade::directory_home::{
+    with_directory_bootstrap, DirectoryHomeGuard,
+};
 use std::path::PathBuf;
 pub use worth_query_host::facade::application_installation::{
     ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,

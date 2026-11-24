@@ -31,13 +31,9 @@ pub use commit::{
     CompositeSignalPublicationIdentity,
 };
 pub use parentage::OrdinaryParent;
-pub(crate) use publication::MemoryPublicationRecord;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
-};
-pub(crate) use publication::{
-    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationReceiverScope,
 };
 pub(crate) use publication::{
     NativeReadmittedPublicationRecord, PreparedReadmittedPublicationRecord, PublicationEvidence,

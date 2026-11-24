@@ -78,17 +78,14 @@ interest; a settled value must remain owned through the consumer's final
 currentness and delivery checks. This transfer neither republishes the source
 nor supplies restart durability.
 
-`WorthQueryApplicationCheckpoint` clones share immutable byte backing. Capture,
-program transition and each repair attempt receive an explicit
-`WorthQueryCheckpointCapturePolicy`: `SystemAllocation` uses fallible uncharged
-storage; `Execution(&lease)` reserves the checked final-frame payload before
-allocation. Clones and embedded native regions retain that one backing and its
-charge until the last owner drops. There is no fallback after lease refusal.
-Decode verifies framing and checksum before the same-backing native handoff;
-ordinary native recovery still owns readmission. Byte equality and wire grammar
-do not encode allocation policy. Native codec temporaries, decoded rows and
-allocator/Arc metadata remain outside this payload charge. See the
-[capture and reopen contract](./docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary).
+Directory Homes persist durable state through World's authoritative journals
+and optional derived checkpoints (`home.checkpoint(&request)`,
+`home.inspect_checkpoint(&request)`, and `home.recover_checkpoint(&request)`).
+Reopening the same Directory Home reconstructs committed truth and accepted
+producer lineage without replaying `initial_state` or moving application-owned
+checkpoint byte blobs. See the
+[Application Home guide](../../docs/application-home.md) and the
+[Directory Home lifecycle contract](./docs/foundations/ordinary-application-front-door.md#capture-and-reopen-cost-boundary).
 
 Required output progression rechecks native consumer decision facts before
 following its previously consumed dependencies. Sealed child entity/field content

@@ -9,6 +9,7 @@ use super::fixture_values::{PlanarAdjustmentResult, PlanarMutationDenial, Positi
 use super::runtime_api::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryDecisionPlan, WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
+    WorthQueryOperationDurableCapability,
 };
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
@@ -166,7 +167,9 @@ impl<Schema: TopologyModelBinding> RegionOutputHandler<Schema> {
 impl<Schema: TopologyModelBinding> OperationHandler<Schema, RegionOutputBinding<Schema>>
     for RegionOutputHandler<Schema>
 {
-    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &RegionOutputInput,

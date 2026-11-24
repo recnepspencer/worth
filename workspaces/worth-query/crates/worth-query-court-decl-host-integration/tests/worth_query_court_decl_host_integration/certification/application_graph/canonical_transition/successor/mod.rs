@@ -4,7 +4,10 @@ use worth_query_decl::facade::application_schema::ApplicationSchema;
 #[test]
 fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output() {
     let authored = model::authored_value();
-    let application = host::install(authored.clone()).unwrap();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-transition-v2",
+    );
+    let application = host::open_directory(dir, authored.clone()).unwrap();
     let source_id = host::source_id(&application);
     output::reset_decodes();
     let scope = worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope();
@@ -37,18 +40,12 @@ fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output()
     );
     assert_eq!(host::read(&application), authored);
     assert_eq!(host::source_id(&application), source_id);
-    let checkpoint = application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                .unwrap()
-        })
-        .unwrap();
+    drop(settled);
     drop(demand);
-    drop(application);
-    let restored = host::restore(checkpoint);
+    drop(principal);
+    drop(scope);
+    let dir = application.checkpoint_and_close_for_reopen();
+    let restored = host::open_directory(dir, authored.clone()).unwrap();
     assert_eq!(host::source_id(&restored), source_id);
     assert_eq!(host::read_derived(&restored), output::calculate(&authored));
     assert_eq!(host::read(&restored), authored);
@@ -114,39 +111,20 @@ fn actual_codec_binding_change_derives_a_new_aspect_revision() {
 
 #[test]
 fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
-    let checkpoint = predecessor_checkpoint();
+    let dir = predecessor_directory();
     output::reset_decodes();
-    let denial = installation::WorthQueryInterimCheckpointRestore::program(
-        host::program(),
-        schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host::limits(),
-        checkpoint.clone(),
-    )
-    .err()
-    .expect("incompatible recovered V1 field cannot enter V2 ordinary restore");
+    let denial = host::open_directory(dir.clone(), model::authored_value())
+        .err()
+        .expect("incompatible V1 Directory Home cannot enter V2 ordinary open");
     assert_eq!(
         output::decodes(),
         0,
         "codec fence must precede V2 payload interpretation"
     );
-    let installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denial else {
-        panic!("expected native checkpoint graph refusal: {denial:?}");
-    };
-    assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
     assert!(
-        denial
-            .subject()
-            .contains("recovered derived codec requires authenticated native transition admission"),
-        "unexpected recovery fence: {denial:?}"
+        denial.transition_required().is_some(),
+        "expected TransitionRequired on V1->V2 ordinary open: {denial:?}"
     );
+    drop(denial);
+    let _ = std::fs::remove_dir_all(&dir);
 }
-
-pub(crate) mod acknowledged_capture;
-
-pub(crate) mod adoption;
-
-pub(crate) mod historical;
-
-pub(crate) mod pre_effect_indexes;

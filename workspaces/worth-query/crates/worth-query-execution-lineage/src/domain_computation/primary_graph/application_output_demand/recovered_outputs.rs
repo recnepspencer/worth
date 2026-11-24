@@ -2,12 +2,7 @@
 use super::WorthQueryReadmittedAcceptedOutput;
 use crate::domain_computation::{
     authorization::WorthQueryOperationScopeEntityBinding,
-    primary_graph::{
-        application_checkpoint::{
-            CheckpointDecodeDenial, CheckpointMetadataFunding, DecodedApplicationCheckpoint,
-        },
-        WorthQueryPrimaryGraphInstallationDenial as Denial,
-    },
+    primary_graph::application_checkpoint::{CheckpointDecodeDenial, CheckpointMetadataFunding},
 };
 
 #[derive(Default)]
@@ -41,50 +36,6 @@ impl WorthQueryRecoveredOutputs {
             record.observation = None;
         }
         Ok(())
-    }
-    pub fn from_checkpoint(
-        checkpoint: DecodedApplicationCheckpoint,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut readmit: impl FnMut(
-            &super::WorthQueryAcceptedOutputCheckpointIdentity,
-        ) -> Result<
-            std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-            >,
-            CheckpointDecodeDenial,
-        >,
-    ) -> Result<Self, Denial> {
-        let DecodedApplicationCheckpoint {
-            accepted_outputs,
-            mut metadata,
-            ..
-        } = checkpoint;
-        let count = accepted_outputs.len();
-        let old_capacity = accepted_outputs.capacity();
-        let mut records = metadata
-            .vec::<WorthQueryReadmittedAcceptedOutput>(count, execution)
-            .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-        for accepted in accepted_outputs {
-            metadata
-                .check_live(execution)
-                .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-            let correspondence =
-                readmit(&accepted).map_err(CheckpointDecodeDenial::into_installation_denial)?;
-            records.push(WorthQueryReadmittedAcceptedOutput {
-                observation: None,
-                checkpoint: accepted,
-                correspondence,
-            });
-        }
-        // The consumed Vec allocation is gone; only its moved nested heaps remain.
-        metadata
-            .release_slots::<super::WorthQueryAcceptedOutputCheckpointIdentity>(old_capacity)
-            .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-        Ok(Self {
-            checkpoint: RecoveredOutputRecords::from_records(records, metadata, execution)
-                .map_err(CheckpointDecodeDenial::into_installation_denial)?,
-            journal: std::sync::OnceLock::new(),
-        })
     }
     pub fn readmit_journal(
         &self,
@@ -164,5 +115,3 @@ impl RecoveredOutputRecords {
             })
     }
 }
-
-mod court_doors_for_test;

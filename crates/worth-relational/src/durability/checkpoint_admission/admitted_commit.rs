@@ -28,9 +28,6 @@ struct AdmittedRow {
 }
 
 impl CheckpointAdmittedCommit {
-    pub(crate) fn scope(&self) -> &worth_foundational::facade::CheckpointAdmissionScope {
-        self.0.image.cut().scope()
-    }
     pub(crate) fn effect_data(
         &self,
         request: &ExecutionRequest<'_, '_>,
