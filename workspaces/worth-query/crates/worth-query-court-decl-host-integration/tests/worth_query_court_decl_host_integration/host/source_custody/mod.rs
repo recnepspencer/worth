@@ -4,6 +4,7 @@ mod commit_and_decline;
 mod custody_dst;
 mod erased_custody;
 mod interrupted_frames;
+mod retryable_no_effect;
 
 use super::application_startup::{
     close_home, local_principal, open_home, open_home_with_contacts, read_balance, scope,

@@ -77,7 +77,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for DirectoryNumericContri
     }
 }
 
-pub(in super::super) fn configure_with_edit_handler<H>(
+pub(in crate::host) fn configure_with_edit_handler<H>(
     setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     edit_handler: H,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>

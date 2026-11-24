@@ -205,7 +205,34 @@ fn external_and_inbound_no_aftermath_handlers_refuse_when_required_capabilities_
         .install_external_effect_transport(Arc::new(CountingTransport(transport_contacts.clone())))
         .unwrap();
 
-    let before_world = home.primary_graph().current_world();
+    let selected_commit = || {
+        let app = home.primary_graph();
+        let branch = app.current_world();
+        let (_, probe_scope) = pending_support::scope();
+        app.with_application_advancement(&probe_scope, |phase| {
+            app.on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .unwrap()
+    };
+    let outbox_count = || {
+        let app = home.primary_graph();
+        let (_, probe_scope) = pending_support::scope();
+        app.with_application_advancement(&probe_scope, |phase| {
+            app.observe_committed_dispatch_outbox_count(&phase).unwrap()
+        })
+        .unwrap()
+    };
+    let before_commit = selected_commit();
+    assert_eq!(
+        outbox_count(),
+        0,
+        "fresh Home starts with zero outbox records"
+    );
     let (_, scope) = pending_support::scope();
     let principal = identity::inspection_authentication::authenticate(
         home.primary_graph().installed_schema(),
@@ -261,9 +288,14 @@ fn external_and_inbound_no_aftermath_handlers_refuse_when_required_capabilities_
         "zero transport contacts"
     );
     assert_eq!(
-        home.primary_graph().current_world(),
-        before_world,
-        "zero outbox or world commit occurred"
+        selected_commit(),
+        before_commit,
+        "selected branch head commit must stay unchanged"
+    );
+    assert_eq!(
+        outbox_count(),
+        0,
+        "owner-observed committed dispatch outbox must contain zero records"
     );
 
     drop((notify_denied, inbound_denied, principal));

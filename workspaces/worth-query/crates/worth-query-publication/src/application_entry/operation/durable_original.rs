@@ -287,6 +287,12 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         Ok(())
     }
 
+    /// Descriptive check for whether this description already carries a retained durable original.
+    /// Grants no admission or discharge authority.
+    pub fn has_durable_original(&self) -> bool {
+        self.original.is_some()
+    }
+
     /// Lawfully withdraws an unconstructed description, discharging any durable original
     /// already retained on it while preserving `self` intact if discharge refuses.
     pub fn close_unexecuted(

@@ -1,6 +1,6 @@
 //! Shared Directory Home builders for NumericSchema correction kill courts.
 //! Uses a Directory-admissible contribution without the testkit's MemoryOnly wake rules.
-pub(super) mod contribution;
+pub(in crate::host) mod contribution;
 use self::contribution::DirectoryNumericContribution;
 use super::*;
 use std::num::NonZeroUsize;
@@ -40,7 +40,7 @@ impl ApplicationProgramDefinition<NumericSchema> for DirectoryProgram {
     }
 }
 
-pub(super) struct DirectoryOutputProgram;
+pub(in crate::host) struct DirectoryOutputProgram;
 impl ApplicationProgramDefinition<NumericSchema> for DirectoryOutputProgram {
     type Contributions = (DirectoryNumericContribution,);
     type Outputs = <OutputProgram as ApplicationProgramDefinition<NumericSchema>>::Outputs;
@@ -65,7 +65,7 @@ pub(in crate::host) fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::new(8).unwrap())
 }
 
-pub(super) fn app_limits() -> WorthQueryApplicationLimits {
+pub(in crate::host) fn app_limits() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(
         identity::world_resources(),
         WorthQueryApplicationQueryResourceProfile::default(),
@@ -73,7 +73,7 @@ pub(super) fn app_limits() -> WorthQueryApplicationLimits {
     )
 }
 
-pub(super) fn seed_numeric(
+pub(in crate::host) fn seed_numeric(
     graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
     installed: &WorthQueryInstalledApplicationSchema<NumericSchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -244,7 +244,7 @@ pub(super) fn read_calc(
         .value
 }
 
-pub(super) fn head_ordinal<P: ApplicationProgramDefinition<NumericSchema>>(
+pub(in crate::host) fn head_ordinal<P: ApplicationProgramDefinition<NumericSchema>>(
     runtime: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     branch: WorthQueryProductBranch,
 ) -> u64 {

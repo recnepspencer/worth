@@ -120,10 +120,22 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Descriptive check for whether the retained Publication owner currently holds an
+    /// undischarged durable original (true on Directory Homes once retained, false on MemoryOnly).
+    /// Grants no admission or discharge authority.
+    pub fn has_durable_original(&self) -> bool {
+        match self {
+            Self::Described(description) => description.has_durable_original(),
+            Self::Retained(operation) => operation.original_identity().is_some(),
+            Self::Completed(completed) => completed.has_durable_original(),
+            Self::Terminal(terminal) => terminal.has_durable_original(),
+        }
+    }
+
     /// Lawfully withdraws an unexecuted command without running its handler, discharging any
-    /// retained durable original. Post-execution phases (`Completed`, `Terminal`, or retained
-    /// native recovery obligations) refuse with `NativeObligationRetained` and return `self`
-    /// intact.
+    /// retained durable original. Post-handler states (including `RetryableNoEffect`),
+    /// post-execution phases (`Completed`, `Terminal`), and retained native recovery obligations
+    /// refuse with `NativeObligationRetained` and return `self` intact.
     pub fn close_unexecuted(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -137,7 +149,7 @@ where
                 .map(|()| WorthQuerySourceCustodyWithdrawal::BeforeConstruction)
                 .map_err(|(description, denial)| (Self::Described(description), denial)),
             Self::Retained(operation) => operation
-                .close(request)
+                .close_unexecuted(request)
                 .map(WorthQuerySourceCustodyWithdrawal::Closed)
                 .map_err(|(operation, denial)| (Self::Retained(operation), denial)),
             Self::Completed(completed) => Err((

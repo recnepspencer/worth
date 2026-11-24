@@ -1,10 +1,14 @@
 //! Seeded deterministic simulation test for typed, erased, and correction Host source custody.
 //!
-//! Runs 64 deterministic seeds against a real Directory Home and tiny reference oracle matching
-//! `specs/tla/host_custody/HostCustody.tla`. Set `WORTH_DST_TRACE_DIR` to emit NDJSON traces
-//! verified by `python3 tools/tla/run_tlc.py trace specs/tla/host_custody/HostCustodyTrace.tla`.
+//! Runs 64 deterministic seeds against real MemoryOnly and Directory Homes while deriving every
+//! emitted trace field (`phase`, `erased`, `durableMode`, `durableOriginal`, `execCount`,
+//! `committedValue`) directly from real custody, head-ordinal, row, and handler-contact
+//! observations. Set `WORTH_DST_TRACE_DIR` to emit NDJSON verified by
+//! `python3 tools/tla/run_tlc.py trace specs/tla/host_custody/HostCustodyTrace.tla`.
 mod correction;
+mod directory_withdrawal;
 mod ordinary;
+mod ordinary_close;
 
 use super::super::application_home::correction_material::numeric_home::{
     model, open_memory_program_home, open_program_home, read_rows,
@@ -60,53 +64,86 @@ pub(self) enum Slot<P: ApplicationProgramDefinition<NumericSchema>> {
     Erased(ErasedCustody<P>),
 }
 
-pub(self) struct Oracle {
+impl<P: ApplicationProgramDefinition<NumericSchema> + 'static> Slot<P> {
+    pub(self) fn is_erased(&self) -> bool {
+        matches!(self, Self::Erased(_))
+    }
+
+    pub(self) fn has_durable_original(&self) -> bool {
+        match self {
+            Self::Typed(c) => c.has_durable_original(),
+            Self::Erased(e) => e.has_durable_original(),
+        }
+    }
+
+    pub(self) fn typed_phase(&self) -> Option<&'static str> {
+        match self {
+            Self::Typed(WorthQuerySourceCustody::Described(_)) => Some("Described"),
+            Self::Typed(WorthQuerySourceCustody::Retained(_)) => Some("PendingAdvance"),
+            Self::Typed(WorthQuerySourceCustody::Completed(_)) => Some("PendingCloseCommitted"),
+            Self::Typed(WorthQuerySourceCustody::Terminal(_)) => Some("PendingCloseDeclined"),
+            Self::Erased(_) => None,
+        }
+    }
+}
+
+pub(self) struct ObservedState {
     pub(self) phase: &'static str,
     pub(self) erased: bool,
+    pub(self) durable_mode: bool,
     pub(self) durable_original: bool,
     pub(self) exec_count: u8,
     pub(self) committed_value: bool,
-    trace: Vec<String>,
 }
 
-impl Oracle {
+pub(self) struct TraceLog {
+    rows: Vec<String>,
+}
+
+impl TraceLog {
     fn new() -> Self {
-        Self {
-            phase: "Empty",
-            erased: false,
-            durable_original: false,
-            exec_count: 0,
-            committed_value: false,
-            trace: Vec::new(),
-        }
+        Self { rows: Vec::new() }
     }
 
-    pub(self) fn record(&mut self, action: &str, extras: &str) {
-        assert!(self.exec_count <= 1, "NoDoubleExecution violated");
+    pub(self) fn record(&mut self, action: &str, extras: &str, obs: ObservedState) {
+        assert!(obs.exec_count <= 1, "NoDoubleExecution violated");
         if matches!(
-            self.phase,
+            obs.phase,
             "TerminalCommitted" | "TerminalWithdrawn" | "TerminalDenied"
         ) {
-            assert!(!self.durable_original, "NoLostDurableOriginal violated");
+            assert!(!obs.durable_original, "NoLostDurableOriginal violated");
+        }
+        if !obs.durable_mode {
+            assert!(
+                !obs.durable_original,
+                "MemoryOnly Home must never report a durable original"
+            );
         }
         let comma = if extras.is_empty() { "" } else { "," };
-        self.trace.push(format!(
-            "{{\"action\":\"{action}\"{comma}{extras},\"postPhase\":\"{}\",\"postErased\":{},\"postDurableOriginal\":{},\"postExecCount\":{},\"postCommittedValue\":{}}}",
-            self.phase,
-            self.erased,
-            self.durable_original,
-            self.exec_count,
-            self.committed_value,
+        self.rows.push(format!(
+            "{{\"action\":\"{action}\"{comma}{extras},\"postPhase\":\"{}\",\"postErased\":{},\"postDurableMode\":{},\"postDurableOriginal\":{},\"postExecCount\":{},\"postCommittedValue\":{}}}",
+            obs.phase,
+            obs.erased,
+            obs.durable_mode,
+            obs.durable_original,
+            obs.exec_count,
+            obs.committed_value,
         ));
     }
 
-    fn reset(&mut self) {
-        self.phase = "Empty";
-        self.erased = false;
-        self.durable_original = false;
-        self.exec_count = 0;
-        self.committed_value = false;
-        self.record("Reset", "");
+    pub(self) fn reset(&mut self) {
+        self.record(
+            "Reset",
+            "",
+            ObservedState {
+                phase: "Empty",
+                erased: false,
+                durable_mode: false,
+                durable_original: false,
+                exec_count: 0,
+                committed_value: false,
+            },
+        );
     }
 }
 
@@ -123,20 +160,18 @@ fn host_custody_dst_64_seeds() {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
 
-    // Run 62 fast deterministic seeds on a MemoryOnly Home (identical Host custody state machine,
-    // zero APFS fsync barriers) plus 2 seeds on a real Directory Home to also verify durable-original
-    // discharge under the same oracle and TLA+ trace checker within a <5s test budget.
+    let mut log = TraceLog::new();
+
+    // Seeds 0..60: fast deterministic coverage across MemoryOnly Home (durableMode = false).
     let mem_home = open_memory_program_home(execution);
     let mem_branch = mem_home.primary_graph().current_world();
-
-    let mut oracle = Oracle::new();
     let mut expected_primary = read_rows(mem_home.runtime(), mem_branch)[0].primary;
     let mut last_committed: Option<(String, u64, WorthQueryApplicationCommitReceipt)> = None;
 
-    for seed in 0_u64..62 {
+    for seed in 0_u64..60 {
         let mut rng = Rng::new(seed);
         if seed > 0 {
-            oracle.reset();
+            log.reset();
         }
         let do_correction = last_committed.is_some() && rng.pick(4) == 0;
         if do_correction {
@@ -147,7 +182,7 @@ fn host_custody_dst_64_seeds() {
                 &mem_home,
                 mem_branch,
                 &clock,
-                &mut oracle,
+                &mut log,
                 &mut expected_primary,
                 prior,
                 &receipt,
@@ -161,7 +196,7 @@ fn host_custody_dst_64_seeds() {
                 &mem_home,
                 mem_branch,
                 &clock,
-                &mut oracle,
+                &mut log,
                 &mut expected_primary,
                 drift_key,
             ) {
@@ -171,13 +206,18 @@ fn host_custody_dst_64_seeds() {
     }
     drop((last_committed, mem_home));
 
+    // Seeds 60..62: real Directory Home retained withdrawal + same-key reuse with live handler
+    // contact counter and live `has_durable_original()` observations (durableMode = true).
+    directory_withdrawal::run_directory_withdrawal_seeds(&clock, &execution, &mut log);
+
+    // Seeds 62..64: real Directory Home commit + correction PendingCloseCommitted (durableMode = true).
     let dir_home = open_program_home(fixture::location(), execution, true);
     let dir_branch = dir_home.primary_graph().current_world();
     let mut dir_expected = read_rows(dir_home.runtime(), dir_branch)[0].primary;
     let mut dir_committed: Option<(String, u64, WorthQueryApplicationCommitReceipt)> = None;
     for seed in 62_u64..64 {
         let mut rng = Rng::new(seed);
-        oracle.reset();
+        log.reset();
         if let Some((_, prior, receipt)) = dir_committed.take() {
             correction::run_correction_seed(
                 seed,
@@ -185,7 +225,7 @@ fn host_custody_dst_64_seeds() {
                 &dir_home,
                 dir_branch,
                 &clock,
-                &mut oracle,
+                &mut log,
                 &mut dir_expected,
                 prior,
                 &receipt,
@@ -198,7 +238,7 @@ fn host_custody_dst_64_seeds() {
                 &dir_home,
                 dir_branch,
                 &clock,
-                &mut oracle,
+                &mut log,
                 &mut dir_expected,
                 None,
             ) {
@@ -211,7 +251,7 @@ fn host_custody_dst_64_seeds() {
         let dir = std::path::PathBuf::from(dir);
         std::fs::create_dir_all(&dir).expect("create WORTH_DST_TRACE_DIR");
         let trace_path = dir.join("host_custody.ndjson");
-        std::fs::write(&trace_path, format!("{}\n", oracle.trace.join("\n")))
+        std::fs::write(&trace_path, format!("{}\n", log.rows.join("\n")))
             .expect("write host_custody.ndjson");
     }
 

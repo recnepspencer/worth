@@ -20,6 +20,12 @@ mod domain_computation_primary_graph_provider_committed_dispatch_outbox {
             self.inner
                 .observe_committed_dispatch_outbox_by_correlation(phase, correlation)
         }
+        pub fn observe_committed_dispatch_outbox_count(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        ) -> Result<usize, Denial> {
+            self.inner.observe_committed_dispatch_outbox_count(phase)
+        }
         pub fn observe_committed_dispatch_outbox(
             &self,
             phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

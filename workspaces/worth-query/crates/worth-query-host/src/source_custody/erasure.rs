@@ -27,6 +27,12 @@ pub enum WorthQueryAnySourceCustodyStep<S, P> {
 }
 
 impl<S: 'static, P: 'static> WorthQueryAnySourceCustody<S, P> {
+    /// Descriptive check for whether the erased owner currently holds an undischarged durable
+    /// original. Grants no admission or discharge authority.
+    pub fn has_durable_original(&self) -> bool {
+        self.0.has_durable_original()
+    }
+
     pub fn resume(
         self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -119,6 +125,7 @@ where
 
 trait ErasedCustody<S, P>: Any {
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
+    fn has_durable_original(&self) -> bool;
     fn resume(
         self: Box<Self>,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -146,6 +153,12 @@ where
 {
     fn into_any(self: Box<Self>) -> Box<dyn Any> {
         self
+    }
+
+    fn has_durable_original(&self) -> bool {
+        self.as_ref()
+            .expect("erased custody owns one command")
+            .has_durable_original()
     }
 
     fn resume(

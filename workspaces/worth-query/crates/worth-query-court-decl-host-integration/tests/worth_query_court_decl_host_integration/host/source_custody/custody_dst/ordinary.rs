@@ -1,6 +1,10 @@
-//! Ordinary command seeded DST driver for Host source custody.
-use super::super::super::application_home::correction_material::numeric_home::{model, read_rows};
-use super::{cancelled_scope, Oracle, OtherAction, Rng, Slot, TypedCustody};
+//! Ordinary command seeded DST driver deriving every trace field from real observations.
+use super::super::super::application_home::correction_material::numeric_home::{
+    head_ordinal, model, read_rows,
+};
+use super::{
+    cancelled_scope, ordinary_close, ObservedState, OtherAction, Rng, Slot, TraceLog, TypedCustody,
+};
 use model::{
     authentication::{authenticate_operator, request_scope},
     edit::{Edit, Edited, Value},
@@ -11,15 +15,51 @@ use model::{
 use worth_query_decl::facade::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
-    application_entry::{
-        WorthQueryApplicationRequestExt, WorthQueryOperationCloseDenial,
-        WorthQuerySourceOnlyAdvance,
-    },
-    primary_graph::WorthQueryApplicationCommitReceipt,
-    product::WorthQueryProductBranch,
+    application_entry::WorthQueryApplicationRequestExt,
+    primary_graph::WorthQueryApplicationCommitReceipt, product::WorthQueryProductBranch,
     WorthQueryAnySourceCustodyStep, WorthQueryApplicationHome, WorthQuerySourceCustodyStep,
     WorthQuerySourceCustodyWithdrawal,
 };
+
+pub(super) struct Observer<'a, P: ApplicationProgramDefinition<NumericSchema> + 'static> {
+    pub(super) home: &'a WorthQueryApplicationHome<NumericSchema, P>,
+    pub(super) branch: WorthQueryProductBranch,
+    pub(super) start_ordinal: u64,
+    pub(super) target_value: u64,
+}
+
+impl<'a, P: ApplicationProgramDefinition<NumericSchema> + 'static> Observer<'a, P> {
+    pub(super) fn slot(&self, phase: &'static str, slot: &Slot<P>) -> ObservedState {
+        if let Some(typed_phase) = slot.typed_phase() {
+            assert_eq!(typed_phase, phase, "observed typed phase mismatch");
+        }
+        let head = head_ordinal(self.home.runtime(), self.branch);
+        let exec_count = u8::try_from(head.saturating_sub(self.start_ordinal)).unwrap();
+        let row = read_rows(self.home.runtime(), self.branch)[0].primary;
+        ObservedState {
+            phase,
+            erased: slot.is_erased(),
+            durable_mode: self.home.is_directory(),
+            durable_original: slot.has_durable_original(),
+            exec_count,
+            committed_value: exec_count > 0 && row == self.target_value,
+        }
+    }
+
+    pub(super) fn terminal(&self, phase: &'static str, erased: bool) -> ObservedState {
+        let head = head_ordinal(self.home.runtime(), self.branch);
+        let exec_count = u8::try_from(head.saturating_sub(self.start_ordinal)).unwrap();
+        let row = read_rows(self.home.runtime(), self.branch)[0].primary;
+        ObservedState {
+            phase,
+            erased,
+            durable_mode: self.home.is_directory(),
+            durable_original: false,
+            exec_count,
+            committed_value: exec_count > 0 && row == self.target_value,
+        }
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> + 'static>(
@@ -28,7 +68,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
     home: &WorthQueryApplicationHome<NumericSchema, P>,
     branch: WorthQueryProductBranch,
     clock: &WorthQueryAdmissionClock,
-    oracle: &mut Oracle,
+    log: &mut TraceLog,
     expected_primary: &mut u64,
     committed_key: Option<&str>,
 ) -> Option<(String, WorthQueryApplicationCommitReceipt)> {
@@ -43,6 +83,12 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
 
     let want_drift = committed_key.is_some() && rng.pick(6) == 0;
     let target_value = *expected_primary + 1 + (seed % 7);
+    let obs = Observer {
+        home,
+        branch,
+        start_ordinal: head_ordinal(home.runtime(), branch),
+        target_value,
+    };
     let key = if want_drift {
         committed_key.unwrap().to_owned()
     } else {
@@ -63,33 +109,35 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
     } else {
         Slot::Typed(TypedCustody::<P>::Described(described))
     };
-    oracle.phase = "Described";
-    oracle.erased = start_erased;
-    oracle.durable_original = false;
-    oracle.exec_count = 0;
-    oracle.committed_value = false;
-    oracle.record("AcceptOrdinary", &format!("\"erased\":{start_erased}"));
+    log.record(
+        "AcceptOrdinary",
+        &format!(
+            "\"erased\":{start_erased},\"durableMode\":{}",
+            home.is_directory()
+        ),
+        obs.slot("Described", &slot),
+    );
 
-    if !oracle.erased && rng.coin() {
+    if !slot.is_erased() && rng.coin() {
         slot = match slot {
             Slot::Typed(c) => Slot::Erased(c.erase()),
             other => other,
         };
-        oracle.erased = true;
-        oracle.record("Erase", "");
+        log.record("Erase", "", obs.slot("Described", &slot));
     }
-    if oracle.erased && rng.coin() {
-        slot = match slot {
-            Slot::Erased(e) => {
-                let preserved = e
-                    .try_into_typed::<OtherEdit, OtherAction>()
-                    .err()
-                    .expect("wrong-type downcast must return Err(self)");
-                oracle.record("Downcast", "\"matched\":false");
-                Slot::Erased(preserved)
-            }
-            other => other,
-        };
+    if slot.is_erased() && rng.coin() {
+        if let Slot::Erased(e) = slot {
+            let preserved = e
+                .try_into_typed::<OtherEdit, OtherAction>()
+                .err()
+                .expect("wrong-type downcast must return Err(self)");
+            slot = Slot::Erased(preserved);
+            log.record(
+                "Downcast",
+                "\"matched\":false",
+                obs.slot("Described", &slot),
+            );
+        }
     }
     if rng.coin() {
         slot = match slot {
@@ -102,11 +150,17 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 _ => panic!("seed {seed} cancelled erased retention must stay pending"),
             },
         };
-        oracle.record("ResumeRetentionRefused", "\"retainedOriginal\":false");
+        let retained_orig = slot.has_durable_original();
+        log.record(
+            "ResumeRetentionRefused",
+            &format!("\"retainedOriginal\":{retained_orig}"),
+            obs.slot("Described", &slot),
+        );
     }
 
     let mode = if want_drift { 3 } else { rng.pick(5) };
     if mode == 0 {
+        let was_erased = slot.is_erased();
         match slot {
             Slot::Typed(c) => assert!(matches!(
                 c.close_unexecuted(&fresh)
@@ -120,9 +174,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 WorthQuerySourceCustodyWithdrawal::BeforeConstruction
             )),
         }
-        oracle.phase = "TerminalWithdrawn";
-        oracle.durable_original = false;
-        oracle.record("WithdrawUnexecuted", "\"succeeds\":true");
+        log.record(
+            "WithdrawUnexecuted",
+            "\"succeeds\":true",
+            obs.terminal("TerminalWithdrawn", was_erased),
+        );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
             *expected_primary
@@ -137,8 +193,9 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 let c = e
                     .try_into_typed::<Edit, Action>()
                     .unwrap_or_else(|_| panic!("seed {seed} exact downcast"));
-                oracle.erased = false;
-                oracle.record("Downcast", "\"matched\":true");
+                let s = Slot::Typed(c);
+                log.record("Downcast", "\"matched\":true", obs.slot("Described", &s));
+                let Slot::Typed(c) = s else { unreachable!() };
                 c
             }
         };
@@ -152,13 +209,19 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             WorthQuerySourceCustodyStep::Pending { custody, .. } => custody,
             _ => panic!("seed {seed} cancelled advance must stay PendingAdvance"),
         };
-        oracle.phase = "PendingAdvance";
-        oracle.durable_original = true;
-        oracle.record("ResumeRetainAndRefuse", "");
+        let typed_slot = Slot::Typed(retained);
+        log.record(
+            "ResumeRetainAndRefuse",
+            "",
+            obs.slot("PendingAdvance", &typed_slot),
+        );
+        let Slot::Typed(retained) = typed_slot else {
+            unreachable!()
+        };
         slot = if rng.coin() {
-            oracle.erased = true;
-            oracle.record("Erase", "");
-            Slot::Erased(retained.erase())
+            let s = Slot::Erased(retained.erase());
+            log.record("Erase", "", obs.slot("PendingAdvance", &s));
+            s
         } else {
             Slot::Typed(retained)
         };
@@ -175,7 +238,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                     _ => panic!("seed {seed} repeat cancelled erased advance must stay pending"),
                 },
             };
-            oracle.record("ResumeAdvanceRefused", "");
+            log.record(
+                "ResumeAdvanceRefused",
+                "",
+                obs.slot("PendingAdvance", &slot),
+            );
         }
     }
 
@@ -185,17 +252,28 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 let (c, _) = c
                     .close_unexecuted(&cancelled)
                     .expect_err("cancelled withdrawal must preserve custody");
-                oracle.record("WithdrawUnexecuted", "\"succeeds\":false");
-                Slot::Typed(c)
+                let s = Slot::Typed(c);
+                log.record(
+                    "WithdrawUnexecuted",
+                    "\"succeeds\":false",
+                    obs.slot("PendingAdvance", &s),
+                );
+                s
             }
             Slot::Erased(e) => {
                 let (e, _) = e
                     .close_unexecuted(&cancelled)
                     .expect_err("cancelled erased withdrawal must preserve custody");
-                oracle.record("WithdrawUnexecuted", "\"succeeds\":false");
-                Slot::Erased(e)
+                let s = Slot::Erased(e);
+                log.record(
+                    "WithdrawUnexecuted",
+                    "\"succeeds\":false",
+                    obs.slot("PendingAdvance", &s),
+                );
+                s
             }
         };
+        let was_erased = slot.is_erased();
         match slot {
             Slot::Typed(c) => assert!(matches!(
                 c.close_unexecuted(&fresh)
@@ -208,9 +286,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 WorthQuerySourceCustodyWithdrawal::Closed(_)
             )),
         }
-        oracle.phase = "TerminalWithdrawn";
-        oracle.durable_original = false;
-        oracle.record("WithdrawUnexecuted", "\"succeeds\":true");
+        log.record(
+            "WithdrawUnexecuted",
+            "\"succeeds\":true",
+            obs.terminal("TerminalWithdrawn", was_erased),
+        );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
             *expected_primary
@@ -219,102 +299,20 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
     }
 
     if mode == 4 {
-        let typed = match slot {
-            Slot::Typed(c) => c,
-            Slot::Erased(e) => {
-                let c = e
-                    .try_into_typed::<Edit, Action>()
-                    .unwrap_or_else(|_| panic!("seed {seed} downcast before completed"));
-                oracle.erased = false;
-                oracle.record("Downcast", "\"matched\":true");
-                c
-            }
-        };
-        let TypedCustody::Retained(op) = typed else {
-            unreachable!();
-        };
-        let WorthQuerySourceOnlyAdvance::Completed(completed) = op.advance(&fresh) else {
-            panic!("seed {seed} advance must reach Completed");
-        };
-        let pending_close = TypedCustody::Completed(completed);
-        oracle.phase = "PendingCloseCommitted";
-        oracle.durable_original = true;
-        oracle.exec_count = 1;
-        oracle.committed_value = true;
-        oracle.record("ResumeCommitPendingClose", "");
-        *expected_primary = target_value;
-
-        let mut close_slot = if rng.coin() {
-            oracle.erased = true;
-            oracle.record("Erase", "");
-            Slot::Erased(pending_close.erase())
-        } else {
-            Slot::Typed(pending_close)
-        };
-        close_slot = match close_slot {
-            Slot::Typed(c) => {
-                let (c, denial) = c
-                    .close_unexecuted(&fresh)
-                    .expect_err("PendingCloseCommitted must refuse WithdrawUnexecuted");
-                assert!(matches!(
-                    denial,
-                    WorthQueryOperationCloseDenial::NativeObligationRetained
-                ));
-                oracle.record("WithdrawUnexecuted", "\"succeeds\":false");
-                Slot::Typed(c)
-            }
-            Slot::Erased(e) => {
-                let (e, denial) = e
-                    .close_unexecuted(&fresh)
-                    .expect_err("erased PendingCloseCommitted must refuse WithdrawUnexecuted");
-                assert!(matches!(
-                    denial,
-                    WorthQueryOperationCloseDenial::NativeObligationRetained
-                ));
-                oracle.record("WithdrawUnexecuted", "\"succeeds\":false");
-                Slot::Erased(e)
-            }
-        };
-        close_slot = match close_slot {
-            Slot::Typed(c) => match c.resume(home.runtime(), &cancelled) {
-                WorthQuerySourceCustodyStep::Pending { custody, .. } => {
-                    oracle.record("ClosePending", "\"succeeds\":false");
-                    Slot::Typed(custody)
-                }
-                _ => panic!("seed {seed} cancelled close must stay pending"),
-            },
-            Slot::Erased(e) => match e.resume(home.runtime(), &cancelled) {
-                WorthQueryAnySourceCustodyStep::Pending { custody, .. } => {
-                    oracle.record("ClosePending", "\"succeeds\":false");
-                    Slot::Erased(custody)
-                }
-                _ => panic!("seed {seed} cancelled erased close must stay pending"),
-            },
-        };
-        let receipt = match close_slot {
-            Slot::Typed(c) => match c.resume(home.runtime(), &fresh) {
-                WorthQuerySourceCustodyStep::Committed { evidence, .. } => {
-                    evidence.live_receipt().cloned().unwrap()
-                }
-                _ => panic!("seed {seed} fresh close must commit"),
-            },
-            Slot::Erased(e) => match e.resume(home.runtime(), &fresh) {
-                WorthQueryAnySourceCustodyStep::Committed { evidence, .. } => {
-                    evidence.live_receipt().cloned().unwrap()
-                }
-                _ => panic!("seed {seed} fresh erased close must commit"),
-            },
-        };
-        oracle.phase = "TerminalCommitted";
-        oracle.durable_original = false;
-        oracle.record("ClosePending", "\"succeeds\":true");
-        assert_eq!(
-            read_rows(home.runtime(), branch)[0].primary,
-            *expected_primary
+        let receipt = ordinary_close::finish_pending_close(
+            seed,
+            rng,
+            &obs,
+            slot,
+            &fresh,
+            &cancelled,
+            log,
+            expected_primary,
         );
         return Some((key, receipt));
     }
 
+    let was_erased = slot.is_erased();
     let receipt = match slot {
         Slot::Typed(c) => match c.resume(home.runtime(), &fresh) {
             WorthQuerySourceCustodyStep::Committed { evidence, .. } => {
@@ -347,11 +345,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         },
     };
     if let Some(receipt) = receipt {
-        oracle.phase = "TerminalCommitted";
-        oracle.durable_original = false;
-        oracle.exec_count = 1;
-        oracle.committed_value = true;
-        oracle.record("ResumeCommitClosed", "");
+        log.record(
+            "ResumeCommitClosed",
+            "",
+            obs.terminal("TerminalCommitted", was_erased),
+        );
         *expected_primary = target_value;
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
@@ -359,9 +357,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         );
         Some((key, receipt))
     } else {
-        oracle.phase = "TerminalDenied";
-        oracle.durable_original = false;
-        oracle.record("ResumeDeclineClosed", "");
+        log.record(
+            "ResumeDeclineClosed",
+            "",
+            obs.terminal("TerminalDenied", was_erased),
+        );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
             *expected_primary

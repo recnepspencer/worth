@@ -9,7 +9,7 @@ EXTENDS HostCustody, TraceData
   transition when `WORTH_DST_TRACE_DIR` is set; `tools/tla/run_tlc.py trace`
   compiles the records into `TraceData.tla` (`Trace == << ... >>`) and checks
   that every observed Rust step refines `HostCustody.tla`, satisfies every
-  safety invariant, and matches the observed post-state.
+  safety invariant, and matches the directly observed post-state.
 *)
 
 VARIABLE pc
@@ -26,6 +26,7 @@ ResetForNextCommand ==
     /\ ~durableOriginal
     /\ phase' = "Empty"
     /\ erased' = FALSE
+    /\ durableMode' = FALSE
     /\ durableOriginal' = FALSE
     /\ execCount' = 0
     /\ correctionMode' = FALSE
@@ -33,9 +34,9 @@ ResetForNextCommand ==
 
 StepAction(step) ==
     CASE step.action = "AcceptOrdinary" ->
-            AcceptOrdinary(step.erased)
+            AcceptOrdinary(step.erased, step.durableMode)
       [] step.action = "AcceptCorrection" ->
-            AcceptCorrection(step.erased, step.outcome)
+            AcceptCorrection(step.erased, step.durableMode, step.outcome)
       [] step.action = "Erase" ->
             Erase
       [] step.action = "Downcast" ->
@@ -66,6 +67,7 @@ StepAction(step) ==
 MatchesPost(step) ==
     /\ phase' = step.postPhase
     /\ erased' = step.postErased
+    /\ durableMode' = step.postDurableMode
     /\ durableOriginal' = step.postDurableOriginal
     /\ execCount' = step.postExecCount
     /\ committedValue' = step.postCommittedValue
