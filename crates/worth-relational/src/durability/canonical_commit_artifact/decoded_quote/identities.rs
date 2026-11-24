@@ -1,6 +1,7 @@
 //! Merge identity/policy descriptions own only their declared names and keys.
 use super::*;
-use crate::merge::data::{DeclaredIdentityKeys, IdentityBasisName, MergePolicyName};
+use crate::merge::data::identity::{DeclaredIdentityKeys, IdentityBasisName};
+use crate::merge::data::policy::MergePolicyName;
 use worth_foundational::facade::AspectKey;
 
 pub(super) fn declaration(

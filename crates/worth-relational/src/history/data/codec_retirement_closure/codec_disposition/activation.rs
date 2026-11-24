@@ -13,7 +13,8 @@ pub(super) fn validate(
 ) -> Result<(), Stop> {
     let id = event.activation.entity_id;
     let root = runtime
-        .runtime
+        .input
+        .projection
         .history
         .branch_cell(&envelope.branch_context)
         .and_then(|cell| cell.root())
@@ -30,7 +31,7 @@ pub(super) fn validate(
         .entity_plans
         .get(&kind)
         .ok_or("codec disposition omits the actual protected program contract")?;
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     let _memory = super::super::reserve(
         lease,
         bound

@@ -4,7 +4,7 @@ use super::frame::{BranchTransitionArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
 use super::payload_digest::RelationalBranchTransitionArtifactDigest as Digest;
 use super::payload_wire::TransitionPayloadRef;
 use super::{RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactEncodeDenial};
-use crate::branch::PositionedBranchTransition;
+use crate::branch::transition::PositionedBranchTransition;
 use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 
 impl RelationalBranchTransitionArtifact {

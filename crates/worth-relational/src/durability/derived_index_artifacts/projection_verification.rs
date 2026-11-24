@@ -59,9 +59,8 @@ pub(crate) fn verify_with_images(
                 root
             }
         };
-        let projection = projections
-            .context()
-            .project(lane, execution, &basis.branch, root)?;
+        let selection = root.admit_checkpoint_projection(lane, execution, &basis.branch)?;
+        let projection = projections.context().project(lane, selection);
         crate::indexes::authority::checkpoint_admission::verify_basis(
             lane,
             execution,

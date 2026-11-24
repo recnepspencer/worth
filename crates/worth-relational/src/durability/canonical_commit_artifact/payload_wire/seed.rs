@@ -8,8 +8,11 @@ use serde::Deserializer;
 pub(in crate::durability::canonical_commit_artifact) fn decode_payload<'de>(
     payload: &'de [u8],
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<ArtifactPayloadWire<'de>, super::super::RelationalCanonicalCommitArtifactRefusal> {
-    use super::super::RelationalCanonicalCommitArtifactRefusal as Refusal;
+) -> Result<
+    ArtifactPayloadWire<'de>,
+    super::super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal,
+> {
+    use super::super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
     let context = ContentDecodeContext::new(execution);
     let mut decoder = rmp_serde::Deserializer::from_read_ref(payload);
     let answer = ArtifactPayloadSeed(&context).deserialize(&mut decoder);

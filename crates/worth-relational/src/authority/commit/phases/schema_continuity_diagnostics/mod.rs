@@ -7,9 +7,12 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
+use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use crate::schema::data::{SchemaTransitionArtifact, SchemaTransitionSummary};
 use crate::schema::SchemaContinuityBundleIssue;
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::{SchemaContinuityPlan, SchemaContinuityPrior};
 use diagnostic_fields::diagnostics_fields;
@@ -43,22 +46,22 @@ pub(crate) fn prepare_schema_continuity_diagnostics(
 }
 
 pub(super) fn schema_continuity_conflict_from_issue(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics: PreparationDiagnostics<'_>,
     branch_id: &crate::history::data::BranchId,
     transition: Option<&SchemaTransitionArtifact>,
     issue: SchemaContinuityBundleIssue,
     envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
 ) -> TransactionCommitError {
     if descriptor_version_mismatch_issue(&issue) {
-        runtime
-            .performance_access()
+        diagnostics
+            .instrumentation
             .count_descriptor_version_mismatch();
     }
 
     let class = schema_continuity_conflict_class(issue, transition, envelope);
     let conflict = CommitConflict::new(class);
     emit_schema_continuity_failure_diagnostic(
-        runtime,
+        diagnostics,
         branch_id,
         transition.map(FailureTransitionView::Artifact),
         None,
@@ -68,7 +71,7 @@ pub(super) fn schema_continuity_conflict_from_issue(
 }
 
 pub(super) fn emit_schema_continuity_failure_diagnostic(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics: PreparationDiagnostics<'_>,
     branch_id: &crate::history::data::BranchId,
     proposed_transition: Option<FailureTransitionView<'_>>,
     previous_envelope: Option<&SchemaContinuityPrior<'_>>,
@@ -84,7 +87,7 @@ pub(super) fn emit_schema_continuity_failure_diagnostic(
         entries.extend(rejected_schema_transition_entries(proposed_transition));
     }
 
-    runtime.push_bounded_preparation_diagnostic(
+    diagnostics.emit(
         DiagnosticsScope::Schema,
         DiagnosticsArtifactKind::Failure,
         entries,

@@ -2,8 +2,8 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
+use crate::history::commit::RelationalCommitEnvelopeResidency;
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
-use crate::history::RelationalCommitEnvelopeResidency;
 use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,7 +29,7 @@ pub(crate) struct DurabilityState {
         Arc<RelationalCommitEnvelopeResidency>,
     )>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
-    pub(super) source_roots: Option<Arc<crate::durability::RecoveredRootInventory>>,
+    pub(super) source_roots: Option<Arc<crate::durability::authority::RecoveredRootInventory>>,
     log_commit_index: HashMap<CommitId, Arc<RelationalCommitEnvelopeResidency>>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
 }

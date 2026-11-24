@@ -1,9 +1,9 @@
 //! Source-carrier readmission and supported consequence admission before restore.
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexKind};
-use crate::runtime::CodecFieldLocus;
+use crate::schema::codec_field_comparison::CodecFieldLocus;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::validation::FrozenCustomInvariantRegistry;
+use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 use worth_foundational::FoundationalBranchTarget;
 
 mod relation_consequences;
@@ -56,7 +56,7 @@ pub(super) fn readmit_interim_current_source_schema(
 ) -> Result<RelationalSchemaRegistry, crate::durability::data::RelationalRecoveryStop> {
     use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
     use crate::durability::data::RelationalRecoveryStop as Stop;
-    let directory = crate::durability::authority::checkpoint_complete::interim::receiver::decoded_origin_directory(
+    let directory = crate::durability::authority::checkpoint_complete::interim::origin_readmission::decoded_origin_directory(
         origin, checkpoint, request,
     )?;
     let manifest = &directory.manifest;
@@ -93,14 +93,14 @@ pub(super) fn readmit_interim_current_source_schema(
         }
     }
     let posture = match lifecycle.ok_or(Stop::AdmissionImage(Refusal::InvalidProjectedMeaning))? {
-        crate::branch::RelationalBranchLifecyclePosture::Live => {
-            crate::branch::RelationalBranchBasisPosture::Live
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live => {
+            crate::branch::basis_descriptor::RelationalBranchBasisPosture::Live
         }
-        crate::branch::RelationalBranchLifecyclePosture::Archived => {
-            crate::branch::RelationalBranchBasisPosture::Archived
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Archived => {
+            crate::branch::basis_descriptor::RelationalBranchBasisPosture::Archived
         }
-        crate::branch::RelationalBranchLifecyclePosture::Deleting => {
-            crate::branch::RelationalBranchBasisPosture::Deleting
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Deleting => {
+            crate::branch::basis_descriptor::RelationalBranchBasisPosture::Deleting
         }
     };
     let mut matched = false;

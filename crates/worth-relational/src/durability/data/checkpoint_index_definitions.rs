@@ -1,7 +1,7 @@
 //! The roster shares original immutable definitions; no definition heap is copied.
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::indexes::data::DerivedIndexDefinition;
-use crate::runtime::CapturedIndexDefinitionCatalog;
+use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};

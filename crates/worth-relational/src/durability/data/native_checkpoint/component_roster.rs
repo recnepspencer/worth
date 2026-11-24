@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub struct RelationalCheckpointComponentRoster {
     pub retained_roots: usize,
     pub retained_empty_components: usize,
-    pub recorded_components: Vec<crate::branch::RelationalBranchBasisDescriptor>,
+    pub recorded_components: Vec<crate::branch::basis_descriptor::RelationalBranchBasisDescriptor>,
     pub schema_registries: Vec<crate::schema::data::RelationalSchemaRegistry>,
 }
 

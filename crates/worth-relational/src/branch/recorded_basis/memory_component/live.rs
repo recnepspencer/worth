@@ -54,7 +54,7 @@ impl RelationalRuntime {
             )?;
             return ObservedRelationalMemoryComponent::from_interim(
                 execution,
-                self.state_binding(),
+                self.services.origin_identity(),
                 description,
                 Some(row),
             )
@@ -86,7 +86,7 @@ impl RelationalRuntime {
         }
         Ok(ObservedRelationalMemoryComponent {
             original: Arc::new(MemoryComponentOrigin::Live(MemoryComponentMeaning {
-                owner: self.state_binding(),
+                owner: self.services.origin_identity(),
                 descriptor: descriptor.clone(),
                 canonical: canonical.map(Arc::downgrade),
                 _funding: funding,
@@ -99,35 +99,14 @@ impl RelationalRuntime {
         component: &ObservedRelationalMemoryComponent,
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
+        let origin = self.services.origin_identity();
         let meaning = match component.original.as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning,
             MemoryComponentOrigin::Interim(meaning) => {
-                if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
-                    return Err(Refusal::Basis(
-                        crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
-                    ));
-                }
-                if let Some(row) = &meaning.canonical {
-                    let artifact = self
-                        .history
-                        .commit_artifact(row.index().commit.commit_id)
-                        .ok_or(Refusal::MissingPerformedCommit {
-                            commit_id: row.index().commit.commit_id,
-                        })?;
-                    if !row.links_artifact(&artifact) {
-                        return Err(Refusal::CanonicalMismatch {
-                            commit_id: row.index().commit.commit_id,
-                        });
-                    }
-                }
-                return Ok(meaning.description.clone());
+                return meaning.export(&origin, &self.history)
             }
         };
-        if !Weak::ptr_eq(&meaning.owner, &self.state_binding()) {
-            return Err(Refusal::Basis(
-                crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
-            ));
-        }
+        super::capture::require_origin(&meaning.owner, &origin)?;
         let descriptor = &meaning.descriptor;
         match descriptor.reference().target() {
             FoundationalBranchTarget::Empty => {
@@ -153,7 +132,13 @@ impl RelationalRuntime {
                 {
                     return Err(Refusal::CanonicalMismatch { commit_id });
                 }
-                let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(positioned.position(), positioned.envelope(), execution).map_err(Refusal::Source)?;
+                let digest =
+                    crate::history::commit::payload_commitment::digest_envelope_for_request(
+                        positioned.position(),
+                        positioned.envelope(),
+                        execution,
+                    )
+                    .map_err(Refusal::Source)?;
                 RecordedRelationalComponentReference::copy_original(
                     execution,
                     descriptor,

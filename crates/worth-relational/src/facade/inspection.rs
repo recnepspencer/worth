@@ -4,7 +4,6 @@ pub use crate::execution::phase_observation::{
     SymbolPreparationEvent,
 };
 pub use crate::history::retention::RelationalRetentionCostCounters;
-pub use crate::performance::data::RuntimeComplexityCounters;
 pub use crate::inspection::data::{
     CommitInspection, ConnectivityComponentSummary, ConnectivityInspectionBudget,
     ConnectivityInspectionRequest, ConnectivityInspectionSummary, GraphInspectionBudget,
@@ -43,6 +42,7 @@ pub use crate::inspection::mvcc::sharing::{
     RelationalVisibilityCommitmentObservation, RELATIONAL_SHARING_INSPECTION_VERSION,
 };
 pub use crate::inspection::InspectionAccess;
+pub use crate::performance::data::RuntimeComplexityCounters;
 pub use crate::runtime::RelationalBranchSharingCostCounters;
 
 pub use crate::runtime::{
@@ -53,7 +53,7 @@ pub use crate::storage::substrate::observe_history_prefix_traversal;
 
 pub use crate::symbols::data::observe_symbol_snapshot_materialization;
 
-pub use crate::inspection::relation_law_sources::{
+pub use crate::validation::engine::request::relation_law_sources::{
     observe_relation_law_sources, RelationLawSourceObservation, RelationLawSourceWitness,
 };
 

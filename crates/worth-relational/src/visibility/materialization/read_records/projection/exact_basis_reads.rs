@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 
@@ -10,7 +8,7 @@ use super::VisibilityProjectionView;
 
 pub(in crate::visibility::materialization::read_records) struct ExactProjectionReader<'view> {
     view: &'view VisibilityProjectionView,
-    root: &'view Arc<RelationalBranchRoot>,
+    root: SnapshotProjectionRoot<'view>,
 }
 
 #[cfg(test)]
@@ -18,7 +16,7 @@ mod census;
 impl<'view> ExactProjectionReader<'view> {
     pub(super) const fn new(
         view: &'view VisibilityProjectionView,
-        root: &'view Arc<RelationalBranchRoot>,
+        root: SnapshotProjectionRoot<'view>,
     ) -> Self {
         Self { view, root }
     }

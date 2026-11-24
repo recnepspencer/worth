@@ -1,11 +1,11 @@
 pub(crate) mod candidate_source;
-mod custom_registry;
+pub(crate) mod custom_registry;
 pub(crate) mod custom_rule;
 pub mod data;
 pub mod engine;
 pub mod execution;
 mod invariant_access;
-mod invariant_authority;
+pub(crate) mod invariant_authority;
 mod preparation_invariant_authority;
 mod proposed_state;
 pub mod reduction;

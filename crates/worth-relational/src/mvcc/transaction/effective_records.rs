@@ -1,11 +1,12 @@
 //! Per-identity projection frontiers on one exact transaction basis.
-use super::read_projection::RelationalTransactionRelationValue;
+use super::relation_value::RelationalTransactionRelationValue;
 use super::staged_mutations::RelationalTransactionStagedMutations as Staged;
 use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::EntityReadRecord;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, RelationMutationIntent, WorkerIntentBatch,
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct EffectiveRecords {

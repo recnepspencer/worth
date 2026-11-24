@@ -1,6 +1,6 @@
 //! Bind actual immutable region owners to selected-image evidence.
 use super::*;
-use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
+use crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
 use worth_execution::ExecutionRequest;
 
 impl RelationalBranchRoot {

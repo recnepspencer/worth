@@ -30,6 +30,8 @@ mod history_construction;
 #[path = "history_identity_allocation.rs"]
 mod history_identity_allocation;
 use history_identity_allocation::reserve_identity;
+#[path = "history_committed_receipts.rs"]
+mod history_committed_receipts;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]
@@ -53,6 +55,8 @@ mod history_memory_close;
 mod history_publication;
 #[path = "history_recovery.rs"]
 mod history_recovery;
+#[path = "history_recovery_denial.rs"]
+mod history_recovery_denial;
 #[path = "history_recovery_index_basis.rs"]
 mod history_recovery_index_basis;
 #[path = "history_recovery_lineage.rs"]
@@ -65,9 +69,7 @@ mod history_retention;
 mod history_root_capture;
 #[path = "history_source_retirement.rs"]
 pub(crate) mod history_source_retirement;
-use canonical_publication_routes::{
-    BranchTransitionPublication, RelationalCanonicalPublicationRoutes,
-};
+use canonical_publication_routes::RelationalCanonicalPublicationRoutes;
 use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
@@ -127,7 +129,6 @@ impl HistorySubsystem {
             self.branch_head_versions.clone(),
             self.retention_owner.binding(),
             Arc::clone(&self.basis_registry_metrics),
-            Arc::clone(&self.canonical_publication_routes),
             self.root_identity_issuer.clone(),
         )
     }

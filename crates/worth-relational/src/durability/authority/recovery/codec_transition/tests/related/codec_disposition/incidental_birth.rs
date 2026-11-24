@@ -2,6 +2,9 @@
 use super::*;
 use crate::history::data::CanonicalRequiredOutputOrigin;
 use crate::identity::data::{EntityId, KindId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 use crate::mvcc::{
     RelationalPublicationOutcome, RelationalTransactionIntent, RequiredOutputPublication,
     RequiredOutputRolePosture,
@@ -10,7 +13,7 @@ use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 
 pub(super) fn refuse_late_claim() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let (runtime, receipt) = super::super::incoming_reference::installed_references(1);
     let left = super::super::super::fixture::create(
@@ -80,7 +83,7 @@ pub(super) fn refuse_late_claim() {
                 admission,
                 predecessor: birth,
                 meaning,
-                roles: crate::mvcc::native_roles_fixture(
+                roles: native_roles_fixture(
                     &outputs.map(|id| (id, KindId(3))),
                     RequiredOutputRolePosture::Preserve,
                 ),
@@ -255,8 +258,8 @@ fn admit(
             "native.closed.producer"
         },
         if preserved { &[20; 32] } else { &[19; 32] },
-        &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-        &crate::mvcc::native_roles_fixture(
+        &native_meaning_fixture("native.closed.producer"),
+        &native_roles_fixture(
             &outputs.map(|id| (id, KindId(3))),
             if preserved {
                 RequiredOutputRolePosture::Preserve

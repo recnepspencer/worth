@@ -40,8 +40,9 @@ impl RelationalCompleteSourceArtifact {
                     crate::durability::canonical_commit_artifact::prepare_schema_image_decode(
                         bytes, request,
                     )?;
-                let mut image = rmp_serde::from_slice(bytes.0).map_err(|_| malformed())?;
-                admission.attach(&mut image)?;
+                let mut image: crate::durability::data::DurableBranchRootSchemaImage =
+                    rmp_serde::from_slice(bytes.0).map_err(|_| malformed())?;
+                admission.attach(image.recorded_for_decode())?;
                 if let Err(cause) = images.push(image) {
                     stopped = Some(array(cause));
                     return Err(malformed());

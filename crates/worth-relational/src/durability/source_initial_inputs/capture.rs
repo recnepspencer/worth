@@ -1,6 +1,10 @@
 //! Capture actual original producer DATA before the initialization durable step.
 use super::{decoding::layout, frame::*, image::*, recorded::*};
-use crate::runtime::{OriginalBranchSchemaInputs, OriginalEmptySchemaObservation};
+use crate::durability::data::branch_root_schema_images::DurableBranchRootSchemaImage;
+use crate::{
+    branch::transition::original_inputs::OriginalEmptySchemaObservation,
+    durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs,
+};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -10,7 +14,7 @@ pub(crate) fn capture(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<InitialInputsImage>, RelationalInitialInputsRefusal> {
@@ -19,7 +23,7 @@ pub(crate) fn capture(
         original,
         installation,
         request,
-        crate::branch::RelationalBranchRootSchemaAuthority::recorded_image,
+        crate::branch::root::schema::RelationalBranchRootSchemaAuthority::recorded_image,
     )
 }
 
@@ -29,7 +33,7 @@ pub(crate) fn capture_complete(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<InitialInputsImage>, RelationalInitialInputsRefusal> {
@@ -38,7 +42,7 @@ pub(crate) fn capture_complete(
         original,
         installation,
         request,
-        crate::branch::RelationalBranchRootSchemaAuthority::descriptive_image_for_request,
+        crate::branch::root::schema::RelationalBranchRootSchemaAuthority::descriptive_image_for_request,
     )
 }
 
@@ -48,14 +52,14 @@ pub(crate) fn capture_with(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
     image: fn(
-        &crate::branch::RelationalBranchRootSchemaAuthority,
+        &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         &ExecutionRequest<'_, '_>,
     ) -> Result<
-        crate::durability::data::DurableBranchRootSchemaImage,
+        crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,
         crate::durability::data::RelationalRecoveryStop,
     >,
 ) -> Result<Arc<InitialInputsImage>, RelationalInitialInputsRefusal> {
@@ -73,11 +77,15 @@ pub(crate) fn capture_with(
         .reserve_retained_memory(layout(2, 3, main.0.len()).ok_or(Refusal::Malformed)?)
         .map_err(|cause| Refusal::Request(cause.into()))?;
     let mut entries = Vec::with_capacity(2);
-    let mut schemas = Vec::with_capacity(3);
+    let mut schemas: Vec<DurableBranchRootSchemaImage> = Vec::with_capacity(3);
     entries.push(InitialInputEntry::Birth(
         observation(birth, image, request).map_err(Refusal::Native)?,
     ));
-    schemas.push(image(&birth.schema, request).map_err(Refusal::Native)?);
+    schemas.push(
+        image(&birth.schema, request)
+            .map_err(Refusal::Native)?
+            .into(),
+    );
     let installation = installation.or_else(|| {
         original
             .installation
@@ -90,8 +98,16 @@ pub(crate) fn capture_with(
             after: observation(after, image, request).map_err(Refusal::Native)?,
             follows_transition,
         });
-        schemas.push(image(&before.schema, request).map_err(Refusal::Native)?);
-        schemas.push(image(&after.schema, request).map_err(Refusal::Native)?);
+        schemas.push(
+            image(&before.schema, request)
+                .map_err(Refusal::Native)?
+                .into(),
+        );
+        schemas.push(
+            image(&after.schema, request)
+                .map_err(Refusal::Native)?
+                .into(),
+        );
     }
     schemas.sort_unstable_by_key(|image| image.carrier_digest());
     schemas.dedup_by_key(|image| image.carrier_digest());
@@ -128,10 +144,10 @@ pub(crate) fn capture_with(
 fn observation(
     original: &OriginalEmptySchemaObservation,
     image: fn(
-        &crate::branch::RelationalBranchRootSchemaAuthority,
+        &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         &ExecutionRequest<'_, '_>,
     ) -> Result<
-        crate::durability::data::DurableBranchRootSchemaImage,
+        crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,
         crate::durability::data::RelationalRecoveryStop,
     >,
     request: &ExecutionRequest<'_, '_>,

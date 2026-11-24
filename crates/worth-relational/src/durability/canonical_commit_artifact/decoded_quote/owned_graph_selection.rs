@@ -2,7 +2,7 @@
 use super::*;
 use crate::history::data::CanonicalOwnedGraphSelection;
 use crate::identity::data::EntityId;
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 pub(super) fn quote(
     value: BorrowedPayload<'_>,

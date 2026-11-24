@@ -74,6 +74,260 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"branch/historical_selection/chain.rs" = "runtime"
+"branch/historical_selection/runtime_reads.rs" = "runtime"
+"branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
+"visibility/materialization/read_records/projection/view/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/context.rs" = "runtime"
+"visibility/materialization/read_records/reader/diagnostics.rs" = "runtime"
+"visibility/materialization/read_records/reader/managed_source.rs" = "runtime"
+"visibility/materialization/read_records/reader/native_output_probe.rs" = "runtime"
+"visibility/materialization/read_records/reader/paid_record_walk/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_entity_metadata/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read/pinning.rs" = "runtime"
+"visibility/materialization/read_records/reader/positioned_snapshot/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/public_managed_cache.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_plan_live.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_planning.rs" = "runtime"
+"visibility/materialization/read_records/reader/snapshot_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_aspect_versions.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_field_equality/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_kind_scan/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_record_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_relation_kind_scan/runtime_reads.rs" = "runtime"
+"mvcc/publication/companion/registration/port.rs" = "runtime"
+"mvcc/publication/companion/registration/head_cell.rs" = "runtime"
+"mvcc/publication/companion/registration/retirement.rs" = "runtime"
+"authority/commit/pipeline/execution.rs" = "runtime"
+"authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
+"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
+"runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
+"runtime/state/subsystems/history_recovery.rs" = "branch"
+"validation/candidate_source/applied.rs" = "publication"
+"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
+
+"derived_relation/read_shape.rs" = "contracts"
+"runtime/invariant_view.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
+"derived_relation/read.rs" = "contracts"
+"performance/complexity_counter_sink.rs" = "contracts"
+"validation/engine/metrics/counters.rs" = "mutation"
+"runtime/settlement_port.rs" = "runtime"
+"durability/initial_schema_installation_denial.rs" = "durability"
+"validation/engine/request/relation_law_sources.rs" = "mutation"
+"validation/engine/input_preparation/counts.rs" = "mutation"
+"durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
+# Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
+"authority/mutation/canonical_deltas" = "mutation"
+"authority/mutation/deletion_publication.rs" = "mutation"
+"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "mutation"
+"authority/mutation/outcomes/mutation_aspect_patch.rs" = "mutation"
+"branch/model_ownership/basis.rs" = "branch"
+"branch/model_ownership/custody_observation.rs" = "branch"
+"branch/model_ownership/custody_read.rs" = "branch"
+"branch/model_ownership/graph_read.rs" = "branch"
+"branch/model_ownership/native_read.rs" = "branch"
+"branch/model_ownership/read_denial.rs" = "contracts"
+"schema/home_program_catalog_receipt.rs" = "contracts"
+"branch/model_ownership/traversal.rs" = "branch"
+"durability/artifact_payload_emission.rs" = "durability"
+"durability/canonical_commit_artifact/body_read.rs" = "durability"
+"durability/canonical_commit_artifact/checkpoint_body.rs" = "branch"
+"durability/canonical_commit_artifact/decoded_quote" = "durability"
+"durability/canonical_commit_artifact/frame_encoding.rs" = "durability"
+"durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
+"durability/canonical_commit_artifact/payload_wire" = "durability"
+"durability/canonical_commit_artifact/verified_frame.rs" = "durability"
+"durability/checkpoint_admission/admitted_commit" = "branch"
+"durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs" = "branch"
+"durability/checkpoint_selection_denial.rs" = "durability"
+"durability/cold_residency_census.rs" = "durability"
+"durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent/claim.rs" = "durability"
+"durability/envelope_version_selection.rs" = "durability"
+"durability/medium_recovery_readmission.rs" = "durability"
+"durability/medium_transition_tail.rs" = "durability"
+"durability/recovery_transition_history.rs" = "durability"
+"durability/source_initial_inputs/producer_roster.rs" = "durability"
+"indexes/authority/maintenance/applied_field.rs" = "indexes"
+"indexes/authority/maintenance/charge_rendezvous.rs" = "indexes"
+"indexes/authority/maintenance/entry_edits.rs" = "indexes"
+"indexes/authority/maintenance/field_delta.rs" = "indexes"
+"indexes/authority/maintenance/field_keys.rs" = "indexes"
+"indexes/authority/maintenance/persistent_allocation.rs" = "indexes"
+"indexes/authority/maintenance/preparation.rs" = "indexes"
+"indexes/authority/maintenance/request_payment.rs" = "indexes"
+"indexes/authority/maintenance/root_view.rs" = "indexes"
+"indexes/authority/maintenance/work.rs" = "indexes"
+# Branch authenticates immutable row custody from the exact selected root.
+"publication/ownership/evidence.rs" = "branch"
+"publication/ownership/observation.rs" = "branch"
+"publication/ownership/read" = "branch"
+"publication/ownership/read/roster" = "branch"
+"replay/authority/commit_closure.rs" = "runtime"
+"replay/authority/diagnostics.rs" = "runtime"
+"replay/authority/recovery_plan.rs" = "runtime"
+"replay/authority/snapshot_surface.rs" = "runtime"
+"runtime/durability_access/branch_transition_artifact_export.rs" = "runtime"
+"runtime/durability_access/canonical_commit_artifact_export.rs" = "runtime"
+"runtime/durability_authority.rs" = "runtime"
+"runtime/recovered_retirement_trials.rs" = "runtime"
+"durability/authority/checkpoint_complete/capture/freeze.rs" = "runtime"
+"durability/authority_continuity/issue_mapping.rs" = "durability"
+"durability/authority_continuity.rs" = "durability"
+"durability/transition_admission_denial.rs" = "durability"
+"durability/authority/runtime_access.rs" = "runtime"
+"durability/authority/checkpoint_runtime.rs" = "runtime"
+"durability/authority/checkpoint_complete/runtime_capture.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/runtime_capture.rs" = "runtime"
+"runtime/checkpoint_split_doors_for_test.rs" = "runtime"
+"durability/authority/associated_effects/discovery.rs" = "runtime"
+"durability/authority/associated_effects/memory_original.rs" = "runtime"
+"durability/authority/associated_effects/readmission.rs" = "runtime"
+"durability/source_initial_inputs/fresh_initialization.rs" = "runtime"
+"durability/authority/fresh_source/receipt.rs" = "runtime"
+"durability/authority/fresh_source.rs" = "runtime"
+"durability/authority/fresh_source/initial_inputs.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/bootstrap.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/receiver.rs" = "runtime"
+"publication/cdc/data/subscriber_decision.rs" = "contracts"
+"publication/cdc/data/subscriber_contract.rs" = "contracts"
+"durability/authority/checkpoint_transition.rs" = "runtime"
+"durability/authority/checkpoint_transition/outcome.rs" = "runtime"
+"durability/authority/recovery/runtime_installation.rs" = "runtime"
+"durability/authority/recovery/codec_transition.rs" = "runtime"
+"durability/authority/recovery/codec_transition/activation_commitment.rs" = "runtime"
+"durability/authority/recovery/codec_transition/output_correspondence.rs" = "runtime"
+"durability/authority/recovery/codec_transition/target_publication.rs" = "runtime"
+"durability/authority/recovery/codec_transition/transition_admission.rs" = "runtime"
+"durability/authority/recovery/home_program_transition.rs" = "runtime"
+"durability/authority/recovery/prepared_home/recovery.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/refusal.rs" = "runtime"
+"durability/authority/recovery/prepared_home/refusal.rs" = "runtime"
+"durability/authority/recovery/home_program_transition/refusal.rs" = "runtime"
+"durability/authority/recovered_runtime.rs" = "runtime"
+"durability/authority/recorded_component_readmission/runtime_admission.rs" = "runtime"
+"durability/authority/recovered_associated_effects.rs" = "runtime"
+"durability/authority/recovered_publication/admission.rs" = "runtime"
+"durability/authority/recovered_publication/successor/runtime_description.rs" = "runtime"
+"durability/authority/recovery/associated_branch_transitions.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/planning_root/runtime_admission.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/prefix.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/runtime_admission.rs" = "runtime"
+"durability/authority/recovery/fork_effect/runtime_admission.rs" = "runtime"
+"authority/commit/lineage_preparation.rs" = "publication"
+"authority/commit/phases/applied_mutation/aggregate_metrics.rs" = "publication"
+"authority/commit/phases/prepare/working_state_metrics.rs" = "publication"
+"authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"
+"branch/basis_admission_tests.rs" = "branch"
+"branch/basis_currentness.rs" = "branch"
+"branch/basis_registry/retirement_tests.rs" = "branch"
+"branch/basis_retention.rs" = "branch"
+"branch/coordination/managed_fork_cleanup.rs" = "branch"
+"branch/projection_view" = "branch"
+"branch/root_artifact_linkage.rs" = "branch"
+"branch/root_authoritative_payload_tests.rs" = "branch"
+"branch/root_completeness/tests.rs" = "branch"
+"branch/root_physical_linkage_tests.rs" = "branch"
+"branch/root_runtime_access" = "branch"
+"branch/root_snapshot_custody.rs" = "branch"
+"branch/root_tests.rs" = "branch"
+"branch/root_tests/request.rs" = "branch"
+"branch/structural_state" = "branch"
+"execution/mod.rs" = "contracts"
+"history/access/merge_branch_basis_foundational.rs" = "branch"
+"history/access/relevant_writes/cursor/admission.rs" = "branch"
+"history/access/relevant_writes/managed_source/selected_catalog.rs" = "branch"
+"history/commit/artifact_tests.rs" = "branch"
+"history/commit/artifact_tests/shared_readmission.rs" = "branch"
+"history/commit/envelope_residency/memory_publication_tests.rs" = "branch"
+"history/commit/envelope_residency_tests.rs" = "branch"
+"history/commit/payload_commitment.rs" = "branch"
+"history/commit/payload_commitment/writer.rs" = "branch"
+"history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "branch"
+"history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "branch"
+"history/data/canonical_commit_envelope/recorded_inputs.rs" = "branch"
+"history/data/canonical_commit_envelope/required_output_origin/payload_coverage/tests.rs" = "branch"
+"history/data/canonical_commit_envelope/required_output_origin/payload_coverage/tests/diagnostics.rs" = "branch"
+"history/data/canonical_commit_envelope/schema_carrier" = "branch"
+"history/data/canonical_commit_envelope/tests.rs" = "branch"
+"history/data/publication_relations/creation/tests.rs" = "branch"
+"history/data/publication_relations/creation/tests/endpoint_aspect_inputs.rs" = "branch"
+"history/retention/head_cell/memory_close_tests.rs" = "branch"
+"history/retention/lane/retirement/tests.rs" = "branch"
+"history/retention/selected_snapshot.rs" = "branch"
+"history/retention/snapshot_basis_retirement.rs" = "branch"
+"branch/root_projection.rs" = "branch"
+"visibility/snapshot_states/historical_basis_custody.rs" = "branch"
+"indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
+"indexes/authority/maintenance/retained_projection.rs" = "indexes"
+"lineage/access/event_demand.rs" = "lineage"
+"publication/ownership/authored_retirement" = "publication"
+"publication/ownership/record_payload.rs" = "branch"
+"publication/ownership/route_selection.rs" = "publication"
+"publication/ownership/source_scope.rs" = "publication"
+"publication/patch/data/stream_commit_ref.rs" = "contracts"
+"runtime/authored_publication_reads.rs" = "runtime"
+"runtime/candidate_consumption.rs" = "runtime"
+"runtime/candidate_preparation.rs" = "runtime"
+"runtime/historical_ancestry.rs" = "runtime"
+"runtime/historical_output_selection.rs" = "runtime"
+"runtime/ownership_certification.rs" = "runtime"
+"runtime/publication_capture.rs" = "runtime"
+"runtime/publication_settlement.rs" = "runtime"
+"runtime/state/subsystems/history_retention/retained_owner_tests.rs" = "branch"
+"runtime/state/subsystems/indexing/definition_catalog_schema_tests.rs" = "indexes"
+"runtime/state/subsystems/lineage/published_batch.rs" = "lineage"
+"runtime/state/subsystems/services/instrumentation/bulk_mutation_counters.rs" = "branch"
+"runtime/state/subsystems/services/instrumentation/merge_execution_counters.rs" = "branch"
+"runtime/state/subsystems/visibility/cache/memory_close/tests.rs" = "branch"
+"runtime/state/subsystems/visibility/snapshot_handles/identity.rs" = "branch"
+"runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs" = "branch"
+"storage/changed_record_retention.rs" = "storage"
+"storage/mirror_publication.rs" = "storage"
+"storage/record_retention.rs" = "storage"
+"storage/substrate/allocation_witness.rs" = "storage"
+"visibility/materialization/read_records/projection/entity_projection/tests.rs" = "branch"
+"visibility/materialization/read_records/projection/field_revisions/restore_tests.rs" = "branch"
+"visibility/materialization/read_records/reader/aspect_versions.rs" = "branch"
+"visibility/materialization/read_records/reader/paid_record_walk/preclaim_tests.rs" = "branch"
+"visibility/materialization/read_records/reader/request_paid_truth.rs" = "branch"
+"visibility/materialization/read_records/visibility/tests.rs" = "branch"
+"indexes/access" = "indexes"
+"indexes/projected_field_values" = "indexes"
+"history/retention/cost_counters/snapshot.rs" = "contracts"
+"runtime/close_denial.rs" = "contracts"
+"change_source/memory_close_observation.rs" = "contracts"
+"durability/data/recovery_verification.rs" = "contracts"
+"branch/result_snapshot_outcome.rs" = "contracts"
+"visibility/snapshot_release.rs" = "contracts"
+"validation/candidate_source/availability.rs" = "contracts"
+"validation/candidate_source/image" = "branch"
+"validation/candidate_source/image/eviction/tests.rs" = "mutation"
+"durability/checkpoint_admission/binary_encoding" = "contracts"
+"durability/checkpoint_admission/row_custody.rs" = "branch"
+"durability/checkpoint_admission/recorded_reference.rs" = "branch"
+"durability/checkpoint_admission/read_image.rs" = "branch"
+"durability/authority/associated_effects/refusal.rs" = "contracts"
+"durability/authority/associated_effects/created_row_read.rs" = "branch"
+"durability/authority/associated_effects/observed_memory_commit.rs" = "branch"
+"durability/artifact_payload_emission/request.rs" = "contracts"
+"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
+
+
+"runtime/merge_ownership_probe.rs" = "runtime"
+"runtime/state/subsystems/schema_contract_runtime" = "mutation"
+"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
+
+
 # Longest physical path wins. Mixed roots stay with the live owner, and
 # declaration, refusal and wire leaves follow their defining responsibility.
 "aggregate_identity" = "mutation"
@@ -85,10 +339,11 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "aspect_wire" = "contracts"
 "authority" = "mutation"
 "authority/commit" = "publication"
+"authority/commit/plan_reservation_summary.rs" = "mutation"
 "authority/commit/semantic_plan/meaning.rs" = "mutation"
 "authority/commit/semantic_plan/retained_entity_payload.rs" = "mutation"
 "authority/commit/preparation/diagnostics/failures.rs" = "contracts"
-"authority/commit/preparation/storage_denial.rs" = "mutation"
+"authority/commit/preparation/storage_denial.rs" = "branch"
 # Validation packets carry Mutation's admitted observation and decision inputs.
 "authority/commit/preparation/facade.rs" = "mutation"
 "authority/commit/preparation/packets/invariant.rs" = "mutation"
@@ -118,7 +373,10 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/basis_denial" = "contracts"
 "branch/basis_currentness_runtime.rs" = "runtime"
 "branch/basis_observation" = "runtime"
+"branch/basis_observation_inputs.rs" = "branch"
+"branch/head_visibility_inputs.rs" = "branch"
 "branch/basis_readmission" = "runtime"
+"branch/basis_readmission_inputs.rs" = "branch"
 "branch/basis_retention_runtime.rs" = "runtime"
 # The installed-runtime driver is mounted by the Branch source court.
 "branch/basis_registry_scale_tests.rs" = "courts"
@@ -146,7 +404,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Export authenticates the retained member against Durability's selected image.
 "branch/recorded_basis/export.rs" = "durability"
 "branch/recorded_basis/live_export.rs" = "runtime"
-"branch/recorded_basis/memory_component/capture_runtime.rs" = "runtime"
 "branch/recorded_basis/memory_component/live.rs" = "runtime"
 "branch/recorded_basis/memory_component/successor_runtime.rs" = "runtime"
 "branch/recorded_basis/refusal" = "contracts"
@@ -154,6 +411,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/reference_checkpoint_data.rs" = "contracts"
 "branch/retained_fork_admission.rs" = "runtime"
 "branch/reference_state" = "branch"
+"branch/root_capture_denial.rs" = "contracts"
 "branch/root_schema/quote_denial.rs" = "contracts"
 "branch/root_schema/standard_tree_quote.rs" = "contracts"
 "branch/root_selection_admission.rs" = "runtime"
@@ -167,7 +425,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Only the runtime admits a new observation or commit selection. Their retained
 # witnesses and retirement stay with the immutable Branch basis.
 "change_source/commit_selection.rs" = "branch"
-"change_source/read_custody.rs" = "branch"
+"change_source/read_custody.rs" = "contracts"
 "change_source/retained_observation" = "branch"
 "change_source/consistency" = "contracts"
 "change_source/consistency_expectations" = "contracts"
@@ -216,22 +474,24 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability" = "durability"
 # Portable schema registration rows own meaning separate from their enclosing image.
 "durability/data/branch_root_schema_images/registrations" = "contracts"
-"durability/access" = "runtime"
 "durability/authority/recovery" = "durability"
 "durability/authority/runtime_rebuild" = "durability"
 "durability/branch_transition_artifact/encode_denial" = "contracts"
 "durability/branch_transition_artifact/frame_refusal" = "contracts"
 "durability/branch_transition_artifact/payload_digest" = "contracts"
 "durability/canonical_commit_artifact/borrowed_payload" = "contracts"
+"durability/artifact_canonical_payload.rs" = "contracts"
+
+
 "durability/canonical_commit_artifact/encode_denial" = "contracts"
 # Canonical framing bounds and refusals are portable wire meaning.
+"durability/canonical_commit_artifact/frame.rs" = "contracts"
 "durability/canonical_commit_artifact/frame_contract" = "contracts"
 "durability/canonical_commit_artifact/frame_refusal" = "contracts"
 "durability/canonical_commit_artifact/payload_digest" = "contracts"
 "durability/canonical_commit_artifact/readmission_refusal" = "contracts"
 "durability/capture_custody_census" = "runtime"
 "durability/checkpoint_admission/refusal" = "contracts"
-"durability/cold_residency_census" = "runtime"
 # Canonical wire image meaning is owned with the branch root; native frame
 # selection and authentication remain with Durability.
 "durability/data/branch_lifecycle_images.rs" = "branch"
@@ -261,7 +521,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/access/mod.rs" = "runtime"
 "history/access/relevant_writes/cursor/admission_runtime.rs" = "runtime"
 "history/access/relevant_writes/live_cursor.rs" = "runtime"
-"history/access/relevant_writes/managed_source/selector_admission.rs" = "runtime"
 "history/access/relevant_writes/maintenance.rs" = "runtime"
 "history/access/ancestry" = "runtime"
 "history/access/branch_envelope_reads" = "runtime"
@@ -283,7 +542,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/aspect_history" = "branch"
 "history/data/branch_creation" = "contracts"
 "history/data/canonical_record_allocation" = "contracts"
-"history/data/canonical_commit_envelope/live_publication_inputs" = "publication"
 "history/data/commit_receipt" = "contracts"
 "history/data/coordinates" = "contracts"
 "history/data/history_policy" = "contracts"
@@ -293,6 +551,24 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/replay_version" = "contracts"
 "history/data/required_output_positions/presence/completion.rs" = "mutation"
 "history/mod.rs" = "runtime"
+"history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
 "history/retention" = "branch"
 "history/retention/head_cell" = "branch"
 "history/retention/reclamation" = "branch"
@@ -303,7 +579,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "identity_authority" = "contracts"
 # The index root mounts the eager recovery entrance. Projection kernels stay in Indexes.
 "indexes/mod.rs" = "durability"
-"indexes/access" = "indexes"
 "indexes/access/admitted_generation" = "runtime"
 "indexes/access/definition_lookup" = "runtime"
 "indexes/access/execution" = "courts"
@@ -341,8 +616,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "indexes/data/mod.rs" = "branch"
 "indexes/data/related_entity_prefix" = "branch"
 "indexes/data/relation_join_index" = "branch"
-"indexes/projected_field_values" = "indexes"
 "indexes/projected_field_values/field_projection_scope" = "contracts"
+
 "indexes/retained_definition" = "branch"
 "inline_type_sizes.rs" = "runtime"
 # The layout census only measures declared data carriers.
@@ -392,6 +667,11 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc" = "runtime"
 "mvcc/observation" = "branch"
 "mvcc/publication" = "publication"
+"mvcc/publication/port.rs" = "runtime"
+"mvcc/publication/port_cutover.rs" = "runtime"
+"mvcc/publication/port_handoff.rs" = "runtime"
+"mvcc/publication/port_preflight.rs" = "runtime"
+"mvcc/publication/port_service_retirement.rs" = "runtime"
 # Canonical output vocabulary contains only role and producing coordinates.
 "mvcc/publication/application_publication/output_meaning.rs" = "contracts"
 "mvcc/publication/application_publication/producing_implementation.rs" = "contracts"
@@ -402,13 +682,30 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/publication/outcome/refusals" = "contracts"
 "mvcc/publication/read_dependency_denial" = "contracts"
 "mvcc/owned_graph_selection/prepared.rs" = "mutation"
+"mvcc/transaction/footprint" = "mutation"
+"mvcc/transaction/footprint_client_keys.rs" = "mutation"
+"mvcc/transaction/footprint_staging.rs" = "mutation"
+"mvcc/transaction/index_row.rs" = "mutation"
+"mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/staged_plan.rs" = "publication"
+"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
+"mvcc/transaction/staged_mutations.rs" = "mutation"
+"mvcc/transaction/normalized_key_cache" = "mutation"
+"mvcc/transaction/effective_records.rs" = "mutation"
+"mvcc/transaction/relation_value.rs" = "mutation"
+"mvcc/transaction/overlay_normalization.rs" = "mutation"
+"mvcc/transaction/overlay" = "mutation"
+"mvcc/transaction/overlay_indexing.rs" = "mutation"
+"mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/normalized_plan" = "mutation"
+"mvcc/transaction/reconstructed_merge_plan" = "mutation"
 "mvcc/transaction/read_denial.rs" = "branch"
 "mvcc/transaction/staging.rs" = "contracts"
 "mvcc/validation" = "mutation"
 "mvcc/validation.rs" = "runtime"
 "performance" = "runtime"
+"performance/operation_complexity_accounting.rs" = "contracts"
 "performance/data/runtime_complexity_counters" = "contracts"
 "presentation" = "runtime"
 "presentation/harness" = "courts"
@@ -420,6 +717,9 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "publication/bundle/publication_status" = "contracts"
 "publication/canonical_history" = "publication"
 "publication/cdc" = "runtime"
+"publication/close_custody" = "contracts"
+"publication/live_publication_inputs" = "publication"
+"publication/diagnostic_store" = "publication"
 "publication/data" = "branch"
 "publication/data/authored_retirement_refusal" = "contracts"
 "publication/data/publication_error" = "contracts"
@@ -427,7 +727,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "publication/ownership" = "publication"
 # Native publication records and bounded decode retain canonical Branch meaning.
 "publication/ownership/record.rs" = "branch"
-"publication/ownership/read/payload.rs" = "branch"
 "publication/ownership/read_request.rs" = "contracts"
 "publication/patch" = "branch"
 "publication/patch/data" = "contracts"
@@ -443,18 +742,27 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "replay/mod.rs" = "runtime"
 "runtime" = "runtime"
 "runtime/fork_denial.rs" = "contracts"
-"runtime/operation_control/interruption_event" = "contracts"
+"runtime/predecessor_publication.rs" = "runtime"
+"runtime/publication_authority.rs" = "runtime"
+"runtime/publication_body.rs" = "runtime"
+"runtime/interruption_counters.rs" = "contracts"
+"runtime/operation_control" = "contracts"
 # Native contract comparison is pure schema meaning. Runtime translates installation refusal.
 "runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis" = "contracts"
 
 "runtime/state/runtime_state/publication_lifecycle" = "publication"
+"runtime/state/runtime_state/publication_lifecycle.rs" = "publication"
 "runtime/state/runtime_state/publication_settlement_registry" = "publication"
 "runtime/state/subsystems/canonical_publication_routes" = "publication"
+"runtime/state/subsystems/canonical_publication_routes/narrowed_cutover_control.rs" = "runtime"
 "runtime/state/subsystems/canonical_publication_routes/position_admission" = "branch"
 # Position retention only shares an already admitted envelope and does not publish.
 "runtime/state/subsystems/canonical_publication_routes/retained_position.rs" = "branch"
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
 "runtime/state/subsystems/durability/checkpoint_selection" = "durability"
+"runtime/state/subsystems/durability/commit_log.rs" = "durability"
+"runtime/state/subsystems/durability/commit_log/read_coverage.rs" = "durability"
+"runtime/state/subsystems/durability/state.rs" = "durability"
 "runtime/state/subsystems/history.rs" = "branch"
 "runtime/state/subsystems/history_branch_cells" = "branch"
 # Runtime publishes the accepted schema cutover using Branch-prepared cells and heads.
@@ -471,12 +779,15 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/history_identity_allocation" = "branch"
 "runtime/state/subsystems/history_ledger" = "branch"
 "runtime/state/subsystems/history_ledger_access" = "branch"
+"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
 "runtime/state/subsystems/history_memory_close" = "branch"
 "runtime/state/subsystems/history_preparation_binding" = "publication"
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
 "runtime/state/subsystems/history_publication" = "branch"
 "runtime/state/subsystems/history_recovery_index_basis.rs" = "branch"
 "runtime/state/subsystems/history_recovery_lineage.rs" = "branch"
+"runtime/state/subsystems/history_recovery_denial.rs" = "branch"
+"runtime/state/subsystems/history_recovery_validation.rs" = "branch"
 "runtime/state/subsystems/history_retention" = "branch"
 "runtime/state/subsystems/history_root_capture" = "branch"
 # Closing the source binds both Branch ledger and Publication route custody.
@@ -490,6 +801,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/publication" = "publication"
 "runtime/state/subsystems/record_identity" = "storage"
 "runtime/state/subsystems/services/instrumentation" = "branch"
+"runtime/state/subsystems/services/sequence/origin.rs" = "branch"
 "runtime/state/subsystems/services/symbol_table" = "storage"
 "runtime/state/subsystems/storage" = "storage"
 "runtime/state/subsystems/visibility" = "branch"
@@ -554,6 +866,11 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "validation/engine/result/failures" = "contracts"
 "validation/invariant_access" = "runtime"
 "validation/invariant_authority" = "runtime"
+"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
+"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
+
 "validation/mod.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
 "visibility" = "branch"
@@ -582,16 +899,60 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 owner = "branch"
 allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["envelope", "projection_view"]]
 [boundaries.paths]
-root_custody = ["branch"]
-envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/read/payload.rs"]
-projection_view = ["branch/projection_view", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+root_custody = [
+    "runtime/state/subsystems/visibility/mod.rs",
+    "runtime/state/subsystems/visibility/replay_retention.rs",
+    "runtime/state/subsystems/visibility/snapshot_handle_binding.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles",
+    "visibility/exact_commit_snapshot.rs",
+    "visibility/snapshot_observation.rs",
+    "visibility/snapshot_states/resolution.rs",
+    "visibility/materialization/read_records/projection/registered_snapshot_projection.rs",
+    "branch",
+    "durability/checkpoint_admission/recorded_reference.rs",
+    "durability/checkpoint_admission/row_custody.rs",
+    "durability/checkpoint_admission/admitted_commit",
+    "durability/authority/associated_effects/observed_memory_commit.rs",
+    "durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs",
+    "authority/commit/preparation/storage_denial.rs",
+    "history/retention/selected_snapshot.rs",
+    "visibility/snapshot_observation_registration.rs",
+    "visibility/materialization/read_records/projection/checkpoint_selection.rs",
+    "visibility/snapshot_states/retained_state_building.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/head_selection.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/active_registry/head_selection.rs",
+    "runtime/state/subsystems/visibility/snapshot_handles/published_registry/head_selection.rs",
+    "history/retention/snapshot_basis_retirement.rs",
+    "visibility/snapshot_states/historical_basis_custody.rs",
+]
+envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/record_payload.rs", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
+projection_view = ["branch/projection_view", "branch/root_projection.rs", "branch/root_region/backing.rs", "branch/root_regions/backing.rs", "branch/root_regions/selected_access.rs", "branch/root_regions/partition_visitation.rs", "branch/symbol_read.rs", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
 owner = "mutation"
-allowed = []
+# Both consumers may acquire exact reads from the same registered relation
+# recipe. Acquisition has no dependency on either consumer's decisions.
+allowed = [["authorization_and_derivation", "derived_relation_reads"], ["candidate_source", "derived_relation_reads"]]
 [boundaries.paths]
 authorization_and_derivation = ["authorization", "derived_relation"]
 candidate_source = ["validation/candidate_source"]
+derived_relation_reads = [
+    "derived_relation/affected",
+    "derived_relation/evaluation.rs",
+    "derived_relation/evaluation",
+    "derived_relation/ordered_events.rs",
+    "derived_relation/ordered_events",
+    "derived_relation/pinned.rs",
+    "derived_relation/pinned",
+    "derived_relation/proof.rs",
+    "derived_relation/source.rs",
+    "derived_relation/source_buffer.rs",
+    "derived_relation/structural.rs",
+    "derived_relation/structural",
+    "derived_relation/support.rs",
+    "derived_relation/traversal.rs",
+    "derived_relation/traversal",
+]
 
 [[boundaries]]
 owner = "durability"
@@ -601,6 +962,184 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"branch/historical_selection/chain.rs" = "runtime"
+"branch/historical_selection/runtime_reads.rs" = "runtime"
+"branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/projection/admitted_snapshot.rs" = "runtime"
+"visibility/materialization/read_records/projection/view/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/context.rs" = "runtime"
+"visibility/materialization/read_records/reader/diagnostics.rs" = "runtime"
+"visibility/materialization/read_records/reader/managed_source.rs" = "runtime"
+"visibility/materialization/read_records/reader/native_output_probe.rs" = "runtime"
+"visibility/materialization/read_records/reader/paid_record_walk/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_entity_metadata/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read/pinning.rs" = "runtime"
+"visibility/materialization/read_records/reader/positioned_snapshot/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/public_managed_cache.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_plan_live.rs" = "runtime"
+"visibility/materialization/read_records/reader/query_planning.rs" = "runtime"
+"visibility/materialization/read_records/reader/snapshot_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_aspect_versions.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_adjacency/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_frontier_field_equality/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_kind_scan/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_record_access/runtime_reads.rs" = "runtime"
+"visibility/materialization/read_records/reader/truth_relation_kind_scan/runtime_reads.rs" = "runtime"
+"mvcc/publication/companion/registration/port.rs" = "runtime"
+"mvcc/publication/companion/registration/head_cell.rs" = "runtime"
+"mvcc/publication/companion/registration/retirement.rs" = "runtime"
+"authority/commit/pipeline/execution.rs" = "runtime"
+"authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
+"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
+"runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
+"runtime/state/subsystems/history_recovery.rs" = "branch"
+"validation/candidate_source/applied.rs" = "publication"
+"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
+
+"derived_relation/read_shape.rs" = "contracts"
+"runtime/invariant_view.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
+"derived_relation/read.rs" = "contracts"
+"performance/complexity_counter_sink.rs" = "contracts"
+"validation/engine/metrics/counters.rs" = "mutation"
+"runtime/settlement_port.rs" = "runtime"
+"durability/initial_schema_installation_denial.rs" = "durability"
+"validation/engine/request/relation_law_sources.rs" = "mutation"
+"validation/engine/input_preparation/counts.rs" = "mutation"
+"durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
+# Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
+"authority/mutation/canonical_deltas" = "mutation"
+"authority/mutation/deletion_publication.rs" = "mutation"
+"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "mutation"
+"authority/mutation/outcomes/mutation_aspect_patch.rs" = "mutation"
+"branch/model_ownership/basis.rs" = "branch"
+"branch/model_ownership/custody_observation.rs" = "branch"
+"branch/model_ownership/custody_read.rs" = "branch"
+"branch/model_ownership/graph_read.rs" = "branch"
+"branch/model_ownership/native_read.rs" = "branch"
+"branch/model_ownership/read_denial.rs" = "contracts"
+"schema/home_program_catalog_receipt.rs" = "contracts"
+"branch/model_ownership/traversal.rs" = "branch"
+"durability/artifact_payload_emission.rs" = "durability"
+"durability/canonical_commit_artifact/body_read.rs" = "durability"
+"durability/canonical_commit_artifact/checkpoint_body.rs" = "branch"
+"durability/canonical_commit_artifact/decoded_quote" = "durability"
+"durability/canonical_commit_artifact/frame_encoding.rs" = "durability"
+"durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
+"durability/canonical_commit_artifact/payload_wire" = "durability"
+"durability/canonical_commit_artifact/verified_frame.rs" = "durability"
+"durability/checkpoint_admission/admitted_commit" = "branch"
+"durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs" = "branch"
+"durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
+"indexes/authority/maintenance/applied_field.rs" = "indexes"
+"indexes/authority/maintenance/charge_rendezvous.rs" = "indexes"
+"indexes/authority/maintenance/entry_edits.rs" = "indexes"
+"indexes/authority/maintenance/field_delta.rs" = "indexes"
+"indexes/authority/maintenance/field_keys.rs" = "indexes"
+"indexes/authority/maintenance/persistent_allocation.rs" = "indexes"
+"indexes/authority/maintenance/preparation.rs" = "indexes"
+"indexes/authority/maintenance/request_payment.rs" = "indexes"
+"indexes/authority/maintenance/root_view.rs" = "indexes"
+"indexes/authority/maintenance/work.rs" = "indexes"
+# Branch authenticates immutable row custody from the exact selected root.
+"publication/ownership/evidence.rs" = "branch"
+"publication/ownership/observation.rs" = "branch"
+"publication/ownership/read" = "branch"
+"publication/ownership/read/roster" = "branch"
+"durability/authority/checkpoint_complete/capture/freeze.rs" = "runtime"
+"durability/authority_continuity/issue_mapping.rs" = "durability"
+"durability/authority_continuity.rs" = "durability"
+"durability/transition_admission_denial.rs" = "durability"
+"durability/cold_residency_census.rs" = "durability"
+"durability/envelope_version_selection.rs" = "durability"
+"durability/medium_transition_tail.rs" = "durability"
+"durability/authority/recorded_component_readmission/runtime_admission.rs" = "runtime"
+"durability/authority/recovered_associated_effects.rs" = "runtime"
+"durability/authority/recovered_publication/admission.rs" = "runtime"
+"durability/authority/recovered_publication/successor/runtime_description.rs" = "runtime"
+"durability/authority/recovery/associated_branch_transitions.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/planning_root/runtime_admission.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/prefix.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/runtime_admission.rs" = "runtime"
+"durability/authority/recovery/fork_effect/runtime_admission.rs" = "runtime"
+"durability/authority/recovered_runtime.rs" = "runtime"
+"durability/authority/checkpoint_transition.rs" = "runtime"
+"durability/authority/checkpoint_transition/outcome.rs" = "runtime"
+"durability/authority/recovery/runtime_installation.rs" = "runtime"
+"durability/authority/recovery/codec_transition.rs" = "runtime"
+"durability/authority/recovery/codec_transition/activation_commitment.rs" = "runtime"
+"durability/authority/recovery/codec_transition/output_correspondence.rs" = "runtime"
+"durability/authority/recovery/codec_transition/target_publication.rs" = "runtime"
+"durability/authority/recovery/codec_transition/transition_admission.rs" = "runtime"
+"durability/authority/recovery/home_program_transition.rs" = "runtime"
+"durability/authority/recovery/prepared_home/recovery.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/refusal.rs" = "runtime"
+"durability/authority/recovery/prepared_home/refusal.rs" = "runtime"
+"durability/authority/recovery/home_program_transition/refusal.rs" = "runtime"
+"publication/cdc/data/subscriber_contract.rs" = "contracts"
+"publication/cdc/data/subscriber_decision.rs" = "contracts"
+"durability/authority/fresh_source.rs" = "runtime"
+"durability/authority/fresh_source/initial_inputs.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/bootstrap.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/receiver.rs" = "runtime"
+"durability/recovery_transition_history.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent/claim.rs" = "durability"
+"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent.rs" = "durability"
+"durability/source_initial_inputs/fresh_initialization.rs" = "runtime"
+"durability/authority/fresh_source/receipt.rs" = "runtime"
+"durability/source_initial_inputs/producer_roster.rs" = "durability"
+"durability/authority/checkpoint_runtime.rs" = "runtime"
+"durability/authority/checkpoint_complete/runtime_capture.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/runtime_capture.rs" = "runtime"
+"runtime/checkpoint_split_doors_for_test.rs" = "runtime"
+"durability/authority/associated_effects/discovery.rs" = "runtime"
+"durability/authority/associated_effects/memory_original.rs" = "runtime"
+"durability/authority/associated_effects/readmission.rs" = "runtime"
+"durability/checkpoint_selection_denial.rs" = "durability"
+"durability/authority/runtime_access.rs" = "runtime"
+"durability/medium_recovery_readmission.rs" = "durability"
+"replay/authority/commit_closure.rs" = "runtime"
+"replay/authority/diagnostics.rs" = "runtime"
+"replay/authority/recovery_plan.rs" = "runtime"
+"replay/authority/snapshot_surface.rs" = "runtime"
+"runtime/durability_access/branch_transition_artifact_export.rs" = "runtime"
+"runtime/durability_access/canonical_commit_artifact_export.rs" = "runtime"
+"runtime/durability_authority.rs" = "runtime"
+"runtime/recovered_retirement_trials.rs" = "runtime"
+"publication/ownership/record_payload.rs" = "branch"
+"visibility/snapshot_states/historical_basis_custody.rs" = "branch"
+"lineage/access/graph" = "runtime"
+"indexes/access" = "indexes"
+"indexes/projected_field_values" = "indexes"
+"validation/candidate_source/image/eviction/tests.rs" = "mutation"
+"authority/commit/plan_reservation_summary.rs" = "mutation"
+"history/retention/cost_counters/snapshot.rs" = "contracts"
+"runtime/close_denial.rs" = "contracts"
+"change_source/memory_close_observation.rs" = "contracts"
+"branch/projection_view" = "branch"
+"durability/data/recovery_verification.rs" = "contracts"
+"branch/result_snapshot_outcome.rs" = "contracts"
+"visibility/snapshot_release.rs" = "contracts"
+"validation/candidate_source/availability.rs" = "contracts"
+"validation/candidate_source/image" = "branch"
+"durability/checkpoint_admission/binary_encoding" = "contracts"
+"durability/checkpoint_admission/row_custody.rs" = "branch"
+"durability/checkpoint_admission/recorded_reference.rs" = "branch"
+"durability/checkpoint_admission/read_image.rs" = "branch"
+"durability/authority/associated_effects/refusal.rs" = "contracts"
+"durability/authority/associated_effects/created_row_read.rs" = "branch"
+"durability/authority/associated_effects/observed_memory_commit.rs" = "branch"
+"durability/artifact_payload_emission/request.rs" = "contracts"
+"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
+"runtime/operation_control" = "contracts"
+"branch/structural_state" = "branch"
+"history/access/relevant_writes/managed_source/selected_catalog.rs" = "branch"
+"authority/commit/lineage_preparation.rs" = "publication"
 
 # Canonical group transition facts and denials shared by mutation and lineage.
 "aggregate_identity/group_lineage" = "contracts"
@@ -645,6 +1184,69 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "merge/schema_reconciliation_witness_access" = "runtime"
 "merge/strategy_witness_access" = "runtime"
 
+# Runtime owns the admitted cutover receiver.
+"mvcc/publication/port.rs" = "runtime"
+"mvcc/publication/port_cutover.rs" = "runtime"
+"mvcc/publication/port_handoff.rs" = "runtime"
+"mvcc/publication/port_preflight.rs" = "runtime"
+"mvcc/publication/port_service_retirement.rs" = "runtime"
+
+# Applied pins are bound and consumed by the publication phase.
+"publication/live_publication_inputs" = "publication"
+
+# Candidate entry/exit and the installed owner reservation gate bind runtime tenure.
+"runtime/candidate_consumption.rs" = "runtime"
+"runtime/candidate_preparation.rs" = "runtime"
+"runtime/state/subsystems/canonical_publication_routes/narrowed_cutover_control.rs" = "runtime"
+
+# Publication completes live origins and passes filled canonical facts to Branch.
+"history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
+
+# Installed receiver methods bind concrete operands for publication.
+"runtime/predecessor_publication.rs" = "runtime"
+"runtime/publication_authority.rs" = "runtime"
+"runtime/publication_body.rs" = "runtime"
+
+# Counter arithmetic has no access to an installed owner.
+"performance/operation_complexity_accounting.rs" = "contracts"
+
+# Branch issues an observation and describes its selected cell.
+
+# The canonical envelope owner hashes body leaves independently of frame verification.
+"history/commit/payload_commitment.rs" = "branch"
+"history/commit/payload_commitment/writer.rs" = "branch"
+
+# Publication owns its operation-scoped diagnostic capture and stored artifacts.
+"publication/diagnostic_store" = "publication"
+
+# Runtime supplies owner identity to the publication-owned historical selection.
+"runtime/historical_output_selection.rs" = "runtime"
+
+# Visibility issues snapshot identities from one owner-bound allocator.
+"runtime/state/subsystems/visibility/snapshot_handles/identity.rs" = "branch"
+
+# Root linkage consumes the completed envelope at the custody boundary.
+"branch/root_artifact_linkage.rs" = "branch"
+
+# Publication reports exact custody held by its candidate, settlement and companion owners.
+"publication/close_custody" = "contracts"
 # Stage 2.3B ownership changes relative to certified Stage 2.2+2.3A.
 "authority/commit/preparation/packets/index" = "indexes"
 "authority/commit/preparation/planning/strategy" = "contracts"
@@ -663,7 +1265,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/materialization/completion.rs" = "runtime"
 "branch/recorded_basis/export.rs" = "durability"
 "branch/recorded_basis/live_export.rs" = "runtime"
-"branch/recorded_basis/memory_component/capture_runtime.rs" = "runtime"
 "branch/recorded_basis/memory_component/live.rs" = "runtime"
 "branch/recorded_basis/memory_component/successor_runtime.rs" = "runtime"
 "branch/reference_checkpoint_data.rs" = "contracts"
@@ -671,11 +1272,18 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/root_runtime_access" = "branch"
 "branch/root_selection_admission.rs" = "runtime"
 "change_source/commit_selection.rs" = "branch"
-"change_source/read_custody.rs" = "branch"
+"change_source/read_custody.rs" = "contracts"
 "change_source/retained_observation" = "branch"
+"durability/canonical_commit_artifact/frame.rs" = "contracts"
 "durability/canonical_commit_artifact/frame_contract" = "contracts"
 "durability/data/branch_lifecycle_images.rs" = "branch"
 "durability/data/branch_root_schema_images/registrations" = "contracts"
+# The immutable canonical schema carrier is shared by commit and root custody.
+"history/data/canonical_commit_envelope/schema_carrier" = "branch"
+"history/data/canonical_commit_envelope/recorded_inputs.rs" = "branch"
+
+# Bound the working-state clone and metrics to its exact preparation policy.
+"authority/commit/phases/prepare/working_state_metrics.rs" = "publication"
 "durability/data/native_checkpoint_capture_denial" = "contracts"
 "execution/mod.rs" = "contracts"
 "history/access/aspect_history/live_admission.rs" = "runtime"
@@ -688,17 +1296,13 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/access/relevant_writes/cursor/admission_runtime.rs" = "runtime"
 "history/access/relevant_writes/live_cursor.rs" = "runtime"
 "history/access/relevant_writes/maintenance.rs" = "runtime"
-"history/access/relevant_writes/managed_source/selector_admission.rs" = "runtime"
-"history/commit/artifact_tests/strategy_readmission" = "branch"
 "history/commit/artifact_tests/strategy_readmission.rs" = "courts"
 "history/data/codec_retirement_closure/authored_restoration/inverse.rs" = "publication"
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
 "history/retention/live_reclamation.rs" = "runtime"
 "history/retention/publication_reclamation.rs" = "runtime"
-"indexes/access" = "indexes"
 "indexes/access/admitted_generation" = "runtime"
-"indexes/access/bounded_entity_field_lookup" = "indexes"
 "indexes/access/definition_lookup" = "runtime"
 "indexes/access/execution" = "courts"
 "indexes/access/mod.rs" = "runtime"
@@ -726,7 +1330,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "inline_type_sizes/census.rs" = "contracts"
 "mvcc/publication/application_publication/output_meaning.rs" = "contracts"
 "mvcc/publication/application_publication/producing_implementation.rs" = "contracts"
-"publication/ownership/read/payload.rs" = "branch"
 "publication/ownership/read_request.rs" = "contracts"
 "publication/ownership/record.rs" = "branch"
 "runtime/fork_denial.rs" = "contracts"
@@ -734,6 +1337,9 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
 "runtime/state/subsystems/canonical_publication_routes/retained_position.rs" = "branch"
 "runtime/state/subsystems/durability/checkpoint_selection" = "durability"
+"runtime/state/subsystems/durability/commit_log.rs" = "durability"
+"runtime/state/subsystems/durability/commit_log/read_coverage.rs" = "durability"
+"runtime/state/subsystems/durability/state.rs" = "durability"
 "runtime/state/subsystems/history_branch_cells/initial_schema.rs" = "runtime"
 "runtime/state/subsystems/history_branch_lifecycle.rs" = "branch"
 "runtime/state/subsystems/history_branch_transition.rs" = "publication"
@@ -742,10 +1348,13 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/history_publication" = "branch"
 "runtime/state/subsystems/history_recovery_index_basis.rs" = "branch"
 "runtime/state/subsystems/history_recovery_lineage.rs" = "branch"
+"runtime/state/subsystems/history_recovery_denial.rs" = "branch"
+"runtime/state/subsystems/history_recovery_validation.rs" = "branch"
 "runtime/state/subsystems/history_source_retirement" = "publication"
 "runtime/state/subsystems/indexing/catalog_coverage.rs" = "branch"
 "runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
 "runtime/state/subsystems/services/instrumentation" = "branch"
+"runtime/state/subsystems/services/sequence/origin.rs" = "branch"
 "validation/candidate_source/authored_history/admission.rs" = "mutation"
 "validation/candidate_source/authored_history/collection" = "mutation"
 "validation/candidate_source/authored_history/material_capture.rs" = "mutation"
@@ -770,7 +1379,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "authority/commit/preparation/proofs/validity.rs" = "mutation"
 "authority/commit/preparation/reduction/identity.rs" = "mutation"
 "authority/commit/preparation/reduction/keys.rs" = "mutation"
-"authority/commit/preparation/storage_denial.rs" = "mutation"
+"authority/commit/preparation/storage_denial.rs" = "branch"
 "history/data/required_output_positions/presence/completion.rs" = "mutation"
 "mvcc/owned_graph_selection/prepared.rs" = "mutation"
 
@@ -784,6 +1393,169 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "validation/preparation_invariant_authority.rs" = "runtime"
 
 # Transaction packet vocabulary is shared. Branch owns denials for selected reads.
+"mvcc/transaction/footprint" = "mutation"
+"mvcc/transaction/footprint_client_keys.rs" = "mutation"
+"mvcc/transaction/footprint_staging.rs" = "mutation"
+"mvcc/transaction/index_row.rs" = "mutation"
+"mvcc/transaction/intent_locus.rs" = "mutation"
+"mvcc/transaction/staged_plan.rs" = "publication"
+"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
+"mvcc/transaction/staged_mutations.rs" = "mutation"
+"mvcc/transaction/normalized_key_cache" = "mutation"
+"mvcc/transaction/effective_records.rs" = "mutation"
+"mvcc/transaction/relation_value.rs" = "mutation"
+"mvcc/transaction/overlay_normalization.rs" = "mutation"
+"mvcc/transaction/overlay" = "mutation"
+"mvcc/transaction/overlay_indexing.rs" = "mutation"
+"mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/read_denial.rs" = "branch"
 "mvcc/transaction/staging.rs" = "contracts"
+
+# The root capture denial is shared by Branch root custody and the canonical payload owner.
+"branch/root_capture_denial.rs" = "contracts"
+
+# Certified Stage 2.4A r2 restores these concrete owners relative to the Stage 2.4B base.
+"branch/basis_admission_tests.rs" = "branch"
+"branch/basis_currentness.rs" = "branch"
+"branch/basis_registry/retirement_tests.rs" = "branch"
+"branch/basis_retention.rs" = "branch"
+"branch/coordination/managed_fork_cleanup.rs" = "branch"
+"branch/root_authoritative_payload_tests.rs" = "branch"
+"branch/root_completeness/tests.rs" = "branch"
+"branch/root_physical_linkage_tests.rs" = "branch"
+"branch/root_tests/request.rs" = "branch"
+"branch/root_tests.rs" = "branch"
+"history/access/merge_branch_basis_foundational.rs" = "branch"
+"history/access/relevant_writes/cursor/admission.rs" = "branch"
+"history/commit/artifact_tests/shared_readmission.rs" = "branch"
+"history/commit/artifact_tests.rs" = "branch"
+"history/commit/envelope_residency/memory_publication_tests.rs" = "branch"
+"history/commit/envelope_residency_tests.rs" = "branch"
+"history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "branch"
+"history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "branch"
+"history/data/canonical_commit_envelope/required_output_origin/payload_coverage/tests/diagnostics.rs" = "branch"
+"history/data/canonical_commit_envelope/required_output_origin/payload_coverage/tests.rs" = "branch"
+"history/data/canonical_commit_envelope/tests.rs" = "branch"
+"history/data/publication_relations/creation/tests/endpoint_aspect_inputs.rs" = "branch"
+"history/data/publication_relations/creation/tests.rs" = "branch"
+"history/retention/head_cell/memory_close_tests.rs" = "branch"
+"history/retention/lane/retirement/tests.rs" = "branch"
+"indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
+"indexes/authority/maintenance/retained_projection.rs" = "indexes"
+"lineage/access/event_demand.rs" = "lineage"
+"runtime/state/subsystems/history_retention/retained_owner_tests.rs" = "branch"
+"runtime/state/subsystems/indexing/definition_catalog_schema_tests.rs" = "indexes"
+"runtime/state/subsystems/visibility/cache/memory_close/tests.rs" = "branch"
+"runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs" = "branch"
+"visibility/materialization/read_records/projection/entity_projection/tests.rs" = "branch"
+"visibility/materialization/read_records/projection/field_revisions/restore_tests.rs" = "branch"
+"visibility/materialization/read_records/reader/aspect_versions.rs" = "branch"
+"visibility/materialization/read_records/reader/paid_record_walk/preclaim_tests.rs" = "branch"
+"visibility/materialization/read_records/reader/request_paid_truth.rs" = "branch"
+"visibility/materialization/read_records/visibility/tests.rs" = "branch"
+
+# These receiver entry points bind the installed runtime to Publication's settlement.
+"runtime/publication_settlement.rs" = "runtime"
+
+# Preparation Runtime binds exact contracts before Publication assembles the candidate.
+"runtime/publication_capture.rs" = "runtime"
+
+# The published lineage batch is installed by its state owner.
+"runtime/state/subsystems/lineage/published_batch.rs" = "lineage"
+
+# Runtime binds the original certification controls to their Publication owners.
+"runtime/ownership_certification.rs" = "runtime"
+
+# The ordinary mirror publisher owns partition installation and copy counters.
+"storage/mirror_publication.rs" = "storage"
+
+# Runtime lends the installed canonical history to historical selection.
+"runtime/historical_ancestry.rs" = "runtime"
+
+# The canonical patch coordinate is consumed independently of Runtime stream access.
+"publication/patch/data/stream_commit_ref.rs" = "contracts"
+
+# Aggregate consequence metrics belong to the one consumer of the exact read report.
+"authority/commit/phases/applied_mutation/aggregate_metrics.rs" = "publication"
+
+# Installed Current route selection consumes Publication's authenticated roster.
+"publication/ownership/route_selection.rs" = "publication"
+
+# Count schema transition classifications where continuity is materialized.
+"authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"
+
+# Live authored-source retirement selects Current ownership before canonical ancestry.
+"publication/ownership/source_scope.rs" = "publication"
+"publication/ownership/authored_retirement" = "publication"
+
+# Immutable receipt discovery has no root runtime or preparation receiver.
+"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
+
+# Paid merge mutation plan reconstruction uses the normalized-intent owner.
+"mvcc/transaction/reconstructed_merge_plan" = "mutation"
+
+# Weak allocation identity does not require checkpoint custody or recovery.
+"storage/substrate/allocation_witness.rs" = "storage"
+
+# Retained snapshots lend native projection reads while raw custody stays with roots.
+"branch/root_snapshot_custody.rs" = "branch"
+"branch/root_projection.rs" = "branch"
+
+# Interruption counter values are shared observation data.
+"runtime/interruption_counters.rs" = "contracts"
+
+"branch/basis_observation_inputs.rs" = "branch"
+"branch/head_visibility_inputs.rs" = "branch"
+
+# Plan counters belong to the instrumentation owner.
+"runtime/state/subsystems/services/instrumentation/bulk_mutation_counters.rs" = "branch"
+
+# Branch owns exact transported-basis matching and readmission.
+"branch/basis_readmission_inputs.rs" = "branch"
+
+# The selected root and retired raw shares remain with retention custody.
+"history/retention/selected_snapshot.rs" = "branch"
+"history/retention/snapshot_basis_retirement.rs" = "branch"
+
+# Runtime lends exact history to authored read receivers.
+"runtime/authored_publication_reads.rs" = "runtime"
+
+# Canonical body admission and shared payload comparison are independent of frame placement.
+"durability/artifact_canonical_payload.rs" = "contracts"
+
+# Originally funded canonical frames expose body admission separately from durable placement.
+
+# Candidate and settlement registrations are the publication owner’s native state.
+"runtime/state/runtime_state/publication_lifecycle.rs" = "publication"
+
+# Checkpoint canonical body admission is independent of its artifact envelope.
+
+
+# Shared named-map byte emission needs only its caller-owned buffer.
+
+# Pure canonical aspect evaluation and funded patch meaning before live stamping.
+
+# Mirror retention and telemetry are executed by their native owners.
+"storage/record_retention.rs" = "storage"
+"storage/changed_record_retention.rs" = "storage"
+"runtime/state/subsystems/services/instrumentation/merge_execution_counters.rs" = "branch"
+
+# Invariant diagnostic projection belongs to its analysis and emission owners.
+"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
+"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
+
+# Frozen schema executors and exact captured receiver pairs precede live installation.
+"runtime/state/subsystems/schema_contract_runtime" = "mutation"
+"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
+
+# The installed receiver binds the original fork, merge and preparation services.
+"runtime/merge_ownership_probe.rs" = "runtime"
+
+# Selected applied field deltas and their request-funded read kernels serve Branch and Indexes.
+
+# An exact pin reads the already selected immutable generations and reached rows.
+
+# Pin certification consumes only exact immutable rows and the original read budget.

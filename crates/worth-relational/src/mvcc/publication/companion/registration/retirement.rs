@@ -6,6 +6,7 @@ use super::{
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 
 #[cfg(test)]
+#[path = "retirement/tests.rs"]
 mod tests;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

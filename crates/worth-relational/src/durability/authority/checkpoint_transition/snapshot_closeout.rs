@@ -1,22 +1,17 @@
 //! Post-performance snapshot closeout preserves both commit identity and refusal.
-use super::RecoveredCheckpointTransitionError;
-use crate::runtime::RelationalRuntime;
-use crate::transactions::data::CommitResult;
+use crate::history::data::CommitId;
+use crate::visibility::RelationalSnapshotReleaseDenial;
 
-pub(super) fn release(
-    runtime: &RelationalRuntime,
-    committed: &CommitResult,
-) -> Result<(), RecoveredCheckpointTransitionError> {
-    runtime
-        .snapshots()
-        .release_snapshot(&committed.snapshot)
-        .map(|_| ())
-        .map_err(
-            |denial| RecoveredCheckpointTransitionError::SnapshotCloseoutFailed {
-                commit_id: committed.commit.commit_id,
-                denial,
-            },
-        )
+pub(super) struct SnapshotCloseoutFailure {
+    pub(super) commit_id: CommitId,
+    pub(super) denial: RelationalSnapshotReleaseDenial,
+}
+
+pub(super) fn closeout(
+    commit_id: CommitId,
+    release: Result<(), RelationalSnapshotReleaseDenial>,
+) -> Result<(), SnapshotCloseoutFailure> {
+    release.map_err(|denial| SnapshotCloseoutFailure { commit_id, denial })
 }
 
 #[cfg(test)]
@@ -25,7 +20,7 @@ mod tests {
     use crate::tests::support::*;
     #[test]
     fn an_already_closed_performed_snapshot_preserves_its_commit_and_typed_denial() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         let committed = create_entity_outcome(&execution, &runtime, "closeout-refusal");
@@ -33,8 +28,9 @@ mod tests {
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .unwrap();
-        let Err(RecoveredCheckpointTransitionError::SnapshotCloseoutFailed { commit_id, denial }) =
-            release(&runtime, &committed)
+        let release = runtime.snapshots().release_snapshot(&committed.snapshot);
+        let Err(SnapshotCloseoutFailure { commit_id, denial }) =
+            closeout(committed.commit.commit_id, release.map(|_| ()))
         else {
             panic!("snapshot closeout cannot be relabelled as a pre-effect refusal");
         };

@@ -4,12 +4,15 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::CommitId;
 use crate::history::data::RequiredOutputRoutePosition;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
-use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, ExecutionResourceLease, MapKernelContext};
 
-pub(crate) fn readmit_required_output_route(
+pub(crate) fn readmit_required_output_route<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
@@ -19,7 +22,7 @@ pub(crate) fn readmit_required_output_route(
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
                     if basis.descriptor().runtime_instance_id()
-                        != runtime.runtime.runtime_instance_id()
+                        != runtime.input.projection.runtime_identity
                         || !basis.is_current()
                     {
                         return Err(
@@ -48,7 +51,7 @@ pub(super) fn select_at(
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(1))?;

@@ -1,5 +1,7 @@
 //! Native association identity survives disposable provider material.
-use super::{ManagedIndexSourceAvailability as Availability, ManagedIndexSourceProgram as Program};
+use super::availability::ManagedIndexSourceAvailability as Availability;
+use super::denial::ManagedIndexSourcePreparationDenial;
+use super::program::ManagedIndexSourceProgram as Program;
 use crate::identity::data::EntityId;
 use std::{
     any::Any,
@@ -56,67 +58,13 @@ impl ManagedIndexBranchImage {
         &self,
         program: &Program,
         scope: EntityId,
-    ) -> Result<
-        Option<Arc<ManagedIndexPublishedSourceRoot>>,
-        super::ManagedIndexSourcePreparationDenial,
-    > {
+    ) -> Result<Option<Arc<ManagedIndexPublishedSourceRoot>>, ManagedIndexSourcePreparationDenial>
+    {
         let roots = self.directory();
         Ok(source_entry(&roots, program, scope)?.cloned())
     }
-    /// Original-paid retention of exact immutable historical material only.
-    pub(crate) fn retained_history_receipt(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        program: &Program,
-        scope: EntityId,
-        budget: &crate::validation::custom_rule::CustomPreparationBudget,
-    ) -> Result<
-        Option<super::opaque_custody::FundedSourceMaterialReceipt>,
-        super::ManagedIndexSourcePreparationDenial,
-    > {
-        let roots = self.directory();
-        let identity = &program.0.path.parts().identity;
-        let overflow = || {
-            crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-            )
-        };
-        // SourceKey compares declared identity strings before fixed-width scope.
-        // A comparison cannot inspect more than this supplied key's byte width.
-        let width = identity
-            .schema
-            .0
-            .len()
-            .checked_add(identity.name.len())
-            .and_then(|n| n.checked_add(size_of::<SourceKey>()))
-            .ok_or_else(overflow)?;
-        let height = 2 * (usize::BITS - roots.len().leading_zeros()) as usize + 2;
-        let work = height.checked_mul(width.max(1)).ok_or_else(overflow)?;
-        if !budget.try_visit(work) {
-            return Err(
-                crate::derived_relation::read_denial::DerivedRelationReadDenial::Definition(
-                    crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
-                )
-                .into(),
-            );
-        }
-        let Some(entry) = source_entry(&roots, program, scope)? else {
-            return Ok(None);
-        };
-        if entry.physical_availability() != Availability::Available {
-            return Ok(None);
-        }
-        let Some(payload) = entry.payload.as_ref() else {
-            return Ok(None);
-        };
-        // Borrow under the actual directory guard: no temporary strong owner
-        // can become last if another thread evicts immediately after unlock.
-        let receipt =
-            super::opaque_custody::FundedSourceMaterialReceipt::retain(execution, payload)
-                .map_err(
-                    crate::derived_relation::read_denial::DerivedRelationReadDenial::Request,
-                )?;
-        Ok(Some(receipt))
+    pub(super) fn history_directory(&self) -> HistorySourceDirectory<'_> {
+        HistorySourceDirectory(self.directory())
     }
 }
 impl ManagedIndexPublishedSourceRoot {
@@ -133,13 +81,31 @@ fn source_entry<'a>(
     roots: &'a Directory,
     program: &Program,
     scope: EntityId,
-) -> Result<
-    Option<&'a Arc<ManagedIndexPublishedSourceRoot>>,
-    super::ManagedIndexSourcePreparationDenial,
-> {
+) -> Result<Option<&'a Arc<ManagedIndexPublishedSourceRoot>>, ManagedIndexSourcePreparationDenial> {
     let entry = roots.get(&SourceKey::new(program, scope));
     if entry.is_some_and(|entry| entry.association.program != *program) {
-        return Err(super::ManagedIndexSourcePreparationDenial::ForeignSource);
+        return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
     }
     Ok(entry)
+}
+
+/// Borrow exact immutable source material under its original native directory guard.
+pub(super) struct HistorySourceDirectory<'a>(std::sync::MutexGuard<'a, Directory>);
+
+impl HistorySourceDirectory<'_> {
+    pub(super) fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub(super) fn selected(
+        &self,
+        program: &Program,
+        scope: EntityId,
+    ) -> Result<Option<&ManagedIndexPublishedSourceRoot>, ManagedIndexSourcePreparationDenial> {
+        Ok(source_entry(&self.0, program, scope)?.map(Arc::as_ref))
+    }
+
+    pub(super) const fn key_storage_bytes() -> usize {
+        size_of::<SourceKey>()
+    }
 }

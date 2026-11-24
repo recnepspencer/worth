@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use worth_foundational::FoundationalBranchTarget;
 
-use crate::branch::{RelationalBranchCellCheckpoint, RelationalBranchRoot};
+use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::CommitId;
 
 use super::HistorySubsystem;

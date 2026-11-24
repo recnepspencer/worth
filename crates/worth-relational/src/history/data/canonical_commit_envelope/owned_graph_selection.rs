@@ -1,6 +1,6 @@
 //! Descriptive provenance of a Native-prepared graph selection; never mutation authority.
 use super::*;
-use crate::branch::RelationalBranchBasisDescriptor;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
 use crate::identity::data::EntityId;
 use crate::identity::data::KindId;
 use crate::identity::data::RelationId;

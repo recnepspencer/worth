@@ -242,6 +242,3 @@ fn fields(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>, DurabilityError> {
     }
     Ok(result)
 }
-
-#[cfg(test)]
-mod tests;

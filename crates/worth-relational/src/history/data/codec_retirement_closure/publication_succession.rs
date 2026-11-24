@@ -100,7 +100,7 @@ pub(super) fn validate_route(
                             before,
                             &mut |commit| runtime.commit(commit),
                             &mut |version, context| runtime.version(version, context),
-                            runtime.runtime.history.catalog_len(),
+                            runtime.input.projection.history.catalog_len(),
                             &runtime.execution(),
                             context,
                         )
@@ -141,7 +141,7 @@ pub(super) fn validate_route(
                 before,
                 &mut |commit| runtime.commit(commit),
                 &mut |version, context| runtime.version(version, context),
-                runtime.runtime.history.catalog_len(),
+                runtime.input.projection.history.catalog_len(),
                 &runtime.execution(),
                 context,
             )? || relation.birth != old.birth
@@ -192,7 +192,7 @@ pub(super) fn validate_gap(
     schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let mut next = current.commit.parents.first().copied();
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound)?;
         let commit = next.ok_or("publication predecessor is outside canonical ancestry")?;

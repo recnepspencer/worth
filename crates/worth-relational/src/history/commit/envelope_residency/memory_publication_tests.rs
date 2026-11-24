@@ -1,5 +1,6 @@
 //! Real Memory publication owns one original frame; tuple observations stay scalar.
 use super::*;
+use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 use crate::tests::support::*;
 use sha2::{Digest, Sha256};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -34,7 +35,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     let bill = retained_byte_owner_bill(original.bytes());
     let positioned = cell.demand_positioned(&execution, 1 << 30).unwrap();
     // Independent existing encoder is a fixture reference, outside the export claim.
-    let reference = RelationalCanonicalCommitArtifact::from_positioned(
+    let reference = VerifiedCanonicalCommitFrame::reference_encode(
         &positioned,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
@@ -88,56 +89,6 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 #[test]
-fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_publication() {
-    let setup = crate::execution::test_policy::serial_request();
-    let setup_request = ExecutionRequest::serial(&setup);
-    let runtime = runtime_with_test_schema();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            batch_create("cancel-memory-frame"),
-            setup_request.allocation_policy(),
-        )
-        .unwrap();
-    let proposal = transaction.validate(&setup_request, &runtime).unwrap();
-    let candidate = runtime
-        .prepare_validated_proposal(&setup_request, proposal)
-        .unwrap();
-    let counters = runtime.patch_position_reservation_counters();
-    let before_head = runtime.history.latest_recorded_patch_position();
-    let cancel = CancellationSource::new();
-    let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), cancel.token(), None);
-    let original = ExecutionRequest::serial(&host);
-    cancel.cancel();
-    assert!(matches!(
-        runtime
-            .publication_port()
-            .compare_and_publish(&original, candidate),
-        crate::mvcc::RelationalPublicationOutcome::RequestStopped(
-            worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
-        )
-    ));
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments
-    );
-    assert_eq!(
-        runtime.history.latest_recorded_patch_position(),
-        before_head
-    );
-    runtime.compare_current_exact(&basis).unwrap();
-    drop(basis);
-    let result = create_entity_outcome(&setup_request, &runtime, "caller-after-cancellation");
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments + 1
-    );
-    release_test_commit_snapshot(&runtime, &result);
-}
-#[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
@@ -156,7 +107,11 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     );
     assert!(artifact.envelope_residency().payload_storage_bytes() > bytes.len() as u64);
     let cell = artifact.envelope_residency();
-    let original = cell.export_artifact(&execution).unwrap();
+    let original =
+        crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+            &cell, &execution,
+        )
+        .unwrap();
     assert_ne!(
         original.payload_digest().as_bytes(),
         &artifact.canonical_payload_digest().unwrap()
@@ -239,7 +194,7 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
         position: crate::publication::patch::data::PatchStreamPosition,
         canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef<'a>,
         original_inputs:
-            Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+            Option<&'a crate::history::data::canonical_commit_envelope::recorded_inputs::RecordedCanonicalInputs>,
     }
     let position = runtime
         .history

@@ -1,7 +1,9 @@
 //! The installed event recipe alone selects the predecessor and its step changes.
 use super::*;
 use crate::derived_relation::{
-    evaluation::SourceRead, DerivedRelationAdjacency, DerivedRelationReads, StructuralSource,
+    evaluation::SourceRead,
+    read::{DerivedRelationAdjacency, DerivedRelationReads},
+    structural::StructuralSource,
 };
 use crate::identity::data::KindId;
 use crate::validation::data::structural_read::StructuralRelationRecord;
@@ -61,7 +63,9 @@ impl ManagedIndexSourceScope<'_> {
             .get()
             .ok_or(Denial::RootUnavailable)?;
         image.admit_predecessor_material(
-            basis,
+            basis.identity().runtime_instance_id(),
+            basis.identity().branch_id(),
+            basis.descriptor().root_identity(),
             self.program,
             parent,
             predecessor,

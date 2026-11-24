@@ -1,10 +1,10 @@
 //! Correspondence and schema witnesses own typed rows and validation scratch.
 use super::*;
-use crate::merge::data::{
+use crate::merge::data::artifacts::{
     RelationalMergeCorrespondenceWitnessRow, RelationalSchemaReconciliationWitnessRow,
 };
 use crate::schema::data::{SchemaDiffAtom, SchemaStratum};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn request(
     value: BorrowedPayload<'_>,

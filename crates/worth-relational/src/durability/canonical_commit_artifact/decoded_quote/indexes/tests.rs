@@ -101,10 +101,11 @@ fn input() -> (Vec<u8>, Vec<u8>) {
         index_id: crate::indexes::data::DerivedIndexId(1),
         name: "index-\u{03bb}".into(),
         kind: crate::indexes::data::DerivedIndexKind::EntityField {
-            field_locator: crate::transactions::data::planned_single_field_locator(
-                worth_foundational::facade::AspectKey::new("aspect").unwrap(),
-                worth_foundational::facade::FieldKey::new("field").unwrap(),
-            ),
+            field_locator:
+                crate::transactions::data::aspect_field_patch::planned_single_field_locator(
+                    worth_foundational::facade::AspectKey::new("aspect").unwrap(),
+                    worth_foundational::facade::FieldKey::new("field").unwrap(),
+                ),
         },
         branch_scoped: true,
     };

@@ -1,5 +1,7 @@
 use crate::history::data::RelationalCommitReceipt;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::{
+    history::HistorySubsystem, visibility::VisibilitySubsystem,
+};
 use crate::snapshots::data::{SnapshotHandle, SnapshotReadPolicy};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -156,20 +158,20 @@ impl<T> RelationalRetainedCommitEntityProjection<T> {
 }
 
 pub(crate) fn open_retained_commit_snapshot(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
+    visibility: &VisibilitySubsystem,
+    runtime_instance_id: u64,
     expected_runtime_instance_id: u64,
     requested_commit: &RelationalCommitReceipt,
 ) -> Result<RelationalRetainedCommitSnapshot, RelationalRetainedCommitSnapshotDenial> {
-    if expected_runtime_instance_id != runtime.runtime_instance_id() {
+    if expected_runtime_instance_id != runtime_instance_id {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::ForeignRuntime,
             "retained commit snapshot belongs to a different runtime instance",
         ));
     }
 
-    let Some(committed) = runtime
-        .history()
-        .immutable_commit_receipt_for_version(requested_commit.version_id)
+    let Some(committed) = history.immutable_commit_receipt_for_version(requested_commit.version_id)
     else {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::VersionUnavailable,
@@ -190,9 +192,8 @@ pub(crate) fn open_retained_commit_snapshot(
         ));
     }
 
-    let Some((snapshot_id, binding)) = runtime
-        .visibility
-        .published_snapshot_binding_for_version(requested_commit.version_id)
+    let Some((snapshot_id, binding)) =
+        visibility.published_snapshot_binding_for_version(requested_commit.version_id)
     else {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::SnapshotNotRetained,
@@ -212,7 +213,7 @@ pub(crate) fn open_retained_commit_snapshot(
     Ok(RelationalRetainedCommitSnapshot {
         commit: canonical_commit.clone(),
         snapshot_handle: SnapshotHandle {
-            runtime_instance_id: runtime.runtime_instance_id(),
+            runtime_instance_id: runtime_instance_id,
             branch_id: binding.branch_id,
             snapshot_id,
             version_id: binding.version_id,

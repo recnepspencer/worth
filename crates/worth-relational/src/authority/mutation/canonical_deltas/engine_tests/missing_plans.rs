@@ -3,7 +3,8 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 
-use super::super::{canonical_delta_for_mutation, CanonicalDeltaError};
+use super::super::super::mutation_delta_dispatch::canonical_delta_for_mutation;
+use super::super::CanonicalDeltaError;
 use super::support::{empty_working_state, empty_workspace, mutation_config};
 
 #[test]

@@ -19,9 +19,11 @@ pub(super) fn capture(
     fields: Arc<crate::indexes::authority::maintenance::AppliedFieldImage>,
 ) -> Result<Arc<AppliedReadChanges>, TransactionCommitError> {
     if previous.is_some_and(|prior| prior.before_root != before_root) {
-        return Err(crate::mvcc::origin_denial(
-            "applied frontier has a foreign before root",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "applied frontier has a foreign before root",
+            ),
+        );
     }
     let memory = ExecutionMemoryReservation::reserve_in_scope(
         crate::authority::commit::pipeline::request_lease(execution),

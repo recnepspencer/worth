@@ -1,6 +1,6 @@
 use super::*;
-use crate::visibility::materialization::read_records::reader::VisibilityReadContext;
-use crate::visibility::snapshot_states::resolve_snapshot_basis;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_basis;
 
 impl VisibilityReadContext<'_> {
     /// Capture native immutable custody while the installed owner is borrowed.
@@ -39,8 +39,7 @@ impl VisibilityReadContext<'_> {
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
-        let (schema_version, _, _) =
-            super::super::snapshot_reads::query_schema_context_for_root(basis.root());
+        let (schema_version, _, _) = basis.projection_root().query_schema_context();
         let (basis, indexes) = self.pin_indexes(
             basis,
             schema_version,
@@ -74,7 +73,7 @@ impl VisibilityReadContext<'_> {
     /// snapshot query-plan door. The caller's request still checks liveness.
     pub fn pin_view_read_capability(
         &self,
-        view: &crate::runtime::VisibilityProjectionView,
+        view: &crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView,
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead<()>, RelationalPinnedReadAdmissionDenial> {
@@ -89,7 +88,7 @@ impl VisibilityReadContext<'_> {
 
     pub(crate) fn pin_view_read_capability_checked<E>(
         &self,
-        view: &crate::runtime::VisibilityProjectionView,
+        view: &crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView,
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
         validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
@@ -106,7 +105,7 @@ impl VisibilityReadContext<'_> {
             .retain_exact_basis()
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let (schema_version, descriptor_semantics_version, evidence_basis) =
-            super::super::snapshot_reads::query_schema_context_for_root(basis.root());
+            basis.projection_root().query_schema_context();
         let context = QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             // Observations carry an exact root, but no operational snapshot identity.

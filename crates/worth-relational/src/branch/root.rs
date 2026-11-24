@@ -22,6 +22,8 @@ mod candidate;
 mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
+#[path = "root_checkpoint_projection.rs"]
+mod checkpoint_projection;
 #[path = "root_commit_evidence.rs"]
 mod commit_evidence;
 #[path = "root_completeness.rs"]
@@ -31,10 +33,10 @@ mod empty;
 pub(crate) use commit_evidence::{
     RelationalOriginalRootCommitEvidence, RelationalRootCommitEvidence,
 };
+mod branch_court_doors_for_test;
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
-mod court_doors_for_test;
 #[path = "root_identity.rs"]
 mod identity;
 #[path = "root_output_publication.rs"]
@@ -44,6 +46,8 @@ mod owner_allocation_ledger;
 #[cfg(test)]
 #[path = "root_physical_linkage_tests.rs"]
 mod physical_linkage_tests;
+#[path = "root_projection.rs"]
+pub(crate) mod projection;
 #[path = "root_readmission.rs"]
 mod readmission;
 #[path = "root_region_access.rs"]
@@ -72,41 +76,7 @@ pub(crate) use schema::{
 };
 pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RelationalBranchRootCaptureDenial {
-    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
-    PublishedPartitionMissing(PartitionId),
-    DuplicateRegion(PartitionId),
-    InvalidAdjacencyProjection(PartitionId),
-    InvalidHistoryCoverage(PartitionId),
-    ContentEncoding(PartitionId),
-    AllocationAccountingOverflow(PartitionId),
-    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
-    SlotCountOverflow,
-    AllocationLayoutOverflow,
-    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
-    CanonicalEnvelopeMismatch,
-    CanonicalPayloadBacking(worth_execution::ExecutionAllocationDenial),
-    UnadmittedContent,
-    Content(crate::content::RelationalContentDenial),
-    StorageContentMismatch {
-        descriptor_root: [u8; 32],
-        reconstructed_root: [u8; 32],
-    },
-    SchemaRootMismatch {
-        descriptor_root: [u8; 32],
-        canonical_root: [u8; 32],
-    },
-    VisibilityCommitmentMismatch {
-        committed: [u8; 32],
-        reconstructed: [u8; 32],
-    },
-    UnresolvedContentSymbol(crate::symbols::data::Symbol),
-    RootIdentityExhausted,
-    SchemaAuthorityIdentityExhausted,
-    RegionIdentityExhausted,
-    ReachabilityIdentityExhausted,
-}
+pub(crate) use super::root_capture_denial::RelationalBranchRootCaptureDenial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) struct RelationalBranchRootPublicationCost {
@@ -168,7 +138,8 @@ pub(crate) struct RelationalBranchRoot {
         std::sync::OnceLock<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
-    pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
+    pub(crate) managed_source_image:
+        std::sync::OnceLock<crate::branch::projection_view::managed_source::ManagedSourceRootImage>,
 }
 
 #[path = "root_managed_fork.rs"]
@@ -214,7 +185,7 @@ impl RelationalBranchRoot {
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             execution,
@@ -226,12 +197,37 @@ impl RelationalBranchRoot {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
     pub(crate) fn retained_content(&self) -> &crate::content::ContentDirectory {
         &self.content
     }
+    pub(super) fn regions_for_projection(&self) -> &RelationalPersistentRegionSet {
+        &self.regions
+    }
+
+    pub(crate) fn project_snapshot(&self) -> projection::SnapshotProjectionRoot<'_> {
+        use self::projection::{SnapshotProjectionRoot, SnapshotProjectionSchema};
+
+        let (version, semantics, evidence) = self.query_schema_context();
+        SnapshotProjectionRoot {
+            regions: &self.regions,
+            id: self.id,
+            storage_version: self
+                .axes()
+                .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
+            schema: SnapshotProjectionSchema {
+                registry: self.schema_authority.registry(),
+                plans: self.schema_authority.aspect_plans(),
+                digest: self.schema_authority.authority_digest(),
+                version,
+                semantics,
+                evidence,
+            },
+        }
+    }
+
     pub(crate) const fn id(&self) -> u64 {
         self.id
     }

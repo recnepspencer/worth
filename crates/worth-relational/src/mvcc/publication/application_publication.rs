@@ -1,18 +1,20 @@
 mod publication_appendix;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 pub use publication_appendix::{
     RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
     RelationalPublicationBodySelection,
 };
-mod historical_selection;
+pub(crate) mod historical_selection;
 pub(crate) use historical_selection::require_graph_coverage;
 pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;
+mod authored_publication_reads;
+pub(crate) use authored_publication_reads::AuthoredPublicationReads;
 mod authored_restoration;
 mod authored_retirement;
 pub use authored_retirement::AuthoredOwnedMemberKind;
-mod native_transition_succession;
-mod restored_producer_prior;
+pub(crate) mod native_transition_succession;
+pub(crate) mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
 pub use restored_producer_prior::RelationalRestoredProducerPrior;
@@ -34,13 +36,13 @@ pub use coupled_assembly::{
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
-mod predecessor_basis;
+pub(crate) mod predecessor_basis;
 mod predecessor_observation;
 pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
 };
-mod producing_implementation;
-mod route_absence;
+pub(crate) mod producing_implementation;
+pub(crate) mod route_absence;
 mod scope_ownership;
 pub use completion::RequiredOutputPublication;
 pub(crate) use custody::prepare as prepare_publications;
@@ -68,7 +70,8 @@ pub struct RelationalInstalledApplicationPublicationAuthority {
     pub(crate) runtime_instance_id: u64,
     pub(crate) custom_invariant_generation: u64,
     pub(crate) schema_digest: [u8; 32],
-    pub(crate) source_scope_ownership: scope_ownership::InstalledSourceScopeOwnership,
+    pub(crate) source_scope_ownership:
+        crate::schema::installed_source_scopes::InstalledSourceScopeOwnership,
     pub(crate) authority: worth_proof::InstalledApplicationPublicationAuthority,
 }
 
@@ -146,7 +149,7 @@ pub(crate) use crate::transactions::data::outcomes::transaction_commit_error::or
 #[cfg(test)]
 pub(crate) fn native_birth_fixture(
     admission: worth_proof::AdmittedRequiredOutputPublication,
-    targets: Vec<crate::transactions::data::CreatedEntityRef>,
+    targets: Vec<crate::transactions::data::primitives::CreatedEntityRef>,
 ) -> RequiredOutputPublication {
     // Closed native fixtures declare a distinct family for each independent
     // producer; continuation fixtures retain the original family's meaning.
@@ -154,7 +157,7 @@ pub(crate) fn native_birth_fixture(
     RequiredOutputPublication::Birth {
         admission,
         absence: None,
-        meaning: native_meaning_fixture(&family),
+        meaning: output_meaning::native_meaning_fixture(&family),
         roles: targets
             .into_iter()
             .enumerate()
@@ -163,53 +166,14 @@ pub(crate) fn native_birth_fixture(
                 entity_name: "native-unit-output".into(),
                 kind: target.kind_id,
                 posture: RequiredOutputRolePosture::Create,
-                target: crate::transactions::data::EntityReference::Created(target),
+                target: crate::transactions::data::primitives::EntityReference::Created(target),
             })
             .collect(),
     }
 }
 
 #[cfg(test)]
-pub(crate) fn native_roles_fixture(
-    roles: &[(
-        crate::identity::data::EntityId,
-        crate::identity::data::KindId,
-    )],
-    posture: RequiredOutputRolePosture,
-) -> Vec<RequiredOutputRoleTarget> {
-    roles
-        .iter()
-        .enumerate()
-        .map(|(index, (id, kind))| RequiredOutputRoleTarget {
-            role: match posture {
-                RequiredOutputRolePosture::Create => format!("output-{index}"),
-                _ => format!("preserved-{index}"),
-            },
-            entity_name: "native-unit-output".into(),
-            kind: *kind,
-            posture,
-            target: crate::transactions::data::EntityReference::Existing(*id),
-        })
-        .collect()
-}
-
-#[cfg(test)]
-pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationMeaning {
-    RequiredOutputPublicationMeaning {
-        implementation: RequiredOutputProducingImplementation::from_checkpoint(
-            [0x11; 16], [0x22; 32],
-        )
-        .unwrap(),
-        family: family.to_owned(),
-        source_scope: crate::identity::data::EntityId::new(
-            crate::identity::data::PartitionId::main(),
-            0,
-            1,
-        ),
-        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
-        source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
-    }
-}
-#[cfg(test)]
 #[path = "application_publication_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(crate) use publication_appendix::prepare_publication_appendix;

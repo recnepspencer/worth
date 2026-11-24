@@ -1,10 +1,10 @@
 //! Resolve a selector from its actual slot lifecycle, never from missing metadata.
 use super::*;
-use crate::validation::engine::state_view::VisibleRelationMetadata;
+use crate::branch::structural_state::VisibleRelationMetadata;
 
 pub(super) fn relation(
-    view: &InvariantStateView<'_>,
-    after: Option<&InvariantStateView<'_>>,
+    view: &StructuralStateView<'_>,
+    after: Option<&StructuralStateView<'_>>,
     id: RelationId,
 ) -> Result<VisibleRelationMetadata, TransactionCommitError> {
     let subject = RecordRef::Relation(id);
@@ -39,8 +39,8 @@ pub(super) fn relation(
 }
 
 pub(super) fn entity_kind(
-    view: &InvariantStateView<'_>,
-    after: Option<&InvariantStateView<'_>>,
+    view: &StructuralStateView<'_>,
+    after: Option<&StructuralStateView<'_>>,
     id: EntityId,
 ) -> Result<Option<KindId>, TransactionCommitError> {
     let subject = RecordRef::Entity(id);
@@ -70,9 +70,9 @@ pub(super) fn entity_kind(
 }
 
 fn missing_restoration(record: RecordRef) -> TransactionCommitError {
-    use crate::transactions::data::{
-        CommitConflict, ConflictClass, MutationStateInconsistencyEvidence,
-    };
+    use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+    use crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence;
     let mut conflict = CommitConflict::new(ConflictClass::MutationStateInconsistency {
         detail: "unavailable custody selector requires its restored candidate metadata".into(),
         evidence: MutationStateInconsistencyEvidence::MaterializationTransition {

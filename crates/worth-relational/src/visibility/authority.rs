@@ -31,7 +31,13 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         expected_runtime_instance_id: u64,
         commit: &crate::history::data::RelationalCommitReceipt,
     ) -> Result<RelationalRetainedCommitSnapshot, RelationalRetainedCommitSnapshotDenial> {
-        open_retained_commit_snapshot(self.runtime, expected_runtime_instance_id, commit)
+        open_retained_commit_snapshot(
+            &self.runtime.history,
+            &self.runtime.visibility,
+            self.runtime.runtime_instance_id(),
+            expected_runtime_instance_id,
+            commit,
+        )
     }
 
     /// Projects one entity directly from an exact retained canonical commit and reports the

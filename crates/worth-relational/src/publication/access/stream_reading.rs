@@ -36,7 +36,7 @@ pub(crate) fn read_patch_stream(
         let envelope = match runtime.history.commit_artifact(reference.commit_id) {
             Some(artifact) => artifact.demand_envelope(execution, 1 << 30)
                 .map_err(|failure| read_refused(failure.into()))?.clone(),
-            None => crate::publication::retained_canonical_envelope_at_position(runtime, reference.position, None)
+            None => crate::publication::retained_canonical_envelope_at_position(&runtime.history, runtime.durability.canonical_coverage(), reference.position, None)
                 .map(|commit| commit.canonical_arc().clone())
                 .ok_or_else(|| PatchStreamReadError {
                     class: PatchStreamReadErrorClass::RetainedHistoryGap,

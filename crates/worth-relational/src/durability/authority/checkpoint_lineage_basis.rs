@@ -2,7 +2,7 @@
 use crate::durability::data::{
     DurabilityError, RecoveryFailureClass, RelationalCheckpointManifest,
 };
-use crate::history::RelationalCommitArtifact;
+use crate::history::commit::RelationalCommitArtifact;
 use crate::lineage::data::LineageCheckpointDigestBasis;
 use std::sync::Arc;
 

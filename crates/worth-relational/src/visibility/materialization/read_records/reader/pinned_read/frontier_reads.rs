@@ -1,6 +1,15 @@
 //! Frontier work uses one captured exact root and preserves caller interruption.
-use super::super::*;
-use super::*;
+use super::super::{
+    frontier_admission::BoundedFrontierReadStop,
+    projection_record_reader::ProjectionRecordReader,
+    truth_frontier_adjacency::{
+        BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded,
+    },
+    truth_frontier_field_equality::{
+        BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded,
+    },
+};
+use super::RelationalPinnedRead;
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::partition::AdjacencyDirection;
 use std::collections::BTreeSet;

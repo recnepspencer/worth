@@ -6,14 +6,17 @@ use crate::branch::materialization::RelationalMaterializationCustody;
 use crate::history::data::{
     canonical_commit_envelope::OutputOriginHistory, CanonicalRequiredOutputMaterialization as Event,
 };
-use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 
-pub(crate) fn prepare_materialization_continuity(
+pub(crate) fn prepare_materialization_continuity<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     custody: &RelationalMaterializationCustody,
     candidate: &WorkingState,

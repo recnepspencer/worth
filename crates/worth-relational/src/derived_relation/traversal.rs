@@ -1,9 +1,10 @@
 //! The existing Native frontier driver over genuine derived endpoint sources.
 use super::evaluation::{evaluate_position, member_work, SourceRead};
-use super::{
-    DerivedRelationData as Data, DerivedRelationDenial as DefinitionDenial,
-    DerivedRelationHandle as Handle, DerivedRelationReadDenial as Denial,
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
 };
+use crate::derived_relation::read::DerivedRelationData as Data;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::{NativeMemberDomain as Domain, NativeMemberKey as Member};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::structural_traversal::{walk as frontier, BreadthFirstRead};
@@ -14,7 +15,7 @@ pub(in crate::derived_relation) use complete::acquire;
 pub(crate) struct DerivedTraversal {
     pub(crate) members: BTreeSet<Member>,
     pub(crate) support: Vec<DerivedTraversalStep>,
-    pub(crate) steps: Vec<super::DerivedRelationWalkStep>,
+    pub(crate) steps: Vec<crate::derived_relation::proof::DerivedRelationWalkStep>,
 }
 
 pub(crate) struct DerivedTraversalStep {
@@ -103,7 +104,7 @@ struct DerivedFrontier<'a, Port> {
     undirected: bool,
     read: &'a mut Port,
     support: Vec<DerivedTraversalStep>,
-    steps: Vec<super::DerivedRelationWalkStep>,
+    steps: Vec<crate::derived_relation::proof::DerivedRelationWalkStep>,
     record_steps: bool,
 }
 impl<Port: SourceRead> BreadthFirstRead<Member> for DerivedFrontier<'_, Port> {
@@ -116,9 +117,9 @@ impl<Port: SourceRead> BreadthFirstRead<Member> for DerivedFrontier<'_, Port> {
             .retain(3 * size_of::<Member>() + 5 * size_of::<usize>())?;
         if self.record_steps {
             self.read
-                .retain(4 * size_of::<super::DerivedRelationWalkStep>())?;
+                .retain(4 * size_of::<crate::derived_relation::proof::DerivedRelationWalkStep>())?;
             self.steps
-                .push(super::DerivedRelationWalkStep { member, distance });
+                .push(crate::derived_relation::proof::DerivedRelationWalkStep { member, distance });
         }
         Ok(())
     }

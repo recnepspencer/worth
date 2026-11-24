@@ -1,114 +1,29 @@
 //! Read and authenticate the current private roster without historical members.
-use super::{checkpoint, corrupt, read_request::damaged, record};
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::CommitId,
-    identity::data::{EntityId, KindId, RelationId},
-    schema::data::CurrentPublicationStorage,
-    storage::overlay::CurrentPartitionAccess,
-    transactions::data::{RecordRef, TransactionCommitError},
-    validation::engine::state_view::InvariantStateView,
-};
+use super::read_request::{checkpoint, corrupt, damaged, request};
+use super::{record, record_payload as payload};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::structural_state::StructuralStateView;
+use crate::history::data::coordinates::CommitId;
+use crate::identity::data::RelationId;
+use crate::identity::data::{EntityId, KindId};
+use crate::schema::data::CurrentPublicationStorage;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
-mod coverage;
 mod entity;
 mod integrity;
 mod linked;
 mod selector;
 pub(crate) use linked::selectors as linked_selectors;
 pub(in crate::publication::ownership) mod anchors;
-pub(crate) mod payload;
 mod reach;
+pub(crate) mod roster;
+pub(crate) use roster::CurrentPublicationRoster;
+pub(super) use roster::{LinkRow, PublicationRow};
 mod source;
 pub(super) use reach::claims as publication_claims;
 use source::OwnershipReadSource;
-
-#[derive(Debug)]
-pub(crate) struct CurrentPublicationRoster {
-    pub(super) observed_position_work: u64,
-    pub(super) reached_relation_scopes: std::collections::BTreeSet<RelationId>,
-    pub(super) reached_scopes: std::collections::BTreeSet<EntityId>,
-    pub(super) reached_entities: std::collections::BTreeSet<EntityId>,
-    pub(super) reached_relations: std::collections::BTreeSet<RelationId>,
-    pub(crate) basis: Option<crate::branch::RelationalBranchBasisDescriptor>,
-    pub(in crate::publication::ownership) publications: Vec<PublicationRow>,
-    pub(in crate::publication::ownership) codec_retired: Vec<PublicationRow>,
-    pub(in crate::publication::ownership) catalogs: Vec<(EntityId, record::Catalog)>,
-    pub(in crate::publication::ownership) edges: Vec<(EntityId, record::Edge)>,
-    pub(crate) positions: Vec<crate::history::data::current_route_presence::PresenceRow>,
-    pub(in crate::publication::ownership) links: Vec<LinkRow>,
-    pub(in crate::publication::ownership) _funding: ExecutionMemoryReservation,
-}
-#[derive(Debug)]
-pub(crate) struct PublicationRow {
-    pub(in crate::publication::ownership) entity: EntityId,
-    pub(in crate::publication::ownership) value: record::Publication,
-    pub(super) digest: [u8; 32],
-}
-#[derive(Debug)]
-pub(in crate::publication::ownership) struct LinkRow {
-    pub(in crate::publication::ownership) id: RelationId,
-    pub(in crate::publication::ownership) kind: KindId,
-    pub(in crate::publication::ownership) publication: CommitId,
-    pub(in crate::publication::ownership) source: EntityId,
-    pub(in crate::publication::ownership) target: EntityId,
-}
-
-impl CurrentPublicationRoster {
-    pub(crate) fn covers(&self, records: &[RecordRef], scopes: &[RecordRef]) -> bool {
-        coverage::covers(
-            &self.reached_entities,
-            &self.reached_relations,
-            &self.reached_scopes,
-            &self.reached_relation_scopes,
-            records,
-            scopes,
-        )
-    }
-
-    /// A retired closure is not a published role grant. This coordinate only
-    /// names the custody owner that must prepare its historical material.
-    pub(crate) fn codec_retired_origins(
-        &self,
-    ) -> impl Iterator<Item = &std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>
-    {
-        self.codec_retired.iter().map(|row| &row.value.origin)
-    }
-
-    pub(crate) fn codec_retirement_subject(
-        &self,
-    ) -> Option<(
-        crate::history::data::CommitId,
-        crate::identity::data::EntityId,
-    )> {
-        self.codec_retired.first().map(|row| {
-            (
-                row.value.origin.commit.commit_id,
-                row.value.origin.meaning.source_scope,
-            )
-        })
-    }
-
-    pub(crate) fn coordinates(
-        &self,
-    ) -> impl ExactSizeIterator<
-        Item = (
-            &std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
-            usize,
-        ),
-    > {
-        self.publications
-            .iter()
-            .map(|row| (&row.value.origin, row.value.ordinal))
-    }
-    pub(crate) fn origins(
-        &self,
-    ) -> impl ExactSizeIterator<
-        Item = &std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
-    > {
-        self.publications.iter().map(|row| &row.value.origin)
-    }
-}
 
 pub(crate) fn read(
     execution: &ExecutionRequest<'_, '_>,
@@ -126,7 +41,7 @@ pub(crate) fn read_selected(
     basis: &AdmittedRelationalBranchBasis,
     records: &[RecordRef],
     scopes: &[RecordRef],
-    after: Option<&InvariantStateView<'_>>,
+    after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let roster = read_source(
@@ -144,7 +59,7 @@ pub(crate) fn read_selected(
 /// A candidate observation cannot be reused as admitted current publication custody.
 pub(crate) fn read_candidate(
     execution: &ExecutionRequest<'_, '_>,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     records: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
@@ -163,7 +78,7 @@ fn read_source(
     source: OwnershipReadSource<'_>,
     records: &[RecordRef],
     scopes: &[RecordRef],
-    after: Option<&InvariantStateView<'_>>,
+    after: Option<&StructuralStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let mut roster = empty(execution, source)?;
@@ -175,7 +90,7 @@ fn read_source(
     else {
         return Ok(roster);
     };
-    let view = InvariantStateView::new(
+    let view = StructuralStateView::new(
         root,
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
@@ -205,10 +120,10 @@ fn retain<T>(funding: &mut ExecutionMemoryReservation) -> Result<(), Transaction
         .bytes()
         .checked_add((4 * std::mem::size_of::<T>()) as u64)
         .ok_or_else(|| {
-            super::request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
     funding.resize(bytes).map_err(|cause| {
-        super::request(crate::execution::denial::lease_denial(
+        request(crate::execution::denial::lease_denial(
             worth_execution::LeaseDenial::MemoryExhausted(cause),
         ))
     })
@@ -220,8 +135,8 @@ fn empty(
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let funding = execution
         .in_scope(|lease| ExecutionMemoryReservation::reserve_in_scope(lease, 0))
-        .map_err(super::request)?
-        .map_err(|cause| super::request(crate::execution::denial::lease_denial(cause)))?;
+        .map_err(request)?
+        .map_err(|cause| request(crate::execution::denial::lease_denial(cause)))?;
     Ok(CurrentPublicationRoster {
         observed_position_work: 0,
         reached_relation_scopes: Default::default(),

@@ -1,6 +1,8 @@
 //! Carry one native companion read condition to the reserved publication image.
 use super::*;
-use crate::mvcc::{CompanionBranchCell, CompanionBranchImage, CompanionPreflightStop};
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
+use crate::mvcc::publication::companion::CompanionBranchCell;
+use crate::mvcc::publication::companion::CompanionBranchImage;
 
 impl PreparedRelationalCommitCandidate {
     /// Restrict this prepared candidate to the exact native image observed by

@@ -1,7 +1,7 @@
-use crate::capabilities::{DiagnosticArtifactSink, RuntimeConfigSource};
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsEntry,
 };
+use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use crate::validation::engine::InvariantExecutionResult;
 
 use super::diagnostic_projection::{
@@ -10,20 +10,15 @@ use super::diagnostic_projection::{
 };
 
 pub(crate) fn emit_preparation_diagnostics(
-    runtime: &(impl DiagnosticArtifactSink + RuntimeConfigSource),
+    diagnostics: PreparationDiagnostics<'_>,
     result: &InvariantExecutionResult,
 ) {
-    if runtime
-        .runtime_config()
-        .diagnostics
-        .profile
-        .should_capture_artifact(
-            DiagnosticsScope::Invariant,
-            DiagnosticsArtifactKind::DetailedTrace,
-        )
-    {
+    if diagnostics.profile.should_capture_artifact(
+        DiagnosticsScope::Invariant,
+        DiagnosticsArtifactKind::DetailedTrace,
+    ) {
         if let Some(proof_boundary) = result.proof_boundary_artifact() {
-            runtime.push_diagnostic_entries(
+            diagnostics.emit(
                 DiagnosticsScope::Invariant,
                 DiagnosticsArtifactKind::DetailedTrace,
                 vec![RelationalDiagnosticsEntry::new(
@@ -42,7 +37,7 @@ pub(crate) fn emit_preparation_diagnostics(
             .filter_map(custom_invariant_trace_entry)
             .collect::<Vec<_>>();
         if !custom_trace_entries.is_empty() {
-            runtime.push_diagnostic_entries(
+            diagnostics.emit(
                 DiagnosticsScope::Invariant,
                 DiagnosticsArtifactKind::DetailedTrace,
                 custom_trace_entries,
@@ -74,7 +69,7 @@ pub(crate) fn emit_preparation_diagnostics(
         ));
     }
 
-    runtime.push_diagnostic_entries(
+    diagnostics.emit(
         DiagnosticsScope::Invariant,
         DiagnosticsArtifactKind::DetailedTrace,
         entries,
@@ -82,7 +77,7 @@ pub(crate) fn emit_preparation_diagnostics(
 }
 
 fn custom_invariant_trace_entry(
-    result: &crate::validation::data::InvariantCheckResult,
+    result: &crate::validation::engine::result::InvariantCheckResult,
 ) -> Option<RelationalDiagnosticsEntry> {
     let artifact =
         crate::validation::engine::InvariantExecutionResult::custom_trace_artifact(result)?;

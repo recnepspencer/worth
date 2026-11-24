@@ -1,6 +1,6 @@
 //! Domain-separated commitments to actual projected bytes under the common cut.
 use super::{
-    wire::AdmissionRowKey, CheckpointAdmissionMeaning,
+    read_image::AdmissionRowKey, CheckpointAdmissionMeaning,
     RelationalCheckpointAdmissionRefusal as Refusal,
 };
 use sha2::{Digest, Sha256};

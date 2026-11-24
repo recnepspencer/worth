@@ -6,7 +6,9 @@ impl CommitPublication {
     /// their actual writes. This is descriptive receipt custody, never a grant.
     pub fn authored_source_effects(
         &self,
-    ) -> Option<&crate::mvcc::RelationalCoupledAuthoredSourceEffects> {
+    ) -> Option<
+        &crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects,
+    > {
         self.source_effects.as_ref()
     }
 }

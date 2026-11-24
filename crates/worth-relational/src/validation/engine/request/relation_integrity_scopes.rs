@@ -30,7 +30,7 @@ pub(super) fn prepare_relation_integrity_scopes(
     whole_home_target: bool,
     state: RelationScopeState<'_>,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
-    performance: &crate::performance::PerformanceAccess<'_>,
+    performance: &crate::validation::engine::metrics::InvariantMetrics<'_>,
     control: &InvariantPreparationControl<'_, '_>,
     admit: &dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
 ) -> Result<Option<PreparedRelationIntegrityScopes>, TransactionCommitError> {
@@ -76,7 +76,7 @@ struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> 
     partitions: &'access dyn CurrentPartitionAccess,
     state_view: crate::validation::engine::state_view::InvariantStateView<'access>,
     predecessor: crate::validation::engine::state_view::InvariantStateView<'access>,
-    performance: &'access crate::performance::PerformanceAccess<'runtime>,
+    performance: &'access crate::validation::engine::metrics::InvariantMetrics<'runtime>,
     control: &'access InvariantPreparationControl<'scope, 'authority>,
     admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
     scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>,
@@ -98,7 +98,7 @@ impl<'access, 'runtime, 'scope, 'authority>
     fn new(
         state: RelationScopeState<'access>,
         requirements: BTreeMap<KindId, RelationScopeRequirement>,
-        performance: &'access crate::performance::PerformanceAccess<'runtime>,
+        performance: &'access crate::validation::engine::metrics::InvariantMetrics<'runtime>,
         control: &'access InvariantPreparationControl<'scope, 'authority>,
         admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
     ) -> Self {

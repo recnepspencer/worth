@@ -6,9 +6,11 @@ use super::{
     ManagedIndexSourceAvailability as Availability, ManagedIndexSourcePreparationDenial as Denial,
 };
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
+use crate::authority::commit::pipeline::candidate_invariant_inputs::CandidateInvariantInputs;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial;
-use crate::runtime::RelationalPreparationRuntime;
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::OverlayStateView;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
@@ -18,31 +20,43 @@ use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
-mod context;
-mod discovery;
+pub(super) mod context;
+pub(super) mod discovery;
 pub(super) mod stage;
-pub(in crate::validation::candidate_source) use context::SourcePreparationContext;
-pub(in crate::validation::candidate_source) use discovery::DiscoveredSource;
+use context::SourcePreparationContext;
+use discovery::{source_record_is_relevant, DiscoveredSource};
+
+/// The selected invariant and publication owners for the real Source preparation.
+pub(crate) struct SourcePreparationInputs<'a> {
+    pub(crate) validation: CandidateInvariantInputs<'a>,
+    pub(crate) publication: RelationalRuntimePublicationBinding,
+    pub(crate) symbols: &'a RuntimeSymbolTable,
+}
 
 impl AppliedMutationDraft {
-    pub(crate) fn prepare_managed_sources(
+    pub(crate) fn prepare_managed_sources<'a>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        inputs: impl Into<SourcePreparationInputs<'a>>,
         selected: SelectedRelationalBranchRead<'_>,
         proposal: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
         authored: Option<&crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
-        crate::execution::transaction_stage(&execution, runtime.commit_work_budget.as_ref(), || {
-            self.prepare_managed_sources_in_original_stage(
-                execution, runtime, selected, proposal, authored,
-            )
-        })
+        let inputs = inputs.into();
+        crate::execution::transaction_stage(
+            &execution,
+            inputs.validation.commit_work_budget,
+            || {
+                self.prepare_managed_sources_in_original_stage(
+                    execution, &inputs, selected, proposal, authored,
+                )
+            },
+        )
     }
     fn prepare_managed_sources_in_original_stage(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        inputs: &SourcePreparationInputs<'_>,
         selected: SelectedRelationalBranchRead<'_>,
         proposal: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
         authored: Option<&crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan>,
@@ -74,9 +88,16 @@ impl AppliedMutationDraft {
             })
             .transpose()?;
         let context = SourcePreparationContext {
-            draft: self,
+            state: self.state(),
+            outcome: &self.outcome,
+            allocations: self.identities.records.canonical(),
+            interpretation: &self.source_interpretation,
+            registry: &inputs
+                .validation
+                .schema_contract_runtime
+                .custom_invariant_registries,
+            home_target: inputs.validation.home_target,
             execution,
-            runtime,
             selected,
             proposal,
             records: full_records
@@ -85,24 +106,24 @@ impl AppliedMutationDraft {
         };
         let groups = context.affected_groups();
         let history_work = authored.is_some()
-            && runtime
-                .schema_contract_runtime
-                .custom_invariant_registries
-                .source_history
-                .has_programs()
+            && context.registry.source_history.has_programs()
             && self.source_interpretation.materialization_mode().is_none();
         let result = if groups.is_empty() && !history_work {
             execution
                 .check_live()
                 .map_err(|cause| Denial::from(DerivedRelationReadDenial::Request(cause.into())))
                 .and_then(|()| install_history(self, None))
-                .and_then(|()| unaffected(self))
+                .and_then(|()| unaffected(&self.source_interpretation))
         } else {
             stage::prepare(execution, |budget| {
-                let (history, mut discovered) =
-                    super::authored_history::preparation::prepare(&context, budget, authored)?;
+                let (history, mut discovered) = super::authored_history::preparation::prepare(
+                    &context,
+                    budget,
+                    authored,
+                    || inputs.validation.select(selected.selected().state()),
+                )?;
                 install_history(self, history)?;
-                prepare(&context, budget, &groups, &mut discovered)
+                prepare(&context, inputs, budget, &groups, &mut discovered)
             })
         };
         if result.is_ok() {
@@ -128,9 +149,8 @@ fn install_history(
         .set(history)
         .map_err(|_| Denial::IncompletePreparation)
 }
-fn unaffected(draft: &AppliedMutationDraft) -> Result<(), Denial> {
-    draft
-        .source_interpretation
+fn unaffected(interpretation: &super::NativeManagedSourceInterpretation) -> Result<(), Denial> {
+    interpretation
         .prepared
         .set(PreparedManagedIndexSources {
             registration_generation: 0,
@@ -140,29 +160,33 @@ fn unaffected(draft: &AppliedMutationDraft) -> Result<(), Denial> {
 }
 fn prepare(
     context: &SourcePreparationContext<'_>,
+    inputs: &SourcePreparationInputs<'_>,
     budget: &crate::validation::custom_rule::CustomPreparationBudget,
     groups: &[&SourcePreparationGroup],
     discovered: &mut Vec<DiscoveredSource<'_>>,
 ) -> Result<(), Denial> {
     let SourcePreparationContext {
-        draft,
+        state,
+        outcome,
+        interpretation,
         execution,
-        runtime,
         selected,
         proposal,
         records,
+        home_target,
+        ..
     } = *context;
     execution
         .check_live()
         .map_err(|cause| DerivedRelationReadDenial::Request(cause.into()))?;
     if groups.is_empty() {
-        return unaffected(draft);
+        return unaffected(interpretation);
     }
     let before = InvariantStateView::new(&selected, selected.version_id());
-    let overlay = OverlayStateView::new(&selected, draft.state());
+    let overlay = OverlayStateView::new(&selected, state);
     let after = InvariantStateView::new(&overlay, proposal.proposed_version_id());
-    let publication = runtime.publication_binding();
-    let epoch = publication
+    let epoch = inputs
+        .publication
         .companion_epoch()
         .map_err(Denial::Registration)?;
     let (generation, participant) = epoch
@@ -170,23 +194,28 @@ fn prepare(
         .map_err(Denial::Registration)?
         .ok_or(Denial::MissingParticipant)?;
     // A private replay mode is not live suspension/rematerialization custody.
-    if draft.source_interpretation.materialization_mode().is_some()
-        && draft
-            .source_interpretation
-            .materialization_source()
-            .is_none()
+    if interpretation.materialization_mode().is_some()
+        && interpretation.materialization_source().is_none()
     {
         return Err(Denial::ForeignSource);
     }
-    let runtime_view =
-        InvariantRuntimeView::from_preparation_for_state(runtime, selected.selected().state());
-    let correspondence =
-        super::correspondence::prepare(draft, execution, runtime, &after, generation)?;
+    let runtime_view = inputs.validation.select(selected.selected().state());
+    let correspondence = super::correspondence::prepare(
+        super::correspondence::AppliedCorrespondenceInputs {
+            owner: interpretation,
+            changed_records: &outcome.effect.publication.changed_records,
+            symbols: inputs.symbols,
+        },
+        execution,
+        &after,
+        generation,
+        |commit| inputs.validation.history.canonical_stream_position(commit),
+    )?;
     let observation = InvariantObservation::applied_with_proposal(
-        OverlayStateView::new(&selected, draft.state()),
+        OverlayStateView::new(&selected, state),
         selected.version_id(),
         Some(proposal.clone()),
-        &draft.outcome.created_entities,
+        &outcome.created_entities,
     );
     let availability = if observation.custom_uses_suspension_source() {
         Availability::Unavailable
@@ -224,7 +253,7 @@ fn prepare(
                         );
                         let source_records =
                             changed_source_records(program, records, &before, &after);
-                        let closure = if runtime.home_target.is_some() {
+                        let closure = if home_target {
                             super::scope_closure::discover_home_target(
                                 runtime_view.selected_registry.registry(),
                                 program,
@@ -236,7 +265,7 @@ fn prepare(
                                 runtime_view.selected_registry.registry(),
                                 program,
                                 &source_records,
-                                &draft.outcome.effect.adjacency.deltas,
+                                &outcome.effect.adjacency.deltas,
                                 &physical.before,
                                 &physical.after,
                             )?
@@ -290,16 +319,15 @@ fn prepare(
             &work,
         );
         let source = ManagedIndexSourcePreparation {
-            interpretation: &draft.source_interpretation,
+            interpretation,
             correspondence: correspondence.as_ref(),
             program,
             closure: &closure,
             views: logical,
             availability,
-            basis: draft.source_interpretation.physical_basis(),
-            committed_available: runtime.home_target.is_none()
-                && draft
-                    .source_interpretation
+            basis: interpretation.physical_basis(),
+            committed_available: !home_target
+                && interpretation
                     .physical_basis()
                     .materialization_is_complete(),
         };
@@ -313,8 +341,7 @@ fn prepare(
             _work: work,
         });
     }
-    draft
-        .source_interpretation
+    interpretation
         .prepared
         .set(PreparedManagedIndexSources {
             registration_generation: generation,
@@ -345,26 +372,6 @@ fn changed_source_records(
         .filter(|record| source_record_is_relevant(program, record, before, after))
         .cloned()
         .collect()
-}
-fn source_record_is_relevant(
-    program: &super::ManagedIndexSourceProgram,
-    record: &RecordRef,
-    before: &InvariantStateView<'_>,
-    after: &InvariantStateView<'_>,
-) -> bool {
-    let RecordRef::Entity(id) = record else {
-        return false;
-    };
-    [before, after]
-        .into_iter()
-        .filter_map(|view| view.entity_metadata(*id))
-        .any(|metadata| {
-            metadata.kind_id == program.scope_kind()
-                || metadata.kind_id == program.row_kind()
-                || program
-                    .physical_sources()
-                    .any(|&(_, from, to)| metadata.kind_id == from || metadata.kind_id == to)
-        })
 }
 
 fn views<'a>(

@@ -12,9 +12,8 @@ use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMe
 /// An admitted directory intrinsically retains its complete semantic basis.
 #[derive(Debug)]
 pub(crate) struct RelationalCheckpointDirectory {
-    pub(crate) admission_owner: std::sync::OnceLock<
-        std::sync::Weak<crate::durability::checkpoint_admission::AdmissionCustody>,
-    >,
+    pub(crate) admission_owner:
+        std::sync::OnceLock<crate::durability::checkpoint_admission::DirectoryAdmissionIdentity>,
     pub(crate) admission_image:
         Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     pub(crate) source_schemas: std::sync::OnceLock<
@@ -89,12 +88,44 @@ impl RelationalCheckpointDirectory {
 }
 
 impl RelationalCheckpointDirectory {
+    pub(crate) fn readmit_canonical_member(
+        &self,
+        entry: &crate::history::commit::RelationalCommitIndexEntry,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<crate::history::data::PositionedCanonicalCommit, super::RelationalRecoveryStop>
+    {
+        crate::durability::canonical_commit_artifact::retained_frame_reads::selected_artifact(
+            entry, self, execution, limit,
+        )?
+        .readmit_indexed(entry, execution)
+    }
+
     pub(crate) fn symbol_member_custody(
         &self,
     ) -> crate::durability::medium::NativeSourceMemberState {
         crate::durability::medium::NativeSourceMemberState::new(
             self.source.clone(),
             self.member_basis(),
+        )
+    }
+}
+
+impl TryFrom<&Arc<RelationalCheckpointDirectory>>
+    for crate::runtime::state::subsystems::lineage::PreparedLineageColdPages
+{
+    type Error = crate::storage::data::RelationalStorageUnavailable;
+
+    fn try_from(directory: &Arc<RelationalCheckpointDirectory>) -> Result<Self, Self::Error> {
+        Self::prepare(
+            &directory.manifest.lineage,
+            &directory.manifest.lineage_events,
+            &directory.source,
+            directory
+                .manifest
+                .commits
+                .iter()
+                .map(|entry| entry.commit.clone()),
         )
     }
 }

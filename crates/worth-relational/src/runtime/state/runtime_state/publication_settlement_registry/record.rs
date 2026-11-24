@@ -2,31 +2,30 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::history::data::{CommitId, PositionedCanonicalCommit, RelationalCommitReceipt};
-use crate::transactions::data::CommitResult;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Precomputed settlement input captured before the publication critical
 /// section. Holding it here is what lets a lost performed witness stay
 /// recoverable: the runtime, not the caller, owns the remaining work.
 pub(crate) struct ReservedRelationalSettlement {
     pub(crate) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
-    pub(crate) published_snapshot_basis:
-        crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(crate) control: crate::runtime::RelationalOperationControl,
-    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(crate) published_snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
+    pub(crate) control: crate::runtime::operation_control::RelationalOperationControl,
+    pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
 /// The same input after the branch reference moved, authorized against the
 /// exact positioned canonical commit that movement produced.
 pub(crate) struct PerformedRelationalSettlement {
     pub(crate) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
-    pub(crate) published_snapshot_basis:
-        crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(crate) control: crate::runtime::RelationalOperationControl,
+    pub(crate) published_snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
+    pub(crate) control: crate::runtime::operation_control::RelationalOperationControl,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
-    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     pub(crate) settlement_retention:
         crate::history::retention::RelationalPerformedSettlementObligation,
-    pub(crate) late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+    pub(crate) late_interruption:
+        Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>,
 }
 
 /// The one terminal answer for a settled commit identity. Every later caller
@@ -43,7 +42,8 @@ pub(crate) struct PerformedRelationalSettlement {
 pub(crate) struct SettledRelationalSettlement {
     pub(crate) receipt: RelationalCommitReceipt,
     pub(crate) result: Option<Arc<CommitResult>>,
-    pub(crate) closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+    pub(crate) closeout:
+        Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
 }
 
 enum PendingRelationalSettlementState {
@@ -147,7 +147,9 @@ impl PendingRelationalPublicationSettlement {
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
         settlement_retention: crate::history::retention::RelationalPerformedSettlementObligation,
-        late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        late_interruption: Option<
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
     ) -> bool {
         let mut state = self.state();
         if !matches!(&*state, PendingRelationalSettlementState::Reserved(_)) {
@@ -215,7 +217,7 @@ impl PendingRelationalPublicationSettlement {
         &self,
         receipt: RelationalCommitReceipt,
         result: Option<Arc<CommitResult>>,
-        closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+        closeout: Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
     ) {
         *self.state() =
             PendingRelationalSettlementState::Settled(Box::new(SettledRelationalSettlement {

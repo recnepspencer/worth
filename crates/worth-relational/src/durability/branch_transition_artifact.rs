@@ -38,7 +38,7 @@ pub use retained_export::RelationalBranchTransitionArtifacts;
 use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::publication::patch::data::PatchStreamPosition;
 use frame::BranchTransitionArtifactHeader;
 

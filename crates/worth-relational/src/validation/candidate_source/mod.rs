@@ -1,4 +1,6 @@
 //! Native-owned candidate Source interpretation and its retained materialization basis.
+pub(crate) mod availability;
+pub use availability::ManagedIndexSourceAvailability;
 mod context;
 mod correspondence;
 pub(crate) mod denial;
@@ -20,12 +22,11 @@ mod projection;
 pub(crate) use projection::selected_rows;
 pub(crate) mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
-mod publication;
+pub(crate) mod publication;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
+pub(crate) mod history_material;
 pub(crate) mod image;
-pub(crate) use image::ManagedIndexSourceAssociation;
 pub use image::ManagedIndexSourceCacheRetirement;
-pub(crate) use image::PublicCacheEntry;
 pub use image::{ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot};
 mod scope_closure;
 mod source_changes;
@@ -36,13 +37,14 @@ pub(crate) use observation::{
 };
 pub use observation::{ManagedIndexSourceRead, PreparedManagedIndexSourceRead};
 pub(crate) use preparation::SourceViews;
-mod applied;
+pub(crate) mod applied;
+mod applied_affinity;
 mod applied_read;
 pub use applied_read::{ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead};
 pub(crate) mod authored_history;
 pub(crate) mod routing;
 pub use preparation::{
-    ManagedIndexSourceAvailability, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
+    ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
     ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows, ManagedIndexSourceScope,
     PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceOccurrence,
     PreparedManagedIndexSourceRoot, PreparedManagedIndexSourceRowRead,
@@ -53,5 +55,6 @@ pub use program::{
 pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationRead};
 
 pub(crate) use interpretation::{
-    NativeManagedSourceInterpretation, NativeMaterializationSource, NativeSourceRestorationOrigin,
+    ManagedSourceIssueInputs, NativeManagedSourceInterpretation, NativeMaterializationSource,
+    NativeSourceRestorationOrigin,
 };

@@ -6,12 +6,16 @@ use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
     pub(super) admitted: AdmittedCommitState,
-    pub(super) public_structural_summary: crate::transactions::data::CommitStructuralSummary,
-    pub(super) proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
+    pub(super) public_structural_summary:
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
+    pub(super) proposal_identity:
+        crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
 }
 
 impl PreparedCommitState {
-    pub(super) fn selected_branch_state(&self) -> &crate::branch::SelectedRelationalBranchState {
+    pub(super) fn selected_branch_state(
+        &self,
+    ) -> &crate::branch::root_selection::SelectedRelationalBranchState {
         self.admitted.selected_branch_state()
     }
     pub(super) fn version_id(&self) -> crate::identity::data::VersionId {
@@ -31,7 +35,7 @@ impl PreparedCommitExecution {
         &mut AdmittedCommitState,
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
-        &crate::mvcc::RelationalMutationProposalIdentity,
+        &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
         Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
@@ -46,10 +50,6 @@ impl PreparedCommitExecution {
         )
     }
 
-    pub(super) fn candidate_symbols(&self) -> &crate::runtime::PendingSymbolMeanings {
-        self.mutation.candidate_symbols()
-    }
-
     pub(super) fn into_parts(self) -> (PreparedCommitState, AppliedMutationDraft) {
         (self.state, self.mutation)
     }
@@ -57,11 +57,19 @@ impl PreparedCommitExecution {
 
 pub(super) fn prepare_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+    descriptor_semantics: crate::schema::data::DescriptorSemanticsVersion,
+    merge_draft: impl FnOnce(
+        &worth_execution::ExecutionRequest<'_, '_>,
+        &AdmittedCommitState,
+    ) -> Result<
+        super::merge_draft::AcceptedMergeDraft,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    >,
     admitted: AdmittedCommitExecution,
 ) -> Result<
     CommitPhaseBacking<PreparedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.
@@ -77,7 +85,7 @@ pub(super) fn prepare_commit_execution(
         } = match prepared_scope {
             Some(scope) => scope,
             None => {
-                let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;
+                let draft = merge_draft(execution, &admitted)?;
                 admitted.accept_merge_draft(draft)
             }
         };
@@ -85,16 +93,10 @@ pub(super) fn prepare_commit_execution(
             prepared_timing.draft_structural_summary_micros;
         admitted.phase_timing_mut().draft_working_state_clone_micros =
             prepared_timing.draft_working_state_clone_micros;
-        let public_structural_summary = structural_summary.public_summary(
-            runtime
-                .config
-                .schema
-                .descriptor_semantics_policy
-                .current_write_version(),
-        );
+        let public_structural_summary = structural_summary.public_summary(descriptor_semantics);
         let (commit_log, phase_timing) = admitted.commit_phase_state();
         record_draft_preparation_phase(
-            runtime,
+            instrumentation,
             commit_log,
             phase_timing,
             &working_state,

@@ -1,4 +1,5 @@
 //! Immutable index handles and the resident basis used to verify their rows.
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::{
     identity::data::VersionId,
     indexes::data::{DerivedIndexGeneration, DerivedIndexId},
@@ -6,7 +7,7 @@ use crate::{
     snapshots::data::SnapshotHandle,
     visibility::{
         materialization::read_records::projection::VisibilityProjectionView,
-        snapshot_states::{ResidentVisibilitySnapshotBasis, VisibilitySnapshotBasis},
+        snapshot_states::ResidentVisibilitySnapshotBasis,
     },
 };
 use std::{collections::BTreeMap, sync::Arc};

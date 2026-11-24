@@ -3,6 +3,7 @@ mod construction;
 mod filtering;
 mod preparation_control;
 mod relation_integrity_scopes;
+pub(crate) mod relation_law_sources;
 mod scope_admission;
 mod scope_types;
 #[cfg(test)]
@@ -23,7 +24,7 @@ use crate::validation::data::rules::InvariantRule;
 use super::observation::InvariantObservation;
 use super::policy::RelationalInvariantRuntime;
 pub(crate) use admission::InvariantRegistrationAdmission;
-pub(crate) use preparation_control::InvariantPreparationControl;
+pub(crate) use preparation_control::{InvariantPreparationControl, InvariantPreparationSource};
 pub(crate) use scope_types::{
     PlannedRelationEdge, PreparedRelationEndpointKey, PreparedRelationIntegrityScope,
     PreparedRelationIntegrityScopes, PreparedRelationPairKey, PreparedVisibleRelationEdge,

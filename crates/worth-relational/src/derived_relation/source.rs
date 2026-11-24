@@ -1,9 +1,12 @@
 //! One closed source-shape acquisition for invariant and pinned views.
-use super::{
-    evaluation::SourceRead, DerivedRelationData, DerivedRelationDenial as DefinitionDenial,
-    DerivedRelationHandle, DerivedRelationReadDenial, DerivedRelationReadShape as Shape,
-    DerivedRelationWalkStep,
+use super::evaluation::SourceRead;
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle,
 };
+use crate::derived_relation::proof::DerivedRelationWalkStep;
+use crate::derived_relation::read::DerivedRelationData;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::derived_relation::read_shape::DerivedRelationReadShape as Shape;
 use crate::{graph_member::NativeMemberKey, schema::data::RelationalSchemaRegistry};
 
 pub(super) fn acquire(

@@ -1,11 +1,11 @@
 //! A live owner's edit retains member lifetime custody without becoming that member.
 use super::*;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Bind the admitted edit source to an already-issued member closure.
     /// Retirement/restoration evidence and mandatory linked writers stay exact;
     /// new operand routes use the edit's ordinary current-owner admission.
-    pub fn readmit_member_edit_coupled_owners(
+    pub(crate) fn readmit_member_edit_coupled_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,

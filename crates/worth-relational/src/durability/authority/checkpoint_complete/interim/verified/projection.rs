@@ -11,8 +11,8 @@ use worth_proof::NativeCheckpointOriginalsVerified;
 impl FrozenMemoryOriginals {
     pub(in crate::durability::authority::checkpoint_complete::interim) fn project(
         artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
-        current: crate::branch::CheckpointBranchMetadata,
-        owner: &Weak<crate::runtime::RelationalRuntimeState>,
+        current: crate::branch::registry::CheckpointBranchMetadata,
+        owner: &crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin,
         manifest: &RelationalCheckpointManifest,
         originals: ReadmittedMemoryOriginals,
         roots: &CapturedRoots,
@@ -43,12 +43,8 @@ impl FrozenMemoryOriginals {
             {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
-            let carrier = frame
-                .inputs
-                .result_schema
-                .descriptive_image_for_request(request)
-                .map_err(stop)?
-                .carrier_digest();
+            crate::execution::check_request(request).map_err(Denial::Request)?;
+            let carrier = frame.inputs.result_schema.carrier_digest();
             rows.push(admission_projection::row::encode_original(
                 &frame.envelope,
                 entry.position,

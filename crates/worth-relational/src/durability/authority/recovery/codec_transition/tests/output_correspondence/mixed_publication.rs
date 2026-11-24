@@ -1,5 +1,8 @@
 //! A genuine optional survivor cannot disappear from described output membership.
 use super::{super::fixture::*, staged};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture, RequiredOutputRolePosture,
+};
 use crate::{
     identity::data::{EntityId, KindId, PartitionId},
     mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
@@ -68,7 +71,7 @@ fn publish(
 }
 #[test]
 fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publication() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed(1);
     let (owner, installed) = receipt.clone().issue_application_publication_owner();
@@ -93,16 +96,16 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
             &selected,
             "native.fixture.mixed",
             &[11; 32],
-            &crate::mvcc::native_meaning_fixture("native.fixture.mixed"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_fixture("native.fixture.mixed"),
+            &native_roles_fixture(
                 &[(a, KindId(3)), (b, KindId(1))],
-                crate::mvcc::RequiredOutputRolePosture::Create,
+                RequiredOutputRolePosture::Create,
             ),
         )
         .unwrap();
-    let original_roles = crate::mvcc::native_roles_fixture(
+    let original_roles = native_roles_fixture(
         &[(a, KindId(3)), (b, KindId(1))],
-        crate::mvcc::RequiredOutputRolePosture::Create,
+        RequiredOutputRolePosture::Create,
     );
     for role in &original_roles {
         let denied = target
@@ -113,7 +116,7 @@ fn companion_optional_survivor_omission_cannot_disguise_a_genuine_mixed_publicat
                 &selected,
                 "native.fixture.mixed",
                 &[11; 32],
-                &crate::mvcc::native_meaning_fixture("native.fixture.mixed"),
+                &native_meaning_fixture("native.fixture.mixed"),
                 std::slice::from_ref(role),
             )
             .unwrap_err();

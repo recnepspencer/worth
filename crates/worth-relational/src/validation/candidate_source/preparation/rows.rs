@@ -1,6 +1,6 @@
 //! Root occurrence issuance and current-loan scalar admission.
 use super::*;
-use crate::derived_relation::DerivedRelationReadShape;
+use crate::derived_relation::read_shape::DerivedRelationReadShape;
 
 /// Full-generation occurrence issued by an actual membership acquisition.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,7 +46,7 @@ impl ManagedIndexSourceRows<'_> {
     pub fn membership_support<'a>(
         &'a self,
         read: &'a super::super::projection::PreparedManagedIndexRelationRead,
-    ) -> Result<&'a crate::derived_relation::DerivedRelationData, ReadDenial> {
+    ) -> Result<&'a crate::derived_relation::read::DerivedRelationData, ReadDenial> {
         self.projection.read(
             read,
             &self.projection.program.0.path,

@@ -51,7 +51,7 @@ impl HistorySubsystem {
     }
 
     #[cfg(test)]
-    pub(crate) fn fill_retired_branch_name_capacity_for_test(&self) {
+    pub(crate) fn exhaust_retired_branch_name_roster_for_test(&self) {
         let mut ordinal = 0_u64;
         loop {
             let name = BranchId(format!("__retired-branch-capacity-proof-{ordinal}"));

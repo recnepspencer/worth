@@ -16,7 +16,8 @@ use crate::indexes::data::DerivedIndexKind;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 type Failure = MapKernelFailure<PacketBudgetDenial>;
 
@@ -55,10 +56,11 @@ impl TouchBudget<'_, '_, '_, '_, '_> {
 }
 
 pub(super) fn prepare(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    work_budget: Option<&crate::execution::RequestWorkBudget>,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     mode: TouchPreparationMode,
@@ -73,7 +75,7 @@ pub(super) fn prepare(
         Some(lease) => {
             let maximum = crate::execution::prepare_borrowed_artifact(
                 lease,
-                runtime.commit_work_budget.as_ref(),
+                work_budget,
                 0,
                 |checked| {
                     Ok((
@@ -92,7 +94,7 @@ pub(super) fn prepare(
                 extent::memory_bound(catalog, selected, working, deltas, maximum, &mode, lease)?;
             let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
                 build(
-                    runtime,
+                    symbols,
                     catalog,
                     selected,
                     working,
@@ -106,21 +108,21 @@ pub(super) fn prepare(
             match bound {
                 Some(bound) => crate::execution::prepare_borrowed_artifact(
                     lease,
-                    runtime.commit_work_budget.as_ref(),
+                    work_budget,
                     bound,
                     build,
                 ),
                 None => crate::execution::prepare_tracked_artifact(
                     execution,
                     lease,
-                    runtime.commit_work_budget.as_ref(),
+                    work_budget,
                     build,
                 ),
             }
             .map_err(|stop| TransactionCommitError::execution(stop.into()))
         }
         None => build(
-            runtime,
+            symbols,
             catalog,
             selected,
             working,
@@ -130,8 +132,8 @@ pub(super) fn prepare(
             maximum_touch_count(catalog, deltas, adjacency, &mut TouchBudget::Legacy).map_err(
                 |failure| {
                     TransactionCommitError::execution(
-                        crate::transactions::data::CommitExecutionDenial {
-                            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                                 crate::execution::kernel_failure(failure),
                             ),
                             partition_identity: None,
@@ -143,8 +145,8 @@ pub(super) fn prepare(
         )
         .map(|(graph, _)| graph)
         .map_err(|failure| {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                     crate::execution::kernel_failure(failure),
                 ),
                 partition_identity: None,
@@ -154,10 +156,10 @@ pub(super) fn prepare(
 }
 
 fn build(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     mode: &TouchPreparationMode,
@@ -174,15 +176,7 @@ fn build(
         .try_reserve_exact(maximum)
         .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
     for delta in deltas {
-        append_delta(
-            runtime,
-            catalog,
-            selected,
-            working,
-            delta,
-            &mut touches,
-            budget,
-        )?;
+        append_delta(catalog, selected, working, delta, &mut touches, budget)?;
     }
     for delta in adjacency {
         budget.checkpoint(3)?;
@@ -209,7 +203,7 @@ fn build(
     }
     if matches!(mode, TouchPreparationMode::NativeMerge)
         && !merge::append(
-            runtime,
+            symbols,
             catalog,
             selected,
             working,
@@ -229,7 +223,7 @@ fn build(
 }
 
 fn maximum_touch_count(
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     deltas: &[CanonicalRecordAspectDelta],
     adjacency: &[AdjacencyDelta],
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
@@ -280,10 +274,9 @@ fn maximum_touch_count(
 }
 
 fn append_delta(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     delta: &CanonicalRecordAspectDelta,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
@@ -351,8 +344,7 @@ fn append_delta(
                         .filter(|definition| definition.index_id.0 < catalog.next_index_id)
                     {
                         append_index(
-                            runtime, selected, working, delta, binding, field, definition, touches,
-                            budget,
+                            selected, working, delta, binding, field, definition, touches, budget,
                         )?;
                     }
                     Ok::<(), Failure>(())

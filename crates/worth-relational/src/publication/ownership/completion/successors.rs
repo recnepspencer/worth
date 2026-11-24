@@ -2,7 +2,7 @@
 use super::*;
 use crate::history::data::CanonicalRequiredOutputOrigin;
 use crate::identity::data::EntityId;
-use crate::mvcc::RequiredOutputRolePosture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
 use std::sync::Arc;
 
 type Successor<'a> = (usize, &'a Arc<CanonicalRequiredOutputOrigin>);
@@ -43,9 +43,11 @@ fn eligible(
     for member in members {
         if member? != RequiredOutputRolePosture::Retire {
             if scope_deleted {
-                return Err(crate::mvcc::origin_denial(
-                    "a live owned successor cannot publish into a deleted source scope",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "a live owned successor cannot publish into a deleted source scope",
+                    ),
+                );
             }
             return Ok(true);
         }
@@ -75,7 +77,9 @@ mod tests {
                 None => assert!(result.is_err()),
             }
         }
-        let refused = crate::mvcc::origin_denial("posture read stopped");
+        let refused = crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+            "posture read stopped",
+        );
         assert!(eligible(false, true, &mut [Err(refused)].into_iter()).is_err());
     }
 }

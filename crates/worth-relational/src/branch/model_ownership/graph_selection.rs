@@ -86,8 +86,8 @@ fn declared(
     ownership: &RelationalModelOwnership,
     edge: StructuralRelationRecord,
 ) -> Result<bool, Denial> {
-    read.charge(ownership.relation_lookup_work())?;
-    Ok(ownership.declares_relation(edge.kind_id))
+    read.charge(ownership.plan.relation_lookup_work())?;
+    Ok(ownership.plan.declares_relation(edge.kind_id))
 }
 fn insert(
     read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
@@ -218,7 +218,7 @@ pub(super) fn prepare(
                             relation: edge.relation_id,
                         });
                     }
-                    let actual_owner = installed.owner(read, edge.source)?;
+                    let actual_owner = installed.plan.owner(read, edge.source)?;
                     if actual_owner != Some(owner) {
                         return Err(Denial::SelectedOwnerChanged {
                             entity: edge.target,

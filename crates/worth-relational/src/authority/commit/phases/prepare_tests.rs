@@ -1,8 +1,11 @@
 use crate::identity::data::{EntityId, PartitionId};
-use crate::transactions::data::{
-    AspectFieldPatch, EntityMutationIntent, MergedCommitPlan, MutationIntent,
-    RevalidateEntityIntent, TransactionId, UpdateEntityFieldsIntent,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RevalidateEntityIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::TransactionId;
 
 use super::{
     select_entity_working_set_layout, sparse_entity_slots_for_plan, EntityWorkingSetLayout,
@@ -106,7 +109,8 @@ fn sparse_entity_selection_preserves_both_admission_limits() {
 
 #[test]
 fn supported_creation_only_graph_has_an_admitted_empty_entity_selection() {
-    use crate::transactions::data::{CreateIntent, EntitySpec};
+    use crate::transactions::data::intents::mutation_intent::CreateIntent;
+    use crate::transactions::data::primitives::EntitySpec;
     let plan = merged_plan(vec![MutationIntent::Create(CreateIntent::Entity(
         EntitySpec {
             partition_id: PartitionId(1),

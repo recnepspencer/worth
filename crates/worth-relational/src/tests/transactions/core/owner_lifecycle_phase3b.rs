@@ -205,7 +205,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
 #[test]
 fn phase3b_removed_lifecycle_premises_stay_removed() {
     const RUNTIME_STATE: &str = include_str!("../../../runtime/state/runtime_state/mod.rs");
-    const SETTLEMENT_PORT: &str = include_str!("../../../publication/authority/settlement_port.rs");
+    const SETTLEMENT_PORT: &str = include_str!("../../../runtime/settlement_port.rs");
     const PREPARATION_RUNTIME: &str =
         include_str!("../../../runtime/state/runtime_state/preparation_runtime.rs");
 

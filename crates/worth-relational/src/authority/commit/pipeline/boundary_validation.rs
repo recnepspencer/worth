@@ -19,30 +19,28 @@ impl BoundaryValidatedCommitExecution {
 
 pub(super) fn validate_commit_boundary(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
     prepared: CommitPhaseBacking<PreparedCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<BoundaryValidatedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     let result = {
         let mut prepared = prepared.into_inner();
         super::consult_stage(execution, super::CommitStage::Boundary)?;
         let (admitted, ..) = prepared.boundary_parts();
         let invariant = admitted.take_prevalidated_invariants().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::conflict(
-                crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::StaleValidationBasis {
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                         detail: "candidate is missing its proposed-state invariant evidence".into(),
                     },
                 ),
             )
         })?;
         let (log, timing) = admitted.commit_phase_state();
-        log.begin_phase(crate::transactions::data::CommitPhase::InvariantPreCheck);
+        log.begin_phase(crate::transactions::data::commit_log::CommitPhase::InvariantPreCheck);
         log.record_invariant_outcomes(&invariant);
-        log.complete_phase(crate::transactions::data::CommitPhase::InvariantPreCheck);
+        log.complete_phase(crate::transactions::data::commit_log::CommitPhase::InvariantPreCheck);
         timing.invariant_pre_check_micros = 0;
         BoundaryValidatedCommitExecution {
             prepared,

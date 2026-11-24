@@ -1,15 +1,15 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
-mod artifact_export;
+mod artifact_source;
 mod authored_writes;
 mod selected_checkpoint;
 pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
 mod demand;
 mod interim_original;
+mod original_frame_digest;
 mod recovered_position;
-mod source_readmission;
+pub(crate) mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
@@ -26,9 +26,10 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
     state: Mutex<EnvelopeState>,
 }
 #[derive(Debug)]
-enum EnvelopeBacking {
+pub(crate) enum EnvelopeBacking {
     Memory {
-        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        canonical:
+            Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>,
         original: Option<worth_execution::ExecutionImmutableBytes>,
     },
     SelectedCheckpoint {
@@ -70,7 +71,9 @@ impl EnvelopeState {
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(
-        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        canonical: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
     ) -> Self {
         let payload_digest = canonical.payload_digest();
         let canonical_payload_bytes = canonical.payload().len() as u64;
@@ -157,7 +160,8 @@ impl RelationalCommitEnvelopeResidency {
     }
     pub(crate) fn original_owner(
         &self,
-    ) -> Option<Arc<crate::branch::RelationalOriginalRootCommitEvidence>> {
+    ) -> Option<Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>>
+    {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         match &state.backing {
             EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical)),

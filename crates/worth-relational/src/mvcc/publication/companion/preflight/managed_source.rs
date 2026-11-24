@@ -21,9 +21,9 @@ impl PublicationCompanionPreflight<'_> {
         &self,
         selected: &ReservedCompanionBranchCell<ManagedIndexBranchImage>,
     ) -> Result<Arc<ManagedIndexBranchImage>, Stop> {
-        if selected.core.runtime_instance_id != self.binding.runtime_instance_id
-            || selected.core.branch_id != self.binding.branch_id
-            || selected.core.registration_generation != self.binding.registration_generation
+        if selected.core().runtime_instance_id() != self.binding.runtime_instance_id
+            || selected.core().branch_id() != &self.binding.branch_id
+            || selected.core().registration_generation() != self.binding.registration_generation
             || selected.current().root_id() != self.binding.expected_root_id
         {
             return Err(Stop::SelectedSourceMismatch);

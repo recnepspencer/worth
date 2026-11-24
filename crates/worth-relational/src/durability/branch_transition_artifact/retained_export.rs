@@ -3,45 +3,35 @@ use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy;
 
 use super::{RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactEncodeDenial};
-use crate::branch::PositionedBranchTransition;
-use crate::durability::access::DurabilityAccess;
-
-impl DurabilityAccess<'_> {
-    /// The runtime's retained branch transitions, in increasing sequence, as
-    /// artifacts. Durable captures release the covered prefix; memory-only
-    /// runtimes keep it for older replay chains. This reads the runtime's own
-    /// transition stream, not a second history store.
-    ///
-    /// The selection is fixed when this is called. Encoding is lazy: each
-    /// item is framed only when pulled, under `policy`. Cost: O(performed
-    /// tail transitions) shared handles up front, then one artifact encode per
-    /// pulled item.
-    pub fn branch_transition_artifacts<'scope, 'authority>(
-        &self,
-        policy: ExecutionAllocationPolicy<'scope, 'authority>,
-    ) -> RelationalBranchTransitionArtifacts<'scope, 'authority> {
-        let (covered, transitions) = self.runtime.history.retained_branch_transitions();
-        RelationalBranchTransitionArtifacts {
-            covered,
-            performed: transitions.into_iter(),
-            policy,
-        }
-    }
-}
+use crate::branch::transition::PositionedBranchTransition;
 
 /// Lazily framed artifacts for one fixed selection of performed transitions,
 /// in strictly increasing sequence order. A denial for one item does not end
 /// the iteration; the caller decides whether to continue.
 pub struct RelationalBranchTransitionArtifacts<'scope, 'authority> {
-    covered: crate::branch::RelationalBranchTransitionSequence,
+    covered: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     performed: std::vec::IntoIter<Arc<PositionedBranchTransition>>,
     policy: ExecutionAllocationPolicy<'scope, 'authority>,
 }
 
-impl RelationalBranchTransitionArtifacts<'_, '_> {
+impl<'scope, 'authority> RelationalBranchTransitionArtifacts<'scope, 'authority> {
+    pub(crate) fn new(
+        covered: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
+        transitions: Vec<Arc<PositionedBranchTransition>>,
+        policy: ExecutionAllocationPolicy<'scope, 'authority>,
+    ) -> Self {
+        Self {
+            covered,
+            performed: transitions.into_iter(),
+            policy,
+        }
+    }
+
     /// Compacted coverage immediately preceding this retained tail. Historical
     /// artifacts at or below this sequence belong to the durable journal.
-    pub fn covered_sequence(&self) -> crate::branch::RelationalBranchTransitionSequence {
+    pub fn covered_sequence(
+        &self,
+    ) -> crate::branch::transition::sequence::RelationalBranchTransitionSequence {
         self.covered
     }
 }

@@ -1,39 +1,39 @@
-mod artifact_execution;
+pub(crate) mod artifact_execution;
 mod authority_context;
 mod boundary_validation;
 mod bulk_mutation_telemetry;
-mod candidate_preparation;
+pub(crate) mod candidate_invariant_inputs;
+pub(crate) mod candidate_preparation;
 mod draft_execution;
 mod draft_preparation_phase;
 mod execution;
-mod execution_admission;
+pub(crate) mod execution_admission;
 mod history_binding;
-mod history_preparation;
+pub(crate) mod history_preparation;
 mod history_resolution_phase;
-mod merge_draft;
+pub(crate) mod merge_draft;
 mod mutation_execution;
+pub(crate) mod performed_outcome;
 mod phase_backing;
-mod publication_execution;
+pub(crate) mod publication_execution;
 mod rejection;
-mod result_assembly;
+pub(crate) mod runtime_candidate_orchestration;
+pub(crate) mod runtime_merge_draft;
 mod semantic_result;
 mod snapshot_validation;
 
 pub(crate) use crate::execution::request_custody::request_lease;
-pub(crate) use authority_context::AuthoritativeCommitContext;
-pub(crate) use execution::{execute_authoritative_commit, publish_prepared_authoritative_commit};
-pub(crate) use publication_execution::publish_commit_execution;
+pub(crate) use authority_context::{AuthoritativeCommitContext, SelectedCommitMutation};
+pub(crate) use execution::execute_authoritative_commit;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
-pub(crate) use result_assembly::assemble_commit_result;
-pub(crate) use result_assembly::CommitResultSeal;
+pub(crate) use publication_execution::{publish_commit_execution, PublishedCommitExecution};
 
 mod request_checkpoints;
 #[cfg(test)]
 pub(crate) use request_checkpoints::observation as stage_observation;
 pub(crate) use request_checkpoints::{consult_stage, CommitStage};
 
-pub(crate) use candidate_preparation::prepare_consulted_authoritative_commit;
 pub use phase_backing::RelationalCommitPhaseBackingForTest;
 pub(crate) use phase_backing::{CommitPhaseBacking, CommitPhaseReservation};
 #[cfg(test)]

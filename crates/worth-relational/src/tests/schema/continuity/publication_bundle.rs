@@ -82,7 +82,7 @@ fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
 
     let preparation = runtime.preparation_runtime_snapshot();
     let error = validate_schema_continuity_publication(
-        &preparation,
+        preparation.preparation_diagnostics(),
         &BranchId("main".to_string()),
         &plan,
         &envelope,
@@ -182,7 +182,7 @@ fn schema_continuity_publication_rejects_descriptor_semantics_mismatch() {
 
     let preparation = runtime.preparation_runtime_snapshot();
     let error = validate_schema_continuity_publication(
-        &preparation,
+        preparation.preparation_diagnostics(),
         &BranchId("main".to_string()),
         &plan,
         &envelope,

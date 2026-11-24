@@ -9,12 +9,12 @@ pub(crate) struct SnapshotHandleBinding {
     pub(crate) branch_id: BranchId,
     pub(crate) version_id: VersionId,
     pub(crate) read_policy: SnapshotReadPolicy,
-    pub(crate) basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    pub(crate) basis: crate::history::retention::VisibilitySnapshotBasis,
 }
 
 impl SnapshotHandleBinding {
     pub(crate) fn new(
-        basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+        basis: crate::history::retention::VisibilitySnapshotBasis,
         read_policy: SnapshotReadPolicy,
     ) -> Self {
         Self {

@@ -1,9 +1,10 @@
 //! Neither ordinary deletion nor producer Retire is a governed codec disposition.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::native_meaning_fixture;
 
 #[test]
 fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restore() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     for producer_retire in [false, true] {
         let mut runtime = runtime_with_test_schema();
@@ -89,7 +90,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
                 execution,
                 &installed,
                 &basis,
-                &crate::mvcc::native_meaning_fixture("delete-does-not-vacate"),
+                &native_meaning_fixture("delete-does-not-vacate"),
             )
             .unwrap();
         assert!(

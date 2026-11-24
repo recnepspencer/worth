@@ -1,6 +1,6 @@
 //! Bind a prepared publication to the original owner's live readonly source.
 use super::PreparedRelationalCommitCandidate;
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::publication::RelationalPublicationReadDependencyDenial as Denial;
 
 impl PreparedRelationalCommitCandidate {

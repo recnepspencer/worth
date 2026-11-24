@@ -1,7 +1,7 @@
 //! Pure exact-owner assertions, borrowing the existing codec unit host's context.
 use super::*;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
-use crate::mvcc::RequiredOutputProducingImplementation;
+use crate::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementation;
 pub(crate) fn assert_exact_owner_refusals(
     original: Arc<CanonicalCommitEnvelope>,
     basis: &crate::branch::basis::RelationalBranchBasisDescriptor,
@@ -27,7 +27,9 @@ pub(crate) fn assert_exact_owner_refusals(
         "birth_dependency": worth_foundational::CanonicalDigestId::new([6;32]), "members": []
     });
     let expected = SelectedOutputPublication {
-        evidence: crate::publication::ownership::PublicationEvidence::Canonical(original.clone()),
+        evidence: crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+            original.clone(),
+        ),
         origin: Arc::new(serde_json::from_value(value.clone()).unwrap()),
         ordinal: 0,
     };

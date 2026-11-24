@@ -32,15 +32,9 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         affected_relation_kinds: vec![KindId(2)],
         include_relation_endpoint_entity_touches: true,
     };
-    let prepared_scope =
-        prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
-    let planner = test_scope_planner(
-        &runtime,
-        *execution,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
+    let version = runtime.current_version_id();
+    let prepared_scope = scope_with_access(version, &observation, Some(&merged_plan), &access);
+    let planner = test_scope_planner(&runtime, *execution, &observation, version, &prepared_scope);
 
     assert_eq!(
         planner.touched().direct_visible_entity_ids(),
@@ -139,8 +133,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -210,8 +204,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
         merged_intents: vec![create_target, update_relation],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -258,8 +252,8 @@ fn touched_scope_tracks_planned_relation_deletes() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -290,7 +284,7 @@ fn test_scope_planner<'a>(
     version: crate::identity::data::VersionId,
     prepared: &PreparedCustomInvariantScope,
 ) -> CustomInvariantScopePlanner<'a> {
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+    let view = runtime.invariant_validation_view();
     CustomInvariantScopePlanner::new_at_current_version(
         &view,
         execution,

@@ -2,7 +2,6 @@
 use super::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
-use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::execution::InvariantStage;
 use worth_execution::CancellationSource;
 
@@ -66,7 +65,7 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
     };
     let funded =
         super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
-    let view = InvariantRuntimeView::from_runtime(&fixture.runtime);
+    let view = fixture.runtime.invariant_validation_view();
     let (stage, charges) = crate::execution::request_work::account_observation::observe(|| {
         crate::validation::engine::stage_execution::execute_stage(
             &view,

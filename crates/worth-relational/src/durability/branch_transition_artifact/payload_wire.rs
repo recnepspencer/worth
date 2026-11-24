@@ -5,8 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::branch::{
-    PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
+use crate::branch::transition::{
+    sequence::RelationalBranchTransitionSequence, PositionedBranchTransition,
+    RelationalBranchTransition,
 };
 use crate::publication::patch::data::PatchStreamPosition;
 

@@ -3,62 +3,10 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
-use crate::durability::access::DurabilityAccess;
-
-impl DurabilityAccess<'_> {
-    /// The runtime's retained performed canonical commits, in strictly
-    /// increasing stream position, as artifacts. This reads the same
-    /// performed publication stream checkpoints select from; it is not a
-    /// second history store.
-    ///
-    /// The selection is fixed when called. New Memory publications verify and
-    /// share their retained original frame when pulled, without encoding or a
-    /// replacement byte allocation. Legacy and Journal paths keep their ordinary
-    /// export behavior. Selection costs O(retained commits) shared metadata;
-    /// verifying an original costs O(artifact bytes), with no new payload copy.
-    pub fn canonical_commit_artifacts<'scope, 'authority>(
-        &self,
-        execution: &ExecutionRequest<'scope, 'authority>,
-    ) -> RelationalCanonicalCommitArtifacts<'scope, 'authority> {
-        let mut selected = std::collections::BTreeMap::new();
-        for artifact in self.runtime.history.commit_artifacts() {
-            let cell = artifact.envelope_residency();
-            let position = cell
-                .journal_index()
-                .map(|entry| entry.position)
-                .or_else(|| {
-                    cell.positioned_if_resident()
-                        .map(|commit| commit.position())
-                });
-            if let Some(position) = position {
-                selected.insert(position, RetainedArtifact { position, cell });
-            }
-        }
-        for commit in self.runtime.history.positioned_canonical_commits_snapshot() {
-            if let Some(cell) = self
-                .runtime
-                .history
-                .performed_envelope_residency(commit.commit.commit_id)
-            {
-                selected
-                    .entry(commit.position())
-                    .or_insert(RetainedArtifact {
-                        position: commit.position(),
-                        cell,
-                    });
-            }
-        }
-        let retained = selected.into_values().collect::<Vec<_>>();
-        RelationalCanonicalCommitArtifacts {
-            retained: retained.into_iter(),
-            execution: *execution,
-        }
-    }
-}
 
 struct RetainedArtifact {
     position: crate::publication::patch::data::PatchStreamPosition,
-    cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
 /// Lazily framed artifacts for one fixed selection of retained commits, in
@@ -69,7 +17,24 @@ pub struct RelationalCanonicalCommitArtifacts<'scope, 'authority> {
     execution: ExecutionRequest<'scope, 'authority>,
 }
 
-impl RelationalCanonicalCommitArtifacts<'_, '_> {
+impl<'scope, 'authority> RelationalCanonicalCommitArtifacts<'scope, 'authority> {
+    pub(crate) fn new(
+        selected: std::collections::BTreeMap<
+            crate::publication::patch::data::PatchStreamPosition,
+            Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        >,
+        execution: ExecutionRequest<'scope, 'authority>,
+    ) -> Self {
+        let retained = selected
+            .into_iter()
+            .map(|(position, cell)| RetainedArtifact { position, cell })
+            .collect::<Vec<_>>();
+        Self {
+            retained: retained.into_iter(),
+            execution,
+        }
+    }
+
     /// Select positions strictly above an acknowledged prefix before any
     /// journal body is demanded. Ordinary iterator skipping may pull and
     /// discard a body; this seek advances only immutable index entries.
@@ -100,9 +65,10 @@ impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
 
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
         // Skipping an immutable index prefix does not demand its bodies.
-        self.retained
-            .nth(n)
-            .map(|commit| commit.cell.export_artifact(&self.execution))
+        self.retained.nth(n).map(|commit| {
+            super::retained_frame_reads::export_artifact(&commit.cell, &self.execution)
+                .map(super::RelationalCanonicalCommitArtifact::from_verified)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -120,7 +86,3 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifacts<'_, '_> {
             .finish_non_exhaustive()
     }
 }
-
-#[cfg(test)]
-#[path = "retained_export/skip_tests.rs"]
-mod skip_tests;

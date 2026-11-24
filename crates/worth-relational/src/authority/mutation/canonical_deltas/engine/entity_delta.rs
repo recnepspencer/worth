@@ -1,19 +1,19 @@
 use crate::publication::patch::data::{ordered_aspect_keys, RecordStructuralChange};
 use crate::transactions::data::primitives::RecordRef;
 
+use super::super::field_changes::changed_fields;
 use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
 use crate::authority::mutation::canonical_deltas::patch_authority::{
     authoritative_patch_binding_evidence, evaluate_authoritative_patch_delta,
 };
-use crate::authority::mutation::field_versions::changed_fields;
 use crate::schema::aspect_plan_source::AspectPlanSource;
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
 use super::state_views::EntityAuthoritativeState;
 
-pub(super) fn evaluate_entity_lifecycle_delta(
+pub(crate) fn evaluate_entity_lifecycle_delta(
     plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,
@@ -48,7 +48,7 @@ pub(super) fn evaluate_entity_lifecycle_delta(
     }
 }
 
-pub(super) fn evaluate_entity_update_delta(
+pub(in crate::authority::mutation) fn evaluate_entity_update_delta(
     plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,
@@ -107,7 +107,7 @@ pub(super) fn evaluate_entity_update_delta(
     }
 }
 
-pub(super) fn evaluate_entity_delta(
+pub(in crate::authority::mutation) fn evaluate_entity_delta(
     plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,

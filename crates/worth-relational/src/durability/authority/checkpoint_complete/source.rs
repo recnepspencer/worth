@@ -1,10 +1,16 @@
 //! Freeze original producer DATA under the actual configuration/publication epoch.
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+use crate::durability::source_initial_inputs::producer_roster::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
+use crate::history::commit::{CapturedOriginalCanonicalInputs, RelationalCommitArtifact};
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::{OriginalCanonicalInputs, RelationalCommitArtifact};
+use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, RelationalRuntime,
+use crate::runtime::state::subsystems::{
+    durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    history::HistorySubsystem, services::symbol_table::RuntimeSymbolTable,
 };
 use std::sync::Arc;
 use worth_execution::{
@@ -25,7 +31,7 @@ pub(super) struct OriginalCanonicalCommit {
     pub(super) position: PatchStreamPosition,
     pub(super) artifact: Arc<RelationalCommitArtifact>,
     pub(super) envelope: Arc<CanonicalCommitEnvelope>,
-    pub(super) inputs: OriginalCanonicalInputs,
+    pub(super) inputs: CapturedOriginalCanonicalInputs,
     pub(super) original_frame: worth_execution::ExecutionImmutableBytes,
     pub(super) original_payload_digest: [u8; 32],
 }
@@ -33,16 +39,16 @@ pub(super) struct OriginalCanonicalCommit {
 impl FrozenOriginalInputs {
     /// Called while the actual complete capture still holds both epochs.
     pub(super) fn capture(
-        runtime: &RelationalRuntime,
-        selection: &crate::runtime::PerformedCheckpointSelection,
+        history: &HistorySubsystem,
+        selection: &RelationalCheckpointManifestSelection,
+        mut journal_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+        symbols: &RuntimeSymbolTable,
+        receipt: Option<&RelationalCommitReceipt>,
+        covered_transitions: RelationalBranchTransitionSequence,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let base = runtime
-            .durability
-            .checkpoint_selection()
-            .freeze_capture_base()?;
-        let branches = runtime
-            .history
+        let base = selection.freeze_capture_base()?;
+        let branches = history
             .capture_original_branch_schema_inputs(execution)
             .map_err(|cause| match cause {
                 OriginalBranchSchemaInputsDenial::Request(cause) => Denial::Request(cause.into()),
@@ -57,11 +63,9 @@ impl FrozenOriginalInputs {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
         let mut ordered = ExecutionOrderedMap::default();
-        let catalog = runtime
-            .history
+        let catalog = history
             .commit_artifacts_for_request(execution)
             .map_err(array_stop)?;
-        let mut journal_source = runtime.durability.cold_source();
         for artifact in catalog.iter() {
             if artifact.original_inputs().is_none() {
                 return Err(Denial::OriginalAuthorityUnavailable);
@@ -95,7 +99,7 @@ impl FrozenOriginalInputs {
             artifacts.push(artifact.clone()).map_err(array_stop)?;
         }
         let artifacts = artifacts.seal().map_err(array_stop)?;
-        let same_receipt = match (artifacts.last(), selection.selected_receipt()) {
+        let same_receipt = match (artifacts.last(), receipt) {
             (None, None) => true,
             (Some(artifact), Some(receipt)) => {
                 artifact.commit_id() == receipt.commit_id
@@ -110,7 +114,7 @@ impl FrozenOriginalInputs {
                 .transitions()
                 .last()
                 .map_or(0, |entry| entry.positioned.sequence().0)
-                != selection.covered_transitions().0
+                != covered_transitions.0
         {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
@@ -120,7 +124,7 @@ impl FrozenOriginalInputs {
             branches,
             journal_source,
             journal: None,
-            symbols: runtime.services.symbols.interner_snapshot(),
+            symbols: symbols.interner_snapshot(),
         })
     }
 
@@ -213,9 +217,8 @@ impl FrozenOriginalInputs {
             ExecutionRequestArrayBuilder::allocate(*execution, count).map_err(array_stop)?;
         for (offset, artifact) in self.artifacts.iter().enumerate().skip(covered) {
             crate::execution::check_request(execution).map_err(Denial::Request)?;
-            let frame = artifact
-                .envelope_residency()
-                .require_original_artifact(
+            let frame = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(
+                    &artifact.envelope_residency(),
                     execution,
                     self.journal
                         .as_ref()
@@ -235,9 +238,9 @@ impl FrozenOriginalInputs {
                 .into());
             }
             let readmitted = frame
-                .readmit_framed(execution)
+                .readmitted_body(execution)
                 .map_err(canonical_readmission_stop)?;
-            let positioned = readmitted.into_positioned();
+            let positioned = readmitted;
             let envelope = positioned.canonical_arc().clone();
             if positioned.position().0 != offset as u64 + 1
                 || envelope.commit.commit_id != artifact.commit_id()
@@ -252,7 +255,7 @@ impl FrozenOriginalInputs {
                     None => {
                         let (entry, _) = artifact.envelope_residency().source_placement()
                             .ok_or(Denial::OriginalAuthorityUnavailable)?;
-                        let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
+                        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
                             entry.position, &envelope, execution,
                         ).map_err(capture_stop)?;
                         entry.commit == envelope.commit

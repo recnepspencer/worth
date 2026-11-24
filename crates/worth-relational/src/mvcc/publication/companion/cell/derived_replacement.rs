@@ -1,10 +1,8 @@
-use std::any::Any;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, TryLockError};
+use std::sync::Arc;
 
 use super::{
     CompanionBranchCell, CompanionBranchCellCore, CompanionBranchImage, CompanionCellEditStop,
-    CompanionRootImage, DerivedCellEdit,
+    CompanionRootImage,
 };
 
 pub enum CompanionDerivedRootPreparationStop<T: Send + Sync + 'static> {
@@ -62,22 +60,18 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         expected: CompanionBranchImage<T>,
         payload: Arc<T>,
     ) -> Result<PreparedCompanionDerivedRoot<T>, CompanionDerivedRootPreparationStop<T>> {
-        let current = match self.core.current.try_lock() {
-            Ok(current) => current,
-            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
-            Err(TryLockError::WouldBlock) => {
-                return Err(CompanionDerivedRootPreparationStop::Cell {
-                    reason: CompanionCellEditStop::PreflightPending,
-                    expected,
-                    payload,
-                });
-            }
+        let Some(current) = self.core.try_read_image() else {
+            return Err(CompanionDerivedRootPreparationStop::Cell {
+                reason: CompanionCellEditStop::PreflightPending,
+                expected,
+                payload,
+            });
         };
-        let generation = self.core.topology_generation.load(Ordering::Acquire);
-        let matched = Arc::ptr_eq(&*current, &expected.image)
+        let generation = self.core.generation();
+        let matched = Arc::ptr_eq(current.image(), &expected.image)
             && generation == expected.topology_generation
-            && expected.root_id == expected.image.root_id
-            && expected.commit_id == expected.image.commit_id
+            && expected.root_id == expected.image.root_id()
+            && expected.commit_id == expected.image.commit_id()
             && expected.position == expected.image.position();
         drop(current);
         if !matched {
@@ -96,12 +90,12 @@ pub(super) fn prepare_admitted<T: Send + Sync + 'static>(
     expected: CompanionBranchImage<T>,
     payload: Arc<T>,
 ) -> PreparedCompanionDerivedRoot<T> {
-    let next = Arc::new(CompanionRootImage {
-        root_id: expected.root_id,
-        commit_id: expected.commit_id,
-        position: AtomicU64::new(expected.position.map_or(0, |position| position.0)),
-        payload: Arc::clone(&payload) as Arc<dyn Any + Send + Sync>,
-    });
+    let next = CompanionRootImage::new(
+        expected.root_id,
+        expected.commit_id,
+        expected.position,
+        Arc::clone(&payload),
+    );
     PreparedCompanionDerivedRoot {
         core: Arc::clone(&cell.core),
         expected,
@@ -114,20 +108,11 @@ impl<T: Send + Sync + 'static> PreparedCompanionDerivedRoot<T> {
     pub fn install(
         self,
     ) -> Result<CompanionDerivedRootInstalled<T>, CompanionDerivedRootStopped<T>> {
-        if self
-            .core
-            .reservation_live
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .is_err()
-        {
-            return Err(CompanionDerivedRootStopped {
-                reason: CompanionCellEditStop::PreflightPending,
-                prepared: self,
-            });
-        }
-        let gate = DerivedCellEdit(&self.core);
-        let result = self.install_with_gate();
-        drop(gate);
+        let result = self.core.replace_derived(
+            &self.expected.image,
+            self.expected.topology_generation,
+            &self.next,
+        );
         let (retired, next_generation) = match result {
             Ok(installed) => installed,
             Err(reason) => {
@@ -153,31 +138,5 @@ impl<T: Send + Sync + 'static> PreparedCompanionDerivedRoot<T> {
                 _core: self.core,
             },
         })
-    }
-
-    fn install_with_gate(&self) -> Result<(Arc<CompanionRootImage>, u64), CompanionCellEditStop> {
-        let mut current = match self.core.current.try_lock() {
-            Ok(current) => current,
-            Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
-            Err(TryLockError::WouldBlock) => return Err(CompanionCellEditStop::PreflightPending),
-        };
-        let generation = self.core.topology_generation.load(Ordering::Acquire);
-        if generation != self.expected.topology_generation
-            || !Arc::ptr_eq(&*current, &self.expected.image)
-            || self.expected.root_id != self.next.root_id
-            || self.expected.commit_id != self.next.commit_id
-            || self.expected.position != self.next.position()
-        {
-            return Err(CompanionCellEditStop::TopologyGenerationChanged);
-        }
-        let next_generation = generation
-            .checked_add(1)
-            .ok_or(CompanionCellEditStop::TopologyGenerationExhausted)?;
-        let retired = std::mem::replace(&mut *current, Arc::clone(&self.next));
-        self.core
-            .topology_generation
-            .store(next_generation, Ordering::Release);
-        drop(current);
-        Ok((retired, next_generation))
     }
 }

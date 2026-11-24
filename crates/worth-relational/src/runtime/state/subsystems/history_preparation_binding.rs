@@ -1,3 +1,5 @@
+#[path = "history_preparation_binding/admitted_version.rs"]
+mod admitted_version;
 #[path = "history_preparation_binding/candidate_root.rs"]
 mod candidate_root;
 #[path = "history_preparation_binding/merge_inspection.rs"]
@@ -8,11 +10,12 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::branch::{
-    PreparedRelationalBranchRootCapture, RelationalBranchReferenceCell,
-    RelationalBranchReferenceRegistry, RelationalBranchRoot, RelationalBranchRootCaptureDenial,
-    RelationalBranchRootIdentityIssuer,
-};
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::root::PreparedRelationalBranchRootCapture;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRootCaptureDenial;
+use crate::branch::root::RelationalBranchRootIdentityIssuer;
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;
 
@@ -120,7 +123,7 @@ impl RelationalPreparationHistory {
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), String> {
         let existing = self.canonical_routes.by_commit(envelope.commit.commit_id);
-        crate::history::RelationalCommitCatalog::validate_new_envelope_against(
+        crate::history::commit::RelationalCommitCatalog::validate_new_envelope_against(
             existing.as_deref(),
             envelope,
         )
@@ -132,7 +135,7 @@ impl RelationalPreparationHistory {
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), String> {
         let existing = self.canonical_routes.by_commit(envelope.commit.commit_id);
-        crate::history::RelationalCommitCatalog::validate_envelope_against(
+        crate::history::commit::RelationalCommitCatalog::validate_envelope_against(
             existing.as_deref(),
             envelope,
         )
@@ -142,14 +145,14 @@ impl RelationalPreparationHistory {
     pub(crate) fn reserve_canonical_publication_route(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<
         super::canonical_publication_routes::PreparedCanonicalPublicationRoute,
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
         let resident = envelope.get().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::publication(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::new(
                     crate::publication::bundle::PublicationStage::BundleAssembly,
                     "prepared publication envelope is not resident",
@@ -163,10 +166,10 @@ impl RelationalPreparationHistory {
         let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
             .map_err(|cause| match cause {
                 crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::publication::commit_denial(cause),
-                crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
-                crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
-                crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
-                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, format!("original payload capture: {cause:?}"))),
+                crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into()),
+                crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
+                crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
+                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, format!("original payload capture: {cause:?}"))),
             })?;
         RelationalCanonicalPublicationRoutes::reserve(
             &self.canonical_routes,
@@ -176,7 +179,7 @@ impl RelationalPreparationHistory {
             original_payload,
         )
         .map_err(|detail| {
-            crate::transactions::data::TransactionCommitError::publication(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::new(
                     crate::publication::bundle::PublicationStage::BundleAssembly,
                     detail,
@@ -226,8 +229,8 @@ impl RelationalPreparationHistory {
         envelope: Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
@@ -245,7 +248,7 @@ impl RelationalPreparationHistory {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
 

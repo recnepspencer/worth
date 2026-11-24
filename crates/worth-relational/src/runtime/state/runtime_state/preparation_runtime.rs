@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
 use crate::performance::PerformanceAccess;
+use crate::runtime::state::subsystems::visibility::SnapshotIdentityAllocator;
 use crate::runtime::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, RecordIdentitySubsystem, RelationalPreparationHistory,
@@ -21,23 +22,22 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     lifecycle: RelationalRuntimeOwnerBinding,
     publication_owner: RelationalRuntimePublicationBinding,
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
-    snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
+    snapshot_ids: Arc<SnapshotIdentityAllocator>,
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
-    diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     durability_admission:
         crate::durability::published_medium::RelationalDurablePreparationAdmission,
 }
 
+mod source_inputs;
+
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
     pub(crate) checkpoint_selection: crate::runtime::RelationalCheckpointManifestSelection,
-    pub(crate) recovered_index_catalog: Option<crate::history::data::CanonicalIndexDefinitionDelta>,
-    pub(crate) recovered_authored_index_writes:
-        Option<crate::history::data::CanonicalAuthoredIndexWrites>,
     pub(crate) current_ownership:
         Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
     pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
@@ -50,7 +50,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
-    pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    pub(crate) diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) durability_admission:
@@ -61,7 +61,7 @@ pub(crate) struct RelationalPreparationRuntime {
     lifecycle: RelationalRuntimeOwnerBinding,
     publication_owner: RelationalRuntimePublicationBinding,
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
-    snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
+    snapshot_ids: Arc<SnapshotIdentityAllocator>,
     pub(crate) lineage_identity: crate::runtime::LineageIdentityAllocator,
     pub(crate) lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
 }
@@ -108,8 +108,6 @@ impl RelationalPreparationOwnerBinding {
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
             checkpoint_selection: self.checkpoint_selection.clone(),
-            recovered_index_catalog: None,
-            recovered_authored_index_writes: None,
             current_ownership: None,
             authored_coupling: None,
             symbol_references: Arc::default(),
@@ -208,49 +206,8 @@ impl RelationalPreparationRuntime {
         self.snapshot_capacity.occupied_handles()
     }
 
-    pub(crate) fn allocate_snapshot_id(&self) -> Option<crate::snapshots::data::SnapshotId> {
-        {
-            let update_counter = &self.snapshot_ids;
-            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = current.checked_add(1) else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    std::sync::atomic::Ordering::Relaxed,
-                    std::sync::atomic::Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(crate::snapshots::data::SnapshotId)
-    }
-
-    pub(crate) fn validate_reserved_lineage_events(
-        &self,
-        events: &[crate::lineage::data::LineageEventRecord],
-    ) -> Result<(), String> {
-        let mut previous = None;
-        for event in events {
-            if previous.is_some_and(|prior| event.event_id() <= prior) {
-                return Err(
-                    "live lineage event ids must advance within their reserved batch".to_owned(),
-                );
-            }
-            if event.event_id() >= self.lineage_identity.frontiers().1 {
-                return Err(format!(
-                    "live lineage event {} was not reserved by this allocator",
-                    event.event_id()
-                ));
-            }
-            previous = Some(event.event_id());
-        }
-        Ok(())
+    pub(crate) fn snapshot_id_allocator(&self) -> &SnapshotIdentityAllocator {
+        &self.snapshot_ids
     }
 
     pub(crate) fn performance_access(&self) -> PerformanceAccess<'_> {
@@ -262,37 +219,7 @@ impl RelationalPreparationRuntime {
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<SelectedRelationalBranchState, crate::transactions::data::CommitPreparationError>
     {
-        if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(crate::transactions::data::CommitPreparationError::selected_branch_root_reference_mismatch(
-                basis.identity().branch_id().clone(),
-                basis.observation().commit_id().map(|id| id.0),
-                basis.observation().version_id(),
-            ));
-        }
-        Ok(SelectedRelationalBranchState::from_admitted_basis(basis))
-    }
-
-    pub(crate) fn admitted_branch_basis_version(
-        &self,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Option<crate::identity::data::VersionId> {
-        let cell = self.history.branch_cell(basis.identity().branch_id())?;
-        if cell.identity() != basis.identity()
-            || cell.observation() != *basis.reference()
-            || cell.truth_version() != basis.truth_version()
-        {
-            return None;
-        }
-        match basis.reference().target() {
-            worth_foundational::FoundationalBranchTarget::Empty => {
-                Some(crate::identity::data::VersionId(0))
-            }
-            worth_foundational::FoundationalBranchTarget::Basis(target) => cell
-                .root()
-                .and_then(|root| root.commit_receipt().cloned())
-                .filter(|receipt| receipt.commit_id.0 == target.selected_commit_id())
-                .map(|receipt| receipt.version_id),
-        }
+        SelectedRelationalBranchState::from_owner_basis(self.runtime_instance_id(), basis)
     }
 
     pub(crate) fn push_bounded_preparation_diagnostic(
@@ -301,29 +228,7 @@ impl RelationalPreparationRuntime {
         kind: crate::diagnostics::data::DiagnosticsArtifactKind,
         entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
     ) -> crate::diagnostics::data::RelationalDiagnosticArtifact {
-        let artifact = crate::diagnostics::data::RelationalDiagnosticArtifact::new(
-            scope,
-            kind,
-            crate::diagnostics::data::DeterminismExpectation::Required,
-            entries,
-        );
-        let filtered = self
-            .config
-            .diagnostics
-            .profile
-            .filter_artifact(artifact.clone())
-            .unwrap_or_else(|| {
-                crate::diagnostics::data::RelationalDiagnosticArtifact::new(
-                    artifact.scope,
-                    artifact.kind,
-                    artifact.determinism,
-                    Vec::new(),
-                )
-            });
-        if !filtered.entries.is_empty() {
-            self.diagnostics.push(filtered.clone());
-        }
-        filtered
+        self.preparation_diagnostics().emit(scope, kind, entries)
     }
 }
 
@@ -347,12 +252,6 @@ impl crate::capabilities::DiagnosticArtifactSink for RelationalPreparationRuntim
         entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
     ) {
         self.push_bounded_preparation_diagnostic(scope, kind, entries);
-    }
-}
-
-impl crate::capabilities::PublicationPolicySource for RelationalPreparationRuntime {
-    fn max_patch_records_per_commit(&self) -> Option<usize> {
-        self.config.publication.policy.max_patch_records_per_commit
     }
 }
 
@@ -394,4 +293,18 @@ impl crate::capabilities::AspectPlanSource for RelationalPreparationRuntime {
 pub(crate) mod inline_type_budget;
 
 #[path = "preparation_runtime/mirror_publication.rs"]
-mod mirror_publication;
+pub(crate) mod mirror_publication;
+
+#[path = "preparation_runtime/working_state.rs"]
+mod working_state;
+
+#[path = "preparation_runtime/aggregate.rs"]
+mod aggregate;
+
+#[path = "preparation_runtime/schema_publication.rs"]
+mod schema_publication;
+
+mod applied_mutation;
+
+mod candidate_registration;
+mod history_preparation_inputs;

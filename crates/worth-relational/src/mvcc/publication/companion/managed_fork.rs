@@ -2,9 +2,9 @@
 use super::cell::publication_admission::PreparedManagedForkCell;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{CompanionBranchCell, CompanionBranchCellSlot, CompanionPreflightStop as Stop};
-use crate::branch::{
-    RelationalBranchRoot, RelationalBranchRootIdentityIssuer, RelationalForkDenial,
-};
+use crate::branch::fork::RelationalForkDenial;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRootIdentityIssuer;
 use crate::history::data::BranchId;
 use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;
@@ -53,20 +53,20 @@ impl PreparedManagedIndexSourceFork {
             .get()
             .ok_or_else(|| denied(Stop::ManagedSourceNotPrepared))?;
         let owner = original
-            .core
-            .upgrade()
+            .serving_cell()
             .ok_or_else(|| denied(Stop::ForeignCell))?;
-        if owner.runtime_instance_id != runtime
-            || owner.branch_id != *source_branch
-            || owner.registration_generation != generation
-            || original.image.root_id != source.id()
-            || original.image.commit_id != source.commit_id()
+        if owner.runtime_instance_id() != runtime
+            || owner.branch_id() != source_branch
+            || owner.registration_generation() != generation
+            || original.retained_image().root_id() != source.id()
+            || original.retained_image().commit_id() != source.commit_id()
         {
             return Err(denied(Stop::SelectedSourceMismatch));
         }
-        let source_payload = Arc::clone(&original.image.payload)
-            .downcast::<ManagedIndexBranchImage>()
-            .map_err(|_| denied(Stop::ForeignCell))?;
+        let source_payload = original
+            .retained_image()
+            .retain_payload::<ManagedIndexBranchImage>()
+            .ok_or_else(|| denied(Stop::ForeignCell))?;
         // Pay before constructing the header, core, image, admission and grant
         // Arc. These are one fork resource, sharing no source reader's allowance.
         let bytes = metadata_bytes(target_branch)
@@ -89,26 +89,20 @@ impl PreparedManagedIndexSourceFork {
             header.commit_id(),
             // The fork transition has a later stream position. Material still
             // belongs to this selected source commit's actual canonical position.
-            original.image.position(),
+            original.retained_image().position(),
             generation,
             payload,
         );
-        Arc::get_mut(&mut cell.core)
-            .expect("fresh unshared fork core")
-            ._fork_memory = memory.clone();
-        let image = cell.read_image();
-        let affinity = cell
-            .core
+        CompanionBranchCellCore::bind_unshared_fork_funding(&mut cell.core, memory);
+        cell.core
             .retain_source_affinity(execution)
             .map_err(denied)?;
         header
             .managed_source_image
-            .set(super::ManagedSourceRootImage {
-                core: Arc::downgrade(&cell.core),
-                affinity,
-                image: Arc::clone(&image.image),
-                _fork_memory: memory,
-            })
+            .set(
+                super::ManagedSourceRootImage::capture_current(&cell.core)
+                    .expect("fresh fork cell retained its original affinity"),
+            )
             .map_err(|_| denied(Stop::SelectedSourceMismatch))?;
         let cell = PreparedManagedForkCell::new(cell);
         let context = ManagedIndexSourceForkPreparation {

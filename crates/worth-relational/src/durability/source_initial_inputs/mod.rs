@@ -16,6 +16,7 @@ pub use frame::{
 };
 pub(crate) mod capture;
 mod decoding;
-mod fresh_initialization;
+pub(crate) mod fresh_initialization;
 pub(crate) mod image;
-pub use fresh_initialization::RelationalFreshInitialization;
+
+pub(crate) mod producer_roster;

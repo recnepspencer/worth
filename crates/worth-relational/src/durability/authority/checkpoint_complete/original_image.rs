@@ -3,7 +3,7 @@ use super::source::OriginalCanonicalCommit;
 use crate::durability::source_initial_inputs::normalized::{
     CanonicalOriginalRecord, NormalizedOriginalInputsRef,
 };
-use crate::runtime::OriginalBranchSchemaInputs;
+use crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs;
 use serde::ser::SerializeSeq;
 use serde::{Serialize, Serializer};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
@@ -110,10 +110,10 @@ impl Serialize for Transitions<'_> {
 
 #[derive(Serialize)]
 struct TransitionOriginalRecordRef<'a> {
-    sequence: crate::branch::RelationalBranchTransitionSequence,
+    sequence: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     follows: crate::publication::patch::data::PatchStreamPosition,
     schema: [u8; 32],
-    transition: &'a crate::branch::RelationalBranchTransition,
+    transition: &'a crate::branch::transition::RelationalBranchTransition,
     caller_association: Option<&'a crate::history::data::RelationalCallerAssociation>,
     artifact_digest: Option<[u8; 32]>,
 }

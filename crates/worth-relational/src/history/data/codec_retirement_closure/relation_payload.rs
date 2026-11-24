@@ -56,7 +56,7 @@ pub(super) fn validate(
             write,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )?
@@ -100,7 +100,7 @@ pub(super) fn reconstruct(
     lease: Option<&ExecutionResourceLease<'_>>,
     schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     let _memory = reserve(
         lease,
         bound
@@ -126,7 +126,7 @@ pub(super) fn reconstruct(
             crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
         ) {
             current = super::historical_selection::antecedent(
-                runtime.runtime,
+                runtime.input.projection.history,
                 &runtime.execution(),
                 &current,
                 origin,
@@ -184,7 +184,7 @@ pub(super) fn reconstruct(
             before,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )? || relation.birth != old.birth

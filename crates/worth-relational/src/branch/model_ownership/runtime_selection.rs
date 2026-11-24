@@ -6,33 +6,6 @@ use worth_execution::ExecutionRequest;
 use RelationalOwnedModelSelectionDenial as Denial;
 
 impl RelationalRuntime {
-    pub(crate) fn observe_model_source_boundary(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        basis: &AdmittedRelationalBranchBasis,
-        ownership: &RelationalModelOwnership,
-        subject: EntityId,
-        expected_kind: KindId,
-        boundary_work: u64,
-        contains: &mut dyn FnMut(EntityId, KindId) -> bool,
-    ) -> Result<Option<(KindId, Option<EntityId>, bool)>, RelationalModelOwnershipDenial> {
-        let (observed, _memory) =
-            basis::observe(self.runtime_instance_id(), execution, basis, |read| {
-                let Some(kind) = read.kind(subject)? else {
-                    return Ok(None);
-                };
-                if kind != expected_kind {
-                    return Ok(Some((kind, None, false)));
-                }
-                let (owner, within) = ownership.owner_with_boundary(
-                    read,
-                    subject,
-                    Some((boundary_work, contains)),
-                )?;
-                Ok(Some((kind, owner, within)))
-            })?;
-        Ok(observed)
-    }
     pub fn observe_model_owner(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -42,7 +15,7 @@ impl RelationalRuntime {
     ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
         let (owner, _memory) =
             basis::observe(self.runtime_instance_id(), execution, basis, |read| {
-                ownership.owner(read, subject)
+                ownership.plan.owner(read, subject)
             })?;
         Ok(owner)
     }

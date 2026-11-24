@@ -89,7 +89,7 @@ impl RelationalInitialSchemaInstallationReceipt {
     }
 }
 
-impl crate::durability::authority::RecoveredRelationalRuntimeAuthority {
+impl crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority {
     /// Pending transitions preserve authentic initial A evidence separately
     /// from the current replay schema. No A receipt is minted from B metadata.
     pub fn readmit_home_initial_schema_installation(

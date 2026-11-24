@@ -3,7 +3,7 @@ use super::*;
 
 #[cfg(test)]
 mod tests;
-use crate::branch::{
+use crate::branch::basis_descriptor::{
     RelationalBranchBasisDescriptor as Descriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
 
@@ -120,8 +120,8 @@ fn require_order(prior: &mut Option<Vec<u8>>, key: Vec<u8>) -> Result<(), Durabi
 
 fn observation_key(
     branch: &crate::history::data::BranchId,
-    reference: &crate::branch::RelationalBranchReferenceObservation,
-    truth: crate::branch::RelationalBranchVersion,
+    reference: &crate::branch::reference::observation::RelationalBranchReferenceObservation,
+    truth: crate::branch::version::RelationalBranchVersion,
 ) -> Result<Vec<u8>, DurabilityError> {
     rmp_serde::to_vec_named(&(branch, reference, truth)).map_err(|cause| corrupt(cause.to_string()))
 }

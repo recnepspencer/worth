@@ -4,7 +4,7 @@ use crate::durability::data::{
     RelationalNativeCheckpointCaptureDenial as Capture,
 };
 use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
-use crate::history::{
+use crate::history::commit::{
     RelationalCommitEnvelopeResidency, RetainedCanonicalIndex, RetiredCanonicalPlacement,
 };
 use std::{alloc::Layout, sync::Arc};

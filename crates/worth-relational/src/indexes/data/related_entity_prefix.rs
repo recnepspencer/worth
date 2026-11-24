@@ -31,7 +31,7 @@ impl<'a> BoundedRelatedEntityPrefixLookupRequest<'a> {
 /// It cannot be serialized, constructed from raw IDs, or reused for another range.
 #[derive(Debug)]
 pub struct BoundedRelatedEntityPrefixBoundary {
-    pub(crate) basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    pub(crate) basis: crate::history::retention::VisibilitySnapshotBasis,
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) runtime: u64,
     pub(crate) generation: Arc<DerivedIndexGeneration>,

@@ -3,12 +3,12 @@ use super::{
     super::fixture::{activation, activation_proof, basis, capture, protected_payload},
     fixture::*,
 };
-use crate::durability::authority::RecoveredCheckpointTransitionError;
-use crate::mvcc::RelationalOperationControl;
+use crate::durability::authority::checkpoint_transition::RecoveredCheckpointTransitionError;
+use crate::runtime::operation_control::RelationalOperationControl;
 
 #[test]
 fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
     let (mut target, mut recovered, _) = recover(execution, &world);
@@ -75,7 +75,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
 
 #[test]
 fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
     let (mut target, mut recovered, receipt) = recover(execution, &world);

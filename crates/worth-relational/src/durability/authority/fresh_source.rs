@@ -1,5 +1,5 @@
 //! Admit the actual newly created source without replacing its Native producer.
-use super::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::data::{
     DurabilityError, RecoveryFailureClass, RecoveryPlan, RelationalRecoveryStop as Stop,
 };
@@ -22,7 +22,8 @@ impl DurabilityRecoveryAuthority<'_> {
     ) -> Result<FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop> {
         crate::execution::check_request(execution).map_err(Stop::Request)?;
         let admitted =
-            super::recovery::admit_recovery_or_emit(self.runtime, plan).map_err(Stop::from)?;
+            super::recovery::runtime_installation::admit_recovery_or_emit(self.runtime, plan)
+                .map_err(Stop::from)?;
         // This owner admitted the plain plan above; an opaque prepared Home
         // recovery cannot enter fresh-source admission.
         let (plan, _prepared_home_schemas) = admitted.into_parts();

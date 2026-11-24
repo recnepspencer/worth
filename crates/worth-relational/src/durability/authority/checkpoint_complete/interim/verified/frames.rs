@@ -20,11 +20,10 @@ impl FrozenMemoryOriginals {
             .map_err(array_stop)?;
         for (offset, artifact) in self.artifacts.iter().enumerate() {
             let cell = artifact.envelope_residency();
-            let original = cell
-                .require_original_artifact(request, None)
+            let original = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&cell, request, None)
                 .map_err(stop)?;
-            let positioned = original.readmit_framed(request)
-                .map_err(crate::durability::authority::checkpoint_complete::source::canonical_readmission_stop)?.into_positioned();
+            let positioned = original.readmitted_body(request)
+                .map_err(crate::durability::authority::checkpoint_complete::source::canonical_readmission_stop)?;
             let envelope = positioned.canonical_arc();
             if positioned.position().0 != offset as u64 + 1
                 || envelope.commit.commit_id != artifact.commit_id()
@@ -54,7 +53,7 @@ impl FrozenMemoryOriginals {
                         .schemas
                         .as_ref()
                         .ok_or(Denial::OriginalAuthorityUnavailable)?;
-                    crate::history::OriginalCanonicalInputs {
+                    crate::history::commit::OriginalCanonicalInputs {
                         prestate_schema: schemas
                             .rows
                             .get(&recorded.prestate_schema)
@@ -67,6 +66,8 @@ impl FrozenMemoryOriginals {
                             .ok_or(Denial::OriginalAuthorityUnavailable)?,
                         mutation: recorded.mutation.clone(),
                     }
+                    .try_into()
+                    .map_err(Denial::Request)?
                 }
             };
             frames

@@ -28,7 +28,7 @@ pub(super) fn authority(
                     })?
                 }
                 "derived_relations" => vector::<
-                    crate::derived_relation::DerivedRelationDefinitionParts,
+                    crate::derived_relation::definition::DerivedRelationDefinitionParts,
                 >(value, request, |value| {
                     derived(value, request)
                 })?,
@@ -154,7 +154,7 @@ pub(super) fn derived(
             match field {
                 "identity" => identity(value, request)?,
                 "from" | "to" => domain(value, request)?,
-                "nodes" => vector::<crate::derived_relation::DerivedRelationNode>(
+                "nodes" => vector::<crate::derived_relation::definition::DerivedRelationNode>(
                     value,
                     request,
                     |value| derived_node(value, request),

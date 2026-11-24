@@ -1,6 +1,6 @@
 //! Live opted-in retirement custody comes from current facts before legacy history.
 use super::*;
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     pub(super) fn current_retirement_custody(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -18,7 +18,7 @@ impl RelationalRuntime {
             .iter()
             .filter_map(|r| match r.target {
                 EntityReference::Existing(id) => {
-                    Some(crate::transactions::data::RecordRef::Entity(id))
+                    Some(crate::transactions::data::primitives::RecordRef::Entity(id))
                 }
                 _ => None,
             })
@@ -62,7 +62,7 @@ impl RelationalRuntime {
                             Ok(false)
                         },
                     ),
-                    current,
+                    current.origins(),
                     context,
                 )
             })

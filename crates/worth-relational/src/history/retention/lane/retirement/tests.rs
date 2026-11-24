@@ -1,13 +1,10 @@
 //! The real lane lock cannot turn a cooperative release into a wait.
 use super::*;
-use crate::tests::support::runtime_with_test_schema;
+use crate::branch::basis_admission_tests::observed_empty_branch;
 
 #[test]
 fn result_snapshot_cleanup_lane_contention_keeps_original_obligation() {
-    let runtime = runtime_with_test_schema();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
+    let (_history, basis) = observed_empty_branch(1);
     let binding = &basis.inner.retention_binding;
     let mut obligation = binding
         .acquire(
@@ -36,5 +33,4 @@ fn result_snapshot_cleanup_lane_contention_keeps_original_obligation() {
         .contains_key(&obligation.obligation_id));
     assert!(obligation.try_retire_observation());
     drop(basis);
-    runtime.prepare_close().unwrap().finish();
 }

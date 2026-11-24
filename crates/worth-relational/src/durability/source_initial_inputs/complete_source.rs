@@ -1,6 +1,6 @@
 //! An additive Complete source artifact binds unchanged CHK18 to original roles.
 use super::{RelationalInitialInputsRefusal as Refusal, RelationalSourceInitialInputsArtifact};
-use crate::branch::RelationalBranchTransitionSequence;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::data::RelationalNativeCheckpoint;
 use crate::publication::patch::data::PatchStreamPosition;
 use sha2::{Digest, Sha256};

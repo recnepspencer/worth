@@ -1,5 +1,5 @@
 //! Rebind only an owner-readmitted exact root to the recovering Native frame.
-use super::super::basis::RelationalLiveBranchBasisDescriptorAxes;
+use super::super::basis_descriptor::RelationalLiveBranchBasisDescriptorAxes;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
 use crate::branch::basis_denial::RelationalBranchBasisDenial;
 use crate::branch::root::RelationalBranchRoot;

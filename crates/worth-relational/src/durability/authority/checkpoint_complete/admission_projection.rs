@@ -176,20 +176,13 @@ pub(super) fn capture(
     for original in originals.commits.iter() {
         crate::durability::artifact_payload_emission::request::account_work(request, 1)
             .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-        let carrier = originals
-            .carriers
-            .get(
-                &(original.inputs.result_schema.as_ref()
-                    as *const crate::branch::RelationalBranchRootSchemaAuthority
-                    as usize),
-            )
-            .ok_or(Denial::OriginalAuthorityUnavailable)?;
+        let carrier = CanonicalDigestId::new(original.inputs.result_schema.carrier_digest());
         rows.push(row::encode_original(
             &original.envelope,
             original.position,
             CanonicalDigestId::new(original.original_payload_digest),
             original.artifact.roots(),
-            *carrier,
+            carrier,
             request,
         )?)
         .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;

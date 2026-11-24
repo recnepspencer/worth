@@ -1,5 +1,7 @@
 //! The Complete image records original roles, independently of its schema union.
-use crate::branch::{RelationalBranchTransition, RelationalBranchTransitionSequence};
+use crate::branch::transition::{
+    sequence::RelationalBranchTransitionSequence, RelationalBranchTransition,
+};
 use crate::config::data::MutationConfig;
 use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;

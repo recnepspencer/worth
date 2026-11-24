@@ -1,6 +1,6 @@
 //! Group canonical descriptor references without a per-root full-source scan.
 use super::*;
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::history::data::CommitId;
 use worth_foundational::CanonicalDigestId;
 #[derive(Clone)]

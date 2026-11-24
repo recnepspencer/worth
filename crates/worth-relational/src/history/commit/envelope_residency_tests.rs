@@ -183,7 +183,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
         let original =
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, body).unwrap();
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(&execution, body).unwrap();
         let cell = RelationalCommitEnvelopeResidency::resident(original);
         let reads = source.reads.load(Ordering::Relaxed);
         cell.bind_performed(
@@ -277,7 +277,10 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     conflicting.body_mut_for_test().commit.version_id = crate::identity::data::VersionId(u64::MAX);
     assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
     let original =
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, envelope).unwrap();
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            &execution, envelope,
+        )
+        .unwrap();
     let cell = RelationalCommitEnvelopeResidency::resident(original);
     let Err(crate::durability::data::recovery_stop::RelationalRecoveryStop::Durability(failure)) =
         cell.demand_positioned(&execution, 1 << 30)
@@ -309,7 +312,11 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
     assert!(cell.resident_payload_bytes().is_none());
     assert_eq!(cell.payload_storage_bytes(), 0);
     let original = medium.latest_committed_artifact().unwrap();
-    let exported = cell.export_artifact(&execution).unwrap();
+    let exported =
+        crate::durability::canonical_commit_artifact::retained_frame_reads::export_artifact(
+            &cell, &execution,
+        )
+        .unwrap();
     assert_eq!(exported.as_bytes(), original.as_bytes());
     assert!(Arc::ptr_eq(
         &source,

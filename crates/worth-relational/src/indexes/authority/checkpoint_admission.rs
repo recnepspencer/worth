@@ -43,10 +43,8 @@ pub(crate) fn verify_checkpoint_index_bases(
             let root = roots
                 .get(&basis.commit)
                 .ok_or_else(|| corrupt("index basis has no selected checkpoint root"))?;
-            let projection =
-                projections
-                    .context
-                    .project(lane, execution, &basis.branch, root.clone())?;
+            let selection = root.admit_checkpoint_projection(lane, execution, &basis.branch)?;
+            let projection = projections.context.project(lane, selection);
             verify_basis(lane, execution, indexes, basis, projection.view())?;
         }
         Ok(())

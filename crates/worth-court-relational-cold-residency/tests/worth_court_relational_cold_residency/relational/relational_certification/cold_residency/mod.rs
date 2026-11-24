@@ -42,6 +42,7 @@ mod checkpoint_read_refusal;
 mod envelope_doors;
 mod envelope_failure_matrix;
 mod envelope_source;
+mod retained_export;
 
 mod envelope_roundtrips;
 

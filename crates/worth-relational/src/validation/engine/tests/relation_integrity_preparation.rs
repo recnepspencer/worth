@@ -1,11 +1,11 @@
 use super::validation_engine_fixtures::*;
-use crate::mvcc::RelationalOperationControl;
 use crate::mvcc::RelationalTransactionIntent;
 use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary as Boundary;
 use crate::runtime::operation_control::interruption_event::RelationalOperationInterruption as Interruption;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use crate::validation::engine::{InvariantPreparationControl, InvariantRuntimeView};
+use crate::validation::engine::InvariantPreparationControl;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
@@ -140,7 +140,7 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
         Allocation::Execution(&lease),
         Boundary::ProposalValidation,
     );
-    let view = InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let plan = entity_plan(1);
     let error = match InvariantExecutionRequest::from_profile_with_contract_at_current_version(
         &worth_execution::ExecutionRequest::leased(&lease),

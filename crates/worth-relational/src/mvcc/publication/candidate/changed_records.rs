@@ -6,7 +6,7 @@ impl PreparedRelationalCommitCandidate {
     /// Cost: one candidate lock and an Arc retain; no change re-projection.
     pub fn commit_change(
         &self,
-    ) -> Option<std::sync::Arc<crate::facade::storage::maintenance::CommitChange>> {
+    ) -> Option<std::sync::Arc<crate::branch::maintenance::CommitChange>> {
         let payload = self
             ._payload
             .lock()
@@ -54,7 +54,7 @@ impl PreparedRelationalCommitCandidate {
     /// prepared records; the callback is not invoked in that state.
     pub fn with_prepared_changed_records<T>(
         &self,
-        visit: impl FnOnce(&[crate::transactions::data::RecordRef]) -> T,
+        visit: impl FnOnce(&[crate::transactions::data::primitives::RecordRef]) -> T,
     ) -> Option<T> {
         let payload = self
             ._payload

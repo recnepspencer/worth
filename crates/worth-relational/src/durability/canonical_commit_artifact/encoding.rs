@@ -1,16 +1,4 @@
-#[cfg(test)]
-use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
-
-#[cfg(test)]
-use super::frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
-use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
-#[cfg(test)]
-use super::payload_wire::ArtifactPayloadRef;
 use super::RelationalCanonicalCommitArtifact;
-#[cfg(test)]
-use super::RelationalCanonicalCommitArtifactEncodeDenial;
-#[cfg(test)]
-use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {
@@ -19,52 +7,10 @@ impl RelationalCanonicalCommitArtifact {
     pub(crate) fn positioned_payload_digest(
         commit: &PositionedCanonicalCommit,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        Self::envelope_payload_digest(commit.position(), commit.envelope())
-    }
-
-    pub(crate) fn envelope_payload_digest(
-        position: crate::publication::patch::data::PatchStreamPosition,
-        envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        use sha2::{Digest as _, Sha256};
-        struct HashWriter(Sha256);
-        impl std::io::Write for HashWriter {
-            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-                self.0.update(bytes);
-                Ok(bytes.len())
-            }
-            fn flush(&mut self) -> std::io::Result<()> {
-                Ok(())
-            }
-        }
-        let mut position_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(&mut position_writer, &position)?;
-        let mut envelope_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(
-            &mut envelope_writer,
-            &crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
-        )?;
-        let mut input_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(&mut input_writer, &envelope.recorded_original_inputs())?;
-        Ok(*Digest::from_leaves(
-            position.0,
-            envelope.commit.commit_id.0,
-            position_writer.0.finalize().into(),
-            envelope_writer.0.finalize().into(),
-            input_writer.0.finalize().into(),
+        crate::history::commit::payload_commitment::digest_envelope(
+            commit.position(),
+            commit.envelope(),
         )
-        .as_bytes())
-    }
-
-    pub(crate) fn matches_positioned_payload(
-        original: &PositionedCanonicalCommit,
-        candidate: &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
-    ) -> Result<bool, rmp_serde::encode::Error> {
-        if std::sync::Arc::ptr_eq(original.canonical_arc(), candidate) {
-            return Ok(true);
-        }
-        Ok(Self::positioned_payload_digest(original)?
-            == Self::envelope_payload_digest(original.position(), candidate)?)
     }
 
     /// Frame one admitted positioned commit. Only Relational holds a
@@ -77,52 +23,9 @@ impl RelationalCanonicalCommitArtifact {
     #[cfg(test)]
     pub(crate) fn from_positioned(
         commit: &PositionedCanonicalCommit,
-        policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<Self, RelationalCanonicalCommitArtifactEncodeDenial> {
-        policy.check_live()?;
-        let payload = ArtifactPayloadRef::new(commit.position(), commit.envelope());
-        let payload_len = count_payload(&payload, policy)?;
-        let frame_len = HEADER_LEN
-            .checked_add(payload_len)
-            .ok_or(RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
-        if frame_len > super::MAXIMUM_ARTIFACT_BYTES {
-            return Err(RelationalCanonicalCommitArtifactEncodeDenial::SizeLimit {
-                observed: frame_len,
-                maximum: super::MAXIMUM_ARTIFACT_BYTES,
-            });
-        }
-        let declared_len = u64::try_from(payload_len)
-            .map_err(|_| RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
-        let unsealed = CanonicalCommitArtifactHeader {
-            position: commit.position(),
-            commit_id: commit.envelope().commit.commit_id,
-            digest: Digest::unsealed(),
-        };
-        let mut frame = ExecutionByteBuffer::allocate(frame_len, policy)?;
-        frame.extend_from_slice(&unsealed.emit(declared_len))?;
-        emit_payload(&payload, &mut frame)?;
-        if frame.len() != frame_len {
-            return Err(
-                RelationalCanonicalCommitArtifactEncodeDenial::CountEmissionMismatch {
-                    counted: payload_len,
-                    emitted: frame.len().saturating_sub(HEADER_LEN),
-                },
-            );
-        }
-        let digest = Digest::of_payload(
-            commit.position().0,
-            commit.envelope().commit.commit_id.0,
-            &frame.bytes()[HEADER_LEN..],
-        )
-        .map_err(|cause| {
-            RelationalCanonicalCommitArtifactEncodeDenial::PayloadEncoding {
-                detail: cause.to_string(),
-            }
-        })?;
-        frame.overwrite(DIGEST_OFFSET, digest.as_bytes())?;
-        Ok(Self {
-            bytes: frame.seal()?,
-            header: CanonicalCommitArtifactHeader { digest, ..unsealed },
-        })
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, super::RelationalCanonicalCommitArtifactEncodeDenial> {
+        super::verified_frame::VerifiedCanonicalCommitFrame::reference_encode(commit, policy)
+            .map(Self::from_verified)
     }
 }

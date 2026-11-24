@@ -1,7 +1,7 @@
 use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::validation::data::{
-    CustomInvariantProvenance, CustomInvariantTouchedSummary, CustomInvariantTraversalSummary,
-    StructuralCountView,
+use crate::validation::custom_rule::{CustomInvariantProvenance, CustomInvariantTraversalSummary};
+use crate::validation::data::custom_rule::touched_scope::{
+    CustomInvariantTouchedSummary, StructuralCountView,
 };
 
 pub(super) fn custom_invariant_provenance_diagnostic_value(

@@ -7,31 +7,10 @@ use super::{verified::FrozenMemoryOriginals, CapturedNativeInterimAdmission};
 use crate::durability::data::*;
 use worth_execution::ExecutionRequest;
 
-pub(super) fn capture(
-    runtime: &crate::runtime::RelationalRuntime,
+pub(super) fn encode_capture(
+    frozen: FrozenMemoryOriginals,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(RelationalNativeCheckpoint, CapturedNativeInterimAdmission), Denial> {
-    let mut answer = None;
-    let stage = request.run_native_with_checkpoint(|_| {
-        answer = Some(capture_inner(runtime, request));
-    });
-    match (stage, answer) {
-        (Ok(_), Some(answer)) => answer,
-        (Ok(_), None) => unreachable!("the capture stage produced its answer"),
-        (Err(cause), Some(Err(inner)))
-            if crate::execution::RelationalExecutionDenialCause::from(cause)
-                == crate::execution::RelationalExecutionDenialCause::NestedStopped =>
-        {
-            Err(inner)
-        }
-        (Err(cause), _) => Err(Denial::Request(cause.into())),
-    }
-}
-fn capture_inner(
-    runtime: &crate::runtime::RelationalRuntime,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<(RelationalNativeCheckpoint, CapturedNativeInterimAdmission), Denial> {
-    let frozen = FrozenMemoryOriginals::capture(runtime, request)?;
     let originals = frozen.read_frames(request)?;
     let frames = &originals.frames;
     let dictionary = OriginalSymbolDictionary::capture(&frozen.symbols, frames, request)?;
@@ -44,7 +23,7 @@ fn capture_inner(
         request,
     )?;
     let indexes = crate::durability::authority::checkpoint_image::capture_frozen_indexes(
-        frozen.current.indexes,
+        frozen.indexes,
         request,
     )?;
     let lineage = super::super::metadata::capture_lineage(frames, None, request)?;
@@ -90,13 +69,13 @@ fn capture_inner(
         &mut metadata.members,
         request,
     )?;
-    let (images, _) = schemas.into_parts();
+    let images = schemas.into_images();
     let (mut draft, member_map) = super::super::draft::assemble(
         &super::super::draft::CheckpointDraftMetadata {
             branches: &frozen.current.branches,
             identity: &frozen.current.identity,
             indexes: &indexes,
-            symbol_frontier: frozen.current.symbol_frontier,
+            symbol_frontier: frozen.symbol_frontier,
             through: frozen.transitions,
         },
         &canonical,

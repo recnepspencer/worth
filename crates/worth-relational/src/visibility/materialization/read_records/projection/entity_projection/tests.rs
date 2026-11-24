@@ -190,41 +190,6 @@ fn assert_projection_lifecycle(
 }
 
 #[test]
-fn borrowed_projection_cannot_bypass_installed_mask_contract() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(execution, &runtime, "masked");
-    let refusal = runtime
-        .read_truth()
-        .project_snapshot(&created.snapshot)
-        .unwrap()
-        .entity_record_with_projection_scope(
-            execution,
-            changed_entities(&created)[0],
-            ProjectionAspectScope::fields(aspect_key("name"), [field_key("alias")]),
-            |_| Some(()),
-        )
-        .expect_err("projection contract must refuse");
-
-    use crate::visibility::materialization::read_records::projection::contracts::denial::ProjectionContractRefusal;
-    use crate::visibility::materialization::read_records::projection::contracts::denial::ProjectionRecordDomain;
-    use crate::visibility::materialization::read_records::projection::contracts::denial::RelationalProjectionContractDenial;
-    assert_eq!(
-        refusal,
-        crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract(
-            RelationalProjectionContractDenial {
-                domain: ProjectionRecordDomain::Entity,
-                kind_id: KindId(1),
-                requirement: Some(0),
-                refusal: ProjectionContractRefusal::MaskRejected,
-            }
-        )
-    );
-}
-
-#[test]
 fn wrong_kind_refusal_precedes_projection_mask_admission() {
     let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);

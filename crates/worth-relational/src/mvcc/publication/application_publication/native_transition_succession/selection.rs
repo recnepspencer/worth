@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) fn select(
-    runtime: &RelationalRuntime,
+    inputs: RetirementHistoryInputs<'_>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &RelationalInstalledApplicationPublicationAuthority,
     basis: &AdmittedRelationalBranchBasis,
@@ -14,12 +14,12 @@ pub(super) fn select(
     )>,
     TransactionCommitError,
 > {
-    if installed.runtime_instance_id != runtime.runtime_instance_id() {
+    if installed.runtime_instance_id != inputs.projection.runtime_identity {
         return Err(origin_denial(
             "foreign installed owner for retirement successor",
         ));
     }
-    if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != inputs.projection.runtime_identity
         || !basis.is_current()
     {
         return Err(origin_denial(
@@ -48,20 +48,24 @@ pub(super) fn select(
         let current = if installed.source_scope_ownership.is_empty() {
             None
         } else {
-            crate::history::data::current_route_presence::read_current(execution, basis, meaning)?
+            crate::publication::ownership::route_selection::read_current(execution, basis, meaning)?
         };
         match current {
             Some(position) => Some(position),
             None => {
                 let historical = crate::history::data::readmit_required_output_route(
-                    execution, runtime, basis, meaning,
+                    execution, inputs, basis, meaning,
                 )
                 .map_err(custody::cold_stop)?;
                 if installed.source_scope_ownership.is_empty() {
                     historical
                 } else {
                     crate::history::data::current_route_presence::require_current_owned_route(
-                        execution, runtime, basis, meaning, historical,
+                        execution,
+                        inputs.projection.history,
+                        basis,
+                        meaning,
+                        historical,
                     )?
                 }
             }
@@ -72,8 +76,9 @@ pub(super) fn select(
     let Some(RequiredOutputRoutePosition::Published(commit)) = selected else {
         return Ok(None);
     };
-    let envelope = runtime
-        .history_access()
+    let envelope = inputs
+        .projection
+        .history
         .demand_commit_envelope(execution, commit)
         .map_err(custody::execution_stop)?
         .ok_or_else(|| origin_denial("selected retirement successor history absent"))?;

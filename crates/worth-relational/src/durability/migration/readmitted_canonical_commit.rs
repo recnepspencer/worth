@@ -1,6 +1,7 @@
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
+use crate::publication::patch::data::position_denial::RelationalCanonicalPositionAdmissionDenial;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
+use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
 
 /// A canonical commit that passed current readmission at its stream
 /// position. Only Relational readmission doors construct it; holding one
@@ -63,11 +64,22 @@ impl ReadmittedCanonicalCommit {
         position: PatchStreamPosition,
         canonical: CanonicalCommitEnvelope,
     ) -> Result<Self, RelationalCanonicalPositionAdmissionDenial> {
-        crate::runtime::readmit_positioned_canonical_commit(
-            position,
-            std::sync::Arc::new(canonical),
-        )
-        .map(Self::exact)
+        readmit_positioned_canonical_commit(position, std::sync::Arc::new(canonical))
+            .map(Self::exact)
+    }
+
+    /// Readmit the position and placement carried by one original retained cell.
+    pub(crate) fn readmit_retained(
+        cell: &crate::history::commit::RelationalCommitEnvelopeResidency,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::durability::data::RelationalRecoveryStop> {
+        let mut readmitted = Self::exact(cell.demand_positioned(execution, 1 << 30)?);
+        if let Some((entry, source)) = cell.journal_placement() {
+            readmitted = readmitted
+                .with_verified_journal_payload(entry.payload_digest)
+                .bind_journal_source(source)?;
+        }
+        Ok(readmitted)
     }
 
     pub fn position(&self) -> PatchStreamPosition {
@@ -96,11 +108,11 @@ impl ReadmittedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(
+    pub(crate) fn readmitted_envelope_mut_for_test(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> &mut crate::history::data::CanonicalCommitEnvelopeBody {
         self.journal = None;
-        self.positioned.envelope_mut_for_test(request)
+        self.positioned.positioned_envelope_mut_for_test(request)
     }
 }

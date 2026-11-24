@@ -1,12 +1,15 @@
 //! The portable image operation explicitly demands every selected cold subject.
 use super::checkpoint_capture::CapturedCheckpointBasis;
 use crate::durability::data::RelationalRecoveryStop;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::{
+    lineage::LineageSubsystem, services::symbol_table::RuntimeSymbolTable,
+};
 
 impl CapturedCheckpointBasis {
     pub(super) fn demand_memory_image(
         mut self,
-        runtime: &RelationalRuntime,
+        symbols: &RuntimeSymbolTable,
+        lineage: &LineageSubsystem,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, RelationalRecoveryStop> {
         // Hold the selection's bodies through image construction. Demand the exact
@@ -17,14 +20,12 @@ impl CapturedCheckpointBasis {
             .map(|cell| cell.demand_positioned(execution, 1 << 30))
             .collect::<Result<_, _>>()?;
         self.envelopes.sort_by_key(|commit| commit.position());
-        let _mirror = self
-            .partitions
-            .demand_all(execution, &runtime.services.symbols)?;
+        let _mirror = self.partitions.demand_all(execution, symbols)?;
         for root in &self.branch_roots {
-            root.demand_all_full(execution, &runtime.services.symbols)?;
+            root.demand_all_full(execution, symbols)?;
         }
         if let Some(directory) = &self.selected_directory {
-            runtime.services.symbols.demand_symbol_ids(
+            symbols.demand_symbol_ids(
                 execution,
                 directory
                     .manifest
@@ -33,14 +34,11 @@ impl CapturedCheckpointBasis {
                     .map(|page| crate::symbols::data::Symbol(page.first as u32)),
             )?;
             for page in &directory.manifest.lineage {
-                runtime
-                    .lineage
-                    .demand_node(execution, crate::identity::data::LineageId(page.first))?;
+                lineage.demand_node(execution, crate::identity::data::LineageId(page.first))?;
             }
         }
-        self.lineage_event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
-        self.lineage_events = runtime
-            .lineage
+        self.lineage_event_leases = lineage.demand_event_pages(execution, None, None)?;
+        self.lineage_events = lineage
             .published_rows()
             .into_iter()
             .map(|(event, publication_commit_id)| {
@@ -66,8 +64,8 @@ impl CapturedCheckpointBasis {
                     )
                 },
             )?;
-        self.symbol_table = runtime.services.symbols.snapshot();
-        self.lineage_nodes = runtime.lineage_access().resident_nodes_snapshot();
+        self.symbol_table = symbols.snapshot();
+        self.lineage_nodes = lineage.nodes_snapshot();
         Ok(self)
     }
 }

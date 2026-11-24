@@ -1,6 +1,5 @@
 //! Root-free original Native coordinates captured from an actual admitted basis.
 mod capture;
-mod capture_runtime;
 mod live;
 mod successor;
 mod successor_runtime;
@@ -10,7 +9,7 @@ use super::{
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::runtime::RelationalRuntimeState;
+use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
 use std::sync::{Arc, Weak};
 pub use successor::AdmittedRelationalMemoryComponent;
 use worth_execution::ExecutionRequest;
@@ -28,14 +27,15 @@ enum MemoryComponentOrigin {
 }
 #[derive(Debug)]
 struct InterimComponentMeaning {
-    owner: Weak<RelationalRuntimeState>,
+    owner: RelationalRuntimeOrigin,
     description: RecordedRelationalComponentReference,
-    canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
+    canonical:
+        Option<crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 struct MemoryComponentMeaning {
-    owner: Weak<RelationalRuntimeState>,
+    owner: RelationalRuntimeOrigin,
     descriptor: RelationalBranchBasisDescriptor,
     canonical: Option<Weak<CanonicalCommitEnvelope>>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
@@ -43,9 +43,11 @@ struct MemoryComponentMeaning {
 impl ObservedRelationalMemoryComponent {
     pub(crate) fn from_interim(
         request: &ExecutionRequest<'_, '_>,
-        owner: Weak<RelationalRuntimeState>,
+        owner: RelationalRuntimeOrigin,
         description: RecordedRelationalComponentReference,
-        canonical: Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
+        canonical: Option<
+            crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
+        >,
     ) -> Result<
         Self,
         crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
@@ -70,7 +72,7 @@ impl ObservedRelationalMemoryComponent {
     }
     pub fn matches_original(
         &self,
-        original: &crate::durability::authority::ObservedRelationalMemoryCommit,
+        original: &crate::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommit,
     ) -> bool {
         match self.original.as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning

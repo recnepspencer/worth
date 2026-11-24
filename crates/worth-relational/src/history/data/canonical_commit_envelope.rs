@@ -22,13 +22,13 @@ use crate::transactions::data::primitives::RecordRef;
 mod authored_index_writes;
 mod index_catalog;
 pub(crate) mod live_managed_source_history;
-pub(crate) mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
+pub(crate) mod recorded_inputs;
+pub(crate) mod schema_carrier;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
-pub(crate) use live_publication_inputs::{AppliedPublicationInputAccess, LivePublicationInputs};
 pub use original_inputs::{
     RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
 };
@@ -53,7 +53,7 @@ mod descriptive_touches;
 mod payload_encoding;
 mod required_output_codec_retirement;
 mod required_output_materialization;
-mod required_output_origin;
+pub(crate) mod required_output_origin;
 pub use descriptive_touches::{
     RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalTouchAdjacencyDirection,
@@ -102,9 +102,7 @@ pub(crate) use wire_projection::EnvelopeProjection;
 /// ```
 #[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
-    original_inputs: std::sync::OnceLock<
-        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
-    >,
+    original_inputs: std::sync::OnceLock<Option<recorded_inputs::RecordedCanonicalInputs>>,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     body: CanonicalCommitEnvelopeBody,
@@ -365,7 +363,7 @@ pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
-mod tests;
+pub(in crate::history) mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};

@@ -1,8 +1,7 @@
 //! Validate the exact native successor and prepare its target index image.
 use crate::durability::authority::checkpoint_transition::RecoveredCheckpointTransitionDenial as Denial;
-use crate::durability::authority::{
-    DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority,
-};
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::mvcc::PreparedRelationalCommitCandidate;
 
 impl DurabilityRecoveryAuthority<'_> {

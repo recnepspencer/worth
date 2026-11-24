@@ -12,7 +12,7 @@ use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTabl
 use crate::schema::data::{AspectBinding, RelationalSchemaRegistry};
 use crate::transactions::data::aspect_traces::AspectTraceEvidence;
 
-use super::super::canonical_delta_for_mutation;
+use super::super::super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use super::super::data::{AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence};
 use super::support::{
     assert_authoritative_whole_aspect_locator, authoritative_string_patch,

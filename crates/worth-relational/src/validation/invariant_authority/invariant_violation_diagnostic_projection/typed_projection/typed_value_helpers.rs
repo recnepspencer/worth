@@ -1,8 +1,7 @@
 use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{
-    CustomInvariantFailureIdentity, RelationCardinalityBoundary, RelationEndpointBoundary,
-};
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::results::custom_invariant_failure::CustomInvariantFailureIdentity;
+use crate::validation::data::results::{RelationCardinalityBoundary, RelationEndpointBoundary};
 
 pub(super) fn entity_reference_diagnostic_value(
     reference: &EntityReference,
@@ -61,7 +60,7 @@ pub(super) fn custom_invariant_identity_diagnostic_value(
 }
 
 pub(super) fn custom_invariant_semantic_identity_diagnostic_value(
-    identity: &crate::validation::data::CustomInvariantSemanticIdentity,
+    identity: &crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
 ) -> RelationalDiagnosticValue {
     RelationalDiagnosticValue::object([
         (

@@ -215,13 +215,17 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
     medium.file_embedded_checkpoint(execution, &runtime);
     create_entity(execution, &runtime, "allocation-tail");
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let tail = plan
         .tail_log
         .last_mut()
         .expect("tail commit is selected")
-        .envelope_mut_for_test(execution);
+        .readmitted_envelope_mut_for_test(execution);
     let forged = crate::identity::data::EntityId::new(
         original.partition_id,
         original.local_slot.0,
@@ -260,12 +264,16 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
     medium.file_embedded_checkpoint(execution, &runtime);
     create_entity(execution, &runtime, "allocation-tail");
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     plan.tail_log
         .last_mut()
         .expect("tail commit is selected")
-        .envelope_mut_for_test(execution)
+        .readmitted_envelope_mut_for_test(execution)
         .install_record_allocations(Vec::new());
 
     let mut recovered = durable_runtime_for_medium(&medium);
@@ -291,7 +299,11 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
     medium.file_embedded_checkpoint(execution, &runtime);
     let tail_entity = create_entity(execution, &runtime, "allocation-gap-tail");
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let forged_entity = crate::identity::data::EntityId::new(
         tail_entity.partition_id,
@@ -301,7 +313,7 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
     plan.tail_log
         .last_mut()
         .expect("tail commit")
-        .envelope_mut_for_test(execution)
+        .readmitted_envelope_mut_for_test(execution)
         .install_record_allocations(vec![
             crate::history::data::CanonicalRecordAllocation::with_origin(
                 0,
@@ -352,13 +364,17 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         .unwrap();
     runtime.execute_prepared_merge(execution, prepared).unwrap();
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let tail = plan
         .tail_log
         .last_mut()
         .expect("merge tail is selected")
-        .envelope_mut_for_test(execution);
+        .readmitted_envelope_mut_for_test(execution);
     tail.install_record_allocations(vec![crate::history::data::CanonicalRecordAllocation::new(
         0,
         crate::transactions::data::RecordRef::Entity(entity),

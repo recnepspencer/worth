@@ -37,7 +37,7 @@ impl<'a> Fold<'a> {
                 return Err(Refusal::Malformed);
             }
             state.generation = worth_foundational::FoundationalBranchReferenceGeneration::initial();
-            state.truth = crate::branch::RelationalBranchVersion::initial();
+            state.truth = crate::branch::version::RelationalBranchVersion::initial();
             return self.record(target, state, request);
         }
         let branch = entry.transition.branch();

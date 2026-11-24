@@ -10,15 +10,15 @@ pub enum RelationalSnapshotReleaseDenial {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalSnapshotReleaseReceipt {
-    snapshot_id: crate::snapshots::data::SnapshotId,
+    snapshot_id: crate::snapshots::data::coordinates::SnapshotId,
 }
 
 impl RelationalSnapshotReleaseReceipt {
-    pub(crate) const fn new(snapshot_id: crate::snapshots::data::SnapshotId) -> Self {
+    pub(crate) const fn new(snapshot_id: crate::snapshots::data::coordinates::SnapshotId) -> Self {
         Self { snapshot_id }
     }
 
-    pub const fn snapshot_id(&self) -> crate::snapshots::data::SnapshotId {
+    pub const fn snapshot_id(&self) -> crate::snapshots::data::coordinates::SnapshotId {
         self.snapshot_id
     }
 }

@@ -1,6 +1,7 @@
 //! A small escaped index subject retains only its own actual metadata bill.
 use super::RelationalCommitIndexEntry;
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
+use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 #[derive(Debug)]
@@ -15,8 +16,8 @@ impl RetainedCanonicalIndex {
         Arc::ptr_eq(&self.0, &other.0)
     }
     /// Weak identity of this exact retained index owner, for custody census.
-    pub(crate) fn allocation_witness(&self) -> crate::durability::RelationalAllocationWitness {
-        crate::durability::RelationalAllocationWitness::of(&self.0)
+    pub(crate) fn allocation_witness(&self) -> RelationalAllocationWitness {
+        RelationalAllocationWitness::of(&self.0)
     }
     fn reserve(
         receipt: &RelationalCommitReceipt,

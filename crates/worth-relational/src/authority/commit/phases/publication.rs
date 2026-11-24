@@ -1,5 +1,4 @@
 use crate::authority::commit::phases::schema_continuity::validate_schema_continuity_publication;
-use crate::capabilities::{DiagnosticArtifactSink, PublicationPolicySource};
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsScope, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
@@ -7,22 +6,27 @@ use crate::history::data::CanonicalCommitAuthorityKind;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::lineage::data::LineageFinalizationArtifact;
+use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::transactions::data::{
-    MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
-};
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(crate) fn enforce_patch_budget(
-    runtime: &(impl DiagnosticArtifactSink + PublicationPolicySource),
+    max_patch_records_per_commit: Option<usize>,
+    diagnostics: PreparationDiagnostics<'_>,
     patch: &CanonicalAuthoritativePatch,
 ) -> Result<(), TransactionCommitError> {
-    let Some(max_patch_records_per_commit) = runtime.max_patch_records_per_commit() else {
+    let Some(max_patch_records_per_commit) = max_patch_records_per_commit else {
         return Ok(());
     };
     if patch.authoritative_record_patches.len() > max_patch_records_per_commit {
-        runtime.emit_failure_diagnostic(
+        diagnostics.emit_failure_diagnostic(
             DiagnosticsScope::PatchPublication,
             DiagnosticCode::DiagnosticsPublicationFailure,
             "patch record budget exceeded",
@@ -39,8 +43,15 @@ pub(crate) fn enforce_patch_budget(
     Ok(())
 }
 
-pub(crate) fn canonical_commit_envelope(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+pub(crate) struct CanonicalEnvelopeInputs<'a> {
+    pub(crate) history: &'a RelationalPreparationHistory,
+    pub(crate) diagnostics: PreparationDiagnostics<'a>,
+    pub(crate) symbols: &'a RuntimeSymbolTable,
+    pub(crate) symbol_references: &'a std::collections::BTreeSet<crate::symbols::data::Symbol>,
+}
+
+pub(crate) fn canonical_commit_envelope<'a>(
+    inputs: impl Into<CanonicalEnvelopeInputs<'a>>,
     content: crate::content::publication::ContentPublication,
     index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     commit_reference: &RelationalCommitReceipt,
@@ -58,15 +69,15 @@ pub(crate) fn canonical_commit_envelope(
     derived_index_artifacts: DerivedIndexArtifacts,
     schema_continuity: &crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
 ) -> Result<crate::history::data::CanonicalCommitEnvelopeDraft, TransactionCommitError> {
+    let inputs = inputs.into();
     let published_lineage = lineage_artifact.publish();
-    runtime
-        .performance_access()
-        .count_lineage_publication_artifact(
-            published_lineage.lineage_events().len(),
-            published_lineage.lineage_decision_log().len(),
-        );
+    inputs.diagnostics.instrumentation.count(|counters| {
+        counters.lineage_publication_event_width += published_lineage.lineage_events().len();
+        counters.lineage_publication_decision_width +=
+            published_lineage.lineage_decision_log().len();
+    });
     if published_lineage.branch_id() != branch_id || lineage_artifact.branch_id() != branch_id {
-        runtime.emit_failure_diagnostic(
+        inputs.diagnostics.emit_failure_diagnostic(
             DiagnosticsScope::Lineage,
             DiagnosticCode::DiagnosticsPublicationFailure,
             "lineage artifact branch scope did not match publication branch",
@@ -100,15 +111,14 @@ pub(crate) fn canonical_commit_envelope(
         schema_continuity.schema_reconciliation_descriptor.clone(),
         schema_continuity.descriptor_semantics_version,
     );
-    envelope.revision_symbol_references = runtime.symbol_references.iter().copied().collect();
-    envelope.symbol_texts = runtime
-        .services
+    envelope.revision_symbol_references = inputs.symbol_references.iter().copied().collect();
+    envelope.symbol_texts = inputs
         .symbols
         .with_read(|symbols| {
             symbols.commit_texts(
                 merged_plan,
                 &envelope.patch,
-                runtime.symbol_references.iter().copied(),
+                inputs.symbol_references.iter().copied(),
             )
         })
         .map_err(|detail| {
@@ -119,8 +129,9 @@ pub(crate) fn canonical_commit_envelope(
         })?;
     // The envelope records process-local identities in the canonical runtime
     // frame, so its bytes do not depend on which process produced it (D11).
-    envelope.merged_plan.transaction_id = crate::branch::CANONICAL_TRANSACTION_ID;
-    envelope.branch_cell_checkpoint = runtime
+    envelope.merged_plan.transaction_id =
+        crate::branch::reference_checkpoint_data::CANONICAL_TRANSACTION_ID;
+    envelope.branch_cell_checkpoint = inputs
         .history
         .branch_cell(branch_id)
         .map(|cell| cell.checkpoint().in_canonical_frame())
@@ -131,7 +142,12 @@ pub(crate) fn canonical_commit_envelope(
                 format!("branch cell cannot be recorded in the canonical frame: {denial:?}"),
             ))
         })?;
-    validate_schema_continuity_publication(runtime, branch_id, schema_continuity, &envelope)?;
+    validate_schema_continuity_publication(
+        inputs.diagnostics,
+        branch_id,
+        schema_continuity,
+        &envelope,
+    )?;
     Ok(envelope)
 }
 

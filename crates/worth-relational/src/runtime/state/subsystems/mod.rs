@@ -5,14 +5,14 @@ pub(crate) mod history;
 pub(crate) mod indexing;
 pub(crate) mod lineage;
 pub(crate) mod lineage_identity;
-mod publication;
-mod publication_diagnostics;
+pub(crate) mod publication;
 pub(crate) mod record_identity;
-mod schema_contract_runtime;
+mod schema_contract_construction;
+pub(crate) mod schema_contract_runtime;
 pub(crate) mod services;
 pub(crate) mod storage;
 mod storage_lifecycle;
-mod visibility;
+pub(crate) mod visibility;
 
 pub(crate) trait RuntimeSubsystem: Sized {
     type Config;
@@ -63,9 +63,6 @@ pub(crate) use lineage::{
 };
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use publication::PublicationSubsystem;
-pub(crate) use publication_diagnostics::{
-    RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
-};
 pub(crate) use record_identity::{
     PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
 };

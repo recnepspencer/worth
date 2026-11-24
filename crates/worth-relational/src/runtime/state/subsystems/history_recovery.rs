@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::branch::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
+use crate::branch::root::{RelationalBranchRoot, RelationalRootCommitEvidence};
+use crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage;
 use crate::history::data::CommitId;
 use worth_foundational::FoundationalBranchTarget;
 
@@ -17,9 +20,9 @@ impl HistorySubsystem {
     pub(crate) fn restore_branch_cells(
         &mut self,
         checkpoints: &[RelationalBranchCellCheckpoint],
-        lifecycle: &[crate::durability::data::DurableBranchLifecycleImage],
+        lifecycle: &[DurableBranchLifecycleImage],
         retired_names: &[crate::history::data::BranchId],
-        roots: &std::collections::BTreeMap<CommitId, Arc<crate::branch::RelationalBranchRoot>>,
+        roots: &std::collections::BTreeMap<CommitId, Arc<RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<(), String> {
         if checkpoints.is_empty() {
@@ -29,13 +32,11 @@ impl HistorySubsystem {
         let mut cells = std::collections::BTreeMap::new();
         for checkpoint in checkpoints.iter().cloned() {
             let root = match checkpoint.observation.target() {
-                FoundationalBranchTarget::Empty => {
-                    Some(crate::branch::RelationalBranchRoot::empty_with_schema(
-                        schema_registry,
-                        crate::schema::data::runtime_descriptor_semantics_policy()
-                            .current_write_version(),
-                    ))
-                }
+                FoundationalBranchTarget::Empty => Some(RelationalBranchRoot::empty_with_schema(
+                    schema_registry,
+                    crate::schema::data::runtime_descriptor_semantics_policy()
+                        .current_write_version(),
+                )),
                 FoundationalBranchTarget::Basis(target) => {
                     let commit_id = CommitId(target.selected_commit_id());
                     validate_branch_target_artifact(
@@ -50,7 +51,7 @@ impl HistorySubsystem {
                         )
                     })?;
                     let linked = match root.commit_evidence() {
-                        Some(crate::branch::RelationalRootCommitEvidence::Original(_)) => {
+                        Some(RelationalRootCommitEvidence::Original(_)) => {
                             let envelope =
                                 self.recorded_commit_envelope(commit_id).ok_or_else(|| {
                                     format!(
@@ -65,10 +66,9 @@ impl HistorySubsystem {
                             )?;
                             root.links_envelope(&envelope)
                         }
-                        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
-                            self.commit_artifact(commit_id)
-                                .is_some_and(|artifact| commit.links_artifact(&artifact))
-                        }
+                        Some(RelationalRootCommitEvidence::Checkpoint(commit)) => self
+                            .commit_artifact(commit_id)
+                            .is_some_and(|artifact| commit.links_artifact(&artifact)),
                         None => false,
                     };
                     if root.descriptor() != Some(target.roots()) || !linked {
@@ -122,11 +122,11 @@ impl HistorySubsystem {
 /// no branch the checkpoint does not hold.
 fn recorded_postures(
     checkpoints: &[RelationalBranchCellCheckpoint],
-    lifecycle: &[crate::durability::data::DurableBranchLifecycleImage],
+    lifecycle: &[DurableBranchLifecycleImage],
 ) -> Result<
     std::collections::BTreeMap<
         crate::history::data::BranchId,
-        crate::branch::RelationalBranchLifecyclePosture,
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture,
     >,
     String,
 > {

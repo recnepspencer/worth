@@ -16,7 +16,7 @@ pub(crate) fn selectors(
     else {
         return Ok(Vec::new());
     };
-    let view = InvariantStateView::new(
+    let view = StructuralStateView::new(
         root.as_ref(),
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
@@ -26,7 +26,9 @@ pub(crate) fn selectors(
             continue;
         };
         root.demand_head_partition(execution, id.partition_id)
-            .map_err(|e| crate::authority::commit::preparation::storage_read_denial(basis, e))?;
+            .map_err(|e| {
+                crate::authority::commit::preparation::storage_denial::storage_read_denial(basis, e)
+            })?;
         let head = root
             .get_current_partition(id.partition_id)
             .ok_or_else(|| damaged(record))?;
@@ -44,7 +46,9 @@ pub(crate) fn selectors(
             checkpoint(context, 1)?;
             root.demand_head_partition(execution, edge.partition_id)
                 .map_err(|e| {
-                    crate::authority::commit::preparation::storage_read_denial(basis, e)
+                    crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                        basis, e,
+                    )
                 })?;
             let partition = root
                 .get_current_partition(edge.partition_id)

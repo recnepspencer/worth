@@ -124,7 +124,7 @@ impl RuntimeExtensions {
     }
 
     fn build_publication_subsystem(&self) -> PublicationSubsystem {
-        let mut publication = <PublicationSubsystem as RuntimeSubsystem>::new(&());
+        let mut publication = PublicationSubsystem::default();
         if let Some(post_commit_consumer) = &self.post_commit_consumer {
             publication.post_commit_consumer = std::sync::Arc::clone(post_commit_consumer);
         }
@@ -227,7 +227,7 @@ impl RelationalRuntime {
         if let Some(medium) = extensions.durable_medium.take() {
             durability.attach_medium(medium);
         }
-        let visibility = <VisibilitySubsystem as RuntimeSubsystem>::new(&config);
+        let visibility = VisibilitySubsystem::new(&config);
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
             history,
@@ -261,8 +261,8 @@ impl RelationalRuntime {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             commit_strategies: RuntimeSubsystem::fork(&self.commit_strategies),
             partitions: self.fork_partitions(),
-            visibility: RuntimeSubsystem::fork(&self.visibility),
-            publication: RuntimeSubsystem::fork(&self.publication),
+            visibility: self.visibility.fork(),
+            publication: self.publication.fork(),
             history,
             indexes: self.indexes.fork(),
             lineage: self.lineage.fork(),

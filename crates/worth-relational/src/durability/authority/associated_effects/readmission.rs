@@ -1,5 +1,6 @@
 //! Read the exact discovered source outside owner locks and match actual state.
 use super::*;
+use crate::durability::authority::runtime_access::DurabilityAuthority;
 
 impl DurabilityAuthority<'_> {
     pub fn readmit_associated_effect(
@@ -65,9 +66,11 @@ impl DurabilityAuthority<'_> {
                 {
                     return Err(Refusal::CatalogSubjectChanged);
                 }
-                let data = commit.effect_data(execution).map_err(|cause| {
-                    Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
-                })?;
+                let data =
+                    crate::durability::checkpoint_admission::effect::read(&commit, execution)
+                        .map_err(|cause| {
+                            Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
+                        })?;
                 let semantic = RecoveredRelationalSemanticResult {
                     semantic: data.semantic.clone(),
                 };

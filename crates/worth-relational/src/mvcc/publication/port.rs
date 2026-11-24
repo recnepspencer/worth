@@ -1,15 +1,14 @@
 use crate::runtime::state::subsystems::history::history_canonical_routes::canonical_publication_reservation_counters;
 use std::sync::Arc;
 
+use super::movement::PreparedCanonicalBranchMovement;
+
 use super::{
     PerformedRelationalCommit, PreparedRelationalCommitCandidate, RelationalPublicationDeferred,
     RelationalPublicationDenial, RelationalPublicationFailure, RelationalPublicationFailureKind,
     RelationalPublicationOutcome, StaleRelationalBranchObservation,
 };
-use crate::branch::{
-    RelationalBranchBasisDescriptor, RelationalBranchPublicationCell,
-    RelationalBranchReferenceCell, RelationalBranchRoot,
-};
+use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchPublicationCell};
 
 /// Independently borrowable Relational owner publication service.
 #[derive(Debug, Clone)]
@@ -22,14 +21,6 @@ pub struct RelationalPublicationPort {
     history: crate::runtime::RelationalPreparationHistory,
     index_definitions: crate::runtime::IndexDefinitionReadBinding,
     medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
-}
-
-pub(crate) struct PreparedCanonicalBranchMovement {
-    record_allocations: Option<crate::runtime::PendingRecordAllocations>,
-    symbol_meanings: Option<crate::runtime::PreparedSymbolPublication>,
-    next_cell: RelationalBranchReferenceCell,
-    root: Arc<RelationalBranchRoot>,
-    canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
 }
 
 struct PreparedBranchPublicationPreflight {
@@ -115,25 +106,6 @@ impl RelationalPublicationPort {
         ) {
             Ok(outcome) => outcome.expect("the ordinary receiver consumes its one cutover token"),
             Err(outcome) => outcome,
-        }
-    }
-}
-
-impl PreparedCanonicalBranchMovement {
-    pub(crate) fn new(
-        record_allocations: crate::runtime::PendingRecordAllocations,
-        symbol_meanings: crate::runtime::PreparedSymbolPublication,
-        mut next_cell: RelationalBranchReferenceCell,
-        root: Arc<RelationalBranchRoot>,
-        canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
-    ) -> Self {
-        next_cell.install_root(Arc::clone(&root));
-        Self {
-            record_allocations: Some(record_allocations),
-            symbol_meanings: Some(symbol_meanings),
-            next_cell,
-            root,
-            canonical_publication_route,
         }
     }
 }

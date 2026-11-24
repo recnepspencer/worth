@@ -1,6 +1,6 @@
 //! Current-loan direct occurrences retain exact nested parent issuance.
 use super::*;
-use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape};
+use crate::derived_relation::{read::DerivedRelationData, read_shape::DerivedRelationReadShape};
 use crate::validation::data::structural_read::StructuralRelationRecord;
 
 /// Flat actual ancestor records avoid recursive destruction. Backing drops
@@ -13,7 +13,7 @@ struct ProjectionLineage {
 /// Actual endpoint preparation tied to its Source row, route and parent path.
 pub struct PreparedManagedIndexProjectionRead {
     root: ManagedIndexSourceOccurrence,
-    source_identity: Option<crate::derived_relation::DerivedRelationReadIdentity>,
+    source_identity: Option<crate::derived_relation::proof::DerivedRelationReadIdentity>,
     route: usize,
     anchor: EntityId,
     lineage: Option<Arc<ProjectionLineage>>,

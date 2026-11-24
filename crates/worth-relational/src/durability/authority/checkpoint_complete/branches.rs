@@ -1,9 +1,10 @@
 //! Classify actual captured components against the SAME owner-issued current cut.
 use super::Denial;
 use crate::branch::{
-    CheckpointBranchMetadata, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
-    RelationalBranchCellCheckpoint, RelationalBranchLifecyclePosture, RelationalBranchRoot,
-    RelationalBranchRootSchemaAuthority,
+    basis_descriptor::RelationalBranchBasisDescriptor,
+    basis_descriptor::RelationalBranchBasisPosture, lifecycle::RelationalBranchLifecyclePosture,
+    reference_checkpoint_data::RelationalBranchCellCheckpoint, registry::CheckpointBranchMetadata,
+    root::schema::RelationalBranchRootSchemaAuthority, root::RelationalBranchRoot,
 };
 use crate::history::data::BranchId;
 use std::sync::Arc;

@@ -4,20 +4,23 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::materialization::RelationalMaterializationRecord;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::CanonicalRequiredOutputMaterializationRecord as Member;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 
 mod selection;
 
-pub(crate) fn capture_materialization_producers(
+pub(crate) fn capture_materialization_producers<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     manifest: &[RelationalMaterializationRecord],
 ) -> Result<(Vec<CommitId>, Vec<Member>, ExecutionMemoryReservation), TransactionCommitError> {
     let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
-    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
         || !basis.is_current()
     {
         return Err(
@@ -38,7 +41,7 @@ pub(crate) fn capture_materialization_producers(
     basis
         .inner
         .root
-        .demand_regions_full(execution, &runtime.runtime.services.symbols, regions)
+        .demand_regions_full(execution, runtime.input.projection.symbols, regions)
         .map_err(|failure| stop(Stop::Request(failure.into())))?;
     execution
         .in_scope(|lease| {

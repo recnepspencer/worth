@@ -1,7 +1,7 @@
 //! Disposable opaque material belongs to one exact Native image, never its clone.
 use super::*;
 use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
-use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 

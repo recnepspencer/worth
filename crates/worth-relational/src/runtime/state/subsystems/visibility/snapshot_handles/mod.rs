@@ -1,4 +1,7 @@
 mod active_registry;
+mod head_selection;
+mod identity;
+pub(crate) use identity::SnapshotIdentityAllocator;
 mod published_capacity;
 mod published_closeout;
 mod published_registry;
@@ -6,10 +9,6 @@ mod published_release;
 pub(crate) use published_release::PublishedSnapshotReleaseObservation;
 mod version_counts;
 
-#[cfg(test)]
-mod cross_registry_composition_tests;
-
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::identity::data::VersionId;
@@ -58,7 +57,7 @@ pub(crate) struct SnapshotHandles {
     /// Shared ownership so a release obligation can hold a weak reference to the
     /// registry it must close against without keeping it alive.
     published: Arc<PublishedSnapshotHandleRegistry>,
-    next_snapshot_id: Arc<AtomicU64>,
+    next_snapshot_id: Arc<SnapshotIdentityAllocator>,
 }
 
 /// One registry's cost accounting, observed under that registry's lock alone.
@@ -89,7 +88,7 @@ impl SnapshotHandles {
     pub(crate) fn try_retained_registrations(&self) -> Result<(bool, bool), ()> {
         Ok((!self.active.try_empty()?, !self.published.try_empty()?))
     }
-    pub(crate) fn snapshot_identity_binding(&self) -> Arc<AtomicU64> {
+    pub(crate) fn snapshot_identity_binding(&self) -> Arc<SnapshotIdentityAllocator> {
         Arc::clone(&self.next_snapshot_id)
     }
 
@@ -97,7 +96,7 @@ impl SnapshotHandles {
         Self {
             active: ActiveSnapshotHandleRegistry::new(),
             published: Arc::new(PublishedSnapshotHandleRegistry::new()),
-            next_snapshot_id: Arc::new(AtomicU64::new(1)),
+            next_snapshot_id: Arc::new(SnapshotIdentityAllocator::new()),
         }
     }
 
@@ -129,28 +128,7 @@ impl SnapshotHandles {
     }
 
     pub(crate) fn next_snapshot_id(&self) -> Option<SnapshotId> {
-        {
-            let update_counter = &self.next_snapshot_id;
-            let mut current = update_counter.load(Ordering::Relaxed);
-            loop {
-                let Some(updated_value) =
-                    (current != 0).then(|| current.checked_add(1).unwrap_or(0))
-                else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(SnapshotId)
+        self.next_snapshot_id.allocate_active()
     }
 
     pub(crate) fn insert_active(&self, snapshot_id: SnapshotId, binding: SnapshotHandleBinding) {
@@ -173,15 +151,6 @@ impl SnapshotHandles {
         self.active
             .selected_branch_bytes(snapshot_id)
             .or_else(|| self.published.selected_branch_bytes(snapshot_id))
-    }
-
-    pub(crate) fn selected_root(
-        &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<Arc<crate::branch::RelationalBranchRoot>> {
-        self.active
-            .selected_root(snapshot_id)
-            .or_else(|| self.published.selected_root(snapshot_id))
     }
 
     /// Whether either registry still knows this identity, answered by one

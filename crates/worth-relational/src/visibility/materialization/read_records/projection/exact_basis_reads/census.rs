@@ -10,10 +10,7 @@ impl ExactProjectionReader<'_> {
     {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
-            super::super::super::read_work::record_memory::partition_ids(
-                self.root.as_ref(),
-                memory,
-            )?;
+            super::super::super::read_work::record_memory::partition_ids(&self.root, memory)?;
         for partition in partitions {
             let incoming =
                 self.entity_records_in_selected_partition(partition, kind, charge, memory)?;
@@ -37,8 +34,8 @@ impl ExactProjectionReader<'_> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
     {
         self.view.reader().paid_entities_in_partition(
-            self.root.as_ref(),
-            self.root.schema_authority().registry(),
+            &self.root,
+            self.registry(),
             partition,
             kind,
             crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,
@@ -57,10 +54,7 @@ impl ExactProjectionReader<'_> {
     > {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
-            super::super::super::read_work::record_memory::partition_ids(
-                self.root.as_ref(),
-                memory,
-            )?;
+            super::super::super::read_work::record_memory::partition_ids(&self.root, memory)?;
         for partition in partitions {
             let incoming =
                 self.relation_records_in_selected_partition(partition, kind, charge, memory)?;
@@ -82,8 +76,8 @@ impl ExactProjectionReader<'_> {
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.view.reader().paid_relations_in_partition(
-            self.root.as_ref(),
-            self.root.schema_authority().registry(),
+            &self.root,
+            self.registry(),
             partition,
             kind,
             crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,

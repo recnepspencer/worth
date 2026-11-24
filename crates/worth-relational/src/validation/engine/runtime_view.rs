@@ -1,8 +1,22 @@
 use crate::identity::data::KindId;
+use crate::runtime::state::subsystems::schema_contract_runtime::SchemaContractRuntimeSubsystem;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
-use crate::runtime::RelationalPreparationRuntime;
-use crate::runtime::RelationalRuntime;
-use crate::runtime::SchemaContractRuntimeSubsystem;
+
+/// The configuration and immutable read handles selected by the owner.
+pub(crate) struct InvariantRuntimeInputs<'a> {
+    pub(crate) selected_registry: crate::schema::SchemaRegistryCustody,
+    pub(crate) prior_registry: Option<crate::schema::SchemaRegistryCustody>,
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
+    pub(crate) config: std::sync::Arc<crate::config::data::RelationalRuntimeConfig>,
+    pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
+    pub(crate) instrumentation: &'a RuntimeInstrumentation,
+    #[cfg(test)]
+    pub(crate) current_version_id: crate::identity::data::VersionId,
+    pub(crate) entity_count: usize,
+    pub(crate) relation_count: usize,
+    pub(crate) version_depth: usize,
+    pub(crate) snapshot_pressure: bool,
+}
 
 /// Read-only validation projection shared by the runtime and preparation port.
 ///
@@ -14,8 +28,6 @@ use crate::runtime::SchemaContractRuntimeSubsystem;
 pub(crate) struct InvariantRuntimeView<'a> {
     pub(crate) selected_registry: crate::schema::SchemaRegistryCustody,
     pub(crate) prior_registry: Option<crate::schema::SchemaRegistryCustody>,
-    pub(crate) home_target:
-        Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) custom_kernel_posture: worth_foundational::ExecutionPosture,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: std::sync::Arc<crate::config::data::RelationalRuntimeConfig>,
@@ -37,73 +49,32 @@ pub(crate) struct InvariantRuntimeView<'a> {
 }
 
 impl<'a> InvariantRuntimeView<'a> {
-    pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
-        let configuration = runtime.operation_configuration();
-        let (entity_count, relation_count) = runtime
-            .history
-            .branch_cell(runtime.main_branch_identity().branch_id())
-            .and_then(|cell| {
-                cell.root()
-                    .map(|root| (root.entity_slot_count(), root.relation_slot_count()))
-            })
-            .unwrap_or_default();
+    pub(crate) fn from_inputs(inputs: InvariantRuntimeInputs<'a>) -> Self {
         Self {
-            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(
-                configuration.config.clone(),
-            ),
-            prior_registry: None,
-            home_target: None,
+            selected_registry: inputs.selected_registry,
+            prior_registry: inputs.prior_registry,
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
-            commit_work_budget: None,
-            config: configuration.config,
-            schema_contract_runtime: configuration.schema_contract_runtime,
-            instrumentation: &runtime.services.instrumentation,
+            commit_work_budget: inputs.commit_work_budget,
+            config: inputs.config,
+            schema_contract_runtime: inputs.schema_contract_runtime,
+            instrumentation: inputs.instrumentation,
             counter_sink: None,
             shared_candidate_inputs: None,
             #[cfg(test)]
-            current_version_id: runtime.current_version_id(),
-            entity_count,
-            relation_count,
-            version_depth: runtime.history().commit_count(),
-            snapshot_pressure: runtime.visibility.active_snapshot_count() > 10,
+            current_version_id: inputs.current_version_id,
+            entity_count: inputs.entity_count,
+            relation_count: inputs.relation_count,
+            version_depth: inputs.version_depth,
+            snapshot_pressure: inputs.snapshot_pressure,
         }
     }
 
-    pub(crate) fn from_preparation_for_state(
-        runtime: &'a RelationalPreparationRuntime,
-        state: &crate::branch::root::RelationalBranchRootState,
-    ) -> Self {
-        Self {
-            selected_registry: crate::schema::SchemaRegistryCustody::Selected(
-                runtime
-                    .execution_registry
-                    .clone()
-                    .unwrap_or_else(|| state.root().schema_authority().registry_arc()),
-            ),
-            prior_registry: runtime.home_target.as_ref().map(|_| {
-                crate::schema::SchemaRegistryCustody::Selected(
-                    state.root().schema_authority().registry_arc(),
-                )
-            }),
-            home_target: runtime.home_target.clone(),
-            custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
-            commit_work_budget: runtime.commit_work_budget.clone(),
-            config: std::sync::Arc::clone(&runtime.config),
-            schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
-            instrumentation: &runtime.services.instrumentation,
-            counter_sink: None,
-            shared_candidate_inputs: None,
-            #[cfg(test)]
-            current_version_id: runtime.current_version_id(),
-            entity_count: state.entity_slot_count(),
-            relation_count: state.relation_slot_count(),
-            version_depth: runtime.current_version_id().0 as usize,
-            snapshot_pressure: runtime.published_snapshot_count() > 10,
-        }
+    pub(crate) fn rejudges_home_target(&self) -> bool {
+        self.prior_registry.is_some()
     }
 
-    pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'a> {
-        crate::performance::PerformanceAccess::from_counters(
+    pub(crate) fn performance_access(&self) -> super::metrics::InvariantMetrics<'a> {
+        super::metrics::InvariantMetrics::new(
             self.counter_sink
                 .unwrap_or(&self.instrumentation.complexity_counters),
         )
@@ -134,7 +105,6 @@ impl<'a> InvariantRuntimeView<'a> {
         InvariantRuntimeView {
             selected_registry: self.selected_registry.clone(),
             prior_registry: self.prior_registry.clone(),
-            home_target: self.home_target.clone(),
             custom_kernel_posture: self.custom_kernel_posture,
             commit_work_budget: self.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&self.config),

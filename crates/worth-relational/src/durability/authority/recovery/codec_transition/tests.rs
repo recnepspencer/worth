@@ -9,11 +9,10 @@ mod publication_custody;
 mod related;
 mod source_head_admission;
 mod stale_codec_revision;
-use crate::durability::authority::{
-    RecoveredCheckpointTransitionError, RecoveredRelationalRuntimeAuthority,
-};
+use crate::durability::authority::checkpoint_transition::RecoveredCheckpointTransitionError;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::indexes::data::DerivedIndexEntries;
-use crate::mvcc::RelationalOperationControl;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::runtime::RelationalRuntime;
 use fixture::*;
 
@@ -39,7 +38,7 @@ fn recovered(
 
 #[test]
 fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equality_index() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     let source_before = protected_payload(&world.runtime, world.authored);
@@ -218,7 +217,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
 
 #[test]
 fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retirement_permission() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     for genuine in [false, true] {
         let world = world(execution, genuine);
@@ -255,7 +254,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
             .unwrap_err();
         assert_eq!(
             denied.kind(),
-            crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+            crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
         );
         assert_eq!(source, protected_payload(&target, world.authored));
         assert_eq!(before, capture(execution, &target));
@@ -265,7 +264,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
 
 #[test]
 fn interrupted_native_codec_publication_returns_the_exact_source_custody_for_retry() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     let (mut target, mut recovered, _) = recovered(execution, &world);
@@ -349,7 +348,7 @@ fn interrupted_native_codec_publication_returns_the_exact_source_custody_for_ret
 
 #[test]
 fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target_runtime() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     world

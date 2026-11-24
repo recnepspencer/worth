@@ -1,9 +1,9 @@
 //! Cache cleanup protocol only; public Source semantics have their own court.
 use super::*;
-use crate::mvcc::{
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    PublicationCompanionRegistrationPort, RelationalPublicationCompanion,
-};
+use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
+use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
+use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
+use crate::mvcc::publication::companion::registration::port::PublicationCompanionRegistrationPort;
 use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -20,7 +20,7 @@ impl Drop for Probe {
     fn drop(&mut self) {
         let core = self.core.lock().unwrap().upgrade().unwrap();
         assert!(
-            core.current.try_lock().is_ok(),
+            core.try_lock_unpoisoned_image().is_some(),
             "opaque Drop is outside current-image coordination"
         );
         let _new_registration = self

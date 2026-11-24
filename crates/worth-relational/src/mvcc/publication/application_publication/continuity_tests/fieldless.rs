@@ -1,9 +1,12 @@
 //! Schema-classified empty entities keep actual native incidence and custody.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 
 #[test]
 fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = AspectSchemaFixture::default();
     let mut runtime = fixture.build_runtime();
@@ -148,8 +151,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_fixture("native-creator"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -176,8 +179,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-creator",
             &[1; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_fixture("native-creator"),
+            &native_roles_fixture(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create,
             ),

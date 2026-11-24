@@ -2,13 +2,11 @@
 use super::publication_custody::RecoveredCodecPublicationCustody;
 use crate::history::data::{RequiredOutputPublicationPositions, RequiredOutputRoutePosition};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{
-        CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
-        CanonicalRequiredOutputOrigin,
-    },
+    branch::basis::AdmittedRelationalBranchBasis, history::data::CanonicalCodecRetirementKind,
+    history::data::CanonicalRequiredOutputCodecRetirement,
+    history::data::CanonicalRequiredOutputOrigin,
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -24,25 +22,25 @@ pub(super) fn capture(
     source: &AdmittedRelationalBranchBasis,
     target: &RelationalSchemaRegistry,
     retirement: &crate::history::data::OwnedCodecRetirementClosure,
-    activation: &crate::runtime::RecoveredCheckpointProgramActivationUpdate,
+    activation: &crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
 ) -> Result<
     (
         Vec<PreparedCodecRetirement>,
         Arc<ExecutionMemoryReservation>,
     ),
-    crate::runtime::RelationalSchemaTransitionAdmissionDenial,
+    crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial,
 > {
-    use crate::runtime::RelationalSchemaTransitionAdmissionDenial as Denial;
+    use crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial;
     let result = execution.in_scope(|lease| {
         worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(lease, None, |context| {
             let (origins, _roster) = retirement.complete_publications(context, lease).map_err(|stop| match stop {
                 crate::history::data::CodecRetirementClosureStop::Request(cause) => Denial::request(cause),
-                crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
+                crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
             })?;
             let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                 .and_then(|partition| partition.entity_arena.get(&activation.entity_id))
                 .filter(|row| row.is_live()).and_then(|row| row.kind_id())
-                .ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
+                .ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
             let overflow = || Denial::request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow);
             let activation_bytes = std::mem::size_of_val(activation).checked_add(2 * std::mem::size_of::<usize>()).and_then(|n| n.checked_add(activation.field_locator.owned_allocation_capacity_bytes())).and_then(|n| n.checked_add(activation.expected.semantic_byte_width())).and_then(|n| n.checked_add(activation.replacement.semantic_byte_width())).ok_or_else(overflow)?;
             let mut bytes = origins.len().checked_mul(std::mem::size_of::<PreparedCodecRetirement>() + std::mem::size_of::<CanonicalRequiredOutputCodecRetirement>() + 512).and_then(|n| n.checked_add(activation_bytes)).ok_or_else(overflow)?;
@@ -52,7 +50,7 @@ pub(super) fn capture(
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
                     for registry in [source.inner.root.schema_authority().registry(), target] {
-                        let kind = registry.entity_kinds.get(&kind_id).ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
+                        let kind = registry.entity_kinds.get(&kind_id).ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
                         let quote = crate::durability::data::DurableEntitySchemaRegistration::capture_bytes(kind).ok_or_else(overflow)?;
                         context.checkpoint(quote as u64).map_err(|stop| Denial::request(stop.into()))?;
                         bytes = bytes.checked_add(quote).ok_or_else(overflow)?;
@@ -93,8 +91,10 @@ impl RecoveredCodecPublicationCustody {
         source: &AdmittedRelationalBranchBasis,
     ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
         use crate::publication::patch::data::RecordStructuralChange as Change;
-        use crate::transactions::data::RecordRef;
-        let denied = |detail| crate::mvcc::origin_denial(detail);
+        use crate::transactions::data::primitives::RecordRef;
+        let denied = |detail| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail)
+        };
         // The envelope records identity in the canonical frame (D11); compare
         // the live source there, and record it there.
         let recorded_source = source.descriptor().in_canonical_frame().map_err(|_| {
@@ -126,7 +126,7 @@ impl RecoveredCodecPublicationCustody {
                                     envelope.patch.authoritative_record_patches.len() as u64 + 1,
                                 )
                                 .map_err(retirement_request)?;
-                            if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+                            if member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
                                 continue;
                             }
                             if envelope
@@ -197,8 +197,8 @@ impl RecoveredCodecPublicationCustody {
 fn retirement_request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

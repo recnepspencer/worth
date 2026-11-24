@@ -3,26 +3,22 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::runtime::RelationalRuntime;
 use crate::schema::codec_field_comparison::CodecFieldLocus;
 
-mod authored_cascade;
+pub(crate) mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 mod coupled_restoration;
 mod coupled_selection;
 mod historical_selection;
-mod history_request;
+pub(crate) mod history_request;
 pub(crate) use historical_selection::antecedent as historical_producer_antecedent;
-mod scope_dependents;
+pub(crate) mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
 pub(crate) use scope_dependents::OwnedScopeDependentSelection;
+pub(crate) mod codec_disposition;
 mod restoration_payload;
-pub(crate) use authored_cascade::{
-    select_authored_source_retirement, AuthoredRetirementSelection, SelectedAuthoredRetirement,
-};
-mod codec_disposition;
 pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;
 mod membership;
@@ -80,14 +76,18 @@ impl From<&str> for CodecRetirementClosureStop {
 /// targets against retained linear ancestry and its actual operations. Vec cycle
 /// detection costs O(ancestry²); memory is bounded by native records + catalog.
 /// Missing history, merges and unknown writers fail closed.
-pub(crate) fn derive_codec_retirement_closure(
+pub(crate) fn derive_codec_retirement_closure<'r>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     changed_fields: &[CodecFieldLocus],
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
     let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
-    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -95,7 +95,7 @@ pub(crate) fn derive_codec_retirement_closure(
     basis
         .inner
         .root
-        .demand_all_full(execution, &runtime.runtime.services.symbols)
+        .demand_all_full(execution, runtime.input.projection.symbols)
         .map_err(|failure| CodecRetirementClosureStop::Request(failure.into()))?;
     let result = execution
         .in_scope(|lease| {
@@ -119,7 +119,7 @@ fn derive_metered(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<OwnedCodecRetirementClosure, CodecRetirementClosureStop> {
     charge(context, 1)?;
-    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
         || !basis.is_current()
     {
         return Err("codec provenance requires the current recovered native basis".into());
@@ -135,7 +135,7 @@ fn derive_metered(
         }
     }
     let entity_bound = root.entity_slot_count();
-    let history_bound = runtime.runtime.history.catalog_len();
+    let history_bound = runtime.input.projection.history.catalog_len();
     let entity_bytes = entity_bound
         .checked_mul(std::mem::size_of::<EntityId>())
         .ok_or_else(memory_overflow)?;
@@ -303,7 +303,7 @@ fn require_linear_history(
     Ok(())
 }
 
-pub(super) fn charge(
+pub(crate) fn charge(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     work: usize,
 ) -> Result<(), CodecRetirementClosureStop> {
@@ -318,19 +318,19 @@ pub(super) fn charge(
     .map_err(request)
 }
 
-pub(super) fn request(
+pub(crate) fn request(
     cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(cause.into())
 }
 
-fn memory_overflow() -> CodecRetirementClosureStop {
+pub(crate) fn memory_overflow() -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(
         crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )
 }
 
-fn reserve(
+pub(crate) fn reserve(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     bytes: usize,
 ) -> Result<worth_execution::ExecutionMemoryReservation, CodecRetirementClosureStop> {

@@ -9,8 +9,8 @@ mod managed_source;
 mod projection;
 #[path = "authored_writes/rebuild.rs"]
 mod rebuild;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
-use crate::history::RelationalAuthoredWriteDenial as Denial;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -26,7 +26,7 @@ impl super::RelationalCanonicalPublicationRoutes {
     pub(super) fn authored_generation_owner(
         &self,
         commit: CommitId,
-    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+    ) -> Option<Arc<crate::history::commit::RelationalCommitEnvelopeResidency>> {
         self.performed_envelope_residency(commit).or_else(|| {
             self.checkpoint_catalog
                 .read()
@@ -41,7 +41,7 @@ impl super::RelationalCanonicalPublicationRoutes {
         execution: ExecutionRequest<'_, '_>,
         envelope: &Arc<CanonicalCommitEnvelope>,
     ) -> Result<Option<AuthoredWriteGeneration>, Denial> {
-        crate::history::run_authored_write_stage(execution, |context| {
+        crate::history::access::relevant_writes::run(execution, |context| {
             let mut generation = match envelope.commit.parents.as_slice() {
                 [] => AuthoredWriteGeneration::default(),
                 [parent] => match self.authored_generation(*parent) {
@@ -56,11 +56,14 @@ impl super::RelationalCanonicalPublicationRoutes {
     }
 }
 
-pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{
-        CommitConflict, CommitExecutionDenial, CommitExecutionDenialKind, ConflictClass,
-        TransactionCommitError as Error,
-    };
+pub(crate) fn commit_denial(
+    cause: Denial,
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+    use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError as Error;
     let request = |cause| {
         Error::execution(CommitExecutionDenial {
             kind: CommitExecutionDenialKind::Cause(cause),

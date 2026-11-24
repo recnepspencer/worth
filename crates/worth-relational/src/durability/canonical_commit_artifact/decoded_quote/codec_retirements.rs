@@ -2,7 +2,7 @@
 use super::*;
 pub(super) mod admission;
 use crate::history::data::{CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement};
-use crate::runtime::RecoveredCheckpointProgramActivationUpdate;
+use crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate;
 pub(in super::super) use admission::prepare_canonical_readmission;
 
 pub(super) fn quote(

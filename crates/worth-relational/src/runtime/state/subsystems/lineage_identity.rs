@@ -86,3 +86,27 @@ fn checked_end(start: u64, width: u64, name: &str) -> Result<u64, String> {
         .filter(|end| *end < u64::MAX)
         .ok_or_else(|| format!("{name} allocator exhausted"))
 }
+
+impl LineageIdentityAllocator {
+    pub(crate) fn validate_reserved_lineage_events(
+        &self,
+        events: &[crate::lineage::data::LineageEventRecord],
+    ) -> Result<(), String> {
+        let mut previous = None;
+        for event in events {
+            if previous.is_some_and(|prior| event.event_id() <= prior) {
+                return Err(
+                    "live lineage event ids must advance within their reserved batch".to_owned(),
+                );
+            }
+            if event.event_id() >= self.frontiers().1 {
+                return Err(format!(
+                    "live lineage event {} was not reserved by this allocator",
+                    event.event_id()
+                ));
+            }
+            previous = Some(event.event_id());
+        }
+        Ok(())
+    }
+}

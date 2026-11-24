@@ -1,18 +1,22 @@
 //! Native admission of a recovered codec retirement and exact program update.
-use super::super::super::{DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority};
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::mvcc::{
-    BranchBoundRelationalTransaction, RelationalInstalledApplicationPublicationAuthority,
-    RelationalOperationControl, RelationalTransactionIntent,
-};
-use crate::runtime::{
-    RecoveredCheckpointProgramActivationUpdate,
-    RelationalSchemaTransitionAdmissionDenial as Denial,
-    RelationalSchemaTransitionAdmissionDenialKind as Kind,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::transactions::data::{
-    AspectFieldPatch, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent,
-    MutationIntent, RelationMutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+    aspect_field_patch::AspectFieldPatch, intents::mutation_intent::DeleteEntityIntent,
+    intents::mutation_intent::DeleteRelationIntent, intents::mutation_intent::EntityMutationIntent,
+    intents::mutation_intent::MutationIntent, intents::mutation_intent::RelationMutationIntent,
+    intents::mutation_intent::UpdateEntityFieldsIntent, primitives::WorkerIntentBatch,
+};
+use crate::{
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
+};
+use crate::{
+    mvcc::BranchBoundRelationalTransaction,
+    mvcc::RelationalInstalledApplicationPublicationAuthority, mvcc::RelationalTransactionIntent,
+    runtime::operation_control::RelationalOperationControl,
 };
 
 impl DurabilityRecoveryAuthority<'_> {
@@ -131,7 +135,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .map_err(|detail| deny(Kind::UnsupportedCodecConsequence, detail))?;
         let retirement = crate::history::data::derive_codec_retirement_closure(
             execution,
-            self.runtime,
+            &*self.runtime,
             basis,
             &changes,
         )
@@ -145,7 +149,11 @@ impl DurabilityRecoveryAuthority<'_> {
         })?;
         super::source_schema::admit_retired_relation_consequences(
             execution,
-            self.runtime,
+            &self
+                .runtime
+                .schema_contract_runtime
+                .custom_invariant_registries,
+            &self.runtime.indexes,
             basis,
             &retirement,
         )?;
@@ -183,7 +191,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .map_err(|cause| {
                 use crate::mvcc::PublicationPreparationDenial as Stop;
                 if cause
-                    == crate::branch::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow
+                    == crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow
                 {
                     return Denial::request(
                         crate::execution::RelationalExecutionDenialCause::MemoryOverflow,

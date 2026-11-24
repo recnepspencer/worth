@@ -1,24 +1,32 @@
 use std::sync::Arc;
 
+use super::PublicationAuthority;
+use crate::authority::commit::pipeline::PublishedCommitExecution;
 use crate::publication::data::PublicationSettlementRepairError;
-use crate::runtime::RelationalRuntime;
-use crate::transactions::data::{CommitResult, TransactionCommitError};
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
-use super::pending_settlement::{RelationalSettlementCompletion, RelationalSettlementResultOwner};
+use super::pending_settlement::{
+    RelationalSettlementCompletion, RelationalSettlementResultOwner, SettlementPublication,
+};
 
-impl RelationalRuntime {
-    /// Complete derived publication for a movement already performed through
-    /// the independently borrowable publication port.
-    ///
-    /// The commit is durable before it is live, so settlement cannot defer: it
-    /// installs the derived state and records the commit in the runtime's
-    /// canonical log under its original identity. The work itself was installed
-    /// in the runtime's pending settlement registry before that movement, so
-    /// this is the witness holder taking its turn at the one executor gate, not
-    /// the sole owner of the work.
-    pub fn settle_performed_publication(
+/// Exact registry and restart receipt custody from one installed owner.
+pub(crate) struct RelationalSettlementBinding<'runtime> {
+    pub(crate) runtime_instance_id: u64,
+    pub(crate) publication: RelationalRuntimePublicationBinding,
+    pub(crate) history: &'runtime HistorySubsystem,
+    pub(crate) checkpoint: &'runtime RelationalCheckpointManifestSelection,
+}
+
+impl PublicationAuthority<'_> {
+    pub(crate) fn settle_performed_publication(
         &self,
-        performed: crate::mvcc::PerformedRelationalCommit,
+        binding: &RelationalSettlementBinding<'_>,
+        performed: crate::mvcc::publication::outcome::PerformedRelationalCommit,
+        publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> Result<CommitResult, TransactionCommitError> {
         let (positioned, record) = performed.into_settlement_parts();
         debug_assert_eq!(
@@ -26,16 +34,18 @@ impl RelationalRuntime {
             positioned.envelope().commit.commit_id,
             record.commit_id()
         );
-        if record.runtime_instance_id() != self.runtime_instance_id() {
+        if record.runtime_instance_id() != binding.runtime_instance_id {
             return Err(TransactionCommitError::publication_denied(
-                crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
-                    expected_runtime_instance_id: self.runtime_instance_id(),
+                crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::ForeignRuntime {
+                    expected_runtime_instance_id: binding.runtime_instance_id,
                     actual_runtime_instance_id: record.runtime_instance_id(),
                 },
             ));
         }
         let completion = self
-            .execute_pending_settlement(&record, RelationalSettlementResultOwner::Witness)
+            .execute_pending_settlement(
+                &record, RelationalSettlementResultOwner::Witness, binding.history, &binding.publication, publish,
+            )
             .expect(/* Proof: PerformedRelationalCommit is non-Clone and record is called only after authorize transitions this exact reservation to Performed. claim runs under enter_execution; receipt-only Runtime repair uses record_settled to retain the result, and only this consuming Witness call may take it. The witness pins the record even after registry acknowledgement. */ "a performed witness exists only after its reservation is authorized");
         match completion {
             RelationalSettlementCompletion::Performed { committed, .. } => Ok(committed),
@@ -48,29 +58,39 @@ impl RelationalRuntime {
         }
     }
 
-    /// Settle a performed publication retained by this runtime even when the
-    /// caller that held its performed witness was lost.
-    pub fn repair_pending_publication_settlement(
+    pub(crate) fn repair_pending_publication_settlement(
         &self,
+        binding: &RelationalSettlementBinding<'_>,
         commit_id: crate::history::data::CommitId,
+        publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> Result<crate::history::data::RelationalCommitReceipt, PublicationSettlementRepairError>
     {
-        let Some(record) = self.publication_binding().pending_settlement(commit_id) else {
-            if self.publication_binding().settlement_admission_is_closed() {
+        let Some(record) = binding.publication.pending_settlement(commit_id) else {
+            if binding.publication.settlement_admission_is_closed() {
                 return Err(PublicationSettlementRepairError::OwnerUnavailable {
-                    runtime_instance_id: self.runtime_instance_id(),
+                    runtime_instance_id: binding.runtime_instance_id,
                 });
             }
-            return self.settled_receipt_without_record(commit_id);
+            return super::settled_receipt::settled_receipt_without_record(
+                binding.history,
+                binding.checkpoint,
+                commit_id,
+            );
         };
-        if record.runtime_instance_id() != self.runtime_instance_id() {
+        if record.runtime_instance_id() != binding.runtime_instance_id {
             return Err(PublicationSettlementRepairError::ForeignRuntime {
-                expected_runtime_instance_id: self.runtime_instance_id(),
+                expected_runtime_instance_id: binding.runtime_instance_id,
                 actual_runtime_instance_id: record.runtime_instance_id(),
             });
         }
-        self.execute_pending_settlement(&record, RelationalSettlementResultOwner::Runtime)
-            .map(|completion| completion.receipt().clone())
-            .map_err(|_| PublicationSettlementRepairError::SettlementInProgress { commit_id })
+        self.execute_pending_settlement(
+            &record,
+            RelationalSettlementResultOwner::Runtime,
+            binding.history,
+            &binding.publication,
+            publish,
+        )
+        .map(|completion| completion.receipt().clone())
+        .map_err(|_| PublicationSettlementRepairError::SettlementInProgress { commit_id })
     }
 }

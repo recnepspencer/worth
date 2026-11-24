@@ -1,16 +1,15 @@
 //! Before-durability admission of the existing stream's concrete Vec backing.
+use crate::durability::source_initial_inputs::producer_roster::roster_bytes;
 
 use worth_execution::ExecutionRequest;
 
-use super::{
-    schema_inputs::roster_bytes, BranchTransitionStream, OriginalBranchSchemaInputsDenial,
-};
+use super::{BranchTransitionStream, OriginalBranchSchemaInputsDenial};
 
 impl BranchTransitionStream {
     pub(super) fn prepare_append(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        positioned: &crate::branch::PositionedBranchTransition,
+        positioned: &crate::branch::transition::PositionedBranchTransition,
     ) -> Result<Option<usize>, OriginalBranchSchemaInputsDenial> {
         let mut state = self.state();
         request

@@ -105,9 +105,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
     use crate::validation::candidate_source::{scope_closure, ManagedIndexSourceProjectionRoute};
     use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
     use crate::validation::data::descriptor::CustomInvariantAccessContract;
-    use crate::validation::engine::{
-        state_view::InvariantStateView, InvariantObservation, InvariantRuntimeView,
-    };
+    use crate::validation::engine::{state_view::InvariantStateView, InvariantObservation};
     use worth_execution::ExecutionAllocationPolicy;
 
     // The nested case uses the same physical relation in both directions:
@@ -329,7 +327,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
         let endpoint = candidate.created_entity(&created(2, "X")).unwrap();
         let after_observation =
             InvariantObservation::committed(runtime.storage_access().current_edition());
-        let runtime_view = InvariantRuntimeView::from_runtime(&runtime);
+        let runtime_view = runtime.invariant_validation_view();
         let access = Arc::new(CustomInvariantAccessContract {
             read_entity_kinds: vec![KindId(1), KindId(2)],
             read_relation_kinds: vec![KindId(3), KindId(4), KindId(5), KindId(6)],

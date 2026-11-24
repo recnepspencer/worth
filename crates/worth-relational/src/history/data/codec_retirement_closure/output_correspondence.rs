@@ -2,20 +2,23 @@
 use super::{charge, request, CodecRetirementClosureStop as Stop};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 #[derive(Clone)]
 pub(crate) struct SelectedOutputPublication {
-    pub(crate) evidence: crate::publication::ownership::PublicationEvidence,
+    pub(crate) evidence: crate::publication::ownership::evidence::PublicationEvidence,
     pub(crate) origin: std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) ordinal: usize,
 }
 
 type Origin =
     std::sync::Arc<super::super::canonical_commit_envelope::CanonicalRequiredOutputOrigin>;
-pub(crate) fn validate_codec_output_correspondence(
+pub(crate) fn validate_codec_output_correspondence<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     producer: &str,
     dependency: &[u8; 32],
@@ -28,7 +31,7 @@ pub(crate) fn validate_codec_output_correspondence(
             lease,
             None,
             |context| {
-                if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+                if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
                     || !basis.is_current()
                 {
                     return Err(
@@ -44,10 +47,12 @@ pub(crate) fn validate_codec_output_correspondence(
                 basis
                     .inner
                     .root
-                    .demand_all_full(execution, &runtime.runtime.services.symbols)
+                    .demand_all_full(execution, runtime.input.projection.symbols)
                     .map_err(|failure| Stop::Request(failure.into()))?;
-                let branch = runtime.runtime.read_truth()
-                    .project_observation(&basis.observation())
+                let branch = crate::visibility::materialization::read_records::projection::VisibilityProjectionView::from_observation(
+                    runtime.input.projection,
+                    &basis.observation(),
+                )
                     .map_err(|_| {
                         Stop::from("output correspondence requires an exact native observation")
                     })?;
@@ -57,7 +62,7 @@ pub(crate) fn validate_codec_output_correspondence(
                 let navigation = branch
                     .exact_entity_state_read_navigation_work_bound()
                     .ok_or("output correspondence has no exact native navigation")?;
-                let bound = runtime.runtime.history.catalog_len();
+                let bound = runtime.input.projection.history.catalog_len();
                 let mut first: Option<(crate::history::data::canonical_commit_envelope::OwnedValidatedOutputOrigins, Origin)> = None;
                 let mut origin_frames = OutputOriginHistory::default();
                 let validated_history = &mut origin_frames;
@@ -159,7 +164,7 @@ pub(crate) fn validate_codec_output_correspondence(
                     if std::sync::Arc::ptr_eq(candidate, &origin) { ordinal = Some(index); break; }
                 }
                 let ordinal = ordinal.ok_or("selected publication lost its canonical route coordinate")?;
-                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::PublicationEvidence::Canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
+                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::evidence::PublicationEvidence::Canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
             },
         )
     });

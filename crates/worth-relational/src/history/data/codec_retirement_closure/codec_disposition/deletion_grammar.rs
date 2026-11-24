@@ -1,11 +1,10 @@
 //! Exact logical deletion projection does not erase the retained physical payload.
 use super::*;
-use crate::schema::data::{
-    AspectContractPlanCatalog, KindAspectContractDeclarations, LoweredAspectContractPlan,
-};
+use crate::schema::data::{AspectContractPlanCatalog, KindAspectContractDeclarations};
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(super) fn entity(
+    grammar: &DeletionPublicationGrammar,
     envelope: &CanonicalCommitEnvelope,
     member: &CanonicalOutputMember,
     state: Option<&AuthoritativeRecordAspectState>,
@@ -15,21 +14,18 @@ pub(super) fn entity(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
     let actual = metadata::require_delete(envelope, RecordRef::Entity(member.id), context)?;
-    let plan = plans
-        .entity_plans
-        .get(&member.kind)
-        .ok_or("codec member source plan absent")?;
-    let _scratch = reserve(plan, state, actual, context, lease)?;
-    let expected = crate::authority::mutation::entity_deletion_publication_patch(
-        member.id,
-        member.kind,
-        state,
-        declarations,
-        plans,
-        actual.detail.clone(),
-    )
-    .map_err(|_| Stop::from("codec member deletion reconstruction refused"))?;
-    compare(&actual.authoritative_patch, &expected)
+    let expected = (grammar.entity)(
+        EntityDeletionExpectation {
+            member,
+            state,
+            declarations,
+            plans,
+            actual,
+        },
+        context,
+        lease,
+    )?;
+    compare(&actual.authoritative_patch, &expected.patch)
 }
 
 pub(super) fn relation(
@@ -41,22 +37,17 @@ pub(super) fn relation(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), Stop> {
     let actual = metadata::require_delete(envelope, RecordRef::Relation(relation.id), context)?;
-    let plan = runtime
-        .runtime
-        .relation_aspect_plan(relation.kind)
-        .ok_or("codec relation plan absent")?;
-    let _scratch = reserve(plan, state, actual, context, lease)?;
-    let expected = crate::authority::mutation::relation_deletion_publication_patch(
-        relation.id,
-        relation.kind,
-        relation.source,
-        relation.target,
-        state,
-        runtime.runtime,
-        actual.detail.clone(),
-    )
-    .map_err(|_| Stop::from("codec relation deletion reconstruction refused"))?;
-    compare(&actual.authoritative_patch, &expected)
+    let expected = (runtime.input.deletion_grammar.relation)(
+        RelationDeletionExpectation {
+            relation,
+            state,
+            plans: runtime.input.plans,
+            actual,
+        },
+        context,
+        lease,
+    )?;
+    compare(&actual.authoritative_patch, &expected.patch)
 }
 
 fn compare(
@@ -69,34 +60,37 @@ fn compare(
     Ok(())
 }
 
-fn reserve(
-    plan: &LoweredAspectContractPlan,
-    state: Option<&AuthoritativeRecordAspectState>,
-    patch: &crate::publication::patch::data::PublishedAuthoritativeRecordPatch,
-    context: &mut MapKernelContext<'_, '_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<worth_execution::ExecutionMemoryReservation, Stop> {
-    let mut bytes = state
-        .map_or(0, |state| state.owned_allocation_capacity_bytes())
-        .checked_add(patch.authoritative_patch.owned_allocation_capacity_bytes() as usize)
-        .and_then(|n| n.checked_add(patch.detail.owned_allocation_capacity_bytes() as usize))
-        .ok_or_else(super::super::memory_overflow)?;
-    for binding in &plan.executable_bindings {
-        charge(context, 1)?;
-        bytes = bytes
-            .checked_add(binding.contract.owned_allocation_capacity_bytes())
-            .and_then(|n| {
-                n.checked_add(
-                    std::mem::size_of::<crate::authority::mutation::EvaluatedAspectBinding>() + 256,
-                )
-            })
-            .ok_or_else(super::super::memory_overflow)?;
-    }
-    // Deletion planner, evaluated evidence, foundational patch and portable
-    // publication overlap; sixteen reached representations bound their clones.
-    let bytes = bytes
-        .checked_mul(16)
-        .ok_or_else(super::super::memory_overflow)?;
-    charge(context, bytes)?;
-    super::super::reserve(lease, bytes)
+/// One native deletion planner, supplied with the same stamped history inputs.
+#[derive(Clone, Copy)]
+pub(crate) struct DeletionPublicationGrammar {
+    pub(crate) entity: fn(
+        EntityDeletionExpectation<'_>,
+        &mut MapKernelContext<'_, '_>,
+        Option<&ExecutionResourceLease<'_>>,
+    ) -> Result<FundedDeletionExpectation, Stop>,
+    pub(crate) relation: fn(
+        RelationDeletionExpectation<'_>,
+        &mut MapKernelContext<'_, '_>,
+        Option<&ExecutionResourceLease<'_>>,
+    ) -> Result<FundedDeletionExpectation, Stop>,
+}
+
+pub(crate) struct FundedDeletionExpectation {
+    pub(crate) patch: crate::publication::patch::data::PublishedAuthoritativePatch,
+    pub(crate) _scratch: worth_execution::ExecutionMemoryReservation,
+}
+
+pub(crate) struct EntityDeletionExpectation<'a> {
+    pub(crate) member: &'a CanonicalOutputMember,
+    pub(crate) state: Option<&'a AuthoritativeRecordAspectState>,
+    pub(crate) declarations: &'a KindAspectContractDeclarations,
+    pub(crate) plans: &'a AspectContractPlanCatalog,
+    pub(crate) actual: &'a crate::publication::patch::data::PublishedAuthoritativeRecordPatch,
+}
+
+pub(crate) struct RelationDeletionExpectation<'a> {
+    pub(crate) relation: &'a CanonicalRequiredOutputRelation,
+    pub(crate) state: Option<&'a AuthoritativeRecordAspectState>,
+    pub(crate) plans: &'a AspectContractPlanCatalog,
+    pub(crate) actual: &'a crate::publication::patch::data::PublishedAuthoritativeRecordPatch,
 }

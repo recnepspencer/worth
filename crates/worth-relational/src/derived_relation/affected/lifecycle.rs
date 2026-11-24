@@ -1,8 +1,7 @@
 //! Existence/generation seeds include every case even with empty adjacency.
 use super::super::evaluation::{insert_member, SourceRead};
-use super::super::{
-    DerivedRelationDenial as DefinitionDenial, DerivedRelationReadDenial as Denial,
-};
+use crate::derived_relation::definition::DerivedRelationDenial as DefinitionDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::{
     NativeMemberDomain as Domain, NativeMemberKey as Member, ProjectedMemberCoordinate,
 };

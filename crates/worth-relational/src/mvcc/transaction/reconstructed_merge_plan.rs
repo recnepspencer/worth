@@ -1,7 +1,10 @@
 //! Reconstructed merge-plan copies retain only their newly allocated backing.
 use super::normalized_plan::{intent_bytes, reserve_copy};
 use crate::history::data::{CanonicalCommitEnvelope, OrderedParentList};
-use crate::transactions::data::{MergeCommitMutationPlan, TransactionCommitError};
+use crate::transactions::data::outcomes::plan_artifacts::{
+    merge_commit_mutation_plan_token, MergeCommitMutationPlan,
+};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 mod copy_storage;
@@ -78,7 +81,7 @@ impl OwnedMergePlan {
                 merged_plan: envelope.merged_plan.clone(),
                 structural_summary: authority.structural_summary.clone(),
                 merge_execution_summary: summary.clone(),
-                proof_token: crate::transactions::data::merge_commit_mutation_plan_token(),
+                proof_token: merge_commit_mutation_plan_token(),
             },
             _memory: memory,
         }))

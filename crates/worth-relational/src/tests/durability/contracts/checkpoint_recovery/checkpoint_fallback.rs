@@ -149,7 +149,7 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
     let tail = plan
         .tail_log
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test(execution))
+        .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("tail contains the post-checkpoint commit");
     let checkpoint = tail

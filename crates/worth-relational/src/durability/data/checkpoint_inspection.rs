@@ -33,7 +33,8 @@ pub struct NativeCheckpointModelBytes<'a> {
 #[derive(Debug)]
 /// Reconstructive native model-byte view, allocator coordinates and live census.
 pub struct RelationalCheckpointInspection<'a> {
-    pub(in crate::durability) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    pub(in crate::durability) branch_cells:
+        Vec<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub model: NativeCheckpointModelBytes<'a>,
     /// Provisional symbol IDs can burn without publishing their meanings.
     pub symbol_identity_frontier: u32,

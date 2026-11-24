@@ -34,7 +34,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         let count = self.state.relation_candidate_count(entity, outgoing);
         self.retain_bytes(count.saturating_mul(512) as u64)?;
         self.charge(count.saturating_mul(3).saturating_add(1))?;
-        let ids = self.state.relation_candidates(entity, outgoing);
+        let ids = self.state.gather_relation_candidates(entity, outgoing);
         let mut edges = Vec::new();
         for &id in ids.iter() {
             if let Some(edge) = self.relation(id)? {

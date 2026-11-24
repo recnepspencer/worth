@@ -1,10 +1,12 @@
 mod aspect_versions;
-mod canonical_deltas;
+pub(crate) mod canonical_deltas;
+mod disjoint_publication;
+mod mutation_delta_dispatch;
 pub(crate) mod pending_identities;
-pub(crate) use canonical_deltas::compose_disjoint_publication;
+pub(crate) use disjoint_publication::compose as compose_disjoint_publication;
 pub(crate) mod adjacency_delta;
 pub(crate) mod current_records;
-mod deletion_publication;
+pub(crate) mod deletion_publication;
 mod delta_symbols;
 mod effect;
 mod effect_assembly;
@@ -14,7 +16,7 @@ mod execution;
 mod field_versions;
 pub(crate) mod intents;
 mod mutation_context;
-mod outcomes;
+pub(crate) mod outcomes;
 pub(crate) mod owned_graph_selection;
 mod patch_details;
 mod record_changes;
@@ -39,8 +41,4 @@ pub(crate) use record_changes::apply_adjacency_deltas_for_request;
 pub(crate) use round_denial::MutationApplyDenial;
 pub(crate) use workspace::{
     BranchLocalDeleteAllowance, MutationPreparationTelemetry, MutationWorkspace,
-};
-
-pub(crate) use deletion_publication::{
-    entity_deletion_publication_patch, relation_deletion_publication_patch,
 };

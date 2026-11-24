@@ -18,8 +18,11 @@ impl CanonicalPositionAdmission {
         original: &PositionedCanonicalCommit,
         canonical: Arc<CanonicalCommitEnvelope>,
     ) -> Result<Self, &'static str> {
-        if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(original, &canonical)
-            .map_err(|_| "recovered position payload encoding failed")? {
+        if !crate::history::commit::payload_commitment::matches_positioned_payload(
+            original, &canonical,
+        )
+        .map_err(|_| "recovered position payload encoding failed")?
+        {
             return Err("recovered position body differs from its admitted canonical payload");
         }
         Ok(Self {

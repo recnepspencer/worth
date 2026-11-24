@@ -2,13 +2,9 @@ use super::PerformanceAccess;
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_query_serial_strategy(&self) {
-        self.counters
-            .count(|counters| counters.query_serial_strategy_count += 1);
-    }
-
-    pub(crate) fn count_query_staged_parallel_strategy(&self) {
-        self.counters
-            .count(|counters| counters.query_staged_parallel_strategy_count += 1);
+        self.counters.count(
+            crate::performance::data::RuntimeComplexityCounters::count_query_serial_strategy,
+        );
     }
 
     pub(crate) fn count_query_index_attempt(&self) {

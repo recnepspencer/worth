@@ -1,7 +1,9 @@
 //! Request-funded, immutable execution-point selection shared with its configuration.
 use crate::execution::RelationalExecutionDenialCause as Denial;
 use crate::schema::SchemaCompilationControl;
-use crate::validation::data::{InvariantExecutionPoint as Point, InvariantRegistration};
+use crate::validation::data::catalog::InvariantRegistration;
+use crate::validation::data::execution::InvariantExecutionPoint as Point;
+use crate::validation::data::rules::InvariantRule;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 #[derive(Debug)]
 pub(crate) struct NativeInvariantPoints {
@@ -71,7 +73,7 @@ fn includes(point: usize, registration: &InvariantRegistration) -> bool {
 fn rejects_live_endpoint_deletion(registration: &InvariantRegistration) -> bool {
     matches!(
         &registration.rule,
-        crate::validation::data::InvariantRule::EndpointDeletionIntegrityContract(contract)
+        InvariantRule::EndpointDeletionIntegrityContract(contract)
             if contract.mode
                 == crate::schema::data::EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations
     )

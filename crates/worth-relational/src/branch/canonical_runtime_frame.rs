@@ -10,7 +10,9 @@
 //! does for any recorded cell, and a live comparison against a recorded
 //! identity first moves the live side into this frame.
 
-use super::basis::{RelationalBranchBasisDescriptor, RelationalLiveBranchBasisDescriptorAxes};
+use super::basis_descriptor::{
+    RelationalBranchBasisDescriptor, RelationalLiveBranchBasisDescriptorAxes,
+};
 use super::reference_checkpoint_data::canonical_observation;
 pub(crate) use super::reference_checkpoint_data::{
     CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID,

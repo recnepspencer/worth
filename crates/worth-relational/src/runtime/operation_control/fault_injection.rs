@@ -43,13 +43,18 @@ impl RelationalOperationControl {
     /// reached over `reached`, so a seam that never runs is a timed-out receive
     /// rather than a stalled run, and the publisher stops waiting once the
     /// observer is gone.
-    pub fn with_patch_position_reservation_pause_for_test(
+    pub fn with_patch_position_reservation_pause_for_test<Gate>(
         mut self,
         reached: std::sync::mpsc::SyncSender<()>,
-        release: Arc<RelationalPatchPositionReservationGateForTest>,
-    ) -> Self {
-        self.patch_position_reservation_pause =
-            Some(RelationalPatchPositionReservationPause { reached, release });
+        release: Arc<Gate>,
+    ) -> Self
+    where
+        Gate: AsRef<Arc<PatchPositionReservationLatch>>,
+    {
+        self.patch_position_reservation_pause = Some(RelationalPatchPositionReservationPause {
+            reached,
+            release: Arc::clone(release.as_ref().as_ref()),
+        });
         self
     }
 

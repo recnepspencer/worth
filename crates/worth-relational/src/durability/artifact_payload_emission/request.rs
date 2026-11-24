@@ -1,7 +1,6 @@
 //! The same two-pass serializer lane, admitted through the original request.
-use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalRecoveryStop as Stop,
-};
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use std::io::{self, Write};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 

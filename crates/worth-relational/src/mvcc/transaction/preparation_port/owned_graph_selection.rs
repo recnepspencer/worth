@@ -42,7 +42,14 @@ impl RelationalPreparationPort {
         let installed = execution
             .run_native_with_checkpoint(|context| {
                 crate::execution::request_stage::checkpoint(context, count as u64)?;
-                graph.ownership_matches_installation(&runtime, context)
+                graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0
@@ -102,10 +109,14 @@ impl RelationalPreparationPort {
         };
         let installed = execution
             .run_native_with_checkpoint(|context| {
-                input
-                    .retained
-                    .graph
-                    .ownership_matches_installation(&runtime, context)
+                input.retained.graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0

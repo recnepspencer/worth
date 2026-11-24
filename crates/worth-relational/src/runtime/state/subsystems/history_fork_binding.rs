@@ -26,8 +26,6 @@ pub(crate) struct RelationalForkOwnerBinding {
     retention: RelationalBranchRetentionBinding,
     basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
     visibility: Option<RelationalForkVisibilityBinding>,
-    /// The publication routes whose transition stream records each fork.
-    routes: Arc<super::RelationalCanonicalPublicationRoutes>,
     root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
 }
 
@@ -40,19 +38,6 @@ struct RelationalForkVisibilityBinding {
 }
 
 impl RelationalForkOwnerBinding {
-    pub(crate) fn observe_original_frontiers(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (
-            crate::publication::patch::data::PatchStreamPosition,
-            crate::branch::transition::sequence::RelationalBranchTransitionSequence,
-        ),
-        worth_execution::WorkCeilingDenial,
-    > {
-        self.routes.observe_fork_original_frontiers(execution)
-    }
-
     pub(crate) fn root_identity_issuer(
         &self,
     ) -> &crate::branch::root::RelationalBranchRootIdentityIssuer {
@@ -65,7 +50,6 @@ impl RelationalForkOwnerBinding {
         head_versions: BranchHeadVersionIndexAuthority,
         retention: RelationalBranchRetentionBinding,
         basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
-        routes: Arc<super::RelationalCanonicalPublicationRoutes>,
         root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
     ) -> Self {
         Self {
@@ -75,14 +59,8 @@ impl RelationalForkOwnerBinding {
             retention,
             basis_metrics,
             visibility: None,
-            routes,
             root_issuer,
         }
-    }
-
-    /// Admit a transition before taking branch coordination or publication state.
-    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
-        self.routes.begin_branch_transition()
     }
 
     pub(crate) fn with_visibility(

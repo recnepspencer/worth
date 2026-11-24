@@ -170,9 +170,12 @@ pub(super) fn prepare_catalog_artifact_for_envelope(
     let artifact = if let Some((entry, source)) =
         cell.as_ref().and_then(|cell| cell.source_placement())
     {
-        let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
-            entry.position, &envelope, request,
-        ).map_err(RelationalHistoryRecoveryDenial::Source)?;
+        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
+            entry.position,
+            &envelope,
+            request,
+        )
+        .map_err(RelationalHistoryRecoveryDenial::Source)?;
         if entry.commit != envelope.commit || entry.payload_digest != digest {
             return Err(RelationalHistoryRecoveryDenial::Artifact(
                 crate::history::RelationalCommitArtifactDenial::RootLinkage,

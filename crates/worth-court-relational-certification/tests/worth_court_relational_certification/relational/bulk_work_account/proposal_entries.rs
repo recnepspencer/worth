@@ -58,6 +58,35 @@ impl CommitStrategyExecutor for CreateDeployment {
     }
 }
 
+fn deployment_strategy() -> (
+    worth_relational::facade::runtime::RelationalRuntime,
+    CanonicalStrategyCommitRequest,
+) {
+    let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(501));
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(schema())
+        .commit_strategy(CommitStrategyRegistration::new(descriptor.clone()).unwrap())
+        .commit_strategy_executor(CommitStrategyExecutionRegistration::new(
+            &descriptor,
+            CreateDeployment,
+        ))
+        .build()
+        .unwrap();
+    let strategy = runtime
+        .commit_strategies()
+        .canonicalize_request(&NativeStrategyCommitRequest::from_native_canonical_bytes(
+            descriptor.semantic_name().clone(),
+            b"create-deployment".to_vec(),
+            StrategyCallerProvenance {
+                request_origin: StrategyRequestOrigin::Test,
+                actor_identity: None,
+                correlation_id: None,
+            },
+        ))
+        .unwrap();
+    (runtime, strategy)
+}
+
 fn commit(
     entry: Entry,
     ceiling: u64,
@@ -70,16 +99,7 @@ fn commit(
         None,
     );
     let setup_request = ExecutionRequest::serial(&setup);
-    let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(501));
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema())
-        .commit_strategy(CommitStrategyRegistration::new(descriptor.clone()).unwrap())
-        .commit_strategy_executor(CommitStrategyExecutionRegistration::new(
-            &descriptor,
-            CreateDeployment,
-        ))
-        .build()
-        .unwrap();
+    let (runtime, strategy) = deployment_strategy();
     let identity = runtime.main_branch_identity();
     let (before, basis) = runtime.observe_branch(&identity).unwrap();
     let snapshot = runtime
@@ -87,17 +107,6 @@ fn commit(
         .snapshot_for_observation(&basis.observation())
         .unwrap();
     let facade = runtime.commit_strategies();
-    let strategy = facade
-        .canonicalize_request(&NativeStrategyCommitRequest::from_native_canonical_bytes(
-            descriptor.semantic_name().clone(),
-            b"create-deployment".to_vec(),
-            StrategyCallerProvenance {
-                request_origin: StrategyRequestOrigin::Test,
-                actor_identity: None,
-                correlation_id: None,
-            },
-        ))
-        .unwrap();
     let draft = facade
         .execute(&strategy, &snapshot, &setup_request)
         .unwrap();
@@ -286,5 +295,65 @@ fn assert_cancelled(outcome: Result<CommitResult, TransactionCommitError>) {
     assert_eq!(
         denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::Cancelled),
+    );
+}
+
+#[test]
+fn strategy_consults_before_its_stale_basis_check() {
+    let (runtime, strategy) = deployment_strategy();
+    let identity = runtime.main_branch_identity();
+    let (_, original_basis) = runtime.observe_branch(&identity).unwrap();
+    let setup = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let setup = ExecutionRequest::serial(&setup);
+    let snapshot = runtime
+        .snapshots()
+        .snapshot_for_observation(&original_basis.observation())
+        .unwrap();
+    let draft = runtime
+        .commit_strategies()
+        .execute(&strategy, &snapshot, &setup)
+        .unwrap();
+    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+    let lowered = runtime
+        .commit_strategies_authority()
+        .lower_execution(
+            &setup,
+            &runtime,
+            &strategy,
+            &draft,
+            &original_basis,
+            RelationalTransactionIntent::ordinary(),
+        )
+        .unwrap();
+    use worth_execution::{SerialMemoryBudget, SerialRequest};
+    use worth_relational::facade::transactions::CommitExecutionDenialKind;
+    let cancellation = CancellationSource::new();
+    let backing =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
+    let execution = ExecutionRequest::serial(&backing);
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("move-head"),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    runtime
+        .commit_branch_transaction(&execution, transaction)
+        .unwrap();
+    cancellation.cancel();
+    let error = runtime
+        .commit_strategies_authority()
+        .validate_lowered_plan(&execution, &runtime, lowered)
+        .unwrap_err();
+    assert!(
+        matches!(error, TransactionCommitError::Execution { denial, .. }
+        if denial.kind == CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::Cancelled)),
+        "cancellation outranks currency before any strategy work"
     );
 }

@@ -1,9 +1,10 @@
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
-use crate::transactions::data::{
-    CreatedEntityRef, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::AspectBinding;
 
 #[test]
@@ -41,7 +42,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let proposal = proposal
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 owner.admit_required_output("installed-producer", [3; 32]),
                 vec![target.clone()],
             ),
@@ -50,9 +51,10 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("genuine native output publication must perform");
     };
@@ -72,7 +74,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .run_native_with_checkpoint(|context| {
             copied.validate_output_origins(context).and_then(|view| {
                 view.materialization_origin_for_record(
-                    &crate::transactions::data::RecordRef::Entity(entity),
+                    &crate::transactions::data::primitives::RecordRef::Entity(entity),
                     context,
                 )
             })
@@ -95,7 +97,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .unwrap();
     release_test_commit_snapshot(&runtime, &result);
     assert!(producer_budget.charged_memory_bytes() > 0, "the actual published row retains its original application bill after result snapshot release");
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -202,7 +204,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
 
 #[test]
 fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -225,7 +227,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
     assert!(proposal
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 foreign.admit_required_output("installed-producer", [3; 32]),
                 Vec::new()
             )
@@ -233,7 +235,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
         .is_err());
     create_entity(execution, &runtime, "authored");
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -249,7 +251,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
 
 #[test]
 fn producer_publication_preserves_unclassified_rows_without_granting_retirement() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -277,7 +279,7 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
         .unwrap()
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 owner.admit_required_output("producer", [8; 32]),
                 vec![target],
             ),
@@ -286,9 +288,10 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("ordinary producer publication must preserve its unclassified system rows");
     };
@@ -305,7 +308,7 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
     let committed = runtime.settle_performed_publication(performed).unwrap();
     release_test_commit_snapshot(&runtime, &committed);
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),

@@ -12,7 +12,7 @@ pub use subsystems::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,
 };
-mod runtime_state;
+pub(crate) mod runtime_state;
 pub(crate) use runtime_state::indexing::RuntimeIndexDefinitionReadBinding;
 pub(crate) mod subsystems;
 
@@ -57,8 +57,7 @@ pub(crate) use subsystems::{
     PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
     RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
-    RelationalDiagnosticOperationCapture, RelationalForkMaterializationCost,
+    RelationalCheckpointManifestSelection, RelationalForkMaterializationCost,
     RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
     ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
     RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,

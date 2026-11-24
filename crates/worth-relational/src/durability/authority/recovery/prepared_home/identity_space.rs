@@ -41,13 +41,13 @@ impl PreparedRelationalHomeRecovery {
     pub fn occupied_identity_maxima_at(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        recorded: &crate::branch::RecordedRelationalComponentReference,
+        recorded: &crate::branch::recorded_basis::RecordedRelationalComponentReference,
     ) -> Result<(Option<KindId>, Option<AspectIdentity>), Denial> {
         let position = match recorded.target() {
-            crate::branch::RecordedRelationalComponentTarget::Canonical(source) => {
+            crate::branch::recorded_basis::RecordedRelationalComponentTarget::Canonical(source) => {
                 Some(source.position())
             }
-            crate::branch::RecordedRelationalComponentTarget::Empty => None,
+            crate::branch::recorded_basis::RecordedRelationalComponentTarget::Empty => None,
         };
         let plan = &self.state.plan;
         if plan

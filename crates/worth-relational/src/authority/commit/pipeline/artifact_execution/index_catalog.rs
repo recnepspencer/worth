@@ -1,11 +1,21 @@
 //! Freeze one actual catalog for both durable declarations and authored writes.
 use crate::history::data::CanonicalIndexDefinitionDelta;
-use crate::runtime::{CapturedIndexDefinitionCatalog, RelationalPreparationRuntime};
-use crate::transactions::data::TransactionCommitError;
+use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
+use crate::runtime::state::subsystems::indexing::IndexDefinitionReadBinding;
+
+pub(crate) struct PublicationIndexCatalogInputs<'a> {
+    pub(crate) history: &'a crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,
+    pub(crate) checkpoint: &'a crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    pub(crate) catalog: &'a IndexDefinitionReadBinding,
+    pub(crate) home_catalog: Option<&'a CapturedIndexDefinitionCatalog>,
+    pub(crate) original_catalog: Option<&'a CanonicalIndexDefinitionDelta>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
+}
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 
 pub(super) fn prepare(
-    runtime: &RelationalPreparationRuntime,
+    inputs: PublicationIndexCatalogInputs<'_>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<
     (
@@ -16,20 +26,15 @@ pub(super) fn prepare(
 > {
     // Accepted facts precede the live snapshot: a concurrent later registration
     // cannot make this baseline exceed the captured next issued identity.
-    let base = runtime.history.index_definition_frontier().max(
-        runtime
-            .checkpoint_selection
-            .acknowledged_index_definition_frontier(),
-    );
-    let mut captured = match runtime
-        .home_target
-        .as_ref()
-        .and_then(|target| target.index_definitions.as_ref())
-    {
-        Some(prepared) => prepared.captured.clone(),
-        None => runtime.index_definitions.capture_catalog(),
-    };
-    if let Some(original) = &runtime.recovered_index_catalog {
+    let base = inputs
+        .history
+        .index_definition_frontier()
+        .max(inputs.checkpoint.acknowledged_index_definition_frontier());
+    let mut captured = inputs
+        .home_catalog
+        .cloned()
+        .unwrap_or_else(|| inputs.catalog.capture_catalog());
+    if let Some(original) = inputs.original_catalog {
         if original.next_index_id > captured.next_index_id {
             return Err(invalid(
                 "recovered original catalog prefix is not installed",
@@ -51,7 +56,7 @@ pub(super) fn prepare(
         ));
     }
     let prepare = || prepare_delta(&captured, base, execution);
-    let delta = match &runtime.commit_work_budget {
+    let delta = match inputs.work {
         Some(budget) => budget.run_stage(*execution, prepare)??,
         None => prepare()?,
     };

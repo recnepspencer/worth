@@ -1,8 +1,8 @@
 //! Corrupt native observations and selectors reach the Native refusal owner.
 use super::*;
-use crate::{
-    identity::data::PartitionId, symbols::data::ClientKey, transactions::data::CreatedEntityRef,
-};
+use crate::identity::data::PartitionId;
+use crate::symbols::data::ClientKey;
+use crate::transactions::data::primitives::CreatedEntityRef;
 fn id(slot: u64) -> EntityId {
     EntityId::new(PartitionId::main(), slot, 1)
 }

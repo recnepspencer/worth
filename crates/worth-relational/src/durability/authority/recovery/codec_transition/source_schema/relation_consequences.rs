@@ -1,15 +1,18 @@
 //! Closed relation ownership does not authorize custom invariant or join changes.
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::history::data::OwnedCodecRetirementClosure;
-use crate::indexes::data::DerivedIndexKind;
-use crate::runtime::{
-    RelationalRuntime, RelationalSchemaTransitionAdmissionDenial as Denial,
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::durability::transition_admission_denial::{
+    RelationalSchemaTransitionAdmissionDenial as Denial,
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };
+use crate::history::data::OwnedCodecRetirementClosure;
+use crate::indexes::data::DerivedIndexKind;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 
 pub(in crate::durability::authority::recovery::codec_transition) fn admit_retired_relation_consequences(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    invariants: &FrozenCustomInvariantRegistry,
+    indexes: &IndexingSubsystem,
     basis: &AdmittedRelationalBranchBasis,
     retirement: &OwnedCodecRetirementClosure,
 ) -> Result<(), Denial> {
@@ -22,7 +25,7 @@ pub(in crate::durability::authority::recovery::codec_transition) fn admit_retire
                         .and_then(|partition| partition.relation_arena.get(id))
                         .and_then(|record| record.kind_id())
                         .ok_or_else(|| deny("retiring relation lost its proven kind"))?;
-                    for registration in runtime.schema_contract_runtime.custom_invariant_registries.iter() {
+                    for registration in invariants.iter() {
                         let access = &registration.descriptor().operational.access;
                         let work = access.read_relation_kinds.len().saturating_add(access.affected_relation_kinds.len()).saturating_add(1);
                         context.checkpoint(u64::try_from(work).map_err(|_| Denial::request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow))?)
@@ -31,7 +34,7 @@ pub(in crate::durability::authority::recovery::codec_transition) fn admit_retire
                             return Err(deny("codec relation retirement with custom invariant consequences is unsupported"));
                         }
                     }
-                    runtime.indexes.with_definitions(|indexes| {
+                    indexes.with_definitions(|indexes| {
                         for index in indexes.values() {
                             context.checkpoint(1).map_err(|stop| Denial::request(stop.into()))?;
                             if matches!(&index.kind, DerivedIndexKind::RelationJoin(join)

@@ -1,10 +1,9 @@
 //! Linear outcomes for recovered checkpoint transitions.
-use crate::branch::RelationalBranchBasisDescriptor;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::history::data::RelationalCommitReceipt;
 use crate::mvcc::RelationalPublicationOutcome;
-use crate::transactions::data::TransactionCommitError;
-
-use super::super::RecoveredRelationalRuntimeAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 /// An acknowledged native commit and recovery authority for its exact successor.
 /// Both are issued together by the recovery owner; callers cannot relabel a

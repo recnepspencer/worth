@@ -3,6 +3,7 @@ use super::{
     super::fixture::{basis, capture},
     fixture::*,
 };
+use crate::mvcc::publication::application_publication::output_meaning::native_meaning_fixture;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{
     EntityMutationIntent, MutationIntent, RecordRef, RevalidateEntityIntent, WorkerIntentBatch,
@@ -16,7 +17,7 @@ enum ClaimDefect {
 
 #[test]
 fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed(1);
     let (world, publisher) = world_with_publication(execution, runtime, receipt);
@@ -27,7 +28,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         &mut target,
         &mut recovered,
         world.activation,
-        crate::mvcc::RelationalOperationControl::uninterrupted(),
+        crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
         Some(
             WorkerIntentBatch::new("judge protected source without rewriting it").push(
                 MutationIntent::Entity(EntityMutationIntent::Revalidate(RevalidateEntityIntent {
@@ -75,7 +76,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             repeated.publication = foreign;
         }
         entry
-            .envelope_mut_for_test(execution)
+            .positioned_envelope_mut_for_test(execution)
             .required_output_codec_retirements
             .push(std::sync::Arc::new(repeated));
         assert!(
@@ -116,7 +117,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         );
         if matches!(defect, Some(ClaimDefect::SiblingKind)) {
             let sibling = entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .required_output_codec_retirements
                 .iter_mut()
                 .find(|event| event.meaning.family == "native.closed.producer")
@@ -127,7 +128,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         if matches!(defect, Some(ClaimDefect::RevalidationWrite)) {
             // An actual read demand cannot authorize an equal-payload patch.
             entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .patch
                 .authoritative_record_patches
                 .push(hidden_write.clone());
@@ -136,7 +137,10 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             required.extend(entry.revision_symbol_references.iter().copied());
             // Keep the hostile claim structurally current: its actual source
             // values retain their original native symbol meanings.
-            entry.envelope_mut_for_test(execution).symbol_texts.entries = required
+            entry
+                .positioned_envelope_mut_for_test(execution)
+                .symbol_texts
+                .entries = required
                 .iter()
                 .map(|symbol| {
                     decoded
@@ -179,7 +183,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             execution,
             &installed,
             &basis(&cold),
-            &crate::mvcc::native_meaning_fixture("native.sibling.producer"),
+            &native_meaning_fixture("native.sibling.producer"),
         );
         if defect.is_some() {
             assert!(
@@ -262,7 +266,7 @@ pub(super) fn cold_retired_route(
             .unwrap();
         let event = std::sync::Arc::make_mut(
             &mut entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .required_output_codec_retirements[0],
         );
         if incomplete {
@@ -298,7 +302,7 @@ pub(super) fn cold_retired_route(
                 execution,
                 &installed,
                 &basis(&rejected),
-                &crate::mvcc::native_meaning_fixture("native.closed.producer"),
+                &native_meaning_fixture("native.closed.producer"),
             )
             .unwrap_err();
         if incomplete {
@@ -342,5 +346,5 @@ fn edit_publication(
         .iter_mut()
         .find(|entry| entry.commit.commit_id == commit)
         .unwrap();
-    edit(entry.envelope_mut_for_test(execution));
+    edit(entry.positioned_envelope_mut_for_test(execution));
 }

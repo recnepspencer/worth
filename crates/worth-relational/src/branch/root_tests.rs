@@ -31,36 +31,9 @@ fn committed_root_and_envelope(
     (runtime, root, envelope)
 }
 
-fn prepare_main_candidate(
-    runtime: &crate::runtime::RelationalRuntime,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    key: &str,
-) -> crate::facade::mvcc::PreparedRelationalCommitCandidate {
-    let services = runtime.owner_component_services();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let mut txn = services
-        .transaction_admission_port()
-        .begin_branch_transaction(
-            &basis,
-            crate::facade::mvcc::RelationalTransactionIntent::ordinary(),
-        )
-        .unwrap();
-    txn.push_batch(
-        crate::tests::support::batch_create(key),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
-    services
-        .preparation_port()
-        .prepare_branch_transaction(execution, txn)
-        .unwrap()
-}
-
 #[test]
 fn publication_cost_distinguishes_new_and_reused_schema_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -89,7 +62,7 @@ fn publication_cost_distinguishes_new_and_reused_schema_authority() {
 
 #[test]
 fn relink_rejects_schema_authority_mutation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
@@ -117,7 +90,7 @@ fn relink_rejects_schema_authority_mutation() {
 
 #[test]
 fn relink_rejects_visibility_tuple_mutation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
@@ -147,7 +120,7 @@ fn relink_rejects_visibility_tuple_mutation() {
 
 #[test]
 fn completeness_recomputes_visibility_commitment() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
@@ -177,7 +150,7 @@ fn completeness_recomputes_visibility_commitment() {
 
 #[test]
 fn visibility_commitment_binds_every_visible_tuple_axis() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, root, envelope) = committed_root_and_envelope(execution);
@@ -313,7 +286,7 @@ fn production_visibility(
 fn fork_target_materialization_overflow_refuses_before_installing_target() {
     use crate::identity::data::PartitionId;
     use crate::storage::overlay::RelationalPartitionAllocationInventory as Inv;
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (runtime, source_root, _) = committed_root_and_envelope(execution);
     let target_branch = BranchId("overflow-refused-fork".to_owned());

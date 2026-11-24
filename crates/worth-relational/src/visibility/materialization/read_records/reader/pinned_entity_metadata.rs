@@ -4,7 +4,6 @@ use crate::snapshots::data::SnapshotHandle;
 use crate::storage::residency::{Head, RelationalResidencyLease};
 use crate::symbols::data::StringInterner;
 use crate::visibility::materialization::read_records::projection::RelationalEntityRetirement;
-use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use worth_foundational::facade::AspectKey;
 
 /// A selected region or its aspect-name dictionary has no resident witness.
@@ -61,49 +60,5 @@ impl RelationalPinnedEntityMetadata {
         )
     }
 }
-impl VisibilityReadContext<'_> {
-    /// Clone only a selected root's already accepted Head custody. This door
-    /// performs no demand or storage read. An unavailable handle is genuine
-    /// absence; an existing cold region is a typed refusal. Later transport
-    /// damage cannot change the immutable contents this custody accepted.
-    pub fn pin_resident_entity_metadata(
-        &self,
-        handle: &SnapshotHandle,
-        entity: EntityId,
-    ) -> Result<Option<RelationalPinnedEntityMetadata>, RelationalEntityMetadataPinDenial> {
-        if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
-            return Ok(None);
-        }
-        let Some(root) = self
-            .runtime
-            .visibility
-            .selected_snapshot_root(handle.snapshot_id)
-        else {
-            return Ok(None);
-        };
-        let region = root
-            .accepted_head_region_witness(entity.partition_id)
-            .map_err(RelationalEntityMetadataPinDenial::RegionNotResident)?;
-        // A metadata pin needs the selected record's aspect-name closure, not
-        // unrelated field texts or buckets. Check admitted meanings without I/O.
-        let symbols = self.runtime.services.symbols.with_read(|symbols| {
-            if let Some(head) = region.as_ref().map(|lease| lease.head_view())
-                && let Some(versions) = head.entity_arena().aspect_versions_at(entity.slot_index())
-                && versions
-                    .keys()
-                    .any(|symbol| symbols.resolve(*symbol).is_none())
-            {
-                return Err(RelationalEntityMetadataPinDenial::SymbolsNotResident(
-                    entity.partition_id,
-                ));
-            }
-            Ok(symbols.clone())
-        })?;
-        Ok(Some(RelationalPinnedEntityMetadata {
-            entity,
-            version: handle.version_id,
-            region,
-            symbols,
-        }))
-    }
-}
+#[path = "pinned_entity_metadata/runtime_reads.rs"]
+mod runtime_reads;

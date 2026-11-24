@@ -13,7 +13,7 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 /// that selection's exact root image, so the writer emits it only with both.
 pub(in crate::durability::authority::checkpoint_complete) fn retained_selection<'a>(
     roots: &'a CapturedRoots,
-    branches: &'a crate::branch::CheckpointBranchMetadata,
+    branches: &'a crate::branch::registry::CheckpointBranchMetadata,
 ) -> impl Fn(&IndexBasisCheckpoint) -> bool + 'a {
     move |basis| {
         roots.retains_basis(basis)
@@ -24,7 +24,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn retained_selection<
     }
 }
 pub(in crate::durability::authority::checkpoint_complete) fn encode_indexes(
-    indexes: &crate::runtime::OriginalCheckpointIndexes,
+    indexes: &crate::runtime::state::subsystems::indexing::OriginalCheckpointIndexes,
     retained: &dyn Fn(&IndexBasisCheckpoint) -> bool,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(RelationalDurableMemberLocator, ExecutionImmutableBytes), RelationalRecoveryStop> {

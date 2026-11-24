@@ -4,6 +4,9 @@ use super::{
     fixture::*,
 };
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 use crate::mvcc::{
     RelationalInstalledApplicationPublicationAuthority, RelationalPublicationOutcome,
     RelationalRequiredOutputPublication, RelationalTransactionIntent, RequiredOutputPublication,
@@ -17,7 +20,7 @@ pub(super) use authoring::installed_references;
 
 #[test]
 fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_retirement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed_references(1);
     let (world, boundary) = world_with_boundary(execution, runtime, receipt);
@@ -142,7 +145,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
                 admission,
                 predecessor: previous,
                 meaning,
-                roles: crate::mvcc::native_roles_fixture(
+                roles: native_roles_fixture(
                     &world.outputs.map(|id| (id, KindId(3))),
                     RequiredOutputRolePosture::Preserve,
                 ),
@@ -269,8 +272,8 @@ fn readmit(
                 "native.closed.producer"
             },
             if preserved { &[20; 32] } else { &[19; 32] },
-            &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_fixture("native.closed.producer"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(3))),
                 if preserved {
                     RequiredOutputRolePosture::Preserve
@@ -306,13 +309,13 @@ fn assert_retirement_refused(
         &mut target,
         &mut recovered,
         activation,
-        crate::mvcc::RelationalOperationControl::uninterrupted(),
+        crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
         None,
     )
     .unwrap_err();
     assert_eq!(
         denied.kind(),
-        crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+        crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
     );
     assert!(
         denied.detail().contains("purpose=codec-retirement"),

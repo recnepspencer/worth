@@ -3,11 +3,13 @@ pub(crate) use publication::CoupledSource;
 pub(crate) mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
+pub use publication::port::{
+    PreparedMemoryRelationalCutover, RelationalPublicationPort, ScopedRelationalPublication,
+};
 pub use publication::RelationalPublicationReadDependencyDenial;
 pub use publication::{
-    PreparedMemoryRelationalCutover, RecordedRequiredOutputRole,
-    RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
-    RelationalPublicationBodySelection, ScopedRelationalPublication,
+    RecordedRequiredOutputRole, RelationalPublicationAdoptionRequest,
+    RelationalPublicationAppendix, RelationalPublicationBodySelection,
 };
 pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
@@ -41,17 +43,14 @@ pub use publication::{
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement,
     ManagedIndexSourceForkPreparation, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
-    PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
-    PreparedRelationalCommitCandidate, PublicationCompanionPreflight,
-    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
-    PublicationCompanionRegistrationStop, PublicationCompanionRetirementDenial,
-    PublishRelationalCommit, RelationalCurrentOutputAdoption, RelationalPublicationCompanion,
-    RelationalPublicationDeferred, RelationalPublicationDenial,
-    RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
-    RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
+    PerformedRelationalCommit, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
+    PreparedPublicationCompanionEffect, PreparedRelationalCommitCandidate,
+    PublicationCompanionPreflight, PublicationCompanionRegistrationStop, PublishRelationalCommit,
+    RelationalCurrentOutputAdoption, RelationalPublicationCompanion, RelationalPublicationDeferred,
+    RelationalPublicationDenial, RelationalPublicationDurabilityPosture,
+    RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
-    RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
+    StaleRelationalBranchObservation,
 };
 pub use publication::{
     ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
@@ -71,15 +70,14 @@ pub use publication::{
     RequiredOutputRoleTarget,
 };
 pub(crate) use publication::{
-    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
-    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
+    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
+    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+    PublicationPreparationDenial,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
     RelationalRetainedEntitySelectionPreparationError,
 };
-pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
 pub(crate) use transaction::RelationalTransactionSavepoint;
 pub(crate) use transaction::TransactionSchemaOrigin;
@@ -106,13 +104,16 @@ pub use validation::{
 };
 
 #[cfg(test)]
-pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
-
-#[cfg(test)]
-pub(crate) use publication::native_roles_fixture;
+pub(crate) use publication::native_birth_fixture;
 
 pub(crate) use validation::ValidatedProposalState;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
 pub(crate) use publication::require_graph_coverage;
+
+pub use publication::companion::registration::port::{
+    PendingCompanionRegistration, PublicationCompanionRegistration,
+    PublicationCompanionRegistrationPort, PublicationCompanionRetirementDenial,
+    RetiredPublicationCompanionRegistration,
+};

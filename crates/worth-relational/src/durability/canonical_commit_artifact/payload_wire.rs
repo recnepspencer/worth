@@ -16,7 +16,7 @@ pub(super) struct ArtifactPayloadRef<'a> {
     position: PatchStreamPosition,
     canonical: AuthoritativeArtifactEnvelopeRef<'a>,
     original_inputs:
-        Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+        Option<&'a crate::history::data::canonical_commit_envelope::recorded_inputs::RecordedCanonicalInputs>,
 }
 
 impl<'a> ArtifactPayloadRef<'a> {
@@ -35,6 +35,7 @@ impl<'a> ArtifactPayloadRef<'a> {
 pub(super) struct ArtifactPayloadWire<'a> {
     pub(super) position: PatchStreamPosition,
     pub(super) canonical: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'a>>,
-    pub(super) original_inputs:
-        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+    pub(super) original_inputs: Option<
+        crate::history::data::canonical_commit_envelope::recorded_inputs::RecordedCanonicalInputs,
+    >,
 }
