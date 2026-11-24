@@ -35,6 +35,7 @@ pub use derived_relation::{
     WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
+mod candidate_naming;
 pub mod managed_index;
 pub mod name_owner;
 pub mod naming;

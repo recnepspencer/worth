@@ -18,74 +18,46 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         token: RelationalCoupledProducerContinuation,
+        publication: RelationalCoupledProducerPosture,
+        content: &crate::content::RelationalContentAttachments,
+        batches: Vec<WorkerIntentBatch>,
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.append_named_successor_publication(execution, token, publication, content, batches, None)
+    }
+
+    /// The same fold, carrying the round's naming plan. Its create targets
+    /// take the chain head's keys and partitions with its commands (a key the
+    /// head never chose refuses as a `StructuralEffect`), and the plan
+    /// replaces the superseded round's, whose batches are withdrawn.
+    pub fn append_named_successor_publication(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        token: RelationalCoupledProducerContinuation,
         mut publication: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
+        mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        let index = self
-            .continuation
-            .consume(token, self.identity, self.applied_parts())?;
+        let index = self.continuation.consume(token, self.identity, self.applied_parts())?;
         let source = proof::require_same_route(&self.parts[index].publication, &publication)?;
         let predecessor = super::participant_admission::admit_posture(
-            self.binding,
-            self.runtime.services.runtime_instance_id(),
-            &self.mutation.outcome.created_entities,
-            execution,
-            &publication,
+            self.binding, self.runtime.services.runtime_instance_id(),
+            &self.mutation.outcome.created_entities, execution, &publication,
         )?;
         let chain = &self.parts[index].chain;
-        if super::local_keys::rescope(
-            execution,
-            &chain.local_keys,
-            self.mutation.candidate_symbols().interner(),
-            &mut batches,
-            publication.roles_mut(),
-        )?
-        .is_err()
-        {
+        let interner = self.mutation.candidate_symbols().interner();
+        if super::local_keys::rescope(execution, &chain.local_keys, interner, &mut batches, publication.roles_mut(), naming.as_mut())?.is_err() {
             return Err(continuation::postponed(Reason::StructuralEffect, source).into());
         }
-        super::local_keys::repartition(
-            execution,
-            &self.parts[index].commands.plan().merged_intents,
-            self.mutation.candidate_symbols().interner(),
-            &mut batches,
-            publication.roles_mut(),
-        )?;
-        let redeleted = proof::prove_succession(
-            execution,
-            &self.parts[index],
-            &self.mutation.outcome,
-            self.mutation.candidate_symbols().interner(),
-            content,
-            &publication,
-            &batches,
-        )?;
-        let first_record = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .changed_records
-            .len();
+        super::local_keys::repartition(execution, &self.parts[index].commands.plan().merged_intents, interner, &mut batches, publication.roles_mut(), naming.as_mut())?;
+        let redeleted = proof::prove_succession(execution, &self.parts[index], &self.mutation.outcome, interner, content, &publication, &batches)?;
+        let pub_effect = &self.mutation.outcome.effect.publication;
+        let (first_record, first_fragment) = (pub_effect.changed_records.len(), pub_effect.patch_fragments.len());
         let first_batch = self.transaction.batches().len();
-        let first_fragment = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .patch_fragments
-            .len();
         let mut applied = self.apply_suffix(
             execution,
-            part::SuffixWriter::Successor {
-                index,
-                source,
-                predecessor: predecessor.as_deref(),
-                redeleted: &redeleted,
-            },
-            content,
-            batches,
+            part::SuffixWriter::Successor { index, source, predecessor: predecessor.as_deref(), redeleted: &redeleted },
+            content, batches, naming.as_mut(),
         )?;
         fold::fold_records(
             execution,
@@ -97,48 +69,23 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 state: &mut self.mutation.state,
                 symbols: &mut self.mutation.identities.symbols,
             },
-            first_fragment,
-            &applied.plan,
-            &redeleted,
-            &applied.read,
-            &mut applied.delta_state,
+            first_fragment, &applied.plan, &redeleted, &applied.read, &mut applied.delta_state,
         )?;
-        let records_end = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .changed_records
-            .len();
+        let records_end = self.mutation.outcome.effect.publication.changed_records.len();
         let batches_end = self.transaction.batches().len();
-        let prior_round_touches =
-            crate::mvcc::validation::proposal_touches::project_applied_intents(
-                execution,
-                &self.mutation.state,
-                &self.parts[index].commands.plan().merged_intents,
-            )?;
+        let prior_round_touches = crate::mvcc::validation::proposal_touches::project_applied_intents(
+            execution, &self.mutation.state, &self.parts[index].commands.plan().merged_intents,
+        )?;
         fold::adopt_round(
-            execution,
-            &mut self.parts,
-            index,
-            prior_round_touches,
+            execution, &mut self.parts, index, prior_round_touches,
             fold::AppliedRound {
-                records: &applied.records,
-                input: applied.read,
-                plan: applied.plan,
-                publication,
-                batches: first_batch..batches_end,
-                record_range: first_record..records_end,
+                records: &applied.records, input: applied.read, plan: applied.plan,
+                publication, batches: first_batch..batches_end, record_range: first_record..records_end,
             },
         )?;
+        self.parts[index].naming = naming;
         self.successor_rounds += 1;
         let input = self.parts[index].input.clone();
-        self.advance_pin(
-            execution,
-            &applied.delta_state,
-            &applied.content,
-            &applied.records,
-            &input,
-        )
+        self.advance_pin(execution, &applied.delta_state, &applied.content, &applied.records, &input)
     }
 }

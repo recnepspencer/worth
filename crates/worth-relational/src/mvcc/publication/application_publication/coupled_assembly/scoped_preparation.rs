@@ -58,6 +58,9 @@ impl RelationalPreparationPort {
             &runtime.services.symbols,
             &runtime.index_definitions,
         )?;
+        // Completion composes every member's plan onto the authored one; a
+        // round Native abandons or re-runs starts again from exactly that.
+        let authored_naming = transaction.naming_plan.clone();
         let selected = SelectedRelationalBranchState::from_admitted_basis(&basis);
         let complete = crate::storage::residency::probe_head(
             execution,
@@ -70,6 +73,7 @@ impl RelationalPreparationPort {
                     &basis,
                     |mut symbols, round| {
                         transaction.with_accepted_preparation_overlay(execution, |transaction| {
+                            transaction.naming_plan.clone_from(&authored_naming);
                             if let Some(prior) = &transaction.pending_symbols {
                                 symbols.adopt(prior)?;
                             }

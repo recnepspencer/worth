@@ -83,6 +83,26 @@ pub enum Op {
         at: Placement,
     },
     Rebuild,
+    /// One edit envelope whose two authored stages each create a record and
+    /// birth one fresh name: their plans compose into the one commit's plan.
+    Coupled {
+        names: [usize; 2],
+        at: [Placement; 2],
+    },
+    /// Both stages of one envelope mint fresh name `name`: the composed plan
+    /// must refuse `DuplicateBirth` with zero effects from either stage.
+    CoupledDuplicate {
+        name: usize,
+        at: Placement,
+    },
+    /// One envelope: `first` stages a mutation, then a later stage reads a
+    /// name on the unpublished candidate; `expected` is the reference
+    /// answer, and a refusal leaves zero effects from either stage.
+    Candidate {
+        first: super::candidate::First,
+        read: super::candidate::Read,
+        expected: super::reference::Answer,
+    },
 }
 
 /// SplitMix64: a tiny, portable, seed-stable generator.
@@ -106,11 +126,11 @@ impl Rng {
         (self.next() % bound as u64) as usize
     }
 
-    fn pick<T: Copy>(&mut self, items: &[T]) -> T {
+    pub fn pick<T: Copy>(&mut self, items: &[T]) -> T {
         items[self.below(items.len())]
     }
 
-    fn placement(&mut self) -> Placement {
+    pub fn placement(&mut self) -> Placement {
         self.pick(&[
             Placement::Owned("a"),
             Placement::Owned("b"),
@@ -132,6 +152,9 @@ enum Kind {
     Retire,
     Restore,
     Rebuild,
+    Coupled,
+    CoupledDuplicate,
+    Candidate,
 }
 
 /// Picks the next enabled action. `authored` are the names whose exact
@@ -173,6 +196,13 @@ pub fn next_op(
     enable(Kind::Retire, 2, !live.is_empty());
     enable(Kind::Restore, 2, !restorable.is_empty());
     enable(Kind::Rebuild, 1, model.events() > 0 && !rebuilt);
+    enable(Kind::Coupled, 2, room >= 2);
+    enable(Kind::CoupledDuplicate, 1, room >= 1);
+    enable(
+        Kind::Candidate,
+        3,
+        !live.is_empty() || room >= 1 || !restorable.is_empty(),
+    );
     let two = |rng: &mut Rng| {
         let first = rng.pick(&live);
         let rest: Vec<usize> = live.iter().copied().filter(|n| *n != first).collect();
@@ -237,5 +267,14 @@ pub fn next_op(
             at: rng.placement(),
         },
         Kind::Rebuild => Op::Rebuild,
+        Kind::Coupled => Op::Coupled {
+            names: [minted, minted + 1],
+            at: [rng.placement(), rng.placement()],
+        },
+        Kind::CoupledDuplicate => Op::CoupledDuplicate {
+            name: minted,
+            at: rng.placement(),
+        },
+        Kind::Candidate => super::candidate::next(rng, model, authored, minted),
     }
 }

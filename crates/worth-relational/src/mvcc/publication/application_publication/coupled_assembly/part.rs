@@ -12,12 +12,27 @@ mod suffix;
 pub(super) use super::suffix_scope::SuffixWriter;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Append a producer part that declares no output names.
     pub fn append_publication(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        publication: RelationalCoupledProducerPosture,
+        content: &crate::content::RelationalContentAttachments,
+        batches: Vec<WorkerIntentBatch>,
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.append_named_publication(execution, publication, content, batches, None)
+    }
+
+    /// Append a producer part with the naming plan its attempt lowered. The
+    /// plan's create targets are rescoped with the part's commands, and the
+    /// envelope's one plan composes it at completion (`part_naming`).
+    pub fn append_named_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         mut publication: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
+        mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let predecessor_origin = super::participant_admission::admit(
             self.binding,
@@ -27,48 +42,24 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             execution,
             &publication,
         )?;
-        let source = publication
-            .producing_meaning()
-            .expect("admitted writer")
-            .source_scope;
+        let source = publication.producing_meaning().expect("admitted writer").source_scope;
         let index = self.parts.len();
-        let first_record = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .changed_records
-            .len();
+        let pub_effect = &self.mutation.outcome.effect.publication;
+        let (first_record, first_fragment) = (pub_effect.changed_records.len(), pub_effect.patch_fragments.len());
         let first_batch = self.transaction.batches().len();
-        let first_fragment = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .patch_fragments
-            .len();
         let applied = self.apply_suffix(
             execution,
-            SuffixWriter::Producer {
-                index,
-                source,
-                roles: publication.roles_mut(),
-                predecessor: predecessor_origin.as_deref(),
-            },
-            content,
-            batches,
+            SuffixWriter::Producer { index, source, roles: publication.roles_mut(), predecessor: predecessor_origin.as_deref() },
+            content, batches, naming.as_mut(),
         )?;
-        let ordinary_ids = publication
-            .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
+        let ordinary_ids = publication.resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
         let publication_effect = &self.mutation.outcome.effect.publication;
         let latest = super::succession::appended_rounds(&self.parts);
         let chain = Chain {
             head_input: applied.read.clone(),
             prior_touches: Vec::new(),
             batches: first_batch..self.transaction.batches().len(),
-            fragments: (first_fragment..publication_effect.patch_fragments.len())
-                .map(|position| (position, applied.read.clone()))
-                .collect(),
+            fragments: (first_fragment..publication_effect.patch_fragments.len()).map(|p| (p, applied.read.clone())).collect(),
             superseded: Vec::new(),
             local_keys: applied.local_keys,
             created: applied.created,
@@ -76,21 +67,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             latest,
         };
         self.parts.push(CoupledPublicationPart {
-            inputs: None,
-            ordinary_ids,
-            input: applied.read,
-            publication,
-            commands: applied.plan,
-            records: applied.records,
-            chain,
+            inputs: None, ordinary_ids, input: applied.read, publication,
+            commands: applied.plan, records: applied.records, chain, naming,
         });
         let latest = self.parts.last().expect("the actual part just appended");
-        self.advance_pin(
-            execution,
-            &applied.delta_state,
-            &applied.content,
-            &latest.records,
-            &latest.input,
-        )
+        self.advance_pin(execution, &applied.delta_state, &applied.content, &latest.records, &latest.input)
     }
 }

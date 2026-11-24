@@ -138,6 +138,7 @@ pub(super) fn observe(
         })
         .unwrap_or_default();
     let mut observed = Vec::new();
+    let mut refused = None;
     let read_name = |reader: &mut DecisionReader<'_, '_, '_, Schema, super::Binding>,
                      label: String,
                      seam: &Handle| match reader.reader().relation_name_of(seam)
@@ -173,10 +174,20 @@ pub(super) fn observe(
         observed.push(read_name(reader, label, &handle));
     }
     for (label, name, selection) in held {
-        let resolved = reader
+        let resolved = match reader
             .reader()
             .resolve_relation(Seam::reference(), &name, &selection)
-            .map_err(HandlerExecutionDenial::new)?;
+        {
+            Ok(resolved) => resolved,
+            Err(denial) => {
+                observed.push(SeamObservation::ResolveRefused {
+                    label,
+                    refusal: format!("{denial:?}"),
+                });
+                refused.get_or_insert(HandlerExecutionDenial::new(denial));
+                continue;
+            }
+        };
         observed.push(match resolved {
             Ok(ResolvedName::Exact(seam)) => SeamObservation::ResolvedTo {
                 label,
@@ -203,5 +214,5 @@ pub(super) fn observe(
         });
     }
     probes().entry(token.to_owned()).or_default().observed = observed;
-    Ok(())
+    refused.map_or(Ok(()), Err)
 }

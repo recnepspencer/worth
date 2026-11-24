@@ -115,6 +115,12 @@ typed roles through `birth(role)`, creates and names in one call
 least parent name whatever order the parents are listed in. Every scheme is
 complete (`require_all_births_named` is fixed, not opt-in): a commit leaving
 any created record of a schemed kind unnamed refuses `MissingBirth`.
+Coupled members name their outputs the same way: every later authored stage
+of an edit envelope and every coupled producer an edit runs declares through
+its own writer, and Relational's coupled assembly rescopes each member's plan
+with its commands and composes them into the envelope's one plan, refusing
+the whole envelope typed (`DuplicateBirth`, `MissingBirth`) with zero effects
+([coupled stages and producers](build-an-application.md#operation-output-names)).
 A later-role output may tell itself apart by an output the same candidate
 named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
@@ -137,8 +143,20 @@ The persistent-naming protocol is specified in
 and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
 `worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
 `WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
-oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`)
-and least-keeper merges, and emits traces for `run_tlc.py trace`.
+oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`),
+least-keeper merges, two-stage edit envelopes composed into one commit
+(`CommitCoupledCreate`, `RefuseCoupledDuplicateBirth`) and candidate-basis
+name reads (`PersistentNamingCandidate.tla`, `CandidateEnvelope`), and emits
+traces for `run_tlc.py trace`.
+A coupled member (a later edit-envelope stage or a coupled producer) reads
+names in `decide` exactly as a direct operation does (`name_of`, `resolve`,
+`resolve_in`, `relation_name_of`, `resolve_relation`), answered from the
+envelope's commit basis and admitted only while the unpublished candidate
+leaves every record the answer rests on live at the same identity: a record
+an earlier member created refuses `UnpublishedCandidateRecord`, one it ended
+refuses `EndedInCandidate`, and an answer resting on an ended or unborn name
+refuses `CandidateNameHistory`, each vetoing the envelope with zero effects
+([candidate-basis reads](build-an-application.md#holding-and-resolving-names)).
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
 declare a kind once with `decl::application_naming::WorthQueryNamedKind`

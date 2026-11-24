@@ -4,10 +4,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::ops::{Op, Placement};
-use crate::persistent_naming::outputs::sculpt::{Held, Keeper, Plan, ScopeStep, Step};
-use crate::persistent_naming::outputs::{
-    birth, naming_refusal, piece, read, MemberCut, Outcome, World,
-};
+
+mod candidate;
+mod coupled;
+mod plan;
+use crate::persistent_naming::outputs::sculpt::{Held, Plan, ScopeStep, Step};
+use crate::persistent_naming::outputs::{birth, naming_refusal, Outcome, World};
 use crate::persistent_naming::{world, Member, MemberRole, MEMBER_SCHEME};
 use worth_query_host::facade::application_naming::{
     LineageNameDenial, LineageRecordTarget, OccurrencePath, WorthQueryName,
@@ -28,8 +30,9 @@ pub struct Driver {
     pub names: BTreeMap<usize, WorthQueryName<Member>>,
     /// Every record key ever created, live or not.
     pub created: Vec<String>,
-    /// Committed plans, in order: the canonical authored history.
-    committed: Vec<Plan>,
+    /// Committed commits, in order, each its stages' plans (one for a
+    /// direct operation): the canonical authored history.
+    committed: Vec<Vec<Plan>>,
     /// Every native record identity this history ever held.
     seen: BTreeSet<RecordIdentity>,
     /// Model `a`'s context partition, where owned records are created.
@@ -93,110 +96,24 @@ impl Driver {
     /// with the model names they will hold. A refusal the op requires is
     /// checked here; any other refusal fails the seed.
     pub fn execute(&mut self, op: &Op, step: usize) -> Result<Vec<(String, usize)>, String> {
-        let mut plan = Plan::default();
-        let mut created = Vec::new();
         match op {
-            Op::Create { name, at } | Op::Restore { name, at } => {
-                let key = self.fresh_key();
-                place(&mut plan, &[(key.clone(), *at)]);
-                plan.steps.push(Step::Birth(
-                    key.clone(),
-                    birth(&authored(*name), "authored"),
-                ));
-                created.push((key, *name));
-            }
             Op::Duplicate { name } => return self.duplicate(*name, step),
             Op::Unnamed { at, pair } => return self.unnamed(*at, *pair, step),
-            Op::Preserve { name, at } => {
-                let old = self.key_of(*name);
-                let key = self.fresh_key();
-                place(&mut plan, &[(key.clone(), *at)]);
-                plan.reads.push(old.clone());
-                plan.deletes.push(old.clone());
-                plan.steps.push(Step::Retire(read(&old)));
-                plan.steps.push(Step::Birth(
-                    key.clone(),
-                    birth(&authored(*name), "authored"),
-                ));
-                created.push((key, *name));
-            }
-            Op::Split { parent, pieces, at } => {
-                let old = self.key_of(*parent);
-                let keys = [self.fresh_key(), self.fresh_key()];
-                place(
-                    &mut plan,
-                    &[(keys[0].clone(), at[0]), (keys[1].clone(), at[1])],
-                );
-                plan.reads.push(old.clone());
-                plan.deletes.push(old.clone());
-                let occurrence = format!("dst-split-{step}");
-                let children = (0..2)
-                    .map(|i| (keys[i].clone(), piece(&occurrence, i as u64 + 1, None)))
-                    .collect();
-                plan.steps.push(Step::Split(read(&old), children));
-                created.extend([(keys[0].clone(), pieces[0]), (keys[1].clone(), pieces[1])]);
-            }
-            Op::MergeKeep {
-                keeper,
-                other,
-                listed,
-            } => {
-                // The keeper is held by name only: this commit never stages it.
-                let other_key = self.key_of(*other);
-                plan.reads.push(other_key.clone());
-                plan.deletes.push(other_key.clone());
-                let held = |name: usize| {
-                    if name == *keeper {
-                        self.held(*keeper)
-                    } else {
-                        read(&other_key)
-                    }
-                };
-                plan.steps.push(match listed {
-                    None => Step::Merge(
-                        vec![held(*keeper), held(*other)],
-                        Keeper::InPlace(self.held(*keeper)),
-                    ),
-                    Some(listed) => Step::Scoped(
-                        OccurrencePath::root(&format!("dst-least-{step}")).unwrap(),
-                        vec![ScopeStep::MergeLeast(listed.map(held).to_vec(), None)],
-                    ),
-                });
-            }
             Op::MergeLeast { .. } => return Err("a least merge must be settled".to_owned()),
-            Op::MergeMint {
-                parents,
-                minted,
-                at,
-            } => {
-                let old = parents.map(|name| self.key_of(name));
-                let key = self.fresh_key();
-                place(&mut plan, &[(key.clone(), *at)]);
-                plan.reads.extend(old.iter().cloned());
-                plan.deletes.extend(old.iter().cloned());
-                let cut = MemberCut::Side {
-                    side: 0,
-                    cutter: None,
-                };
-                let minting =
-                    birth(&format!("dst-merge-{step}"), "merged").with_discriminator(&cut);
-                plan.steps.push(Step::Merge(
-                    old.iter().map(|key| read(key)).collect(),
-                    Keeper::MintNew(key.clone(), minting),
-                ));
-                created.push((key, *minted));
-            }
-            Op::Retire { name } => {
-                let old = self.key_of(*name);
-                plan.reads.push(old.clone());
-                plan.deletes.push(old.clone());
-                plan.steps.push(Step::Retire(read(&old)));
-            }
             Op::Rebuild => {
                 self.rebuild()?;
                 return Ok(Vec::new());
             }
+            Op::Coupled { names, at } => return self.coupled(*names, *at, step),
+            Op::CoupledDuplicate { name, at } => return self.coupled_duplicate(*name, *at, step),
+            Op::Candidate {
+                first,
+                read,
+                expected,
+            } => return self.candidate(first, *read, expected, step),
+            _ => {}
         }
+        let (plan, created) = self.plan(op, step)?;
         self.commit(step, plan)?;
         for (key, placement) in created.iter().zip(placements(op)) {
             self.admit_record(&key.0, placement)?;
@@ -210,7 +127,7 @@ impl Driver {
         if !matches!(outcome, Outcome::Committed { .. }) {
             return Err(format!("step {step} must commit: {outcome:?}"));
         }
-        self.committed.push(plan);
+        self.committed.push(vec![plan]);
         self.naming_commits += 1;
         Ok(())
     }
@@ -347,15 +264,9 @@ impl Driver {
         self.generation += 1;
         self.world = World::install();
         self.seen.clear();
-        for (ordinal, plan) in self.committed.clone().into_iter().enumerate() {
-            let token = self.token(ordinal, "replay");
-            let outcome = self.world.try_sculpt(&token, plan.clone())?;
-            if !matches!(outcome, Outcome::Committed { .. }) {
-                return Err(format!(
-                    "replayed commit {ordinal} must commit: {outcome:?}"
-                ));
-            }
-            for key in &plan.creates {
+        for (ordinal, plans) in self.committed.clone().into_iter().enumerate() {
+            self.replay(ordinal, &plans)?;
+            for key in plans.iter().flat_map(|plan| &plan.creates) {
                 if let Some(identity) = self.identity(key) {
                     self.seen.insert(identity);
                 }
@@ -379,12 +290,14 @@ fn placements(op: &Op) -> Vec<Placement> {
         | Op::Restore { at, .. }
         | Op::Preserve { at, .. }
         | Op::MergeMint { at, .. } => vec![*at],
-        Op::Split { at, .. } => at.to_vec(),
+        Op::Split { at, .. } | Op::Coupled { at, .. } => at.to_vec(),
         Op::Duplicate { .. }
         | Op::Unnamed { .. }
         | Op::MergeKeep { .. }
         | Op::MergeLeast { .. }
         | Op::Retire { .. }
-        | Op::Rebuild => Vec::new(),
+        | Op::Rebuild
+        | Op::CoupledDuplicate { .. }
+        | Op::Candidate { .. } => Vec::new(),
     }
 }

@@ -8,8 +8,13 @@
 //! pieces two distinct models own (#133), merges keeping a parent in place
 //! whose partition the commit never touches (#314), the same merges through
 //! a naming scope's `merge_least` with the parents in seeded order, merges
-//! minting a new name, retirement, cross-commit `Restore` on a
-//! strictly fresh native identity, and destruction of the derived name index
+//! minting a new name, retirement, edit envelopes whose two authored stages
+//! each birth a name in one composed commit (and typed `DuplicateBirth`
+//! refusals when both mint the same one), cross-commit `Restore` on a
+//! strictly fresh native identity, candidate-basis name reads (Slice 3C-1:
+//! an envelope whose later stage reads a name on the candidate an earlier
+//! stage mutated, answered or refused typed with zero effects), and
+//! destruction of the derived name index
 //! (a fresh world rebuilt from the same canonical commits). After every step
 //! every ever-minted name is resolved `Exact` and `AllDescendants`, unscoped
 //! and within each owner model, and must agree 100% with the reference
@@ -22,6 +27,7 @@ use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+mod candidate;
 mod driver;
 mod observe;
 mod ops;
@@ -49,6 +55,12 @@ struct Coverage {
     unnamed: usize,
     least_merges: usize,
     minted_merges: usize,
+    coupled: usize,
+    coupled_duplicates: usize,
+    candidate_answers: usize,
+    candidate_ended: usize,
+    candidate_history: usize,
+    candidate_unpublished: usize,
 }
 
 impl Coverage {
@@ -68,6 +80,14 @@ impl Coverage {
             Op::Duplicate { .. } => self.duplicates += 1,
             Op::Unnamed { .. } => self.unnamed += 1,
             Op::MergeMint { .. } => self.minted_merges += 1,
+            Op::Coupled { .. } => self.coupled += 1,
+            Op::CoupledDuplicate { .. } => self.coupled_duplicates += 1,
+            Op::Candidate { expected, .. } => match expected.status {
+                "RefusedEnded" => self.candidate_ended += 1,
+                "RefusedHistory" => self.candidate_history += 1,
+                "RefusedUnpublished" => self.candidate_unpublished += 1,
+                _ => self.candidate_answers += 1,
+            },
             _ => {}
         }
     }
@@ -82,6 +102,12 @@ impl Coverage {
         self.unnamed += other.unnamed;
         self.least_merges += other.least_merges;
         self.minted_merges += other.minted_merges;
+        self.coupled += other.coupled;
+        self.coupled_duplicates += other.coupled_duplicates;
+        self.candidate_answers += other.candidate_answers;
+        self.candidate_ended += other.candidate_ended;
+        self.candidate_history += other.candidate_history;
+        self.candidate_unpublished += other.candidate_unpublished;
     }
 }
 
@@ -117,7 +143,17 @@ fn apply(model: &mut Oracle, op: &Op) {
             vec![at.owner()],
         )),
         Op::Retire { name } => Some((Event::Retire(*name), Vec::new())),
-        Op::Duplicate { .. } | Op::Unnamed { .. } | Op::MergeLeast { .. } | Op::Rebuild => None,
+        Op::Coupled { names, at } => {
+            // Both stages' births land in the one commit, in stage order.
+            model.apply(Event::Create(names[0]), &[at[0].owner()]);
+            Some((Event::Create(names[1]), vec![at[1].owner()]))
+        }
+        Op::Duplicate { .. }
+        | Op::Unnamed { .. }
+        | Op::MergeLeast { .. }
+        | Op::Rebuild
+        | Op::CoupledDuplicate { .. }
+        | Op::Candidate { .. } => None,
     };
     if let Some((event, owners)) = event {
         model.apply(event, &owners);
@@ -179,15 +215,32 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
         coverage.count(&op, untouched);
         let created = driver.execute(&op, step).map_err(fail)?;
         driver.learn(step, &created).map_err(fail)?;
-        apply(&mut model, &op);
-        match &op {
-            Op::Create { name, .. } => {
-                authored.insert(*name);
-                minted += 1;
+        // A candidate envelope lands its first stage only when the read
+        // answered (an edit lands no naming event); every other op lands.
+        let landed = match &op {
+            Op::Candidate {
+                first: candidate::First::Commit(first),
+                expected,
+                ..
+            } if !candidate::is_refusal(expected) => Some(first.as_ref()),
+            Op::Candidate { .. } => None,
+            op => Some(op),
+        };
+        if let Some(landed) = landed {
+            apply(&mut model, landed);
+            match landed {
+                Op::Create { name, .. } => {
+                    authored.insert(*name);
+                    minted += 1;
+                }
+                Op::Split { .. } => minted += 2,
+                Op::MergeMint { .. } => minted += 1,
+                Op::Coupled { names, .. } => {
+                    authored.extend(names.iter().copied());
+                    minted += 2;
+                }
+                _ => {}
             }
-            Op::Split { .. } => minted += 2,
-            Op::MergeMint { .. } => minted += 1,
-            _ => {}
         }
         let observed = driver.observe(step).map_err(fail)?;
         let born: BTreeSet<usize> = driver.names.keys().copied().collect();
@@ -256,6 +309,12 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             unnamed,
             least_merges,
             minted_merges,
+            coupled,
+            coupled_duplicates,
+            candidate_answers,
+            candidate_ended,
+            candidate_history,
+            candidate_unpublished,
         } = total;
         for (case, runs) in [
             ("#133 multi-owner splits", multi_owner_splits),
@@ -267,6 +326,15 @@ fn seeded_walks_agree_with_the_reference_oracle() {
             ("unnamed-birth refusals", unnamed),
             ("merge_least merges", least_merges),
             ("MintNew merges", minted_merges),
+            ("coupled envelopes", coupled),
+            ("coupled DuplicateBirth refusals", coupled_duplicates),
+            ("answered candidate reads", candidate_answers),
+            ("candidate reads of ended records", candidate_ended),
+            ("candidate reads over name history", candidate_history),
+            (
+                "candidate reads of unpublished records",
+                candidate_unpublished,
+            ),
         ] {
             assert!(runs > 0, "the seeds never exercised {case}");
         }

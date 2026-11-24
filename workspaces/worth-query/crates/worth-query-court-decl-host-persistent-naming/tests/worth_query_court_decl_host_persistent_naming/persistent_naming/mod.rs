@@ -17,6 +17,7 @@ mod schema;
 use schema::*;
 pub(crate) use schema::{Member, MemberRole, MEMBER_SCHEME};
 mod completeness;
+pub(crate) mod coupled;
 mod delete;
 mod edit;
 mod ergonomics;
@@ -54,26 +55,38 @@ impl<B: ApplicationMutationBinding<Schema>> ApplicationActionDelivery<Schema, B>
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Outputs = ApplicationProgramOutputs<coupled::producer::Graph>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-model.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Schema, Entry>()
-            .action::<edit::model::Binding, Completion>()
+        // `stir` is an ordinary edit here: only the successor-round
+        // program delivers it to its producers.
+        let entry = entry()
+            .action::<coupled::producer::successor::Binding, Completion>()
             .finish_action()
-            .action::<edit::member::Binding, Completion>()
-            .finish_action()
-            .action::<delete::Binding, Completion>()
-            .finish_action()
-            .action::<probe::Binding, Completion>()
-            .finish_action()
-            .action::<refusals::Binding, Completion>()
-            .finish_action()
-            .action::<outputs::sculpt::Binding, Completion>()
-            .finish_action()
-            .action::<stored::Binding, Completion>()
-            .finish_action()
-            .finish()]
+            .finish();
+        vec![entry, coupled::producer::feature()]
     }
+}
+/// The entry feature's actions, shared with the successor-round program.
+pub(crate) fn entry() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
+    ApplicationFeatureSpec::root::<Schema, Entry>()
+        .provides::<coupled::producer::EntryOutput>()
+        .action::<edit::model::Binding, Completion>()
+        .finish_action()
+        .action::<edit::member::Binding, Completion>()
+        .finish_action()
+        .action::<delete::Binding, Completion>()
+        .finish_action()
+        .action::<probe::Binding, Completion>()
+        .finish_action()
+        .action::<refusals::Binding, Completion>()
+        .finish_action()
+        .action::<outputs::sculpt::Binding, Completion>()
+        .finish_action()
+        .action::<stored::Binding, Completion>()
+        .finish_action()
+        .action::<coupled::producer::shape::Binding, Completion>()
+        .finish_action()
 }

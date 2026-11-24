@@ -14,6 +14,7 @@ pub struct PreparedCoupledWriter<'run> {
     pub publication: RelationalCoupledProducerPosture,
     pub batch: WorkerIntentBatch,
     pub content: worth_relational::facade::content::RelationalContentAttachments,
+    pub naming: Option<worth_relational::facade::lineage::CommitNamingPlan>,
 }
 
 pub trait InstalledCoupledProducerExecutor<Schema> {
@@ -215,7 +216,10 @@ where
             &execution, phase, runtime, prepared,
         )
         .map_err(|outcome| coupled_preparation::preparation_denial(Binding::IDENTITY, outcome))?;
-        let (writer, publication, batch, content) = inspect_coupled_application::<Schema, Binding>(
+        let (writer, publication, batch, content, naming) = inspect_coupled_application::<
+            Schema,
+            Binding,
+        >(
             &execution,
             phase,
             runtime,
@@ -230,6 +234,7 @@ where
             publication,
             batch,
             content,
+            naming,
         })
     }
 

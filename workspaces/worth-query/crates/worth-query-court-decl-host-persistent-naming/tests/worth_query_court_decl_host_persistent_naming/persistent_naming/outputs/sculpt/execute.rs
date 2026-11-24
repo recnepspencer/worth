@@ -50,7 +50,7 @@ pub(super) fn execute(
         }
         members.insert(key.clone(), created);
     }
-    for key in &plan.reads {
+    for key in plan.reads.iter().chain(&plan.plain_reads) {
         let existing = writer.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
         members.entry(key.clone()).or_insert(existing);
     }

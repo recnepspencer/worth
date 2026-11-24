@@ -10,7 +10,8 @@
 //! (or deleting an endpoint) changes that fact and stales the decision.
 //!
 //! What no fact key tracks vetoes sealing exactly as for entities
-//! ([`PersistentNameReadVeto`]).
+//! ([`PersistentNameReadVeto`]), and an applied candidate admits the read
+//! only as `candidate_naming` states.
 
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
@@ -73,13 +74,13 @@ impl<Schema: ApplicationSchema, Operation>
         {
             return Err(WorthQueryDecisionNameDenial::ForeignIdentity);
         }
-        let named = {
-            let reader = self.name_reader()?;
+        self.require_candidate_unaltered(LineageRecordTarget::Relation(relation.relation_id()))?;
+        let named = self.with_name_reader(|reader| {
             reader.relation_name_of::<Relation>(
                 relation.relation_id(),
                 &mut NameReadDependencies::new(),
             )
-        };
+        })?;
         if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
             self.decision_facts.veto_persistent_name(veto);
         }
@@ -109,11 +110,19 @@ impl<Schema: ApplicationSchema, Operation>
     {
         let subject = self.admit_relation_name_read(relation.name())?;
         let mut dependencies = NameReadDependencies::new();
-        let (resolved, branch) = {
-            let reader = self.name_reader()?;
+        let (resolved, branch) = self.with_name_reader(|reader| {
             let resolved = reader.resolve_relation::<Relation>(held, selection, &mut dependencies);
             (resolved, reader.branch().clone())
+        })?;
+        let resolved = match resolved {
+            Err(ExecutionNameResolveDenial::Read(read)) => {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+                return Ok(Err(ExecutionNameResolveDenial::Read(read)));
+            }
+            resolved => resolved,
         };
+        self.require_candidate_footprint(&dependencies, &branch)?;
         let untracked = untracked_resolution(&resolved, &dependencies, &branch);
         if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
             self.decision_facts.veto_persistent_name(veto);
@@ -193,7 +202,7 @@ impl<Schema: ApplicationSchema, Operation>
         let record = self
             .reader
             .native
-            .projection(self.reader.snapshot)
+            .projection_of_relation(self.reader.snapshot, relation_id)
             .map(|view| {
                 view.relation_record_with_projection_scope(
                     &execution,

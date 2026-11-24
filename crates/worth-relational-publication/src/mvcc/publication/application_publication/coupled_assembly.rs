@@ -15,6 +15,7 @@ pub mod local_keys;
 pub mod managed_source_alignment;
 pub mod net_plan;
 pub mod parent_read_footprint;
+pub mod part_naming;
 pub mod participant_admission;
 pub mod patch_target;
 pub mod producer_posture;

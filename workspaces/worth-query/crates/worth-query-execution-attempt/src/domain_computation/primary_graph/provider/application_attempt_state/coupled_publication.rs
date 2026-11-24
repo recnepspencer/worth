@@ -5,6 +5,7 @@ use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind as Cause, WorthQueryInvariantExecutionFailure as Failure,
 };
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_relational::facade::lineage::CommitNamingPlan;
 use worth_relational::facade::{
     mvcc::{
         RelationalCoupledProducerPosture, RelationalRequiredOutputPublication,
@@ -17,6 +18,9 @@ pub struct CoupledWriterCommands {
     pub publication: RelationalCoupledProducerPosture,
     pub batch: WorkerIntentBatch,
     pub content: worth_relational::facade::content::RelationalContentAttachments,
+    /// The writer's lowered output names; coupled assembly composes them
+    /// into the envelope's one naming plan.
+    pub naming: Option<CommitNamingPlan>,
 }
 impl WorthQueryPrimaryGraphProvider {
     pub fn authored_stage_commands(
@@ -27,6 +31,7 @@ impl WorthQueryPrimaryGraphProvider {
             WorkerIntentBatch,
             worth_relational::facade::content::RelationalContentAttachments,
             Vec<worth_relational::facade::mvcc::RequiredOutputRoleTarget>,
+            Option<CommitNamingPlan>,
         ),
         Failure,
     > {
@@ -52,7 +57,7 @@ impl WorthQueryPrimaryGraphProvider {
                 "authored stage is not owned by an envelope receipt",
             ));
         }
-        refuse_coupled_part_names(&staged)?;
+        let naming = part_naming(&staged)?;
         let (roles, _) = super::super::native_publication_roles::collect(
             self.graph.layout_ref(),
             staged.attempt.native_publication_roles(),
@@ -67,6 +72,7 @@ impl WorthQueryPrimaryGraphProvider {
             staged.batch().clone(),
             staged.content_attachments().clone(),
             roles,
+            naming,
         ))
     }
 
@@ -91,7 +97,7 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or_else(unavailable)?;
         let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
         let staged = attempts.staged_attempt(session).ok_or_else(unavailable)?;
-        refuse_coupled_part_names(&staged)?;
+        let naming = part_naming(&staged)?;
         let attempt = staged.attempt;
         let idempotency = attempt.idempotency();
         let dependency = idempotency
@@ -182,6 +188,7 @@ impl WorthQueryPrimaryGraphProvider {
             publication,
             batch,
             content,
+            naming,
         })
     }
 }
@@ -231,18 +238,20 @@ pub fn authored_source(
     )
 }
 
-/// A coupled part's batch joins another attempt's transaction, which carries
-/// only that attempt's naming plan. Until coupled assembly composes a naming
-/// plan per part (across supersession and rekeying), a part declaring output
-/// names refuses rather than commit them unnamed.
-fn refuse_coupled_part_names(
+/// A coupled part's lowered naming plan, exactly as a direct operation's
+/// transaction would attach it. Relational's coupled assembly rescopes its
+/// create targets with the part's commands and composes it into the
+/// envelope's one plan, so commit finalization judges every part's names.
+fn part_naming(
     staged: &super::WorthQueryStagedApplicationAttempt<'_>,
-) -> Result<(), Failure> {
-    match staged.naming_plan() {
-        Ok(None) => Ok(()),
-        Ok(Some(_)) | Err(()) => Err(Failure::new(
-            Cause::ProviderUnsupported,
-            "coupled producer and authored-stage outputs cannot declare persistent names",
-        )),
-    }
+) -> Result<Option<CommitNamingPlan>, Failure> {
+    staged
+        .naming_plan()
+        .map(|plan| plan.cloned())
+        .map_err(|()| {
+            Failure::new(
+                Cause::StateLoadClosureMismatch,
+                "declared output names were never lowered",
+            )
+        })
 }

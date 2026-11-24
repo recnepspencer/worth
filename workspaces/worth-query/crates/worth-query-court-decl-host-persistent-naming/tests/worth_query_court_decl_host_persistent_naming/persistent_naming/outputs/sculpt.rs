@@ -115,6 +115,9 @@ pub struct Plan {
     pub moves: Vec<(String, String, String)>,
     pub seam_reads: Vec<(String, String, String)>,
     pub reads: Vec<String>,
+    /// Read without asking their name: a record an earlier stage of the same
+    /// envelope created has none until the envelope commits.
+    pub plain_reads: Vec<String>,
     pub creates: Vec<String>,
     pub deletes: Vec<String>,
     pub unlinks: Vec<(String, String)>,
@@ -267,6 +270,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                     .map_err(HandlerExecutionDenial::new)?;
                 names.insert(key.clone(), name);
                 members.insert(key, member);
+            }
+            for key in plan.plain_reads {
+                let member = reader.resolve_entity(MemberKey::at("MemberKey"), key)?;
+                reader.entity(&member, Member::reference())?;
             }
             let mut seam_names = BTreeMap::new();
             for (label, from, to) in plan.seam_reads {

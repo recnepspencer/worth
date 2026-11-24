@@ -1,5 +1,5 @@
 ------------------------ MODULE PersistentNamingTrace -----------------------
-EXTENDS PersistentNaming, TraceData
+EXTENDS PersistentNamingCandidate, TraceData
 
 (*
   Trace-validation refinement wrapper for PersistentNaming.tla.
@@ -11,15 +11,19 @@ EXTENDS PersistentNaming, TraceData
   observed Rust transition is a step of PersistentNaming.tla whose post-state
   matches the observed live and retired names and log length, and every
   `Observe` record's resolutions (each ever-minted name, unscoped and per
-  owner, Exact and AllDescendants) equal the model's answers.
+  owner, Exact and AllDescendants) equal the model's answers. A
+  `CandidateEnvelope` record (Slice 3C-1) is one envelope whose later member
+  read a name on the candidate: TLC accepts it iff the model's candidate-basis
+  read gives exactly the observed answer or refusal, and the envelope then
+  committed (an answer) or left zero effects (a refusal) as the model does.
 *)
 
 VARIABLE pc
 
-traceVars == <<vars, pc>>
+traceVars == <<cvars, pc>>
 
 TraceInit ==
-    /\ Init
+    /\ CInit
     /\ pc = 1
 
 StepAction(step) ==
@@ -41,6 +45,10 @@ StepAction(step) ==
             CommitRetire(step.name)
       [] step.action = "CommitRestore" ->
             CommitRestore(step.name, step.owner, step.part)
+      [] step.action = "CommitCoupledCreate" ->
+            CommitCoupledCreate(step.n1, step.o1, step.p1, step.n2, step.o2, step.p2)
+      [] step.action = "RefuseCoupledDuplicateBirth" ->
+            RefuseCoupledDuplicateBirth(step.name)
       [] step.action = "DestroyAndRebuildIndex" ->
             DestroyAndRebuildIndex
       [] step.action = "Observe" ->
@@ -51,6 +59,14 @@ StepAction(step) ==
 
 LiveNameSet(liveMap) == {n \in Names : liveMap[n].alive}
 
+\* A candidate envelope: the model's read must answer exactly as observed.
+CandidateTraceStep(step) ==
+    /\ CandidateEnvelope(step.kind, step.x, step.y, step.z, step.o1, step.o2,
+                         step.part, step.rk, step.rn, step.scope, step.sel)
+    /\ ImplRead(CandLive(step.kind, step.x, step.y, step.z, step.o1, step.o2, step.part),
+                step.rk, step.rn, step.scope, step.sel)
+            = [status |-> step.status, targets |-> step.targets]
+
 MatchesPost(step) ==
     /\ LiveNameSet(live') = step.postLive
     /\ retired' = step.postRetired
@@ -58,7 +74,9 @@ MatchesPost(step) ==
 
 TraceStep ==
     /\ pc <= Len(Trace)
-    /\ StepAction(Trace[pc])
+    /\ IF Trace[pc].action = "CandidateEnvelope"
+          THEN CandidateTraceStep(Trace[pc])
+          ELSE StepAction(Trace[pc]) /\ UNCHANGED lastRead
     /\ MatchesPost(Trace[pc])
     /\ pc' = pc + 1
 
