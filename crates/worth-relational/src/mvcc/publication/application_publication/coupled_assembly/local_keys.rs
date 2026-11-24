@@ -1,11 +1,15 @@
 //! Each admitted participant keeps its local Create coordinates in the combined transaction.
-use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    symbols::data::{ClientKey, StringInterner},
-    transactions::data::{CommitCreatedEntityBindings, EntityReference, WorkerIntentBatch},
-};
+use crate::mvcc::publication::application_publication::custody;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::symbols::data::ClientKey;
+use crate::symbols::data::StringInterner;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::fmt::Write;
+use worth_execution::ExecutionRequest;
 
 /// The scoped coordinates one part chose, by original text. A successor round
 /// of the same route reuses exactly these, so its keys name the chain's records.
@@ -24,7 +28,7 @@ pub(super) fn scope(
         .run_native_with_checkpoint(|context| {
             let mut rewrite = |key: &mut ClientKey| {
                 let text = key.resolve_with_interner(symbols).ok_or_else(|| {
-                    crate::mvcc::origin_denial(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "coupled local key has no actual Native symbol meaning",
                     )
                 })?;
@@ -88,7 +92,7 @@ pub(super) fn rescope(
             let mut unknown = false;
             let mut rewrite = |key: &mut ClientKey| {
                 let text = key.resolve_with_interner(symbols).ok_or_else(|| {
-                    crate::mvcc::origin_denial(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "coupled local key has no actual Native symbol meaning",
                     )
                 })?;
@@ -121,12 +125,13 @@ pub(super) fn rescope(
 /// partition for that key.
 pub(super) fn repartition(
     execution: &ExecutionRequest<'_, '_>,
-    head: &[crate::transactions::data::MutationIntent],
+    head: &[crate::transactions::data::intents::mutation_intent::MutationIntent],
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
 ) -> Result<(), TransactionCommitError> {
-    use crate::transactions::data::{CreateIntent, MutationIntent};
+    use crate::transactions::data::intents::mutation_intent::CreateIntent;
+    use crate::transactions::data::intents::mutation_intent::MutationIntent;
     execution
         .run_native_with_checkpoint(|context| {
             // Keyed by (relation create, text): an entity and a relation may
@@ -143,7 +148,7 @@ pub(super) fn repartition(
                     _ => continue,
                 };
                 let text = key.resolve_with_interner(symbols).ok_or_else(|| {
-                    crate::mvcc::origin_denial(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "coupled local key has no actual Native symbol meaning",
                     )
                 })?;

@@ -138,12 +138,12 @@ fn evaluate(
         .unwrap();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         None,
         None,
     );
-    InvariantEngine::new(runtime)
+    InvariantEngine::from_view(&runtime.invariant_validation_view())
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request)
 }

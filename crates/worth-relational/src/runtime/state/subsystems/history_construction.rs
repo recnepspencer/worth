@@ -77,22 +77,3 @@ impl HistorySubsystem {
         Ok(snapshot)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::runtime::fork_denial::RelationalRuntimeForkDenial;
-    use crate::tests::support::{create_entity, runtime_with_test_schema};
-
-    #[test]
-    fn fork_refuses_a_missing_performed_artifact_without_reconstructing_inventory() {
-        let host = crate::execution::test_policy::serial_request();
-        let execution = worth_execution::ExecutionRequest::serial(&host);
-        let runtime = runtime_with_test_schema();
-        create_entity(&execution, &runtime, "performed-inventory");
-        runtime.history.install_commit_catalog(Default::default());
-        assert!(matches!(
-            runtime.fork(),
-            Err(RelationalRuntimeForkDenial::CanonicalInventoryInvalid)
-        ));
-    }
-}

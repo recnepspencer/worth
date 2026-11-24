@@ -9,7 +9,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         posture: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
-        mut batches: Vec<crate::transactions::data::WorkerIntentBatch>,
+        mut batches: Vec<crate::transactions::data::primitives::WorkerIntentBatch>,
         fault: u8,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         if fault == 4 {
@@ -47,8 +47,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     .first()
                     .expect("the actual producer has its output role");
                 match &role.target {
-                    crate::transactions::data::EntityReference::Existing(id) => *id,
-                    crate::transactions::data::EntityReference::Created(reference) => {
+                    crate::transactions::data::primitives::EntityReference::Existing(id) => *id,
+                    crate::transactions::data::primitives::EntityReference::Created(reference) => {
                         self.mutation.outcome.created_entities.resolve(reference).ok_or_else(||
                             part::reject(crate::publication::data::AuthoredRetirementRefusal::CorruptPublication, self.authored_source()))?
                     }
@@ -57,9 +57,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let batch = batches.first_mut().expect("actual writer batch");
             batch
                 .intents
-                .push(crate::transactions::data::MutationIntent::Entity(
-                    crate::transactions::data::EntityMutationIntent::Delete(
-                        crate::transactions::data::DeleteEntityIntent { entity_id: target },
+                .push(crate::transactions::data::intents::mutation_intent::MutationIntent::Entity(
+                    crate::transactions::data::intents::mutation_intent::EntityMutationIntent::Delete(
+                        crate::transactions::data::intents::mutation_intent::DeleteEntityIntent { entity_id: target },
                     ),
                 ));
             return self.append_publication(execution, posture, content, batches);
@@ -101,14 +101,17 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 })?;
             let Some(batch) = batches.first_mut() else {
                 return Err(
-                    crate::mvcc::origin_denial("real coupled writer has no command batch").into(),
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "real coupled writer has no command batch",
+                    )
+                    .into(),
                 );
             };
             batch
                 .intents
-                .push(crate::transactions::data::MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::Delete(
-                        crate::transactions::data::DeleteRelationIntent {
+                .push(crate::transactions::data::intents::mutation_intent::MutationIntent::Relation(
+                    crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Delete(
+                        crate::transactions::data::intents::mutation_intent::DeleteRelationIntent {
                             relation_id: edge.id,
                         },
                     ),

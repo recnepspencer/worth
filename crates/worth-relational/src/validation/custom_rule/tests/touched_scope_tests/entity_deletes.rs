@@ -5,35 +5,32 @@ fn touched_scope_tracks_planned_entity_deletes() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let entity_id = create_entity(execution, &runtime, "entity");
+    let id = PartitionId::main();
+    let (partition, entities, _) = relation_partition(id, 1, &[]);
+    let partitions = BTreeMap::from([(id, partition)]);
+    let entity_id = entities[0];
     let intent = MutationIntent::Entity(
         crate::transactions::data::intents::mutation_intent::EntityMutationIntent::Delete(
             DeleteEntityIntent { entity_id },
         ),
     );
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("delete-entity").push(intent.clone()),
-        AllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
     let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
+        transaction_id: TransactionId(9_004),
         merged_intents: vec![intent],
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let observation = InvariantObservation::committed_branch(&partitions);
     let prepared_scope = scope_with_access(
-        runtime.current_version_id(),
+        VersionId(1),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
     );
+    let instrumentation = RuntimeInstrumentation::default();
     let planner = test_scope_planner(
-        &runtime,
+        &instrumentation,
         *execution,
         &observation,
-        runtime.current_version_id(),
+        VersionId(1),
         &prepared_scope,
     );
 

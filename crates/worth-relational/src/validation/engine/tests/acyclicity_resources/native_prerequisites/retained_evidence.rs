@@ -8,7 +8,7 @@ fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped(
     let plan = fixture.merged_plan(fixture.chain_batch(1));
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &fixture.runtime,
+        &fixture.runtime.invariant_validation_view(),
         InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
         fixture.runtime.current_version_id(),
         Some(&plan),
@@ -145,7 +145,7 @@ fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remain
     let request = || {
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &fixture.runtime,
+            &fixture.runtime.invariant_validation_view(),
             InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
             fixture.runtime.current_version_id(),
             Some(&plan),
@@ -165,7 +165,7 @@ fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remain
     *hooks.native_probe.lock().unwrap() = Some(Arc::clone(&serial));
     assert!(serial.memory().is_none());
     let native = ExecutionRequest::serial(&serial);
-    let result = InvariantEngine::new(&fixture.runtime)
+    let result = InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
         .execute(&native, request())
         .unwrap();
     assert_eq!(result.results().len(), 2);
@@ -183,7 +183,10 @@ fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remain
     let (result, report) = ExecutionRequest::serial(&ancestor)
         .run(
             worth_execution::ExecutionWorkCeiling::new(Some(4_000_000)),
-            |_| InvariantEngine::new(&fixture.runtime).execute(&native, request()),
+            |_| {
+                InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
+                    .execute(&native, request())
+            },
         )
         .unwrap();
     assert_eq!(result.unwrap().results().len(), 2);

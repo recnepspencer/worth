@@ -1,17 +1,17 @@
 use super::*;
-use crate::storage::overlay::{OverlayStateView, WorkingState};
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::storage::overlay::{
+    CurrentPartitionAccess, OverlayStateView, PartitionState, WorkingState,
+};
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
-use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
+use std::collections::BTreeMap;
 
 #[test]
 fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let runtime = runtime_with_test_schema();
-    let shared = create_entity(execution, &runtime, "shared");
-    let existing_neighbor = create_entity(execution, &runtime, "existing-neighbor");
-    create_relation(execution, &runtime, shared, existing_neighbor, "existing");
-    let new_neighbor = create_entity(execution, &runtime, "new-neighbor");
+    let (partitions, entities, _) = scope_partitions(3);
+    let (shared, existing_neighbor, new_neighbor) = (entities[0], entities[1], entities[2]);
     let intent = MutationIntent::Create(CreateIntent::Relation(RelationSpec {
         partition_id: crate::identity::data::PartitionId::main(),
         kind_id: KindId(2),
@@ -24,7 +24,7 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         transaction_id: TransactionId(9_002),
         merged_intents: vec![intent],
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let observation = InvariantObservation::committed_branch(&partitions);
     let access = CustomInvariantAccessContract {
         read_entity_kinds: vec![KindId(1)],
         read_relation_kinds: vec![KindId(2)],
@@ -32,9 +32,16 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         affected_relation_kinds: vec![KindId(2)],
         include_relation_endpoint_entity_touches: true,
     };
-    let version = runtime.current_version_id();
+    let version = VersionId(1);
     let prepared_scope = scope_with_access(version, &observation, Some(&merged_plan), &access);
-    let planner = test_scope_planner(&runtime, *execution, &observation, version, &prepared_scope);
+    let instrumentation = RuntimeInstrumentation::default();
+    let planner = test_scope_planner(
+        &instrumentation,
+        *execution,
+        &observation,
+        version,
+        &prepared_scope,
+    );
 
     assert_eq!(
         planner.touched().direct_visible_entity_ids(),
@@ -51,11 +58,8 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let old_source = create_entity(execution, &runtime, "old-source");
-    let old_target = create_entity(execution, &runtime, "old-target");
-    let new_target = create_entity(execution, &runtime, "new-target");
-    let relation_id = create_relation(execution, &runtime, old_source, old_target, "edge");
+    let (partitions, entities, relation_id) = scope_partitions(3);
+    let (old_source, old_target, new_target) = (entities[0], entities[1], entities[2]);
     let intent = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
             relation_id,
@@ -65,7 +69,7 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
         },
     ));
     let touched = proposed_relation_scope(
-        &runtime,
+        &partitions,
         *execution,
         relation_id,
         intent,
@@ -86,15 +90,13 @@ fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(execution, &runtime, "source");
-    let target = create_entity(execution, &runtime, "target");
-    let relation_id = create_relation(execution, &runtime, source, target, "edge");
+    let (partitions, entities, relation_id) = scope_partitions(2);
+    let (source, target) = (entities[0], entities[1]);
     let intent = MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
         relation_id,
     }));
     let touched = proposed_relation_scope(
-        &runtime,
+        &partitions,
         *execution,
         relation_id,
         intent,
@@ -109,11 +111,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(execution, &runtime, "source");
-    let old_target = create_entity(execution, &runtime, "old-target");
-    let new_target = create_entity(execution, &runtime, "new-target");
-    let relation_id = create_relation(execution, &runtime, source, old_target, "edge");
+    let (partitions, entities, relation_id) = scope_partitions(3);
+    let (source, new_target) = (entities[0], entities[2]);
     let intent = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
             relation_id,
@@ -122,28 +121,23 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
             target: EntityReference::Existing(new_target),
         },
     ));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("rewire").push(intent.clone()),
-        AllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
     let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
+        transaction_id: TransactionId(9_004),
         merged_intents: vec![intent],
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let observation = InvariantObservation::committed_branch(&partitions);
     let prepared_scope = scope_with_access(
-        runtime.current_version_id(),
+        VersionId(1),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
     );
+    let instrumentation = RuntimeInstrumentation::default();
     let planner = test_scope_planner(
-        &runtime,
+        &instrumentation,
         *execution,
         &observation,
-        runtime.current_version_id(),
+        VersionId(1),
         &prepared_scope,
     );
 
@@ -168,10 +162,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(execution, &runtime, "source");
-    let old_target = create_entity(execution, &runtime, "old-target");
-    let relation_id = create_relation(execution, &runtime, source, old_target, "edge");
+    let (partitions, entities, relation_id) = scope_partitions(2);
+    let source = entities[0];
     let created_target = CreatedEntityRef {
         partition_id: crate::identity::data::PartitionId(1),
         kind_id: KindId(1),
@@ -191,30 +183,23 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
             target: EntityReference::Created(created_target.clone()),
         },
     ));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("rewire-to-created")
-            .push(create_target.clone())
-            .push(update_relation.clone()),
-        AllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
     let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
+        transaction_id: TransactionId(9_004),
         merged_intents: vec![create_target, update_relation],
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let observation = InvariantObservation::committed_branch(&partitions);
     let prepared_scope = scope_with_access(
-        runtime.current_version_id(),
+        VersionId(1),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
     );
+    let instrumentation = RuntimeInstrumentation::default();
     let planner = test_scope_planner(
-        &runtime,
+        &instrumentation,
         *execution,
         &observation,
-        runtime.current_version_id(),
+        VersionId(1),
         &prepared_scope,
     );
 
@@ -234,35 +219,27 @@ fn touched_scope_tracks_planned_relation_deletes() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(execution, &runtime, "source");
-    let target = create_entity(execution, &runtime, "target");
-    let relation_id = create_relation(execution, &runtime, source, target, "edge");
+    let (partitions, _, relation_id) = scope_partitions(2);
     let intent = MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
         relation_id,
     }));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("delete").push(intent.clone()),
-        AllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
     let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
+        transaction_id: TransactionId(9_004),
         merged_intents: vec![intent],
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let observation = InvariantObservation::committed_branch(&partitions);
     let prepared_scope = scope_with_access(
-        runtime.current_version_id(),
+        VersionId(1),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
     );
+    let instrumentation = RuntimeInstrumentation::default();
     let planner = test_scope_planner(
-        &runtime,
+        &instrumentation,
         *execution,
         &observation,
-        runtime.current_version_id(),
+        VersionId(1),
         &prepared_scope,
     );
 
@@ -278,19 +255,19 @@ fn touched_scope_tracks_planned_relation_deletes() {
 }
 
 fn test_scope_planner<'a>(
-    runtime: &'a crate::runtime::RelationalRuntime,
+    instrumentation: &'a RuntimeInstrumentation,
     execution: worth_execution::ExecutionRequest<'a, 'a>,
     observation: &'a InvariantObservation<'a>,
     version: crate::identity::data::VersionId,
     prepared: &PreparedCustomInvariantScope,
 ) -> CustomInvariantScopePlanner<'a> {
-    let view = runtime.invariant_validation_view();
+    let view = empty_invariant_view(instrumentation);
     CustomInvariantScopePlanner::new_at_current_version(
         &view,
         execution,
         observation,
         version,
-        runtime.current_version_id(),
+        VersionId(1),
         prepared,
         super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
         Arc::new(CustomInvariantAccessContract {
@@ -312,20 +289,21 @@ enum ProposedRelationState {
 }
 
 fn proposed_relation_scope(
-    runtime: &crate::runtime::RelationalRuntime,
+    committed: &dyn CurrentPartitionAccess,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     relation_id: crate::identity::data::RelationId,
     intent: MutationIntent,
     proposed_state: ProposedRelationState,
 ) -> crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet {
-    let committed = runtime.storage_access().current_edition();
-    let current_version = runtime.current_version_id();
+    let current_version = VersionId(1);
     let proposed_version = current_version.saturating_next();
     let partition_id = relation_id.partition_id;
     let mut proposed = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
-        &committed,
+        committed,
         [partition_id],
-        runtime.config.storage.adjacency_policy.clone(),
+        crate::config::data::RelationalRuntimeConfig::default()
+            .storage
+            .adjacency_policy,
         crate::storage::overlay::PartitionCloneMode::Full,
         crate::storage::overlay::EntityWorkingSetLayout::CanonicalSoA,
         None,
@@ -354,7 +332,7 @@ fn proposed_relation_scope(
             .expect("fixture slot is materialized"),
     }
     proposed.mark_relation_slot_touched(partition_id, relation_slot);
-    let overlay = OverlayStateView::new(&committed, &proposed);
+    let overlay = OverlayStateView::new(committed, &proposed);
     let observation =
         InvariantObservation::speculative_with_proposal(overlay, current_version, None);
     let plan = MergedCommitPlan {
@@ -370,8 +348,9 @@ fn proposed_relation_scope(
         &super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
     );
 
+    let instrumentation = RuntimeInstrumentation::default();
     test_scope_planner(
-        runtime,
+        &instrumentation,
         execution,
         &observation,
         proposed_version,
@@ -389,6 +368,19 @@ fn test_access_contract() -> CustomInvariantAccessContract {
         affected_relation_kinds: vec![KindId(2)],
         include_relation_endpoint_entity_touches: true,
     }
+}
+
+fn scope_partitions(
+    entity_count: usize,
+) -> (
+    BTreeMap<PartitionId, PartitionState>,
+    Vec<crate::identity::data::EntityId>,
+    crate::identity::data::RelationId,
+) {
+    let id = PartitionId::main();
+    let (partition, entities, relations) =
+        relation_partition(id, entity_count, &[(0, 1, KindId(2))]);
+    (BTreeMap::from([(id, partition)]), entities, relations[0])
 }
 
 mod entity_deletes;

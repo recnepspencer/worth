@@ -3,28 +3,32 @@ use worth_foundational::facade::{
     PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
 
-use crate::capabilities::AspectPlanSource;
-use crate::identity::data::{KindId, PartitionId};
-use crate::mvcc::ValidatedRelationalProposal;
-use crate::tests::support::{
-    aspect_key, create_entity, create_relation, field_key, name_field_patch,
-    runtime_with_test_schema,
-};
-use crate::transactions::data::{
+use super::proposal_records::{create_relation, name_field_patch};
+use worth_relational::facade::identity::{KindId, PartitionId};
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
+use worth_relational::facade::transactions::{
     ApplyEntityAspectPatchIntent, CreateIntent, DeleteEntityIntent, EntityMutationIntent,
     EntityReference, EntitySpec, MutationIntent, RecordRef, RelationMutationIntent,
     ReplaceEntityIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
     WorkerIntentBatch,
 };
+use worth_testkit_relational::{
+    aspect_storage::{aspect_key, field_key, publications::begin_main_transaction},
+    durable_publication::{field_patch, memory_runtime as runtime_with_test_schema},
+    ordinary_records::create_entity,
+    shared_relational_certification_test_execution_policy::serial_request,
+};
 
-use super::ValidatedMutationFootprint;
+use worth_relational::facade::mvcc::{
+    ValidatedMutationFootprint, ValidatedMutationFootprintProjection,
+};
 
 mod relation_births;
 mod variant_matrix;
 
 #[test]
 fn exact_field_footprint_keeps_record_aspect_and_field_distinct() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -45,18 +49,17 @@ fn exact_field_footprint_keeps_record_aspect_and_field_distinct() {
 
 #[test]
 fn whole_aspect_footprint_keeps_its_record_and_aspect_boundaries() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
     let changed = create_entity(execution, &runtime, "changed");
     let other = create_entity(execution, &runtime, "other");
-    let contract = runtime
-        .entity_aspect_plan(KindId(1))
-        .unwrap()
-        .contract_for(&aspect_key("name"))
-        .unwrap()
-        .clone();
+    let contract = worth_testkit_relational::aspect_storage::definition::default_entity_aspects()
+        .into_iter()
+        .map(|(_, contract)| contract)
+        .find(|contract| contract.key() == &aspect_key("name"))
+        .unwrap();
     let patch = PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
         basis: PortableAspectContractBasis::from_contract(&contract),
         value: ContractValidationInput::Scalar(AspectValue::String("after".into())),
@@ -80,7 +83,7 @@ fn whole_aspect_footprint_keeps_its_record_and_aspect_boundaries() {
 
 #[test]
 fn replace_and_delete_footprints_cover_only_the_exact_whole_record() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -105,7 +108,7 @@ fn replace_and_delete_footprints_cover_only_the_exact_whole_record() {
 
 #[test]
 fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -142,7 +145,7 @@ fn create_only_and_endpoint_only_intents_examine_work_but_name_no_prior_field() 
 
 #[test]
 fn mixed_breadth_reports_every_validated_intent_and_materialized_target() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -174,7 +177,7 @@ fn mixed_breadth_reports_every_validated_intent_and_materialized_target() {
 
 #[test]
 fn omitted_demand_performs_no_footprint_scan_or_materialization() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -193,7 +196,7 @@ fn omitted_demand_performs_no_footprint_scan_or_materialization() {
 
     assert!(matches!(
         not_requested,
-        super::ValidatedMutationFootprintProjection::NotRequested(_)
+        ValidatedMutationFootprintProjection::NotRequested(_)
     ));
     assert!(not_requested.projected().is_none());
     assert_eq!(not_requested.work().validated_intents_examined(), 0);
@@ -202,14 +205,14 @@ fn omitted_demand_performs_no_footprint_scan_or_materialization() {
 
 fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     intents: impl IntoIterator<Item = MutationIntent>,
 ) -> ValidatedRelationalProposal {
     let batch = intents.into_iter().fold(
         WorkerIntentBatch::new("footprint-owner-proof"),
         WorkerIntentBatch::push,
     );
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(
             batch,
@@ -228,7 +231,10 @@ fn project(validated: ValidatedRelationalProposal) -> ValidatedMutationFootprint
         .expect("explicit demand projects footprint")
 }
 
-fn update_name(entity_id: crate::identity::data::EntityId, value: &str) -> MutationIntent {
+fn update_name(
+    entity_id: worth_relational::facade::identity::EntityId,
+    value: &str,
+) -> MutationIntent {
     MutationIntent::Entity(EntityMutationIntent::UpdateFields(
         UpdateEntityFieldsIntent {
             entity_id,
@@ -241,19 +247,22 @@ fn entity_spec(key: &str) -> EntitySpec {
     EntitySpec {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
-        client_key: crate::symbols::data::ClientKey::raw(key),
+        client_key: worth_relational::facade::symbols::ClientKey::raw(key),
         fields: name_field_patch(key),
     }
 }
 
 fn locator(aspect: &str, field: &str) -> worth_foundational::facade::AspectFieldLocator {
-    crate::transactions::data::planned_single_field_locator(aspect_key(aspect), field_key(field))
+    worth_relational::facade::transactions::planned_single_field_locator(
+        aspect_key(aspect),
+        field_key(field),
+    )
 }
 
 fn assert_whole_record(
     footprint: &ValidatedMutationFootprint,
-    changed: crate::identity::data::EntityId,
-    other: crate::identity::data::EntityId,
+    changed: worth_relational::facade::identity::EntityId,
+    other: worth_relational::facade::identity::EntityId,
 ) {
     assert!(footprint.mutates_field(&RecordRef::Entity(changed), &locator("any", "field")));
     assert!(!footprint.mutates_field(&RecordRef::Entity(other), &locator("any", "field")));

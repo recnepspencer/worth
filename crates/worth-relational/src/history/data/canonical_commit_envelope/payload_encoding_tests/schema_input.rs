@@ -18,7 +18,8 @@ use crate::publication::patch::data::{
 use crate::schema::data::{
     LoweredSchemaTransitionPlan, RelationalSchemaRegistry, SchemaTransitionArtifact,
 };
-use crate::transactions::data::{MergedCommitPlan, TransactionId};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::TransactionId;
 
 pub(crate) fn canonical_schema_envelope_input(
     registry: &RelationalSchemaRegistry,

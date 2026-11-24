@@ -1,12 +1,10 @@
 use super::filtering::relation_rule_kind;
-use super::test_support::{
-    create_entity, create_relation_of_kind, relation_integrity_runtime, request_for_plan,
-};
+use super::test_support::RequestGraph;
 use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent;
 use crate::transactions::data::intents::materialization_intent::RematerializeRelationIntent;
-use crate::transactions::data::intents::materialization_intent::SuspendRelationMaterializationIntent;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
 use crate::transactions::data::intents::mutation_intent::DeleteRelationIntent;
@@ -18,16 +16,11 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::TransactionId;
-use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[test]
 fn request_excludes_unrelated_relation_kind_registrations_for_relation_create() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = relation_integrity_runtime();
-    let source = create_entity(execution, &runtime, "source");
-    let target = create_entity(execution, &runtime, "target");
+    let graph = RequestGraph::new(2, &[]);
+    let (source, target) = (graph.entities[0], graph.entities[1]);
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(11),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Relation(
@@ -42,8 +35,10 @@ fn request_excludes_unrelated_relation_kind_registrations_for_relation_create() 
         ))],
     };
 
-    let request = request_for_plan(&runtime, &plan);
-    let included_relation_kinds = runtime
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = RequestGraph::view(&instrumentation);
+    let request = graph.request(&view, Some(&plan));
+    let included_relation_kinds = view
         .schema_contract_runtime
         .relation_integrity_registrations
         .iter()
@@ -56,31 +51,8 @@ fn request_excludes_unrelated_relation_kind_registrations_for_relation_create() 
 
 #[test]
 fn request_excludes_unrelated_relation_kind_registrations_for_entity_delete() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = relation_integrity_runtime();
-    let anchor = create_entity(execution, &runtime, "anchor");
-    let target = create_entity(execution, &runtime, "target");
-    let isolated_a = create_entity(execution, &runtime, "isolated-a");
-    let isolated_b = create_entity(execution, &runtime, "isolated-b");
-    create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(2),
-        anchor,
-        target,
-        "adjacent-kind2",
-    );
-    create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(3),
-        isolated_a,
-        isolated_b,
-        "remote-kind3",
-    );
-
+    let graph = RequestGraph::new(4, &[(0, 1, KindId(2)), (2, 3, KindId(3))]);
+    let anchor = graph.entities[0];
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(12),
         merged_intents: vec![MutationIntent::Entity(EntityMutationIntent::Delete(
@@ -88,8 +60,10 @@ fn request_excludes_unrelated_relation_kind_registrations_for_entity_delete() {
         ))],
     };
 
-    let request = request_for_plan(&runtime, &plan);
-    let included_relation_kinds = runtime
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = RequestGraph::view(&instrumentation);
+    let request = graph.request(&view, Some(&plan));
+    let included_relation_kinds = view
         .schema_contract_runtime
         .relation_integrity_registrations
         .iter()
@@ -102,31 +76,8 @@ fn request_excludes_unrelated_relation_kind_registrations_for_entity_delete() {
 
 #[test]
 fn request_excludes_unrelated_relation_kind_registrations_for_entity_replace() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = relation_integrity_runtime();
-    let anchor = create_entity(execution, &runtime, "anchor");
-    let target = create_entity(execution, &runtime, "target");
-    let isolated_a = create_entity(execution, &runtime, "isolated-a");
-    let isolated_b = create_entity(execution, &runtime, "isolated-b");
-    create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(2),
-        anchor,
-        target,
-        "adjacent-kind2",
-    );
-    create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(3),
-        isolated_a,
-        isolated_b,
-        "remote-kind3",
-    );
-
+    let graph = RequestGraph::new(4, &[(0, 1, KindId(2)), (2, 3, KindId(3))]);
+    let anchor = graph.entities[0];
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(13),
         merged_intents: vec![MutationIntent::Entity(EntityMutationIntent::Replace(
@@ -143,8 +94,10 @@ fn request_excludes_unrelated_relation_kind_registrations_for_entity_replace() {
         ))],
     };
 
-    let request = request_for_plan(&runtime, &plan);
-    let included_relation_kinds = runtime
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = RequestGraph::view(&instrumentation);
+    let request = graph.request(&view, Some(&plan));
+    let included_relation_kinds = view
         .schema_contract_runtime
         .relation_integrity_registrations
         .iter()
@@ -157,15 +110,8 @@ fn request_excludes_unrelated_relation_kind_registrations_for_entity_replace() {
 
 #[test]
 fn request_includes_deleted_relation_kind_scope_for_delete_only_commits() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = relation_integrity_runtime();
-    let source = create_entity(execution, &runtime, "source");
-    let target = create_entity(execution, &runtime, "target");
-    let relation_id =
-        create_relation_of_kind(execution, &runtime, KindId(2), source, target, "edge");
-
+    let graph = RequestGraph::new(2, &[(0, 1, KindId(2))]);
+    let relation_id = graph.relations[0];
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(14),
         merged_intents: vec![MutationIntent::Relation(RelationMutationIntent::Delete(
@@ -173,8 +119,10 @@ fn request_includes_deleted_relation_kind_scope_for_delete_only_commits() {
         ))],
     };
 
-    let request = request_for_plan(&runtime, &plan);
-    let included_relation_kinds = runtime
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = RequestGraph::view(&instrumentation);
+    let request = graph.request(&view, Some(&plan));
+    let included_relation_kinds = view
         .schema_contract_runtime
         .relation_integrity_registrations
         .iter()
@@ -187,46 +135,10 @@ fn request_includes_deleted_relation_kind_scope_for_delete_only_commits() {
 
 #[test]
 fn request_includes_rematerialized_relation_as_a_planned_edge() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = relation_integrity_runtime();
-    let source = create_entity(execution, &runtime, "restored-source");
-    let target = create_entity(execution, &runtime, "restored-target");
-    let relation_id = create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(2),
-        source,
-        target,
-        "restored-edge",
-    );
-    let services = runtime.owner_component_services();
-    let (_, basis) = services
-        .basis_port()
-        .observe_branch(&runtime.main_branch_identity())
-        .expect("the relation has an owner basis");
-    let mut suspension = runtime
-        .begin_branch_transaction(
-            &basis,
-            crate::mvcc::RelationalTransactionIntent::materialization(
-                crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode::Suspend,
-            ),
-        )
-        .expect("owner materialization suspension is admitted");
-    suspension
-        .push_batch(
-            WorkerIntentBatch::new("suspend-edge").push(MutationIntent::Materialization(
-                MaterializationMutationIntent::SuspendRelation(
-                    SuspendRelationMaterializationIntent { relation_id },
-                ),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the exact relation suspension is staged");
-    suspension
-        .commit(execution, &runtime)
-        .expect("the exact relation becomes unavailable");
+    let mut graph = RequestGraph::new(2, &[(0, 1, KindId(2))]);
+    let (source, target) = (graph.entities[0], graph.entities[1]);
+    let relation_id = graph.relations[0];
+    graph.suspend(relation_id, (source, target));
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(15),
         merged_intents: vec![MutationIntent::Materialization(
@@ -240,7 +152,9 @@ fn request_includes_rematerialized_relation_as_a_planned_edge() {
         )],
     };
 
-    let request = request_for_plan(&runtime, &plan);
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = RequestGraph::view(&instrumentation);
+    let request = graph.request(&view, Some(&plan));
     let scope = request
         .relation_integrity_scopes()
         .and_then(|scopes| scopes.scope_for(KindId(2)))
@@ -248,7 +162,7 @@ fn request_includes_rematerialized_relation_as_a_planned_edge() {
     assert_eq!(scope.planned_edges.len(), 1);
     assert_eq!(scope.source_counts.values().sum::<usize>(), 1);
     assert_eq!(scope.target_counts.values().sum::<usize>(), 1);
-    let included_relation_kinds = runtime
+    let included_relation_kinds = view
         .schema_contract_runtime
         .relation_integrity_registrations
         .iter()

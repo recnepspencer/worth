@@ -26,13 +26,13 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     let lease = checked_lease(REQUEST_MEMORY, 10_000, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         None,
         None,
     );
-    let result = InvariantEngine::new(&runtime)
+    let result = InvariantEngine::from_view(&runtime.invariant_validation_view())
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
     // The claim is charged to the lease before it is made, so the request's

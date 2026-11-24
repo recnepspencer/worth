@@ -4,7 +4,9 @@ use super::{
     *,
 };
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
-use crate::transactions::data::{EntityMutationIntent, MutationIntent};
+use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
 type Error = ValidatedMutationTouchProjectionError;
 
 pub(super) fn project<'p>(

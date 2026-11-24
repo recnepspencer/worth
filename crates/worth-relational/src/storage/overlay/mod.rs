@@ -32,3 +32,6 @@ pub(crate) use working_state::WorkingState;
 pub(crate) mod mirror_merge;
 pub(crate) mod published_delta;
 pub(crate) mod record_observation;
+
+#[cfg(test)]
+pub(crate) mod small_relation_partition;

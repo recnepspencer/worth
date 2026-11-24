@@ -1,21 +1,25 @@
-use crate::identity::data::{KindId, PartitionId};
-use crate::tests::support::{
-    create_entity, create_relation, name_field_patch, runtime_with_test_schema,
+use super::proposal_records::{create_relation, name_field_patch};
+use worth_relational::facade::identity::{KindId, PartitionId};
+use worth_testkit_relational::{
+    aspect_storage::publications::begin_main_transaction,
+    durable_publication::memory_runtime as runtime_with_test_schema,
+    ordinary_records::create_entity,
+    shared_relational_certification_test_execution_policy::serial_request,
 };
-use crate::transactions::data::{
+
+use worth_relational::facade::transactions::{
     CreateIntent, DeleteEntityIntent, EntityMutationIntent, EntityReference, EntitySpec,
     MutationIntent, RelationMutationIntent, UpdateEntityFieldsIntent,
     UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 
-use super::ValidatedMutationTouch;
+use worth_relational::facade::mvcc::ValidatedMutationTouch;
 
-#[path = "tests/initialization.rs"]
 mod initialization;
 
 #[test]
 fn create_and_update_project_exact_entity_touch_loci() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -51,7 +55,7 @@ fn create_and_update_project_exact_entity_touch_loci() {
 
 #[test]
 fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -95,14 +99,14 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
 
 fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     intents: impl IntoIterator<Item = MutationIntent>,
-) -> crate::mvcc::ValidatedRelationalProposal {
+) -> worth_relational::facade::mvcc::ValidatedRelationalProposal {
     let batch = intents.into_iter().fold(
         WorkerIntentBatch::new("validated-touch-owner-proof"),
         WorkerIntentBatch::push,
     );
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(
             batch,
@@ -114,7 +118,10 @@ fn validate(
         .expect("owner validates touch projection fixture")
 }
 
-fn update_name(entity_id: crate::identity::data::EntityId, value: &str) -> MutationIntent {
+fn update_name(
+    entity_id: worth_relational::facade::identity::EntityId,
+    value: &str,
+) -> MutationIntent {
     MutationIntent::Entity(EntityMutationIntent::UpdateFields(
         UpdateEntityFieldsIntent {
             entity_id,
@@ -127,7 +134,7 @@ fn entity_spec(key: &str) -> EntitySpec {
     EntitySpec {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
-        client_key: crate::symbols::data::ClientKey::raw(key),
+        client_key: worth_relational::facade::symbols::ClientKey::raw(key),
         fields: name_field_patch(key),
     }
 }

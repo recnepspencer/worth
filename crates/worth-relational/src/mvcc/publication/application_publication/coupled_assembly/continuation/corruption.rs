@@ -34,10 +34,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         posture: super::super::RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
-        batches: Vec<crate::transactions::data::WorkerIntentBatch>,
+        batches: Vec<crate::transactions::data::primitives::WorkerIntentBatch>,
         probe: u8,
     ) -> Result<(), super::super::RelationalCoupledAssemblyFailure> {
-        use crate::transactions::data::{AspectFieldPatch, EntityMutationIntent, MutationIntent};
+        use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+        use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+        use crate::transactions::data::intents::mutation_intent::MutationIntent;
         use worth_foundational::facade::AspectValue;
         let mut round = batches.clone();
         let unchanged_content = crate::content::RelationalContentAttachments::default();

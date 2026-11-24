@@ -31,7 +31,7 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) stru
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) read:
         RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) plan:
-        crate::mvcc::OwnedNormalizedPlan,
+        crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) records:
         Vec<RecordRef>,
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) content:
@@ -135,7 +135,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // endpoints are lowered, for either producer or authored-stage suffixes.
         // A successor's relation creates are proved re-creates the head already
         // applied; lowering drops them, so they have no original to complete.
-        let originals = crate::transactions::data::CoupledOriginalRelationCreates::capture(
+        let originals = crate::transactions::data::outcomes::created_relation_bindings::CoupledOriginalRelationCreates::capture(
             execution,
             if successor {
                 &[]
@@ -150,7 +150,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // lowered onto the chain's allocations.
         let recorded = if successor {
             let recorded =
-                crate::mvcc::OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
+                crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_for_request(
+                    intents.plan(),
+                    execution,
+                )?;
             intents = intents.lower_coupled_recreates(
                 &self.mutation.outcome.created_entities,
                 self.prepared.schema_authority.aspect_plans(),

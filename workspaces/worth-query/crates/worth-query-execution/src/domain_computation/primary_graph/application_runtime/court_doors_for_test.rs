@@ -110,14 +110,14 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn pause_branch_adoption_stage_for_test(
         &self,
         stage: worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStageForTest,
-    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStagePauseForTest {
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStagePauseForTest{
         self.inner.pause_branch_adoption_stage_for_test(stage)
     }
 
     #[doc(hidden)]
     pub fn observe_branch_adoption_preparations_for_test(
         &self,
-    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionPreparationObserverForTest {
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionPreparationObserverForTest{
         self.inner.observe_branch_adoption_preparations_for_test()
     }
 
@@ -138,7 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     #[doc(hidden)]
     pub fn pause_after_commit_before_answer_for_test(
         &self,
-    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest {
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest{
         self.inner.pause_after_commit_before_answer_for_test()
     }
 }
@@ -149,6 +149,7 @@ mod commit_validation_and_external_settlement;
 mod coupled_producer_observations;
 mod inbound_cleanup_and_transport;
 mod output_demand_and_source_selection;
+mod ownership_locality;
 mod ownership_probes;
 mod ownership_sources_and_cycles;
 mod product_branch_and_workflow_basis;

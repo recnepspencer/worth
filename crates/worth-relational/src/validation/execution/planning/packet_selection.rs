@@ -210,6 +210,3 @@ pub(super) fn eligible_registrations<'state>(
 
 #[cfg(test)]
 mod narrowing_tests;
-
-#[cfg(test)]
-mod basis_tests;

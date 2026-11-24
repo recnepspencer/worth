@@ -14,10 +14,10 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
     };
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
@@ -70,10 +70,10 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
@@ -118,10 +118,10 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
@@ -189,10 +189,10 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
             },
         ))],
     };
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
@@ -259,10 +259,10 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
         .custom_invariant(CustomInvariantRegistration::new(SwallowsWorkExhaustionRule).unwrap())
         .build()
         .expect("valid native runtime configuration");
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,

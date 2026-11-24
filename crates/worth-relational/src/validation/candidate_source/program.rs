@@ -193,4 +193,4 @@ impl ManagedIndexSourceProgram {
 }
 
 #[cfg(test)]
-mod schema_fixture;
+pub(crate) mod schema_fixture;

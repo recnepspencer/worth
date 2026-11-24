@@ -1,4 +1,5 @@
 //! Record-level folding and superseded-batch withdrawal for a coupled chain.
+use super::super::chain::Read;
 use super::*;
 use std::collections::BTreeMap;
 
@@ -12,7 +13,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         index: usize,
         first: usize,
-        round: &crate::mvcc::OwnedNormalizedPlan,
+        round: &crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
         read: &Read,
         delta_state: &mut crate::storage::overlay::WorkingState,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
@@ -21,7 +22,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let chain = &mut self.parts[index].chain;
         if publication.canonical_deltas.len() != publication.patch_fragments.len() {
             return Err(
-                crate::mvcc::origin_denial("publication deltas and fragments diverged").into(),
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "publication deltas and fragments diverged",
+                )
+                .into(),
             );
         }
         let (folds, tail, deltas) = execution
@@ -41,13 +45,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     let entity = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
                             allocation(bindings, spec, &mut charge)?.ok_or_else(|| {
-                                crate::mvcc::origin_denial("a re-create has no chain allocation")
+                                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("a re-create has no chain allocation")
                             })?
                         }
                         // A proved relation re-create keeps the head's relation.
                         MutationIntent::Create(CreateIntent::Relation(_)) => continue,
                         _ => entity_write(intent).ok_or_else(|| {
-                            crate::mvcc::origin_denial("a proved round wrote no entity")
+                            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("a proved round wrote no entity")
                         })?,
                     };
                     if let Some(&slot) = slots.get(&RecordRef::Entity(entity)) {

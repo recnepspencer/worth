@@ -2,8 +2,7 @@
 use super::*;
 use crate::identity::data::EntityId;
 use crate::validation::candidate_source::{
-    ManagedIndexAppliedSourceRead, ManagedIndexSourcePreparationDenial as Denial,
-    ManagedIndexSourceProgram,
+    ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Borrow a genuine retained prefix of this same live assembly. Discovery
@@ -54,3 +53,5 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         ManagedIndexAppliedSourceRead::issue(execution, self.identity, pin.clone(), program, scope)
     }
 }
+
+use crate::validation::candidate_source::applied_read::ManagedIndexAppliedSourceRead;

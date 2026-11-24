@@ -1,7 +1,7 @@
 //! Branch-bound invariant planning owned by a live transaction.
 
-use crate::branch::SelectedRelationalBranchState;
-use crate::transactions::data::TransactionCommitError;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::InvariantExecutionResult;
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
@@ -46,7 +46,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     ) -> Result<
         (
             SelectedRelationalBranchState,
-            crate::transactions::data::MergedCommitPlan,
+            crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
         ),
         TransactionCommitError,
     > {

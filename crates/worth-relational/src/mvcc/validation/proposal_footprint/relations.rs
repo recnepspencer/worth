@@ -1,65 +1,19 @@
 //! Relation lifecycle material comes from the validated actor's real applied draft.
-use super::member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
-use super::ValidatedRelationalProposal;
-use crate::execution::request_stage::checkpoint;
-use crate::{
-    identity::data::{EntityId, KindId, RelationId},
-    storage::overlay::CurrentPartitionAccess,
-    transactions::data::{RecordRef, TransactionCommitError},
+use super::member_restoration::{
+    project_restored_member, RecordedMemberRestoration, RecordedMemberRestorationRefusal,
 };
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use super::relation_mutations::{
+    stop, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
+};
+use crate::execution::request_stage::checkpoint;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use worth_execution::ExecutionRequest;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ValidatedRelationMutation {
-    relation: RelationId,
-    kind: KindId,
-    audit_retained: bool,
-    before: Option<(EntityId, EntityId)>,
-    after: Option<(EntityId, EntityId)>,
-    allocated_endpoint: bool,
-}
-impl ValidatedRelationMutation {
-    pub const fn relation(&self) -> RelationId {
-        self.relation
-    }
-    pub const fn kind(&self) -> KindId {
-        self.kind
-    }
-    pub const fn is_audit_retained(&self) -> bool {
-        self.audit_retained
-    }
-    pub const fn before(&self) -> Option<(EntityId, EntityId)> {
-        self.before
-    }
-    pub const fn after(&self) -> Option<(EntityId, EntityId)> {
-        self.after
-    }
-    /// A born relation with an endpoint this same draft allocated. Its prior
-    /// absence is structural: no earlier relation can name an entity that did
-    /// not exist, so no read is needed to know it had no prior endpoints.
-    pub const fn has_allocated_endpoint(&self) -> bool {
-        self.allocated_endpoint
-    }
-}
-/// Privately constructed from one invariant-approved draft; selectors grant no effects.
-#[derive(Debug)]
-pub struct ValidatedRelationMutationFootprint {
-    relations: Vec<ValidatedRelationMutation>,
-    restored_entities: Result<Vec<(EntityId, EntityId)>, RecordedMemberRestorationRefusal>,
-    _memory: Option<ExecutionMemoryReservation>,
-}
-impl ValidatedRelationMutationFootprint {
-    pub fn restored_entities(
-        &self,
-    ) -> Result<&[(EntityId, EntityId)], RecordedMemberRestorationRefusal> {
-        self.restored_entities
-            .as_deref()
-            .map_err(|refusal| *refusal)
-    }
-    pub fn relations(&self) -> &[ValidatedRelationMutation] {
-        &self.relations
-    }
-}
 impl ValidatedRelationalProposal {
     /// Optional relation projection. The field-only footprint does no additional work.
     ///
@@ -111,7 +65,7 @@ impl ValidatedRelationalProposal {
                         .authored_records
                         .get(..group.authored_prefix_records)
                         .ok_or_else(|| {
-                            crate::mvcc::origin_denial("coupled authored root range unavailable")
+                            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled authored root range unavailable")
                         })?,
                 ),
                 _ => None,
@@ -185,9 +139,9 @@ impl ValidatedRelationalProposal {
             .reserve_memory(bytes)
             .map_err(|denial| {
                 crate::execution::denial::allocation_commit_error(
-                    crate::transactions::data::TransactionCommitError::conflict(
-                        crate::transactions::data::CommitConflict::new(
-                            crate::transactions::data::ConflictClass::ExecutionAllocationDenied {
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                        crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                            crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied {
                                 denial,
                             },
                         ),
@@ -210,16 +164,16 @@ impl ValidatedRelationalProposal {
                 for (original, target) in targets.iter().take(anchors) {
                     let created = &self.state.proposed_mutation.outcome.created_entities;
                     checkpoint(context, created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
-                    let actual = created.resolve(target).ok_or_else(|| crate::mvcc::origin_denial("authored inverse anchor has no actual allocation"))?;
+                    let actual = created.resolve(target).ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("authored inverse anchor has no actual allocation"))?;
                     if let Some(root) = prefix_records {
                         checkpoint(context, root.len() as u64).map_err(stop)?;
                         if !root.contains(&RecordRef::Entity(actual)) {
-                            return Err(crate::mvcc::origin_denial("restoration anchor is outside the actual authored root"));
+                            return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial("restoration anchor is outside the actual authored root"));
                         }
                     }
                     checkpoint(context, restored_entities.len() as u64).map_err(stop)?;
                     if restored_entities.iter().any(|(known, allocated)| known == original || *allocated == actual) {
-                        return Err(crate::mvcc::origin_denial("ambiguous actual authored root correspondence"));
+                        return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial("ambiguous actual authored root correspondence"));
                     }
                     restored_entities.push((*original, actual));
                 }
@@ -235,7 +189,11 @@ impl ValidatedRelationalProposal {
                     && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {
                     let partition = self.state.proposed_mutation.state.get_current_partition(entity.partition_id);
                     if let Some(kind) = partition.as_ref().and_then(|partition| partition.entity_arena().get(&entity)).filter(|row| row.is_live()).and_then(|row| row.kind_id()) {
-                        self.project_restored_member(entity, kind, members, member_kinds, &mut restored_entities, &mut member_refusal, context)?;
+                        let state = crate::validation::engine::state_view::InvariantStateView::new(
+                            &self.state.proposed_mutation.state,
+                            self.state.evidence.proposed_version(),
+                        );
+                        project_restored_member(&state, entity, kind, members, member_kinds, &mut restored_entities, &mut member_refusal, context)?;
                     }
                 }
                 let RecordRef::Relation(relation) = fragment.target else { continue; };
@@ -292,12 +250,4 @@ impl ValidatedRelationalProposal {
             _memory: memory,
         })
     }
-}
-pub(super) fn stop(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
-) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
-        partition_identity: None,
-    })
 }

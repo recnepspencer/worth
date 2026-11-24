@@ -19,25 +19,26 @@ pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
 pub use restored_producer_prior::RelationalRestoredProducerPrior;
 mod completion;
-mod coupled_assembly;
+pub(crate) mod coupled_assembly;
 mod coupled_owners;
 pub(crate) mod custody;
 pub(crate) mod output_meaning;
 mod ownership_reach;
-pub(crate) use coupled_assembly::{BoundAuthoredCoupling, RequiredOutputInputs};
-pub use coupled_assembly::{
-    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
-    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
-    RelationalCoupledChainOverlay, RelationalCoupledContribution,
-    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
-    RelationalRequiredOutputInput,
+pub use coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailure;
+pub use coupled_assembly::completion::RelationalCoupledAuthoredPublication;
+pub use coupled_assembly::contribution::RelationalCoupledContribution;
+pub use coupled_assembly::inputs::RelationalRequiredOutputInput;
+pub use coupled_assembly::producer_posture::RelationalCoupledProducerPosture;
+pub use coupled_assembly::source_effects::RelationalCoupledAuthoredSourceEffects;
+pub(crate) use coupled_assembly::{
+    inputs::RequiredOutputInputs, retained_assembly::BoundAuthoredCoupling,
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
 pub(crate) mod predecessor_basis;
 mod predecessor_observation;
+mod proposal_binding;
+mod proposal_predecessor;
 pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
 };
@@ -88,59 +89,6 @@ impl RelationalInstalledApplicationPublicationAuthority {
         proof: &worth_proof::AdmittedCheckpointProgramActivation,
     ) -> bool {
         self.authority.admits_checkpoint_program_activation(proof)
-    }
-}
-
-impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
-    /// Bind a running installed producer before immutable publication preparation.
-    /// Target references remain untrusted selectors until native allocation and
-    /// canonical operation/payload coverage have been checked.
-    /// The real scoped assembly has already bound each admitted writer's
-    /// publication. An outer authored origin must not bind it a second time.
-    pub fn has_coupled_authored_publication(&self) -> bool {
-        self.state
-            .required_output_publication
-            .as_ref()
-            .is_some_and(|admission| {
-                matches!(
-                    admission.publication,
-                    RequiredOutputPublication::CoupledAuthored { .. }
-                )
-            })
-    }
-
-    pub fn bind_required_output_publication(
-        mut self,
-        installed: &RelationalInstalledApplicationPublicationAuthority,
-        publication: RequiredOutputPublication,
-    ) -> Result<Self, TransactionCommitError> {
-        if self.state.required_output_publication.is_some()
-            || !publication.admitted_by(installed)
-            || self
-                .state
-                .validation_input
-                .basis()
-                .descriptor()
-                .runtime_instance_id()
-                != installed.runtime_instance_id
-            || self.state.custom_invariant_generation != installed.custom_invariant_generation
-        {
-            return Err(origin_denial(
-                "required-output publication has a foreign or repeated installed owner",
-            ));
-        }
-        if !installed.source_scope_ownership.is_empty()
-            && let Some(source) = publication.ownership_subject(installed)
-        {
-            installed
-                .require_current_ownership_storage(self.state.validation_input.basis(), source)?;
-        }
-        self.state.required_output_publication = Some(RequiredOutputPublicationAdmission {
-            inputs: Default::default(),
-            installed: installed.clone(),
-            publication,
-        });
-        Ok(self)
     }
 }
 

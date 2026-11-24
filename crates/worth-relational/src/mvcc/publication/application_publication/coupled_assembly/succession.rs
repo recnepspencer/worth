@@ -1,79 +1,27 @@
 //! One owned route's later round folds into its chain in place, or refuses
 //! under #119 before anything applies. The chain stays one producer part, so
 //! every first-match consumer of `parts` reads its latest round.
+use super::refusals::overflow;
 use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
 use crate::publication::data::{
     AuthoredRetirementRefusal as Cause, CoupledProvenancePostponement as Reason,
 };
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use coverage::{covered, entity_write, roles, units, Unit};
 use std::collections::BTreeSet;
-use std::ops::Range;
 
 mod coverage;
 mod fold;
 mod relations;
 pub(super) use fold::withdraw_superseded;
-
-type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
-
-/// One route's chain in the candidate. Positions are physical: transaction
-/// batches and patch fragments are only ever appended before completion.
-pub(crate) struct Chain {
-    /// The candidate read immediately before the chain's head appended.
-    pub(crate) head_input: Read,
-    /// Cumulative certified touches of superseded rounds of this chain.
-    pub(crate) prior_touches: Vec<crate::mvcc::validation::ValidatedMutationTouch>,
-    /// The latest round's transaction batches.
-    pub(crate) batches: Range<usize>,
-    /// Earlier rounds' batches, withdrawn once at completion.
-    pub(crate) superseded: Vec<Range<usize>>,
-    /// The chain's patch fragments, one per record it changed, each with the
-    /// candidate read from before the chain first wrote that record.
-    pub(crate) fragments: Vec<(usize, Read)>,
-    /// The scoped coordinates the head chose; every round reuses them.
-    pub(crate) local_keys: super::local_keys::LocalKeys,
-    /// The records the head allocated; every round re-creates exactly these.
-    pub(crate) created: Vec<EntityId>,
-    /// Each round's span of the changed-record log, head first, ascending.
-    pub(crate) rounds: Vec<Range<usize>>,
-    /// The candidate-wide append ordinal of the latest round: rounds order by
-    /// it even when one appended no batch.
-    pub(crate) latest: usize,
-}
-
-impl Chain {
-    /// The first record in `own` that a member outside this chain changed
-    /// since the chain's head: every log entry from the head's span on,
-    /// outside the chain's own rounds (§1.5 fold condition 5).
-    pub(crate) fn intervened<'a>(
-        &self,
-        changed: &'a [RecordRef],
-        own: &BTreeSet<&RecordRef>,
-        charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
-    ) -> Result<Option<&'a RecordRef>, TransactionCommitError> {
-        let start = self.rounds.first().map_or(changed.len(), |head| head.start);
-        let mut rounds = self.rounds.iter().peekable();
-        for (index, record) in changed.iter().enumerate().skip(start) {
-            charge(1)?;
-            while rounds.peek().is_some_and(|round| round.end <= index) {
-                rounds.next();
-            }
-            if rounds.peek().is_some_and(|round| round.contains(&index)) {
-                continue;
-            }
-            if own.contains(record) {
-                return Ok(Some(record));
-            }
-        }
-        Ok(None)
-    }
-}
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Fold a complete re-derivation of owned route `token`'s chain into it.
@@ -175,11 +123,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .changed_records
             .len();
         let batches_end = self.transaction.batches().len();
-        let prior_round_touches = crate::mvcc::validation::project_applied_intents(
-            execution,
-            &self.mutation.state,
-            &self.parts[index].commands.plan().merged_intents,
-        )?;
+        let prior_round_touches =
+            crate::mvcc::validation::proposal_touches::project_applied_intents(
+                execution,
+                &self.mutation.state,
+                &self.parts[index].commands.plan().merged_intents,
+            )?;
         let part = &mut self.parts[index];
         part.chain.prior_touches.extend(prior_round_touches);
         part.chain.prior_touches.sort_unstable();
@@ -336,7 +285,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     let id = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
                             allocation(bindings, spec, &mut charge)?.ok_or_else(|| {
-                                crate::mvcc::origin_denial("chain create has no actual allocation")
+                                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("chain create has no actual allocation")
                             })?
                         }
                         _ => entity_write(intent).ok_or_else(|| {
@@ -364,7 +313,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
 
 /// The chain allocation a create's raw key resolves to, charged by the probe.
 fn allocation(
-    bindings: &crate::transactions::data::CommitCreatedEntityBindings,
+    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     spec: &EntitySpec,
     charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
 ) -> Result<Option<EntityId>, TransactionCommitError> {
@@ -386,10 +335,6 @@ fn subject(record: &RecordRef, source: EntityId) -> EntityId {
         RecordRef::Entity(entity) => *entity,
         RecordRef::Relation(_) => source,
     }
-}
-
-fn overflow() -> TransactionCommitError {
-    custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
 }
 
 /// Every round appended to the candidate so far: the next round's ordinal.

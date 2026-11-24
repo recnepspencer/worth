@@ -3,9 +3,11 @@
 use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
-use crate::mvcc::validation::{project_applied_intents, ValidatedMutationTouch};
+use crate::mvcc::validation::proposal_touches::project_applied_intents;
+use crate::mvcc::validation::proposal_touches::ValidatedMutationTouch;
 use crate::publication::data::CoupledProvenancePostponement as Reason;
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use worth_execution::ExecutionRequest;
 

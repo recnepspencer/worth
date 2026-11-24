@@ -1,24 +1,6 @@
 //! A receipt says why a custom rule did not run. Only a proven footprint
 //! outside the rule's declared closure is vacuous truth; deleting inside the
 //! closure still runs the rule.
-use crate::facade::runtime::RelationalRuntime;
-use crate::facade::runtime::RelationalRuntimeApi;
-use crate::identity::data::EntityId;
-use crate::identity::data::KindId;
-use crate::identity::data::PartitionId;
-use crate::schema::data::EntityKindRegistration;
-use crate::schema::data::KindAspectContractDeclarations;
-use crate::schema::data::RelationalSchemaRegistry;
-use crate::schema::data::SchemaId;
-use crate::schema::data::SchemaVersionId;
-use crate::transactions::data::intents::mutation_intent::CreateIntent;
-use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
-use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
-use crate::transactions::data::intents::mutation_intent::MutationIntent;
-use crate::transactions::data::primitives::CreatedEntityRef;
-use crate::transactions::data::primitives::EntitySpec;
-use crate::transactions::data::primitives::WorkerIntentBatch;
-use crate::validation::data::*;
 use std::{
     num::{NonZeroU64, NonZeroUsize},
     sync::Arc,
@@ -27,6 +9,30 @@ use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLeas
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_relational::facade::{
+    identity::{EntityId, KindId, PartitionId},
+    mvcc::CustomInvariantNonApplicability,
+    runtime::{
+        CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantExecutionContext,
+        CustomInvariantExecutionError, CustomInvariantLeaseBudget,
+        CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
+        CustomInvariantRegistration, CustomInvariantRule, CustomInvariantRuleId,
+        CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
+        CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCatalog,
+        InvariantCostClass, InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect,
+        InvariantGroupSet, RelationalRuntime, RelationalRuntimeApi,
+    },
+    schema::{
+        EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry, SchemaId,
+        SchemaVersionId,
+    },
+    symbols::ClientKey,
+    transactions::{
+        CreateIntent, CreatedEntityRef, DeleteEntityIntent, EntityMutationIntent, EntitySpec,
+        MutationIntent, WorkerIntentBatch,
+    },
+};
+use worth_testkit_relational::aspect_storage::publications::begin_main_transaction;
 
 const UNRELATED: KindId = KindId(1);
 const GOVERNED: KindId = KindId(2);
@@ -93,10 +99,6 @@ impl CustomInvariantRule for ClosureRule {
 }
 
 fn runtime() -> RelationalRuntime {
-    runtime_with_native_rules(vec![])
-}
-
-fn runtime_with_native_rules(registrations: Vec<InvariantRegistration>) -> RelationalRuntime {
     let mut schema = RelationalSchemaRegistry::new();
     for (kind, name) in [(UNRELATED, "unrelated"), (GOVERNED, "governed")] {
         schema = schema
@@ -111,7 +113,9 @@ fn runtime_with_native_rules(registrations: Vec<InvariantRegistration>) -> Relat
     }
     RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .invariant_catalog(InvariantCatalog { registrations })
+        .invariant_catalog(InvariantCatalog {
+            registrations: vec![],
+        })
         .custom_invariant(CustomInvariantRegistration::new(ClosureRule).unwrap())
         .build()
         .expect("valid native runtime configuration")
@@ -134,7 +138,7 @@ fn create(kind: KindId, key: &str) -> MutationIntent {
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
         partition_id: PartitionId::main(),
         kind_id: kind,
-        client_key: crate::symbols::data::ClientKey::raw(key),
+        client_key: ClientKey::raw(key),
         fields: Default::default(),
     }))
 }
@@ -147,7 +151,7 @@ fn delete(entity_id: EntityId) -> MutationIntent {
 
 fn seed(runtime: &RelationalRuntime, lease: &ExecutionResourceLease<'_>, kind: KindId) -> EntityId {
     let key = format!("seed-{}", kind.0);
-    let mut tx = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut tx = begin_main_transaction(runtime);
     let request = ExecutionRequest::leased(lease);
     tx.push_batch(
         WorkerIntentBatch::new("seed").push(create(kind, &key)),
@@ -159,7 +163,7 @@ fn seed(runtime: &RelationalRuntime, lease: &ExecutionResourceLease<'_>, kind: K
         .created_entity(&CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: kind,
-            client_key: crate::symbols::data::ClientKey::raw(&key),
+            client_key: ClientKey::raw(&key),
         })
         .expect("the seed was created")
 }
@@ -175,7 +179,7 @@ fn receipts(
     lease: &ExecutionResourceLease<'_>,
     intents: Vec<MutationIntent>,
 ) -> Vec<ReceiptFacts> {
-    let mut tx = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut tx = begin_main_transaction(runtime);
     let request = ExecutionRequest::leased(lease);
     let batch = intents
         .into_iter()
@@ -214,58 +218,6 @@ fn a_candidate_outside_the_closure_is_vacuous_and_says_so() {
     let (runtime, lease) = (runtime(), lease());
     assert_eq!(
         receipt(&runtime, &lease, vec![create(UNRELATED, "elsewhere")]),
-        (
-            InvariantDecisionKind::NotApplicable,
-            Some(CustomInvariantNonApplicability::CandidateOutsideClosure)
-        )
-    );
-}
-
-#[test]
-fn a_native_pass_retains_the_custom_vacuous_receipt_through_staged_reduction() {
-    let runtime = runtime_with_native_rules(vec![InvariantRegistration::for_rule(
-        InvariantRule::MaxMergedIntents(1),
-        InvariantExecutionPoint::CommitBoundary,
-        InvariantFailureEffect::BlockCommit,
-    )]);
-    let lease = lease();
-    let request = ExecutionRequest::leased(&lease);
-    let mut tx = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    tx.push_batch(
-        WorkerIntentBatch::new("candidate").push(create(UNRELATED, "elsewhere")),
-        request.allocation_policy(),
-    )
-    .unwrap();
-    let validated = tx
-        .validate(&request, &runtime)
-        .expect("candidate validates");
-    let native = validated
-        .state
-        .invariants
-        .results()
-        .iter()
-        .filter(|check| {
-            matches!(
-                check.rule,
-                InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(1))
-            )
-        })
-        .collect::<Vec<_>>();
-    assert_eq!(
-        native.len(),
-        1,
-        "the final report retains the actual native check"
-    );
-    assert_eq!(native[0].verdict, InvariantVerdict::Pass);
-    let [custom] = validated.custom_invariant_execution_receipts() else {
-        panic!("only the registered custom rule leaves a custom receipt")
-    };
-    assert_eq!(
-        custom.rule_id(),
-        &CustomInvariantRuleId::new("basis.closure")
-    );
-    assert_eq!(
-        (custom.verdict(), custom.non_applicability()),
         (
             InvariantDecisionKind::NotApplicable,
             Some(CustomInvariantNonApplicability::CandidateOutsideClosure)

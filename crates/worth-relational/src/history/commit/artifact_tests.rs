@@ -8,73 +8,8 @@ use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId, DerivedIndexPublicationStatus,
 };
-use crate::tests::support::create_entity_outcome;
 
-use super::{
-    RelationalCommitArtifact, RelationalCommitArtifactDenial,
-    RelationalCommitAuthoritativeAllocationKind,
-};
-
-#[test]
-fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "preencoded-recovery-root");
-    let root = runtime
-        .history
-        .branch_cell(&crate::history::data::BranchId("main".to_owned()))
-        .and_then(|cell| cell.root())
-        .expect("committed main has one root");
-    let envelope = root
-        .canonical_envelope()
-        .cloned()
-        .expect("committed root carries its canonical envelope");
-    let preencoded = RelationalCommitArtifact::from_preencoded(
-        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
-            execution,
-            Arc::clone(&envelope),
-        )
-        .unwrap(),
-    )
-    .unwrap();
-    let legacy =
-        RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
-            .unwrap();
-    let relinked = preencoded
-        .relink_preencoded_recovery(&envelope, Some(&root), None)
-        .unwrap();
-    assert!(Arc::ptr_eq(
-        &preencoded.envelope_residency(),
-        &relinked.envelope_residency()
-    ));
-    assert_eq!(relinked.identity(), legacy.identity());
-    assert_eq!(relinked.parentage(), legacy.parentage());
-    assert_eq!(relinked.roots(), legacy.roots());
-    assert_eq!(
-        relinked
-            .canonical_payload_digest()
-            .expect("resident fixture has a canonical digest"),
-        legacy
-            .canonical_payload_digest()
-            .expect("resident fixture has a canonical digest")
-    );
-
-    let equal_but_unsealed = Arc::new(envelope.copy_original_for_test(execution));
-    assert!(matches!(
-        preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
-        Err(RelationalCommitArtifactDenial::RootLinkage)
-    ));
-    let mismatched_schema = crate::branch::target::RelationalBranchRootDescriptor::new(
-        *legacy.roots().truth_root(),
-        [0xAB; 32],
-    );
-    assert!(matches!(
-        preencoded.relink_preencoded_recovery(&envelope, None, Some(&mismatched_schema)),
-        Err(RelationalCommitArtifactDenial::RootLinkage)
-    ));
-}
+use super::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
 
 fn canonical_accounting_fixture() -> crate::history::data::CanonicalCommitEnvelope {
     use crate::branch::reference::observation::relational_branch_observation;
@@ -285,5 +220,3 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         "the populated artifact remains observable in the optional-cache lane",
     );
 }
-#[path = "artifact_tests/shared_readmission.rs"]
-mod shared_readmission;

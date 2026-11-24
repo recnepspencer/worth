@@ -12,10 +12,10 @@ fn engine_executes_custom_invariant_packets() {
         .build()
         .expect("valid native runtime configuration");
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
@@ -45,13 +45,13 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
         .expect("valid native runtime configuration");
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         None,
         None,
     );
-    let denial = InvariantEngine::new(&runtime)
+    let denial = InvariantEngine::from_view(&runtime.invariant_validation_view())
         .execute(
             &worth_execution::ExecutionRequest::leased(
                 &crate::execution::test_authority::test_execution_lease(),
@@ -83,10 +83,10 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
         .build()
         .expect("valid native runtime configuration");
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::GraphComposition,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
@@ -194,10 +194,10 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
         .expect("valid native runtime configuration");
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
@@ -250,10 +250,10 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
         .expect("valid native runtime configuration");
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,

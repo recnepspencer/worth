@@ -38,15 +38,6 @@ impl std::ops::DerefMut for RelationalPublicationHistory {
 }
 
 impl RelationalPublicationHistory {
-    pub(crate) fn commit_for_version_in_context(
-        &self,
-        version: VersionId,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
-        self.canonical_publication_routes
-            .commit_for_version_in_context(version, context)
-    }
-
     pub(crate) fn discard_unobserved_construction_schema_inputs_for_recovery(&self) {
         self.canonical_publication_routes
             .discard_unobserved_construction_schema_inputs_for_recovery();
@@ -118,13 +109,6 @@ impl RelationalPublicationHistory {
         self.commit_artifact(commit_id)
             .and_then(|artifact| artifact.resident_envelope())
             .or_else(|| self.canonical_publication_routes.by_commit(commit_id))
-    }
-
-    pub(crate) fn canonical_envelope_for_version(
-        &self,
-        version_id: VersionId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_publication_routes.by_version(version_id)
     }
 
     pub(crate) fn canonical_envelope_at_patch(

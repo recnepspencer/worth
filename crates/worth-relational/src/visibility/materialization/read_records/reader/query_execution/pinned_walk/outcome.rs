@@ -34,6 +34,11 @@ pub struct PinnedStructuralWalk {
 }
 
 impl PinnedStructuralWalk {
+    #[cfg(test)]
+    pub(crate) fn retained_memory(&self) -> Option<&ExecutionMemoryReservation> {
+        self._retention.as_ref()
+    }
+
     pub fn visits(&self) -> &[PinnedStructuralWalkVisit] {
         &self.visits
     }

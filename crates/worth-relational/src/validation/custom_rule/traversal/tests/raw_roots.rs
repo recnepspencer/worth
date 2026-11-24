@@ -18,7 +18,7 @@ enum Case {
 fn duplicate_raw_roots_spend_original_work_and_observe_interruption_before_deduplication() {
     let setup_host = crate::execution::test_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
-    let graph = Graph::new(&setup, 2, &[(0, 1, KindId(2))]);
+    let graph = Graph::new(2, &[(0, 1, KindId(2))]);
     let root = graph.entities[0];
     let seeds = vec![root; 1024];
     let baseline = graph

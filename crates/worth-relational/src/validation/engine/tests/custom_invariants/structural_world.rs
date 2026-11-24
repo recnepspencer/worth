@@ -83,16 +83,15 @@ impl StructuralWorld {
     /// Run the planned candidate at the commit boundary from zeroed counters.
     pub(super) fn evaluate(&self) -> (InvariantExecutionResult, RuntimeComplexityCounters) {
         self.runtime.performance_access().reset_counters();
-        let results = InvariantEngine::new(&self.runtime).execute_fixture(
-            InvariantExecutionRequest::from_profile_with_contract(
+        let results = InvariantEngine::from_view(&self.runtime.invariant_validation_view())
+            .execute_fixture(InvariantExecutionRequest::from_profile_with_contract(
                 InvariantRequestProfile::CommitBoundary,
-                &self.runtime,
+                &self.runtime.invariant_validation_view(),
                 InvariantObservation::committed(self.runtime.storage_access().current_edition()),
                 self.runtime.current_version_id(),
                 Some(&self.plan),
                 None,
-            ),
-        );
+            ));
         (results, self.runtime.performance_access().counters())
     }
 

@@ -1,7 +1,8 @@
 //! Passive observation of projected touch work on one thread, with unwind cleanup.
+use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
 use std::cell::Cell;
 thread_local! { static EXAMINED: Cell<Option<u64>> = const { Cell::new(None) }; }
-impl super::ValidatedRelationalProposal {
+impl ValidatedRelationalProposal {
     /// Sums the validated intents every touch projection on this thread examines
     /// while `observe` runs. A cost court compares two sizes; nothing is decided here.
     pub fn observe_touch_projection_work<R>(observe: impl FnOnce() -> R) -> (R, u64) {

@@ -4,9 +4,11 @@ use super::{
 };
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    AspectFieldPatch, CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
 use worth_foundational::facade::PortableAspectPatchOperation;
 pub(super) fn project_intent(
     intent: &MutationIntent,
@@ -28,12 +30,12 @@ pub(super) fn project_intent(
 }
 
 fn project_materialization(
-    intent: &crate::transactions::data::MaterializationMutationIntent,
+    intent: &crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent,
     state: &crate::storage::overlay::WorkingState,
     touches: &mut super::collection::TouchCollection<'_, '_>,
     work: &mut ValidatedMutationTouchProjectionWork,
 ) -> Result<(), ValidatedMutationTouchProjectionError> {
-    use crate::transactions::data::MaterializationMutationIntent as Intent;
+    use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent as Intent;
     match intent {
         Intent::SuspendEntity(spec) => {
             let kind = entity_kind(state, spec.entity_id, work)?;

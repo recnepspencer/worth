@@ -1,6 +1,6 @@
 //! Native alone admits absence of publication ownership for an ordinary part.
 use super::*;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 pub(super) fn require(
     candidate: &RelationalAuthoredCoupledCandidate<'_>,

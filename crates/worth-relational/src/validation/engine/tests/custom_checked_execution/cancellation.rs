@@ -37,7 +37,7 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
@@ -51,7 +51,8 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
             worth_execution::ExecutionRequest::serial(&serial)
         };
         let head = runtime.current_version_id();
-        let result = InvariantEngine::new(&runtime).execute(&original, request);
+        let result = InvariantEngine::from_view(&runtime.invariant_validation_view())
+            .execute(&original, request);
         assert_eq!(runtime.current_version_id(), head);
         let visited = visits.load(Ordering::SeqCst);
         assert!(

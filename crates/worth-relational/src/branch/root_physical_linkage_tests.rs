@@ -1,29 +1,18 @@
 //! Immutable physical-linkage predicate inputs, never an admitted runtime world.
 use super::*;
-use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticArtifact,
-};
-use crate::history::data::{
-    BranchId, CanonicalCommitAuthorityKind, RelationalCommitReceipt,
-    RelationalDescriptiveTouchGraph,
-};
-use crate::identity::data::VersionId;
-use crate::indexes::data::DerivedIndexArtifacts;
-use crate::lineage::data::{
-    FinalizedLineageEventBatch, LineageDecisionLog, LineageFinalizationArtifact,
-};
-use crate::publication::patch::data::{
-    CanonicalAuthoritativePatch, PatchOrdering, PatchPublicationMode,
-};
-use crate::schema::data::{DescriptorSemanticsVersion, RelationalSchemaRegistry, SchemaVersionId};
-use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use crate::transactions::data::primitives::TransactionId;
+use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+use crate::identity::data::{EntityId, PartitionId};
+use crate::transactions::data::primitives::RecordRef;
 
 #[test]
 fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let envelope = Arc::new(envelope_input(execution));
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let envelope = Arc::new(envelope_with_patch_and_update(
+        RecordRef::Entity(entity),
+        entity,
+    ));
     let descriptor = RelationalBranchRootDescriptor::new([7; 32], [8; 32]);
     let axes = RelationalBranchRootAxes {
         storage_version: 1,
@@ -71,68 +60,93 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     assert_eq!(root.descriptor(), distinct_custody.descriptor());
 }
 
-fn envelope_input(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> CanonicalCommitEnvelope {
-    let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
-        Default::default(),
-        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
-        RelationalCommitReceipt {
-            commit_id: CommitId(1),
-            version_id: VersionId(1),
-            branch_id: BranchId("predicate".into()),
-            parents: vec![],
-        },
-        BranchId("predicate".into()),
-        CanonicalCommitAuthorityKind::VersionedTransaction,
-        None,
-        None,
-        vec![],
-        vec![],
-        SchemaVersionId(1),
-        RelationalSchemaRegistry::new().authority_snapshot(),
-        MergedCommitPlan {
-            transaction_id: TransactionId(1),
-            merged_intents: vec![],
-        },
-        CanonicalAuthoritativePatch {
-            ordering: PatchOrdering::CanonicalCommitOrder,
-            publication_mode: PatchPublicationMode::CommitNative,
-            authoritative_record_patches: vec![],
-        },
-        RelationalDescriptiveTouchGraph::exact(vec![]),
-        RelationalDiagnosticArtifact::new(
-            DiagnosticsScope::Replay,
-            DiagnosticsArtifactKind::MinimalSummary,
-            DeterminismExpectation::Required,
-            vec![],
-        ),
-        LineageFinalizationArtifact::new(
-            BranchId("predicate".into()),
-            FinalizedLineageEventBatch::new(vec![]),
-            LineageDecisionLog::new(vec![]),
-        )
-        .publish(),
-        DerivedIndexArtifacts::default(),
-        None,
-        None,
-        None,
-        DescriptorSemanticsVersion(1),
+#[test]
+fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
+    use crate::history::commit::{RelationalCommitArtifact, RelationalCommitArtifactDenial};
+    let host_request = crate::execution::test_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let partition_id = crate::identity::data::PartitionId::main();
+    let (partition, entities, _) =
+        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 1, &[]);
+    let entity = entities[0];
+    let registry = crate::schema::data::RelationalSchemaRegistry::new()
+        .register_entity_kind(crate::schema::data::EntityKindRegistration {
+            kind_id: crate::identity::data::KindId(1),
+            kind_name: "artifact-entity".to_owned(),
+            schema_id: crate::schema::data::SchemaId("artifact".to_owned()),
+            schema_version_id: crate::schema::data::SchemaVersionId(1),
+            aspect_contract_declarations: Default::default(),
+        })
+        .unwrap();
+    let mut envelope =
+        crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update(
+            crate::transactions::data::primitives::RecordRef::Entity(entity),
+            entity,
+        );
+    envelope.body_mut_for_test().schema_authority = registry.authority_snapshot();
+    let envelope = Arc::new(envelope);
+    let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
+    journal.entity_slots.insert(entity.slot_index());
+    let delta = crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
+        &std::collections::BTreeMap::from([(partition_id, (partition.clone(), journal))]),
     );
-    // Pure predicate/inspection input: keep an actual original semantic image,
-    // then edit only this test body. No publication or readmission is claimed.
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let produced = crate::tests::support::create_entity_outcome(
+    let partitions = std::collections::BTreeMap::from([(partition_id, partition)]);
+    let root = crate::branch::root::RelationalBranchRoot::prepare_capture(
         execution,
-        &runtime,
-        "predicate-semantic-source",
+        &crate::branch::root::RelationalBranchRootIdentityIssuer::default(),
+        &partitions,
+        &delta,
+        None,
+        Arc::clone(&envelope),
+        &Default::default(),
+        &registry,
+        &Default::default(),
+        None,
+    )
+    .unwrap()
+    .into_root();
+    let preencoded = RelationalCommitArtifact::from_preencoded(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::clone(&envelope),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let legacy =
+        RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
+            .unwrap();
+    let relinked = preencoded
+        .relink_preencoded_recovery(&envelope, Some(&root), None)
+        .unwrap();
+    assert!(Arc::ptr_eq(
+        &preencoded.envelope_residency(),
+        &relinked.envelope_residency()
+    ));
+    assert_eq!(relinked.identity(), legacy.identity());
+    assert_eq!(relinked.parentage(), legacy.parentage());
+    assert_eq!(relinked.roots(), legacy.roots());
+    assert_eq!(
+        relinked
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest"),
+        legacy
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest")
     );
-    let envelope = produced.publication().envelope.clone().into_arc();
-    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
-    drop(produced);
-    drop(runtime);
-    let mut envelope = std::sync::Arc::try_unwrap(envelope)
-        .expect("source owner and result released their actual envelope shares");
-    *envelope.body_mut_for_test() = draft.into_body();
-    envelope
+
+    let equal_but_unsealed = Arc::new(envelope.copy_original_for_test(execution));
+    assert!(matches!(
+        preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
+        Err(RelationalCommitArtifactDenial::RootLinkage)
+    ));
+    let mismatched_schema = crate::branch::target::RelationalBranchRootDescriptor::new(
+        *legacy.roots().truth_root(),
+        [0xAB; 32],
+    );
+    assert!(matches!(
+        preencoded.relink_preencoded_recovery(&envelope, None, Some(&mismatched_schema)),
+        Err(RelationalCommitArtifactDenial::RootLinkage)
+    ));
 }

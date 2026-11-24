@@ -1,8 +1,39 @@
 use super::validation_engine_fixtures::*;
+use crate::config::data::RelationalRuntimeConfig;
+use crate::identity::data::VersionId;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::storage::overlay::small_relation_partition::{
+    relation_partition, typed_relation_partition,
+};
+use crate::storage::overlay::PartitionState;
+use std::collections::BTreeMap;
+
+fn evaluate(
+    schema: RelationalSchemaRegistry,
+    partitions: &BTreeMap<PartitionId, PartitionState>,
+    version: VersionId,
+    profile: InvariantRequestProfile,
+    plan: Option<&MergedCommitPlan>,
+    instrumentation: &RuntimeInstrumentation,
+) -> crate::validation::engine::InvariantExecutionResult {
+    let mut config = RelationalRuntimeConfig::default();
+    config.schema.registry = schema;
+    let view =
+        crate::validation::engine::test_view::invariant_view(instrumentation, config, version);
+    InvariantEngine::from_view(&view).execute_fixture(
+        InvariantExecutionRequest::from_profile_with_contract(
+            profile,
+            &view,
+            InvariantObservation::committed_branch(partitions),
+            version,
+            plan,
+            plan.map(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan),
+        ),
+    )
+}
 
 #[test]
 fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts() {
-    let runtime = runtime_with_partition_isolation();
     let source = crate::identity::data::EntityId::new(PartitionId(1), 0, 1);
     let target = crate::identity::data::EntityId::new(PartitionId(2), 0, 1);
     let plan = MergedCommitPlan {
@@ -19,17 +50,13 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
         ))],
     };
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            Some(&plan),
-            Some(
-                crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan),
-            ),
-        ),
+    let results = evaluate(
+        partition_isolation_registry(),
+        &BTreeMap::new(),
+        VersionId(0),
+        InvariantRequestProfile::CommitBoundary,
+        Some(&plan),
+        &RuntimeInstrumentation::new(),
     );
 
     let failure = results
@@ -69,7 +96,6 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
 
 #[test]
 fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
-    let runtime = runtime_with_acyclicity_and_connectivity();
     let a = crate::identity::data::EntityId::new(PartitionId::main(), 0, 1);
     let b = crate::identity::data::EntityId::new(PartitionId::main(), 1, 1);
     let plan = MergedCommitPlan {
@@ -94,17 +120,13 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
         ],
     };
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            Some(&plan),
-            Some(
-                crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan),
-            ),
-        ),
+    let results = evaluate(
+        acyclicity_and_connectivity_registry(),
+        &BTreeMap::new(),
+        VersionId(0),
+        InvariantRequestProfile::CommitBoundary,
+        Some(&plan),
+        &RuntimeInstrumentation::new(),
     );
 
     let failure = results
@@ -127,19 +149,20 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
 
 #[test]
 fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_acyclicity_and_connectivity();
-    let a = create_entity_of_kind(execution, &runtime, KindId(3), "a");
-    let b = create_entity_of_kind(execution, &runtime, KindId(3), "b");
-    let c = create_entity_of_kind(execution, &runtime, KindId(3), "c");
-    let d = create_entity_of_kind(execution, &runtime, KindId(3), "d");
-    let e = create_entity_of_kind(execution, &runtime, KindId(3), "e");
-    create_relation_of_kind(execution, &runtime, KindId(2), a, b, "edge-ab");
-    create_relation_of_kind(execution, &runtime, KindId(2), b, c, "edge-bc");
-    create_relation_of_kind(execution, &runtime, KindId(2), c, d, "edge-cd");
-    create_relation_of_kind(execution, &runtime, KindId(2), d, e, "edge-de");
+    let partition_id = PartitionId::main();
+    let (partition, nodes, _) = typed_relation_partition(
+        partition_id,
+        [KindId(3); 5].into_iter(),
+        &[
+            (0, 1, KindId(2)),
+            (1, 2, KindId(2)),
+            (2, 3, KindId(2)),
+            (3, 4, KindId(2)),
+        ],
+    );
+    let a = nodes[0];
+    let e = nodes[4];
+    let partitions = BTreeMap::from([(partition_id, partition)]);
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(19),
         merged_intents: vec![MutationIntent::Create(CreateIntent::Relation(
@@ -154,10 +177,14 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
         ))],
     };
 
-    let result =
-        crate::validation::invariant_access::test_support::evaluate_main_commit_boundary_plan(
-            &runtime, &plan,
-        );
+    let result = evaluate(
+        acyclicity_and_connectivity_registry(),
+        &partitions,
+        VersionId(1),
+        InvariantRequestProfile::CommitBoundary,
+        Some(&plan),
+        &RuntimeInstrumentation::new(),
+    );
     let failure = result
         .summary()
         .blocking_failure()
@@ -184,80 +211,36 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
 }
 
 #[test]
-fn commit_publication_stage_rejects_sources_without_required_connectivity() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_acyclicity_and_connectivity();
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("node-a").push(MutationIntent::Create(CreateIntent::Entity(
-            EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: ClientKey::raw("node-a"),
-                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
-            },
-        ))),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-
-    let error = txn
-        .commit(execution, &runtime)
-        .expect_err("connectivity publication failure");
-    match error {
-        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Publication { error, .. } => {
-            assert!(error.detail.contains("reachable_anchor"));
-            assert!(error.detail.contains("at least 1 reachable target"));
-        }
-        other => panic!("expected publication error, got {other:?}"),
-    }
-}
-
-#[test]
 fn minimum_cardinality_current_version_scans_only_live_slots() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_cardinality_minimum();
-    let source = create_entity_of_kind(execution, &runtime, KindId(1), "source");
-    let target = create_entity_of_kind(execution, &runtime, KindId(1), "target");
-    let retired_target = create_entity_of_kind(execution, &runtime, KindId(1), "retired-target");
-    let retired_relation = create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(2),
-        source,
-        retired_target,
-        "retired",
-    );
-    create_relation_of_kind(execution, &runtime, KindId(2), source, target, "live");
-    let mut delete_txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    delete_txn
-        .push_batch(
-            WorkerIntentBatch::new("delete-retired").push(MutationIntent::Relation(
-                RelationMutationIntent::Delete(DeleteRelationIntent {
-                    relation_id: retired_relation,
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    delete_txn
-        .commit(execution, &runtime)
-        .expect("retire relation");
-
-    runtime.performance_access().reset_counters();
-    let results = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CertificationBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            None,
-            None,
-        ),
+    let partition_id = PartitionId::main();
+    let (mut partition, _, relations) =
+        relation_partition(partition_id, 3, &[(0, 2, KindId(2)), (0, 1, KindId(2))]);
+    partition
+        .relation_arena
+        .retire_for_request(execution, relations[0].slot_index(), VersionId(2))
+        .unwrap()
+        .unwrap();
+    partition
+        .adjacency
+        .get_mut(0)
+        .unwrap()
+        .remove(KindId(2), &relations[0]);
+    partition
+        .reverse_adjacency
+        .get_mut(2)
+        .unwrap()
+        .remove(KindId(2), &relations[0]);
+    let instrumentation = RuntimeInstrumentation::new();
+    let results = evaluate(
+        cardinality_minimum_registry(),
+        &BTreeMap::from([(partition_id, partition)]),
+        VersionId(2),
+        InvariantRequestProfile::CertificationBoundary,
+        None,
+        &instrumentation,
     );
 
     let violating_contracts = results
@@ -277,7 +260,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(violating_contracts, ["min_one", "min_one_again"].into());
 
-    let counters = runtime.performance_access().counters();
+    let counters = instrumentation.complexity_snapshot();
     assert_eq!(
         counters.relation_cardinality_minimum_certification_contracts_evaluated,
         2,
@@ -294,25 +277,17 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
 
 #[test]
 fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_cardinality_minimum();
-    let first = create_entity_of_kind(execution, &runtime, KindId(1), "first");
-    let second = create_entity_of_kind(execution, &runtime, KindId(1), "second");
-    create_relation_of_kind(execution, &runtime, KindId(2), first, second, "forward");
-    create_relation_of_kind(execution, &runtime, KindId(2), second, first, "reverse");
-
-    runtime.performance_access().reset_counters();
-    let results = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CertificationBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            None,
-            None,
-        ),
+    let partition_id = PartitionId::main();
+    let (partition, _, _) =
+        relation_partition(partition_id, 2, &[(0, 1, KindId(2)), (1, 0, KindId(2))]);
+    let instrumentation = RuntimeInstrumentation::new();
+    let results = evaluate(
+        cardinality_minimum_registry(),
+        &BTreeMap::from([(partition_id, partition)]),
+        VersionId(1),
+        InvariantRequestProfile::CertificationBoundary,
+        None,
+        &instrumentation,
     );
     let passing_contracts = results
         .results()
@@ -330,7 +305,7 @@ fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
         })
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(passing_contracts, ["min_one", "min_one_again"].into());
-    let counters = runtime.performance_access().counters();
+    let counters = instrumentation.complexity_snapshot();
     assert_eq!(
         counters.relation_cardinality_minimum_certification_contracts_evaluated,
         2,

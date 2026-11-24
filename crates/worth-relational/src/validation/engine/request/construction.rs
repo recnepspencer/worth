@@ -12,7 +12,7 @@ use crate::validation::engine::{InvariantObservation, InvariantRequestProfile};
 impl<'state> InvariantExecutionRequest<'state> {
     pub(crate) fn from_profile_with_contract<'runtime>(
         profile: InvariantRequestProfile,
-        runtime: &'runtime crate::runtime::RelationalRuntime,
+        view: &crate::validation::engine::InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'state>,
         version_id: crate::identity::data::VersionId,
         merged_plan: Option<&'state MergedCommitPlan>,
@@ -21,13 +21,12 @@ impl<'state> InvariantExecutionRequest<'state> {
     where
         'runtime: 'state,
     {
-        let view = runtime.invariant_validation_view();
         let backing = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
             &execution,
             profile,
-            &view,
+            view,
             observation,
             version_id,
             view.current_version_id(),

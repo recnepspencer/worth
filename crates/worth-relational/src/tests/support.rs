@@ -78,7 +78,6 @@ mod relation_integrity;
 mod savepoint;
 #[path = "support/schema.rs"]
 mod schema;
-mod schema_payload;
 #[path = "support/transaction_authority.rs"]
 mod transaction_authority;
 
@@ -92,7 +91,6 @@ pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
 pub(crate) use savepoint::*;
 pub(crate) use schema::*;
-pub(crate) use schema_payload::canonical_schema_envelope_input;
 pub(crate) use transaction_authority::*;
 
 pub(crate) fn diagnostic_field<'a>(

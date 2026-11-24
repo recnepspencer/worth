@@ -3,12 +3,11 @@ use super::proposal_source::RelationalProposalSource;
 use crate::authority::commit::phases::applied_mutation::AppliedDraftCustody;
 use crate::authority::commit::phases::prepare::PreparedWorkingStateScope;
 use crate::authority::commit::pipeline::{CommitPhaseBacking, CommitPhaseReservation};
-use crate::mvcc::{
-    BranchBoundRelationalTransaction, RelationalMutationProposalIdentity,
-    RelationalTransactionValidationInput,
-};
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) struct PreparedProposalRound {
     pub(super) prepared: PreparedWorkingStateScope,
@@ -31,7 +30,10 @@ impl RelationalPreparationRuntime {
                 transaction.authored_coupling.as_ref(),
             );
         let basis = transaction.basis.clone();
-        let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(&basis);
+        let selected =
+            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(
+                &basis,
+            );
         let (mut answer, round) = crate::storage::residency::probe_head(
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
@@ -39,8 +41,9 @@ impl RelationalPreparationRuntime {
                 let round = self
                     .preparation_round()
                     .with_authored_coupling(transaction.authored_coupling.clone());
-                let read =
-                    crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
+                let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
+                    &selected, partitions,
+                );
                 let answer = round.prepare_proposal_symbol_round(
                     execution,
                     transaction,
@@ -52,7 +55,9 @@ impl RelationalPreparationRuntime {
             },
         )
         .map_err(|failure| {
-            crate::authority::commit::preparation::storage_read_denial(&basis, failure)
+            crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                &basis, failure,
+            )
         })?;
         if let Ok(prepared) = &answer {
             crate::execution::transaction_stage(
@@ -73,7 +78,7 @@ impl RelationalPreparationRuntime {
                                 .copied(),
                         )
                         .map_err(|failure| {
-                            crate::authority::commit::preparation::storage_read_denial(
+                            crate::authority::commit::preparation::storage_denial::storage_read_denial(
                                 &basis, failure,
                             )
                         })

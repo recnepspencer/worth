@@ -29,10 +29,7 @@ fn lease(
 
 #[test]
 fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
-    let setup = crate::execution::test_policy::serial_request();
-    let setup_execution = ExecutionRequest::serial(&setup);
     let graph = Graph::new(
-        &setup_execution,
         6,
         &[
             (0, 1, KindId(2)),
@@ -113,7 +110,6 @@ fn complete_walk_work_and_memory_refuse_without_a_partial_result() {
     let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let graph = Graph::new(
-        &execution,
         5,
         &[
             (0, 1, KindId(2)),
@@ -167,9 +163,7 @@ fn complete_walk_work_and_memory_refuse_without_a_partial_result() {
 
 #[test]
 fn retained_complete_result_keeps_its_original_payer_until_drop() {
-    let host = crate::execution::test_policy::serial_request();
-    let setup = ExecutionRequest::serial(&host);
-    let graph = Graph::new(&setup, 3, &[(0, 1, KindId(2)), (1, 2, KindId(2))]);
+    let graph = Graph::new(3, &[(0, 1, KindId(2)), (1, 2, KindId(2))]);
     let memory = 64 * 1024;
     let lease = lease(Some(memory), CancellationToken::new(), None);
     let budget = CustomPreparationBudget::tracked(&lease).unwrap();
@@ -198,14 +192,9 @@ fn retained_complete_result_keeps_its_original_payer_until_drop() {
 fn complete_walk_counts_acquired_metadata_even_when_access_is_denied() {
     let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let graph = Graph::new(&execution, 2, &[(0, 1, KindId(2))]);
-    let observation =
-        InvariantObservation::committed(graph.runtime.storage_access().current_edition());
+    let graph = Graph::new(2, &[(0, 1, KindId(2))]);
     for denied_relation in [false, true] {
-        let state = InvariantStateView::new(
-            observation.committed_partition_access(),
-            graph.runtime.current_version_id(),
-        );
+        let state = InvariantStateView::new(&graph.partitions, VersionId(1));
         let access = CustomInvariantAccessContract {
             read_relation_kinds: if denied_relation {
                 vec![]

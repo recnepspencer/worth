@@ -1,22 +1,29 @@
 //! The sealed native basis distinguishes initialization from replacement.
 use super::*;
-use crate::config::data::CascadeDeletePolicy;
-use crate::schema::data::DeclaredAspectContractBinding;
-use crate::tests::support::{aspect_key, field_key, AspectSchemaFixture};
-use crate::transactions::data::{ApplyEntityAspectPatchIntent, CommitResult};
 use worth_foundational::facade::{
     aspects, AspectBinding, AspectContract, AspectIdentity, AspectValue, ContractValidationInput,
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
     ScalarAspectType, StructAspectValue,
 };
+use worth_relational::facade::config::CascadeDeletePolicy;
+use worth_relational::facade::schema::DeclaredAspectContractBinding;
+use worth_relational::facade::transactions::{ApplyEntityAspectPatchIntent, CommitResult};
+use worth_testkit_relational::{
+    aspect_storage::{
+        aspect_key, field_key,
+        publications::{changed_entities, release_test_commit_snapshot},
+        AspectSchemaFixture,
+    },
+    durable_publication::create_entity_outcome,
+};
 
 #[test]
 fn optional_aspect_initialization_and_present_empty_replacement_have_exact_presence() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (runtime, contract) = world();
-    let born = crate::tests::support::create_entity_outcome(&execution, &runtime, "source");
-    let entity = crate::tests::support::changed_entities(&born)[0];
+    let born = create_entity_outcome(&execution, &runtime, "source");
+    let entity = changed_entities(&born)[0];
     {
         let read = runtime
             .read_truth()
@@ -33,7 +40,7 @@ fn optional_aspect_initialization_and_present_empty_replacement_have_exact_prese
             "the native birth has no assessment aspect"
         );
     }
-    crate::tests::support::release_test_commit_snapshot(&runtime, &born);
+    release_test_commit_snapshot(&runtime, &born);
     let initial = validate(
         &execution,
         &runtime,
@@ -102,11 +109,11 @@ fn optional_aspect_initialization_and_present_empty_replacement_have_exact_prese
 
 #[test]
 fn optional_aspect_initialization_rejects_conflicting_repeated_sets_before_effects() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (runtime, contract) = world();
     let entity = create_entity(&execution, &runtime, "source");
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("conflicting-initializations")
@@ -117,14 +124,14 @@ fn optional_aspect_initialization_rejects_conflicting_repeated_sets_before_effec
         .unwrap();
     let denied = transaction.validate(&execution, &runtime).unwrap_err();
     assert!(
-        matches!(denied, crate::transactions::data::TransactionCommitError::Conflict { error, .. }
-        if matches!(error.class, crate::transactions::data::ConflictClass::ConflictingIntent { .. }))
+        matches!(denied, worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. }
+        if matches!(error.class, worth_relational::facade::transactions::ConflictClass::ConflictingIntent { .. }))
     );
 }
 
 #[test]
 fn optional_aspect_initialization_cannot_omit_required_siblings() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let shape = aspects()
         .struct_fields()
@@ -140,7 +147,7 @@ fn optional_aspect_initialization_cannot_omit_required_siblings() {
         .struct_aspect(shape);
     let runtime = runtime_for(&contract);
     let entity = create_entity(&execution, &runtime, "source");
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("incomplete-initialization").push(set(
@@ -153,9 +160,9 @@ fn optional_aspect_initialization_cannot_omit_required_siblings() {
         .unwrap();
     let denied = transaction.validate(&execution, &runtime).unwrap_err();
     assert!(
-        matches!(denied, crate::transactions::data::TransactionCommitError::Conflict { error, .. }
-        if matches!(error.class, crate::transactions::data::ConflictClass::RecordAspectPatchDenied {
-            denial: crate::transactions::data::RecordAspectPatchDenial::ReadmissionDenied(
+        matches!(denied, worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. }
+        if matches!(error.class, worth_relational::facade::transactions::ConflictClass::RecordAspectPatchDenied {
+            denial: worth_relational::facade::transactions::RecordAspectPatchDenial::ReadmissionDenied(
                 worth_foundational::facade::PortableAspectReadmissionDenial::ValueValidation {
                     denial: worth_foundational::facade::ContractValidationDenial::MissingRequiredField(ref field), ..
                 }), ..
@@ -165,7 +172,7 @@ fn optional_aspect_initialization_cannot_omit_required_siblings() {
 
 #[test]
 fn optional_aspect_initialization_cannot_publish_over_a_concurrent_sibling() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (runtime, contract) = world();
     let entity = create_entity(&execution, &runtime, "source");
@@ -200,8 +207,8 @@ fn optional_aspect_initialization_cannot_publish_over_a_concurrent_sibling() {
         .prepare_validated_proposal(&execution, candidate)
         .unwrap_err();
     assert!(
-        matches!(denied, crate::transactions::data::TransactionCommitError::Conflict { error, .. }
-        if matches!(error.class, crate::transactions::data::ConflictClass::StaleValidationBasis { .. }))
+        matches!(denied, worth_relational::facade::transactions::TransactionCommitError::Conflict { error, .. }
+        if matches!(error.class, worth_relational::facade::transactions::ConflictClass::StaleValidationBasis { .. }))
     );
     let read = runtime
         .read_truth()
@@ -226,7 +233,10 @@ fn optional_aspect_initialization_cannot_publish_over_a_concurrent_sibling() {
     assert_eq!(value.get(&field_key("a")), None);
 }
 
-fn world() -> (crate::runtime::RelationalRuntime, AspectContract) {
+fn world() -> (
+    worth_relational::facade::runtime::RelationalRuntime,
+    AspectContract,
+) {
     let shape = aspects()
         .struct_fields()
         .optional("a", ScalarAspectType::String)
@@ -242,7 +252,7 @@ fn world() -> (crate::runtime::RelationalRuntime, AspectContract) {
     (runtime_for(&contract), contract)
 }
 
-fn runtime_for(contract: &AspectContract) -> crate::runtime::RelationalRuntime {
+fn runtime_for(contract: &AspectContract) -> worth_relational::facade::runtime::RelationalRuntime {
     let mut schema = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -256,7 +266,7 @@ fn runtime_for(contract: &AspectContract) -> crate::runtime::RelationalRuntime {
 }
 
 fn set(
-    entity_id: crate::identity::data::EntityId,
+    entity_id: worth_relational::facade::identity::EntityId,
     contract: &AspectContract,
     fields: &[(&str, &str)],
 ) -> MutationIntent {
@@ -280,10 +290,10 @@ fn set(
 
 fn commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     intent: MutationIntent,
 ) -> CommitResult {
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("initialize-aspect").push(intent),

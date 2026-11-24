@@ -23,7 +23,7 @@ fn run(
     let runtime = &fixture.runtime;
     let request_view = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         Some(&plan),

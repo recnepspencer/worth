@@ -23,10 +23,9 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
     // visits per key per binary-tree level, including the two construction passes.
     let levels = u64::from(usize::BITS - KEYS.leading_zeros());
     let allowance = 4 * KEYS as u64 * levels;
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(crate::schema::data::RelationalSchemaRegistry::new())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let view = crate::validation::engine::test_view::empty_invariant_view(&instrumentation);
+    let partitions = std::collections::BTreeMap::new();
     let keys: Vec<_> = (0..KEYS)
         .rev()
         .map(|i| crate::symbols::data::ClientKey::raw(format!("key-{i}")))
@@ -88,10 +87,10 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
             |_, packet_context| {
                 let budget = LeasedInvariantBudget::new(packet_context, lease.status());
                 let context = InvariantExecutionContext::new(
-                    &runtime.invariant_validation_view(),
-                    InvariantObservation::committed(runtime.storage_access().current_edition()),
-                    runtime.current_version_id(),
-                    runtime.current_version_id(),
+                    &view,
+                    InvariantObservation::committed_branch(&partitions),
+                    view.current_version_id(),
+                    view.current_version_id(),
                     Some(&plan),
                     Some(scopes.clone()),
                     Arc::new(OnceLock::new()),

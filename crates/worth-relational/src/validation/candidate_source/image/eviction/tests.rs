@@ -1,6 +1,6 @@
 //! Destruction of the final opaque value must not run under its directory lock.
 use super::*;
-use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
+use crate::validation::candidate_source::program::schema_fixture::managed_cache_schema;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Weak,
@@ -22,31 +22,22 @@ impl Drop for Probe {
 }
 #[test]
 fn managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard() {
-    let (schema, program) = managed_cache_schema();
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .build()
-        .unwrap();
+    let (_, program) = managed_cache_schema();
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
         None,
     );
     let execution = ExecutionRequest::serial(&host);
-    let scope = create_entity(&execution, &runtime, "scope");
+    let scope =
+        crate::identity::data::EntityId::new(crate::identity::data::PartitionId::main(), 0, 1);
     let weak = Arc::new(Mutex::new(Weak::new()));
     let drops = Arc::new(AtomicUsize::new(0));
     let payload: Payload = Arc::new(Probe {
         image: weak.clone(),
         drops: drops.clone(),
     });
-    let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
-    let revision = runtime
-        .read_truth()
-        .positioned_snapshot(&snapshot)
-        .unwrap()
-        .commit_id()
-        .unwrap();
+    let revision = crate::history::data::CommitId(1);
     let mut image = ManagedIndexBranchImage::default();
     image
         .prepare_source(
@@ -85,28 +76,30 @@ fn managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard() {
     assert_eq!(drops.load(Ordering::SeqCst), 1);
 }
 
-// Keep real runtime construction in this existing managed-Source court owner.
 #[test]
 fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() {
     use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
     use crate::config::data::CascadeDeletePolicy;
     use crate::config::data::CrossContextPolicy;
+    use crate::config::data::RelationalRuntimeConfig;
     use crate::derived_relation::definition::DerivedRelationDefinitionParts;
     use crate::derived_relation::definition::DerivedRelationIdentity;
     use crate::derived_relation::definition::DerivedRelationNode as Node;
-    use crate::facade::schema::*;
-    use crate::facade::transactions::*;
-    use crate::identity::data::KindId;
-    use crate::identity::data::PartitionId;
-    use crate::symbols::data::ClientKey;
-    use crate::tests::support::{
-        release_test_commit_snapshot, test_owner_begin_transaction_for_main,
+    use crate::identity::data::{KindId, PartitionId, VersionId};
+    use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+    use crate::schema::data::{
+        CardinalityContractDeclaration, EndpointKindContractDeclaration, EntityKindRegistration,
+        MinimumCardinalityEnforcement, PairMinimumSemantics, RelationIntegrityDeclarations,
+        RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
     };
+    use crate::storage::overlay::small_relation_partition::typed_relation_partition;
+    use crate::transactions::data::primitives::RecordRef;
     use crate::validation::candidate_source::{scope_closure, ManagedIndexSourceProjectionRoute};
     use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
     use crate::validation::data::descriptor::CustomInvariantAccessContract;
+    use crate::validation::engine::test_view::invariant_view;
     use crate::validation::engine::{state_view::InvariantStateView, InvariantObservation};
-    use worth_execution::ExecutionAllocationPolicy;
+    use std::collections::BTreeMap;
 
     // The nested case uses the same physical relation in both directions:
     // row -> old endpoint, then new child -> old endpoint (read in reverse).
@@ -235,99 +228,34 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
                 routes,
             )
             .unwrap();
-        let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-            .schema_registry(schema.clone())
-            .build()
-            .unwrap();
         let host = crate::execution::test_policy::serial_request();
         let execution = ExecutionRequest::serial(&host);
-        let created = |kind, key: &str| CreatedEntityRef {
-            partition_id: PartitionId::main(),
-            kind_id: KindId(kind),
-            client_key: ClientKey::raw(key),
-        };
-        let entity = |kind, key: &str| {
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(kind),
-                client_key: ClientKey::raw(key),
-                fields: AspectFieldPatch::default(),
-            }))
-        };
-        let edge = |kind, key: &str, source, target| {
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(kind),
-                client_key: ClientKey::raw(key),
-                source,
-                target,
-                fields: AspectFieldPatch::default(),
-            }))
-        };
-        let mut seed = WorkerIntentBatch::new("seed-prefix");
-        seed.intents.extend([
-            entity(1, "P"),
-            entity(2, "R"),
-            entity(2, "Q"),
-            edge(
-                4,
-                "introduced",
-                EntityReference::Created(created(1, "P")),
-                EntityReference::Created(created(2, "R")),
-            ),
-        ]);
+        let id = PartitionId::main();
+        let mut edges = vec![(0, 1, KindId(4))];
         if nested {
-            seed.intents.push(edge(
-                6,
-                "parent",
-                EntityReference::Created(created(2, "R")),
-                EntityReference::Created(created(2, "Q")),
-            ));
+            edges.push((1, 2, KindId(6)));
         }
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(seed, ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
-        let seed = transaction.commit(&execution, &runtime).unwrap();
-        let parent = seed.created_entity(&created(1, "P")).unwrap();
-        let row = seed.created_entity(&created(2, "R")).unwrap();
-        let anchor = if nested {
-            seed.created_entity(&created(2, "Q")).unwrap()
-        } else {
-            row
-        };
-        release_test_commit_snapshot(&runtime, &seed);
-        let before_observation =
-            InvariantObservation::committed(runtime.storage_access().current_edition());
-        let before_version = runtime.current_version_id();
-
-        let mut candidate = WorkerIntentBatch::new("birth-and-reverse-edge");
-        candidate.intents.extend([
-            entity(1, "S"),
-            entity(2, "X"),
-            edge(
-                3,
-                "previous",
-                EntityReference::Created(created(1, "S")),
-                EntityReference::Existing(parent),
-            ),
-            edge(
-                6,
-                "new-endpoint",
-                EntityReference::Created(created(2, "X")),
-                EntityReference::Existing(anchor),
-            ),
-        ]);
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(candidate, ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
-        let candidate = transaction.commit(&execution, &runtime).unwrap();
-        let successor = candidate.created_entity(&created(1, "S")).unwrap();
-        let endpoint = candidate.created_entity(&created(2, "X")).unwrap();
-        let after_observation =
-            InvariantObservation::committed(runtime.storage_access().current_edition());
-        let runtime_view = runtime.invariant_validation_view();
+        let kinds = [KindId(1), KindId(2), KindId(2), KindId(1), KindId(2)];
+        let (before, _, _) = typed_relation_partition(id, kinds[..3].iter().copied(), &edges);
+        let anchor = if nested { 2 } else { 1 };
+        edges.extend([(3, 0, KindId(3)), (4, anchor, KindId(6))]);
+        let (after, entities, relations) = typed_relation_partition(id, kinds.into_iter(), &edges);
+        let before = BTreeMap::from([(id, before)]);
+        let after = BTreeMap::from([(id, after)]);
+        let (parent, row, successor, endpoint) =
+            (entities[0], entities[1], entities[3], entities[4]);
+        let changed = [
+            RecordRef::Entity(successor),
+            RecordRef::Entity(endpoint),
+            RecordRef::Relation(relations[relations.len() - 2]),
+            RecordRef::Relation(relations[relations.len() - 1]),
+        ];
+        let before_observation = InvariantObservation::committed_branch(&before);
+        let after_observation = InvariantObservation::committed_branch(&after);
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = schema.clone();
+        let instrumentation = RuntimeInstrumentation::default();
+        let runtime_view = invariant_view(&instrumentation, config, VersionId(1));
         let access = Arc::new(CustomInvariantAccessContract {
             read_entity_kinds: vec![KindId(1), KindId(2)],
             read_relation_kinds: vec![KindId(3), KindId(4), KindId(5), KindId(6)],
@@ -336,7 +264,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
         let before = StructuralRelationView::new(
             InvariantStateView::new(
                 before_observation.committed_partition_access(),
-                before_version,
+                VersionId(1),
             ),
             execution,
             CustomInvariantWorkMeter::new(None),
@@ -344,10 +272,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
         )
         .with_structural_source(&runtime_view, &before_observation, true);
         let after = StructuralRelationView::new(
-            InvariantStateView::new(
-                after_observation.committed_partition_access(),
-                runtime.current_version_id(),
-            ),
+            InvariantStateView::new(after_observation.committed_partition_access(), VersionId(1)),
             execution,
             CustomInvariantWorkMeter::new(None),
             access,
@@ -366,15 +291,9 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
                 },
             })
             .collect::<Vec<_>>();
-        let closure = scope_closure::discover(
-            &schema,
-            &program,
-            &candidate.changed_records,
-            &adjacency,
-            &before,
-            &after,
-        )
-        .unwrap();
+        let closure =
+            scope_closure::discover(&schema, &program, &changed, &adjacency, &before, &after)
+                .unwrap();
         assert!(
             closure
                 .scopes
@@ -387,6 +306,5 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
             !closure.support.is_empty(),
             "general pullback must retain its real reads"
         );
-        release_test_commit_snapshot(&runtime, &candidate);
     }
 }

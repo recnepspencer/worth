@@ -1,5 +1,6 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
 use super::*;
+use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
 use crate::{mvcc::RelationalAuthoredRestoration, transactions::data::*};
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
@@ -19,7 +20,7 @@ pub(super) fn validate(
     };
     let validate = || validate_candidate(proposal, execution, restoration);
     match (
-        crate::authority::commit::pipeline::request_lease(execution),
+        crate::execution::request_custody::request_lease(execution),
         proposal.state.commit_work_budget.as_ref(),
     ) {
         (Some(_), Some(budget)) => budget

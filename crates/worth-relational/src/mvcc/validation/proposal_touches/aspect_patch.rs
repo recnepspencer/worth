@@ -1,7 +1,8 @@
 //! Entity aspect patches resolve through the validated proposal's exact native binding.
 use super::{collection::TouchCollection, *};
+use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
 use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
-use crate::transactions::data::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectShape, ContractValidatedAspectValueView,
     ContractValidationInput, PortableAspectPatchOperation as Op, StructAspectValue,

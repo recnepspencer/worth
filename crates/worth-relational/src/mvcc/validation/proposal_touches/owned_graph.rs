@@ -1,9 +1,8 @@
 //! A selected whole record is a real mutation, including unchanged field payloads.
 use super::ValidatedMutationTouch as Touch;
-use crate::{
-    identity::data::KindId, publication::patch::data::RecordStructuralChange as Change,
-    transactions::data::RecordRef,
-};
+use crate::identity::data::KindId;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::RecordRef;
 pub(super) fn whole_record(record: &RecordRef, kind: KindId, change: Change) -> Touch {
     match (record, change) {
         (RecordRef::Entity(_), Change::Deleted) => Touch::DeleteEntity { kind },

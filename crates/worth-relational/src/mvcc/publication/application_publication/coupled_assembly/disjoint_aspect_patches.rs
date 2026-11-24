@@ -1,12 +1,16 @@
 //! Compose submitted disjoint aspect grammars; final C admission remains authoritative.
-use super::disjoint_field_patches::patch_entity;
-use super::*;
+use super::patch_target::patch_entity;
 use crate::execution::request_stage::checkpoint;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityMutationIntent, ExistingRecordTarget, MutationIntent,
-    WorkerIntentBatch,
-};
+use crate::mvcc::publication::application_publication::custody;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     AspectKey, FieldKey, PortableAspectPatchOperation as Operation, PortableRecordAspectPatch,
 };

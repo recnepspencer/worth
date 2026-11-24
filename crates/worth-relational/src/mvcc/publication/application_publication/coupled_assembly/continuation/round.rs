@@ -3,33 +3,17 @@ use super::super::{
     custody, writer_custody, RelationalCoupledAssemblyFailure, RequiredOutputPublication,
 };
 use super::{
-    checkpoint, part, Cause, ExecutionRequest, RelationalAuthoredCoupledCandidate,
+    checkpoint, postponed, ExecutionRequest, RelationalAuthoredCoupledCandidate,
     RelationalCoupledProducerContinuation, TransactionCommitError,
 };
 use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
 use crate::publication::patch::data::preserves_application;
-use crate::transactions::data::{
-    AuthoritativeApplyPlan, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::Arc;
-
-/// Publishing a second producing round needs multi-input provenance (public #119).
-const PROVENANCE_ISSUE: u16 = 119;
-
-/// The one #119 postponement refusal, for a continued round or a successor fold.
-pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn postponed(
-    reason: crate::publication::data::CoupledProvenancePostponement,
-    subject: crate::identity::data::EntityId,
-) -> TransactionCommitError {
-    part::reject(
-        Cause::CoupledContinuationProvenancePostponed {
-            issue: PROVENANCE_ISSUE,
-            reason,
-        },
-        subject,
-    )
-}
 
 /// Only these commands can leave a record structurally as it was. Creation,
 /// deletion, replacement and endpoint changes are effects by their application.
@@ -99,7 +83,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                         .collect_raw_client_keys(&mut raw_keys, allocation)
                         .map_err(|cause| {
                             TransactionCommitError::conflict(
-                                crate::mvcc::transaction::RelationalTransactionStagingDenial::from(
+                                crate::mvcc::transaction::staging::RelationalTransactionStagingDenial::from(
                                     cause,
                                 )
                                 .into_conflict(),
@@ -130,7 +114,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let intents = crate::mvcc::OwnedNormalizedPlan::copy_batches(
+        let intents = crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_batches(
             self.transaction.transaction_id(),
             &batches,
             execution,

@@ -5,11 +5,11 @@ use crate::tests::support::{
     create_branch_from_main, create_entity, release_test_commit_snapshot, runtime_with_test_schema,
     update_entity_on_branch,
 };
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 #[test]
 fn restored_intermediate_source_commit_refuses_merge_parent_overlap() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let source = runtime_with_test_schema();
     let a = create_entity(request, &source, "merge-a-base");

@@ -267,10 +267,10 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     target.set(entity).unwrap();
     runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
@@ -299,13 +299,13 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
     runtime.performance_access().reset_counters();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         None,
         None,
     );
-    let engine = InvariantEngine::new(runtime);
+    let engine = InvariantEngine::from_view(&runtime.invariant_validation_view());
     let results = if leased {
         let denial = engine
             .execute(

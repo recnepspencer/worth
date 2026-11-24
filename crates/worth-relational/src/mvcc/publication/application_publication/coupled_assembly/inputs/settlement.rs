@@ -161,7 +161,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     ) -> Result<Vec<RoleSignature<'_>>, TransactionCommitError> {
         let part = &self.parts[index];
         let roles = part.publication.roles();
-        let resolved = super::ordinary_roles::resolve_applied_roles(
+        let resolved = super::producer_posture::resolve_applied_roles(
             execution,
             roles,
             &self.mutation.outcome.created_entities,

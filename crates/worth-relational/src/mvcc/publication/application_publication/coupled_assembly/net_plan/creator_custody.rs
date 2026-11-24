@@ -1,10 +1,15 @@
 //! Full-generation allocation evidence fences destructive cross-writer suffixes.
-use super::super::*;
-use crate::{
-    identity::data::EntityId,
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    transactions::data::{EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent},
-};
+use crate::execution::request_stage::checkpoint;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::custody;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use worth_execution::ExecutionRequest;
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
 type Writer = crate::publication::data::CoupledFreshWriter;
 type Creator = (Writer, EntityId);
@@ -39,8 +44,8 @@ impl CreatorCustody {
             .map_err(|cause| match cause {
                 ExecutionOrderedMapDenial::Request(cause) => custody::execution_stop(cause),
                 ExecutionOrderedMapDenial::Allocation(denial) => TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::ExecutionAllocationDenied {
+                    crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                        crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied {
                             denial,
                         },
                     ),
@@ -56,7 +61,7 @@ impl CreatorCustody {
         execution: &ExecutionRequest<'_, '_>,
         writer: Writer,
         source: EntityId,
-        plan: &crate::transactions::data::MergedCommitPlan,
+        plan: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
     ) -> Result<(), TransactionCommitError> {
         execution
             .run_native_with_checkpoint(|context| {

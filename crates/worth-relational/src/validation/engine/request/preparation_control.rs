@@ -22,7 +22,7 @@ pub(crate) struct InvariantPreparationControl<'scope, 'authority> {
 
 impl<'scope, 'authority> InvariantPreparationControl<'scope, 'authority> {
     #[cfg(test)]
-    pub(super) fn uninterrupted_proposal_validation() -> Self {
+    pub(crate) fn uninterrupted_proposal_validation() -> Self {
         Self::new(
             RelationalOperationControl::uninterrupted(),
             ExecutionAllocationPolicy::SystemAllocation,

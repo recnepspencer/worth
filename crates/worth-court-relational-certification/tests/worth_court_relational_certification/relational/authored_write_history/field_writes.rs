@@ -1,5 +1,29 @@
-use super::*;
-use crate::capabilities::AspectPlanSource;
+//! Authored no-op writes and semantic field revisions remain independent.
+use super::super::proposal_records::{create_entity_with_fields, update_name};
+use super::{collect, cursor, name_locator, selected};
+use std::num::NonZeroUsize;
+use worth_execution::ExecutionRequest;
+use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
+use worth_relational::facade::{
+    history::{RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector},
+    identity::{EntityId, KindId},
+    runtime::RelationalRuntime,
+    schema::DeclaredAspectContractBinding,
+    transactions::*,
+};
+use worth_testkit_relational::{
+    aspect_storage::{
+        aspect_key, entity_summary_struct_aspect, field_key,
+        publications::{
+            begin_main_transaction, changed_entities, release_test_commit_snapshot,
+            string_aspect_field_patch,
+        },
+        AspectSchemaFixture,
+    },
+    durable_publication::{create_entity_outcome, memory_runtime as runtime_with_test_schema},
+    shared_relational_certification_test_execution_policy::serial_request,
+};
+
 use worth_foundational::facade::{
     AspectValue, ContractValidationInput, PortableAspectContractBasis,
     PortableAspectPatchOperation, PortableRecordAspectPatch,
@@ -7,24 +31,22 @@ use worth_foundational::facade::{
 
 #[test]
 fn authored_noops_and_whole_aspects_remain_visible_beyond_semantic_revisions() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
-    let original = test_owner_main_basis(&runtime).unwrap();
-    let equal = update_entity(&execution, &runtime, entity, "before");
-    let changed = update_entity(&execution, &runtime, entity, "after");
-    let restored = update_entity(&execution, &runtime, entity, "before");
-    let contract = runtime
-        .entity_aspect_plan(crate::identity::data::KindId(1))
-        .unwrap()
-        .executable_bindings
-        .iter()
-        .find(|binding| binding.aspect_key() == &aspect_key("name"))
-        .unwrap()
-        .contract
-        .clone();
+    let original = runtime
+        .admit_branch_basis(&runtime.main_branch_identity())
+        .unwrap();
+    let equal = update_name(&execution, &runtime, entity, "before");
+    let changed = update_name(&execution, &runtime, entity, "after");
+    let restored = update_name(&execution, &runtime, entity, "before");
+    let contract = worth_testkit_relational::aspect_storage::definition::default_entity_aspects()
+        .into_iter()
+        .map(|(_, contract)| contract)
+        .find(|contract| contract.key() == &aspect_key("name"))
+        .unwrap();
     let whole = patch(
         &runtime,
         execution,
@@ -34,7 +56,9 @@ fn authored_noops_and_whole_aspects_remain_visible_beyond_semantic_revisions() {
             value: ContractValidationInput::Scalar(AspectValue::String("before".into())),
         },
     );
-    let target = test_owner_main_basis(&runtime).unwrap();
+    let target = runtime
+        .admit_branch_basis(&runtime.main_branch_identity())
+        .unwrap();
     let (commits, _) = collect(
         &runtime,
         execution,
@@ -108,7 +132,7 @@ fn authored_noops_and_whole_aspects_remain_visible_beyond_semantic_revisions() {
             wrong_generation,
             &aspect_key("name")
         ),
-        Err(crate::facade::runtime::RelationalFieldSupportComparisonDenial::SourceUnavailable)
+        Err(worth_relational::facade::runtime::RelationalFieldSupportComparisonDenial::SourceUnavailable)
     ));
     let worker_only = worth_execution::SerialRequest::from_policy(
         &worth_foundational::ExecutionRequestPolicy::for_workers(
@@ -156,26 +180,24 @@ fn absent_field_writes(execution: ExecutionRequest<'_, '_>) {
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![DeclaredAspectContractBinding {
             binding: binding.binding,
-            contract: optional,
+            contract: optional.clone(),
         }],
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let entity = super::super::struct_field_patch_authority::create_entity_with_summary_fields(
+    let entity = create_entity_with_fields(
         &execution,
         &runtime,
         "absent-writes",
-        "title",
-        "open",
-        false,
-        false,
+        string_aspect_field_patch([
+            (aspect_key("summary"), field_key("title"), "title"),
+            (aspect_key("summary"), field_key("status"), "open"),
+        ]),
     );
-    let original = test_owner_main_basis(&runtime).unwrap();
-    let contract = runtime
-        .entity_aspect_plan(crate::identity::data::KindId(1))
-        .unwrap()
-        .contract_for(&aspect_key("summary"))
+    let original = runtime
+        .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
+    let contract = optional;
     let clear = || PortableAspectPatchOperation::PatchFields {
         basis: PortableAspectContractBasis::from_contract(&contract),
         selected_fields: vec![field_key("status")],
@@ -184,7 +206,9 @@ fn absent_field_writes(execution: ExecutionRequest<'_, '_>) {
     };
     let removed = patch(&runtime, execution, entity, clear());
     let equal_absent = patch(&runtime, execution, entity, clear());
-    let target = test_owner_main_basis(&runtime).unwrap();
+    let target = runtime
+        .admit_branch_basis(&runtime.main_branch_identity())
+        .unwrap();
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Authoritative,
         aspect_key("summary"),
@@ -254,7 +278,7 @@ fn absent_field_writes(execution: ExecutionRequest<'_, '_>) {
                 &execution,
                 &with_sibling,
                 entity,
-                crate::identity::data::KindId(1),
+                KindId(1),
                 &aspect_key("summary"),
             )
             .unwrap(),
@@ -314,7 +338,7 @@ fn patch(
     entity: EntityId,
     operation: PortableAspectPatchOperation,
 ) -> CommitResult {
-    let mut transaction = test_owner_begin_transaction_for_main(runtime);
+    let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("authored-aspect").push(MutationIntent::Entity(

@@ -14,7 +14,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     let plan = entity_plan(32_769);
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CertificationBoundary,
-        &runtime,
+        &runtime.invariant_validation_view(),
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         Some(&plan),
@@ -34,7 +34,8 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     }
     // Full candidate retention must still reach the real minimum-cardinality
     // rule, rather than a preparation count refusal or a silently empty scope.
-    let result = InvariantEngine::new(&runtime).execute_fixture(request);
+    let result =
+        InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
         crate::validation::data::execution::InvariantVerdict::Violation(violation)

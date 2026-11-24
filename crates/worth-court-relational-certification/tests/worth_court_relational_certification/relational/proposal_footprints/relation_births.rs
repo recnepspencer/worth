@@ -1,10 +1,10 @@
 //! A born relation names an endpoint this draft allocated only when it truly does.
 use super::*;
-use crate::transactions::data::{CreatedEntityRef, RelationSpec};
+use worth_relational::facade::transactions::{CreatedEntityRef, RelationSpec};
 
 #[test]
 fn only_births_with_an_allocated_endpoint_carry_structural_prior_absence() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
     let first = create_entity(execution, &runtime, "first");
@@ -14,16 +14,16 @@ fn only_births_with_an_allocated_endpoint_carry_structural_prior_absence() {
     let born = CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),
-        client_key: crate::symbols::data::ClientKey::raw("born"),
+        client_key: worth_relational::facade::symbols::ClientKey::raw("born"),
     };
     let link = |key: &str, source, target| {
         MutationIntent::Create(CreateIntent::Relation(RelationSpec {
             partition_id: PartitionId::main(),
             kind_id: KindId(2),
-            client_key: crate::symbols::data::ClientKey::raw(key),
+            client_key: worth_relational::facade::symbols::ClientKey::raw(key),
             source,
             target,
-            fields: crate::tests::support::relation_label_field_patch(key),
+            fields: field_patch("label", "label", key),
         }))
     };
     let validated = validate(

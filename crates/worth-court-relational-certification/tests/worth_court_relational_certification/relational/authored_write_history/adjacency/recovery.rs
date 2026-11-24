@@ -1,23 +1,25 @@
 //! The same canonical occurrences survive accelerator disposal and durable recovery.
 use super::*;
+use crate::relational::durable_publication::branch_history_publications::fork;
+use worth_relational::facade::durability::RecoveryVerificationMode;
 
 #[test]
 fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let a = create_entity(&execution, &runtime, "source");
     let b = create_entity(&execution, &runtime, "target");
     let c = create_entity(&execution, &runtime, "new-target");
-    create_branch_from_main(&runtime, "adjacency-source");
-    let source = test_owner_main_basis(&runtime).unwrap();
+    fork(&execution, &runtime, "adjacency-source");
+    let source = admit_main(&runtime).unwrap();
     let created = create_relation_outcome(&execution, &runtime, a, b, "edge");
     let relation = changed_relations(&created)[0];
     let moved = endpoints(&runtime, execution, relation, a, c);
     let noop = endpoints(&runtime, execution, relation, a, c);
     let removed =
         delete_relation_on_branch(&execution, &runtime, relation, BranchId("main".into()));
-    let target = test_owner_main_basis(&runtime).unwrap();
+    let target = admit_main(&runtime).unwrap();
     let expected = [
         created.commit.commit_id,
         moved.commit.commit_id,
@@ -60,7 +62,7 @@ fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
         .durability()
         .recovery_plan(
             &execution,
-            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+            RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
     let mut recovered = runtime_with_test_schema();
@@ -75,7 +77,7 @@ fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
                 .unwrap(),
         )
         .unwrap();
-    let recovered_target = test_owner_main_basis(&recovered).unwrap();
+    let recovered_target = admit_main(&recovered).unwrap();
     recovered
         .rebuild_authored_write_generation(execution, selected(&recovered, &recovered_target))
         .unwrap();

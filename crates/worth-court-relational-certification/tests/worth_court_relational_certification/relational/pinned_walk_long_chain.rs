@@ -1,22 +1,27 @@
 //! A real authored chain crosses any legacy scope-widening depth bound.
-use super::*;
-use crate::facade::{
-    identity::PartitionId,
-    runtime::RelationalRuntimeApi,
+use super::pinned_read_publication::snapshot_for_main;
+use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_foundational::facade::RelationDirection;
+use worth_relational::facade::{
+    identity::{KindId, PartitionId},
+    runtime::{PinnedStructuralWalkScope, RelationalRuntimeApi},
+    symbols::ClientKey,
     transactions::{
         AspectFieldPatch, CreateIntent, CreatedEntityRef, EntityReference, EntitySpec,
         MutationIntent, RelationSpec, WorkerIntentBatch,
     },
 };
-use crate::symbols::data::ClientKey;
-use crate::tests::support::{
-    release_test_commit_snapshot, test_owner_begin_transaction_for_main, AspectSchemaFixture,
+use worth_testkit_relational::{
+    aspect_storage::{
+        publications::{begin_main_transaction, release_test_commit_snapshot},
+        AspectSchemaFixture,
+    },
+    shared_relational_certification_test_execution_policy::serial_request,
 };
-use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn pinned_thousand_hops_complete_in_both_directions() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(AspectSchemaFixture::default().build_registry())
@@ -54,7 +59,7 @@ fn pinned_thousand_hops_complete_in_both_directions() {
                 },
             )));
     }
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(batch, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
@@ -66,14 +71,7 @@ fn pinned_thousand_hops_complete_in_both_directions() {
     release_test_commit_snapshot(&runtime, &committed);
     let pin = runtime
         .read_truth()
-        .pin_read_capability(
-            &runtime
-                .visibility_authority()
-                .snapshot()
-                .expect("the live fixture admits its current snapshot"),
-            &[],
-            &execution,
-        )
+        .pin_read_capability(&snapshot_for_main(&runtime), &[], &execution)
         .unwrap();
     for (direction, root) in [
         (RelationDirection::Forward, ids[0]),

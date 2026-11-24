@@ -1,8 +1,12 @@
 //! Immutable descriptive effects of exactly the actual authored appends.
-use super::*;
 use crate::authority::mutation::FoundationalPatchFragment;
+use crate::execution::request_stage::checkpoint;
+use crate::mvcc::publication::application_publication::custody;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
+use worth_execution::ExecutionRequest;
 
 #[derive(Debug)]
 struct Backing {

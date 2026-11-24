@@ -1,47 +1,13 @@
 //! Admit and apply one authenticated surviving writer's own successor commands.
+use super::chain::Chain;
+pub(super) use super::refusals::{reject, reject_extra_owner};
 use super::*;
+use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base,
-    publication::data::AuthoredRetirementRefusal as Cause,
-    transactions::data::{AuthoritativeApplyPlan, RecordRef, WorkerIntentBatch},
-};
-
-pub(super) fn reject(
-    cause: Cause,
-    subject: crate::identity::data::EntityId,
-) -> TransactionCommitError {
-    TransactionCommitError::publication(
-        crate::publication::data::PublicationError::authored_retirement(
-            cause,
-            RecordRef::Entity(subject),
-        ),
-    )
-}
-
-/// Describe the actual rejected route without changing its admission or cause.
-pub(super) fn reject_extra_owner(
-    owners: &super::super::RelationalAuthoredCoupledOwners,
-    subject: crate::identity::data::EntityId,
-    detail: String,
-) -> TransactionCommitError {
-    let source_kind = match &owners.source {
-        super::super::CoupledSource::Edit(_) => "edit",
-        super::super::CoupledSource::Retirement { .. } => "retirement",
-        super::super::CoupledSource::Restoration { .. } => "restoration",
-        super::super::CoupledSource::MemberEditRetirement { .. } => "member-edit-retirement",
-        super::super::CoupledSource::MemberEditRestoration { .. } => "member-edit-restoration",
-    };
-    let mut error = crate::publication::data::PublicationError::authored_retirement(
-        Cause::ExtraCoupledOwner,
-        RecordRef::Entity(subject),
-    );
-    error.detail.push_str(&format!(
-        "; {detail}; source_kind={source_kind}; source_root={:?}",
-        owners.source.subject(),
-    ));
-    TransactionCommitError::publication(error)
-}
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 pub(super) fn require_unseen_route(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
@@ -113,7 +79,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
         let publication_effect = &self.mutation.outcome.effect.publication;
         let latest = super::succession::appended_rounds(&self.parts);
-        let chain = super::succession::Chain {
+        let chain = Chain {
             head_input: applied.read.clone(),
             prior_touches: Vec::new(),
             batches: first_batch..self.transaction.batches().len(),

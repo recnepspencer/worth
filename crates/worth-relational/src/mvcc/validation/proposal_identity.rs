@@ -1,8 +1,9 @@
-#[path = "proposal_identity/sequence.rs"]
-mod sequence;
-use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersion};
+#[path = "proposal_identity/issuance.rs"]
+mod issuance;
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::version::RelationalBranchVersion;
 use crate::identity::data::VersionId;
-use crate::transactions::data::TransactionId;
+use crate::transactions::data::primitives::TransactionId;
 
 /// Runtime-local identity for one owner-issued mutation proposal.
 ///
@@ -82,39 +83,5 @@ impl RelationalMutationProposalIdentity {
 
     pub const fn proposed_version_id(&self) -> VersionId {
         self.proposed_version_id
-    }
-}
-
-impl crate::runtime::RelationalPreparationRuntime {
-    pub(crate) fn issue_mutation_proposal_identity(
-        &self,
-        transaction_id: TransactionId,
-        validation_input: &crate::mvcc::RelationalTransactionValidationInput,
-    ) -> Result<
-        (
-            RelationalMutationProposalIdentity,
-            std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
-        ),
-        crate::transactions::data::TransactionCommitError,
-    > {
-        let (proposed_version_id, ordinal, commit_id) =
-            self.reserve_proposal_sequence(validation_input)?;
-        let source = crate::validation::candidate_source::NativeManagedSourceInterpretation::issue(
-            validation_input,
-            proposed_version_id,
-            self.publication_binding(),
-        );
-        let identity = RelationalMutationProposalIdentity {
-            omitted_publication_appendix: validation_input.appendix_adoption().is_some(),
-            runtime_instance_id: self.services.runtime_instance_id(),
-            ordinal,
-            transaction_id,
-            branch_observation: validation_input.basis().reference().clone(),
-            branch_version: validation_input.basis().truth_version(),
-            proposed_version_id,
-            commit_id,
-            source_interpretation: source.identity(),
-        };
-        Ok((identity, source))
     }
 }

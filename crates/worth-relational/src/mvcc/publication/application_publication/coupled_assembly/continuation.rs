@@ -2,9 +2,9 @@
 use super::{part, RelationalAuthoredCoupledCandidate};
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
-use crate::mvcc::RelationalMutationProposalIdentity;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 /// Exact candidate/round custody. A new execution still needs its own current
 /// operation admission, and Native still judges its entire body before adoption.
@@ -139,4 +139,4 @@ impl RelationalAuthoredCoupledCandidate<'_> {
 
 mod corruption;
 mod round;
-pub(super) use round::postponed;
+pub(super) use super::refusals::postponed;

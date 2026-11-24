@@ -1,11 +1,18 @@
 //! Compose disjoint field patches of Native-applied participants, preserving all reads.
-use super::*;
+use super::patch_target::patch_entity;
 use crate::execution::request_stage::checkpoint;
-use crate::transactions::data::{
-    AspectFieldPatch, CommitConflict, ConflictClass, EntityMutationIntent, ExistingRecordTarget,
-    MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
-};
+use crate::mvcc::publication::application_publication::custody;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, CanonicalFieldPath};
 type Entity = crate::identity::data::EntityId;
 struct Patches {
@@ -22,51 +29,48 @@ struct Patches {
 /// composition. Structural changes retain repeated-record C refusal.
 pub(super) fn compose(
     execution: &ExecutionRequest<'_, '_>,
-    transaction: &mut BranchBoundRelationalTransaction,
+    context: &mut MapKernelContext<'_, '_>,
+    batches: &[WorkerIntentBatch],
     effect: &mut crate::authority::mutation::MutationEffect,
     state: &impl crate::storage::overlay::CurrentPartitionAccess,
     plans: &crate::schema::data::AspectContractPlanCatalog,
-) -> Result<(), TransactionCommitError> {
-    execution
-        .run_native_with_checkpoint(|context| {
-            let _groups_memory = reserve(execution, quote_groups(context, transaction.batches())?)?;
-            let Some(groups) = disjoint_groups(context, transaction.batches())? else {
-                return Ok(());
-            };
-            let _copies_memory = reserve(execution, quote_copies(context, transaction.batches())?)?;
-            let composed = compose_batches(
-                execution,
-                context,
-                transaction.batches(),
-                &groups,
-                state,
-                plans,
-            )?;
-            let mut targets = Vec::new();
-            targets.try_reserve_exact(groups.len()).map_err(|_| {
-                custody::execution_stop(
-                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-                )
-            })?;
-            targets.extend(
-                groups
-                    .iter()
-                    .filter(|(_, group)| group.repeated)
-                    .map(|(entity, _)| *entity),
-            );
-            crate::authority::mutation::compose_disjoint_publication(
-                context,
-                execution,
-                &mut effect.publication,
-                &targets,
-            )?;
-            transaction
-                .restage_coupled_field_batches(composed, execution.allocation_policy())
-                .map_err(|stop| TransactionCommitError::conflict(stop.into_conflict()))
-        })
-        .map_err(custody::execution_stop)?
-        .0
+) -> Result<Option<ComposedFieldBatches>, TransactionCommitError> {
+    let groups_memory = reserve(execution, quote_groups(context, batches)?)?;
+    let Some(groups) = disjoint_groups(context, batches)? else {
+        return Ok(None);
+    };
+    let copies_memory = reserve(execution, quote_copies(context, batches)?)?;
+    let composed = compose_batches(execution, context, batches, &groups, state, plans)?;
+    let mut targets = Vec::new();
+    targets.try_reserve_exact(groups.len()).map_err(|_| {
+        custody::execution_stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+    })?;
+    targets.extend(
+        groups
+            .iter()
+            .filter(|(_, group)| group.repeated)
+            .map(|(entity, _)| *entity),
+    );
+    crate::authority::mutation::compose_disjoint_publication(
+        context,
+        execution,
+        &mut effect.publication,
+        &targets,
+    )?;
+    Ok(Some(ComposedFieldBatches {
+        batches: composed,
+        _copies_memory: copies_memory,
+        _groups_memory: groups_memory,
+    }))
 }
+
+pub(super) struct ComposedFieldBatches {
+    pub(super) batches: Vec<WorkerIntentBatch>,
+    // The temporary backing remains funded through the caller's restaging.
+    _copies_memory: ExecutionMemoryReservation,
+    _groups_memory: ExecutionMemoryReservation,
+}
+
 fn field_patch(intent: &MutationIntent) -> Option<&UpdateEntityFieldsIntent> {
     match intent {
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(patch)) => Some(patch),
@@ -78,7 +82,7 @@ fn reserve(
     bytes: u64,
 ) -> Result<worth_execution::ExecutionMemoryReservation, TransactionCommitError> {
     worth_execution::ExecutionMemoryReservation::reserve_in_scope(
-        crate::authority::commit::pipeline::request_lease(execution),
+        crate::execution::request_custody::request_lease(execution),
         bytes,
     )
     .map_err(|cause| custody::execution_stop(crate::execution::denial::lease_denial(cause)))
@@ -254,7 +258,7 @@ fn compose_batches(
                 if groups[&entity].first == (batch_index, index) {
                     intents.push(MutationIntent::Entity(
                         EntityMutationIntent::ApplyAspectPatch(
-                            crate::transactions::data::ApplyEntityAspectPatchIntent {
+                            crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent {
                                 entity_id: entity,
                                 aspect_patch: portable
                                     .remove(&entity)
@@ -296,12 +300,4 @@ fn add(left: u64, right: u64) -> Result<u64, TransactionCommitError> {
 }
 fn overflow() -> TransactionCommitError {
     custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
-}
-
-pub(super) fn patch_entity(intent: &MutationIntent) -> Option<Entity> {
-    match intent {
-        MutationIntent::Entity(EntityMutationIntent::UpdateFields(p)) => Some(p.entity_id),
-        MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(p)) => Some(p.entity_id),
-        _ => None,
-    }
 }

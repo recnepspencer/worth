@@ -1,97 +1,81 @@
 //! Receiver protocol only. The public court proves actual correspondence issuance.
 use super::*;
-use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
-use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
-use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
-use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
+use crate::branch::projection_view::companion_slot::transfer::PreparedCompanionSlotSwap;
+use crate::identity::data::{PartitionId, VersionId};
+use crate::validation::candidate_source::program::schema_fixture::managed_cache_schema;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-struct Owner {
-    program: ManagedIndexSourceProgram,
+fn source_image(
+    execution: &ExecutionRequest<'_, '_>,
+    program: &ManagedIndexSourceProgram,
     scope: EntityId,
-    payload: Arc<dyn Any + Send + Sync>,
-    available: std::sync::atomic::AtomicBool,
-    slots: std::sync::Mutex<Vec<crate::mvcc::publication::companion::cell::publication_admission::CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
-}
-impl std::fmt::Debug for Owner {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("CorrespondenceReceiverProtocolOwner")
-    }
-}
-impl RelationalPublicationCompanion for Owner {
-    fn prepare(
-        &self,
-        context: &mut PublicationCompanionPreflight<'_>,
-    ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        let mark = context
-            .mint_selected_branch_cell(Arc::new(()))?
-            .reserve_preflight(context)?;
-        let source = context.mint_managed_index_source_cell()?;
-        self.slots.lock().unwrap().push(source.lookup_slot());
-        let source = source.reserve_preflight(context)?;
-        let execution = context.execution_request();
-        let mut image = ManagedIndexBranchImage::default();
-        let availability = if self.available.load(std::sync::atomic::Ordering::SeqCst) {
-            ManagedIndexSourceAvailability::Available
-        } else {
-            ManagedIndexSourceAvailability::Unavailable
-        };
-        image.prepare_source(
-            &execution,
-            &self.program,
-            self.scope,
+    selected: &PositionedRelationalSnapshot,
+    availability: ManagedIndexSourceAvailability,
+    payload: &Arc<dyn Any + Send + Sync>,
+) -> Arc<ManagedIndexBranchImage> {
+    let mut image = ManagedIndexBranchImage::default();
+    image
+        .prepare_source(
+            execution,
+            program,
+            scope,
             availability,
-            context.canonical_commit().commit.commit_id,
+            selected.commit_id.unwrap(),
             true,
-            Some(&self.payload),
-        )?;
-        let image = ManagedIndexBranchImage::retain_header(&execution, image)?;
-        context.seal_managed_source_replacement(mark, Arc::new(()), source, image)
-    }
+            Some(payload),
+        )
+        .unwrap();
+    ManagedIndexBranchImage::retain_header(execution, image).unwrap()
 }
 
 #[test]
 fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavailable_payload() {
-    let (schema, program) = managed_cache_schema();
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .build()
-        .unwrap();
+    let (_, program) = managed_cache_schema();
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
         None,
     );
     let execution = ExecutionRequest::serial(&host);
-    let scope = create_entity(&execution, &runtime, "scope");
-    let other_scope = create_entity(&execution, &runtime, "other-scope");
-    let owner = Arc::new(Owner {
-        program: program.clone(),
-        scope,
-        payload: Arc::new(7u64),
-        available: std::sync::atomic::AtomicBool::new(false),
-        slots: std::sync::Mutex::new(Vec::new()),
-    });
-    let registration = runtime
-        .publication_companion_port()
-        .begin_required_registration()
-        .unwrap()
-        .activate(owner.clone())
-        .unwrap();
-    create_entity(&execution, &runtime, "unavailable-cache-publication");
-    let basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    let image = basis.inner.root.managed_source_image.get().unwrap();
-    let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
-    let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
-    let generation = image.serving_cell().unwrap().registration_generation();
+    let scope = EntityId::new(PartitionId::main(), 0, 1);
+    let other_scope = EntityId::new(PartitionId::main(), 1, 1);
+    let original_payload: Arc<dyn Any + Send + Sync> = Arc::new(7u64);
+    let selected = PositionedRelationalSnapshot {
+        runtime_instance_id: 1,
+        branch_id: BranchId("main".into()),
+        root_id: 1,
+        version_id: VersionId(1),
+        commit_id: Some(CommitId(1)),
+        position: Some(PatchStreamPosition(1)),
+    };
+    let initial = CompanionRootImage::new(
+        selected.root_id,
+        selected.commit_id,
+        selected.position,
+        source_image(
+            &execution,
+            &program,
+            scope,
+            &selected,
+            ManagedIndexSourceAvailability::Unavailable,
+            &original_payload,
+        ),
+    );
+    let generation = 1;
+    let cell = CompanionBranchCellCore::new(
+        selected.runtime_instance_id,
+        selected.branch_id.clone(),
+        generation,
+        Arc::clone(&initial),
+    );
+    cell.retain_source_affinity(&execution).unwrap();
+    let image = ManagedSourceRootImage::capture_current(&cell).unwrap();
     let payload = image
         .corresponding_payload(&selected, generation, &program, scope)
         .unwrap()
         .unwrap();
     assert!(
-        Arc::ptr_eq(&payload, &owner.payload),
+        Arc::ptr_eq(&payload, &original_payload),
         "receiver shares the exact immutable payload allocation"
     );
     assert!(
@@ -134,19 +118,35 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
             "receiver rejects changed selected axis {axis}"
         );
     }
-    owner
-        .available
-        .store(true, std::sync::atomic::Ordering::SeqCst);
-    create_entity(&execution, &runtime, "available-cache-publication");
-    let resumed = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    let resumed_image = resumed.inner.root.managed_source_image.get().unwrap();
-    let resumed_snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
-    let resumed_selected = runtime
-        .read_truth()
-        .positioned_snapshot(&resumed_snapshot)
-        .unwrap();
+    let resumed_selected = PositionedRelationalSnapshot {
+        root_id: 2,
+        version_id: VersionId(2),
+        commit_id: Some(CommitId(2)),
+        position: Some(PatchStreamPosition(2)),
+        ..selected.clone()
+    };
+    let mut swap = PreparedCompanionSlotSwap::prepare(
+        cell.reserve_for_publication().unwrap(),
+        initial,
+        resumed_selected.root_id,
+        resumed_selected.commit_id.unwrap(),
+        source_image(
+            &execution,
+            &program,
+            scope,
+            &resumed_selected,
+            ManagedIndexSourceAvailability::Available,
+            &original_payload,
+        ),
+        cell.generation(),
+    )
+    .unwrap();
+    swap.check(generation).unwrap();
+    swap.enter()
+        .unwrap()
+        .install_at(resumed_selected.position.unwrap());
+    drop(swap);
+    let resumed_image = ManagedSourceRootImage::capture_current(&cell).unwrap();
     assert!(
         matches!(
             resumed_image.corresponding_payload(&resumed_selected, generation, &program, scope),
@@ -170,5 +170,4 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
         ),
         "public cache eviction cannot edit an unavailable association"
     );
-    drop((payload, registration));
 }

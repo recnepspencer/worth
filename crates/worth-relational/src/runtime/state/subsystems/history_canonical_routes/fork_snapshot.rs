@@ -110,3 +110,50 @@ impl RelationalPublicationHistory {
         Ok(fork)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::branch::target::RelationalBranchRootDescriptor;
+    use crate::history::commit::{
+        original_payload::RelationalOriginalRootCommitEvidence, RelationalCommitEnvelopeResidency,
+    };
+    use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+    use crate::identity::data::{EntityId, PartitionId};
+    use crate::publication::patch::data::PatchStreamPosition;
+    use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
+    use crate::transactions::data::primitives::RecordRef;
+
+    #[test]
+    fn fork_refuses_a_missing_performed_artifact_without_reconstructing_inventory() {
+        let host = crate::execution::test_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let history = RelationalPublicationHistory::from_branch(
+            crate::branch::basis_admission_tests::installed_history(1),
+        );
+        let entity = EntityId::new(PartitionId::main(), 1, 1);
+        let envelope = Arc::new(envelope_with_patch_and_update(
+            RecordRef::Entity(entity),
+            entity,
+        ));
+        let positioned =
+            readmit_positioned_canonical_commit(PatchStreamPosition(1), Arc::clone(&envelope))
+                .unwrap();
+        let commit_id = positioned.commit.commit_id;
+        let original = RelationalOriginalRootCommitEvidence::prepare(&execution, envelope).unwrap();
+        history
+            .canonical_publication_routes
+            .install_recovered(
+                Arc::new(positioned),
+                Arc::new(RelationalCommitEnvelopeResidency::resident(original)),
+                RelationalBranchRootDescriptor::new([4; 32], [8; 32]),
+            )
+            .unwrap();
+        assert!(history.positioned_canonical_commit(commit_id).is_some());
+        assert!(history.commit_artifact(commit_id).is_none());
+        assert!(matches!(
+            history.fork_snapshot(),
+            Err(RelationalRuntimeForkDenial::CanonicalInventoryInvalid)
+        ));
+    }
+}

@@ -31,13 +31,13 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
     let run = |execution: &ExecutionRequest<'_, '_>| {
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
+            &runtime.invariant_validation_view(),
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             None,
             None,
         );
-        InvariantEngine::new(&runtime).execute(execution, request)
+        InvariantEngine::from_view(&runtime.invariant_validation_view()).execute(execution, request)
     };
     let serial_request = crate::execution::test_policy::serial_request();
     let expected = run(&ExecutionRequest::serial(&serial_request)).unwrap();

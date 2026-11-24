@@ -50,6 +50,8 @@ mod readmission;
 pub(crate) mod readmission_refusal;
 mod request_agreement;
 mod request_encoding;
+#[cfg(test)]
+mod shared_readmission_tests;
 pub(crate) mod verified_frame;
 
 mod retained_export;

@@ -205,3 +205,6 @@ pub(crate) mod symbol_publication;
 pub(crate) mod symbol_read;
 
 pub(crate) use model_ownership::validate_candidate_ownership;
+
+#[cfg(test)]
+mod pinned_walk_request_tests;

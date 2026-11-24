@@ -34,6 +34,9 @@ pub(super) use crate::validation::custom_rule::CustomInvariantRule;
 pub(super) use crate::validation::custom_rule::CustomInvariantScopePlanner;
 pub(super) use crate::validation::data::catalog::InvariantCatalog;
 pub(super) use crate::validation::data::catalog::InvariantRegistration;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantExecutionError;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantPreparationError;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantVerdict;
 pub(super) use crate::validation::data::descriptor::CustomInvariantDescriptor;
 pub(super) use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
 pub(super) use crate::validation::data::execution::InvariantReportedRule;
@@ -44,23 +47,12 @@ pub(super) use crate::validation::data::rule_id::CustomInvariantRuleId;
 pub(super) use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 pub(super) use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
 pub(super) use crate::validation::data::rules::InvariantRule;
-pub(super) use crate::validation::data::CustomInvariantExecutionError;
-pub(super) use crate::validation::data::CustomInvariantPreparationError;
-pub(super) use crate::validation::data::CustomInvariantVerdict;
 pub(super) use crate::validation::engine::{
     InvariantEngine, InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
 };
 
-pub(super) fn runtime_with_invariants(invariant_catalog: InvariantCatalog) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .invariant_catalog(invariant_catalog)
-        .build()
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
+pub(super) fn partition_isolation_registry() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "geom.vertex".to_string(),
@@ -86,16 +78,18 @@ pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
                     ]),
             })
         })
-        .unwrap();
+        .unwrap()
+}
 
+pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
-        .schema_registry(registry)
+        .schema_registry(partition_isolation_registry())
         .build()
         .expect("valid native runtime configuration")
 }
 
-pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
+pub(super) fn cardinality_minimum_registry() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "geom.node".to_string(),
@@ -141,10 +135,12 @@ pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
                 ),
             })
         })
-        .unwrap();
+        .unwrap()
+}
 
+pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
-        .schema_registry(registry)
+        .schema_registry(cardinality_minimum_registry())
         .build()
         .expect("valid native runtime configuration")
 }

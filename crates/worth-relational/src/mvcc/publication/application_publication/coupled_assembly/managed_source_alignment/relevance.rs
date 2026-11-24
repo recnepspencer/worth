@@ -1,6 +1,6 @@
 //! A Source's and its Parent's footprint by kind, aspect and field, and the
 //! scope entities a probed scope's Source can never reach.
-use super::{ManagedIndexParentReadFootprint, ManagedIndexSourceProgram};
+use super::super::parent_read_footprint::ManagedIndexParentReadFootprint;
 use crate::authority::mutation::{
     AdjacencyDelta, AdjacencyDeltaKind, CanonicalAspectDeltaEvidence as Evidence,
     CanonicalRecordAspectDelta, MutationEffect,
@@ -10,7 +10,8 @@ use crate::graph_member::NativeMemberDomain;
 use crate::identity::data::{EntityId, KindId};
 use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::candidate_source::ManagedIndexSourceProgram;
 use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectKey, FieldKey};
 
@@ -23,7 +24,8 @@ struct Ordered {
 }
 
 /// Reads one entity's scope-key value from the candidate.
-pub(super) type ScopeKeyReader<'p> = &'p dyn Fn(EntityId) -> Option<worth_foundational::facade::AspectValue>;
+pub(super) type ScopeKeyReader<'p> =
+    &'p dyn Fn(EntityId) -> Option<worth_foundational::facade::AspectValue>;
 
 pub(super) struct SourceRelevance<'p> {
     program: &'p ManagedIndexSourceProgram,
@@ -203,7 +205,12 @@ impl<'p> SourceRelevance<'p> {
         match (record, kind) {
             (_, None) => true,
             (RecordRef::Entity(id), Some(kind)) => {
-                if self.footprint.fields.iter().any(|(field, _, _)| *field == kind) {
+                if self
+                    .footprint
+                    .fields
+                    .iter()
+                    .any(|(field, _, _)| *field == kind)
+                {
                     return true;
                 }
                 !self.other_root(*id, kind)
@@ -219,8 +226,10 @@ impl<'p> SourceRelevance<'p> {
     /// key would make that key name another scope: equal, unreadable or
     /// opaque keys are relevant; a distinct key is not.
     fn appears_with_probed_key(&self, delta: &CanonicalRecordAspectDelta, id: EntityId) -> bool {
-        if !matches!(delta.structural_change, Change::Created | Change::Rematerialized)
-            || self.footprint.scope_key.is_none()
+        if !matches!(
+            delta.structural_change,
+            Change::Created | Change::Rematerialized
+        ) || self.footprint.scope_key.is_none()
         {
             return false;
         }
@@ -249,16 +258,21 @@ impl<'p> SourceRelevance<'p> {
     fn entity(&self, kind: KindId) -> bool {
         [self.program.scope_kind(), self.program.row_kind()]
             .into_iter()
-            .chain(self.program.physical_sources().flat_map(|&(_, from, to)| [from, to]))
+            .chain(
+                self.program
+                    .physical_sources()
+                    .flat_map(|&(_, from, to)| [from, to]),
+            )
             .any(|candidate| candidate == kind)
     }
 
     fn projects(&self, kind: KindId, aspect: &AspectKey) -> bool {
-        let projected = |fields: &[crate::validation::candidate_source::ManagedIndexSourceField]| {
-            fields
-                .iter()
-                .any(|field| field.locator.aspect().aspect_key() == aspect)
-        };
+        let projected =
+            |fields: &[crate::validation::candidate_source::ManagedIndexSourceField]| {
+                fields
+                    .iter()
+                    .any(|field| field.locator.aspect().aspect_key() == aspect)
+            };
         (kind == self.program.row_kind() && projected(self.program.fields()))
             || self
                 .program

@@ -5,6 +5,8 @@ use crate::publication::close_custody::{
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+mod source_registration;
+
 #[cfg(test)]
 mod memory_close_tests;
 

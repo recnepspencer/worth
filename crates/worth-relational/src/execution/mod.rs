@@ -35,7 +35,6 @@ pub(crate) mod request_custody;
 pub(crate) use request_custody::check_request;
 
 #[cfg(test)]
-#[path = "../tests/support/runtime.rs"]
 pub(crate) mod test_authority;
 
 pub(crate) mod content_stage;

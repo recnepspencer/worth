@@ -3,13 +3,16 @@ use worth_foundational::facade::{
     PortableAspectPatchOperation, PortableRecordAspectPatch, StructAspectValue,
 };
 
-use crate::capabilities::AspectPlanSource;
-use crate::identity::data::KindId;
-use crate::tests::support::{
-    aspect_key, create_entity, create_relation, entity_summary_struct_aspect, field_key,
-    runtime_with_test_schema, AspectSchemaFixture,
+use super::super::proposal_records::{create_entity_with_fields, create_relation_with_fields};
+use super::{
+    begin_main_transaction, create_entity, create_relation, runtime_with_test_schema,
+    serial_request,
 };
-use crate::transactions::data::{
+use worth_testkit_relational::aspect_storage::{
+    aspect_key, entity_summary_struct_aspect, field_key, AspectSchemaFixture,
+};
+
+use worth_relational::facade::transactions::{
     ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, DeleteRelationIntent,
     EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent, WorkerIntentBatch,
 };
@@ -18,14 +21,21 @@ use super::{assert_work, locator, project, validate};
 
 #[test]
 fn entity_field_patch_materializes_only_selected_fields_on_its_exact_record_type() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_struct_aspects();
-    let changed = create_entity(execution, &runtime, "changed");
-    let other = create_entity(execution, &runtime, "other");
-    let relation = create_relation(execution, &runtime, changed, other, "edge");
-    let contract = summary_contract(&runtime);
+    let changed = create_entity_with_fields(execution, &runtime, "changed", Default::default());
+    let other = create_entity_with_fields(execution, &runtime, "other", Default::default());
+    let relation = create_relation_with_fields(
+        execution,
+        &runtime,
+        changed,
+        other,
+        "edge",
+        Default::default(),
+    );
+    let contract = summary_contract();
     commit_intent(
         execution,
         &runtime,
@@ -50,16 +60,32 @@ fn entity_field_patch_materializes_only_selected_fields_on_its_exact_record_type
 
 #[test]
 fn relation_field_patch_materializes_only_selected_fields_on_its_exact_record_type() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_struct_aspects();
-    let source = create_entity(execution, &runtime, "source");
-    let first_target = create_entity(execution, &runtime, "first-target");
-    let second_target = create_entity(execution, &runtime, "second-target");
-    let changed = create_relation(execution, &runtime, source, first_target, "changed");
-    let other = create_relation(execution, &runtime, source, second_target, "other");
-    let contract = summary_contract(&runtime);
+    let source = create_entity_with_fields(execution, &runtime, "source", Default::default());
+    let first_target =
+        create_entity_with_fields(execution, &runtime, "first-target", Default::default());
+    let second_target =
+        create_entity_with_fields(execution, &runtime, "second-target", Default::default());
+    let changed = create_relation_with_fields(
+        execution,
+        &runtime,
+        source,
+        first_target,
+        "changed",
+        Default::default(),
+    );
+    let other = create_relation_with_fields(
+        execution,
+        &runtime,
+        source,
+        second_target,
+        "other",
+        Default::default(),
+    );
+    let contract = summary_contract();
     commit_intent(
         execution,
         &runtime,
@@ -83,7 +109,7 @@ fn relation_field_patch_materializes_only_selected_fields_on_its_exact_record_ty
 
 #[test]
 fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -92,10 +118,10 @@ fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
     let second_target = create_entity(execution, &runtime, "second-target");
     let changed = create_relation(execution, &runtime, source, first_target, "changed");
     let other = create_relation(execution, &runtime, source, second_target, "other");
-    let contract = runtime
-        .relation_aspect_plan(KindId(2))
-        .unwrap()
-        .contract_for(&aspect_key("label"))
+    let contract = worth_testkit_relational::aspect_storage::definition::default_relation_aspects()
+        .into_iter()
+        .map(|(_, contract)| contract)
+        .find(|contract| contract.key() == &aspect_key("label"))
         .unwrap();
     let patch = PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
         basis: PortableAspectContractBasis::from_contract(&contract),
@@ -116,7 +142,7 @@ fn relation_whole_aspect_footprint_keeps_record_type_and_aspect_distinct() {
 
 #[test]
 fn relation_delete_footprint_covers_only_the_exact_relation_record() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -141,9 +167,9 @@ fn relation_delete_footprint_covers_only_the_exact_relation_record() {
     assert_work(&footprint, 1, 1);
 }
 
-fn runtime_with_struct_aspects() -> crate::runtime::RelationalRuntime {
+fn runtime_with_struct_aspects() -> worth_relational::facade::runtime::RelationalRuntime {
     let entity_binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
-    let relation_binding = crate::schema::data::DeclaredAspectContractBinding {
+    let relation_binding = worth_relational::facade::schema::DeclaredAspectContractBinding {
         binding: worth_foundational::facade::AspectBinding::RelationField {
             field: field_key("summary"),
         },
@@ -157,15 +183,8 @@ fn runtime_with_struct_aspects() -> crate::runtime::RelationalRuntime {
     .build_runtime()
 }
 
-fn summary_contract(
-    runtime: &crate::runtime::RelationalRuntime,
-) -> worth_foundational::facade::AspectContract {
-    runtime
-        .entity_aspect_plan(KindId(1))
-        .unwrap()
-        .contract_for(&aspect_key("summary"))
-        .unwrap()
-        .clone()
+fn summary_contract() -> worth_foundational::facade::AspectContract {
+    entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")).contract
 }
 
 fn whole_summary_patch(
@@ -204,7 +223,7 @@ fn selected_summary_patch(
 }
 
 fn entity_summary_patch(
-    entity_id: crate::identity::data::EntityId,
+    entity_id: worth_relational::facade::identity::EntityId,
     aspect_patch: PortableRecordAspectPatch,
 ) -> MutationIntent {
     MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
@@ -216,7 +235,7 @@ fn entity_summary_patch(
 }
 
 fn relation_summary_patch(
-    relation_id: crate::identity::data::RelationId,
+    relation_id: worth_relational::facade::identity::RelationId,
     aspect_patch: PortableRecordAspectPatch,
 ) -> MutationIntent {
     MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(
@@ -229,10 +248,10 @@ fn relation_summary_patch(
 
 fn commit_intent(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
     intent: MutationIntent,
 ) {
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+    let mut transaction = begin_main_transaction(runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("footprint-setup").push(intent),

@@ -1,6 +1,7 @@
 //! Scoped Query dispatch completes the real Native draft before final judging.
 use super::*;
-use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::mvcc::{RelationalPreparationPort, RelationalTransactionValidationInput};
 
 // Both issued forms retain their actual Native context for the duration of the
@@ -84,7 +85,7 @@ impl RelationalPreparationPort {
                                 transaction.transaction_id,
                                 &input,
                             )?;
-                            let complete = super::completion::prepare_coupled_candidate(
+                            let complete = super::candidate_completion::prepare_coupled_candidate(
                                 execution,
                                 round,
                                 transaction,
@@ -117,43 +118,5 @@ impl RelationalPreparationPort {
             crate::authority::commit::preparation::storage_read_denial(&basis, cause)
         })??;
         Ok(complete.then_some(transaction))
-    }
-}
-
-impl BoundAuthoredCoupling {
-    pub(crate) fn inherit_prepared_symbols(
-        &self,
-        symbols: &mut crate::runtime::PendingSymbolMeanings,
-    ) -> Result<(), crate::authority::mutation::MutationApplyDenial> {
-        let prepared = self.applied.lock().unwrap_or_else(|e| e.into_inner());
-        let prepared = prepared.as_ref().ok_or_else(|| {
-            part::reject(
-                crate::publication::data::AuthoredRetirementRefusal::MissingCoupledOwner,
-                self.owners.source.subject(),
-            )
-        })?;
-        symbols.adopt(prepared.mutation.candidate_symbols())?;
-        Ok(())
-    }
-    pub(crate) fn adopt_prepared_symbols(
-        &self,
-        identity: &RelationalMutationProposalIdentity,
-        symbols: &mut crate::runtime::PendingSymbolMeanings,
-    ) -> Result<(), TransactionCommitError> {
-        let mut prepared = self.applied.lock().unwrap_or_else(|e| e.into_inner());
-        let prepared = prepared.as_mut().ok_or_else(|| {
-            part::reject(
-                crate::publication::data::AuthoredRetirementRefusal::MissingCoupledOwner,
-                self.owners.source.subject(),
-            )
-        })?;
-        if !prepared.identity.same_proposal_sequence(identity) {
-            return Err(part::reject(
-                crate::publication::data::AuthoredRetirementRefusal::ForeignCoupledOwner,
-                self.owners.source.subject(),
-            ));
-        }
-        std::mem::swap(symbols, &mut prepared.mutation.identities.symbols);
-        Ok(())
     }
 }

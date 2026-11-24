@@ -2,7 +2,9 @@
 //! schema, invariant, footprint, and publication validation.
 
 #[path = "validation/custom_invariant_execution_receipt.rs"]
-mod custom_invariant_execution_receipt;
+pub(crate) mod custom_invariant_execution_receipt;
+#[path = "validation/invariant_evidence.rs"]
+mod invariant_evidence;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
 mod proposal_candidate;
@@ -16,9 +18,11 @@ mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
+#[path = "validation/proposal_identity/sequence.rs"]
+mod proposal_sequence;
 mod proposal_source;
 #[path = "validation/proposal_touches.rs"]
-mod proposal_touches;
+pub(crate) mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 mod proposal_validation;
 pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
@@ -27,6 +31,7 @@ pub(crate) mod validated_proposal;
 
 pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
+pub use invariant_evidence::RelationalMutationInvariantEvidence;
 pub use proposal_footprint::{
     RecordedMemberRestoration, RecordedMemberRestorationRefusal, ValidatedMutationFootprint,
     ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
@@ -38,7 +43,7 @@ pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
-pub use validated_proposal::{RelationalMutationInvariantEvidence, ValidatedRelationalProposal};
+pub use validated_proposal::ValidatedRelationalProposal;
 pub(crate) use validated_proposal::{StrategyProposalDecoration, ValidatedProposalState};
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};

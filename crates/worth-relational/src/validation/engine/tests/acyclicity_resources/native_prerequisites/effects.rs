@@ -109,7 +109,7 @@ fn native_advisory_continues_custom_preparation_and_harness_audit_collects_even_
         assert_eq!(plan.merged_intents.len(), 2);
         let request = InvariantExecutionRequest::from_profile_with_contract(
             profile,
-            &fixture.runtime,
+            &fixture.runtime.invariant_validation_view(),
             InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
             fixture.runtime.current_version_id(),
             Some(&plan),
@@ -121,7 +121,7 @@ fn native_advisory_continues_custom_preparation_and_harness_audit_collects_even_
             CancellationToken::new(),
             None,
         );
-        let result = InvariantEngine::new(&fixture.runtime)
+        let result = InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
             .execute(&ExecutionRequest::leased(&lease), request)
             .unwrap();
         let limit = result

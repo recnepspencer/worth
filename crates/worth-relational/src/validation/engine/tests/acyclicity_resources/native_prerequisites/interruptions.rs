@@ -56,7 +56,7 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
     let request = || {
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &fixture.runtime,
+            &fixture.runtime.invariant_validation_view(),
             InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
             fixture.runtime.current_version_id(),
             Some(&plan),
@@ -100,7 +100,7 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
     );
     let (failure, stopped_charges) =
         crate::execution::request_work::account_observation::observe(|| {
-            InvariantEngine::new(&fixture.runtime)
+            InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
                 .execute(&ExecutionRequest::leased(&constrained), request())
         });
     assert_stop(failure.unwrap_err(), Cause::WorkExhausted);
@@ -113,7 +113,7 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
     assert!(stopped_charges[2] > 0);
     assert_eq!(hooks.observed(), (0, 0));
     assert_eq!(constrained.charged_memory_bytes(), 0);
-    let result = InvariantEngine::new(&fixture.runtime)
+    let result = InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
         .execute(&ExecutionRequest::leased(&funded), request())
         .unwrap();
     assert_eq!(result.results().len(), 2);
