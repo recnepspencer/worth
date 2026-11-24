@@ -5,13 +5,13 @@
 //! own effects"; `Chain::intervened` keeps them exclusive to the chain.
 use super::super::super::custody;
 use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::storage::data::{RecordLifecycleState, RelationReadRecord};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use crate::visibility::materialization::read_records::reader::pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
 use worth_execution::ExecutionRequest;
-use crate::storage::data::{RecordLifecycleState, RelationReadRecord};
 
 /// One live side of an overlay relation: its kind and endpoints.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
