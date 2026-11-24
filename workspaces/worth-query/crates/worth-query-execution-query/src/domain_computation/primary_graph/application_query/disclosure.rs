@@ -6,7 +6,7 @@ pub use crate::domain_computation::authorization::application_disclosure::{
 };
 pub use crate::domain_computation::authorization::application_disclosure::{
     compile_disclosure_contract, compile_funded_disclosure_contract,
-    FundedDisclosureCompilationDenial,
+    FundedDisclosureCompilationDenial, FundedDisclosureContract,
 };
 pub use crate::domain_computation::authorization::application_disclosure::{
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,

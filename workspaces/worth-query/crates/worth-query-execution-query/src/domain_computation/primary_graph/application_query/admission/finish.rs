@@ -28,7 +28,7 @@ use crate::domain_computation::primary_graph::application_query::{
     controls::WorthQueryApplicationQueryBasis,
     disclosure::{
         compile_funded_disclosure_contract, FundedDisclosureCompilationDenial,
-        WorthQueryAdmittedApplicationDisclosureContract,
+        FundedDisclosureContract, WorthQueryAdmittedApplicationDisclosureContract,
         WorthQueryPendingApplicationQueryGovernance,
     },
     execution_shape::validate_one_shot_shape,
@@ -48,8 +48,7 @@ use crate::domain_computation::provider_session::{
 struct PreparedApplicationQueryGraphWork {
     plan: WorthQueryAdmittedGraphWorkPlan,
     obligation_identity: WorthQueryInstalledGraphObligationSetIdentity,
-    disclosure: WorthQueryAdmittedApplicationDisclosureContract,
-    disclosure_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    disclosure: FundedDisclosureContract,
     canonical_work: WorthQueryCanonicalWorkPhases,
     continuation_index_id: Option<DerivedIndexId>,
 }
@@ -156,7 +155,6 @@ where
             &parameters,
             pending_governance,
             prepared.disclosure,
-            prepared.disclosure_memory,
         )?;
         Ok(WorthQueryAdmittedApplicationQueryPlan {
             history_metadata: None,
@@ -224,7 +222,7 @@ where
             admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
                 .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
-        let (disclosure, disclosure_memory) =
+        let disclosure =
             compile_funded_disclosure_contract(query, graph.layout_ref(), execution).map_err(
                 |cause| match cause {
                     FundedDisclosureCompilationDenial::Contract(denial) => {
@@ -255,7 +253,6 @@ where
             plan,
             obligation_identity: reviewed.obligation_identity,
             disclosure,
-            disclosure_memory,
             canonical_work,
             continuation_index_id,
         })

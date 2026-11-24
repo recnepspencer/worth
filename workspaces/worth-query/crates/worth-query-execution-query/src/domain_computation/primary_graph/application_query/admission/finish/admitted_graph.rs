@@ -62,8 +62,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(PreparedApplicationQueryGraphWork {
             plan,
             obligation_identity,
-            disclosure,
-            disclosure_memory: None,
+            disclosure: FundedDisclosureContract::unfunded(disclosure),
             canonical_work,
             continuation_index_id: None,
         })
