@@ -4,6 +4,37 @@ This is an SDK maintainer contract. Applications continue to use Query's
 declaration and host facades. The Relational SDK namespace is
 `worth_relational::facade::storage::maintenance`.
 
+## Relational package graph
+
+The package names below use the `worth-relational-` prefix for subordinate
+owners. Every dependency points to a lower layer.
+
+| Layer | Package | Direct Relational dependencies |
+| --- | --- | --- |
+| 0 | `contracts` | None |
+| 1 | `storage` | Contracts |
+| 2 | `branch` | Contracts, Storage |
+| 3 | `lineage` | Contracts, Storage, Branch |
+| 3 | `mutation` | Contracts, Storage, Branch |
+| 3 | `merge` | Contracts, Storage, Branch |
+| 3 | `indexes` | Contracts, Storage, Branch |
+| 4 | `durability` | All Layer 0–3 packages |
+| 5 | `publication` | All Layer 0–4 packages |
+| 6 | `worth-relational` | All nine subordinate packages |
+
+The substrate packages carry shared contracts, storage, and branch custody.
+Layer 3 owners handle persistent naming, mutation, reconciliation, and derived
+index maintenance independently. Durability owns checkpoint and reconstruction
+operations. Publication prepares candidate effects, supplies canonical stream
+and settlement operations, and judges continued rounds on a discarded working
+image. Runtime selects and binds the live operands and supplies the public facade.
+
+Subordinate `internal_port` modules are sealed to their Relational consumers
+by the dependency and source rules. The DAG check audits package edges, the
+Branch, Mutation, and Durability internal boundaries, and the frozen facade.
+
+## Canonical change input
+
 `CommitChange` is constructed once during canonical root preparation from the
 storage owner's partition journals and that publication's canonical envelope.
 It carries before/after record identity, kind, lifecycle and retirement facts;

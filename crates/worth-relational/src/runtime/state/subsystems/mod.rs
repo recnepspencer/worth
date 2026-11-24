@@ -5,7 +5,7 @@ pub(crate) use worth_relational_indexes::internal_port::runtime::state::subsyste
 pub(crate) use worth_relational_lineage::internal_port::runtime::state::subsystems::{
     lineage, lineage_identity,
 };
-pub(crate) mod publication;
+pub(crate) use worth_relational_publication::internal_port::runtime::state::subsystems::publication;
 pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::{
     record_identity, storage,
 };

@@ -139,7 +139,7 @@ fn interrupted_mid_range() {
     let observed = applied.clone();
     let mut validations = 0;
     let mut first_published = false;
-    let error = stage_observation::with_observer(
+    let error = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 first_published = true;
@@ -211,7 +211,7 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
         // Rejected marks diagnostic posture; parity drift makes admission refuse.
         plan.authority_continuity.schema_parity =
             crate::durability::data::RecoveryAuthorityParity::Drift;
-        let result = stage_observation::with_observer(
+        let result = stage_observation::with_stage_observer_for_test(
             Box::new(move |_| {
                 observed.fetch_add(1, Ordering::SeqCst);
             }),

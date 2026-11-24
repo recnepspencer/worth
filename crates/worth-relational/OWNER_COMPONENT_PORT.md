@@ -1,5 +1,9 @@
 # Relational Owner Component Port
 
+Runtime assembles the component services from the
+[Relational package graph](../../docs/relational-maintenance.md#relational-package-graph).
+The service contracts named here remain the entry points for component consumers.
+
 This document freezes the Relational component boundary that Query Milestone
 9.17.2 may consume. It is a port over owner-issued artifacts and typed outcomes,
 not access to Relational internals and not a composite commit implementation.

@@ -28,7 +28,12 @@ fn publication_rejects_envelope_identity_drift_before_any_effect() {
     mismatched_commit.body_mut_for_test().commit.commit_id.0 += 100;
     let error = runtime
         .mvcc_publication_authority()
-        .validate_versioned_publication(receipt.commit_id, &receipt, &binding, &mismatched_commit)
+        .validate_versioned_publication_for_test(
+            receipt.commit_id,
+            &receipt,
+            &binding,
+            &mismatched_commit,
+        )
         .expect_err("envelope commit identity drift must be denied");
     assert!(error.contains("envelope commit identity mismatch"));
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
@@ -38,7 +43,12 @@ fn publication_rejects_envelope_identity_drift_before_any_effect() {
     mismatched_branch.body_mut_for_test().branch_context = BranchId("other".to_owned());
     let error = runtime
         .mvcc_publication_authority()
-        .validate_versioned_publication(receipt.commit_id, &receipt, &binding, &mismatched_branch)
+        .validate_versioned_publication_for_test(
+            receipt.commit_id,
+            &receipt,
+            &binding,
+            &mismatched_branch,
+        )
         .expect_err("envelope branch context drift must be denied");
     assert!(error.contains("envelope branch context mismatch"));
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);

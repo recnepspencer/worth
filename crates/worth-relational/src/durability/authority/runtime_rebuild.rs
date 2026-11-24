@@ -5,7 +5,6 @@ pub(crate) use worth_relational_durability::internal_port::durability::authority
 mod checkpoint_restore;
 pub(super) mod envelope_replay;
 pub(super) mod index_catalog;
-mod source_schema_routes;
 use original_schemas::OriginalSchemaGraph;
 
 mod transition_replay;

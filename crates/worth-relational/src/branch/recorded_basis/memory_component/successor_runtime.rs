@@ -2,9 +2,12 @@
 use super::successor::{fund_and_charge, live_bytes};
 use super::*;
 use crate::runtime::RelationalRuntime;
-use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::assemble_admitted_relational_memory_component;
-use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::AdmittedRelationalMemoryComponentFieldsPort as _;
-use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::AdmittedRelationalMemoryComponentOwnerPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::{
+    assemble_admitted_relational_memory_component,
+    AdmittedRelationalMemoryComponentFieldsPort as _,
+    AdmittedRelationalMemoryComponentOwnerPort as _,
+};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 impl RelationalRuntime {
     /// Admit the Live component of the successor `candidate` will publish.

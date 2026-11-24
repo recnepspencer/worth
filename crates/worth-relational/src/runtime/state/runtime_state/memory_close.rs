@@ -28,7 +28,11 @@ impl RelationalRuntime {
     }
 
     fn memory_close_business_preflight(&self) -> Result<Option<RelationalRuntimeCloseDenial>, ()> {
-        if let Some(holders) = self.publication_owner.try_memory_close_custody()? {
+        if let Some(holders) = self
+            .publication_owner
+            .try_memory_close_custody()
+            .map_err(|_| ())?
+        {
             return Ok(Some(
                 RelationalRuntimeCloseDenial::PublicationCustodyRetained(holders),
             ));

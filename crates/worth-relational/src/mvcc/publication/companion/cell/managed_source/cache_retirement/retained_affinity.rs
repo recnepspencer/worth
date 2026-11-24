@@ -5,6 +5,8 @@ use crate::history::data::BranchId;
 use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceForkPreparation;
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationFixturePort as _;
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedSourceRootImageFixturePort as _;
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellFixturePort as _;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);
@@ -61,7 +63,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .unwrap();
     create_entity(&execution, &runtime, "source-publication");
     let main_cell = owner.0.slots.lock().unwrap()[0].admitted().unwrap();
-    *core.lock().unwrap() = Arc::downgrade(&main_cell.core);
+    *core.lock().unwrap() = Arc::downgrade(main_cell.companion_core_for_test());
     let main = runtime.main_branch_identity();
     let main_snapshot = snapshot_for_owner_identity(&runtime, &main);
     let main_observation = runtime
@@ -77,9 +79,9 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     let identity = runtime.branch_identity(&target).unwrap();
     let snapshot = snapshot_for_owner_identity(&runtime, &identity);
     let cell = owner.0.slots.lock().unwrap()[1].admitted().unwrap();
-    let weak = Arc::downgrade(&cell.core);
-    let fork_grant = Arc::downgrade(cell.core.fork_funding().unwrap());
-    let generation = cell.core.registration_generation();
+    let weak = Arc::downgrade(cell.companion_core_for_test());
+    let fork_grant = Arc::downgrade(cell.companion_core_for_test().fork_funding().unwrap());
+    let generation = cell.companion_core_for_test().registration_generation();
     let old = runtime
         .read_truth()
         .observe_managed_index_source(&execution, &snapshot, &program, scope)

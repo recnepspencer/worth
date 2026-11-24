@@ -95,8 +95,7 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
         assert!(source.retained_branch_transitions().1.is_empty());
         assert_eq!(
             source
-                .branch_transitions
-                .prepare_append(&request, &original_transition.positioned)
+                .prepare_original_transition_for_test(&request, &original_transition.positioned)
                 .unwrap(),
             Some(0)
         );
@@ -110,12 +109,10 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
             },
         );
         assert!(matches!(
-            source
-                .branch_transitions
-                .prepare_append(&request, &different),
+            source.prepare_original_transition_for_test(&request, &different),
             Err(OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch)
         ));
-        assert_eq!(source.branch_transitions.state().log.len(), 1);
+        assert_eq!(source.original_transition_count_for_test(), 1);
         assert_eq!(source.branch_transition_head().0, 0);
     }
 }

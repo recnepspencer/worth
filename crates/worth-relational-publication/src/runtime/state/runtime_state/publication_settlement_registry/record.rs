@@ -1,0 +1,260 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard};
+use worth_relational_branch::internal_port as branch;
+use worth_relational_contracts::internal_port as contracts;
+
+use crate::transactions::data::outcomes::commit_result::CommitResult;
+use branch::history::data::positioned_canonical_commit::PositionedCanonicalCommit;
+use contracts::history::data::commit_receipt::RelationalCommitReceipt;
+use contracts::history::data::coordinates::CommitId;
+
+/// Precomputed settlement input captured before the publication critical
+/// section. Holding it here is what lets a lost performed witness stay
+/// recoverable: the runtime, not the caller, owns the remaining work.
+pub struct ReservedRelationalSettlement {
+    pub completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
+    pub published_snapshot_basis:
+        branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
+    pub control: contracts::runtime::operation_control::RelationalOperationControl,
+    pub envelope_cell:
+        Arc<branch::history::commit::envelope_residency::RelationalCommitEnvelopeResidency>,
+}
+
+/// The same input after the branch reference moved, authorized against the
+/// exact positioned canonical commit that movement produced.
+pub(crate) struct PerformedRelationalSettlement {
+    pub(crate) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
+    pub(crate) published_snapshot_basis:
+        branch::history::retention::selected_snapshot::VisibilitySnapshotBasis,
+    pub(crate) control: contracts::runtime::operation_control::RelationalOperationControl,
+    pub(crate) positioned: Arc<PositionedCanonicalCommit>,
+    pub(crate) envelope_cell:
+        Arc<branch::history::commit::envelope_residency::RelationalCommitEnvelopeResidency>,
+    pub(crate) settlement_retention:
+        branch::history::retention::obligation::RelationalPerformedSettlementObligation,
+    pub(crate) late_interruption: Option<
+        contracts::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    >,
+}
+
+/// The one terminal answer for a settled commit identity. Every later caller
+/// reads this instead of repeating a derived effect.
+///
+/// `result` is retained only when the executor was not the natural owner of the
+/// commit result, which is exactly the repair case. Immediate settlement hands
+/// its result to the witness holder instead of copying it.
+///
+/// `closeout` travels with `result` and moves to the same claim: whoever takes
+/// the commit result also takes releasing its published snapshot. If no caller
+/// ever claims it, dropping this record drops the closeout, which closes the
+/// handle rather than leaking it.
+pub(crate) struct SettledRelationalSettlement {
+    pub(crate) receipt: RelationalCommitReceipt,
+    pub(crate) result: Option<Arc<CommitResult>>,
+    pub(crate) closeout:
+        Option<branch::runtime::state::subsystems::visibility::snapshot_handles::published_closeout::PublishedSnapshotCloseout>,
+}
+
+enum PendingRelationalSettlementState {
+    Reserved(Box<ReservedRelationalSettlement>),
+    Performed(Box<PerformedRelationalSettlement>),
+    Executing,
+    Settled(Box<SettledRelationalSettlement>),
+}
+
+/// One runtime-owned pending publication settlement, keyed by the candidate's
+/// owner-issued commit identity.
+///
+/// `execution_gate` is the single-executor gate shared by immediate settlement
+/// and commit-identity repair. It is per-commit and is
+/// deliberately not the registry index lock, which never spans an effect.
+pub struct PendingRelationalPublicationSettlement {
+    commit_id: CommitId,
+    runtime_instance_id: u64,
+    state: Mutex<PendingRelationalSettlementState>,
+    execution_gate: Mutex<()>,
+    abandoned_capabilities: AtomicU64,
+}
+
+/// What the single executor is authorized to do for one claim.
+pub(crate) enum RelationalSettlementClaim {
+    Immediate(Box<PerformedRelationalSettlement>),
+    AlreadySettled(Box<SettledRelationalSettlement>),
+    NotYetPerformed,
+}
+
+/// Proof that its holder is the one executor for this exact record.
+pub(crate) struct RelationalSettlementExecution<'record> {
+    _gate: MutexGuard<'record, ()>,
+}
+
+impl PendingRelationalPublicationSettlement {
+    pub(super) fn install_prepared_indexes(&self) {
+        let mut state = self.state();
+        match &mut *state {
+            PendingRelationalSettlementState::Reserved(reserved) => {
+                reserved.completion.install_prepared_indexes();
+            }
+            PendingRelationalSettlementState::Performed(_)
+            | PendingRelationalSettlementState::Executing
+            | PendingRelationalSettlementState::Settled(_) => {
+                unreachable!("only the linear pre-effect reservation installs its admitted indexes")
+            }
+        }
+    }
+
+    pub(crate) fn reserved(
+        commit_id: CommitId,
+        runtime_instance_id: u64,
+        reserved: ReservedRelationalSettlement,
+    ) -> Self {
+        Self {
+            commit_id,
+            runtime_instance_id,
+            state: Mutex::new(PendingRelationalSettlementState::Reserved(Box::new(
+                reserved,
+            ))),
+            execution_gate: Mutex::new(()),
+            abandoned_capabilities: AtomicU64::new(0),
+        }
+    }
+
+    pub(crate) const fn commit_id(&self) -> CommitId {
+        self.commit_id
+    }
+
+    pub(crate) const fn runtime_instance_id(&self) -> u64 {
+        self.runtime_instance_id
+    }
+
+    /// Whether settlement, which installs the commit's derived state, has run.
+    pub(crate) fn is_settled(&self) -> bool {
+        matches!(*self.state(), PendingRelationalSettlementState::Settled(_))
+    }
+
+    fn state(&self) -> MutexGuard<'_, PendingRelationalSettlementState> {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Enter the single-executor gate. Concurrent immediate settlement and
+    /// repair converge here instead of repeating derived work.
+    pub(crate) fn enter_execution(&self) -> RelationalSettlementExecution<'_> {
+        RelationalSettlementExecution {
+            _gate: self
+                .execution_gate
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        }
+    }
+
+    /// Authorize the already-installed reservation against the exact positioned
+    /// canonical commit produced by movement. Returns false when the record was
+    /// already authorized, which cannot happen for one linearized candidate.
+    pub(crate) fn authorize_performed(
+        &self,
+        positioned: Arc<PositionedCanonicalCommit>,
+        settlement_retention: branch::history::retention::obligation::RelationalPerformedSettlementObligation,
+        late_interruption: Option<
+            contracts::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
+    ) -> bool {
+        let mut state = self.state();
+        if !matches!(&*state, PendingRelationalSettlementState::Reserved(_)) {
+            return false;
+        }
+        let PendingRelationalSettlementState::Reserved(reserved) =
+            std::mem::replace(&mut *state, PendingRelationalSettlementState::Executing)
+        else {
+            unreachable!(
+                /* Proof: The immediately preceding match observes Reserved under this same exclusive record guard; no other writer can change the record before this match. */
+                "reserved settlement was observed immediately above"
+            );
+        };
+        *state =
+            PendingRelationalSettlementState::Performed(Box::new(PerformedRelationalSettlement {
+                completion: reserved.completion,
+                published_snapshot_basis: reserved.published_snapshot_basis,
+                control: reserved.control,
+                positioned,
+                envelope_cell: reserved.envelope_cell,
+                settlement_retention,
+                late_interruption,
+            }));
+        true
+    }
+
+    /// Take the outstanding work. The caller proves single execution by holding
+    /// the gate, so no second executor can observe the same work.
+    pub(crate) fn claim(
+        &self,
+        _execution: &RelationalSettlementExecution<'_>,
+    ) -> RelationalSettlementClaim {
+        let mut state = self.state();
+        match std::mem::replace(&mut *state, PendingRelationalSettlementState::Executing) {
+            PendingRelationalSettlementState::Reserved(reserved) => {
+                *state = PendingRelationalSettlementState::Reserved(reserved);
+                RelationalSettlementClaim::NotYetPerformed
+            }
+            PendingRelationalSettlementState::Performed(performed) => {
+                RelationalSettlementClaim::Immediate(performed)
+            }
+            PendingRelationalSettlementState::Settled(mut settled) => {
+                // The terminal answer stays; the one commit result and its
+                // published-snapshot closeout transfer to this single claimant.
+                let claimed = SettledRelationalSettlement {
+                    receipt: settled.receipt.clone(),
+                    result: settled.result.take(),
+                    closeout: settled.closeout.take(),
+                };
+                *state = PendingRelationalSettlementState::Settled(settled);
+                RelationalSettlementClaim::AlreadySettled(Box::new(claimed))
+            }
+            PendingRelationalSettlementState::Executing => {
+                unreachable!(
+                    /* Proof: The exclusive settlement executor gate permits one in-flight claim; this branch runs under that gate after checking the same record. */
+                    "the executor gate excludes a second in-flight claim"
+                )
+            }
+        }
+    }
+
+    /// Terminal settlement. Recording the one answer here is what lets a
+    /// repeated or concurrent caller return it without another effect.
+    pub(crate) fn record_settled(
+        &self,
+        receipt: RelationalCommitReceipt,
+        result: Option<Arc<CommitResult>>,
+        closeout: Option<branch::runtime::state::subsystems::visibility::snapshot_handles::published_closeout::PublishedSnapshotCloseout>,
+    ) {
+        *self.state() =
+            PendingRelationalSettlementState::Settled(Box::new(SettledRelationalSettlement {
+                receipt,
+                result,
+                closeout,
+            }));
+    }
+
+    /// Dropping `PerformedRelationalCommit` records abandonment only. It may
+    /// not release the obligation, mark the route settled, remove this record,
+    /// or make repair unavailable.
+    pub(crate) fn record_capability_abandonment(&self) {
+        self.abandoned_capabilities.fetch_add(1, Ordering::Relaxed);
+    }
+
+    #[doc(hidden)]
+    pub fn abandoned_capability_count_for_test(&self) -> u64 {
+        self.abandoned_capabilities.load(Ordering::Relaxed)
+    }
+}
+
+impl std::fmt::Debug for PendingRelationalPublicationSettlement {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("PendingRelationalPublicationSettlement")
+            .field("commit_id", &self.commit_id)
+            .field("runtime_instance_id", &self.runtime_instance_id)
+            .finish_non_exhaustive()
+    }
+}

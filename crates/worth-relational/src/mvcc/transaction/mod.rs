@@ -1,25 +1,34 @@
 mod coupled_field_restaging;
 pub use staged_mutations::RelationalTransactionStagedMutations;
-pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::{
-    effective_records, footprint, index_row, intent, normalized_plan, overlay, read_projection,
-    reconstructed_merge_plan, staged_mutations, staged_plan_normalization, staging_storage,
-};
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::effective_records;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::footprint;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::index_row;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::intent;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::normalized_plan;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::overlay;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::read_projection;
+#[cfg(test)]
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::reconstructed_merge_plan;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staged_mutations;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staged_plan_normalization;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::transaction::staging_storage;
 mod admission;
 mod bound;
 mod commit;
 pub(crate) mod commit_plan;
 mod coupled_batch;
 mod inspection;
-pub(crate) mod staged_plan;
 pub(crate) use normalized_plan::OwnedNormalizedPlan;
 #[cfg(test)]
 pub(crate) use reconstructed_merge_plan::OwnedMergePlan;
+pub(crate) use worth_relational_publication::internal_port::mvcc::transaction::{
+    prepared_change_summary, staged_plan,
+};
 mod overlay_normalization;
 mod plan_preparation;
 mod planning;
 mod preparation_port;
 mod preparation_round;
-mod prepared_change_summary;
 mod read_view;
 mod region_demand;
 mod request_custody;

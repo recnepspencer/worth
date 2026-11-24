@@ -1,3 +1,4 @@
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use super::fixtures::*;

@@ -1,4 +1,5 @@
 //! Consume the publication body phase at the bound transaction.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::publication_appendix::RelationalPublicationBodySelectionOwnerPort as _;
 use crate::mvcc::{
     RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
     RelationalPublicationBodySelection,

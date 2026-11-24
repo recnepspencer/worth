@@ -1,4 +1,7 @@
 //! Exact participant completion is sealed before the one final invariant judgment.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::completion::RelationalCoupledAuthoredPublicationOwnerPort as _;
+
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailureFieldsPort as _;
 use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use super::*;
 use crate::authority::mutation::MutationApplyDenial;
@@ -43,11 +46,11 @@ pub(crate) fn prepare_coupled_candidate(
             owned_symbols,
             &transaction.content,
         )?;
-    if let Some(restoration) = binding.owners.source.restoration() {
+    if let Some(restoration) = binding.owners.source().restoration() {
         execution
             .run_native_with_checkpoint(|context| {
                 crate::history::data::validate_authored_restoration_candidate(
-                    &binding.owners.before,
+                    binding.owners.before(),
                     &mutation.state,
                     &mutation.outcome.created_entities,
                     &mutation.outcome.created_relations,
@@ -78,13 +81,13 @@ pub(crate) fn prepare_coupled_candidate(
     fresh_records.retain(
         execution,
         crate::publication::data::CoupledFreshWriter::Authored,
-        binding.owners.source.subject(),
+        binding.owners.source().subject(),
         &mutation.outcome,
     )?;
     let mut authored_writes = authored_writes::AuthoredWrites::default();
     authored_writes
         .retain(execution, 0, authored_commands.plan(), &authored_records)
-        .map_err(|failure| failure.cause)?;
+        .map_err(|failure| failure.into_cause())?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         input_issuance: std::cell::RefCell::new(None),
         runtime: &runtime,
@@ -107,7 +110,7 @@ pub(crate) fn prepare_coupled_candidate(
     );
     if assembly
         .assemble(execution, &mut candidate)
-        .map_err(|failure| failure.cause)?
+        .map_err(|failure| failure.into_cause())?
         .is_break()
     {
         crate::execution::phase_observation::symbol_preparation_event(
@@ -181,16 +184,16 @@ pub(crate) fn prepare_coupled_candidate(
         inputs: Default::default(),
         installed: binding.installed.clone(),
         publication: RequiredOutputPublication::CoupledAuthored {
-            group: RelationalCoupledAuthoredPublication {
-                binding: Arc::clone(&binding),
+            group: RelationalCoupledAuthoredPublication::from_completed_group(
+                Arc::clone(&binding),
                 source_effects,
                 authored_records,
                 authored_prefix_records,
                 authored_commands,
                 parts,
                 stages,
-                _authored_records_memory: authored_records_memory,
-            },
+                authored_records_memory,
+            ),
         },
     });
     // The ordinary call below receives the complete actual symbol reservation

@@ -1,6 +1,6 @@
 mod diagnostic_projection;
 pub(crate) mod failure_diagnostics;
-pub(crate) mod preparation_diagnostics;
+pub(crate) use worth_relational_publication::internal_port::validation::invariant_authority::preparation_diagnostics;
 
 use crate::publication::bundle::PublicationStage;
 use crate::runtime::RelationalRuntime;

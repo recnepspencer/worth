@@ -1,4 +1,3 @@
-pub(crate) use worth_relational_durability::internal_port::storage::residency::region_load;
 pub use worth_relational_storage::internal_port::storage::residency::history_capture_bound;
 #[cfg(test)]
 pub(crate) use worth_relational_storage::internal_port::storage::residency::probe::probe_full_sources;

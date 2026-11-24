@@ -4,8 +4,7 @@ use super::*;
 use crate::validation::candidate_source::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
-mod assessment;
-mod relevance;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::managed_source_alignment::assessment;
 pub use super::parent_read_footprint::ManagedIndexParentReadFootprint;
 
 impl RelationalAuthoredCoupledCandidate<'_> {

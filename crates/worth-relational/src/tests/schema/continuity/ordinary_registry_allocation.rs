@@ -27,8 +27,7 @@ fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scal
         )
         .expect("ordinary continuity resolves from the admitted branch root");
         let carried_registry = plan
-            .target_schema_registry
-            .as_ref()
+            .target_schema_registry()
             .expect("ordinary continuity carries its exact registry");
         assert!(
             prior_registry.same_allocation_for_test(carried_registry),

@@ -292,9 +292,6 @@ impl crate::capabilities::AspectPlanSource for RelationalPreparationRuntime {
 #[path = "preparation_runtime_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
 
-#[path = "preparation_runtime/mirror_publication.rs"]
-pub(crate) mod mirror_publication;
-
 #[path = "preparation_runtime/working_state.rs"]
 mod working_state;
 

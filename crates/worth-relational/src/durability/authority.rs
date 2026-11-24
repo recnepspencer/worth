@@ -21,7 +21,6 @@ pub use recovered_publication::{
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
     RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
-pub(crate) use recovery::versioned_artifact::install_recovered_versioned_artifact;
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub use recovery::{
     PreparedRelationalHomeRecovery, ReadmittedRelationalAssociatedFork,

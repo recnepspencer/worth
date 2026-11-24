@@ -13,7 +13,7 @@ mod associated_branch_transitions;
 pub(crate) mod catalog_readmission;
 mod fork_effect;
 pub(crate) use worth_relational_durability::internal_port::durability::authority::recovery::{
-    admission, declared_schema, versioned_artifact,
+    admission, declared_schema,
 };
 pub(crate) mod codec_transition;
 pub(crate) mod home_program_transition;

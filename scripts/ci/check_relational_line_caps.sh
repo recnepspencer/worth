@@ -30,6 +30,7 @@ done < <(find \
   crates/worth-relational-merge/src \
   crates/worth-relational-mutation/src \
   crates/worth-relational-durability/src \
+  crates/worth-relational-publication/src \
   -type f -name '*.rs' | sort)
 
 if (( violations != 0 )); then

@@ -1,10 +1,9 @@
 pub use worth_relational_storage::internal_port::storage::changed_record_retention;
-pub use worth_relational_storage::internal_port::storage::mirror_plan;
-pub use worth_relational_storage::internal_port::storage::mirror_publication;
 pub use worth_relational_storage::internal_port::storage::overlay;
 pub use worth_relational_storage::internal_port::storage::partition;
 pub use worth_relational_storage::internal_port::storage::record_retention;
 pub use worth_relational_storage::internal_port::storage::substrate;
+#[cfg(test)]
 pub use worth_relational_storage::internal_port::storage::*;
 pub(crate) mod access;
 pub(crate) mod authority;

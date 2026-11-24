@@ -58,7 +58,7 @@ fn memory_terminal_close_publication_registry_contention_preserves_admission() {
     let mut close = RelationalRuntimeHandle::immutable(Arc::new(runtime))
         .into_memory_close()
         .unwrap();
-    publication.while_empty_candidate_registry_locked(|| {
+    publication.while_empty_candidate_registry_locked_for_test(|| {
         assert!(matches!(close.advance(request), O::Busy));
         drop(
             binding

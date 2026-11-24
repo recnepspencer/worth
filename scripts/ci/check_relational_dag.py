@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet source dependencies across Relational's physical and virtual owners."""
+"""Ratchet source dependencies across the ten Relational packages."""
 import argparse
 from collections import Counter, defaultdict
 import json
@@ -20,6 +20,10 @@ BASELINE = Path('scripts/ci/relational_split_baseline.json')
 PROJECTIONS = ('production_explicit', 'production_resolved', 'inherent_impl', 'cfg_test')
 TESTKIT = 'testkit'
 TEST_PATHS = {('tests',), ('presentation', 'harness'), ('test_execution_policy',)}
+EXTRACTED = {
+    'contracts', 'storage', 'branch', 'lineage', 'mutation', 'merge',
+    'indexes', 'durability', 'publication',
+}
 
 
 def prefixes(path):
@@ -316,6 +320,19 @@ def ordinary_storage_totals(projection, directions):
     return counts
 
 
+def check_partition(audit, baseline):
+    """Require the completed package cut and its three in-crate boundaries."""
+    if set(audit.map.physical.values()) != EXTRACTED:
+        raise ValueError('expected all nine extracted Relational owners')
+    if set(audit.map.owners) != EXTRACTED | {'runtime'}:
+        raise ValueError('expected exactly ten Relational owners')
+    if set(audit.map.boundaries) != {'branch', 'mutation', 'durability'}:
+        raise ValueError('expected the Branch, Mutation, and Durability internal boundaries')
+    mutation_probe = audit.root / baseline['probe_3_live_mutation_source']
+    if audit.file_owners.get(mutation_probe) != 'mutation':
+        raise ValueError('the live mutation probe must stay in the Mutation package')
+
+
 def compare(directions, ceilings, rows):
     """Each direction and each named reference can only shrink."""
     failures = []
@@ -339,6 +356,7 @@ def main():
         config = tomllib.loads((args.root / CONFIG).read_text())
         baseline = json.loads((args.root / BASELINE).read_text())
         audit = Audit(args.root, config)
+        check_partition(audit, baseline)
         failures = facade_failures(audit, baseline)
         audit.scan()
         failures.extend(check_owner_sizes(audit, args.root / SOURCE.parent / 'examples'))

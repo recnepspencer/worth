@@ -33,6 +33,10 @@
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/custom_invariant_managed_source.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/associated_effects.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/recovered_publication.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/commit_result.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/pinned_read.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/caller_association.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/predecessor_basis.md"))]
 
 pub(crate) use worth_relational_branch::internal_port::{query, schema, snapshots, symbols};
 #[cfg(test)]

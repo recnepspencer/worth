@@ -1,3 +1,4 @@
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::query_plan_execution::RelationalPinnedReadOwnerPort as _;
 use super::context::VisibilityReadContext;
 use super::pin_denial::RelationalPinnedReadAdmissionDenial;
 use super::query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop};

@@ -1,4 +1,6 @@
 //! Complete publication position survives total membership replacement.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_for_test, native_roles_for_test,
@@ -31,7 +33,7 @@ fn completion(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("retirement-preserver", [dependency; 32]),

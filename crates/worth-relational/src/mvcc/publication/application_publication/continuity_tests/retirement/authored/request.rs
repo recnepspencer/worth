@@ -1,4 +1,8 @@
 //! Both retirement readmission checkpoints retain the original cancellation.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_cascade::RelationalAuthoredRetirementFixturePort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_cascade::RelationalAuthoredRetirementFieldsPort as _;
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
 use crate::authority::commit::pipeline::{stage_observation as observation, CommitStage};
 use crate::mvcc::publication::application_publication::meaning_fixture::native_roles_for_test;
@@ -25,7 +29,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
     );
     let original_execution = &ExecutionRequest::serial(&original);
     let cancel = cancellation.clone();
-    let denied = observation::with_observer(
+    let denied = observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Admission {
                 cancel.cancel();
@@ -59,7 +63,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
     )
     .unwrap();
     let publication = retired.required_output_publication(&installed).unwrap();
-    let meaning = &publication.origin.as_ref().meaning;
+    let meaning = &publication.origin().as_ref().meaning;
     release_test_commit_snapshot(&runtime, &retired);
     let basis = test_owner_main_basis(&runtime).unwrap();
     let cancellation = worth_execution::CancellationSource::new();
@@ -70,7 +74,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
     );
     let original_execution = &ExecutionRequest::serial(&original);
     let cancel = cancellation.clone();
-    let denied = observation::with_observer(
+    let denied = observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Admission {
                 cancel.cancel();
@@ -95,7 +99,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
         .readmit_native_output_transition_successor(execution, &installed, &basis, meaning)
         .unwrap()
         .unwrap();
-    assert_eq!(successor.origin.commit, publication.origin.commit);
+    assert_eq!(successor.origin().commit, publication.origin().commit);
     assert_eq!(
         test_owner_main_basis(&runtime).unwrap().descriptor(),
         basis.descriptor()
@@ -169,7 +173,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
             .unwrap();
         let mut tampered: crate::history::data::CanonicalRequiredOutputOrigin =
             rmp_serde::from_slice(
-                &rmp_serde::to_vec(selected.publications[0].origin.as_ref()).unwrap(),
+                &rmp_serde::to_vec(selected.publications()[0].origin().as_ref()).unwrap(),
             )
             .unwrap();
         let corrupt_subject = if change_origin {
@@ -182,7 +186,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
         } else {
             tampered.members[0].entity_name = "invented-member-family".into();
         }
-        selected.publications[0].origin = std::sync::Arc::new(tampered);
+        selected.replace_selected_origin_for_test(0, std::sync::Arc::new(tampered));
         let admission = owner
             .admit_authored_output_retirements(selected.authorities())
             .unwrap();

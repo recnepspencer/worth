@@ -1,4 +1,6 @@
 //! Real producer ownership must survive exact subset materialization maintenance.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
 use crate::branch::materialization::RelationalEntityMaterialization;
 use crate::branch::materialization::RelationalRelationMaterialization;
@@ -262,7 +264,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         .unwrap(),
         Some(crate::history::data::RequiredOutputRoutePosition::Published(original_commit))
     );
-    let origin = cold.origin.as_ref();
+    let origin = cold.origin().as_ref();
     assert_eq!(origin.birth, original_commit);
     assert_eq!(origin.birth_producer, "native-creator");
     assert_eq!(origin.producer, "native-creator");

@@ -2,7 +2,7 @@
 use super::super::{
     CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
 };
-use super::guard_fault::{self, Door};
+use super::guard_fault::Door;
 use super::*;
 use crate::publication::close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
@@ -33,7 +33,7 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
     let registry = port.publication.companion_registry();
     let pending = port.begin_required_registration().unwrap();
     if door == Door::Activate {
-        guard_fault::arm(door);
+        registry.arm_guard_fault_for_test(door);
         catch(|| {
             pending.activate(Arc::new(Unindexed)).unwrap();
         });
@@ -50,7 +50,7 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
         return;
     }
     let mut registration = pending.activate(Arc::new(Unindexed)).unwrap();
-    guard_fault::arm(door);
+    registry.arm_guard_fault_for_test(door);
     catch(|| match door {
         Door::Fork => {
             registry.fork();

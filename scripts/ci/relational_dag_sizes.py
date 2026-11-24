@@ -22,7 +22,7 @@ def check_owner_sizes(audit, examples):
     for owner, budget in audit.map.owners.items():
         actual, prod = total[owner], production[owner]
         floor, cap = budget['floor'], budget['cap']
-        placement = 'physical' if budget.get('physical') else 'virtual'
+        placement = 'physical' if budget.get('physical') or owner == 'runtime' else 'virtual'
         print(f'{owner:<12} {placement:>10} {actual:>11,} {prod:>11,} {floor:>11,} {cap:>11,}')
         if prod < floor or actual > cap:
             failures.append(f'{owner} must meet its production floor and total cap')

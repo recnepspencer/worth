@@ -1,4 +1,6 @@
 //! Relation custody follows its producer even when only its other endpoint suspends.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_for_test, native_roles_for_test,
@@ -183,7 +185,7 @@ fn run(replace_endpoint: bool) {
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
             );
-        assert_eq!(cold.origin.as_ref().birth, birth);
+        assert_eq!(cold.origin().as_ref().birth, birth);
     }
 }
 
@@ -282,7 +284,7 @@ fn replace_birth_endpoint(
             &native_roles_for_test(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
         )
         .expect("the later complete publication is valid before materialization");
-    assert_eq!(cold.origin.commit.commit_id, current.commit.commit_id);
+    assert_eq!(cold.origin().commit.commit_id, current.commit.commit_id);
     joined
 }
 
@@ -292,7 +294,7 @@ fn complete(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("group-a-current", [dependency; 32]),

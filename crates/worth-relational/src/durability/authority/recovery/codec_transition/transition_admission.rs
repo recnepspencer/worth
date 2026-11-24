@@ -20,6 +20,10 @@ use crate::{
 };
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::{
+    RelationalInstalledApplicationPublicationAuthorityFieldsPort as _,
+    RelationalInstalledApplicationPublicationAuthorityOwnerPort as _,
+};
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Bind a source publisher occurrence to the exact recovered image. Target
@@ -96,13 +100,13 @@ impl DurabilityRecoveryAuthority<'_> {
         let source_authority = basis.owner_inner().root.schema_authority();
         let source = source_authority.registry();
         let target = &state.target_registry;
-        if installed.runtime_instance_id != self.runtime.runtime_instance_id()
-            || installed.custom_invariant_generation
+        if installed.runtime_instance_id() != self.runtime.runtime_instance_id()
+            || installed.custom_invariant_generation()
                 != self
                     .runtime
                     .schema_contract_runtime
                     .custom_invariant_generation
-            || installed.schema_digest
+            || installed.schema_digest()
                 != crate::schema::data::schema_authority_snapshot_digest_bytes(
                     &source.authority_snapshot(),
                 )

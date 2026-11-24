@@ -1,4 +1,5 @@
 //! Real native partial/no-data completion and intervening-writer refusal.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::mvcc::publication::application_publication::meaning_fixture::{
@@ -46,7 +47,7 @@ fn preserve(
             previous.authority(),
         )
         .unwrap();
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     RequiredOutputPublication::Preserve {
         admission,
         predecessor: previous,
@@ -186,7 +187,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         )
         .unwrap();
     assert_eq!(
-        cold.origin.commit.commit_id, no_data_id,
+        cold.origin().commit.commit_id,
+        no_data_id,
         "membership wins over two different latest member writes"
     );
     for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {

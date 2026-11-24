@@ -1,4 +1,5 @@
 use crate::tests::support::*;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 #[test]
 fn publication_port_denies_candidate_after_owner_drop() {

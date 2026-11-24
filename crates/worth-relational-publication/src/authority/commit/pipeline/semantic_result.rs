@@ -1,0 +1,110 @@
+//! The single original semantic producer; no publication or measured work is recorded.
+use contracts::transactions::data::commit_log::CommitLog;
+use contracts::transactions::data::outcomes::commit_semantic_result::assemble_commit_semantic_result;
+use contracts::transactions::data::outcomes::commit_semantic_result::RelationalCommitPublicationMeaning;
+use contracts::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
+use contracts::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultParts;
+use contracts::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal as Refusal;
+use contracts::transactions::data::outcomes::commit_semantic_result::RelationalCommitStructuralMeaning;
+use contracts::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
+use contracts::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
+use contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use contracts::transactions::data::primitives::RecordRef;
+use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody;
+use worth_relational_contracts::internal_port as contracts;
+use worth_relational_mutation::internal_port::validation::engine::result::InvariantExecutionResult;
+use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+
+pub(super) struct SemanticResultInput<'a> {
+    pub(super) structural: &'a CommitStructuralSummary,
+    pub(super) validation: &'a [InvariantExecutionResult],
+    pub(super) entities: &'a CommitCreatedEntityBindings,
+    pub(super) relations: &'a CommitCreatedRelationBindings,
+    pub(super) log: &'a CommitLog,
+    pub(super) changed: &'a [RecordRef],
+    pub(super) envelope: &'a CanonicalCommitEnvelopeBody,
+}
+
+pub(super) fn prepare_semantic_result(
+    symbols: &RuntimeSymbolTable,
+    input: SemanticResultInput<'_>,
+) -> Result<Arc<RelationalCommitSemanticResult>, TransactionCommitError> {
+    let denied = |refusal| {
+        contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+            "original semantic result: {refusal:?}"
+        ))
+    };
+    let original = input.log.summary();
+    let history = original
+        .history_summary
+        .clone()
+        .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
+    let change = original
+        .change_summary
+        .clone()
+        .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
+    let aspects = original
+        .aspect_summary
+        .clone()
+        .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
+    let publication = original
+        .publication_summary
+        .as_ref()
+        .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
+    let (created_entities, created_relations, validation) = symbols.with_read(|symbols| {
+            let entities = input.entities.canonical_meaning(symbols)?;
+            // Borrow a single reverse index of the genuine allocation roster. Each
+            // relation endpoint pays one lookup, rather than rescanning all creates.
+            let by_id = entities
+                .iter()
+                .map(|entry| (entry.assigned, &entry.key))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let relations = input.relations.canonical_meaning(symbols, &by_id)?;
+            let validation = input
+                .validation
+                .iter()
+                .map(|execution| {
+                    worth_relational_mutation::internal_port::transactions::data::outcomes::commit_semantic_result::validation::production::from_original(
+                        execution, symbols,
+                    )
+                })
+                .collect::<Result<Vec<_>, Refusal>>()?;
+            Ok::<_, Refusal>((entities, relations, validation))
+        })
+        .map_err(denied)?;
+    Ok(Arc::new(assemble_commit_semantic_result(
+        RelationalCommitSemanticResultParts {
+            decoded_memory: None,
+            receipt: input.envelope.commit.clone(),
+            created_entities,
+            created_relations,
+            changed_records: input.changed.to_vec(),
+            structural: RelationalCommitStructuralMeaning {
+                invariant_groups: input.structural.invariant_groups,
+                commit_topology: input.structural.commit_topology,
+                touched_partitions: input.structural.touched_partitions.clone(),
+                descriptor_semantics_version: input.structural.descriptor_semantics_version,
+            },
+            schema: CommitSchemaSummary {
+                transition: input
+                    .envelope
+                    .schema_transition
+                    .as_ref()
+                    .map(contracts::schema::data::continuity::transition_plans::SchemaTransitionSummary::from_artifact),
+                descriptor_semantics_version: input.envelope.descriptor_semantics_version,
+            },
+            history,
+            change,
+            aspects,
+            publication: RelationalCommitPublicationMeaning {
+                patch_record_count: input.envelope.patch.authoritative_record_patches.len(),
+                lineage_event_count: publication.lineage_event_count,
+                merge_parent_count: publication.merge_parent_count,
+            },
+            validation,
+        },
+    )))
+}

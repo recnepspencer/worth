@@ -1,4 +1,5 @@
 //! Admit and apply one authenticated surviving writer's own successor commands.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
 use super::chain::Chain;
 pub(super) use super::refusals::{reject, reject_extra_owner};
 use super::*;

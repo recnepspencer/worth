@@ -1,17 +1,22 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::indexes::data::*;
 use crate::snapshots::data::SnapshotHandle;
-pub(crate) use applied_field::AppliedFieldImage;
-pub(crate) use candidate_publication::PreparedCandidateIndexPublication;
 pub(crate) use fork_selection::PreparedForkIndexSelection;
 use publication::PreparedRefresh;
 use work::MaintenanceWork;
 mod admission;
-pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::{
-    applied_field, basis, candidate_publication, currency_selection, field_refresh, field_request,
-    fork_selection, owner, publication, reconstruction_projection, recovery_catalog,
-    request_payment, root_view, work,
-};
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::basis;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::currency_selection;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::field_refresh;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::field_request;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::fork_selection;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::owner;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::publication;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::reconstruction_projection;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::recovery_catalog;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::request_payment;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::root_view;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::work;
 mod basis_currency;
 mod live_binding;
 mod live_refresh;

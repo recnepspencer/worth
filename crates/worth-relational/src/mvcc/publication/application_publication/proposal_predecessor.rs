@@ -1,4 +1,8 @@
 //! Read the predecessor already bound by proposal admission.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::completion::RelationalCoupledAuthoredPublicationFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::completion::RequiredOutputPublicationOwnerPort as _;
 use super::*;
 use worth_execution::ExecutionRequest;
 
@@ -17,7 +21,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
         ) -> Option<&'a RelationalRequiredOutputPublication> {
             match publication {
                 RequiredOutputPublication::Preserve { predecessor, .. }
-                    if predecessor.origin.source_scope_owned
+                    if predecessor.origin().source_scope_owned
                         && publication.lineage_attribution() == Some((producer, *dependency)) =>
                 {
                     Some(predecessor)
@@ -37,7 +41,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 return Ok(Some(predecessor.clone()));
             }
             if let RequiredOutputPublication::CoupledAuthored { group } = publication {
-                for part in &group.parts {
+                for part in group.parts() {
                     if let Some(publication) = part.publication.owned()
                         && let Some(prior) = select(publication, producer, dependency, context)?
                     {

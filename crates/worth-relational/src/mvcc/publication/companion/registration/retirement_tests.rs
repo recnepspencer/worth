@@ -7,9 +7,7 @@ use std::sync::{
 };
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 
-#[path = "retirement_participant.rs"]
-mod participant;
-use participant::Participant;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::companion::registration::retirement_participant::Participant;
 
 fn install(
     port: &PublicationCompanionRegistrationPort,
@@ -23,10 +21,10 @@ fn install(
     let registration = port
         .begin_required_registration()
         .unwrap()
-        .activate(Arc::new(Participant {
-            drops: Arc::clone(&drops),
-            prepares: Arc::clone(&prepares),
-        }))
+        .activate(Arc::new(Participant::reclamation_observer_for_test(
+            Arc::clone(&drops),
+            Arc::clone(&prepares),
+        )))
         .unwrap();
     (registration, drops, prepares)
 }
@@ -64,10 +62,8 @@ fn original_epoch_refusal_retries_without_callback_or_participant_destruction() 
         epoch.active(),
         Err(PublicationCompanionRegistrationStop::RebindRequired)
     ));
-    assert!(
-        matches!(&*epoch.state, CompanionRegistrationState::RequiredRebind { generation: actual } if *actual == generation)
-    );
-    assert!(!epoch.has_live_close_client());
+    assert_eq!(epoch.rebind_generation_for_test(), Some(generation));
+    assert!(!epoch.has_live_close_client_for_test());
     drop(epoch);
     assert_eq!(prepares.load(Ordering::SeqCst), 0);
     assert_eq!(drops.load(Ordering::SeqCst), 0);
@@ -184,9 +180,7 @@ fn exact_cleanup_after_owner_stop_retains_original_payload_until_reclaim() {
         .try_retire_required_for_request(registration, &request)
         .unwrap();
     let epoch = port.publication.companion_registry().enter().unwrap();
-    assert!(
-        matches!(&*epoch.state, CompanionRegistrationState::RequiredRebind { generation: actual } if *actual == generation)
-    );
+    assert_eq!(epoch.rebind_generation_for_test(), Some(generation));
     assert!(matches!(
         epoch.active(),
         Err(PublicationCompanionRegistrationStop::RebindRequired)

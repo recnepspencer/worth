@@ -23,14 +23,15 @@ mod preparation_home_contracts;
 mod preparation_round;
 pub(crate) mod preparation_runtime;
 mod prepared_close;
-pub(crate) mod publication_lifecycle;
+pub(crate) use worth_relational_publication::internal_port::runtime::state::runtime_state::{
+    publication_lifecycle, publication_settlement_registry,
+};
 mod record_allocation_frontier;
 mod runtime_court_doors_for_test;
 pub use crate::publication::close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,
 };
-pub(crate) mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
 mod test_support;

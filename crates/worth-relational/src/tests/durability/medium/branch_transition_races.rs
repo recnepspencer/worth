@@ -1,6 +1,7 @@
 //! D8 publishers obey branch-before-reservation ordering in both runtime modes.
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 use super::slow_publication::{PublicationGate, SlowFirstPublication};
 use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;

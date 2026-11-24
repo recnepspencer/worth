@@ -3,10 +3,8 @@ pub use applied_entity_field_lookup::{
 };
 pub use pinning::BoundedEntityFieldLookupRead;
 pub(crate) use worth_relational_indexes::internal_port::indexes::access::{
-    applied_entity_field_lookup, bounded_entity_field_lookup,
-    bounded_related_entity_ordered_lookup, bounded_relation_join_lookup, definition_lookup,
-    pinned_entity_field_lookup, prepared_entity_field_lookup, related_entity_prefix,
-    selected_index,
+    applied_entity_field_lookup, bounded_related_entity_ordered_lookup, definition_lookup,
+    prepared_entity_field_lookup, selected_index,
 };
 mod selected_entity_field_lookup;
 pub use selected_entity_field_lookup::BoundedEntityFieldSelectedLookup;

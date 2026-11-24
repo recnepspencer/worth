@@ -255,7 +255,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     let registry = cad_scheme_registry();
     let (mut staged, f1, f2, s1, s2, c1_changed, c1_input) = seed_two_faces_and_parallel_seams();
     let c1 = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged,
             &receipt_at(1, 1),
@@ -309,7 +309,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     // Spoof/omission proof: empty caller live_holders cannot bypass DuplicateBirth.
     let dup_e = super::posture_fixtures::push_entity(&mut staged, VersionId(2));
     let spoof = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged,
             &receipt_at(2, 2),
@@ -338,7 +338,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     ));
     assert_eq!(prep.lineage_identity.frontiers(), before);
     let err = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged,
             &receipt_at(2, 2),
@@ -381,7 +381,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         [s1_a, s1_b],
     );
     let c2 = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged,
             &receipt_at(2, 2),

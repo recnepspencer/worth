@@ -42,6 +42,11 @@ permission to choose it.
 
 ## Stable public entry points
 
+Branch owns reference and immutable-root custody. Publication owns candidate
+preparation, publication records, and settlement. Runtime binds those owners to
+the installed branch and request. These roles follow the
+[Relational package graph](../../docs/relational-maintenance.md#relational-package-graph).
+
 Import through `worth_relational::facade`:
 
 - `branch` owns identities, descriptors, admitted bases, the fork service, fork

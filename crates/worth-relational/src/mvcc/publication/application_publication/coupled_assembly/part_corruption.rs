@@ -1,4 +1,6 @@
 //! Corrupt only a real Query-prepared participant at this Native receiver.
+
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFixturePort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
@@ -49,7 +51,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let registry = self
                 .binding
                 .owners
-                .before
+                .before()
                 .owner_inner()
                 .root
                 .schema_authority()
@@ -72,8 +74,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             };
             let foreign = worth_proof::InstalledApplicationPublicationOwner::fresh();
             let admission = foreign.admit_required_output(
-                predecessor.origin.producer.clone(),
-                *predecessor.origin.dependency_identity.bytes(),
+                predecessor.origin().producer.clone(),
+                *predecessor.origin().dependency_identity.bytes(),
             );
             publication = RequiredOutputPublication::Birth {
                 admission,
@@ -82,7 +84,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 roles,
             };
         } else if let RequiredOutputPublication::Preserve { predecessor, .. } = &mut publication {
-            let subject = predecessor.origin.meaning.source_scope;
+            let subject = predecessor.origin().meaning.source_scope;
             let missing = || {
                 part::reject(
                     crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
@@ -90,7 +92,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 )
             };
             let older = predecessor
-                .origin
+                .origin()
                 .publication
                 .predecessor()
                 .ok_or_else(missing)?;
@@ -105,7 +107,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     envelope
                         .validate_output_origins(context)
                         .and_then(|origins| {
-                            origins.output_origin_for_route(&predecessor.origin.meaning, context)
+                            origins.output_origin_for_route(&predecessor.origin().meaning, context)
                         })
                         .map(Arc::clone)
                         .map_err(|stop| match stop {
@@ -117,9 +119,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 })
                 .map_err(custody::execution_stop)?
                 .0?;
-            predecessor.origin = origin;
-            predecessor.evidence =
-                crate::publication::ownership::PublicationEvidence::Canonical(envelope);
+            predecessor.replace_recorded_custody_for_test(origin, envelope);
         }
         self.append_publication(
             execution,

@@ -1,6 +1,6 @@
-# Extracted packages and virtual owners remaining under crates/worth-relational/src.
+# Extracted packages and the Runtime and court sources under crates/worth-relational/src.
 # Longest path wins. A module prefix matches both name.rs and name/.
-# Stage 2 splits mixed source in place. Court seeds carry no production crate.
+# Court seeds are counted separately from production owners.
 court_seed = "courts"
 
 [owners.contracts]
@@ -68,6 +68,7 @@ floor = 45400
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes"]
 
 [owners.publication]
+physical = true
 crate = "worth-relational-publication"
 layer = 5
 cap = 60000
@@ -82,6 +83,24 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"authority/commit/mod.rs" = "runtime"
+"authority/commit/pipeline/mod.rs" = "runtime"
+"authority/commit/preparation/mod.rs" = "runtime"
+"authority/commit/preparation/reduction/merge.rs" = "runtime"
+"authority/commit/preparation/reduction/mod.rs" = "runtime"
+"lineage/mod.rs" = "runtime"
+"mvcc/publication/application_publication.rs" = "runtime"
+"mvcc/publication/companion/cell.rs" = "runtime"
+"mvcc/publication/companion/cell/managed_source.rs" = "runtime"
+"mvcc/publication/companion/mod.rs" = "runtime"
+"mvcc/publication/companion/registration.rs" = "runtime"
+"mvcc/publication/mod.rs" = "runtime"
+"runtime/state/subsystems/canonical_publication_routes.rs" = "runtime"
+"runtime/state/subsystems/canonical_publication_routes/branch_transition_stream.rs" = "runtime"
+"runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs.rs" = "runtime"
+"visibility/materialization/read_records/mod.rs" = "runtime"
+"visibility/materialization/read_records/reader/mod.rs" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read.rs" = "runtime"
 "durability/authority.rs" = "runtime"
 "durability/authority/associated_effects.rs" = "runtime"
 "durability/authority/checkpoint_capture.rs" = "runtime"
@@ -143,10 +162,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/commit/envelope_residency.rs" = "runtime"
 "history/commit/mod.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding.rs" = "runtime"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin.rs" = "publication"
 "history/data/canonical_commit_envelope.rs" = "runtime"
 "history/data/codec_retirement_closure/authored_restoration.rs" = "runtime"
 "history/data/codec_retirement_closure.rs" = "runtime"
@@ -180,7 +195,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/authority/runtime_rebuild/envelope_replay.rs" = "runtime"
 "durability/authority/runtime_rebuild/envelope_replay/committed_artifacts.rs" = "runtime"
 "durability/authority/runtime_rebuild/envelope_replay/effect.rs" = "runtime"
-"durability/authority/runtime_rebuild/source_schema_routes.rs" = "publication"
 "durability/authority/runtime_rebuild/envelope_replay/owner_bindings.rs" = "runtime"
 "durability/authority/runtime_rebuild/index_catalog/predecessor.rs" = "runtime"
 "durability/authority/runtime_rebuild/transition_replay.rs" = "runtime"
@@ -224,7 +238,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
-"validation/candidate_source/applied.rs" = "publication"
 
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
@@ -278,18 +291,11 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/authority/recovery/catalog_readmission/prefix.rs" = "runtime"
 "durability/authority/recovery/catalog_readmission/runtime_admission.rs" = "runtime"
 "durability/authority/recovery/fork_effect/runtime_admission.rs" = "runtime"
-"authority/commit/lineage_preparation.rs" = "publication"
-"authority/commit/phases/applied_mutation/aggregate_metrics.rs" = "publication"
-"authority/commit/phases/prepare/working_state_metrics.rs" = "publication"
-"authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"
 "branch/root_authoritative_payload_tests.rs" = "runtime"
 "branch/root_tests/request.rs" = "runtime"
 "history/commit/envelope_residency/memory_publication_tests.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "runtime"
-"publication/ownership/authored_retirement" = "publication"
-"publication/ownership/route_selection.rs" = "publication"
-"publication/ownership/source_scope.rs" = "publication"
 "runtime/authored_publication_reads.rs" = "runtime"
 "runtime/candidate_consumption.rs" = "runtime"
 "runtime/candidate_preparation.rs" = "runtime"
@@ -300,7 +306,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/publication_settlement.rs" = "runtime"
 "visibility/materialization/read_records/projection/field_revisions/restore_tests.rs" = "runtime"
 "visibility/materialization/read_records/reader/request_paid_truth.rs" = "runtime"
-"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
 
 
 "runtime/merge_ownership_probe.rs" = "runtime"
@@ -309,7 +314,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Longest physical path wins. Mixed roots stay with the live owner, and
 # declaration, refusal and wire leaves follow their defining responsibility.
 "aspect_truth_flow.md" = "runtime"
-"authority/commit" = "publication"
 # Validation packets carry Mutation's admitted observation and decision inputs.
 # Index packet descriptors carry index keys. Read-only proof vocabulary and
 # packet placement are shared contracts; the paid ordered reducer is substrate.
@@ -337,7 +341,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/mod.rs" = "runtime"
 # Native custody stays below the live candidate and its completion receipt.
 "branch/materialization/completion.rs" = "runtime"
-"branch/model_ownership/current_publications.rs" = "publication"
 "branch/model_ownership/runtime_publications.rs" = "runtime"
 "branch/model_ownership/runtime_selection.rs" = "runtime"
 "branch/owner_services" = "runtime"
@@ -389,28 +392,9 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Strategy-to-wire readmission drives an installed Runtime in the history court.
 "history/commit/artifact_tests/strategy_readmission.rs" = "courts"
 # Admit retained publication owners through the receiving runtime.
-"history/data/codec_retirement_closure/authored_restoration/inverse.rs" = "publication"
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
 "history/mod.rs" = "runtime"
-"history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
 # Runtime coordinates index and root reclamation; Branch owns the retained sets.
 "history/retention/live_reclamation.rs" = "runtime"
 "history/retention/publication_reclamation.rs" = "runtime"
@@ -444,7 +428,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "inspection" = "runtime"
 "lib.rs" = "runtime"
 "lib_inline_type_budget.rs" = "runtime"
-"lineage" = "publication"
 "lineage/access/aspect_history" = "runtime"
 "lineage/access/discovery" = "runtime"
 "lineage/access/divergence" = "runtime"
@@ -472,15 +455,12 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "merge/schema_reconciliation_witness_access" = "runtime"
 "merge/strategy_witness_access" = "runtime"
 "mvcc" = "runtime"
-"mvcc/publication" = "publication"
 "mvcc/publication/port.rs" = "runtime"
 "mvcc/publication/port_cutover.rs" = "runtime"
 "mvcc/publication/port_handoff.rs" = "runtime"
 "mvcc/publication/port_preflight.rs" = "runtime"
 "mvcc/publication/port_service_retirement.rs" = "runtime"
 # Canonical output vocabulary contains only role and producing coordinates.
-"mvcc/publication/companion/cell/managed_source/rebuild" = "publication"
-"mvcc/transaction/staged_plan.rs" = "publication"
 "mvcc/validation.rs" = "runtime"
 "mvcc/validation/invariant_plan.rs" = "runtime"
 "mvcc/validation/proposal_candidate.rs" = "runtime"
@@ -495,14 +475,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "presentation" = "runtime"
 "presentation/harness" = "courts"
 "publication/access" = "runtime"
-"publication/authority" = "publication"
-"publication/bundle" = "publication"
-"publication/canonical_history" = "publication"
 "publication/cdc" = "runtime"
-"publication/live_publication_inputs" = "publication"
-"publication/diagnostic_store" = "publication"
 "publication/mod.rs" = "runtime"
-"publication/ownership" = "publication"
 # Native publication records and bounded decode retain canonical Branch meaning.
 "replay/access" = "runtime"
 "replay/authority" = "runtime"
@@ -513,52 +487,32 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/publication_body.rs" = "runtime"
 # Native contract comparison is pure schema meaning. Runtime translates installation refusal.
 
-"runtime/state/runtime_state/publication_lifecycle" = "publication"
-"runtime/state/runtime_state/publication_lifecycle.rs" = "publication"
-"runtime/state/runtime_state/publication_settlement_registry" = "publication"
-"runtime/state/subsystems/canonical_publication_routes" = "publication"
 "runtime/state/subsystems/canonical_publication_routes/narrowed_cutover_control.rs" = "runtime"
 # Position retention only shares an already admitted envelope and does not publish.
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
 # Runtime publishes the accepted schema cutover using Branch-prepared cells and heads.
 "runtime/state/subsystems/history_branch_cells/initial_schema.rs" = "runtime"
-"runtime/state/subsystems/history_canonical_routes" = "publication"
 # Branch keeps the cells and exact historical selection. Publication admits transitions.
-"runtime/state/subsystems/history_branch_transition.rs" = "publication"
-"runtime/state/subsystems/history_committed_receipts.rs" = "publication"
-"runtime/state/subsystems/history_preparation_binding" = "publication"
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
 # Closing the source binds both Branch ledger and Publication route custody.
-"runtime/state/subsystems/history_source_retirement" = "publication"
 # Original index member admission and source retirement stay in Durability.
-"runtime/state/subsystems/publication" = "publication"
 "simulation" = "runtime"
 "storage/access" = "runtime"
 "storage/authority" = "runtime"
 "storage/residency/cross_region_forgery_tests" = "runtime"
 "tests" = "courts"
 # This existing source-court path now contains only the shared SDK request fixture.
-"transactions/data/mod.rs" = "publication"
-"transactions/data/outcomes/commit_result" = "publication"
-"transactions/data/outcomes/merge_execution_outcome" = "publication"
-"transactions/data/outcomes/mod.rs" = "publication"
 # Retained history keeps original descriptive material. Evaluation over an
 # applied mutation and its work budget is owned by Mutation.
 "validation/data/custom_rule.rs" = "runtime"
 "validation/data/mod.rs" = "runtime"
 "validation/invariant_access" = "runtime"
 "validation/invariant_authority" = "runtime"
-"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
 
 "validation/mod.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
 "visibility/authority" = "runtime"
-"visibility/materialization/read_records/mod.rs" = "publication"
-"visibility/materialization/read_records/reader/mod.rs" = "publication"
-"visibility/materialization/read_records/reader/pinned_read" = "publication"
-"visibility/materialization/read_records/reader/query_execution/pinned_walk/pinned.rs" = "publication"
 # Pinned dispatch coordinates Branch packet kernels. Region selection stays in Branch.
-"visibility/materialization/read_records/reader/query_plan_execution" = "publication"
 "visibility/retention" = "runtime"
 # These adapters admit and close runtime snapshot handles.
 "visibility/pins/pin_authority/mod.rs" = "runtime"
@@ -623,7 +577,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "tests/transactions/core/authored_write_history/adjacency/paired/meaning.rs" = "runtime"
 
 
-"publication/cdc/data/normalized_continuation_proof.rs" = "publication"
 
 
 
@@ -644,12 +597,9 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 
 
 
-"mvcc/transaction/prepared_change_summary.rs" = "publication"
 
 
-"publication/cdc/planning/continuity_assessment/disposition.rs" = "publication"
 
-"publication/cdc/data/subscriber_recovery_plan/continuation_assessment.rs" = "publication"
 
 
 
@@ -666,11 +616,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 
 
 
-"publication/cdc/data" = "publication"
 
-"publication/cdc/diagnostics" = "publication"
 
-"publication/cdc/planning/checkpoint_resolution/validation.rs" = "publication"
 
 "mvcc/publication/application_publication/absent_optional_field.rs" = "runtime"
 
@@ -767,7 +714,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/authority/runtime_rebuild/envelope_replay.rs" = "runtime"
 "durability/authority/runtime_rebuild/envelope_replay/committed_artifacts.rs" = "runtime"
 "durability/authority/runtime_rebuild/envelope_replay/effect.rs" = "runtime"
-"durability/authority/runtime_rebuild/source_schema_routes.rs" = "publication"
 "durability/authority/runtime_rebuild/envelope_replay/owner_bindings.rs" = "runtime"
 "durability/authority/runtime_rebuild/index_catalog/predecessor.rs" = "runtime"
 "durability/authority/runtime_rebuild/transition_replay.rs" = "runtime"
@@ -840,7 +786,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/history_catalog_recovery/inventory.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
-"validation/candidate_source/applied.rs" = "publication"
 
 "derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
@@ -935,9 +880,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/checkpoint_admission/binary_encoding" = "contracts"
 "durability/authority/associated_effects/refusal.rs" = "contracts"
 "durability/artifact_payload_emission/request.rs" = "contracts"
-"runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
 "runtime/operation_control" = "contracts"
-"authority/commit/lineage_preparation.rs" = "publication"
 
 # Canonical group transition facts and denials shared by mutation and lineage.
 "aggregate_identity/group_lineage" = "contracts"
@@ -986,7 +929,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "mvcc/publication/port_service_retirement.rs" = "runtime"
 
 # Applied pins are bound and consumed by the publication phase.
-"publication/live_publication_inputs" = "publication"
 
 # Candidate entry/exit and the installed owner reservation gate bind runtime tenure.
 "runtime/candidate_consumption.rs" = "runtime"
@@ -994,24 +936,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/canonical_publication_routes/narrowed_cutover_control.rs" = "runtime"
 
 # Publication completes live origins and passes filled canonical facts to Branch.
-"history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
-"history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
 
 # Installed receiver methods bind concrete operands for publication.
 "runtime/predecessor_publication.rs" = "runtime"
@@ -1026,7 +950,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 # The canonical envelope owner hashes body leaves independently of frame verification.
 
 # Publication owns its operation-scoped diagnostic capture and stored artifacts.
-"publication/diagnostic_store" = "publication"
 
 # Runtime supplies owner identity to the publication-owned historical selection.
 "runtime/historical_output_selection.rs" = "runtime"
@@ -1066,7 +989,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 # The immutable canonical schema carrier is shared by commit and root custody.
 
 # Bound the working-state clone and metrics to its exact preparation policy.
-"authority/commit/phases/prepare/working_state_metrics.rs" = "publication"
 "durability/data/native_checkpoint_capture_denial" = "contracts"
 "execution/mod.rs" = "contracts"
 "history/access/aspect_history/live_admission.rs" = "runtime"
@@ -1080,7 +1002,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/access/relevant_writes/live_cursor.rs" = "runtime"
 "history/access/relevant_writes/maintenance.rs" = "runtime"
 "history/commit/artifact_tests/strategy_readmission.rs" = "courts"
-"history/data/codec_retirement_closure/authored_restoration/inverse.rs" = "publication"
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
 "history/retention/live_reclamation.rs" = "runtime"
@@ -1120,10 +1041,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/durability/commit_log/read_coverage.rs" = "durability"
 "runtime/state/subsystems/durability/state.rs" = "durability"
 "runtime/state/subsystems/history_branch_cells/initial_schema.rs" = "runtime"
-"runtime/state/subsystems/history_branch_transition.rs" = "publication"
-"runtime/state/subsystems/history_source_retirement" = "publication"
 "runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
-"visibility/materialization/read_records/reader/query_plan_execution" = "publication"
 "visibility/pins/pin_authority/branch_head_residency.rs" = "runtime"
 "visibility/pins/pin_authority/mod.rs" = "runtime"
 "visibility/pins/pin_authority/replay_authority.rs" = "runtime"
@@ -1136,13 +1054,11 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "authorization/runtime_dependencies.rs" = "runtime"
 "authorization/runtime_freshness.rs" = "runtime"
 "authorization/runtime_observation.rs" = "runtime"
-"branch/model_ownership/current_publications.rs" = "publication"
 "branch/model_ownership/runtime_publications.rs" = "runtime"
 "branch/model_ownership/runtime_selection.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
 
 # Transaction packet vocabulary is shared. Branch owns denials for selected reads.
-"mvcc/transaction/staged_plan.rs" = "publication"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/staging.rs" = "contracts"
 
@@ -1180,20 +1096,14 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "publication/patch/data/stream_commit_ref.rs" = "contracts"
 
 # Aggregate consequence metrics belong to the one consumer of the exact read report.
-"authority/commit/phases/applied_mutation/aggregate_metrics.rs" = "publication"
 
 # Installed Current route selection consumes Publication's authenticated roster.
-"publication/ownership/route_selection.rs" = "publication"
 
 # Count schema transition classifications where continuity is materialized.
-"authority/commit/phases/schema_continuity/schema_transition_metrics.rs" = "publication"
 
 # Live authored-source retirement selects Current ownership before canonical ancestry.
-"publication/ownership/source_scope.rs" = "publication"
-"publication/ownership/authored_retirement" = "publication"
 
 # Immutable receipt discovery has no root runtime or preparation receiver.
-"runtime/state/subsystems/history_committed_receipts.rs" = "publication"
 
 # Paid merge mutation plan reconstruction uses the normalized-intent owner.
 
@@ -1221,7 +1131,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 # Originally funded canonical frames expose body admission separately from durable placement.
 
 # Candidate and settlement registrations are the publication owner’s native state.
-"runtime/state/runtime_state/publication_lifecycle.rs" = "publication"
 
 # Checkpoint canonical body admission is independent of its artifact envelope.
 
@@ -1235,7 +1144,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "storage/changed_record_retention.rs" = "storage"
 
 # Invariant diagnostic projection belongs to its analysis and emission owners.
-"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
 
 # Frozen schema executors and exact captured receiver pairs precede live installation.
 
@@ -1299,7 +1207,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "tests/transactions/core/authored_write_history/adjacency/paired/meaning.rs" = "runtime"
 
 
-"publication/cdc/data/normalized_continuation_proof.rs" = "publication"
 
 
 
@@ -1320,12 +1227,9 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 
 
-"mvcc/transaction/prepared_change_summary.rs" = "publication"
 
 
-"publication/cdc/planning/continuity_assessment/disposition.rs" = "publication"
 
-"publication/cdc/data/subscriber_recovery_plan/continuation_assessment.rs" = "publication"
 
 
 
@@ -1341,22 +1245,15 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 
 
-"transactions/data/mod.rs" = "publication"
 
-"transactions/data/outcomes/mod.rs" = "publication"
 
-"visibility/materialization/read_records/reader/mod.rs" = "publication"
 
-"visibility/materialization/read_records/mod.rs" = "publication"
 
 
 "performance/data/complexity_contract.rs" = "contracts"
 
-"publication/cdc/data" = "publication"
 
-"publication/cdc/diagnostics" = "publication"
 
-"publication/cdc/planning/checkpoint_resolution/validation.rs" = "publication"
 
 "mvcc/publication/application_publication/absent_optional_field.rs" = "runtime"
 

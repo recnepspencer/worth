@@ -2,6 +2,8 @@ use crate::facade::identity::{KindId, PartitionId};
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::tests::support::*;
 use std::sync::{Arc, Barrier};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 #[test]
 fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
@@ -128,7 +130,7 @@ fn prepared_root_materializes_exactly_the_declared_write_partitions() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("candidate root construction succeeds");
-    let (touched, reused) = candidate.materialization_counts();
+    let (touched, reused) = candidate.materialization_counts_for_test();
 
     assert_eq!(touched, declared_write_partition_count);
     assert_eq!(touched, 2);

@@ -7,6 +7,7 @@ CONTRACTS_ROOT="$ROOT_DIR/crates/worth-relational-contracts/src"
 STORAGE_ROOT="$ROOT_DIR/crates/worth-relational-storage/src"
 BRANCH_ROOT="$ROOT_DIR/crates/worth-relational-branch/src"
 MUTATION_ROOT="$ROOT_DIR/crates/worth-relational-mutation/src"
+PUBLICATION_ROOT="$ROOT_DIR/crates/worth-relational-publication/src"
 RELATIONAL_SOURCES=(
   "$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT" "$BRANCH_ROOT"
   "$ROOT_DIR/crates/worth-relational-indexes/src"
@@ -14,6 +15,7 @@ RELATIONAL_SOURCES=(
   "$ROOT_DIR/crates/worth-relational-merge/src"
   "$MUTATION_ROOT"
   "$ROOT_DIR/crates/worth-relational-durability/src"
+  "$PUBLICATION_ROOT"
 )
 RAW_REQUESTS="$CONTRACTS_ROOT/merge/data/requests/raw.rs"
 
@@ -82,7 +84,7 @@ if rg -n "pub\(crate\) fn (publish_commit|publish_metadata_artifact)" "$RELATION
   failures=1
 fi
 
-if ! test -f "$RELATIONAL_ROOT/mvcc/publication/authority.rs"; then
+if ! test -f "$PUBLICATION_ROOT/mvcc/publication/authority.rs"; then
   echo "[relational-phase4-residue] FAIL: dedicated MVCC publication authority is missing" >&2
   failures=1
 fi

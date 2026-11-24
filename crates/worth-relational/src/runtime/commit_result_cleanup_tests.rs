@@ -1,4 +1,6 @@
 //! Runtime cleanup checks authentic tenure and exact private snapshot registrations.
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::CommitResultOwnerPort as _;
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::snapshot_fixture::CommitResultFixturePort as _;
 use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::SnapshotHandlesFixturePort as _;
 use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::published_release::PublishedSnapshotReleaseObservationFixturePort as _;
 use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupPending as Pending;
@@ -128,7 +130,7 @@ fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_
     drop(basis);
     // This private negative fixture cannot be written through CommitResult's
     // public read-only outcome; both handles came from real owner admission.
-    let altered = result.copy_with_altered_snapshot(independent.clone());
+    let altered = result.copy_with_altered_snapshot_for_test(independent.clone());
     let service = runtime.owner_component_services().basis_port();
     assert!(matches!(
         service.release_commit_result_snapshot(&altered),

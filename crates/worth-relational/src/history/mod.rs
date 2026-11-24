@@ -2,7 +2,6 @@ pub(crate) mod access;
 mod authority;
 pub(crate) mod commit;
 pub mod data;
-pub(crate) use worth_relational_branch::internal_port::history::envelope_demand;
 pub mod retention;
 
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};

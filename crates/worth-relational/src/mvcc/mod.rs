@@ -90,9 +90,7 @@ pub use validation::{
 };
 
 pub(crate) use validation::ValidatedProposalState;
-#[cfg(test)]
-#[path = "mod_inline_type_budget.rs"]
-pub(crate) mod inline_type_budget;
+
 pub(crate) use publication::require_graph_coverage;
 
 pub use publication::companion::registration::port::{

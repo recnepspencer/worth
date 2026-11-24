@@ -3,7 +3,7 @@
   "unmounted_baseline_sources": [
     "crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs"
   ],
-  "probe_3_live_mutation_source": "crates/worth-relational/src/authority/mutation/execution.rs",
+  "probe_3_live_mutation_source": "crates/worth-relational-mutation/src/authority/mutation/execution.rs",
   "subordinate_test_export_tokens": [
     "CurrentOwnershipContactsForTest",
     "CurrentOwnershipLocalityForTest",

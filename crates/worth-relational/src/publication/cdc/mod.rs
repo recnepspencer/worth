@@ -1,6 +1,5 @@
 pub mod access;
-pub mod data;
-pub mod diagnostics;
+pub use worth_relational_publication::internal_port::publication::cdc::{data, diagnostics};
 pub mod execution;
 pub mod facade;
 pub mod planning;

@@ -1708,6 +1708,7 @@ dependencies = [
  "worth-relational-lineage",
  "worth-relational-merge",
  "worth-relational-mutation",
+ "worth-relational-publication",
  "worth-relational-storage",
 ]
 
@@ -1823,6 +1824,30 @@ dependencies = [
  "worth-proof",
  "worth-relational-branch",
  "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-publication"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "dashmap",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-durability",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
  "worth-relational-storage",
 ]
 

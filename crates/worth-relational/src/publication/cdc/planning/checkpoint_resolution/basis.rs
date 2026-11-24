@@ -1,3 +1,5 @@
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointOwnerPort as _;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_recovery_plan::continuation_assessment::SubscriberContinuationAssessmentOwnerPort as _;
 use crate::capabilities::{PatchStreamSource, RuntimeConfigSource};
 use crate::history::data::PositionedCanonicalCommit;
 use crate::publication::cdc::data::{

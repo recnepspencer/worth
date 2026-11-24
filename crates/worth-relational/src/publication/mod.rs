@@ -1,14 +1,16 @@
 mod access;
-pub(crate) mod authority;
-pub mod bundle;
-pub(crate) mod canonical_history;
+pub use worth_relational_publication::internal_port::publication::bundle;
+pub(crate) use worth_relational_publication::internal_port::publication::{
+    authority, canonical_history, diagnostic_store,
+};
 pub mod cdc;
-pub(crate) use worth_relational_branch::internal_port::publication::data;
+pub(crate) mod ownership {
+    pub use worth_relational_publication::internal_port::publication::ownership::*;
+    // Runtime owns the certification name used by its existing Query callers.
+    pub use worth_relational_publication::internal_port::publication::ownership::CurrentOwnershipLocalityObservation as CurrentOwnershipLocalityForTest;
+}
+pub(crate) use worth_relational_branch::internal_port::publication::{data, patch};
 pub(crate) use worth_relational_contracts::internal_port::publication::close_custody;
-pub(crate) mod diagnostic_store;
-pub(crate) mod live_publication_inputs;
-pub(crate) mod ownership;
-pub(crate) use worth_relational_branch::internal_port::publication::patch;
 
 pub(crate) use access::invariant_failure_diagnostic;
 pub use access::{

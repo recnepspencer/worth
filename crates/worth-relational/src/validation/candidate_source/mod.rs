@@ -22,7 +22,6 @@ pub(crate) use program::SourceProgramCommitmentDenial;
 pub use program::{
     ManagedIndexSourceField, ManagedIndexSourceProgram, ManagedIndexSourceProjectionRoute,
 };
-pub(crate) use projection::selected_rows;
 pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationRead};
 pub use provider_failure::ManagedIndexSourceProviderFailure;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
@@ -31,9 +30,8 @@ pub(crate) use worth_relational_contracts::internal_port::validation::candidate_
     availability, denial, program, provider_failure,
 };
 pub(crate) use worth_relational_mutation::internal_port::validation::candidate_source::{
-    applied_affinity, authored_history, context, correspondence, image, interpretation,
-    interpretation_identity, observation, preparation, preparation_group, projection, publication,
-    registration_observation, scope_closure, source_changes, staged,
+    applied_affinity, context, image, interpretation, interpretation_identity, observation,
+    preparation, preparation_group, projection, publication, source_changes,
 };
-pub(crate) mod applied;
+pub(crate) use worth_relational_publication::internal_port::validation::candidate_source::applied;
 pub(crate) mod applied_read;

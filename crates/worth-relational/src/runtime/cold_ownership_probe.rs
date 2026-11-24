@@ -55,7 +55,10 @@ impl RelationalRuntime {
         owner: EntityId,
         seed_fields: impl Fn(u64) -> AspectFieldPatch,
         value_fields: impl Fn(u64) -> AspectFieldPatch,
-    ) -> Result<locality_court::CurrentOwnershipLocalityForTest, TransactionCommitError> {
+    ) -> Result<
+        crate::publication::ownership::CurrentOwnershipLocalityForTest,
+        TransactionCommitError,
+    > {
         let fail = |detail: String| locality_court::locality_error(detail);
         let kind = locality_court::owner_kind(basis, owner)?;
         let branch = BranchId("current-ownership-locality-court".into());

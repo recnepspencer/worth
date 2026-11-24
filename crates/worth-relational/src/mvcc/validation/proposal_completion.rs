@@ -9,6 +9,7 @@ use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBra
 use worth_relational_mutation::internal_port::mvcc::validation::invariant_evidence::{
     assemble_mutation_invariant_evidence, MutationInvariantEvidenceParts,
 };
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
@@ -51,9 +52,9 @@ pub(super) fn complete(
             crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
                 proposed_version,
                 prepared.plan.view().commands().merged_intents.len(),
-                prepared.structural_summary.touched_partitions.len(),
-                prepared.structural_summary.bulk_entity_slots_reserved,
-                prepared.structural_summary.bulk_relation_slots_reserved,
+                prepared.structural_summary.touched_partitions().len(),
+                prepared.structural_summary.bulk_entity_slots_reserved(),
+                prepared.structural_summary.bulk_relation_slots_reserved(),
                 1,
             );
         strategy.artifacts.clone().with_preview_validation(

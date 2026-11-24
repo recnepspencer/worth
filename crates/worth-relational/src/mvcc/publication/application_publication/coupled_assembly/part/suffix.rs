@@ -1,5 +1,9 @@
 //! Apply one writer's suffix over the current candidate pin. Producers and
 //! authored stages share this one apply owner; only their custody differs.
+
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::assembly_failure::RelationalCoupledAssemblyFailureOwnerPort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
+
 use super::super::suffix_scope::{self, AppliedSuffix, SuffixWriter};
 use super::*;
 use crate::storage::overlay::WorkingState;
@@ -195,7 +199,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let successor = RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
-            &self.binding.owners.before,
+            self.binding.owners.before(),
             self.identity,
             self.applied_parts() as u64,
             delta_state,

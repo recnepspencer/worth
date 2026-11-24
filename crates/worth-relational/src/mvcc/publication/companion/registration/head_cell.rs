@@ -1,6 +1,6 @@
 //! One Native-selected head and publication exclusion through caller installation.
-use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshotParts;
-use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::assemble_positioned_relational_snapshot;
+use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::{PositionedRelationalSnapshotParts, assemble_positioned_relational_snapshot};
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use super::{
     CompanionRegistrationState, PendingCompanionRegistration, PublicationCompanionRegistration,
@@ -77,8 +77,7 @@ impl PublicationCompanionRegistrationPort {
             registry.state.try_write(),
             Stop::HeadCellPublicationContended,
         )?;
-        #[cfg(test)]
-        super::guard_fault::after_acquisition(super::guard_fault::Door::Head);
+        registry.after_guard_acquisition(super::guard_fault::Door::Head);
         match &*exclusion {
             CompanionRegistrationState::RequiredRebind { generation: active }
             | CompanionRegistrationState::RequiredActive {

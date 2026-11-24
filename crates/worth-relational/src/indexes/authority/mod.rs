@@ -7,7 +7,7 @@ use crate::indexes::data::{
     DerivedIndexBuildOutcome, DerivedIndexBuildRequest, DerivedIndexGeneration, DerivedIndexId,
 };
 pub(crate) use checkpoint_admission::{verify_checkpoint_index_bases, CheckpointIndexProjections};
-pub(crate) use maintenance::{PreparedCandidateIndexPublication, PreparedForkIndexSelection};
+pub(crate) use maintenance::PreparedForkIndexSelection;
 pub(crate) use worth_relational_indexes::internal_port::indexes::authority::{
     checkpoint_admission, diagnostics, reconstruction_build,
 };

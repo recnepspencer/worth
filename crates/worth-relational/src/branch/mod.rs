@@ -75,7 +75,6 @@ pub(crate) use root::{
 };
 pub(crate) use worth_relational_branch::internal_port::branch::root_regions;
 pub(crate) use worth_relational_branch::internal_port::branch::root_selection;
-pub(crate) use worth_relational_branch::internal_port::branch::structural_state;
 pub(crate) use worth_relational_contracts::internal_port::branch::result_snapshot_outcome;
 mod root_selection_admission;
 pub(crate) use selected_read::SelectedRelationalBranchRead;
@@ -157,10 +156,8 @@ pub use transition::{
 };
 pub use version::RelationalBranchVersion;
 
-pub(crate) use worth_relational_branch::internal_port::branch::symbol_publication;
-
 #[cfg(test)]
-pub(crate) use worth_relational_branch::internal_port::branch::basis_fixture;
+pub(crate) use worth_relational_branch::internal_port::branch::symbol_publication;
 
 #[cfg(test)]
 pub(crate) use reference::RelationalBranchCellCheckpoint;

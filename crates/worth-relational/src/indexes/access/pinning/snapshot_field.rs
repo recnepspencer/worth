@@ -1,4 +1,5 @@
 //! Snapshot input resolves and pins before entering immutable field collection.
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::index_lookups::RelationalPinnedReadOwnerPort as _;
 use super::IndexAccess;
 use crate::indexes::data::{
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,

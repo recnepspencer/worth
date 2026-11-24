@@ -1,4 +1,6 @@
 //! Obtain current publication custody under the installed model-ownership law.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::scope_ownership::RelationalInstalledApplicationPublicationAuthorityOwnerPort as _;
 use super::{current_publications::RelationalOwnedModelPublicationRead, *};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
@@ -17,8 +19,8 @@ impl RelationalRuntime {
     ) -> Result<RelationalOwnedModelPublicationRead, RelationalModelOwnershipDenial> {
         use RelationalModelOwnershipDenial as Denial;
         if selected.identity().runtime_instance_id() != self.runtime_instance_id()
-            || installed.runtime_instance_id != self.runtime_instance_id()
-            || installed.schema_digest
+            || installed.runtime_instance_id() != self.runtime_instance_id()
+            || installed.schema_digest()
                 != selected
                     .owner_inner()
                     .root

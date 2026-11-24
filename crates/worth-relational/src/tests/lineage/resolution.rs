@@ -315,7 +315,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
         )],
     );
     let missing_err = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged_missing,
             &receipt,
@@ -347,7 +347,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
         ],
     );
     let dup_err = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged_dup,
             &receipt,
@@ -379,7 +379,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     .unwrap();
     let ok_input = create_postures_input(registry, vec![(ok0, ok_req)]);
     let prepared = authority
-        .ensure_lineage_for_commit_with_postures(
+        .ensure_lineage_for_commit_with_postures_for_test(
             execution,
             &mut staged_ok,
             &receipt,

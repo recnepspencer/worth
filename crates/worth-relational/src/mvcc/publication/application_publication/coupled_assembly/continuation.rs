@@ -1,10 +1,11 @@
 //! Bind continuation custody to an admitted runtime candidate.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
 use super::{part, RelationalAuthoredCoupledCandidate};
 use crate::execution::request_stage::checkpoint;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
-mod custody;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::continuation::{application, custody};
 pub(super) use custody::ContinuationState;
 pub use custody::RelationalCoupledProducerContinuation;
 
@@ -47,7 +48,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     }
 }
 
-mod application;
 mod corruption;
 mod round;
 pub(super) use super::refusals::postponed;
