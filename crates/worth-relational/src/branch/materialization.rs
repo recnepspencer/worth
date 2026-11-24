@@ -113,6 +113,53 @@ impl PreparedRelationalMaterializationSuspension {
     }
 }
 
+#[must_use = "a validated suspension must be prepared or discarded"]
+pub struct PendingRelationalMaterializationSuspension {
+    pub(crate) proposal: crate::mvcc::ValidatedRelationalProposal,
+    pub(crate) completion: PendingRelationalMaterializationSuspensionCompletion,
+}
+
+impl PendingRelationalMaterializationSuspension {
+    pub fn into_parts(
+        self,
+    ) -> (
+        crate::mvcc::ValidatedRelationalProposal,
+        PendingRelationalMaterializationSuspensionCompletion,
+    ) {
+        (self.proposal, self.completion)
+    }
+}
+
+pub struct PendingRelationalMaterializationSuspensionCompletion {
+    pub(crate) branch_identity: super::RelationalBranchIdentity,
+    pub(crate) source_commit: CommitId,
+    pub(crate) records: std::sync::Arc<Vec<RelationalMaterializationRecord>>,
+    pub(crate) source:
+        std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
+    pub(crate) producer_publications: Vec<CommitId>,
+    pub(crate) producer_records:
+        Vec<crate::history::data::CanonicalRequiredOutputMaterializationRecord>,
+    pub(crate) producer_memory: worth_execution::ExecutionMemoryReservation,
+}
+
+impl PendingRelationalMaterializationSuspensionCompletion {
+    pub fn finish(
+        self,
+        candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
+    ) -> RelationalMaterializationSuspensionCompletion {
+        RelationalMaterializationSuspensionCompletion {
+            transaction_id: candidate.transaction_id(),
+            branch_identity: self.branch_identity,
+            source_commit: self.source_commit,
+            records: self.records,
+            source: self.source,
+            producer_publications: self.producer_publications,
+            producer_records: self.producer_records,
+            producer_memory: self.producer_memory,
+        }
+    }
+}
+
 pub struct RelationalMaterializationSuspensionCompletion {
     pub(crate) transaction_id: crate::transactions::data::TransactionId,
     pub(crate) branch_identity: super::RelationalBranchIdentity,
@@ -172,6 +219,45 @@ impl PreparedRelationalRematerialization {
         crate::mvcc::RelationalMutationInvariantEvidence,
     ) {
         (self.candidate, self.completion, self.invariant_evidence)
+    }
+}
+
+#[must_use = "a validated restoration retains materialization custody"]
+pub struct PendingRelationalRematerialization {
+    pub(crate) proposal: crate::mvcc::ValidatedRelationalProposal,
+    pub(crate) completion: PendingRelationalRematerializationCompletion,
+    pub(crate) invariant_evidence: crate::mvcc::RelationalMutationInvariantEvidence,
+}
+
+impl PendingRelationalRematerialization {
+    pub fn into_parts(
+        self,
+    ) -> (
+        crate::mvcc::ValidatedRelationalProposal,
+        PendingRelationalRematerializationCompletion,
+        crate::mvcc::RelationalMutationInvariantEvidence,
+    ) {
+        (self.proposal, self.completion, self.invariant_evidence)
+    }
+}
+
+pub struct PendingRelationalRematerializationCompletion {
+    pub(crate) custody: RelationalMaterializationCustody,
+}
+
+impl PendingRelationalRematerializationCompletion {
+    pub fn finish(
+        self,
+        candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
+    ) -> RelationalRematerializationCompletion {
+        RelationalRematerializationCompletion {
+            transaction_id: candidate.transaction_id(),
+            custody: self.custody,
+        }
+    }
+
+    pub fn into_custody(self) -> RelationalMaterializationCustody {
+        self.custody
     }
 }
 

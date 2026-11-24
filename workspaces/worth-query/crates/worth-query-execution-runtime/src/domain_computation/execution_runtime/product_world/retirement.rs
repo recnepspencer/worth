@@ -25,6 +25,25 @@ impl WorthQueryProductRuntime {
         );
         Ok(report)
     }
+
+    pub(crate) fn retire_product_branch_with_request(
+        &self,
+        observed: &WorthQueryProductBranchLease,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        ProductBranchRetirementReport,
+        RuntimeWorldServiceDenial<RuntimeWorldBranchRetirementDenial>,
+    > {
+        let report = self
+            .owner
+            .branch_port()
+            .retire_product_branch_with_request(observed.observation(), execution)?;
+        self.activations.release(
+            observed.branch_identity(),
+            observed.observation().lifecycle_incarnation(),
+        );
+        Ok(report)
+    }
 }
 
 mod court_doors_for_test;

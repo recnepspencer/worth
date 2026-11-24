@@ -101,6 +101,11 @@ macro_rules! reconciliation_child_phase {
             }
             pub struct Handler { pub derive: fn(u64) -> u64, pub indices: bool }
             impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;

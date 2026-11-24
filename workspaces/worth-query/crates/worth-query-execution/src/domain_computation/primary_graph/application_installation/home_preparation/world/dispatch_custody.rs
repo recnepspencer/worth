@@ -36,6 +36,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     .product_runtime_ref()
                     .owner_ref()
                     .inspection_port(),
+                self.metadata_readmission_authority.as_ref(),
             )
             .map_err(Denial::DispatchOutbox)?
         {

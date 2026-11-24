@@ -66,7 +66,13 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         self.runtime
             .durability
             .install_source_root_inventory(recovered_roots.clone());
-        Ok(recovered_authority(self.runtime, recovered_roots))
+        let authority = recovered_authority(self.runtime, recovered_roots);
+        self.runtime
+            .durability
+            .install_home_readmission_phase(std::sync::Arc::clone(
+                &authority.home_readmission_phase,
+            ));
+        Ok(authority)
     }
 
     pub fn restore_native_checkpoint(
@@ -155,6 +161,17 @@ fn recovered_authority(
         .into_iter()
         .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
         .collect();
+    let home_readmission_phase = std::sync::Arc::new(super::HomeReadmissionMetadataPhase::new(
+        runtime.runtime_instance_id(),
+        runtime
+            .history()
+            .latest_commit()
+            .map(|receipt| receipt.commit_id),
+        runtime
+            .schema_contract_runtime
+            .home_readmission_metadata_kinds
+            .clone(),
+    ));
     RecoveredRelationalRuntimeAuthority {
         interim_bootstrap_phase: None,
         home_catalog_readmission: std::sync::Mutex::new(()),
@@ -162,6 +179,7 @@ fn recovered_authority(
         runtime_instance_id: runtime.runtime_instance_id(),
         recovered_branch_images,
         recovered_roots,
+        home_readmission_phase,
         codec_transition: None,
         performed_codec_retirement: None,
     }
@@ -302,6 +320,7 @@ fn publish_recovered_runtime(
         },
         checkpoint_restore_work,
     };
+    runtime.durability.close_home_readmission_phase();
     *runtime = restored;
     (outcome, recovered_roots)
 }

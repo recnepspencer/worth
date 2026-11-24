@@ -14,6 +14,7 @@ where
     pub(super) fn retire_observed_branch(
         &self,
         observed: &ProductBranchObservation,
+        execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
         if let Err(cause) = self
             .owner_identity()
@@ -46,7 +47,7 @@ where
             .map_err(|()| RuntimeWorldBranchRetirementDenial::CapacityExhausted)?;
         let (cell, incarnation, retirement, retirement_boundary) =
             if let Some(binding) = self.state.durable.as_ref() {
-                self.retire_durable_observed_branch(binding, observed)?
+                self.retire_durable_observed_branch(binding, observed, execution)?
             } else {
                 self.state
                     .branches
@@ -79,6 +80,7 @@ where
         &self,
         binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
         observed: &ProductBranchObservation,
+        caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     ) -> Result<
         (
             crate::branch::ProductBranchReferenceCell,
@@ -109,12 +111,14 @@ where
             return Err(RuntimeWorldBranchRetirementDenial::AlreadyRetired);
         }
         let policy = self.state.execution.request_policy();
-        let serial = worth_execution::SerialRequest::from_policy(
+        let fallback_serial = worth_execution::SerialRequest::from_policy(
             &policy,
             worth_execution::CancellationSource::new().token(),
             None,
         );
-        let execution = worth_execution::ExecutionRequest::serial(&serial);
+        let execution = caller_execution
+            .copied()
+            .unwrap_or_else(|| worth_execution::ExecutionRequest::serial(&fallback_serial));
         let head = match WorldHeadInput::from_snapshot(&snapshot) {
             Ok(head) => head,
             Err(_) => {

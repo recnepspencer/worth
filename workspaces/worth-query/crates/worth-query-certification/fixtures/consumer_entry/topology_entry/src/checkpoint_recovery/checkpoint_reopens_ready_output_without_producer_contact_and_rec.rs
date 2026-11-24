@@ -11,7 +11,7 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
         provider_observation.reset();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let settled = settle(&request, &application);
@@ -21,17 +21,10 @@ mod serial {
         drop(principal);
         drop(scope);
 
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("the ready output is checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
         provider_observation.reset();
-        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let restored = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let restored_settlement = settle(&request, &restored);

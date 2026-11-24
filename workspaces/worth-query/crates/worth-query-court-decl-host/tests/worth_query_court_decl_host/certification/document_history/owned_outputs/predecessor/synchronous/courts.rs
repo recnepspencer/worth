@@ -63,7 +63,9 @@ fn refusal(cause: ReadRefusal) {
     let wrong_scope = matches!(cause, ReadRefusal::Scope);
     let undeclared = matches!(cause, ReadRefusal::Undeclared);
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = install(false);
+    let host = world::open_directory_program::<predecessor::program::Program>(host_limits(
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ));
     courts::reset(false);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -149,38 +151,14 @@ fn refusal(cause: ReadRefusal) {
     assert_model_unchanged(&host, &checkpoint);
 }
 
-pub(super) fn checkpoint(host: &super::super::Host) -> WorthQueryApplicationCheckpoint {
-    host.with_host_advancement(|phase| {
-        host.capture_application_checkpoint(
-            &phase,
-            WorthQueryCheckpointCapturePolicy::SystemAllocation,
-        )
-        .unwrap()
-    })
-    .unwrap()
+pub(super) fn checkpoint(host: &world::DirHost<predecessor::program::Program>) -> Vec<u8> {
+    synchronous_edit::failure::checkpoint(host)
 }
 pub(super) fn assert_model_unchanged(
-    host: &super::super::Host,
-    before: &WorthQueryApplicationCheckpoint,
+    host: &world::DirHost<predecessor::program::Program>,
+    before: &[u8],
 ) {
-    let after = checkpoint(host);
-    host.with_host_advancement(|phase| {
-        let old = host
-            .runtime()
-            .inspect_application_checkpoint(&phase, before.bytes())
-            .unwrap();
-        let now = host
-            .runtime()
-            .inspect_application_checkpoint(&phase, after.bytes())
-            .unwrap();
-        assert_eq!(now.model, old.model);
-        assert_eq!(now.live_records, old.live_records);
-        assert_eq!(
-            now.current_publication_records,
-            old.current_publication_records
-        );
-    })
-    .unwrap();
+    synchronous_edit::failure::assert_model_unchanged(host, before);
 }
 
 #[test]

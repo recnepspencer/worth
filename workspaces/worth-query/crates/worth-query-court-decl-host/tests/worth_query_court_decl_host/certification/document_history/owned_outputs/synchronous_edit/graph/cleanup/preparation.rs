@@ -3,11 +3,7 @@ use super::*;
 use worth_relational::facade::{publication::AuthoredRetirementRefusal, transactions::RecordRef};
 fn exercise(worker: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

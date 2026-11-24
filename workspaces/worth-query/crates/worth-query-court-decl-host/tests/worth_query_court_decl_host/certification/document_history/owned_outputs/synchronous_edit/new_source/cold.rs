@@ -3,11 +3,7 @@ use super::*;
 fn run(worker: bool) {
     use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -51,9 +47,9 @@ fn run(worker: bool) {
             .rows()[0]
             .clone(),
     );
-    let checkpoint = super::super::failure::checkpoint(&host);
-    drop(host);
-    let cold = world::restore_same_build(checkpoint, worker);
+    drop((edit, principal, scope));
+    let directory = host.checkpoint_and_close_for_reopen();
+    let cold = world::reopen_same_build(directory, worker);
     let head = courts::native_head(&cold);
     let contacts = cold.producer_contacts_on_this_thread_for_test();
     let scope = request_scope();

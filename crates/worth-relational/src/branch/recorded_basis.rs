@@ -9,6 +9,7 @@ use crate::publication::patch::data::PatchStreamPosition;
 mod copying;
 mod memory_component;
 pub use memory_component::{AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent};
+mod effect_export;
 mod export;
 mod json;
 mod json_emission;

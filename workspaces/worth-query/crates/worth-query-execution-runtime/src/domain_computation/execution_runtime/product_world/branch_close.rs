@@ -89,6 +89,24 @@ impl WorthQueryProductRuntime {
         branch: WorthQueryProductBranch,
         scope: WorthQueryProductBranchCloseScope,
     ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial> {
+        self.begin_product_branch_close_inner(branch, scope, None)
+    }
+
+    pub(crate) fn begin_product_branch_close_with_request(
+        &self,
+        branch: WorthQueryProductBranch,
+        scope: WorthQueryProductBranchCloseScope,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial> {
+        self.begin_product_branch_close_inner(branch, scope, Some(execution))
+    }
+
+    fn begin_product_branch_close_inner(
+        &self,
+        branch: WorthQueryProductBranch,
+        scope: WorthQueryProductBranchCloseScope,
+        execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial> {
         let observed = self
             .admit_product_occurrence(branch.occurrence())
             .map_err(WorthQueryProductBranchCloseDenial::Selection)?;
@@ -105,9 +123,11 @@ impl WorthQueryProductRuntime {
             }
         }
         .map_err(|_| WorthQueryProductBranchCloseDenial::CleanupCapacityExhausted)?;
-        let report = self
-            .retire_product_branch(&observed)
-            .map_err(map_retirement_denial)?;
+        let report = match execution {
+            Some(execution) => self.retire_product_branch_with_request(&observed, execution),
+            None => self.retire_product_branch(&observed),
+        }
+        .map_err(map_retirement_denial)?;
         drop(observed);
         Ok(WorthQueryPendingProductBranchClose {
             runtime: self.clone(),

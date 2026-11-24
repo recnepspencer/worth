@@ -138,7 +138,7 @@ fn failure(worker: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host = world::install_configured::<program::Program>(
+    let host = world::open_directory_configured::<program::Program>(
         limits,
         1,
         None,
@@ -207,12 +207,8 @@ fn worker_only_initial_refusal_discards_the_source_and_the_earlier_initial() {
 
 fn cold(worker: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let (checkpoint, outputs) = {
-        let host = if worker {
-            world::install_worker_only()
-        } else {
-            world::install()
-        };
+    let (directory, outputs) = {
+        let host = world::open_directory_host(worker);
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let request = host.request(&principal, &scope);
@@ -233,12 +229,11 @@ fn cold(worker: bool) {
             ),
             "{outcome:?}"
         );
-        (
-            failure::checkpoint(&host),
-            world::outputs(&host, host.current_world()),
-        )
+        let outputs = world::outputs(&host, host.current_world());
+        drop((outcome, principal, scope));
+        (host.checkpoint_and_close_for_reopen(), outputs)
     };
-    let host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, false);
+    let host = world::reopen_program_directory::<program::Program>(directory, worker, false);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

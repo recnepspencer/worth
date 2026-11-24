@@ -257,12 +257,15 @@ fn content_source_equal_final_identity_does_not_erase_authored_history() {
 
 #[test]
 fn content_recovered_current_source_rebuilds_from_native_checkpoint_bytes() {
-    let host = world::install();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "content-door-recovery",
+    );
+    let host = world::open_directory(dir, Arc::new(Calls::default()));
     committed(&host, 18, "alpha", &[7, 11], "alpha");
     committed(&host, 18, "reject", &[1, 2], "reject");
-    let checkpoint = world::checkpoint(&host);
+    let dir = host.checkpoint_and_close_for_reopen();
     let calls = Arc::new(Calls::default());
-    let recovered = world::restore(checkpoint, calls.clone());
+    let recovered = world::open_directory(dir, calls.clone());
     let scope = request_scope();
     let principal = authenticate_operator(recovered.installed_schema(), &scope);
     let request = recovered.runtime().request(&principal, &scope);

@@ -4,7 +4,6 @@
 use super::*;
 use worth_query_consumer_values::PositiveLength;
 use worth_query_host::facade::application_entry::WorthQueryOutputSettlementPosture as Posture;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::{
     WorthQueryGeneratedEntity, WorthQueryReconstructedOutputEntity,
 };
@@ -98,11 +97,16 @@ fn suspend_and_restore(
     })
     .expect("the current branch is selectable")
     .suspend_current_generated_output::<Final>(scope, source)
-    .unwrap_or_else(|_| panic!("the generated final output suspends"));
+    .unwrap_or_else(|err| panic!("the generated final output suspends: {err:?}"));
     let completed = reconstruct_ring(application, suspended, ring);
     application
         .restore_generated_output(completed, scope)
-        .unwrap_or_else(|_| panic!("the reconstructed output is restored"));
+        .unwrap_or_else(|err| {
+            panic!(
+                "the reconstructed output is restored: {:?}",
+                err.cause()
+            )
+        });
 }
 
 fn generated<Denial: std::fmt::Debug>(
@@ -195,22 +199,15 @@ mod serial {
     #[test]
     fn an_output_restored_after_a_checkpoint_is_never_created_a_second_time() {
         let _guard = checkpoint_recovery_test_guard();
-        let application = install(None);
+        let application = support::open_directory(None);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("the ready outputs are checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = install(Some(checkpoint));
+        let restored = support::open_directory(Some(directory));
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let ring = ring(&request);
@@ -225,22 +222,15 @@ mod serial {
     #[test]
     fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_second_time() {
         let _guard = checkpoint_recovery_test_guard();
-        let application = install(None);
+        let application = support::open_directory(None);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("the ready outputs are checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = install(Some(checkpoint));
+        let restored = support::open_directory(Some(directory));
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let ring = ring(&request);

@@ -58,6 +58,34 @@ where
     Ok(cursor.prepared(execution, next))
 }
 
+pub(super) fn prepare_retained<'request, 'authority, D, I, E, Ctx, T>(
+    owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: worth_execution::ExecutionRequest<'request, 'authority>,
+    cursor: &ProductExactHistoryCursor,
+) -> Result<PreparedProductExactHistoryPage<'request, 'authority>, Denial>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    require_owner(owner, cursor.target())?;
+    let _operation = owner
+        .reserve_creation_operation()
+        .map_err(|()| Denial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+    let next = request_stage(execution, |checkpoint| {
+        let Some(current) = cursor.position() else {
+            return Ok(None);
+        };
+        checkpoint_step(checkpoint)?;
+        owner
+            .state
+            .history
+            .next_retained_history_position(execution, current)
+            .map_err(Denial::History)
+    })?;
+    Ok(cursor.prepared(execution, next))
+}
+
 fn require_owner<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
     target: &ProductBranchObservation,

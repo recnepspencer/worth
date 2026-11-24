@@ -4,23 +4,20 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::ProducerInvocationAuthority;
-use super::super::WorthQueryProducerCommitAuthority;
+use super::super::{ProducerInvocationAuthority, WorthQueryProducerCommitAuthority};
 use super::disclosure::validate_disclosure;
-use super::own_effect_observation;
-use super::own_effect_observation::Stage;
-pub use super::FamilySourceQuery;
-pub use super::FamilySourceValue;
-pub use super::WorthQueryAdmittedOutputDemand;
-pub use super::WorthQueryOutputDemandAdvance;
-pub use super::WorthQueryOutputDemandDenial;
+use super::own_effect_observation::{self, Stage};
 use super::WorthQueryOutputDemandDenialKind;
-pub use super::WorthQueryProducerOutputFamily;
-
+pub use super::{
+    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
+};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-
-pub use required_wave::CurrentBasis;
-pub use required_wave::CurrentProof;
+pub use required_wave::performed::{DecisionInput, PerformedMembers, SelectedDecisionInput};
+pub use required_wave::{
+    CurrentBasis, CurrentProof, MatchedRequiredPredecessors, ReboundConsumedOutput,
+    ResolvedRequiredPredecessors,
+};
 pub mod admission;
 mod caller_pass;
 use caller_pass::CallerPass;
@@ -30,13 +27,7 @@ mod refresh;
 mod rejoin;
 mod required_fresh;
 pub mod required_wave;
-pub use required_wave::performed::DecisionInput;
-pub use required_wave::performed::PerformedMembers;
-pub use required_wave::performed::SelectedDecisionInput;
 pub mod retained_read;
-pub use required_wave::MatchedRequiredPredecessors;
-pub use required_wave::ReboundConsumedOutput;
-pub use required_wave::ResolvedRequiredPredecessors;
 mod selected_program;
 mod source_recovery;
 mod unavailable;
@@ -301,20 +292,35 @@ where
         let performed = std::cell::RefCell::new(PerformedMembers::start());
         let stop = match advance(demand, &performed) {
             Ok(progress) => {
-                if matches!(progress, WorthQueryOutputDemandAdvance::Settled(_))
-                    && let Some(interest) = &demand.interest
-                {
-                    self.retain_accepted_output(
-                        execution,
-                        interest.key(),
-                        demand.observed_source.selected_product_commit(),
-                        demand.observed_source.selected_product_occurrence(),
-                    )?;
+                let basis = demand.observed_source.selected_product_commit();
+                let occurrence = demand.observed_source.selected_product_occurrence();
+                let caller_key = demand.interest.as_ref().map(|interest| interest.key());
+                for performed_key in performed.borrow().performed_keys() {
+                    if caller_key.is_none_or(|key| key != performed_key) {
+                        self.retain_accepted_output(execution, performed_key, basis, occurrence)?;
+                    }
+                }
+                if let Some(interest) = &demand.interest {
+                    self.retain_accepted_output(execution, interest.key(), basis, occurrence)?;
                 }
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
                 return Ok(progress);
             }
-            Err(stop) => stop,
+            Err(stop) => {
+                let basis = demand.observed_source.selected_product_commit();
+                let occurrence = demand.observed_source.selected_product_occurrence();
+                if occurrence.is_some() {
+                    for performed_key in performed.borrow().performed_keys() {
+                        let _ = self.retain_accepted_output(
+                            execution,
+                            performed_key,
+                            basis,
+                            occurrence,
+                        );
+                    }
+                }
+                stop
+            }
         };
         if stop.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied
             && let Some(source) = demand

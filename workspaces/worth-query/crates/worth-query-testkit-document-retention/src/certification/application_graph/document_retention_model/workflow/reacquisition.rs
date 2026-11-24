@@ -22,10 +22,13 @@ pub use worth_query_host::facade::{
 
 /// Both current-restore courts deliberately author the existing governed Spec.
 /// The default ReviewedDocumentWorkflow keeps its disabled read policy.
-pub fn read<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
-    application: &DocumentWorkflowRuntime<Program, GovernedDocumentWorkflow>,
+pub fn read<Application>(
+    application: &Application,
     original: &WorthQueryWorkflowInstanceDiscoveryIntent<DocumentRetentionSchema>,
-) -> WorthQueryWorkflowInstanceRead {
+) -> WorthQueryWorkflowInstanceRead
+where
+    Application: super::super::host::DocumentWorkflowApplication<Spec = GovernedDocumentWorkflow>,
+{
     let runtime = application.runtime();
     let scope = request_scope();
     let reader = authenticate_reviewer(runtime.installed_schema(), &scope);

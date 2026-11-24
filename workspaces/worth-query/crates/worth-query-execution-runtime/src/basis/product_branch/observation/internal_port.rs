@@ -62,6 +62,10 @@ pub trait ProductBranchLeaseInternalPort: Sized {
         &mut self,
         selected: &WorthQuerySelectedProgramInspection,
     ) -> Result<(), WorthQueryProductBranchAdmissionDenial>;
+    fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), WorthQueryProductBranchAdmissionDenial>;
     fn read_lease(&self) -> WorthQueryProductObservationLease;
     fn into_read_lease(self) -> WorthQueryProductObservationLease;
     fn read_lease_ref(&self) -> &WorthQueryProductObservationLease;
@@ -81,6 +85,13 @@ impl ProductBranchLeaseInternalPort for WorthQueryProductBranchLease {
         selected: &WorthQuerySelectedProgramInspection,
     ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
         Self::retain_selected_program_source(self, selected)
+    }
+
+    fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
+        Self::carry_selected_program_source_from(self, prior)
     }
 
     fn read_lease(&self) -> WorthQueryProductObservationLease {

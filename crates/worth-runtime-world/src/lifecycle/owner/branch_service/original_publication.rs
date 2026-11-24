@@ -1,6 +1,12 @@
 //! Source admission joins one exact Native effect to its original World occurrence.
 use super::super::RuntimeWorldOwnerRoot;
-use crate::history::{WorldReadmittedPublication, WorldReadmittedPublicationDenial as Denial};
+use crate::history::{
+    WorldObservedHomePublication, WorldReadmittedPublication,
+    WorldReadmittedPublicationDenial as Denial,
+};
+use worth_foundational::facade::{
+    DurableProductBranchReference, DurableProductReferenceGeneration,
+};
 use worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -9,15 +15,17 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub(super) fn read_original_native_publication(
+    fn read_verified_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        effect: ReadmittedRelationalAssociatedEffect,
-    ) -> Result<WorldReadmittedPublication, Denial> {
-        let _call = self.try_admit_call().ok_or(Denial::OwnerUnavailable)?;
-        let _operation = self
-            .reserve_creation_operation()
-            .map_err(|()| Denial::OwnerUnavailable)?;
+        effect: &ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        (
+            crate::durability::WorldCheckpointImage,
+            crate::durability::AdmittedWorldOccurrence,
+        ),
+        Denial,
+    > {
         let binding = self.state.durable.as_ref().ok_or(Denial::NotReadmitted)?;
         let association = effect
             .subject()
@@ -55,11 +63,88 @@ where
         {
             return Err(Denial::NativeMismatch);
         }
+        let occurrence = occurrence.clone();
+        Ok((image, occurrence))
+    }
+
+    pub(super) fn read_original_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: ReadmittedRelationalAssociatedEffect,
+    ) -> Result<WorldReadmittedPublication, Denial> {
+        let _call = self.try_admit_call().ok_or(Denial::OwnerUnavailable)?;
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        let (_, occurrence) = self.read_verified_occurrence(execution, &effect)?;
         self.state.history.readmitted_native_publication(
             execution,
             self.owner_identity(),
-            occurrence,
+            &occurrence,
             effect,
         )
+    }
+
+    pub(super) fn observe_original_home_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: ReadmittedRelationalAssociatedEffect,
+    ) -> Result<WorldObservedHomePublication, Denial> {
+        let _call = self.try_admit_call().ok_or(Denial::OwnerUnavailable)?;
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        let expected_owner = self
+            .owner_identity()
+            .durable()
+            .ok_or(Denial::NotReadmitted)?;
+        let (image, occurrence) = self.read_verified_occurrence(execution, &effect)?;
+        let open = occurrence.open();
+        if open.expected.branch.owner() != expected_owner || open.commit.owner() != expected_owner {
+            return Err(Denial::ForeignHome);
+        }
+        let before = DurableProductBranchReference::from_recorded(
+            open.expected.branch.clone(),
+            open.expected.incarnation,
+            open.expected.generation,
+            open.expected.commit,
+        )
+        .map_err(|_| Denial::NativeMismatch)?;
+        let next_generation = open
+            .expected
+            .generation
+            .get()
+            .checked_add(1)
+            .ok_or(Denial::NativeMismatch)?;
+        let after = DurableProductBranchReference::from_recorded(
+            open.expected.branch.clone(),
+            open.expected.incarnation,
+            DurableProductReferenceGeneration::from_recorded(next_generation),
+            open.commit,
+        )
+        .map_err(|_| Denial::NativeMismatch)?;
+        let recorded_before_component =
+            image
+                .history
+                .get(&open.expected.commit)
+                .and_then(|head| match &head.record().record {
+                    crate::durability::WorldRecord::Branch { components, .. } => {
+                        Some(components.relational.clone())
+                    }
+                    crate::durability::WorldRecord::BranchCreated(created) => {
+                        Some(created.components.relational.clone())
+                    }
+                    _ => None,
+                });
+        Ok(WorldObservedHomePublication::from_verified_occurrence(
+            before,
+            after,
+            open.association.attempt(),
+            occurrence.location().position(),
+            *occurrence.location().digest(),
+            occurrence.publishing_incarnation(),
+            recorded_before_component,
+            effect,
+        ))
     }
 }

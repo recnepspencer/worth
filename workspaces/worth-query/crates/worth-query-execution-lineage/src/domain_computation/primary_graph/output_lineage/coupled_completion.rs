@@ -13,7 +13,7 @@ pub struct CoupledOutputCompletion {
     receipt: Arc<worth_execution::ExecutionArray<CoupledCompletionCells>>,
 }
 struct CoupledCompletionCells {
-    receipt: OnceLock<WorthQueryApplicationLandedCommit>,
+    receipt: std::sync::Mutex<Option<WorthQueryApplicationLandedCommit>>,
     // The lineage owner retains this completion inside the same record cell.
     // This backlink is consulted only during its canonical publication join.
     lineage: OnceLock<std::sync::Weak<OnceLock<RecordedOutput>>>,
@@ -69,7 +69,7 @@ impl CoupledOutputCompletion {
             worth_execution::ExecutionRequestArrayBuilder::allocate(*execution, 1).map_err(map)?;
         receipt
             .push(CoupledCompletionCells {
-                receipt: OnceLock::new(),
+                receipt: std::sync::Mutex::new(None),
                 lineage: OnceLock::new(),
             })
             .map_err(map)?;
@@ -82,8 +82,11 @@ impl CoupledOutputCompletion {
         &self,
         settlement: &Arc<RecordedSettlementIdentity>,
     ) -> Option<WorthQueryApplicationCommitReceipt> {
-        let WorthQueryApplicationLandedCommit::Live { receipt } = self.receipt[0].receipt.get()?
-        else {
+        let guard = self.receipt[0]
+            .receipt
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let WorthQueryApplicationLandedCommit::Live { receipt } = guard.as_ref()? else {
             return None;
         };
         receipt
@@ -129,10 +132,68 @@ impl CoupledOutputCompletion {
         &self.source
     }
     pub fn complete(&self, receipt: WorthQueryApplicationLandedCommit) {
+        let mut slot = self.receipt[0]
+            .receipt
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(
-            self.receipt[0].receipt.set(receipt).is_ok(),
+            slot.is_none(),
             "one actual managed completion for the coupled writer"
         );
+        *slot = Some(receipt);
+    }
+    pub fn detach_receipt_for_home_retirement(
+        &self,
+    ) -> Result<Option<WorthQueryApplicationLandedCommit>, ()> {
+        let mut slot = self.receipt[0].receipt.try_lock().map_err(|_| ())?;
+        Ok(slot.take())
+    }
+    pub fn restore_receipt_after_refused_home_retirement(
+        &self,
+        receipt: WorthQueryApplicationLandedCommit,
+    ) {
+        let mut slot = self.receipt[0]
+            .receipt
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        assert!(
+            slot.is_none(),
+            "restored coupled receipt must not overwrite a live completion"
+        );
+        *slot = Some(receipt);
+    }
+}
+
+impl WorthQueryApplicationOutputLineage {
+    pub fn detach_coupled_completion_receipts_for_home_retirement(
+        &self,
+    ) -> Result<Vec<(CoupledOutputCompletion, WorthQueryApplicationLandedCommit)>, ()> {
+        let mut detached = Vec::new();
+        for occurrences in self.by_source.values() {
+            for generations in occurrences.values() {
+                for cells in generations.values() {
+                    for cell in cells {
+                        if let Some(recorded) = cell.get()
+                            && let Some(completion) = &recorded.coupled_completion
+                        {
+                            match completion.detach_receipt_for_home_retirement() {
+                                Ok(Some(landed)) => {
+                                    detached.push((completion.clone(), landed));
+                                }
+                                Ok(None) => {}
+                                Err(()) => {
+                                    for (prior, landed) in detached {
+                                        prior.restore_receipt_after_refused_home_retirement(landed);
+                                    }
+                                    return Err(());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(detached)
     }
 }
 impl input_cutoff::RetainedInputCutoffCandidate {

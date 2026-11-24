@@ -102,7 +102,7 @@ impl WorthQueryApplicationProductBranchCleanup {
             product,
             conditional,
         } = self;
-        if let Err(denial) = product.release_retired_history(retirements) {
+        if let Err(denial) = product.release_retired_history_with_request(execution, retirements) {
             return Err(Self::failed(
                 product,
                 conditional,

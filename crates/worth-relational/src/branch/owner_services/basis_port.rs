@@ -159,6 +159,25 @@ impl RelationalBranchBasisPort {
             .export_memory_component(execution, component)
     }
 
+    /// Describe the original predecessor and successor components directly from
+    /// a readmitted durable Native effect without requiring live branch history.
+    pub fn export_recorded_effect_components(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: &crate::durability::authority::ReadmittedRelationalAssociatedEffect,
+        recorded_empty_before: Option<&crate::branch::RecordedRelationalComponentReference>,
+    ) -> Result<
+        (
+            crate::branch::RecordedRelationalComponentReference,
+            crate::branch::RecordedRelationalComponentReference,
+        ),
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_recorded_effect_components(execution, effect, recorded_empty_before)
+    }
+
     /// Describe the original owner-admitted pinned subject independently of
     /// later branch advancement. This creates no recovery or durability proof.
     pub fn export_recorded_retained_component(

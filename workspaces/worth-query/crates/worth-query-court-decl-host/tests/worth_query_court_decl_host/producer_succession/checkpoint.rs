@@ -1,222 +1,395 @@
-//! Observe and corrupt the checkpoint made by the actual Query producer journey.
+//! Observe and corrupt durable artifacts made by the actual Query producer journey.
 use super::*;
 use serde::Deserialize;
 use serde_json::Value;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use worth_query_testkit_document_retention::facade::directory_home::{
+    directory_lease, ClosedDirectorySnapshot,
+};
 use sha2::{Digest, Sha256};
-const NATIVE_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+use std::sync::{Arc, Weak};
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_relational::facade::{
+    durability::{
+        RelationalDurableColdSource, RelationalDurableMemberCustody,
+        RelationalDurableMemberLocator, RelationalDurableMemberRetirementObservation,
+        RelationalDurableMemberRetirementRefusal, RelationalDurableOwnedReadRefusal,
+        RelationalDurableReadPayload, RelationalNativeCheckpoint,
+    },
+    publication::PatchStreamPosition,
+    storage::RelationalStorageUnavailableCause,
+};
+const ARTIFACT_MAGIC: &[u8] = b"WRTHRCCA";
 const ARTIFACT_HEADER: usize = 66;
-pub fn capture(app: &world::App) -> installation::WorthQueryApplicationCheckpoint {
-    app.with_host_advancement(|phase| {
-        app.capture_application_checkpoint(
-            &phase,
-            installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-        )
-        .unwrap()
-    })
-    .unwrap()
+
+pub fn capture(app: &world::App) -> Vec<u8> {
+    app.capture_native_checkpoint_frame()
 }
-#[derive(Deserialize)]
-struct Native<'a> {
-    #[serde(borrow)]
-    members: Vec<(serde::de::IgnoredAny, Blob<'a>)>,
-    #[serde(borrow)]
-    envelopes: Vec<Blob<'a>>,
+
+pub fn envelopes(app: &world::App) -> Vec<Value> {
+    envelopes_in_dir(app.directory())
 }
-struct Blob<'a>(&'a [u8]);
-impl<'de: 'a, 'a> Deserialize<'de> for Blob<'a> {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        struct Visitor;
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = Blob<'de>;
-            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                f.write_str("borrowed native envelope bytes")
+
+pub fn envelopes_in_dir(root: &Path) -> Vec<Value> {
+    let mut files = Vec::new();
+    collect_files(root, &mut files);
+    files.sort();
+    let mut by_commit: BTreeMap<u64, Value> = BTreeMap::new();
+    for path in files {
+        let Ok(bytes) = std::fs::read(&path) else {
+            continue;
+        };
+        let mut cursor = 0;
+        while let Some(pos) = bytes[cursor..]
+            .windows(ARTIFACT_MAGIC.len())
+            .position(|w| w == ARTIFACT_MAGIC)
+        {
+            let at = cursor + pos;
+            cursor = at + ARTIFACT_MAGIC.len();
+            if bytes.len() < at + ARTIFACT_HEADER {
+                continue;
             }
-            fn visit_borrowed_bytes<E: serde::de::Error>(
-                self,
-                bytes: &'de [u8],
-            ) -> Result<Self::Value, E> {
-                Ok(Blob(bytes))
+            let length = u64::from_le_bytes(bytes[at + 58..at + 66].try_into().unwrap()) as usize;
+            let Some(end) = at
+                .checked_add(ARTIFACT_HEADER)
+                .and_then(|start| start.checked_add(length))
+            else {
+                continue;
+            };
+            if end > bytes.len() {
+                continue;
+            }
+            let frame = &bytes[at..end];
+            if worth_relational::facade::durability::RelationalCanonicalCommitArtifact::preflight_frame_version(frame).is_err() {
+                continue;
+            }
+            if let Ok(super::checkpoint_value::InspectionValue(value)) =
+                rmp_serde::from_slice(&frame[ARTIFACT_HEADER..])
+                && let Some(canonical) = value.get("canonical")
+                && let Some(commit_id) = canonical["commit"]["commit_id"].as_u64()
+            {
+                by_commit.insert(commit_id, canonical.clone());
             }
         }
-        d.deserialize_bytes(Visitor)
+    }
+    by_commit.into_values().collect()
+}
+
+fn collect_files(root: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_files(&path, out);
+        } else {
+            out.push(path);
+        }
     }
 }
-pub fn envelopes(checkpoint: &installation::WorthQueryApplicationCheckpoint) -> Vec<Value> {
-    let (_, _, native) = native_wire(checkpoint);
-    native
-        .members
-        .iter()
-        .filter(|(_, blob)| blob.0.starts_with(b"WRTHRCCA"))
-        .map(|(_, blob)| {
-                // Inspection confers no readmission authority. Actual capture
-                // supplies the current positioned member; fault fixtures may
-                // intentionally leave its integrity commitment invalid.
-                worth_relational::facade::durability::RelationalCanonicalCommitArtifact::preflight_frame_version(blob.0).unwrap();
-                let length = u64::from_le_bytes(blob.0[58..66].try_into().unwrap());
-                assert_eq!(length as usize, blob.0.len() - ARTIFACT_HEADER);
-                let super::checkpoint_value::InspectionValue(value) =
-                    rmp_serde::from_slice(&blob.0[ARTIFACT_HEADER..]).unwrap();
-                value["canonical"].clone()
-        })
-        .collect()
-}
-fn native_wire(
-    checkpoint: &installation::WorthQueryApplicationCheckpoint,
-) -> (usize, usize, Native<'_>) {
-    let bytes = checkpoint.bytes();
-    let start = find(bytes, NATIVE_MAGIC);
-    let length = u64::from_be_bytes(bytes[start - 32..start - 24].try_into().unwrap()) as usize;
-    let native: Native<'_> =
-        rmp_serde::from_slice(&bytes[start + NATIVE_MAGIC.len()..start + length]).unwrap();
-    assert!(
-        native.envelopes.is_empty(),
-        "current checkpoints carry canonical artifacts as members"
-    );
-    (start, length, native)
-}
-fn retirement_member<'a>(native: &'a Native<'_>) -> &'a [u8] {
-    native
-        .members
-        .iter()
-        .map(|(_, blob)| blob.0)
-        .find(|bytes| {
-            bytes.starts_with(b"WRTHRCCA")
-                && bytes[ARTIFACT_HEADER..]
-                    .windows(b"producer_cascade_retirement".len())
-                    .any(|s| s == b"producer_cascade_retirement")
-        })
-        .expect("actual canonical producer retirement member")
-}
+
 fn find(bytes: &[u8], needle: &[u8]) -> usize {
     bytes
         .windows(needle.len())
         .position(|s| s == needle)
-        .expect("actual native checkpoint field")
-}
-pub fn tamper_anchor(
-    checkpoint: &installation::WorthQueryApplicationCheckpoint,
-) -> installation::WorthQueryApplicationCheckpoint {
-    let mut bytes = checkpoint.bytes().to_vec();
-    let (_, _, native) = native_wire(checkpoint);
-    let member = retirement_member(&native);
-    let group = find(&bytes, member)
-        + ARTIFACT_HEADER
-        + find(&member[ARTIFACT_HEADER..], b"producer_cascade_retirement");
-    let anchor = group + find(&bytes[group..], b"anchors");
-    let slot = anchor + find(&bytes[anchor..], b"local_slot") + b"local_slot".len();
-    assert!(
-        bytes[slot] < 128,
-        "fixture anchor uses a MessagePack positive fixint"
-    );
-    bytes[slot] ^= 1;
-    // Preserve Query framing/checksum. Imported DATA still lacks the issuing
-    // capture origin and cannot authorize this changed Native closure.
-    let checksum = Sha256::digest(&bytes[40..]);
-    bytes[8..40].copy_from_slice(&checksum);
-    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
-}
-pub fn assert_shrink_delta(
-    app: &world::App,
-    before: &installation::WorthQueryApplicationCheckpoint,
-    after: &installation::WorthQueryApplicationCheckpoint,
-) {
-    app.with_host_advancement(|phase| {
-        let before = app
-            .runtime()
-            .inspect_application_checkpoint(&phase, before.bytes())
-            .unwrap();
-        let after = app
-            .runtime()
-            .inspect_application_checkpoint(&phase, after.bytes())
-            .unwrap();
-        let removed = before
-            .live_records
-            .difference(&after.live_records)
-            .filter(|record| !before.current_publication_records.contains(record))
-            .collect::<Vec<_>>();
-        let entities = removed
-            .iter()
-            .filter(|r| {
-                r.class == worth_relational::facade::durability::RecordAllocationClass::Entity
-            })
-            .count();
-        // Two generated sources, their two realizations, two GeneratedBy and two Realizes edges.
-        assert_eq!(
-            entities, 4,
-            "all retained roots: before={:?}, after={:?}",
-            before.live_records, after.live_records
-        );
-        assert_eq!(removed.len() - entities, 4);
-    })
-    .unwrap();
+        .expect("actual native canonical artifact field")
 }
 
-pub fn omit_leaf_publication(
-    checkpoint: &installation::WorthQueryApplicationCheckpoint,
-) -> installation::WorthQueryApplicationCheckpoint {
-    let (start, native_len, native) = native_wire(checkpoint);
-    let blob = retirement_member(&native);
-    let group = ARTIFACT_HEADER + find(&blob[ARTIFACT_HEADER..], b"producer_cascade_retirement");
-    let array = group + find(&blob[group..], b"publications") + b"publications".len();
-    assert_eq!(
-        blob[array], 0x92,
-        "two separate retired publication origins"
-    );
-    let first = array + 1;
-    let first_len = value_len(&blob[first..]);
-    let second = first + first_len;
-    let end = second + value_len(&blob[second..]);
-    let mut changed = blob.to_vec();
-    changed.drain(second..end);
-    changed[array] = 0x91;
-    replace_member(checkpoint, start, native_len, blob, changed)
-}
-impl serde::Serialize for Blob<'_> {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_bytes(self.0)
-    }
-}
 fn value_len(bytes: &[u8]) -> usize {
     let mut decoder = rmp_serde::Deserializer::new(std::io::Cursor::new(bytes));
     serde::de::IgnoredAny::deserialize(&mut decoder).unwrap();
     decoder.position() as usize
 }
 
-pub fn omit_retirement_group(
-    checkpoint: &installation::WorthQueryApplicationCheckpoint,
-) -> installation::WorthQueryApplicationCheckpoint {
-    let (start, native_len, native) = native_wire(checkpoint);
-    let key = rmp_serde::to_vec("producer_cascade_retirement").unwrap();
-    let blob = retirement_member(&native);
-    let field = ARTIFACT_HEADER + find(&blob[ARTIFACT_HEADER..], &key);
-    let end = field + key.len() + value_len(&blob[field + key.len()..]);
-    let map = ARTIFACT_HEADER + find(&blob[ARTIFACT_HEADER..], b"canonical") + b"canonical".len();
-    assert_eq!(blob[map], 0xde, "current named envelope uses a map16");
-    let count = u16::from_be_bytes(blob[map + 1..map + 3].try_into().unwrap());
-    let mut changed = blob.to_vec();
-    changed.drain(field..end);
-    changed[map + 1..map + 3].copy_from_slice(&(count - 1).to_be_bytes());
-    replace_member(checkpoint, start, native_len, blob, changed)
+fn mutate_retirement_artifacts(
+    snapshot: &ClosedDirectorySnapshot,
+    directory: &Path,
+    mut transform: impl FnMut(&[u8]) -> Vec<u8>,
+) {
+    snapshot.restore_into(directory);
+    let mut files = Vec::new();
+    collect_files(directory, &mut files);
+    let mut mutated = 0usize;
+    for path in files {
+        let Ok(mut data) = std::fs::read(&path) else {
+            continue;
+        };
+        let mut changed_file = false;
+        let mut cursor = 0;
+        while let Some(pos) = data[cursor..]
+            .windows(ARTIFACT_MAGIC.len())
+            .position(|w| w == ARTIFACT_MAGIC)
+        {
+            let at = cursor + pos;
+            cursor = at + ARTIFACT_MAGIC.len();
+            if data.len() < at + ARTIFACT_HEADER {
+                continue;
+            }
+            let length = u64::from_le_bytes(data[at + 58..at + 66].try_into().unwrap()) as usize;
+            let Some(end) = at
+                .checked_add(ARTIFACT_HEADER)
+                .and_then(|start| start.checked_add(length))
+            else {
+                continue;
+            };
+            if end > data.len() {
+                continue;
+            }
+            let frame = &data[at..end];
+            if frame[ARTIFACT_HEADER..]
+                .windows(b"producer_cascade_retirement".len())
+                .any(|s| s == b"producer_cascade_retirement")
+            {
+                let mut replacement = transform(frame);
+                assert!(
+                    replacement.len() <= frame.len(),
+                    "tampered frame must fit inside original durable slot"
+                );
+                let payload_length = (replacement.len() - ARTIFACT_HEADER) as u64;
+                replacement[58..66].copy_from_slice(&payload_length.to_le_bytes());
+                replacement.resize(frame.len(), 0);
+                data[at..end].copy_from_slice(&replacement);
+                changed_file = true;
+                mutated += 1;
+                cursor = end;
+            }
+        }
+        if changed_file {
+            std::fs::write(&path, data).unwrap();
+        }
+    }
+    assert!(
+        mutated > 0,
+        "found durable producer_cascade_retirement artifact to mutate"
+    );
 }
 
-fn replace_member(
-    checkpoint: &installation::WorthQueryApplicationCheckpoint,
-    start: usize,
-    native_len: usize,
-    original_member: &[u8],
-    mut changed: Vec<u8>,
-) -> installation::WorthQueryApplicationCheckpoint {
-    let payload_length = (changed.len() - ARTIFACT_HEADER) as u64;
-    changed[58..66].copy_from_slice(&payload_length.to_le_bytes());
-    let original = rmp_serde::to_vec(&Blob(original_member)).unwrap();
-    let replacement = rmp_serde::to_vec(&Blob(&changed)).unwrap();
-    let bytes = checkpoint.bytes();
-    let offset = find(bytes, &original);
-    let removed = original.len() - replacement.len();
-    let mut frame = bytes.to_vec();
-    frame.splice(offset..offset + original.len(), replacement);
-    frame[start - 32..start - 24].copy_from_slice(&((native_len - removed) as u64).to_be_bytes());
-    let checksum = Sha256::digest(&frame[40..]);
-    frame[8..40].copy_from_slice(&checksum);
-    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(frame.into_boxed_slice())
+pub fn tamper_anchor_dir(snapshot: &ClosedDirectorySnapshot, directory: &Path) {
+    mutate_retirement_artifacts(snapshot, directory, |frame| {
+        let mut changed = frame.to_vec();
+        let group =
+            ARTIFACT_HEADER + find(&changed[ARTIFACT_HEADER..], b"producer_cascade_retirement");
+        let anchor = group + find(&changed[group..], b"anchors");
+        let slot = anchor + find(&changed[anchor..], b"local_slot") + b"local_slot".len();
+        assert!(
+            changed[slot] < 128,
+            "fixture anchor uses a MessagePack positive fixint"
+        );
+        changed[slot] ^= 1;
+        changed
+    });
+}
+
+pub fn omit_leaf_publication_dir(snapshot: &ClosedDirectorySnapshot, directory: &Path) {
+    mutate_retirement_artifacts(snapshot, directory, |frame| {
+        let group =
+            ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], b"producer_cascade_retirement");
+        let array = group + find(&frame[group..], b"publications") + b"publications".len();
+        assert_eq!(
+            frame[array], 0x92,
+            "two separate retired publication origins"
+        );
+        let first = array + 1;
+        let first_len = value_len(&frame[first..]);
+        let second = first + first_len;
+        let end = second + value_len(&frame[second..]);
+        let mut changed = frame.to_vec();
+        changed.drain(second..end);
+        changed[array] = 0x91;
+        changed
+    });
+}
+
+pub fn omit_retirement_group_dir(snapshot: &ClosedDirectorySnapshot, directory: &Path) {
+    mutate_retirement_artifacts(snapshot, directory, |frame| {
+        let key = rmp_serde::to_vec("producer_cascade_retirement").unwrap();
+        let field = ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], &key);
+        let end = field + key.len() + value_len(&frame[field + key.len()..]);
+        let map = ARTIFACT_HEADER + find(&frame[ARTIFACT_HEADER..], b"canonical") + b"canonical".len();
+        assert_eq!(frame[map], 0xde, "current named envelope uses a map16");
+        let count = u16::from_be_bytes(frame[map + 1..map + 3].try_into().unwrap());
+        let mut changed = frame.to_vec();
+        changed.drain(field..end);
+        changed[map + 1..map + 3].copy_from_slice(&(count - 1).to_be_bytes());
+        changed
+    });
+}
+
+#[derive(Debug)]
+struct DirectoryMemberColdSource {
+    files: Vec<Vec<u8>>,
+}
+
+impl DirectoryMemberColdSource {
+    fn from_dir(root: &Path) -> Arc<Self> {
+        let mut paths = Vec::new();
+        collect_files(root, &mut paths);
+        paths.sort();
+        let files = paths
+            .into_iter()
+            .filter_map(|path| std::fs::read(&path).ok())
+            .collect();
+        Arc::new(Self { files })
+    }
+}
+
+impl RelationalDurableColdSource for DirectoryMemberColdSource {
+    fn retain_members_for_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
+    }
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), RelationalDurableMemberRetirementRefusal> {
+        original
+            .is::<()>()
+            .then_some(())
+            .ok_or(RelationalDurableMemberRetirementRefusal::ForeignCustody)
+    }
+    fn advance_member_custody_retirement(
+        &self,
+        _request: &ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> RelationalDurableMemberRetirementObservation {
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => RelationalDurableMemberRetirementObservation::Complete,
+            Err(cause) => RelationalDurableMemberRetirementObservation::Refused(cause),
+        }
+    }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalDurableReadPayload, RelationalDurableOwnedReadRefusal> {
+        request
+            .check_live()
+            .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+        Ok(Box::new(()))
+    }
+    fn read_member_owned(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        request
+            .check_live()
+            .map_err(|cause| RelationalDurableOwnedReadRefusal::Request(cause.into()))?;
+        if !original.is::<()>() {
+            return Err(RelationalDurableOwnedReadRefusal::ForeignProtection);
+        }
+        let bytes = self
+            .read_member(locator, limit)
+            .map_err(RelationalDurableOwnedReadRefusal::Storage)?;
+        let mut out = ExecutionRequestArrayBuilder::<u8>::allocate(*request, bytes.len())
+            .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+        out.extend_from_slice(&bytes)
+            .map_err(RelationalDurableOwnedReadRefusal::Buffer)?;
+        out.seal_immutable_bytes()
+            .map_err(RelationalDurableOwnedReadRefusal::Buffer)
+    }
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, RelationalStorageUnavailableCause> {
+        Ok(RelationalDurableMemberCustody::new(()))
+    }
+
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
+        if locator.length > limit {
+            return Err(RelationalStorageUnavailableCause::LimitExceeded {
+                length: locator.length,
+                limit,
+            });
+        }
+        let len = usize::try_from(locator.length)
+            .map_err(|_| RelationalStorageUnavailableCause::MissingMember)?;
+        const MAGICS: &[&[u8]] = &[
+            b"WORTH-REL-REG7\n",
+            b"WORTH-REL-MBR1\n",
+            b"WRTHRCCA",
+            b"WRTHRBTA",
+            b"WRTHRSI1",
+            b"WRTHRCS1",
+        ];
+        for bytes in &self.files {
+            if bytes.len() < len {
+                continue;
+            }
+            for magic in MAGICS {
+                let mut cursor = 0;
+                while let Some(pos) = bytes[cursor..]
+                    .windows(magic.len())
+                    .position(|window| window == *magic)
+                {
+                    let at = cursor + pos;
+                    cursor = at + 1;
+                    let Some(end) = at.checked_add(len) else {
+                        continue;
+                    };
+                    if end > bytes.len() {
+                        break;
+                    }
+                    let slice = &bytes[at..end];
+                    if <[u8; 32]>::from(Sha256::digest(slice)) == locator.sha256 {
+                        return Ok(slice.to_vec());
+                    }
+                }
+            }
+        }
+        Err(RelationalStorageUnavailableCause::MissingMember)
+    }
+
+    fn read_commit(
+        &self,
+        _position: PatchStreamPosition,
+        _limit: u64,
+    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
+        Err(RelationalStorageUnavailableCause::SourceUnavailable)
+    }
+}
+
+pub fn assert_shrink_delta(directory: &Path, before: &[u8], after: &[u8]) {
+    let lease = directory_lease();
+    let request = worth_execution::ExecutionRequest::leased(&lease);
+    let source = DirectoryMemberColdSource::from_dir(directory);
+    let before = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &request,
+        before,
+        Arc::clone(&source) as Arc<dyn RelationalDurableColdSource>,
+    )
+    .expect("inspect before Native checkpoint");
+    let after = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &request,
+        after,
+        source as Arc<dyn RelationalDurableColdSource>,
+    )
+    .expect("inspect after Native checkpoint");
+    let removed = before
+        .mirror_live_records
+        .difference(&after.mirror_live_records)
+        .filter(|record| !before.current_publication_records.contains(record))
+        .collect::<Vec<_>>();
+    let entities = removed
+        .iter()
+        .filter(|r| r.class == worth_relational::facade::durability::RecordAllocationClass::Entity)
+        .count();
+    // Two generated sources, their two realizations, two GeneratedBy and two Realizes edges.
+    assert_eq!(
+        entities, 4,
+        "all retained roots: before={:?}, after={:?}",
+        before.mirror_live_records, after.mirror_live_records
+    );
+    assert_eq!(removed.len() - entities, 4);
 }

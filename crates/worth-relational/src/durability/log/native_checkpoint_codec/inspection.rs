@@ -9,17 +9,56 @@ use std::{
 pub(crate) fn inspect<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     bytes: &'a [u8],
+    external: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
 ) -> Result<RelationalCheckpointInspection<'a>, RelationalRecoveryStop> {
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
     let payload = super::checkpoint_payload(bytes)?;
-    // The one request-aware codec admits the roster/table before they grow.
-    let decoded = super::decode_checkpoint(execution, bytes)?.checkpoint;
-    let symbol_identity_frontier = decoded.symbol_identity_frontier;
-    let record_identity = decoded.record_identity;
-    let partition_images = decoded.partition_images;
-    let branch_roots = decoded.branch_roots;
+    let (
+        symbol_identity_frontier,
+        record_identity,
+        partition_images,
+        branch_roots,
+        branch_root_schema_images,
+        branch_cells,
+    ) = if let Some(decoded) = decode_for_inspection(execution, bytes, payload, external)? {
+        (
+            decoded.symbol_identity_frontier,
+            decoded.record_identity,
+            decoded.partition_images,
+            decoded.branch_roots,
+            decoded.branch_root_schema_images,
+            decoded.branch_cells,
+        )
+    } else {
+        let memory =
+            crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
+        let _member_memory = super::member_sequence::reserve(payload, execution)?;
+        let mut wire: super::checkpoint_wire::CheckpointWire<
+            '_,
+            crate::durability::data::RelationalCheckpointManifestDraft,
+        > = rmp_serde::from_slice(payload)
+            .map_err(|error| invalid(format!("native manifest: {error}")))?;
+        if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
+            drop(wire);
+            drop(memory);
+            return Err(invalid("canonical inventory shared before original admission").into());
+        }
+        crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
+        let manifest = wire.manifest.seal_ordinary();
+        let _ = super::expanded_checkpoint::validate_manifest(&manifest)?;
+        let manifest = manifest.ordinary_owned_draft();
+        let (_, branch_cells, _, _) = manifest.branch_data.ordinary_owned_parts();
+        (
+            manifest.symbol_identity_frontier,
+            manifest.record_identity,
+            Vec::new(),
+            Vec::new(),
+            manifest.schemas.ordinary_owned_copy(),
+            branch_cells,
+        )
+    };
     if record_identity.schema_version != DurableRecordIdentityState::CURRENT_SCHEMA_VERSION {
         return Err(invalid("unknown record identity schema").into());
     }
@@ -58,9 +97,10 @@ pub(crate) fn inspect<'a>(
         })
         .collect();
     let mut live_records = BTreeSet::new();
+    let mut mirror_live_records = BTreeSet::new();
     let mut current_publication_records = BTreeSet::new();
     let mut roster_kinds = BTreeSet::new();
-    for schema in &decoded.branch_root_schema_images {
+    for schema in &branch_root_schema_images {
         let (registry, _) = schema.readmit_registry().map_err(invalid)?;
         if let Some(storage) = registry.current_publication_storage {
             roster_kinds.extend(storage.metadata_kinds());
@@ -68,8 +108,9 @@ pub(crate) fn inspect<'a>(
     }
     // Alias targets are encoded in the mirror or another root. Union all
     // present arena images; a shared identity may be live in several roots.
-    for partitions in std::iter::once(partition_images)
+    for (index, partitions) in std::iter::once(partition_images)
         .chain(branch_roots.into_iter().map(|root| root.partition_images))
+        .enumerate()
     {
         let mut root_live = BTreeSet::new();
         for partition in partitions {
@@ -90,6 +131,9 @@ pub(crate) fn inspect<'a>(
                 &mut current_publication_records,
             )?;
         }
+        if index == 0 {
+            mirror_live_records.extend(root_live.iter().copied());
+        }
         live_records.extend(root_live);
     }
     let mut envelope = fields(payload)?;
@@ -99,7 +143,7 @@ pub(crate) fn inspect<'a>(
     take(&mut allocator, "append_frontiers")?;
     take(&mut allocator, "generation_high_water")?;
     Ok(RelationalCheckpointInspection {
-        branch_cells: decoded.branch_cells,
+        branch_cells,
         model: NativeCheckpointModelBytes {
             envelope,
             fields,
@@ -108,9 +152,53 @@ pub(crate) fn inspect<'a>(
         symbol_identity_frontier,
         frontiers,
         generations,
+        mirror_live_records,
         live_records,
         current_publication_records,
     })
+}
+
+fn decode_for_inspection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    bytes: &[u8],
+    payload: &[u8],
+    external: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+) -> Result<Option<DurableCheckpoint>, RelationalRecoveryStop> {
+    if let Some(source) = external {
+        let memory =
+            crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
+        let _member_memory = super::member_sequence::reserve(payload, execution)?;
+        let mut wire: super::checkpoint_wire::CheckpointWire<
+            '_,
+            crate::durability::data::RelationalCheckpointManifestDraft,
+        > = rmp_serde::from_slice(payload)
+            .map_err(|error| invalid(format!("native manifest: {error}")))?;
+        if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
+            drop(wire);
+            drop(memory);
+            return Err(invalid("canonical inventory shared before original admission").into());
+        }
+        crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
+        let manifest = wire.manifest.seal_ordinary();
+        let facts = super::expanded_checkpoint::validate_manifest(&manifest)?;
+        return super::expanded_checkpoint::expand(
+            execution,
+            manifest,
+            source,
+            facts.history_members,
+        )
+        .map(Some);
+    }
+    match super::decode_checkpoint(execution, bytes) {
+        Ok(decoded) => Ok(Some(decoded.checkpoint)),
+        Err(RelationalRecoveryStop::Durability(error))
+            if error.class == RecoveryFailureClass::CorruptCheckpoint
+                && error.detail == "external checkpoint requires its cold source" =>
+        {
+            Ok(None)
+        }
+        Err(error) => Err(error),
+    }
 }
 fn record_class(class: DurableRecordGenerationClass) -> RecordAllocationClass {
     match class {

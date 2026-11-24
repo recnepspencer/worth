@@ -13,6 +13,15 @@ use crate::storage::residency::{RelationalColdRegion, RelationalRegionResidency}
 
 const MEMBER_LIMIT: u64 = 1 << 30;
 
+pub(super) fn validate_manifest(
+    manifest: &RelationalCheckpointManifest,
+) -> Result<super::manifest_validation::ManifestDirectoryFacts, RelationalRecoveryStop> {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        super::manifest_validation::validate(lane, manifest)
+    })
+    .map_err(Into::into)
+}
+
 pub(super) fn expand(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,

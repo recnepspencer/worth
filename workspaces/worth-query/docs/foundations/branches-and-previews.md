@@ -1061,4 +1061,3 @@ source effects. An ineligible producer in an unrelated family does not refuse
 the group. A homogeneous member list can use source-completion or
 fixed required-output actions. Group creation, finish and abort preserve the
 document's payload and configured output mode.
-

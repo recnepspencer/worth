@@ -97,34 +97,19 @@ fn output_only_body_requires_a_real_entity_decision_read() {
 
 #[test]
 fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
-    let old = install::<31>();
-    assert!(matches!(create(&old, 312), Outcome::Committed { .. }));
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(old);
-    let schema = program::schema::<31>();
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<31>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
+    let dir = unique_directory("output-body");
+    let old = open_directory::<31>(&dir);
     assert!(matches!(
-        create(&restored, 312),
+        create(old.runtime(), 312),
+        Outcome::Committed { .. }
+    ));
+    close_directory(old);
+    let restored = open_directory::<31>(&dir);
+    assert!(matches!(
+        create(restored.runtime(), 312),
         Outcome::RecoveredCommitted(_)
     ));
-    let Outcome::Committed { receipt, .. } = invoke(&restored, 313) else {
+    let Outcome::Committed { receipt, .. } = invoke(restored.runtime(), 313) else {
         panic!("restored preserve")
     };
     let preserved = receipt
@@ -134,8 +119,8 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         .unwrap()
         .expect("restored Preserve output is present");
     assert!(receipt.outputs_of::<CreatedOutputs<31>>().is_err());
-    assert_eq!(read_retention(&restored), 7);
-    let Outcome::RecoveredCommitted(replayed) = invoke(&restored, 313) else {
+    assert_eq!(read_retention(restored.runtime()), 7);
+    let Outcome::RecoveredCommitted(replayed) = invoke(restored.runtime(), 313) else {
         panic!("restored replay")
     };
     assert!(receipt.matches_recorded_original(&replayed));
@@ -143,7 +128,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         replayed.semantic_result().semantic().receipt(),
         receipt.commit_reference()
     );
-    assert_eq!(read_retention(&restored), 7);
+    assert_eq!(read_retention(restored.runtime()), 7);
     assert_eq!(
         receipt
             .outputs_of::<ScopeOutputs<31>>()
@@ -154,4 +139,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
             .entity_id(),
         preserved.entity_id()
     );
+    drop((replayed, receipt));
+    close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -236,6 +236,9 @@ C5 deletes the accessor along with D18.
   - Delete the D13 door and the D18 refusal.
   - Boundary gates at zero; re-audit; no deleted callers.
   - Tier 3 and the cumulative oracle; milestone certification.
+  - Known Directory Home migration coverage gap (C5.2.1):
+    `worth-query-court-decl-host::certification::document_history::owned_outputs::member_retarget::courts::a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply`
+    retains its full live reverse/reapply assertions on MemoryOnly and proves Directory Home's intentional `UnsupportedCorrectionRelationPreimage` refusal on relation-only inverse preimages; the 4 post-reopen reads from the retired D13 interim checkpoint cannot run on Directory Home until durable relation-only inverse preimages are supported.
 
 ### C1 implementation and acceptance slices
 

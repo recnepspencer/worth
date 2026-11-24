@@ -4,11 +4,9 @@
 use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest as EquivalenceForTest;
 
-/// Three rings settle, and the world is captured.
-fn settled_checkpoint(
-    rings: &mut [Ring],
-) -> application_installation::WorthQueryApplicationCheckpoint {
-    let application = install(None, ring_world::seed::<3>);
+/// Three rings settle, and the Directory Home is checkpointed and closed.
+fn settled_checkpoint(rings: &mut [Ring]) -> std::path::PathBuf {
+    let application = open_directory(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d00);
@@ -16,7 +14,7 @@ fn settled_checkpoint(
         court.demand_ring(rings, index, "before the checkpoint");
     }
     drop((principal, scope));
-    worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application)
+    application.checkpoint_and_close_for_reopen()
 }
 
 mod forked_branch;
@@ -32,7 +30,7 @@ mod serial {
         Reading::decisions();
         let checkpoint = settled_checkpoint(&mut rings);
 
-        let application = install(Some(checkpoint), ring_world::seed::<3>);
+        let application = open_directory(Some(checkpoint), ring_world::seed::<3>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3d40);
@@ -267,7 +265,7 @@ mod serial {
         Reading::decisions();
         let checkpoint = settled_checkpoint(&mut rings);
 
-        let application = install(Some(checkpoint), ring_world::seed::<3>);
+        let application = open_directory(Some(checkpoint), ring_world::seed::<3>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3a40);
@@ -312,7 +310,7 @@ mod serial {
         Reading::decisions();
         let checkpoint = settled_checkpoint(&mut rings);
 
-        let application = install(Some(checkpoint), ring_world::seed::<3>);
+        let application = open_directory(Some(checkpoint), ring_world::seed::<3>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3a80);

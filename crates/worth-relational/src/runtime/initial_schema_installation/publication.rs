@@ -39,10 +39,29 @@ impl FreshRelationalInitialSchemaInstallation<'_> {
         sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
     {
+        self.install_with_managed_sources_and_readmission_metadata(
+            request,
+            additions,
+            invariants,
+            sources,
+            crate::runtime::HomeReadmissionMetadataKinds::default(),
+        )
+    }
+
+    pub fn install_with_managed_sources_and_readmission_metadata(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+        additions: RelationalSchemaRegistry,
+        invariants: Vec<CustomInvariantRegistration>,
+        sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
+        readmission_metadata_kinds: crate::runtime::HomeReadmissionMetadataKinds,
+    ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
+    {
         self.installation.install_with_publication(
             additions,
             invariants,
             sources,
+            readmission_metadata_kinds,
             Some((self.initialization, request)),
         )
     }

@@ -99,6 +99,19 @@ impl DurabilitySubsystem {
         self.state.write().push_log_envelope(commit);
     }
 
+    pub(crate) fn install_home_readmission_phase(
+        &self,
+        phase: Arc<crate::durability::HomeReadmissionMetadataPhase>,
+    ) {
+        self.state.write().home_readmission_phase = Some(phase);
+    }
+
+    pub(crate) fn close_home_readmission_phase(&self) {
+        if let Some(phase) = self.state.write().home_readmission_phase.take() {
+            phase.close();
+        }
+    }
+
     pub(crate) fn push_checkpoint(&self, checkpoint: DurableCheckpoint) {
         self.state.write().push_checkpoint(checkpoint);
     }

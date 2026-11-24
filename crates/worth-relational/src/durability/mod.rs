@@ -1,12 +1,13 @@
 pub(crate) use authority::RecordedReplayResultSchema;
-pub(crate) use authority::RecoveredRootInventory;
+pub(crate) use authority::{HomeReadmissionMetadataPhase, RecoveredRootInventory};
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod access;
 pub mod authority;
 pub use authority::{
-    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
-    RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
-    RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
+    HomeReadmissionMetadataAuthority, RecoveredCheckpointTransition,
+    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
+    RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
+    RefusedRecoveredCheckpointTransition,
 };
 pub(crate) mod artifact_canonical_payload;
 pub(crate) mod artifact_payload_emission;

@@ -80,6 +80,12 @@ pub trait ProductBranchOwnerCleanupInternalPort: Sized {
         retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>;
 
+    fn release_retired_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>;
+
     fn pending_signal_bases(
         &self,
     ) -> Result<
@@ -98,6 +104,14 @@ impl ProductBranchOwnerCleanupInternalPort for WorthQueryProductBranchOwnerClean
         retirements: &mut OwnerCleanupRetirements,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         Self::release_retired_history(self, retirements)
+    }
+
+    fn release_retired_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        Self::release_retired_history_with_request(self, execution, retirements)
     }
 
     fn pending_signal_bases(

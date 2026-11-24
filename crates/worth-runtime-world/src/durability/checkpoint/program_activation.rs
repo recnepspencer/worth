@@ -37,6 +37,11 @@ impl WorldProgramActivationHistory {
             binding,
         })
     }
+    /// Whether durable history retirement removed this commit from live ancestry.
+    pub fn is_retired(&self, commit: DurableCompositeCommitIdentity) -> bool {
+        commit.owner() == self.binding.binding().owner()
+            && self.image.retired_history.contains_key(&commit)
+    }
     /// Descriptive history only: this neither mints a live commit nor admits use.
     pub fn recorded_entry(
         &self,

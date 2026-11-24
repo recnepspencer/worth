@@ -83,6 +83,7 @@ pub fn readmit_latest(
     originals: &WorldProgramActivationHistory,
     selected: &CompositeCommitIdentity,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
@@ -95,6 +96,7 @@ pub fn readmit_latest(
         JoinScope::CurrentNativeHead(selected),
         &basis,
         material,
+        metadata_authority,
     )
 }
 pub fn readmit_branch(
@@ -104,6 +106,7 @@ pub fn readmit_branch(
     originals: &WorldProgramActivationHistory,
     branch: &ProductBranchObservation,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     readmit(
         execution,
@@ -113,6 +116,7 @@ pub fn readmit_branch(
         JoinScope::SelectedWorldBranch(branch),
         branch.basis().relational_basis(),
         material,
+        metadata_authority,
     )
 }
 fn readmit(
@@ -123,6 +127,7 @@ fn readmit(
     scope: JoinScope<'_>,
     basis: &AdmittedRelationalBranchBasis,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     let owner = scope
         .selected()
@@ -135,6 +140,7 @@ fn readmit(
         layout,
         basis,
         WorldOwnerCoordinate::Home { owner },
+        metadata_authority,
     )?;
     let facts = original_join::readmit(execution, originals, facts, &scope)?;
     relationships::readmit(&facts)?;

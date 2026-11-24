@@ -7,26 +7,22 @@ use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_topology_entry::PlanarInitialAdjustment;
 #[test]
 fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() {
+    let dir = installation::unique_directory("discovered-historical");
+    let foreign = crate::installed_schema();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, DiscoveredProgram>::begin()
         .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
-    let world = installation::install_selected_program(
-        &crate::installed_schema(),
-        worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
-        ),
-        &[],
-        program,
-    )
-    .unwrap();
-    let adapter = authentication::admit(world.application.installed_schema());
+    let home = installation::open_directory_selected_program(&dir, &foreign, program);
+    let application = home.runtime();
+    let adapter = authentication::admit(application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
         &scope,
     ))
     .unwrap();
-    let request = world.application.request(&principal, &scope);
+    let request = application.request(&principal, &scope);
     let input = PlanarInitialAdjustment {
         scope_key: "anchor-b".to_owned(),
         replacement_y: length(2),
@@ -42,7 +38,7 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         .without_source()
         .idempotency_owned(110_024)
         .unwrap_or_else(|(_, _, d)| panic!("capture: {d:?}"))
-        .retain_operation::<DiscoveredProgram, DiscoveredAction>(&world.application)
+        .retain_durable_operation::<DiscoveredProgram, DiscoveredAction>(&request, application)
         .unwrap_or_else(|(_, d)| panic!("construction: {d:?}"));
     let operation = match operation.advance(&request) {
         Advance::Progress {
@@ -57,14 +53,33 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         _ => panic!("original source must perform before capture"),
     };
     assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
-    drop(operation);
+    let mut operation = operation;
+    let settled = loop {
+        match operation.advance(&request) {
+            Advance::Progress {
+                operation: next, ..
+            } => operation = next,
+            Advance::Settled(settled) => break settled,
+            Advance::Terminal { operation, denial } => panic!(
+                "original settlement: {denial:?}, native={:?}",
+                operation.native_outcome()
+            ),
+            Advance::Refused { denial, .. } => panic!("original settlement admission: {denial:?}"),
+        }
+    };
+    settled
+        .close(&request)
+        .unwrap_or_else(|(_, d)| panic!("original close: {d:?}"));
+    drop(request);
+    drop(principal);
+    drop(adapter);
+    installation::close_directory_program(home);
     let program = ApplicationProgramAuthoring::<ConsumerSchema, DiscoveredProgram>::begin()
         .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
-    let checkpoint=world.application.with_host_advancement(|phase|world.application.runtime()
-        .capture_application_checkpoint(&phase,worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).unwrap();
-    let restored = installation::restore_selected_program(&world, program, checkpoint);
+    let reopened = installation::open_directory_selected_program(&dir, &foreign, program);
+    let restored = reopened.runtime();
     let adapter = authentication::admit(restored.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
@@ -83,7 +98,7 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         .without_source()
         .idempotency_owned(110_024)
         .unwrap_or_else(|(_, _, d)| panic!("restored capture: {d:?}"))
-        .retain_operation::<DiscoveredProgram, DiscoveredAction>(&restored)
+        .retain_durable_operation::<DiscoveredProgram, DiscoveredAction>(&request, &restored)
         .unwrap_or_else(|(_, d)| panic!("restored construction: {d:?}"));
     // Recorded replay first observes the original, then asks the real registry
     // for retained output custody (the phase cutover in 6b1c8ff677).
@@ -172,4 +187,10 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         &head
     );
     assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
+    drop(head);
+    drop(request);
+    drop(principal);
+    drop(adapter);
+    installation::close_directory_program(reopened);
+    let _ = std::fs::remove_dir_all(&dir);
 }

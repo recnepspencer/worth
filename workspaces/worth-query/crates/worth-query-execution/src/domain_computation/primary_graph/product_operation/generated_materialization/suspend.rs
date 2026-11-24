@@ -213,39 +213,6 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
             ));
         }
-        let prepared = application
-            .inner
-            .runtime
-            .primary_provider_ref()
-            .graph_ref()
-            .with_runtime(execution, |runtime| {
-                runtime
-                    .owner_component_services()
-                    .materialization_port()
-                    .prepare_generated_materialization_suspension(
-                        execution,
-                        product.relational_basis(),
-                        &generated_entities,
-                    )
-            });
-        let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
-        let (candidate, completion) = prepared.into_parts();
-        let prepared = product
-            .publication_binding()
-            .prepare_relational_candidate(candidate, request, true)
-            .map_err(|denial| match denial {
-                PublicationDenial::ClockMismatch => {
-                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
-                },
-PublicationDenial::Stopped(stop) => {
-                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(
-                        stop,
-                    ))
-                }
-                PublicationDenial::Refused(_) => {
-                    WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect
-                }
-            })?;
         let correspondence = exact.correspondence;
         let producer = ProducerQualification {
             binding_type: TypeId::of::<Producer>(),
@@ -266,16 +233,109 @@ PublicationDenial::Stopped(stop) => {
             output_generation,
             observed_source_facts: exact.observed_source_facts,
         };
-        execute_suspension_publication(
-            application,
-            phase,
-            &product,
-            prepared,
-            branch,
-            correspondence,
-            producer,
-            completion,
+        let pending_suspension = application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref()
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .owner_component_services()
+                    .materialization_port()
+                    .validate_generated_materialization_suspension(
+                        execution,
+                        product.relational_basis(),
+                        &generated_entities,
+                    )
+            })
+            .map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
+        let (proposal, pending_completion) = pending_suspension.into_parts();
+        let open = super::durable_publication::open_if_home(
+            &product.publication_binding(),
+            request,
+            execution,
         )
+        .map_err(super::durable_publication::map_open_suspension_denial)?;
+        match open {
+            super::durable_publication::DurableMaterializationOpen::Memory => {
+                let candidate = application
+                    .inner
+                    .runtime
+                    .primary_provider_ref()
+                    .graph_ref()
+                    .with_runtime(execution, |runtime| {
+                        runtime
+                            .prepare_validated_proposal(execution, proposal)
+                            .map_err(worth_relational::facade::branch::RelationalMaterializationError::Commit)
+                    })
+                    .map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
+                let completion = pending_completion.finish(&candidate);
+                let prepared = product
+                    .publication_binding()
+                    .prepare_relational_candidate(candidate, request, true)
+                    .map_err(super::durable_publication::map_suspension_denial)?;
+                execute_suspension_publication(
+                    application,
+                    phase,
+                    &product,
+                    prepared,
+                    branch,
+                    correspondence,
+                    producer,
+                    completion,
+                )
+            }
+            super::durable_publication::DurableMaterializationOpen::Retained(effects) => {
+                super::durable_publication::finish_suspension_outcome(
+                    application,
+                    &product,
+                    Ok(PublicationOutcome::ProductUnpublished(effects)),
+                    branch,
+                    correspondence,
+                    producer,
+                    None,
+                )
+            }
+            super::durable_publication::DurableMaterializationOpen::Opened { opened, control } => {
+                let pub_exec = phase
+                    .execution_request_for(application.inner.runtime.product_runtime_ref())
+                    .map_err(|cause| {
+                        WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
+                    })?;
+                match super::durable_publication::prepare_and_execute_opened(
+                    application,
+                    &product.publication_binding(),
+                    opened,
+                    &control,
+                    request,
+                    pub_exec,
+                    proposal,
+                    |candidate| pending_completion.finish(candidate),
+                ) {
+                    Ok((outcome, completion)) => super::durable_publication::finish_suspension_outcome(
+                        application,
+                        &product,
+                        Ok(outcome),
+                        branch,
+                        correspondence,
+                        producer,
+                        Some(completion),
+                    ),
+                    Err((PublicationOutcome::ProductUnpublished(effects), completion)) => {
+                        super::durable_publication::finish_suspension_outcome(
+                            application,
+                            &product,
+                            Ok(PublicationOutcome::ProductUnpublished(effects)),
+                            branch,
+                            correspondence,
+                            producer,
+                            completion,
+                        )
+                    }
+                    Err(_) => Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect),
+                }
+            }
+        }
     }
 }
 
@@ -291,61 +351,22 @@ fn execute_suspension_publication<Schema: ApplicationSchema>(
     producer: ProducerQualification,
     completion: RelationalMaterializationSuspensionCompletion,
 ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure> {
-    match prepared.execute(
+    let outcome = prepared.execute(
         phase
             .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
             })?,
-    ) {
-        Ok(PublicationOutcome::Performed(performed)) => {
-            let commit = performed
-                .component_results()
-                .relational_commit_result()
-                .cloned()
-                .expect("a relational-only publication returns its relational result");
-            let mut publication = performed.consume();
-            let observation = publication
-                .take_successor_observation()
-                .expect("the requested successor observation is retained");
-            Ok(suspended_output(
-                application.materialization_publication_binding(observation),
-                branch,
-                correspondence,
-                producer,
-                completion,
-                commit,
-            ))
-        }
-        Err(PublicationDenial::ClockMismatch) => Err(
-            WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
-                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock,
-                ),
-            ),
-        ),
-        Err(PublicationDenial::Stopped(stop)) => Err(
-            WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(stop)),
-        ),
-        Err(PublicationDenial::Refused(no_effect)) => {
-            drop(no_effect);
-            Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)
-        }
-        Ok(PublicationOutcome::ProductUnpublished(effects)) => {
-            let product = application.unpublished_materialization(effects, product);
-            Err(
-                WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(
-                    WorthQueryGeneratedOutputSuspensionRecovery::new(
-                        product,
-                        completion,
-                        branch,
-                        correspondence,
-                        producer,
-                    ),
-                ),
-            )
-        }
-    }
+    );
+    super::durable_publication::finish_suspension_outcome(
+        application,
+        product,
+        outcome,
+        branch,
+        correspondence,
+        producer,
+        Some(completion),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph::product_operation) fn suspended_output(

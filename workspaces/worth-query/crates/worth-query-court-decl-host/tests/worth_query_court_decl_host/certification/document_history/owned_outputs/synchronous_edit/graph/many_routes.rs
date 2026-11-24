@@ -7,7 +7,7 @@ mod touch_work;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::ApplicationProducerRoundLimits;
 use worth_relational::facade::inspection::observe_maintenance_work;
-type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
+type Host = world::DirHost<program::Program>;
 /// The fixture world seeds its decision member with this value.
 const MEMBER_VALUE: u64 = 5;
 const ROUTES: u64 = 3;
@@ -20,7 +20,7 @@ pub(in super::super::super) fn install(worker: bool) -> Host {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    world::install_program_with_value::<program::Program>(limits, 2)
+    world::open_directory_program_with_value::<program::Program>(limits, 2)
 }
 /// Each seeded source is a real authored model with its own committed producers.
 pub(in super::super::super) fn seed(

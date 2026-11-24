@@ -12,7 +12,10 @@ mod runtime;
 mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
-pub use close::{WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed};
+pub use close::{
+    WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
+    WorthQueryApplicationHomeClosed,
+};
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,

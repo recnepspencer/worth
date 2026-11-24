@@ -122,6 +122,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
             payload,
         });
     }
+    let mut decoded = Vec::new();
     for row in records {
         let original = originals
             .recorded_entry(row.commit)
@@ -147,24 +148,103 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
             .installed_producers
             .readmit_checkpoint_output(&application.inner.installed_schema, &checkpoint, execution)
             .map_err(|_| Denial::ObligationSubjectMismatch)?;
+        let observation = branches
+            .branches()
+            .iter()
+            .find(|known| {
+                known.branch_identity().name().as_str() == row.branch
+                    && known.owner_identity().durable() == Some(row.commit.owner())
+            })
+            .cloned()
+            .ok_or(Denial::ObligationSubjectMismatch)?;
+        decoded.push((row.commit, row.branch, row.producer, observation, checkpoint, correspondence));
+    }
+    let lineage = application
+        .inner
+        .runtime
+        .primary_provider_ref()
+        .graph_ref()
+        .output_lineage_ref()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut latest_slot = std::collections::BTreeMap::new();
+    let mut latest_family = std::collections::BTreeMap::new();
+    for (commit, branch, producer, _, checkpoint, correspondence) in &decoded {
+        let slot_key = (
+            branch.clone(),
+            commit.owner(),
+            producer.clone(),
+            checkpoint.scope,
+            checkpoint.source_partition,
+        );
+        latest_slot
+            .entry(slot_key)
+            .and_modify(|max: &mut u64| *max = (*max).max(commit.ordinal()))
+            .or_insert(commit.ordinal());
+        if let Some((family, role)) = lineage
+            .checkpoint_family_role(correspondence.binding_type())
+            .map_err(|_| Denial::ObligationSubjectMismatch)?
+            && let Some(entity) = correspondence.publication_entity_for_role(role)
+        {
+            let family_key = (
+                branch.clone(),
+                commit.owner(),
+                family.to_owned(),
+                role.to_owned(),
+                checkpoint.scope,
+                checkpoint.source_partition,
+                entity,
+            );
+            latest_family
+                .entry(family_key)
+                .and_modify(|max: &mut u64| *max = (*max).max(commit.ordinal()))
+                .or_insert(commit.ordinal());
+        }
+    }
+    let mut seen_slots = std::collections::BTreeSet::new();
+    for (commit, branch, producer, observation, checkpoint, correspondence) in
+        decoded.into_iter().rev()
+    {
+        let slot_key = (
+            branch.clone(),
+            commit.owner(),
+            producer,
+            checkpoint.scope,
+            checkpoint.source_partition,
+        );
+        if latest_slot.get(&slot_key).copied() != Some(commit.ordinal()) {
+            continue;
+        }
+        if let Some((family, role)) = lineage
+            .checkpoint_family_role(correspondence.binding_type())
+            .map_err(|_| Denial::ObligationSubjectMismatch)?
+            && let Some(entity) = correspondence.publication_entity_for_role(role)
+        {
+            let family_key = (
+                branch,
+                commit.owner(),
+                family.to_owned(),
+                role.to_owned(),
+                checkpoint.scope,
+                checkpoint.source_partition,
+                entity,
+            );
+            if latest_family.get(&family_key).copied() != Some(commit.ordinal()) {
+                continue;
+            }
+        }
+        if !seen_slots.insert(slot_key) {
+            continue;
+        }
         accepted.push(
             super::super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
-                observation: Some(
-                    branches
-                        .branches()
-                        .iter()
-                        .find(|known| {
-                            known.branch_identity().name().as_str() == row.branch
-                                && known.owner_identity().durable() == Some(row.commit.owner())
-                        })
-                        .cloned()
-                        .ok_or(Denial::ObligationSubjectMismatch)?,
-                ),
+                observation: Some(observation),
                 checkpoint,
                 correspondence,
             },
         );
     }
+    drop(lineage);
     application
         .inner
         .runtime

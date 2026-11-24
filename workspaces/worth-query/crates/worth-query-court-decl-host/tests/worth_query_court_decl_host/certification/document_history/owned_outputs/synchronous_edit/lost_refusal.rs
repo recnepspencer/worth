@@ -4,7 +4,7 @@ use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind as Kind;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
-fn refuses_typed(host: &world::Host) {
+fn refuses_typed(host: &world::DirHost) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -38,10 +38,10 @@ fn refuses_typed(host: &world::Host) {
 #[test]
 fn a_coupled_break_without_a_subject_refuses_as_a_custody_fault() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    refuses_typed(&world::install());
+    refuses_typed(&world::open_directory_host(false));
 }
 #[test]
 fn worker_only_coupled_break_without_a_subject_refuses_as_a_custody_fault() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    refuses_typed(&world::install_worker_only());
+    refuses_typed(&world::open_directory_host(true));
 }

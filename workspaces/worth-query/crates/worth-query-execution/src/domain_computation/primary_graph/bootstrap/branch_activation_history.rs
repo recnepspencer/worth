@@ -47,6 +47,9 @@ use QueryHomeProgramActivationDenial as Denial;
 pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(), Denial> {
     let support = application
         .installed_program_support()
@@ -66,7 +69,8 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .map_err(Denial::Source)?;
     let graph = &application.inner.runtime.primary_provider_ref().graph_ref();
     graph.with_runtime(execution, |native| {
-        let source = BranchActivationSource::new(native, &graph.layout_ref(), published);
+        let source =
+            BranchActivationSource::new(native, &graph.layout_ref(), published, metadata_authority);
         for branch in inventory.branches() {
             execution.consult().map_err(Denial::Execution)?;
             let current = source.read(execution, branch.basis().relational_basis())?;
@@ -88,6 +92,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
                 branch,
                 worth_foundational::facade::CanonicalDigestId::new(*program.revision().as_bytes()),
                 &history,
+                metadata_authority,
             )
             .map_err(Denial::Workflow)?;
         }
@@ -148,6 +153,7 @@ pub(in crate::domain_computation::primary_graph) fn verify_predecessor<Schema>(
             branch,
             worth_foundational::facade::CanonicalDigestId::new(*program.revision().as_bytes()),
             &history,
+            None,
         )
         .map_err(Denial::Workflow)?;
     }

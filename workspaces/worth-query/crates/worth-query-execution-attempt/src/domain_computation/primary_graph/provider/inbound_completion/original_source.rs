@@ -141,7 +141,7 @@ fn original_publication(
         .readmit_associated_effect(execution, &exact.ok_or(Denial::CommitUnavailable)?)
         .map_err(native_read_denial)?;
     observation
-        .readmitted_native_publication(execution, native)
+        .observe_home_original_publication(execution, native)
         .map(OriginalPublication::Home)
         .map_err(world_read_denial)
 }
@@ -153,8 +153,9 @@ fn matches_world(
 ) -> bool {
     match source {
         OriginalPublication::Home(source) => {
-            source.after().selected_commit() == world
-                && source.after().lifecycle_incarnation() == incarnation
+            world.owner_identity().durable() == Some(source.after().branch().owner())
+                && source.after().selected_commit().ordinal() == world.ordinal()
+                && source.after().incarnation().ordinal() == incarnation.ordinal()
         }
         // The actual World observation service admits the current receiver
         // against the exact Native artifact; these are original DATA coordinates.

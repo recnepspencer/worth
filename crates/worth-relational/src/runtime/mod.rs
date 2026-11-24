@@ -29,9 +29,10 @@ mod operation_control;
 mod schema_transition_admission;
 mod state;
 pub use state::{
-    PreparedRelationalRuntimeClose, RelationalPublicationCompanionCustody,
-    RelationalPublicationCustodyHolders, RelationalPublicationRegistryCustody,
-    RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    HomeReadmissionMetadataKinds, PreparedRelationalRuntimeClose,
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
 };
 
 pub use crate::config::data::RelationalRuntimeConfig;
@@ -66,7 +67,8 @@ pub use crate::visibility::materialization::read_records::{
     RelationalHistoricalSourceReadDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
-    VisibilityProjectionView, VisibilityReadContext,
+    HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, VisibilityProjectionView,
+    VisibilityReadContext,
 };
 pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,

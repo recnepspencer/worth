@@ -45,7 +45,8 @@ pub(crate) use publication::{
     RecoveredWorldOwnerEvidenceRef,
 };
 pub use publication::{
-    WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
+    WorldObservedHomePublication, WorldObservedMemoryPublication, WorldReadmittedPublication,
+    WorldReadmittedPublicationDenial,
 };
 #[cfg(test)]
 pub(crate) use reclamation::CompositeHistoryReclamationRequest;

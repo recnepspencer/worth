@@ -171,14 +171,25 @@ pub(in crate::domain_computation::primary_graph) fn readmit_home_branch_basis(
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let graph = &provider.graph_ref();
     graph.with_runtime(&phase.execution_request(), |native| {
-        graph.carry_primary_index_basis_for_basis(&phase.execution_request(), native, basis)
-            .map_err(|cause| match cause {
-                super::super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) =>
-                    super::super::super::bootstrap::request_read_denial::read(cause),
-                cause => WorthQueryPrimaryGraphInstallationDenial::new(
-                    WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
-                    format!("Home selected-basis index admission denied: {cause:?}")),
-            })
+        match graph.carry_primary_index_basis_for_basis(&phase.execution_request(), native, basis) {
+            Ok(())
+            | Err(
+                super::super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
+                    super::super::super::exact_basis_access::WorthQueryExactBasisSnapshotDenial::BranchMaterializationSuspended,
+                ),
+            ) => Ok(()),
+            Err(
+                super::super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(
+                    cause,
+                ),
+            ) => Err(super::super::super::bootstrap::request_read_denial::read(
+                cause,
+            )),
+            Err(cause) => Err(WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
+                format!("Home selected-basis index admission denied: {cause:?}"),
+            )),
+        }
     })?;
     Ok(())
 }

@@ -2,56 +2,40 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 
 #[test]
 fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
-    let old = install::<30>();
+    let dir = unique_directory("genesis");
+    let old = open_directory::<30>(&dir);
     assert!(matches!(
-        create(&old, 304, input(1)).unwrap(),
+        create(old.runtime(), 304, input(1)).unwrap(),
         Outcome::Committed { .. }
     ));
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    let revision = *old.installed_program().revision();
-    drop(old);
+    let revision = *old.runtime().installed_program().revision();
+    close_directory(old);
     let schema = program::schema::<30>();
     let portable = WorthQueryPortableApplicationSchemaRecord::project(schema.erased());
     assert_eq!(
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<30>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
-    assert_eq!(*restored.installed_program().revision(), revision);
-    let replay = create(&restored, 304, input(1)).unwrap();
+    let restored = open_directory::<30>(&dir);
+    assert_eq!(*restored.runtime().installed_program().revision(), revision);
+    let replay = create(restored.runtime(), 304, input(1)).unwrap();
     // Restart retains the committed idempotency fact, not the old live receipt.
     assert!(
         matches!(replay, Outcome::RecoveredCommitted(_)),
         "{replay:?}"
     );
-    assert_eq!(read_retention(&restored), 7);
+    assert_eq!(read_retention(restored.runtime()), 7);
     let mut second = input(1);
     second.identity = "restored-new-document".to_owned();
     second.retention_days = 10;
     assert!(matches!(
-        create(&restored, 306, second).unwrap(),
+        create(restored.runtime(), 306, second).unwrap(),
         Outcome::Committed { .. }
     ));
     let scope = request_scope();
-    let principal = authenticate_operator(restored.runtime().installed_schema(), &scope);
+    let principal = authenticate_operator(restored.runtime().runtime().installed_schema(), &scope);
     let read = restored
+        .runtime()
         .request(&principal, &scope)
         .query(query::DocumentRetentionRead {
             identity: "restored-new-document".to_owned(),
@@ -61,6 +45,7 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
     assert_eq!(read.rows().len(), 1);
     assert_eq!(read.rows()[0].retention_days, 10);
     let linked = restored
+        .runtime()
         .request(&principal, &scope)
         .query(super::super::creation_link::query::ReadTenant(
             "restored-new-document".to_owned(),
@@ -71,8 +56,13 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
         linked.rows(),
         &[super::super::creation_link::query::TenantRow(1)]
     );
-    assert!(matches!(invoke(&restored, 305), Outcome::Committed { .. }));
-    assert_eq!(read_retention(&restored), 30);
+    assert!(matches!(
+        invoke(restored.runtime(), 305),
+        Outcome::Committed { .. }
+    ));
+    assert_eq!(read_retention(restored.runtime()), 30);
+    close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

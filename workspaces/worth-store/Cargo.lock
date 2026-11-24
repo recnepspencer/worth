@@ -1649,9 +1649,11 @@ name = "worth-query-testkit-document-retention"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "worth-execution",
  "worth-foundational",
  "worth-query-decl",
  "worth-query-host",
+ "worth-relational",
 ]
 
 [[package]]

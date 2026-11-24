@@ -37,41 +37,52 @@ pub(super) fn settle_with_result(
 pub(super) fn with_legacy_rows(
     worker: bool,
     verify: impl FnOnce(
-        &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+        &world::DirHost<program::Lazy>,
         &family::Request<'_, '_, '_>,
         snapshot::Snapshot,
     ),
 ) {
-    with_middle_count(worker, None, verify);
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let (host, snapshot) = build_middle_count(worker, None);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    verify(&host, &request, snapshot);
+}
+
+pub(super) fn build_legacy_rows(
+    worker: bool,
+) -> (world::DirHost<program::Lazy>, snapshot::Snapshot) {
+    build_middle_count(worker, None)
 }
 
 pub(super) fn with_repeated_shrink(
     worker: bool,
     verify: impl FnOnce(
-        &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+        &world::DirHost<program::Lazy>,
         &family::Request<'_, '_, '_>,
         snapshot::Snapshot,
     ),
 ) {
-    with_middle_count(worker, Some(3), verify);
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let (host, snapshot) = build_middle_count(worker, Some(3));
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    verify(&host, &request, snapshot);
 }
 
-fn with_middle_count(
+fn build_middle_count(
     worker: bool,
     middle: Option<u64>,
-    verify: impl FnOnce(
-        &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
-        &family::Request<'_, '_, '_>,
-        snapshot::Snapshot,
-    ),
-) {
+) -> (world::DirHost<program::Lazy>, snapshot::Snapshot) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let limits = if worker {
         world::worker_limits()
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host = world::install_program_with_value::<program::Lazy>(limits, 5);
+    let host = world::open_directory_program_with_value::<program::Lazy>(limits, 5);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -268,7 +279,8 @@ fn with_middle_count(
         publications.published_rows.len() + publications.omitted_publications,
         actual
     );
-    verify(&host, &request, snapshot);
+    drop((_original, principal, scope));
+    (host, snapshot)
 }
 
 fn legacy(worker: bool) {

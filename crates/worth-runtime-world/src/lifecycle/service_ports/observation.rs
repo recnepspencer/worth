@@ -22,6 +22,20 @@ impl RuntimeWorldObservationPort {
             .observe_memory_original_publication(execution, effect)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+    /// Observe one durable Home's original World occurrence and Native effect
+    /// without pinning live history, so retired commits remain replayable.
+    pub fn observe_home_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_home_original_publication(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     /// Read the original durable occurrence for this exact Native owner-admitted
     /// effect. Reconstruction reads the selected World image and bounded tails;
     /// it never executes a handler, publishes, or manufactures a live result.
@@ -303,6 +317,21 @@ impl RuntimeWorldObservationPort {
     > {
         self.service()?
             .prepare_exact_product_history_page(execution, cursor)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    /// Prepare one retained product-parent step, following owner-recorded
+    /// retirement splices across retired interior commits.
+    pub fn prepare_retained_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        super::super::RuntimeWorldServiceDenial<crate::branch::ProductExactHistoryDenial>,
+    > {
+        self.service()?
+            .prepare_retained_product_history_page(execution, cursor)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 

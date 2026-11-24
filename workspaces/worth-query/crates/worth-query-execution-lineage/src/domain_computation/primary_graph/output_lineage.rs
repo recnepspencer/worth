@@ -34,6 +34,8 @@ pub mod native_output_witness;
 pub mod native_prior_checkpoint;
 
 pub mod partition_index;
+pub mod pending_coupled;
+pub use pending_coupled::PendingCoupledOutputRecord;
 pub mod prepared_slot;
 
 pub use input_cutoff::RetainedInputCutoffCandidate;
@@ -126,6 +128,7 @@ pub struct WorthQueryApplicationOutputLineage {
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
     output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     source_publication_coverage: source_publication::SourcePublicationCoverage,
+    pending_coupled: Vec<pending_coupled::PendingCoupledOutputRecord>,
 }
 
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;

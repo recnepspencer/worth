@@ -47,6 +47,27 @@ impl WorthQueryRetiredHomeQuery {
     }
 }
 
+impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
+    #[doc(hidden)]
+    pub fn flush_pending_coupled_outputs(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.runtime().inner.flush_pending_coupled_outputs(request)
+    }
+
+    #[doc(hidden)]
+    pub fn retain_coupled_output_records_from_receipt(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        self.runtime()
+            .inner
+            .retain_coupled_output_records_from_receipt(request, receipt)
+    }
+}
+
 impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     #[doc(hidden)]
     pub fn prepare_home_retirement(
@@ -85,8 +106,12 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
 }
 
 impl<Schema: ApplicationSchema, Program> WorthQueryPreparedHomeQuery<Schema, Program> {
-    /// Pre-seal refusal returns the same Query with its original Some runtime.
-    pub fn resume(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
+    /// Pre-seal refusal returns the same Query with its original Some runtime
+    /// and restores any coupled-completion receipts detached during preflight.
+    pub fn resume(mut self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
+        if let Some(backing) = Arc::get_mut(&mut self.query.backing) {
+            backing.runtime_mut().restore_after_refused_home_retirement();
+        }
         self.query
     }
 

@@ -72,9 +72,10 @@ pub use crate::durability::{
     RelationalSelectedCheckpointObservation,
 };
 pub use crate::durability::{
-    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
-    RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
-    RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
+    HomeReadmissionMetadataAuthority, RecoveredCheckpointTransition,
+    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
+    RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
+    RefusedRecoveredCheckpointTransition,
 };
 pub use crate::history::data::RelationalAssociationDiscovery;
 pub use crate::runtime::CompleteRelationalCheckpointPreparation;

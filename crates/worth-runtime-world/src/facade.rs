@@ -80,8 +80,8 @@ pub use crate::history::{
     HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
     RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
     RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
-    RuntimeWorldPublicationRow, WorldObservedMemoryPublication, WorldReadmittedPublication,
-    WorldReadmittedPublicationDenial,
+    RuntimeWorldPublicationRow, WorldObservedHomePublication, WorldObservedMemoryPublication,
+    WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };
 
 pub use crate::identity::{

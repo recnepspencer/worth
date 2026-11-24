@@ -1,5 +1,5 @@
 //! Current admission expiring inside a coupled old-input loan vetoes the edit.
-use super::super::{control::ClockSource, courts::reset, courts::settle, PROBE};
+use super::super::{courts::reset, courts::settle, PROBE};
 use super::*;
 use worth_query_host::facade::{
     admission::authenticated_principal::{
@@ -12,27 +12,15 @@ fn coupled_authentication_expiring_during_predecessor_read_has_no_effect() {
     let controller = std::sync::Arc::new(WorthQueryAdmissionTimeController::new().unwrap());
     controller.hold();
     let clock = controller.clock();
-    let schema = Schema::declaration().unwrap();
-    let host = in_memory_program_with_authorization_time_source(
-        ApplicationProgramAuthoring::<Schema, predecessor::program::Program>::begin()
-            .with_schema(&schema)
-            .validated_program()
-            .unwrap(),
-        schema,
-        (world::Configuration::default(),),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
-        host_limits(clock.clone()),
-        |_, graph, installed| world::seed(graph, installed, 1, None),
-        ClockSource(clock.clone()),
-    )
-    .unwrap();
+    let host =
+        world::authorization_clock::install::<predecessor::program::Program>(clock.clone(), false, 1);
     reset(false);
     let scope =
         WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), clock);
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     settle(&request, &host).unwrap();
-    let checkpoint = courts::checkpoint(&host);
+    let checkpoint = synchronous_edit::failure::memory_basis_state(&host);
     let before = host.current_world();
     PROBE.with(|probe| {
         probe.borrow_mut().after_read = Some(Box::new(move || {
@@ -76,5 +64,5 @@ fn coupled_authentication_expiring_during_predecessor_read_has_no_effect() {
         )
     });
     assert_eq!(host.current_world(), before);
-    courts::assert_model_unchanged(&host, &checkpoint);
+    synchronous_edit::failure::assert_memory_basis_unchanged(&host, &checkpoint);
 }

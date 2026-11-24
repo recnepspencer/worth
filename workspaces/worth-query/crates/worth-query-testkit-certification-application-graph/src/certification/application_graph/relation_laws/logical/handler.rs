@@ -4,6 +4,11 @@ pub use super::operation::*;
 pub use super::*;
 pub struct Handler;
 impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CheckBinding<L>> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Input,

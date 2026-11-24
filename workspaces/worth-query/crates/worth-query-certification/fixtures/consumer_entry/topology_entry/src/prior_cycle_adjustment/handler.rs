@@ -12,6 +12,7 @@ pub struct PriorCycleAdjustmentHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PriorCycleAdjustmentBinding<Schema>>
     for PriorCycleAdjustmentHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &PriorCycleAdjustment,

@@ -46,6 +46,7 @@ impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<
             source,
             ordinary,
             Some(activation_seed),
+            None,
         )?;
         Ok((
             PreparedHomeSignalProgram {
@@ -79,6 +80,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             state,
             schema,
             restore_work,
+            metadata_readmission_authority,
         } = self;
         let HomeSignalProgramParts {
             prepared,
@@ -92,6 +94,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             source,
             ordinary,
             None,
+            metadata_readmission_authority,
         )?;
         Ok((
             PreparedExistingHomeSignalProgram {
@@ -164,8 +167,9 @@ fn attach<Schema: ApplicationSchemaComposition, Program>(
         readiness_routes,
         definition_routes,
         operations,
+        metadata_readmission_authority,
     } = *prepared;
-    Ok(assembly::HomeQueryPreparation {state,bootstrap,services,producers,conditionals,producer_routes,readiness_routes,definition_routes,operations,bridge:crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge::attach_authored_home_bridge(ordinary,assembly)})
+    Ok(assembly::HomeQueryPreparation {state,bootstrap,services,producers,conditionals,producer_routes,readiness_routes,definition_routes,operations,bridge:crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge::attach_authored_home_bridge(ordinary,assembly),metadata_readmission_authority})
 }
 
 impl<Schema: ApplicationSchemaComposition, Program>

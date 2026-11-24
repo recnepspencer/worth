@@ -219,7 +219,7 @@ fn read_publication(
         .map_err(super::source_denial::native)?;
     product
         .observation_port()
-        .readmitted_native_publication(execution, effect)
+        .observe_home_original_publication(execution, effect)
         .map(OriginalPublication::Home)
         .map_err(super::source_denial::world)
 }

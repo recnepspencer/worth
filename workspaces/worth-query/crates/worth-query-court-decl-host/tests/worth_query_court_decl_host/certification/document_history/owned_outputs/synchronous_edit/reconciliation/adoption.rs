@@ -29,7 +29,7 @@ pub(super) fn raise_cap(
 }
 
 pub(super) fn verify(
-    host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+    host: &world::DirHost<program::Lazy>,
     request: &family::Request<'_, '_, '_>,
     expected: snapshot::Snapshot,
 ) {

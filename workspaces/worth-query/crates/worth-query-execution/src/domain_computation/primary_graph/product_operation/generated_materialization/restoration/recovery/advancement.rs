@@ -45,6 +45,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 match recovery.state {
                     RecoveryState::Unpublished { unpublished } => {
                         let (product, retry) = unpublished.into_parts();
+                        if product.next_actions().contains(
+                            &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+                        ) {
+                            return Err(failure(
+                                WorthQueryGeneratedOutputRestorationRecoveryStage::ReopenRequired,
+                                RecoveryState::World {
+                                    recovery: product.into_recovery(),
+                                    retry,
+                                },
+                            ));
+                        }
                         let needs_settlement = product.relational_requires_settlement();
                         self.continue_restoration_world(
                             execution,
@@ -56,8 +67,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         )
                     }
                     RecoveryState::World { recovery, retry } => {
-                        let needs_settlement = match recovery.inspect() {
-                            Ok(product) => product.relational_requires_settlement(),
+                        let product = match recovery.inspect() {
+                            Ok(product) => product,
                             Err(_) => {
                                 return Err(failure(
                                     WorthQueryGeneratedOutputRestorationRecoveryStage::Inspection,
@@ -65,6 +76,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 ));
                             }
                         };
+                        if product.next_actions().contains(
+                            &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+                        ) {
+                            return Err(failure(
+                                WorthQueryGeneratedOutputRestorationRecoveryStage::ReopenRequired,
+                                RecoveryState::World { recovery, retry },
+                            ));
+                        }
+                        let needs_settlement = product.relational_requires_settlement();
                         self.continue_restoration_world(
                             execution,
                             recovery,

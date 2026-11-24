@@ -13,6 +13,9 @@ use worth_runtime_world::facade::{RuntimeWorldInspectionPort, RuntimeWorldObserv
 pub fn verify<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(), Denial> {
     let owner = &application.runtime.product_runtime.owner_ref();
     let graph = &application.runtime.primary_provider.graph_ref();
@@ -24,6 +27,7 @@ pub fn verify<Schema: ApplicationSchema>(
             &owner.inspection_port(),
             &owner.observation_port(),
             Some(&application.runtime.primary_provider),
+            metadata_authority,
         )
     })
 }
@@ -34,7 +38,7 @@ pub fn verify_source(
     inspection: &RuntimeWorldInspectionPort,
     observation: &RuntimeWorldObservationPort,
 ) -> Result<(), Denial> {
-    verify_with_material(execution, native, layout, inspection, observation, None)
+    verify_with_material(execution, native, layout, inspection, observation, None, None)
 }
 fn verify_with_material(
     execution: &ExecutionRequest<'_, '_>,
@@ -44,6 +48,9 @@ fn verify_with_material(
     observation: &RuntimeWorldObservationPort,
     material_owner: Option<
         &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    >,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
     >,
 ) -> Result<(), Denial> {
     let inventory = observation
@@ -71,6 +78,7 @@ fn verify_with_material(
         &originals,
         selected.selected_commit(),
         material_owner,
+        metadata_authority,
     )?;
     for branch in inventory.branches() {
         let first = readmit_branch(
@@ -80,6 +88,7 @@ fn verify_with_material(
             &originals,
             branch,
             material_owner,
+            metadata_authority,
         )?;
         material = material.or(first);
     }

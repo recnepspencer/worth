@@ -29,6 +29,7 @@ pub(crate) struct DurabilityState {
     )>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
     pub(super) source_roots: Option<Arc<crate::durability::RecoveredRootInventory>>,
+    pub(super) home_readmission_phase: Option<Arc<crate::durability::HomeReadmissionMetadataPhase>>,
     log_commit_index: HashMap<CommitId, Arc<RelationalCommitEnvelopeResidency>>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
 }
@@ -47,6 +48,7 @@ impl DurabilityState {
             // A fork has its own actual branch inventory. It does not acquire
             // the source owner's separate checkpoint-image admissions.
             source_roots: None,
+            home_readmission_phase: None,
             log_commit_index: self.log_commit_index.clone(),
             checkpoint_commit_index: self.checkpoint_commit_index.clone(),
         }
@@ -60,6 +62,9 @@ impl DurabilityState {
             Arc<RelationalCommitEnvelopeResidency>,
         ),
     ) {
+        if let Some(phase) = self.home_readmission_phase.take() {
+            phase.close();
+        }
         self.log_commit_index.insert(commit.0, commit.2.clone());
         self.log.push_back(commit);
     }

@@ -15,9 +15,18 @@ use crate::branch::{
 /// The observation shares the admitted root and lease. It performs no live
 /// branch lookup, and therefore remains stable when the branch reference later
 /// moves.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RelationalBranchObservation {
     inner: Arc<AdmittedRelationalBranchBasisInner>,
+}
+
+impl std::fmt::Debug for RelationalBranchObservation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RelationalBranchObservation")
+            .field("descriptor", &self.inner.descriptor)
+            .field("identity", &self.inner.identity)
+            .finish_non_exhaustive()
+    }
 }
 
 impl AdmittedRelationalBranchBasis {

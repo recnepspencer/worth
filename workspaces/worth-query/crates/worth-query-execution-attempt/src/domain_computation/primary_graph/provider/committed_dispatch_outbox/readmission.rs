@@ -3,7 +3,9 @@ use super::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, ContractValidatedAspectValueView};
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
-use worth_relational::facade::runtime::{EntityReadRecord, VisibilityProjectionView};
+use worth_relational::facade::runtime::{
+    BoundedEntityKindTruthRead, EntityReadRecord,
+};
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn dispatch_readmission_catalog(
@@ -16,39 +18,75 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &ExecutionRequest<'_, '_>,
         observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
         inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        metadata_authority: Option<
+            &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+        >,
     ) -> Result<bool, Denial> {
         let (inbound, candidates) = self.graph.with_runtime(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .map_err(|_| Denial::ExactCommitUnavailable)?;
-            let view = runtime
-                .read_truth()
-                .project_observation(&basis.observation())
-                .map_err(|_| Denial::ExactCommitUnavailable)?;
-            self.readmit_outbox_view(execution, &view)
+            let layout = self.graph.layout_ref().provider_dispatch_outbox();
+            let binding_layout = self.graph.layout_ref().provider_idempotency();
+            let (outboxes, bindings) = match metadata_authority {
+                Some(authority) => {
+                    use worth_relational::facade::runtime::HomeReadmissionMetadataReadDenial as ReadDenial;
+                    let map_read = |cause| match cause {
+                        ReadDenial::Execution(cause) => read_denial(cause),
+                        ReadDenial::PhaseClosed | ReadDenial::KindNotAdmitted(_) => {
+                            Denial::ExactCommitUnavailable
+                        }
+                    };
+                    let view = runtime
+                        .read_truth()
+                        .project_home_readmission_metadata(authority, &basis.observation())
+                        .map_err(|_| Denial::ExactCommitUnavailable)?;
+                    let outboxes = view
+                        .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
+                        .map_err(map_read)?
+                        .map_err(|_| Denial::Malformed)?;
+                    if outboxes.records().is_empty() {
+                        return Ok((false, Vec::new()));
+                    }
+                    let bindings = view
+                        .bounded_entities_of_kind(execution, binding_layout.entity_kind, usize::MAX)
+                        .map_err(map_read)?
+                        .map_err(|_| Denial::Malformed)?;
+                    (outboxes, bindings)
+                }
+                None => {
+                    let view = runtime
+                        .read_truth()
+                        .project_observation(&basis.observation())
+                        .map_err(|_| Denial::ExactCommitUnavailable)?;
+                    let outboxes = view
+                        .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
+                        .map_err(read_denial)?
+                        .map_err(|_| Denial::Malformed)?;
+                    if outboxes.records().is_empty() {
+                        return Ok((false, Vec::new()));
+                    }
+                    let bindings = view
+                        .bounded_entities_of_kind(execution, binding_layout.entity_kind, usize::MAX)
+                        .map_err(read_denial)?
+                        .map_err(|_| Denial::Malformed)?;
+                    (outboxes, bindings)
+                }
+            };
+            self.readmit_outbox_records(execution, &outboxes, &bindings)
         })?;
         self.readmit_dispatch_correlation_index(execution, observation, inspection, candidates)?;
         Ok(inbound)
     }
 
-    fn readmit_outbox_view(
+    fn readmit_outbox_records(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        view: &VisibilityProjectionView,
+        outboxes: &BoundedEntityKindTruthRead,
+        bindings: &BoundedEntityKindTruthRead,
     ) -> Result<(bool, Vec<super::recovered::RecoveredDispatchCandidate>), Denial> {
         let layout = self.graph.layout_ref().provider_dispatch_outbox();
-        let outboxes = view
-            .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
-            .map_err(read_denial)?
-            .map_err(|_| Denial::Malformed)?;
-        if outboxes.records().is_empty() {
-            return Ok((false, Vec::new()));
-        }
         let binding_layout = self.graph.layout_ref().provider_idempotency();
-        let bindings = view
-            .bounded_entities_of_kind(execution, binding_layout.entity_kind, usize::MAX)
-            .map_err(read_denial)?
-            .map_err(|_| Denial::Malformed)?;
         let bytes = bindings
             .records()
             .len()

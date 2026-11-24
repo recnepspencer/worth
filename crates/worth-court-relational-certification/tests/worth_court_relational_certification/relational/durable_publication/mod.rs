@@ -2,6 +2,7 @@
 mod aggregate_validation;
 mod associated_effects;
 mod cold_envelope_custody;
+mod home_readmission_metadata;
 mod index_catalog;
 mod initial_schema_recovery;
 mod prepared_home_schema;

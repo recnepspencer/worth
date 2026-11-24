@@ -120,12 +120,15 @@ pub use lifecycle::{
     RelationalBranchLifecyclePosture,
 };
 pub use materialization::{
-    PreparedRelationalMaterializationSuspension, PreparedRelationalRematerialization,
-    RelationalEntityMaterialization, RelationalMaterializationCustody,
-    RelationalMaterializationError, RelationalMaterializationRecord,
-    RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
-    RelationalRelationMaterialization, RelationalRematerializationCompletion,
-    RelationalRematerializationFailure, SuspendRelationalMaterialization,
+    PendingRelationalMaterializationSuspension,
+    PendingRelationalMaterializationSuspensionCompletion, PendingRelationalRematerialization,
+    PendingRelationalRematerializationCompletion, PreparedRelationalMaterializationSuspension,
+    PreparedRelationalRematerialization, RelationalEntityMaterialization,
+    RelationalMaterializationCustody, RelationalMaterializationError,
+    RelationalMaterializationRecord, RelationalMaterializationSuspension,
+    RelationalMaterializationSuspensionCompletion, RelationalRelationMaterialization,
+    RelationalRematerializationCompletion, RelationalRematerializationFailure,
+    SuspendRelationalMaterialization,
 };
 pub use owner_services::{
     RelationalBranchBasisPort, RelationalBranchLifecyclePort,

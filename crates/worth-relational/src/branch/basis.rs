@@ -159,9 +159,19 @@ impl ResolvedRelationalBasisDescriptor {
 /// Clones share one owner-issued lease and one immutable root. Cloning never
 /// revalidates, reacquires retention, copies truth, or contacts live branch
 /// state.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AdmittedRelationalBranchBasis {
     pub(crate) inner: Arc<AdmittedRelationalBranchBasisInner>,
+}
+
+impl std::fmt::Debug for AdmittedRelationalBranchBasis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdmittedRelationalBranchBasis")
+            .field("descriptor", &self.inner.descriptor)
+            .field("identity", &self.inner.identity)
+            .field("admission_identity", &self.inner.admission_identity)
+            .finish_non_exhaustive()
+    }
 }
 
 impl PartialEq for AdmittedRelationalBranchBasis {

@@ -8,7 +8,30 @@ pub fn lower_layout(
     value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 ) -> Result<(WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial>
 {
-    WorthQueryPrimaryGraphLayout::lower(schema, native_contracts, existing_registry, value_bindings)
+    WorthQueryPrimaryGraphLayout::lower(
+        schema,
+        native_contracts,
+        existing_registry,
+        value_bindings,
+        false,
+    )
+}
+
+pub fn lower_layout_for_program(
+    schema: &ErasedApplicationSchemaDeclaration,
+    native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+    existing_registry: &RelationalSchemaRegistry,
+    value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    current_publication_ownership: bool,
+) -> Result<(WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial>
+{
+    WorthQueryPrimaryGraphLayout::lower(
+        schema,
+        native_contracts,
+        existing_registry,
+        value_bindings,
+        current_publication_ownership,
+    )
 }
 
 pub fn lower_layout_with_original(
@@ -19,6 +42,7 @@ pub fn lower_layout_with_original(
     original: &RelationalSchemaRegistry,
     maximum_kind: Option<KindId>,
     maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+    current_publication_ownership: bool,
 ) -> Result<(WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial>
 {
     WorthQueryPrimaryGraphLayout::lower_with_original(
@@ -29,6 +53,7 @@ pub fn lower_layout_with_original(
         original,
         maximum_kind,
         maximum_aspect,
+        current_publication_ownership,
     )
 }
 
@@ -38,6 +63,7 @@ pub fn lower_layout_successor(
     base: &RelationalSchemaRegistry,
     value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     predecessor: &WorthQueryPrimaryGraphLayout,
+    current_publication_ownership: bool,
 ) -> Result<(WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial>
 {
     WorthQueryPrimaryGraphLayout::lower_successor(
@@ -46,6 +72,7 @@ pub fn lower_layout_successor(
         base,
         value_bindings,
         predecessor,
+        current_publication_ownership,
     )
 }
 
@@ -55,6 +82,7 @@ impl WorthQueryPrimaryGraphLayout {
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
         existing_registry: &RelationalSchemaRegistry,
         value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+        current_publication_ownership: bool,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial> {
         Self::lower_with_roles(
             schema,
@@ -63,9 +91,11 @@ impl WorthQueryPrimaryGraphLayout {
             value_bindings,
             None,
             source_registration::SourceRegistration::new(None),
+            current_publication_ownership,
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn lower_with_original(
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
@@ -74,6 +104,7 @@ impl WorthQueryPrimaryGraphLayout {
         original: &RelationalSchemaRegistry,
         maximum_kind: Option<KindId>,
         maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+        current_publication_ownership: bool,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial> {
         let roles = physical_identity::PhysicalIdentityBindings::readmit(
             schema,
@@ -89,6 +120,7 @@ impl WorthQueryPrimaryGraphLayout {
             value_bindings,
             roles.as_ref(),
             source_registration::SourceRegistration::new(Some(original)),
+            current_publication_ownership,
         )?;
         if let Some(roles) = &roles {
             roles.require_original(&result.1, original)?;
@@ -102,6 +134,7 @@ impl WorthQueryPrimaryGraphLayout {
         base: &RelationalSchemaRegistry,
         value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
         predecessor: &Self,
+        current_publication_ownership: bool,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial> {
         Self::lower_with_roles(
             schema,
@@ -110,6 +143,7 @@ impl WorthQueryPrimaryGraphLayout {
             value_bindings,
             Some(&predecessor.physical_roles),
             source_registration::SourceRegistration::new(None),
+            current_publication_ownership,
         )
     }
 
@@ -123,6 +157,7 @@ impl WorthQueryPrimaryGraphLayout {
         value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
         previous_roles: Option<&physical_identity::PhysicalIdentityBindings>,
         sources: source_registration::SourceRegistration<'_>,
+        current_publication_ownership: bool,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial> {
         let mut roles = physical_identity::PhysicalIdentityAllocation::new(
             previous_roles,
@@ -268,6 +303,13 @@ impl WorthQueryPrimaryGraphLayout {
             &relation_layouts,
             &live_control_entity_kinds,
         )?;
+        let registry = if current_publication_ownership {
+            let registry = super::install_current_publication_ownership(registry)?;
+            roles.reserve_registry(&registry);
+            registry
+        } else {
+            registry
+        };
         let physical_roles = roles.finish(&registry, entity_kinds, relation_kinds)?;
         Ok((
             Self {

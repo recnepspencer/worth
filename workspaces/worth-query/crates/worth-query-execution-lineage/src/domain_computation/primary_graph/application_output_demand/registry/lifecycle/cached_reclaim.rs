@@ -107,12 +107,20 @@ impl DemandRegistryState {
 
         let mut behind_ready = None;
         for (key, record) in &self.records {
-            if closed_cached(record) && !superseded(record) {
+            if (closed_cached(record) && !superseded(record))
+                || (closed_superseded(record)
+                    && matches!(
+                        record.idle_disposition(false),
+                        super::super::IdleRowDisposition::Retired(reason)
+                            if reason.releases_finished_work()
+                    ))
+            {
                 let prepaid = &self.records;
                 if !held_by_row(record) && !crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(prepaid, key) {
                     return Ok(Some(key.clone()));
                 }
-            } else if behind_ready.is_none()
+            }
+            if behind_ready.is_none()
                 && closed_superseded(record)
                 && still_claimed.is_none_or(|claimed| key > claimed)
             {

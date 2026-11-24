@@ -61,22 +61,25 @@ impl TopologySchemaBinding for NoReuseSchema {
 }
 
 fn install_no_reuse(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
+    directory: Option<std::path::PathBuf>,
+) -> support::DirectoryApp<NoReuseSchema, NoReuseProgram> {
     install_no_reuse_with_build(
-        checkpoint,
+        directory,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         None,
     )
 }
 
 fn install_no_reuse_with_build(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    directory: Option<std::path::PathBuf>,
     build_identity: ApplicationBuildIdentity,
     producer_contacts: Option<crate::producer::ProviderContacts>,
-) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
+) -> support::DirectoryApp<NoReuseSchema, NoReuseProgram> {
+    let declaration =
+        <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .expect("the completed schema is valid");
     let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
-        .with_schema(&<NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
+        .with_schema(&declaration)
         .validated_program()
         .unwrap();
     let configuration = (TopologyConfiguration {
@@ -89,46 +92,37 @@ fn install_no_reuse_with_build(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
         producer_contacts,
     },);
-    // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
     let limits = support::limits(32, support::invalidation());
-    if let Some(checkpoint) = checkpoint {
-        return worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-            support::observation::POPULATION_BOOTSTRAP_POLICY,
-            |phase| application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
-                &phase,
-                program,
-                application_installation::WorthQueryApplicationProgramRoster::new(),
-                <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
-                configuration,
-                build_identity,
-                limits,
-                checkpoint,
-            ),
-        )
-        .expect("no-reuse reconstruction opens its original setup request")
-        .expect("the no-reuse checkpoint restores under its original serving policy");
-    }
-    application_installation::in_memory_program(
-        program,
-        <NoReuseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
-        configuration,
-        build_identity,
-        limits,
-        |_phase, graph, installed| {
-            let principal = installed.principal_binding(
-                ConsumerPrincipalBinding::reference::<NoReuseSchema>(),
-            ).unwrap();
-            graph.bind_principal(
-                &principal,
-                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                1_u64,
-                support::external_identity(),
-                worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            support::seed_cycle(graph);
-            Ok(())
-        },
-    ).unwrap()
+    let dir = directory.unwrap_or_else(|| support::directory::unique_directory("no-reuse"));
+    let home = support::directory::with_directory_bootstrap(|phase| {
+        worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+            worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(dir.clone()),
+            program,
+            application_installation::WorthQueryApplicationProgramRoster::new(),
+            declaration,
+            configuration,
+            build_identity,
+            limits,
+            |_phase, graph, installed| {
+                let principal = installed
+                    .principal_binding(ConsumerPrincipalBinding::reference::<NoReuseSchema>())
+                    .unwrap();
+                graph.bind_principal(
+                    &principal,
+                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner")
+                            .unwrap(),
+                        1_u64,
+                        support::external_identity(),
+                        worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+                    )?;
+                    support::seed_cycle(graph);
+                    Ok(())
+                },
+            )
+            .open_in_advancement(phase)
+    })
+    .unwrap_or_else(|refused| panic!("no-reuse directory open refused: {refused:?}"));
+    support::DirectoryApp::wrap(home, dir)
 }
 
 fn check_live_output(

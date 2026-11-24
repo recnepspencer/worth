@@ -1,6 +1,6 @@
-//! Reconstruction consumes only bytes after all source runtime custody is gone.
+//! Reconstruction consumes only durable Directory Home state after source runtime closes.
 use super::{
-    checkpoint, host,
+    checkpoint,
     lifecycle::{ChangeCell, Replacement},
     live_at, values,
 };
@@ -13,8 +13,8 @@ fn cell_checkpoint_restores_structural_edits_and_retries_by_the_durable_record()
         cell: 10,
         replacement: Some(Replacement { key: 12, value: 47 }),
     };
-    let (bytes, survivor, untouched, original_commit) = {
-        let host = host::install();
+    let (directory, survivor, untouched, original_commit) = {
+        let host = checkpoint::open_directory(checkpoint::new_directory(), 64);
         assert!(matches!(
             live_at::edit(&host, 1, 10, 31, 501),
             WorthQueryApplicationMutationOutcome::Committed { .. }
@@ -40,15 +40,16 @@ fn cell_checkpoint_restores_structural_edits_and_retries_by_the_durable_record()
         let untouched = live_at::current(&host, 2);
         assert_eq!(values(&current), [(12, 47)]);
         assert_eq!(values(&untouched), [(20, 29)]);
+        drop(receipt);
         // Rows and commit identity are weak expected data, not runtime custody.
         (
-            checkpoint::capture(&host),
+            host.checkpoint_and_close_for_reopen(),
             current[0].clone(),
             untouched,
             original_commit,
         )
     };
-    let restored = checkpoint::restore(bytes, 64);
+    let restored = checkpoint::open_directory(directory, 64);
     assert_eq!(
         live_at::current(&restored, 1).as_slice(),
         std::slice::from_ref(&survivor)

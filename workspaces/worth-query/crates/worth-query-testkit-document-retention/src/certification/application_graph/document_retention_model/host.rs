@@ -68,10 +68,15 @@ pub mod checkpoint_restore;
 pub mod trusted_time;
 #[path = "host/workflow_runtime.rs"]
 pub mod workflow_runtime;
-pub use checkpoint_restore::{restore, restore_on_first_program};
+pub use checkpoint_restore::{
+    default_first_program_roster, open_directory, open_directory_on_first_program,
+    open_directory_with_build, open_directory_with_limits, open_raw_directory,
+    open_workflow_directory_for,
+};
 pub use trusted_time::{publish_on_first_program_with_trusted_time, CertificationTrustedTime};
 pub use workflow_runtime::{
-    DocumentWorkflowApplication, DocumentWorkflowHome, DocumentWorkflowRuntime,
+    DocumentWorkflowApplication, DocumentWorkflowDirectoryHome, DocumentWorkflowHome,
+    DocumentWorkflowRuntime,
 };
 
 /// The retention every host seeds. It satisfies both installed rules, so the

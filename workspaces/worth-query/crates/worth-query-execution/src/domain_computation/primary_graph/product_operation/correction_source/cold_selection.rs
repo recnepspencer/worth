@@ -19,6 +19,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         coordinates: &WorthQueryCorrectionSourceCoordinates,
+        known: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         maximum: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
     ) -> Result<WorthQuerySelectedCorrectionSource<'runtime, S>, WorthQueryCorrectionSelectionDenial>
@@ -55,13 +56,16 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         {
             return Err(D::SourcePublicationMismatch);
         }
-        let observed = exact_original::resolve(
-            execution,
-            &owner.observation_port(),
-            self.product().observation(),
-            coordinates,
-            maximum,
-        )?;
+        let observed = match known {
+            Some(known) => known.clone(),
+            None => exact_original::resolve(
+                execution,
+                &owner.observation_port(),
+                self.product().observation(),
+                coordinates,
+                maximum,
+            )?,
+        };
         let ancestry = owner
             .observation_port()
             .select_retained_product_branch_ancestor(
@@ -71,6 +75,16 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                 maximum,
             )
             .map_err(D::Ancestry)?;
+        if ancestry
+            .source()
+            .basis()
+            .relational_basis()
+            .observation()
+            .commit_receipt()
+            != Some(coordinates.relational())
+        {
+            return Err(D::SourcePublicationMismatch);
+        }
         let source_type = application
             .installed_schema()
             .installed_mutation_binding_descriptor(&material.capture.mutation)

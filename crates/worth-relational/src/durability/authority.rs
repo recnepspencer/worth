@@ -2,6 +2,7 @@ pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPubli
 pub(crate) use runtime_rebuild::RecoveredRootInventory;
 mod associated_effects;
 mod authority_continuity;
+pub(crate) use associated_effects::ReadmittedEffectOrigin;
 pub use associated_effects::{
     ObservedRelationalMemoryCommit, ReadmittedRelationalAssociatedEffect,
     ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal,
@@ -108,6 +109,7 @@ pub struct RecoveredRelationalRuntimeAuthority {
     home_program_predecessor: Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     runtime_instance_id: u64,
     recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
+    home_readmission_phase: std::sync::Arc<HomeReadmissionMetadataPhase>,
     recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (
@@ -119,7 +121,130 @@ pub struct RecoveredRelationalRuntimeAuthority {
     performed_codec_retirement: Option<crate::history::data::OwnedCodecRetirementClosure>,
 }
 
+/// Shared phase gate bounding Home readmission metadata scans to one active
+/// pre-service readmission phase and its sealed owner-admitted metadata kinds.
+#[derive(Debug)]
+pub(crate) struct HomeReadmissionMetadataPhase {
+    runtime_instance_id: u64,
+    recovered_latest_commit: Option<crate::history::data::CommitId>,
+    allowed_kinds: std::sync::Arc<crate::runtime::HomeReadmissionMetadataKinds>,
+    active: std::sync::atomic::AtomicBool,
+    issued: std::sync::atomic::AtomicBool,
+}
+
+impl HomeReadmissionMetadataPhase {
+    pub(crate) fn new(
+        runtime_instance_id: u64,
+        recovered_latest_commit: Option<crate::history::data::CommitId>,
+        allowed_kinds: std::sync::Arc<crate::runtime::HomeReadmissionMetadataKinds>,
+    ) -> Self {
+        Self {
+            runtime_instance_id,
+            recovered_latest_commit,
+            allowed_kinds,
+            active: std::sync::atomic::AtomicBool::new(true),
+            issued: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    pub(crate) fn is_active(&self) -> bool {
+        self.active.load(std::sync::atomic::Ordering::Acquire)
+    }
+
+    pub(crate) fn close(&self) {
+        self.active
+            .store(false, std::sync::atomic::Ordering::Release);
+    }
+}
+
+/// Linear, non-cloneable authority issued at most once from a recovered Native
+/// runtime during its active Home readmission phase (before service begins) to
+/// project owner-admitted internal metadata records on a recovered branch.
+///
+/// Dropping this authority, completing Home readmission, or committing any
+/// post-recovery transaction closes the phase for this authority and any view.
+///
+/// Ordinary callers cannot construct this witness:
+/// ```compile_fail,E0451
+/// use worth_relational::facade::durability::HomeReadmissionMetadataAuthority;
+/// let _ = HomeReadmissionMetadataAuthority { phase: todo!() };
+/// ```
+///
+/// Nor clone it to survive service handoff:
+/// ```compile_fail,E0277
+/// use worth_relational::facade::durability::HomeReadmissionMetadataAuthority;
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<HomeReadmissionMetadataAuthority>();
+/// ```
+#[derive(Debug)]
+pub struct HomeReadmissionMetadataAuthority {
+    phase: std::sync::Arc<HomeReadmissionMetadataPhase>,
+}
+
+impl Drop for HomeReadmissionMetadataAuthority {
+    fn drop(&mut self) {
+        self.phase.close();
+    }
+}
+
+impl HomeReadmissionMetadataAuthority {
+    pub(crate) fn runtime_instance_id(&self) -> u64 {
+        self.phase.runtime_instance_id
+    }
+
+    pub(crate) fn recovered_latest_commit(&self) -> Option<crate::history::data::CommitId> {
+        self.phase.recovered_latest_commit
+    }
+
+    pub(crate) fn is_active(&self) -> bool {
+        self.phase.is_active()
+    }
+
+    pub(crate) fn allows_entity_kind(&self, kind_id: crate::identity::data::KindId) -> bool {
+        self.phase.allowed_kinds.contains_entity_kind(kind_id)
+    }
+
+    pub(crate) fn allows_relation_kind(&self, kind_id: crate::identity::data::KindId) -> bool {
+        self.phase.allowed_kinds.contains_relation_kind(kind_id)
+    }
+}
+
 impl RecoveredRelationalRuntimeAuthority {
+    /// Issue the single linear Home-readmission metadata authority bound to
+    /// this recovered runtime's active pre-service readmission phase and its
+    /// sealed owner-admitted metadata kinds.
+    ///
+    /// Fails with `OwnerUnavailable` if already issued, if `finish_home_readmission`
+    /// has run, or if the runtime has already published a post-recovery commit.
+    pub fn begin_home_readmission_metadata(
+        &self,
+    ) -> Result<HomeReadmissionMetadataAuthority, crate::branch::RelationalBranchBasisDenial> {
+        use std::sync::atomic::Ordering;
+        if !self.home_readmission_phase.is_active() {
+            return Err(crate::branch::RelationalBranchBasisDenial::OwnerUnavailable);
+        }
+        if self
+            .home_readmission_phase
+            .issued
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            return Err(crate::branch::RelationalBranchBasisDenial::OwnerUnavailable);
+        }
+        if !self.home_readmission_phase.is_active() {
+            return Err(crate::branch::RelationalBranchBasisDenial::OwnerUnavailable);
+        }
+        Ok(HomeReadmissionMetadataAuthority {
+            phase: std::sync::Arc::clone(&self.home_readmission_phase),
+        })
+    }
+
+    /// Irreversibly end the active Home readmission phase at service handoff,
+    /// expiring any issued authority or metadata view and preventing re-issuance.
+    pub fn finish_home_readmission(&self) {
+        self.home_readmission_phase.close();
+    }
+
     /// The original Home acknowledges actual World reconciliation, releasing
     /// preparation pins only. A foreign or stale completion changes nothing.
     pub fn complete_home_world_selection(

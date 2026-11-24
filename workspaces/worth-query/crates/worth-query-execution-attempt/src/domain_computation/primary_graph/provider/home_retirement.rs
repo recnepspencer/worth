@@ -5,6 +5,10 @@ use super::super::{
 };
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCloseCustody;
+use crate::domain_computation::primary_graph::{
+    application_attempt::WorthQueryApplicationLandedCommit,
+    output_lineage::CoupledOutputCompletion,
+};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
@@ -16,6 +20,9 @@ pub struct PrimaryProviderCustody {
     stage: ProviderRetirementStage,
     /// What the latest admitted preflight proved about dispatch custody.
     dispatch_custody: QueryDispatchCloseCustody,
+    /// Coupled-completion receipts detached during preflight and held in
+    /// prepared-close custody until World seals or serving resumes.
+    detached_coupled: Vec<(CoupledOutputCompletion, WorthQueryApplicationLandedCommit)>,
 }
 enum ProviderRetirementStage {
     OutstandingSources,
@@ -38,19 +45,32 @@ impl PrimaryProviderCustody {
             retiring: None,
             stage: ProviderRetirementStage::OutstandingSources,
             dispatch_custody: QueryDispatchCloseCustody::ProcessLocal,
+            detached_coupled: Vec::new(),
         }
     }
+
+    /// Restore coupled-completion receipts if World refuses to seal and this
+    /// Home returns to live service.
+    pub fn restore_after_refused_home_retirement(&mut self) {
+        for (completion, landed) in self.detached_coupled.drain(..) {
+            completion.restore_receipt_after_refused_home_retirement(landed);
+        }
+    }
+
     pub fn preflight(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         dispatch_custody: QueryDispatchCloseCustody,
         transport: &crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
     ) -> Result<(), Denial> {
+        self.restore_after_refused_home_retirement();
         self.dispatch_custody = QueryDispatchCloseCustody::ProcessLocal;
-        self.serving
+        let detached = self
+            .serving
             .as_ref()
             .expect("only serving provider preflights")
             .preflight_home_retirement(request, &dispatch_custody, transport)?;
+        self.detached_coupled = detached;
         self.dispatch_custody = dispatch_custody;
         Ok(())
     }
@@ -63,6 +83,9 @@ impl PrimaryProviderCustody {
             return Ok(Progress::Complete);
         }
         request.consult().map_err(Denial::Execution)?;
+        if !self.detached_coupled.is_empty() {
+            self.detached_coupled.clear();
+        }
         if let Some(provider) = self.serving.take() {
             match Arc::try_unwrap(provider) {
                 Ok(provider) => self.retiring = Some(provider),
@@ -158,7 +181,7 @@ impl WorthQueryPrimaryGraphProvider {
         request: &ExecutionRequest<'_, '_>,
         dispatch_custody: &QueryDispatchCloseCustody,
         transport: &crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
-    ) -> Result<(), Denial> {
+    ) -> Result<Vec<(CoupledOutputCompletion, WorthQueryApplicationLandedCommit)>, Denial> {
         request.consult().map_err(Denial::Execution)?;
         let attempts = self
             .attempts
@@ -184,19 +207,43 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(Denial::Busy(Owner::GraphProvider));
         }
         drop(unpublished);
-        self.completed_commit_evidence
-            .try_lock()
-            .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
-            .preflight_home_retirement(request)?;
-        self.outstanding_dispatch
-            .preflight_home_retirement(dispatch_custody, transport)?;
-        self.receipt_basis_retention
-            .try_lock()
-            .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
-            .preflight_home_retirement(dispatch_custody)?;
-        self.graph
-            .source_owner_ref()
-            .preflight_home_retirement(request)
-            .map_err(Into::into)
+        let detached_coupled = {
+            let lineage = self
+                .graph
+                .output_lineage_ref()
+                .try_lock()
+                .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
+            if lineage.has_pending_coupled_outputs() {
+                return Err(Denial::Busy(Owner::InstalledProducers));
+            }
+            lineage
+                .detach_coupled_completion_receipts_for_home_retirement()
+                .map_err(|()| Denial::Busy(Owner::PublicationReceipts))?
+        };
+        let result = (|| {
+            self.completed_commit_evidence
+                .try_lock()
+                .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
+                .preflight_home_retirement(request)?;
+            self.outstanding_dispatch
+                .preflight_home_retirement(dispatch_custody, transport)?;
+            self.receipt_basis_retention
+                .try_lock()
+                .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
+                .preflight_home_retirement(dispatch_custody)?;
+            self.graph
+                .source_owner_ref()
+                .preflight_home_retirement(request)
+                .map_err(Into::into)
+        })();
+        match result {
+            Ok(()) => Ok(detached_coupled),
+            Err(cause) => {
+                for (completion, landed) in detached_coupled {
+                    completion.restore_receipt_after_refused_home_retirement(landed);
+                }
+                Err(cause)
+            }
+        }
     }
 }

@@ -107,7 +107,7 @@ pub(super) fn commit(
         .is_some_and(|cutover| cutover.uses_owned_model_graph());
     let query = native_work::prepare_before_native(&execution, provider, prepared, owned_history)?;
     if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot) {
-        return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy).map(ApplicationCommitExecution::Committed);
+        return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy);
     }
     let product = query.attempt.affinity().product_publication().clone();
     match product
@@ -116,7 +116,7 @@ pub(super) fn commit(
     {
         Ok(None) => memory::commit(execution, provider, query, mint, history, allocation_policy),
         Ok(Some(_)) => match history {
-            None => durable::commit(execution, provider, query, allocation_policy).map(ApplicationCommitExecution::Committed),
+            None => durable::commit(execution, provider, query, allocation_policy),
             Some(_) => Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(
                 worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
                     crate::domain_computation::WorthQueryProductPreparationRefused::new(

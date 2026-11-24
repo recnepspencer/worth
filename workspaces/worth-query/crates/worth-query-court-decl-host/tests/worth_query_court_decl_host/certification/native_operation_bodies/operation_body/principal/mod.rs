@@ -2,44 +2,27 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 
 #[test]
 fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
-    let old = install::<36>();
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(old);
-    let schema = program::schema::<36>();
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<36>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
+    let dir = unique_directory("principal");
+    let old = open_directory::<36>(&dir);
+    close_directory(old);
+    let restored = open_directory::<36>(&dir);
     // invoke supplies retention_days=99. The admitted native principal is 1.
     let Outcome::Committed {
         receipt: original, ..
-    } = invoke(&restored, 360)
+    } = invoke(restored.runtime(), 360)
     else {
         panic!("the admitted actor commits the original operation");
     };
-    let Outcome::RecoveredCommitted(recorded) = invoke(&restored, 360) else {
+    let Outcome::RecoveredCommitted(recorded) = invoke(restored.runtime(), 360) else {
         panic!("the actor's retry observes the recorded original");
     };
     worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &recorded, &original,
     );
     let scope = request_scope();
-    let principal = authenticate_operator(restored.runtime().installed_schema(), &scope);
+    let principal = authenticate_operator(restored.runtime().runtime().installed_schema(), &scope);
     let result = restored
+        .runtime()
         .request(&principal, &scope)
         .query(audit_query::AuditRead {
             identity: DOCUMENT_IDENTITY.to_owned(),
@@ -52,7 +35,10 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
         (row.actor, row.retention_days, row.prior_retention_days),
         (Some(1), 36, 7)
     );
-    assert_eq!(read_retention(&restored), 36);
+    assert_eq!(read_retention(restored.runtime()), 36);
+    drop((original, recorded));
+    close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

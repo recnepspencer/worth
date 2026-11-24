@@ -2,7 +2,6 @@
 
 use super::*;
 use worth_query_consumer_values::{PlanarDerivedOutput, PlanarOperation};
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -11,7 +10,7 @@ mod serial {
     fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install_program::<program::ChainProgram>(
+        let application = support::observed::open_directory_program::<program::ChainProgram>(
             None,
             Default::default(),
             &provider_observation,
@@ -102,18 +101,11 @@ mod serial {
             principal,
             scope,
         ));
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
         provider_observation.reset();
-        let restored = support::observed::install_program::<program::ChainProgram>(
-            Some(checkpoint),
+        let restored = support::observed::open_directory_program::<program::ChainProgram>(
+            Some(directory),
             Default::default(),
             &provider_observation,
         );
@@ -172,7 +164,7 @@ mod serial {
             };
         }
         let application =
-            support::install_program::<program::ChainProgram>(None, Default::default());
+            support::open_directory_program::<program::ChainProgram>(None, Default::default());
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let mut a = request
@@ -234,21 +226,16 @@ mod serial {
                 "authored pre-capture truth {key}"
             );
         }
-        let checkpoint = application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .unwrap();
         a.close();
         b.close();
         c.close();
         drop((source, a, b, c, principal, scope));
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored =
-            support::install_program::<program::ChainProgram>(Some(checkpoint), Default::default());
+        let restored = support::open_directory_program::<program::ChainProgram>(
+            Some(directory),
+            Default::default(),
+        );
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         // Restore qualifies every upstream through its own real owner before C,

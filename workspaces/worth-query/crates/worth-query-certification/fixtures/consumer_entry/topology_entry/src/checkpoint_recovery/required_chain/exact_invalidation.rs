@@ -16,6 +16,7 @@ type Runtime = application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
     program::ChainProgram,
 >;
+type DirRuntime = support::DirectoryApp<CheckpointSchema, program::ChainProgram>;
 type Request<'application, 'principal, 'scope> =
     worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
         'application,
@@ -33,22 +34,15 @@ const AMPLE_OBSERVATIONS: u64 = 64;
 
 /// A courtroom world over `seed`, with room for a hundred rings to keep their
 /// three demands open and for the rows a random history leaves behind.
-fn install(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-    seed: Seed,
-) -> Runtime {
-    install_observing(checkpoint, seed, AMPLE_OBSERVATIONS)
+fn install(unused: Option<()>, seed: Seed) -> Runtime {
+    install_observing(unused, seed, AMPLE_OBSERVATIONS)
 }
 
 /// A courtroom world whose branch admits `observations` product observations
 /// at once.
-fn install_observing(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-    seed: Seed,
-    observations: u64,
-) -> Runtime {
+fn install_observing(unused: Option<()>, seed: Seed, observations: u64) -> Runtime {
     install_observing_with_policy(
-        checkpoint,
+        unused,
         seed,
         observations,
         support::observation::CHECKPOINT_EXECUTION_POLICY,
@@ -56,7 +50,7 @@ fn install_observing(
 }
 
 fn install_observing_with_policy(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    unused: Option<()>,
     seed: Seed,
     observations: u64,
     policy: worth_foundational::ExecutionRequestPolicy,
@@ -65,12 +59,49 @@ fn install_observing_with_policy(
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
 
     support::install_program_with_limits::<program::ChainProgram>(
-        checkpoint,
+        unused,
         profile,
         // This world retains up to 4096 composite entries. Its two-component
         // publication metadata measured 1967 bytes per reservation; give the
         // fixture 2 KiB per retained entry. The small default's 512 KiB cannot
         // hold the hundred-ring population and its retained output history.
+        support::limits_with_history_and_policy(
+            4_096,
+            observations,
+            512,
+            support::invalidation(),
+            4_096 * 2_048,
+            policy,
+            authentication::WorthQueryAdmissionClock::system(),
+        ),
+        seed,
+    )
+}
+
+fn open_directory(directory: Option<std::path::PathBuf>, seed: Seed) -> DirRuntime {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(128_000_000),
+        ),
+    );
+    open_directory_observing_with_policy(directory, seed, AMPLE_OBSERVATIONS, policy)
+}
+
+fn open_directory_observing_with_policy(
+    directory: Option<std::path::PathBuf>,
+    seed: Seed,
+    observations: u64,
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> DirRuntime {
+    let profile =
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
+    support::open_directory_program_with_limits::<program::ChainProgram>(
+        directory,
+        profile,
         support::limits_with_history_and_policy(
             4_096,
             observations,

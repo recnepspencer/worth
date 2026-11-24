@@ -201,6 +201,7 @@ impl Drop for RelationalRuntime {
     /// lets a waiting owner finish.
     fn drop(&mut self) {
         if let Some(close) = self.tenure.close_authority() {
+            self.state.durability.close_home_readmission_phase();
             close.close();
         }
     }

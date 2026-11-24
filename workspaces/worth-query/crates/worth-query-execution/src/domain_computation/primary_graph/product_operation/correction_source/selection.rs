@@ -61,6 +61,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 principal,
                 request,
                 &coordinates,
+                Some(receipt.committed_product_publication().composite_commit()),
                 maximum,
                 maximum_results,
             );
@@ -141,6 +142,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 principal,
                 request,
                 locator,
+                None,
                 maximum,
                 maximum_results,
             );

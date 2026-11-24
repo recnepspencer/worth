@@ -1,5 +1,19 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_approval::field_text_readmission::*;
 
+fn open_governed_directory(
+    directory: std::path::PathBuf,
+) -> DocumentWorkflowDirectoryHome<RetentionProgramP0, GovernedDocumentWorkflow> {
+    open_workflow_directory_for::<RetentionProgramP0, GovernedDocumentWorkflow>(
+        directory,
+        validated_first_program(),
+        default_first_program_roster(),
+        host_limits(
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+        ),
+        workflow_resources(),
+    )
+}
+
 #[test]
 fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmission() {
     use worth_query_host::facade::application_discovery::{
@@ -7,10 +21,8 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         WorthQueryWorkflowInstanceRead,
     };
     use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::authenticate_reviewer;
-    let application = retain_workflow_for::<_, GovernedDocumentWorkflow>(
-        publish_on_first_program(),
-        workflow_resources(),
-    );
+    let directory = unique_directory("approval-field-text-readmission");
+    let application = open_governed_directory(directory);
     // Capture only descriptive identities; no old installed handle survives restore.
     let original_capability = application
         .runtime()
@@ -78,34 +90,12 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
         .committed_changes()
         .entity_changes()
         .any(|(entity, _)| entity == original_approval));
-    let checkpoint = application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
     // Neither the old request nor its native live ref supplies the restored authority.
     drop(performed);
     drop(required);
     drop(proposal);
-    drop(application);
-    let retained = checkpoint;
-    let intact = retained.bytes().to_vec();
-    let restored = retain_workflow_for::<_, GovernedDocumentWorkflow>(
-        restore_on_first_program(
-            retained.clone(),
-            WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
-        )
-        .expect("current native symbol dictionary and Query checkpoint restore"),
-        workflow_resources(),
-    );
-    assert_eq!(retained.bytes(), intact);
+    let directory = application.close_for_reopen();
+    let restored = open_governed_directory(directory);
     let current_capability = restored
         .runtime()
         .installed_schema()
@@ -229,10 +219,8 @@ fn cancelled_workflow_readmits_the_actual_ending_principal_with_fresh_audit_auth
     use worth_query_testkit_document_retention::facade::document_retention_model::workflow::{
         WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
     };
-    let application = retain_workflow_for::<_, GovernedDocumentWorkflow>(
-        publish_on_first_program(),
-        workflow_resources(),
-    );
+    let directory = unique_directory("cancelled-workflow-ending-principal");
+    let application = open_governed_directory(directory);
     let definition = match publish_definition(
         &application,
         governed_reviewed_definition(),
@@ -279,27 +267,8 @@ fn cancelled_workflow_readmits_the_actual_ending_principal_with_fresh_audit_auth
             u64::from(actor.generation()),
         ]
     };
-    let checkpoint = application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(application);
-    let restored = retain_workflow_for::<_, GovernedDocumentWorkflow>(
-        restore_on_first_program(
-            checkpoint,
-            WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
-        )
-        .unwrap(),
-        workflow_resources(),
-    );
+    let directory = application.close_for_reopen();
+    let restored = open_governed_directory(directory);
     // This fixture admits a fresh reader and also proves the ungranted reader refuses.
     let found = reacquisition::read(&restored, &original);
     let WorthQueryWorkflowInstanceRead::Historical {

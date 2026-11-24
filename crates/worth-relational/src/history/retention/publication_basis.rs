@@ -37,6 +37,30 @@ impl PublicationBasisRoute {
 }
 
 #[derive(Debug)]
+struct PublicationBasisCountGuard(Weak<super::owner::RelationalBranchRetentionOwnerInner>);
+
+impl PublicationBasisCountGuard {
+    fn acquire(binding: &super::RelationalBranchRetentionBinding) -> Self {
+        if let Some(owner) = binding.owner.upgrade() {
+            owner
+                .live_publication_basis_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
+        Self(binding.owner.clone())
+    }
+}
+
+impl Drop for PublicationBasisCountGuard {
+    fn drop(&mut self) {
+        if let Some(owner) = self.0.upgrade() {
+            owner
+                .live_publication_basis_count
+                .fetch_sub(1, std::sync::atomic::Ordering::Release);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct RetainedPublicationBasis {
     pub(crate) publication: CommitId,
     pub(crate) descriptor: RelationalBranchBasisDescriptor,
@@ -46,6 +70,7 @@ pub(crate) struct RetainedPublicationBasis {
     /// The publishing branch's own cell, so issuing this input does not
     /// depend on that branch still being registered after it is deleted.
     pub(crate) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    _count_guard: PublicationBasisCountGuard,
     _hold: super::RelationalObservationRetentionObligation,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -159,6 +184,8 @@ impl PublicationBasisImage {
                                 "publication predecessor retention unavailable",
                             )
                         })?;
+                        let count_guard =
+                            PublicationBasisCountGuard::acquire(&basis.inner.retention_binding);
                         routes.insert(
                             route,
                             Arc::new(RetainedPublicationBasis {
@@ -168,6 +195,7 @@ impl PublicationBasisImage {
                                 binding: basis.inner.retention_binding.clone(),
                                 applied,
                                 publication_cell: basis.publication_cell().clone(),
+                                _count_guard: count_guard,
                                 _hold: hold,
                                 _funding: funding,
                             }),

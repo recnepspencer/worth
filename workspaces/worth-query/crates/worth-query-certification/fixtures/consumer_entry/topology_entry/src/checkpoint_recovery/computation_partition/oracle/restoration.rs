@@ -17,24 +17,24 @@ mod serial {
             worth_foundational::DeterminismContract::CanonicalBitwise,
             worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
         );
-        let original = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
-            None,
-            Default::default(),
-            0,
-            policy,
-            seed,
-        );
+        let original =
+            installation::open_directory_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+                None,
+                Default::default(),
+                64,
+                policy,
+                seed,
+            );
         let (model, _, mut history) = differential::prefix::run_with_history(&original);
-        let checkpoint =
-            worth_query_testkit_host::facade::host::checkpoint_capture::capture(&original);
-        drop(original);
-        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
-            Some(checkpoint),
-            Default::default(),
-            0,
-            policy,
-            seed,
-        );
+        let directory = original.checkpoint_and_close_for_reopen();
+        let application =
+            installation::open_directory_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+                Some(directory),
+                Default::default(),
+                64,
+                policy,
+                seed,
+            );
         let fresh = history
             .install::<false, TOTALS_WORK, 1, 0>(Default::default(), |graph, model| {
                 model.seed(graph)

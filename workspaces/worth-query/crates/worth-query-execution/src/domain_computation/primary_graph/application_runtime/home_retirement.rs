@@ -54,6 +54,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.preflight_provider_and_bridge(request, dispatch_custody, &transport)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn restore_after_refused_home_retirement(
+        &mut self,
+    ) {
+        self.inner
+            .runtime
+            .primary_provider_mut()
+            .restore_after_refused_home_retirement();
+    }
+
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {
         use WorthQueryHomeRetirementDenial::Busy;
         use WorthQueryHomeRetirementOwner as Owner;

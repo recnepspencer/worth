@@ -25,6 +25,8 @@ pub struct ReadmittedHomeQueryService<Schema, Program> {
     program_support_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryObligations>,
     correction_material_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryCorrections>,
     dispatch_custody_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryDispatch>,
+    metadata_readmission_authority:
+        Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
     for ReadmittedHomeQueryService<Schema, Program>
@@ -43,6 +45,7 @@ impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
         self.dispatch_custody_admission.get().cloned()
     }
     pub fn into_home_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
+        drop(self.metadata_readmission_authority);
         self.runtime
     }
 }
@@ -215,6 +218,7 @@ where
             readiness_routes,
             definition_routes,
             operations,
+            metadata_readmission_authority,
         } = *self;
         let home_attachment::HomeApplicationServices {
             provider,
@@ -277,6 +281,7 @@ where
                 program_support_admission: std::sync::OnceLock::new(),
                 correction_material_admission: std::sync::OnceLock::new(),
                 dispatch_custody_admission: std::sync::OnceLock::new(),
+                metadata_readmission_authority,
             })
         })
         .map_err(|refused| QueryHomeWorldAttachmentRefused {

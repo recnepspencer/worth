@@ -8,7 +8,7 @@ fn exercise(worker: bool, cold: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let mut host = world::install_program_with_value::<program::Program>(limits, 2);
+    let mut host = world::open_directory_program_with_value::<program::Program>(limits, 2);
     let scope = request_scope();
     let mut original = None;
     for (ordinal, value, expected) in [(0, 7, 1), (1, 9, 1), (2, 9, 0)] {
@@ -81,9 +81,9 @@ fn exercise(worker: bool, cold: bool) {
         assert_eq!(courts::native_head(&host), head);
         if cold && ordinal == 0 {
             drop(outputs);
-            let checkpoint = super::super::failure::checkpoint(&host);
-            drop(host);
-            host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, false);
+            drop(principal);
+            let directory = host.checkpoint_and_close_for_reopen();
+            host = world::reopen_program_directory::<program::Program>(directory, worker, false);
         }
     }
 }

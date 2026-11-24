@@ -60,15 +60,13 @@ impl WorthQueryApplicationOutputLineage {
                 metadata: None,
             }
         };
-        if retained.producer_facts.is_none() {
-            let source = record.checkpoint_source_facts().ok_or_else(|| {
-                unavailable("completed producer has no original dependency facts")
-            })?;
-            let bytes = match record.native_output_witness() {
+        if retained.producer_facts.is_none()
+            && let Some(source) = record.checkpoint_source_facts()
+            && let Some(bytes) = match record.native_output_witness() {
                 Some(witness) => checkpoint::capture::output_facts::encode(&source, witness),
                 None => facts::encode(&source),
             }
-            .ok_or_else(|| unavailable("original producer facts cannot be encoded"))?;
+        {
             retained.producer_facts = Some(std::sync::Arc::new(bytes));
             retained.producer_fact_wire_version = facts::WIRE_VERSION;
         }

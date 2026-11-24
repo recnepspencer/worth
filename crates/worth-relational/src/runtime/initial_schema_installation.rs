@@ -47,6 +47,10 @@ impl RelationalRuntime {
             sealed: self
                 .schema_contract_runtime
                 .initial_custom_invariants_sealed,
+            home_readmission_metadata_kinds: self
+                .schema_contract_runtime
+                .home_readmission_metadata_kinds
+                .clone(),
         }
     }
 
@@ -64,7 +68,8 @@ impl RelationalRuntime {
             snapshot.sealed,
             crate::schema::SchemaCompilationControl::Configuration,
         )
-        .expect("request-free recovery configuration has no execution refusal");
+        .expect("request-free recovery configuration has no execution refusal")
+        .with_home_readmission_metadata_kinds(snapshot.home_readmission_metadata_kinds);
         installed.schema_contract_runtime = Arc::new(rebuilt);
         drop(installed);
         self.reconfigure(|_| {});
@@ -116,6 +121,7 @@ pub(crate) struct RelationalInitialSchemaAuthoritySnapshot {
     custom_invariants: FrozenCustomInvariantRegistry,
     custom_invariant_generation: u64,
     sealed: bool,
+    home_readmission_metadata_kinds: Arc<crate::runtime::HomeReadmissionMetadataKinds>,
 }
 
 impl RelationalInitialSchemaInstallation<'_> {
@@ -145,7 +151,31 @@ impl RelationalInitialSchemaInstallation<'_> {
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
     {
-        self.install_with_publication(additions, custom_invariants, managed_sources, None)
+        self.install_with_managed_sources_and_readmission_metadata(
+            additions,
+            custom_invariants,
+            managed_sources,
+            crate::runtime::HomeReadmissionMetadataKinds::default(),
+        )
+    }
+
+    /// Install exact public Source programs and seal the owner-admitted internal
+    /// metadata kinds that Home readmission may scan on a suspended branch.
+    pub fn install_with_managed_sources_and_readmission_metadata(
+        self,
+        additions: RelationalSchemaRegistry,
+        custom_invariants: Vec<CustomInvariantRegistration>,
+        managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
+        readmission_metadata_kinds: crate::runtime::HomeReadmissionMetadataKinds,
+    ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
+    {
+        self.install_with_publication(
+            additions,
+            custom_invariants,
+            managed_sources,
+            readmission_metadata_kinds,
+            None,
+        )
     }
 
     fn install_with_publication(
@@ -153,6 +183,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         additions: RelationalSchemaRegistry,
         custom_invariants: Vec<CustomInvariantRegistration>,
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
+        readmission_metadata_kinds: crate::runtime::HomeReadmissionMetadataKinds,
         publication: Option<(
             crate::durability::source_initial_inputs::RelationalFreshInitialization,
             &worth_execution::ExecutionRequest<'_, '_>,
@@ -203,6 +234,23 @@ impl RelationalInitialSchemaInstallation<'_> {
             .clone()
             .extend(additions)
             .map_err(schema_denial)?;
+        for kind in readmission_metadata_kinds.entity_kinds() {
+            if !merged.entity_kinds.contains_key(kind) {
+                return Err(RelationalInitialSchemaInstallationDenial::new(
+                    RelationalInitialSchemaInstallationDenialKind::SchemaRejected,
+                    format!("unknown Home readmission metadata entity kind {}", kind.0),
+                ));
+            }
+        }
+        for kind in readmission_metadata_kinds.relation_kinds() {
+            if !merged.relation_kinds.contains_key(kind) {
+                return Err(RelationalInitialSchemaInstallationDenial::new(
+                    RelationalInitialSchemaInstallationDenialKind::SchemaRejected,
+                    format!("unknown Home readmission metadata relation kind {}", kind.0),
+                ));
+            }
+        }
+        let readmission_metadata_kinds = Arc::new(readmission_metadata_kinds);
         let retained_entity_kind_count = merged.entity_kinds.len();
         let retained_relation_kind_count = merged.relation_kinds.len();
         let retained_schema_authority_digest =
@@ -261,7 +309,8 @@ impl RelationalInitialSchemaInstallation<'_> {
                 RelationalInitialSchemaInstallationDenialKind::Request(cause),
                 format!("{cause:?}"),
             )
-        })?;
+        })?
+        .with_home_readmission_metadata_kinds(readmission_metadata_kinds.clone());
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
         self.runtime
@@ -298,6 +347,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         Ok(RelationalInitialSchemaInstallationReceipt {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             source_groups,
+            home_readmission_metadata_kinds: readmission_metadata_kinds,
             custom_invariant_generation: generation,
             custom_invariant_inventory_digest: inventory_digest,
             retained_entity_kind_count,

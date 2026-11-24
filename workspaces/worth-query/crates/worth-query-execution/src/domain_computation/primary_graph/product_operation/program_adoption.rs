@@ -16,7 +16,7 @@ pub(in crate::domain_computation::primary_graph) mod authorization;
 pub use authorization::WorthQueryProgramAdoptionAuthorizationDenial;
 pub(crate) mod custody;
 mod preparation;
-mod publication;
+pub(in crate::domain_computation::primary_graph::product_operation) mod publication;
 mod scope;
 
 pub use custody::{

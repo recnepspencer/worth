@@ -20,6 +20,24 @@ impl WorthQueryOutputDemandRegistry {
             {
                 continue;
             }
+            self.drain_closed_cleanup_admitted()
+                .map_err(|_| Denial::Busy(Owner::InstalledProducers))?;
+            let had_custody_cleanup = {
+                let mut state = self
+                    .state
+                    .lock()
+                    .map_err(|_| Denial::Busy(Owner::InstalledProducers))?;
+                let before = state.custody_cleanup.len;
+                state.drain_completed_custody();
+                state.custody_cleanup.len < before
+            };
+            if had_custody_cleanup
+                || self
+                    .reclaim_unheld_observation()
+                    .map_err(|_| Denial::Busy(Owner::InstalledProducers))?
+            {
+                continue;
+            }
             if let Some(history) = history {
                 self.release_durable_home_cache(history)?;
             }

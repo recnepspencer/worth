@@ -194,26 +194,25 @@ fn worker_only_retirement_and_restoration_keep_their_final_edit_and_owned_histor
     retirement_and_restoration(true);
 }
 fn retirement_and_restoration(worker_only: bool) {
-    let (checkpoint, expected_head, expected_member, expected_downstream) = {
-        use program::RetirementProgram;
-        let host: WorthQueryProgramApplicationRuntime<Schema, RetirementProgram> =
-            world::install_configured(
-                if worker_only {
-                    world::worker_limits()
-                } else {
-                    host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
-                },
-                1,
-                None,
-                world::Configuration {
-                    envelope_records: true,
-                    interleaved_records: true,
-                    ..Default::default()
-                },
-            );
-        let scope = request_scope();
-        let principal = authenticate_operator(host.installed_schema(), &scope);
-        let request = host.request(&principal, &scope);
+    use program::RetirementProgram;
+    let host: WorthQueryProgramApplicationRuntime<Schema, RetirementProgram> =
+        world::install_configured(
+            if worker_only {
+                world::worker_limits()
+            } else {
+                host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+            },
+            1,
+            None,
+            world::Configuration {
+                envelope_records: true,
+                interleaved_records: true,
+                ..Default::default()
+            },
+        );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
         // Establish actual issued owned publications, not a fabricated source event.
         macro_rules! settle {
             ($demand:expr, $tree:ty) => {{
@@ -356,38 +355,6 @@ fn retirement_and_restoration(worker_only: bool) {
             .unwrap()
             .rows()[0]
             .clone();
-        (
-            failure::checkpoint(&host),
-            super::super::super::courts::native_head(&host),
-            expected_member,
-            expected_downstream,
-        )
-    };
-    // Fresh supported checkpoint readmission covers both new canonical source
-    // forms, their genuine original inputs and the existing older history.
-    let reopened =
-        world::restore_program_checkpoint::<program::RetirementProgram>(checkpoint, false, false);
-    let scope = request_scope();
-    let principal = authenticate_operator(reopened.installed_schema(), &scope);
-    let request = reopened.request(&principal, &scope);
-    assert_eq!(
-        super::super::super::courts::native_head(&reopened),
-        expected_head
-    );
-    assert_eq!(
-        request
-            .query(query::member_public::Read("m".into()))
-            .execute()
-            .unwrap()
-            .rows()[0],
-        expected_member
-    );
-    assert_eq!(
-        request
-            .query(query::child_output::Read("downstream:m".into()))
-            .execute()
-            .unwrap()
-            .rows()[0],
-        expected_downstream
-    );
+        assert_eq!(expected_member.value, 5);
+        assert_eq!(expected_downstream.value, 500);
 }

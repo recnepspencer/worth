@@ -11,13 +11,14 @@ fn run(worker: bool) {
     let controller = WorthQueryAdmissionTimeController::new().unwrap();
     controller.hold();
     let clock = controller.clock();
-    let host = world::authorization_clock::install::<program::Program>(clock.clone(), worker, 1);
+    let host =
+        world::authorization_clock::install::<program::Program>(clock.clone(), worker, 1);
     let scope =
         WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), clock);
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let before = courts::native_head(&host);
-    let checkpoint = super::super::failure::checkpoint(&host);
+    let checkpoint = super::super::failure::memory_basis_state(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let control = host
         .runtime()
@@ -66,7 +67,7 @@ fn run(worker: bool) {
     );
     assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
     assert_eq!(courts::native_head(&host), before);
-    super::super::failure::assert_model_unchanged(&host, &checkpoint);
+    super::super::failure::assert_memory_basis_unchanged(&host, &checkpoint);
 }
 #[test]
 fn current_authentication_expiring_at_applied_lookup_refuses_without_effect() {

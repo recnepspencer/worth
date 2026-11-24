@@ -55,6 +55,7 @@ impl QueryObligationHistory {
         let Some(medium) = self.medium.get() else {
             return Ok(None);
         };
+        self.flush_output_discharges(request)?;
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
         let position = {
@@ -134,10 +135,13 @@ impl QueryObligationHistory {
         }))
     }
     pub fn has_output_demands(&self) -> bool {
-        self.state()
-            .journal
-            .as_ref()
-            .is_some_and(|journal| !ledger_inspect::output(&journal.ledger).subjects.is_empty())
+        let state = self.state();
+        state.journal.as_ref().is_some_and(|journal| {
+            ledger_inspect::output(&journal.ledger)
+                .subjects
+                .values()
+                .any(|position| !state.pending_output_discharges.contains(position))
+        })
     }
     pub fn matching_output_demand(
         &self,
@@ -148,6 +152,9 @@ impl QueryObligationHistory {
         let position = output
             .subjects
             .get(&ledger_inspect::output_demand_subject(row))?;
+        if state.pending_output_discharges.contains(position) {
+            return None;
+        }
         output.demands.get(position).cloned()
     }
     pub fn output_demand(&self, position: NonZeroU64) -> Option<QueryOutputDemandObligation> {
@@ -157,10 +164,12 @@ impl QueryObligationHistory {
             .cloned()
     }
     pub fn output_demand_retained(&self, position: NonZeroU64) -> bool {
-        self.state().journal.as_ref().is_some_and(|journal| {
-            let output = ledger_inspect::output(&journal.ledger);
-            output.demands.contains_key(&position) && !output.completed.contains(&position)
-        })
+        let state = self.state();
+        !state.pending_output_discharges.contains(&position)
+            && state.journal.as_ref().is_some_and(|journal| {
+                let output = ledger_inspect::output(&journal.ledger);
+                output.demands.contains_key(&position) && !output.completed.contains(&position)
+            })
     }
     pub fn link_output_demand(
         &self,

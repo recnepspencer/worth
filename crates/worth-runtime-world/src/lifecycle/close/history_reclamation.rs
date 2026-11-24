@@ -12,24 +12,101 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(super) fn retire_changed_history_inner(
+        &self,
+        caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<Vec<CompositeCommitIdentity>, HistoryReclamationDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                HistoryReclamationDenial::OwnerUnavailable(
+                    crate::lifecycle::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        if let Some(binding) = self.state.durable.as_ref() {
+            let pending = self.state.history.begin_durable_retire_changed_history();
+            let (reclaimed, _) =
+                self.drive_durable_history_retirement(binding, pending, caller_execution)?;
+            Ok(reclaimed)
+        } else {
+            let retired = self.state.history.retire_changed_history();
+            Ok(self.reclaim_retired_entries(retired))
+        }
+    }
+
+    pub(super) fn release_retired_branch_history_inner(
+        &self,
+        from: &CompositeCommitIdentity,
+        caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                HistoryReclamationDenial::OwnerUnavailable(
+                    crate::lifecycle::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        if let Some(binding) = self.state.durable.as_ref() {
+            let pending = self
+                .state
+                .history
+                .begin_durable_release_retired_branch_history(from)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            let (reclaimed, held) =
+                self.drive_durable_history_retirement(binding, pending, caller_execution)?;
+            Ok(crate::history::RetiredBranchHistoryRelease::new(
+                reclaimed, held,
+            ))
+        } else {
+            let (released, held) = self
+                .state
+                .history
+                .release_retired_branch_history(from)
+                .map_err(HistoryReclamationDenial::Catalog)?;
+            Ok(crate::history::RetiredBranchHistoryRelease::new(
+                self.reclaim_retired_entries(released),
+                held,
+            ))
+        }
+    }
+
     pub(super) fn drive_durable_history_retirement(
         &self,
         binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
         pending: PendingDurableHistoryRetirement,
+        caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
     {
-        self.drive_durable_history_retirement_with_chunk_size(
+        self.drive_durable_history_retirement_with_chunk_size_and_request(
             binding,
             pending,
             HISTORY_RETIRED_CHUNK_SIZE,
+            caller_execution,
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn drive_durable_history_retirement_with_chunk_size(
+        &self,
+        binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
+        pending: PendingDurableHistoryRetirement,
+        chunk_size: usize,
+    ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
+    {
+        self.drive_durable_history_retirement_with_chunk_size_and_request(
+            binding,
+            pending,
+            chunk_size,
+            None,
+        )
+    }
+
+    fn drive_durable_history_retirement_with_chunk_size_and_request(
         &self,
         binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
         mut pending: PendingDurableHistoryRetirement,
         chunk_size: usize,
+        caller_execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     ) -> Result<(Vec<CompositeCommitIdentity>, Option<CompositeCommitIdentity>), HistoryReclamationDenial>
     {
         use crate::durability::{
@@ -44,12 +121,14 @@ where
         let owner = binding.binding().owner();
         let retiring_incarnation = binding.binding().incarnation();
         let policy = self.state.execution.request_policy();
-        let serial = worth_execution::SerialRequest::from_policy(
+        let fallback_serial = worth_execution::SerialRequest::from_policy(
             &policy,
             worth_execution::CancellationSource::new().token(),
             None,
         );
-        let execution = worth_execution::ExecutionRequest::serial(&serial);
+        let execution = caller_execution
+            .copied()
+            .unwrap_or_else(|| worth_execution::ExecutionRequest::serial(&fallback_serial));
         let mut reclaimed = Vec::with_capacity(pending.remaining().len());
         while !pending.remaining().is_empty() {
             let chunk_len = pending.remaining().len().min(chunk_size);

@@ -103,7 +103,11 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .inner
             .runtime
             .product_runtime_ref()
-            .begin_product_branch_close(self.branch, WorthQueryProductBranchCloseScope::Application)
+            .begin_product_branch_close_with_request(
+                self.branch,
+                WorthQueryProductBranchCloseScope::Application,
+                &execution,
+            )
             .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)?;
         self.application
             .inner

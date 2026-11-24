@@ -34,6 +34,16 @@ where
             .history
             .observe_memory_original(execution, self.owner_identity(), effect)
     }
+    fn observe_home_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        self.observe_original_home_publication(execution, effect)
+    }
     fn readmitted_native_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -287,6 +297,17 @@ where
         crate::branch::ProductExactHistoryDenial,
     > {
         super::exact_history::prepare(self, execution, cursor)
+    }
+
+    fn prepare_retained_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        crate::branch::ProductExactHistoryDenial,
+    > {
+        super::exact_history::prepare_retained(self, execution, cursor)
     }
 
     fn trace_product_branch_ancestry(

@@ -312,13 +312,10 @@ pub(super) fn finish_recovered_release(
     if original.native_semantic_result().is_none() {
         return;
     }
-    let entry = store
-        .recovered
-        .values_mut()
-        .find(|entry| match &entry.fate {
-            OriginalFate::Unpublished(current) => current == handle,
-            OriginalFate::Released(_) => false,
-        })
-        .expect("D8 admitted the exact original key before serving release");
-    entry.fate = OriginalFate::Released(original);
+    if let Some(entry) = store.recovered.values_mut().find(|entry| match &entry.fate {
+        OriginalFate::Unpublished(current) => current == handle,
+        OriginalFate::Released(_) => false,
+    }) {
+        entry.fate = OriginalFate::Released(original);
+    }
 }

@@ -32,7 +32,7 @@ pub struct RelationalAssociatedEffectSubject {
 }
 
 impl RelationalAssociatedEffectSubject {
-    pub(super) fn source_entry(&self) -> &crate::history::RelationalCommitIndexEntry {
+    pub(crate) fn source_entry(&self) -> &crate::history::RelationalCommitIndexEntry {
         &self.entry
     }
 
@@ -71,7 +71,7 @@ pub struct ReadmittedRelationalAssociatedEffect {
 }
 
 #[derive(Debug)]
-pub(super) enum ReadmittedEffectOrigin {
+pub(crate) enum ReadmittedEffectOrigin {
     Original(crate::history::data::PositionedCanonicalCommit),
     Checkpoint {
         commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
@@ -86,7 +86,7 @@ impl ReadmittedRelationalAssociatedEffect {
             ReadmittedEffectOrigin::Checkpoint { commit, .. } => &commit.index().commit.branch_id,
         }
     }
-    pub(super) fn origin(&self) -> &ReadmittedEffectOrigin {
+    pub(crate) fn origin(&self) -> &ReadmittedEffectOrigin {
         &self.origin
     }
     pub fn subject(&self) -> &RelationalAssociatedEffectSubject {
@@ -104,10 +104,10 @@ impl ReadmittedRelationalAssociatedEffect {
 }
 
 impl RelationalAssociatedEffectSubject {
-    pub(super) fn belongs_to_runtime(&self, runtime: &crate::runtime::RelationalRuntime) -> bool {
+    pub(crate) fn belongs_to_runtime(&self, runtime: &crate::runtime::RelationalRuntime) -> bool {
         self.runtime_instance_id == runtime.runtime_instance_id()
     }
-    pub(super) fn current_settlement(
+    pub(crate) fn current_settlement(
         &self,
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Option<RelationalAssociatedEffectSettlement> {

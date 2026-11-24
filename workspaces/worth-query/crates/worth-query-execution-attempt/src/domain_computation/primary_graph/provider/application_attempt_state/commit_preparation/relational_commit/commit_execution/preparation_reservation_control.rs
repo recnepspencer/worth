@@ -15,7 +15,7 @@ pub(super) fn refuse_duplicate_before_world_for_test(
     query: QueryPreparingApplicationCommit,
     allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    WorthQueryCommittedApplicationSession,
+    ApplicationCommitExecution,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     assert!(query.is_unprepared());

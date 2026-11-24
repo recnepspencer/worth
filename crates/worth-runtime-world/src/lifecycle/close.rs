@@ -127,21 +127,13 @@ where
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
-        let _operation = self
-            .reserve_recovery_operation_if_open_and_bootstrapped()
-            .map_err(|_| {
-                HistoryReclamationDenial::OwnerUnavailable(
-                    super::RuntimeWorldOwnerUnavailable::new(),
-                )
-            })?;
-        if let Some(binding) = self.state.durable.as_ref() {
-            let pending = self.state.history.begin_durable_retire_changed_history();
-            let (reclaimed, _) = self.drive_durable_history_retirement(binding, pending)?;
-            Ok(reclaimed)
-        } else {
-            let retired = self.state.history.retire_changed_history();
-            Ok(self.reclaim_retired_entries(retired))
-        }
+        self.retire_changed_history_inner(None)
+    }
+    fn retire_changed_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.retire_changed_history_inner(Some(execution))
     }
     fn retire_unprotected_history(
         &self,
@@ -160,7 +152,7 @@ where
                 .history
                 .begin_durable_retire_unprotected_history(keep)
                 .map_err(HistoryReclamationDenial::Catalog)?;
-            let (reclaimed, _) = self.drive_durable_history_retirement(binding, pending)?;
+            let (reclaimed, _) = self.drive_durable_history_retirement(binding, pending, None)?;
             Ok(reclaimed)
         } else {
             let retired = self
@@ -175,34 +167,14 @@ where
         &self,
         from: &crate::identity::CompositeCommitIdentity,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
-        let _operation = self
-            .reserve_recovery_operation_if_open_and_bootstrapped()
-            .map_err(|_| {
-                HistoryReclamationDenial::OwnerUnavailable(
-                    super::RuntimeWorldOwnerUnavailable::new(),
-                )
-            })?;
-        if let Some(binding) = self.state.durable.as_ref() {
-            let pending = self
-                .state
-                .history
-                .begin_durable_release_retired_branch_history(from)
-                .map_err(HistoryReclamationDenial::Catalog)?;
-            let (reclaimed, held) = self.drive_durable_history_retirement(binding, pending)?;
-            Ok(crate::history::RetiredBranchHistoryRelease::new(
-                reclaimed, held,
-            ))
-        } else {
-            let (released, held) = self
-                .state
-                .history
-                .release_retired_branch_history(from)
-                .map_err(HistoryReclamationDenial::Catalog)?;
-            Ok(crate::history::RetiredBranchHistoryRelease::new(
-                self.reclaim_retired_entries(released),
-                held,
-            ))
-        }
+        self.release_retired_branch_history_inner(from, None)
+    }
+    fn release_retired_branch_history_with_request(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        self.release_retired_branch_history_inner(from, Some(execution))
     }
     fn retained_commits(
         &self,

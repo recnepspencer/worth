@@ -1,6 +1,5 @@
 //! Closed predecessors retain delivery without retaining their live interests.
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -26,7 +25,7 @@ mod serial {
             };
         }
         let application =
-            support::install_program::<program::ChainProgram>(None, Default::default());
+            support::open_directory_program::<program::ChainProgram>(None, Default::default());
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let mut a = request
@@ -73,8 +72,13 @@ mod serial {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
-        assert!(matches!(edit, worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_)), "the first source edit performs");
-        drop(edit);
+        assert!(
+            matches!(
+                edit,
+                worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+            ),
+            "the first source edit performs"
+        );
         settle!(c, request);
         // seed_cycle authors B.Y=1 and C.Y=10; their handlers preserve Y+1.
         for (key, expected) in [("anchor-a", 6), ("anchor-b", 2), ("anchor-c", 11)] {
@@ -90,19 +94,14 @@ mod serial {
                 "authored pre-capture truth {key}"
             );
         }
-        let checkpoint = application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .unwrap();
         c.close();
-        drop((source, a, b, c, principal, scope));
-        drop(application);
+        drop((edit, source, a, b, c, principal, scope));
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored =
-            support::install_program::<program::ChainProgram>(Some(checkpoint), Default::default());
+        let restored = support::open_directory_program::<program::ChainProgram>(
+            Some(directory),
+            Default::default(),
+        );
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         // Qualify each restored upstream through a real owner, then close it.
@@ -248,7 +247,7 @@ mod serial {
         }};
     }
         let application =
-            support::install_program::<program::ChainProgram>(None, Default::default());
+            support::open_directory_program::<program::ChainProgram>(None, Default::default());
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let mut a = request
@@ -281,19 +280,14 @@ mod serial {
                 "pre-capture authored truth {key}"
             );
         }
-        let checkpoint = application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .unwrap();
         b.close();
         drop((a, b, principal, scope));
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored =
-            support::install_program::<program::ChainProgram>(Some(checkpoint), Default::default());
+        let restored = support::open_directory_program::<program::ChainProgram>(
+            Some(directory),
+            Default::default(),
+        );
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let mut a = request

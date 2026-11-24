@@ -64,7 +64,7 @@ mod serial {
     #[test]
     fn latest_stable_alias_checkpoint_restores_output_and_source_change_requires_fresh_execution() {
         let _guard = checkpoint_recovery_test_guard();
-        let application = install(None);
+        let application = support::open_directory(None);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let first = direct_demand(&request, &application, "anchor-a");
@@ -136,20 +136,22 @@ mod serial {
             );
         }
         drop(first);
-        let checkpoint = application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .unwrap();
-        // Keep the captured alias checkpoint, then invalidate that actual live
-        // alias. This fresh execution must not replace the checkpoint subject.
-        require_fresh_after_root_edit(&application, &request, 0x32a3);
         drop(principal);
         drop(scope);
-        drop(application);
-        let restored = install(Some(checkpoint));
+        let directory = application.checkpoint_and_close_for_reopen();
+        let saved = support::directory::ClosedDirectorySnapshot::capture(&directory, "alias-spans");
+        // Keep the saved alias Directory Home, then invalidate that actual live
+        // alias before restoring the saved snapshot into the same Home directory.
+        let directory = {
+            let continued = support::open_directory(Some(directory));
+            let (scope, principal) = authenticate(&continued);
+            let request = continued.request(&principal, &scope);
+            require_fresh_after_root_edit(&continued, &request, 0x32a3);
+            drop((principal, scope));
+            continued.close_for_reopen()
+        };
+        saved.restore_into(&directory);
+        let restored = support::open_directory(Some(directory));
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let before = support::retain_read(&restored, &request).unwrap();
