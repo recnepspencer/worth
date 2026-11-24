@@ -17,7 +17,7 @@ impl RelationalPinnedRead {
         record_query_packet_metrics(self.pinned_instrumentation(), &plan, &metrics);
         let basis = &self.basis;
         let state_access: &(dyn PartitionAccess + Sync) = basis;
-        let registry = basis.root().schema_authority().registry();
+        let registry = basis.projection_root().schema_authority().registry();
         let version_id = basis.version_id();
         let remaining_lease = lease
             .map(|lease| remaining_work_lease(lease, preparation))

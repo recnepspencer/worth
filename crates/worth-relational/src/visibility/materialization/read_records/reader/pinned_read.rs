@@ -116,7 +116,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
-        self.basis.root().schema_authority().registry()
+        self.basis.projection_root().schema_authority().registry()
     }
     /// Persistent snapshot of this pin's resident dictionary meanings. Record
     /// reads admit their region's symbol closure; later outside interns or
@@ -200,7 +200,7 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         self.basis
-            .demand_regions_full(execution, self.basis.root().partition_ids_iter())
+            .demand_regions_full(execution, self.basis.projection_root().partition_ids_iter())
             .map_err(Into::into)
     }
     fn demand_regions_head(
@@ -239,7 +239,9 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
         &self,
         visit: impl FnMut(crate::identity::data::PartitionId) -> Result<(), E>,
     ) -> Result<(), E> {
-        self.basis.root().try_for_each_partition_id(visit)
+        self.basis
+            .projection_root()
+            .try_for_each_partition_id(visit)
     }
 
     fn selected_entity_ids(
@@ -247,7 +249,9 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
     ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
-        self.basis.root().entity_ids_of_kind(kind, partition)
+        self.basis
+            .projection_root()
+            .entity_ids_of_kind(kind, partition)
     }
 
     fn selected_relation_ids(
@@ -255,14 +259,18 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
         kind: crate::identity::data::KindId,
         partition: Option<crate::identity::data::PartitionId>,
     ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
-        self.basis.root().relation_ids_of_kind(kind, partition)
+        self.basis
+            .projection_root()
+            .relation_ids_of_kind(kind, partition)
     }
 
     fn retained_head_region(
         &self,
         partition: crate::identity::data::PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.basis.root().accepted_head_region_view(partition)
+        self.basis
+            .projection_root()
+            .accepted_head_region_view(partition)
     }
     fn is_exact_basis(&self) -> bool {
         true

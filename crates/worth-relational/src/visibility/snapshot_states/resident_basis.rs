@@ -1,6 +1,6 @@
 //! Selected root and isolated dictionary custody for per-region read demands.
 use super::VisibilitySnapshotBasis;
-use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
+use crate::history::retention::SnapshotProjectionRoot;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::storage::residency::RelationalRegionHeadView;
 use std::sync::Arc;

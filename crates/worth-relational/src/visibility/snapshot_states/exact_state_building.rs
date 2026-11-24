@@ -11,11 +11,8 @@ pub(crate) fn build_visibility_state(
     snapshot_id: SnapshotId,
     read_policy: SnapshotReadPolicy,
 ) -> SnapshotState {
-    let root = basis.root().clone();
-    if let Some(root_version) = root
-        .axes()
-        .map(|axes| crate::identity::data::VersionId(axes.storage_version))
-    {
+    let root = basis.projection_root();
+    if let Some(root_version) = root.storage_version() {
         debug_assert_eq!(
             /* Proof: The exact basis key and root version are derived together from the same admitted immutable branch observation; callers cannot independently replace the private basis root. */
             root_version,
@@ -29,8 +26,8 @@ pub(crate) fn build_visibility_state(
         version_id: basis.version_id(),
         read_policy,
     };
-    let entities = exact_entity_slots(root.as_ref());
-    let relations = exact_relation_slots(root.as_ref());
+    let entities = exact_entity_slots(&root);
+    let relations = exact_relation_slots(&root);
     assemble_snapshot_state(
         handle,
         SnapshotStateBasis::Exact(basis),

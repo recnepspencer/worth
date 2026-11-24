@@ -1,7 +1,7 @@
 //! The exact retained root and observation stay in their original allocation.
 use super::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::branch::root::RelationalBranchRoot;
-use crate::history::data::BranchId;
+use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
 use crate::visibility::snapshot_states::VisibilitySnapshotStateKey;
 use std::sync::Arc;
@@ -145,5 +145,9 @@ impl VisibilitySnapshotBasis {
 
     pub(crate) fn root_id(&self) -> u64 {
         self.root.id()
+    }
+
+    pub(crate) fn commit_id(&self) -> Option<CommitId> {
+        self.root.commit_id()
     }
 }

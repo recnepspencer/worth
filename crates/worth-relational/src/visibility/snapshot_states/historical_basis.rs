@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use crate::history::data::BranchId;
-use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
+use crate::history::retention::SnapshotProjectionRoot;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::visibility::branch_scope::HistoricalBasisInputs;
 
 use super::historical_denial::HistoricalVisibilityDenial;
+
+#[path = "historical_basis_custody.rs"]
+mod custody;
 
 #[derive(Clone, Debug)]
 pub(crate) struct HistoricalVisibilityBasis {

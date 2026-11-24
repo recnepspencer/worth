@@ -12,24 +12,19 @@ use crate::storage::residency::{
     Full, Head, LiveRecordCounts, PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView,
     RelationalResidencyDemandFailure, RelationalResidencyLease,
 };
-use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 /// A restricted loan of the exact root while its original owner retains it.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct SnapshotProjectionRoot<'a>(&'a Arc<RelationalBranchRoot>);
+pub(crate) struct SnapshotProjectionRoot<'a>(&'a RelationalBranchRoot);
 
 impl<'a> SnapshotProjectionRoot<'a> {
-    pub(super) const fn borrowed(root: &'a Arc<RelationalBranchRoot>) -> Self {
+    pub(super) const fn borrowed(root: &'a RelationalBranchRoot) -> Self {
         Self(root)
     }
 
-    pub(crate) fn root_custody(self) -> &'a Arc<RelationalBranchRoot> {
-        self.0
-    }
-
     pub(crate) fn partition_access(self) -> &'a dyn PartitionAccess {
-        self.0.as_ref()
+        self.0
     }
 
     pub(crate) fn id(self) -> u64 {
@@ -248,6 +243,6 @@ impl CurrentPartitionAccess for SnapshotProjectionRoot<'_> {
         self.0.partition_ids_with_memory(memory)
     }
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
-        CurrentPartitionAccess::partition_ids_iter(self.0.as_ref())
+        CurrentPartitionAccess::partition_ids_iter(self.0)
     }
 }

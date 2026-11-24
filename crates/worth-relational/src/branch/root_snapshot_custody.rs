@@ -1,11 +1,10 @@
 //! Root-custody handoffs for checkpoint, index and applied authority consumers.
 use super::root::RelationalBranchRoot;
 use crate::history::data::BranchId;
-use crate::history::retention::snapshot_projection_root::SnapshotProjectionRoot;
 use crate::identity::data::VersionId;
 use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use crate::visibility::snapshot_states::{
-    ResidentVisibilitySnapshotBasis, VisibilitySnapshotStateKey,
+    ResidentVisibilitySnapshotBasis, SnapshotStateBasis, VisibilitySnapshotStateKey,
 };
 use std::sync::Arc;
 
@@ -26,9 +25,10 @@ impl VisibilitySnapshotStateKey {
 
 impl VisibilityProjectionView {
     pub(crate) fn selected_root(&self) -> Option<&Arc<RelationalBranchRoot>> {
-        self.snapshot_basis()
-            .root()
-            .map(SnapshotProjectionRoot::root_custody)
+        match self.snapshot_basis() {
+            SnapshotStateBasis::Exact(basis) => Some(basis.root()),
+            SnapshotStateBasis::Historical(basis) => basis.retained_root(),
+        }
     }
 }
 

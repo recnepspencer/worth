@@ -39,7 +39,7 @@ impl VisibilityReadContext<'_> {
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
-        let (schema_version, _, _) = basis.root().query_schema_context();
+        let (schema_version, _, _) = basis.projection_root().query_schema_context();
         let (basis, indexes) = self.pin_indexes(
             basis,
             schema_version,
@@ -105,7 +105,7 @@ impl VisibilityReadContext<'_> {
             .retain_exact_basis()
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let (schema_version, descriptor_semantics_version, evidence_basis) =
-            basis.root().query_schema_context();
+            basis.projection_root().query_schema_context();
         let context = QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             // Observations carry an exact root, but no operational snapshot identity.
