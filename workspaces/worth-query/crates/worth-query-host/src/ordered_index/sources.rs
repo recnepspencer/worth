@@ -10,7 +10,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 /// Opaque AVL node retained in Query's checked binary source tree.
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Debug)]
 pub struct WorthQueryOrderedIndexNode<Summary> {
     pub(crate) source: WorthQueryManagedIndexSourceSlot,
     pub(crate) own_summary: Summary,
@@ -18,6 +18,12 @@ pub struct WorthQueryOrderedIndexNode<Summary> {
     pub(crate) left: Option<WorthQueryManagedIndexNodeId>,
     pub(crate) right: Option<WorthQueryManagedIndexNodeId>,
     pub(crate) height: u8,
+}
+
+impl<Summary: Copy> Clone for WorthQueryOrderedIndexNode<Summary> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 /// Borrowed genuine Source row lookup for summary combination and pruning.

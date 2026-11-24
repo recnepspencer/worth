@@ -1,17 +1,32 @@
 //! Same-host mid-edit warm AVL budget rollback court (Blocker 4).
-use super::queries::*;
-use super::schema::*;
+use super::queries::{task_title, FindFocusOverlap, FindTitlePrefix, ReadTasks};
+use super::schema::{DaymarkSchema, FocusIntervalIndex, FocusWindow, TitlePrefixIndex};
 use super::title_prefix::TitlePrefixDomain;
-use super::{create_task, keys, limits, rename_task, seed_workspace, try_rename_task, Program};
+use super::{
+    create_task, keys, limits, rename_task, seed_workspace, try_rename_task,
+    try_rename_task_with_policy, Program,
+};
 use std::cmp::Ordering;
+use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::Arc;
+use worth_execution::{
+    CancellationToken, ExecutionResourceLease, LeaseRequest, MapKernelStop, WorkCeilingDenial,
+};
+use worth_foundational::facade::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
+use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
-use worth_query_decl::facade::{application_program::*, application_schema::*};
+use worth_query_decl::facade::application_schema::ApplicationSchema;
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
+};
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::application_installation::*;
 use worth_query_host::facade::ordered_index::*;
 use worth_query_host::facade::primary_graph::*;
+use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
@@ -20,6 +35,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::op
 pub struct TitlePassObserver {
     pub observed_pass2_long_title: Arc<AtomicBool>,
     pub pass2_compare_count: Arc<AtomicUsize>,
+    pub pass2_stopped_on_work_ceiling: Arc<AtomicBool>,
 }
 
 /// Pass-observing wrapper over `TitlePrefixDomain` with zero mocked errors: every stop
@@ -28,9 +44,38 @@ pub(super) struct ObservedTitlePrefixDomain {
     observer: TitlePassObserver,
 }
 
+type ProviderStop = WorthQueryManagedIndexProviderStop<super::title_prefix::TitlePrefixDenial>;
+
 impl ObservedTitlePrefixDomain {
     pub(super) fn new(observer: TitlePassObserver) -> Self {
         Self { observer }
+    }
+
+    fn record_if_pass2_work_ceiling<T>(
+        &self,
+        result: Result<T, ProviderStop>,
+    ) -> Result<T, ProviderStop> {
+        let is_ceiling = matches!(
+            &result,
+            Err(WorthQueryManagedIndexProviderStop::Controlled(
+                WorthQueryManagedIndexStop::Request(WorkCeilingDenial::Stopped(
+                    MapKernelStop::WorkCeiling,
+                )) | WorthQueryManagedIndexStop::ValueDecode(
+                    WorthQueryValueDecodeDenial::Checkpoint(MapKernelStop::WorkCeiling),
+                ),
+            ))
+        );
+        if is_ceiling
+            && self
+                .observer
+                .observed_pass2_long_title
+                .load(AtomicOrdering::SeqCst)
+        {
+            self.observer
+                .pass2_stopped_on_work_ceiling
+                .store(true, AtomicOrdering::SeqCst);
+        }
+        result
     }
 }
 
@@ -55,7 +100,7 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, TitlePrefixIndex> for ObservedT
                 .pass2_compare_count
                 .fetch_add(1, AtomicOrdering::SeqCst);
         }
-        TitlePrefixDomain.compare_rows(left, right, control)
+        self.record_if_pass2_work_ceiling(TitlePrefixDomain.compare_rows(left, right, control))
     }
 
     fn source_summary(
@@ -74,7 +119,7 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, TitlePrefixIndex> for ObservedT
                 .observed_pass2_long_title
                 .store(true, AtomicOrdering::SeqCst);
         }
-        TitlePrefixDomain.source_summary(slot, row, control)
+        self.record_if_pass2_work_ceiling(TitlePrefixDomain.source_summary(slot, row, control))
     }
 
     fn combine_summaries(
@@ -84,7 +129,9 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, TitlePrefixIndex> for ObservedT
         sources: &WorthQueryOrderedIndexSources<'_, '_, DaymarkSchema, TitlePrefixIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        TitlePrefixDomain.combine_summaries(left, right, sources, control)
+        self.record_if_pass2_work_ceiling(
+            TitlePrefixDomain.combine_summaries(left, right, sources, control),
+        )
     }
 
     fn summary_may_match(
@@ -158,6 +205,7 @@ fn focus_q(start: i64, end: i64) -> FindFocusOverlap {
 fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
     let observed_pass2 = Arc::new(AtomicBool::new(false));
     let pass2_compares = Arc::new(AtomicUsize::new(0));
+    let pass2_stopped_on_work_ceiling = Arc::new(AtomicBool::new(false));
     let declaration = DaymarkSchema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<DaymarkSchema, Program>::begin()
         .with_schema(&declaration)
@@ -169,6 +217,7 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
         (Some(TitlePassObserver {
             observed_pass2_long_title: Arc::clone(&observed_pass2),
             pass2_compare_count: Arc::clone(&pass2_compares),
+            pass2_stopped_on_work_ceiling: Arc::clone(&pass2_stopped_on_work_ceiling),
         }),),
         ApplicationBuildIdentity::parse("7b7b7b7b-7b7b-7b7b-7b7b-7b7b7b7b7b7b").unwrap(),
         limits(None, Some(900_000)),
@@ -237,46 +286,71 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
         .unwrap();
     assert_eq!(keys(init_t.rows()), [1]);
     assert_eq!(keys(init_f.rows()), [1]);
-    let pre_rows = request
-        .query(ReadTasks {
-            workspace: "main".into(),
-        })
-        .execute()
-        .unwrap()
-        .rows()
-        .to_vec();
+    let read_all = || {
+        request
+            .query(ReadTasks {
+                workspace: "main".into(),
+            })
+            .execute()
+            .unwrap()
+            .rows()
+            .to_vec()
+    };
+    let pre_rows = read_all();
 
-    // Pass 1 removes "Alpha" cheaply; Pass 2 inserts 45 KiB shared-prefix title and hits WorkCeiling.
+    // Pass 1 removes "Alpha" cheaply (~1 byte/node mismatch); Pass 2 inserts 45 KiB shared-prefix
+    // title under a tighter per-operation work ceiling so WorkCeiling fires strictly inside Pass 2.
     observed_pass2.store(false, AtomicOrdering::SeqCst);
     pass2_compares.store(0, AtomicOrdering::SeqCst);
+    pass2_stopped_on_work_ceiling.store(false, AtomicOrdering::SeqCst);
+    let pass2_lease = ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(750_000)),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    })
+    .unwrap();
     let mut colliding_title = shared;
     colliding_title.push('z');
-    let refused = try_rename_task(&host, 1, &colliding_title, 99);
-    let detail = format!("{refused:?}");
-    let is_work_refusal = !matches!(
-        refused,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ) && (detail.contains("WorkCeiling") || detail.contains("WorkExhausted"));
+    let refused = try_rename_task_with_policy(
+        &host,
+        1,
+        &colliding_title,
+        99,
+        ExecutionAllocationPolicy::Execution(&pass2_lease),
+    );
     assert!(
-        is_work_refusal,
-        "warm rename must stop with WorkCeiling/WorkExhausted, got {detail}"
+        match &refused {
+            Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+                WorthQueryAdvancementDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
+            )) => true,
+            Ok(WorthQueryApplicationMutationOutcome::Commit(
+                WorthQueryApplicationUncommitted::Denied(denial),
+            )) => matches!(
+                denial.kind(),
+                WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                    denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    ..
+                }
+            ),
+            _ => false,
+        },
+        "warm rename must return typed WorkExhausted refusal, got {refused:?}"
     );
     assert!(
         observed_pass2.load(AtomicOrdering::SeqCst)
-            && pass2_compares.load(AtomicOrdering::SeqCst) > 0,
-        "stop must occur strictly inside Pass 2 after Pass 1 removed the old slot"
+            && pass2_compares.load(AtomicOrdering::SeqCst) > 0
+            && pass2_stopped_on_work_ceiling.load(AtomicOrdering::SeqCst),
+        "WorkCeiling stop must occur strictly inside Pass 2 after Pass 1 removed the old slot"
     );
 
     // Same host retains exact pre-state rows, BOTH indexes, and unwoken watches.
-    let post_rows = request
-        .query(ReadTasks {
-            workspace: "main".into(),
-        })
-        .execute()
-        .unwrap()
-        .rows()
-        .to_vec();
-    assert_eq!(post_rows, pre_rows, "authoritative rows must be unchanged");
+    assert_eq!(read_all(), pre_rows, "authoritative rows must be unchanged");
     assert_eq!(
         keys(request.query(prefix_q("al")).execute().unwrap().rows()),
         [1]

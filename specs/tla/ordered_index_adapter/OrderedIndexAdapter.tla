@@ -468,6 +468,7 @@ RefuseBudgetExhausted(r, val) ==
     /\ r \in RowIds
     /\ rows[r] /= AbsentRow
     /\ IsValidRow(val)
+    /\ val /= rows[r]
     /\ UNCHANGED vars
 
 Next ==

@@ -147,11 +147,13 @@ fn run_durable_seed_zero(
     cov.updates += 1;
     cov.watch_deliveries += driver.poll_watches(&mut oracle, &mut trace)?;
 
-    // 5. Same-host budget refusal on live row 1 -> rows, queries, and watches stay unchanged.
+    // 5. Same-host non-no-op budget refusal on live row 1 (attempts moving "Alpha" -> "Beta",
+    //    a different title probe group, while keeping focus fields unchanged) -> rows, queries,
+    //    and watches stay unchanged.
     driver.probe_same_host_budget_refusal(
         1,
         &OracleTask {
-            title: "Alpha".to_owned(),
+            title: "Beta".to_owned(),
             lo: 2,
             hi: 5,
         },

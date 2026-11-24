@@ -10,6 +10,9 @@ use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::facade::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
+};
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
@@ -199,16 +202,33 @@ pub fn verify_same_host_budget_refusal(
         idem,
         ExecutionAllocationPolicy::Execution(&tight_lease),
     );
-    let detail = format!("{refused:?}");
-    let is_budget_refusal = !matches!(
-        refused,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ) && (detail.contains("WorkExhausted")
-        || detail.contains("WorkCeiling")
-        || detail.contains("MemoryExhausted")
-        || detail.contains("MemoryLimit"));
+    let is_budget_refusal = match &refused {
+        Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
+            WorthQueryAdvancementDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::WorkExhausted
+                | WorthQueryManagedComputationResourceDenial::MemoryLimit { .. }
+                | WorthQueryManagedComputationResourceDenial::PolicyMemoryLimit
+                | WorthQueryManagedComputationResourceDenial::WorkLimit,
+            ),
+        )) => true,
+        Ok(WorthQueryApplicationMutationOutcome::Commit(
+            WorthQueryApplicationUncommitted::Denied(denial),
+        )) => matches!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial: WorthQueryManagedComputationResourceDenial::WorkExhausted
+                    | WorthQueryManagedComputationResourceDenial::MemoryLimit { .. }
+                    | WorthQueryManagedComputationResourceDenial::PolicyMemoryLimit
+                    | WorthQueryManagedComputationResourceDenial::WorkLimit,
+                ..
+            }
+        ),
+        _ => false,
+    };
     if !is_budget_refusal {
-        return Err(format!("expected same-host budget refusal, got {detail}"));
+        return Err(format!(
+            "expected typed same-host budget refusal, got {refused:?}"
+        ));
     }
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
