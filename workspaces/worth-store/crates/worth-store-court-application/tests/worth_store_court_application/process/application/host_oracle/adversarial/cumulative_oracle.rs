@@ -7,6 +7,7 @@
 //! External Dispatch Custody), injecting real OS kills across alternating build
 //! identities and D14 derived-state discards, verified in fresh OS processes
 //! against `MemoryOnly` under run-wide durable identity correspondence.
+mod c6_durability_dst;
 mod families_child;
 mod families_lane;
 mod host_lane;
