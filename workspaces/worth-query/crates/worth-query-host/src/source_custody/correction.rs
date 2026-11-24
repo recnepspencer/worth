@@ -84,7 +84,7 @@ where
     S: ApplicationSchema + 'static,
     B: WorthQuerySourceMutationBinding<S>,
     B::Input: ApplicationMutationInputScope<S, B>,
-    P: ApplicationProgramDefinition<S>,
+    P: ApplicationProgramDefinition<S> + 'static,
     A: WorthQuerySourceCompletionAction<S, B> + 'static,
     WorthQueryTerminalSourceEvidence<S, WorthQueryCapturedMutationInput<S, B>>: fmt::Debug,
 {
@@ -105,7 +105,7 @@ where
 impl<S, P> WorthQueryAnySourceCustody<S, P>
 where
     S: ApplicationSchema + 'static,
-    P: ApplicationProgramDefinition<S>,
+    P: ApplicationProgramDefinition<S> + 'static,
 {
     /// Publishes or continues a prepared operation correction directly into type-erased Host
     /// source custody.

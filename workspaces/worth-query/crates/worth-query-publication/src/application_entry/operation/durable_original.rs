@@ -286,4 +286,19 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         }
         Ok(())
     }
+
+    /// Lawfully withdraws an unconstructed description, discharging any durable original
+    /// already retained on it while preserving `self` intact if discharge refuses.
+    pub fn close_unexecuted(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<(), (Self, WorthQueryOperationCloseDenial)> {
+        if self.original.is_some() && self.branch != request.branch {
+            return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
+        }
+        match self.discharge_original(request) {
+            Ok(()) => Ok(()),
+            Err(denial) => Err((self, denial)),
+        }
+    }
 }

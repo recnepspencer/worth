@@ -107,7 +107,12 @@ where
     let request = phase.execution_request();
     let mut home = match attach_relational(home, &request) {
         Ok(home) => home,
-        Err(home) => return Err(Refused::from_phase(Phase::RelationalAttachment { query, home })),
+        Err(home) => {
+            return Err(Refused::from_phase(Phase::RelationalAttachment {
+                query,
+                home,
+            }))
+        }
     };
     // Store chooses the identity bound for the open it admitted.
     let installed = match home.prepare_native_schema_for_home(&request) {
@@ -128,15 +133,31 @@ where
             identities.maximum_aspect(),
             installation,
         ),
-        Err(cause) => return Err(Refused::from_phase(Phase::NativePreparation { query, home, cause })),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::NativePreparation {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let query = match installed {
         Ok(query) => query,
-        Err(query) => return Err(Refused::from_phase(Phase::NativeInstallation { query, home })),
+        Err(query) => {
+            return Err(Refused::from_phase(Phase::NativeInstallation {
+                query,
+                home,
+            }))
+        }
     };
     let home = match home.readmit(query.home_initial_schema_receipt(), &request) {
         Ok(home) => home.consume(|home| home),
-        Err(home) => return Err(Refused::from_phase(Phase::NativeReadmission { query, home })),
+        Err(home) => {
+            return Err(Refused::from_phase(Phase::NativeReadmission {
+                query,
+                home,
+            }))
+        }
     };
     Ok((query, home))
 }

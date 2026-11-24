@@ -96,12 +96,61 @@ pub enum WorthQuerySourceCustodyPending {
     Close(WorthQueryOperationCloseDenial),
 }
 
+/// How an unexecuted command was lawfully withdrawn from Host custody without executing.
+pub enum WorthQuerySourceCustodyWithdrawal {
+    /// The command had not constructed a retained operation yet (and any durable original on its
+    /// description was discharged).
+    BeforeConstruction,
+    /// A retained unexecuted operation closed its cleanup and discharged its durable original.
+    Closed(WorthQueryClosedOperation),
+}
+
+impl std::fmt::Debug for WorthQuerySourceCustodyWithdrawal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BeforeConstruction => f.write_str("BeforeConstruction"),
+            Self::Closed(_) => f.write_str("Closed(..)"),
+        }
+    }
+}
+
 impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Lawfully withdraws an unexecuted command without running its handler, discharging any
+    /// retained durable original. Post-execution phases (`Completed`, `Terminal`, or retained
+    /// native recovery obligations) refuse with `NativeObligationRetained` and return `self`
+    /// intact.
+    pub fn close_unexecuted(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> std::result::Result<
+        WorthQuerySourceCustodyWithdrawal,
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        match self {
+            Self::Described(description) => description
+                .close_unexecuted(request)
+                .map(|()| WorthQuerySourceCustodyWithdrawal::BeforeConstruction)
+                .map_err(|(description, denial)| (Self::Described(description), denial)),
+            Self::Retained(operation) => operation
+                .close(request)
+                .map(WorthQuerySourceCustodyWithdrawal::Closed)
+                .map_err(|(operation, denial)| (Self::Retained(operation), denial)),
+            Self::Completed(completed) => Err((
+                Self::Completed(completed),
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            )),
+            Self::Terminal(terminal) => Err((
+                Self::Terminal(terminal),
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            )),
+        }
+    }
+
     /// Transfers one native source-only advance into Host custody, closing completed or terminal
     /// owners immediately under `request` and retaining pending custody otherwise.
     pub fn accept_advance(

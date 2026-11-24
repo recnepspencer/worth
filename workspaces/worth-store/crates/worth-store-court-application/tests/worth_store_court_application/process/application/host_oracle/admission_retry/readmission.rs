@@ -110,7 +110,7 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
         cause,
     })
     .close(&cleanup)
-        .unwrap_or_else(|refused| panic!("actual predecessor disposal: {refused:?}"));
+    .unwrap_or_else(|refused| panic!("actual predecessor disposal: {refused:?}"));
     assert!(matches!(
         closed.directory_outcome(),
         Some(worth_store_application::ApplicationHomeCloseOutcome::Closed { .. })

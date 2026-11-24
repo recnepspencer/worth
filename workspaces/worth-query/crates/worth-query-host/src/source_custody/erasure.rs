@@ -26,7 +26,7 @@ pub enum WorthQueryAnySourceCustodyStep<S, P> {
     },
 }
 
-impl<S, P> WorthQueryAnySourceCustody<S, P> {
+impl<S: 'static, P: 'static> WorthQueryAnySourceCustody<S, P> {
     pub fn resume(
         self,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -34,12 +34,52 @@ impl<S, P> WorthQueryAnySourceCustody<S, P> {
     ) -> WorthQueryAnySourceCustodyStep<S, P> {
         self.0.resume(runtime, request)
     }
+
+    /// Lawfully closes an unexecuted retained or described command without executing it,
+    /// discharging its durable original. If the command is already in a post-execution phase or
+    /// close refuses, returns `Err((self, denial))` with the exact erased owner intact.
+    pub fn close_unexecuted(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> std::result::Result<
+        WorthQuerySourceCustodyWithdrawal,
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        self.0.close_unexecuted(request)
+    }
+}
+
+impl<S, P> WorthQueryAnySourceCustody<S, P>
+where
+    S: ApplicationSchema + 'static,
+    P: ApplicationProgramDefinition<S> + 'static,
+{
+    /// Recovers the exact typed custody owner when `I` and `A` match, or returns `Err(self)`
+    /// preserving the exact erased owner on mismatch.
+    pub fn try_into_typed<I, A>(
+        self,
+    ) -> std::result::Result<WorthQuerySourceCustody<S, I, P, A>, Self>
+    where
+        I: WorthQuerySourceMutation<S> + 'static,
+        A: WorthQuerySourceCompletionAction<S, I::Binding> + 'static,
+    {
+        if (self.0.as_ref() as &dyn Any).is::<Option<WorthQuerySourceCustody<S, I, P, A>>>() {
+            let mut boxed = self
+                .0
+                .into_any()
+                .downcast::<Option<WorthQuerySourceCustody<S, I, P, A>>>()
+                .expect("type identity verified before downcast");
+            Ok(boxed.take().expect("erased custody owns one command"))
+        } else {
+            Err(self)
+        }
+    }
 }
 
 impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
 where
     S: ApplicationSchema + 'static,
-    P: ApplicationProgramDefinition<S>,
+    P: ApplicationProgramDefinition<S> + 'static,
     I: WorthQuerySourceMutation<S> + 'static,
     A: WorthQuerySourceCompletionAction<S, I::Binding> + 'static,
     WorthQueryTerminalSourceEvidence<S, I>: fmt::Debug,
@@ -53,7 +93,7 @@ where
 impl<S, I, P, A> WorthQuerySourceCustodyStep<S, I, P, A>
 where
     S: ApplicationSchema + 'static,
-    P: ApplicationProgramDefinition<S>,
+    P: ApplicationProgramDefinition<S> + 'static,
     I: WorthQuerySourceMutation<S> + 'static,
     A: WorthQuerySourceCompletionAction<S, I::Binding> + 'static,
     WorthQueryTerminalSourceEvidence<S, I>: fmt::Debug,
@@ -77,22 +117,37 @@ where
     }
 }
 
-trait ErasedCustody<S, P> {
+trait ErasedCustody<S, P>: Any {
+    fn into_any(self: Box<Self>) -> Box<dyn Any>;
     fn resume(
         self: Box<Self>,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryAnySourceCustodyStep<S, P>;
+    fn close_unexecuted(
+        self: Box<Self>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> std::result::Result<
+        WorthQuerySourceCustodyWithdrawal,
+        (
+            WorthQueryAnySourceCustody<S, P>,
+            WorthQueryOperationCloseDenial,
+        ),
+    >;
 }
 
 impl<S, I, P, A> ErasedCustody<S, P> for Option<WorthQuerySourceCustody<S, I, P, A>>
 where
     S: ApplicationSchema + 'static,
-    P: ApplicationProgramDefinition<S>,
+    P: ApplicationProgramDefinition<S> + 'static,
     I: WorthQuerySourceMutation<S> + 'static,
     A: WorthQuerySourceCompletionAction<S, I::Binding> + 'static,
     WorthQueryTerminalSourceEvidence<S, I>: fmt::Debug,
 {
+    fn into_any(self: Box<Self>) -> Box<dyn Any> {
+        self
+    }
+
     fn resume(
         mut self: Box<Self>,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -118,6 +173,29 @@ where
                     custody: WorthQueryAnySourceCustody(self),
                     cause,
                 }
+            }
+        }
+    }
+
+    fn close_unexecuted(
+        mut self: Box<Self>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> std::result::Result<
+        WorthQuerySourceCustodyWithdrawal,
+        (
+            WorthQueryAnySourceCustody<S, P>,
+            WorthQueryOperationCloseDenial,
+        ),
+    > {
+        match self
+            .take()
+            .expect("erased custody owns one command")
+            .close_unexecuted(request)
+        {
+            Ok(withdrawal) => Ok(withdrawal),
+            Err((custody, denial)) => {
+                *self = Some(custody);
+                Err((WorthQueryAnySourceCustody(self), denial))
             }
         }
     }

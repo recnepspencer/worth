@@ -1,6 +1,6 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
 mod changed_build;
-mod correction_material;
+pub(in crate::host) mod correction_material;
 pub(crate) mod managed_cleanup;
 pub(crate) mod managed_runs;
 mod original_fixed;

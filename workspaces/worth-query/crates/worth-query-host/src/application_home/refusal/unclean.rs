@@ -26,8 +26,10 @@ impl<Schema: ApplicationSchemaComposition, Program>
         let (WorthQueryApplicationHomeOpenRefusedPhase::WorldReadmission { home, .. }
         | WorthQueryApplicationHomeOpenRefusedPhase::ExistingWorldReadmission { home, .. }
         | WorthQueryApplicationHomeOpenRefusedPhase::WorldSourcePreparation { home, .. }
-        | WorthQueryApplicationHomeOpenRefusedPhase::ExistingWorldSourcePreparation { home, .. }) =
-            self.phase()
+        | WorthQueryApplicationHomeOpenRefusedPhase::ExistingWorldSourcePreparation {
+            home,
+            ..
+        }) = self.phase()
         else {
             return None;
         };

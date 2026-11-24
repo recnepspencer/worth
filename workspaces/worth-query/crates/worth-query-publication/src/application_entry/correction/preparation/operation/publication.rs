@@ -29,7 +29,9 @@ where
 {
     /// Publishes once and transfers every native outcome into ordinary source custody.
     pub fn publish(self) -> Result<Advance<S, B, P, A>, WorthQueryApplicationCorrectionDenial> {
-        <B as crate::application_entry::operation::SourceAssessmentDriver<S>>::publish_correction(self)
+        <B as crate::application_entry::operation::SourceAssessmentDriver<S>>::publish_correction(
+            self,
+        )
     }
 }
 

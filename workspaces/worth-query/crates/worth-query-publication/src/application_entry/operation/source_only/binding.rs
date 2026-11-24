@@ -278,7 +278,7 @@ pub(super) mod sealed {
             A: ApplicationAction<S, Self>,
             <<A as ApplicationAction<S, Self>>::Delivery as worth_query_declaration::facade::application_program::ApplicationActionDelivery<S, Self>>::Mode:
                 WorthQuerySourceDeliveryMode,
-        {
+{
             prepared.publish_admitted()
         }
     }

@@ -101,7 +101,12 @@ where
     };
     let query = match query.finish_fresh_home_native_readmission(phase, native, admission) {
         Ok(query) => query,
-        Err(query) => return Err(Refused::from_phase(Phase::NativeFinalization { query, home })),
+        Err(query) => {
+            return Err(Refused::from_phase(Phase::NativeFinalization {
+                query,
+                home,
+            }))
+        }
     };
     let bridge = match query.home_bridge_definition() {
         Ok(bridge) => bridge,
@@ -233,13 +238,7 @@ where
     };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
-        Err(cause) => {
-            return Err(Refused::from_phase(Phase::WorldRoot {
-                query,
-                home,
-                cause,
-            }))
-        }
+        Err(cause) => return Err(Refused::from_phase(Phase::WorldRoot { query, home, cause })),
     };
     let ports = home.world();
     let query = match query.attach_home_world(

@@ -389,6 +389,7 @@ pub use crate::source_custody::{
     WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
     WorthQueryAnyTerminalSourceEvidence, WorthQueryCorrectionCustodyOutcome,
     WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
+    WorthQuerySourceCustodyWithdrawal,
 };
 pub use worth_foundational::facade::{
     CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,

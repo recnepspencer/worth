@@ -57,14 +57,12 @@ where
                 )
             }
             ApplicationHomeInitializationDenial::Execution(_)
-            | ApplicationHomeInitializationDenial::OpportunityAlreadyConsumed => {
-                Err(Refused::from_phase(
-                    Phase::QueryPublicationReadmissionRequired {
-                        query: query.take().expect("refused origin retained Query"),
-                        home,
-                    },
-                ))
-            }
+            | ApplicationHomeInitializationDenial::OpportunityAlreadyConsumed => Err(
+                Refused::from_phase(Phase::QueryPublicationReadmissionRequired {
+                    query: query.take().expect("refused origin retained Query"),
+                    home,
+                }),
+            ),
         },
     }
 }
