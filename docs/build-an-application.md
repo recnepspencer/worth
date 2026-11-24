@@ -1444,7 +1444,8 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
 - `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
   `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
   `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
-  usual `reference()`; `name = ".."` keeps a persisted name.
+  usual `reference()`; `name = ".."` keeps a persisted name. The schema role
+  dispatches typed correction members through the declared membership.
 - `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
   for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
   `FieldSelection` alias per column, named after the column. Columns default

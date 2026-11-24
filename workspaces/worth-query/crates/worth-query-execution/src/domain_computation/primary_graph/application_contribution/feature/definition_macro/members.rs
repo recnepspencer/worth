@@ -59,6 +59,17 @@ macro_rules! __worth_query_complete_feature {
             [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
+    (@members $head:tt [$($actions:tt)*] $handlers:tt [$($bodies:tt)*] $roles:tt [$($spec:tt)*];
+        body_action_ref($Binding:ty, $Delivery:ty) {
+            $($clauses:tt)*
+        }; $($rest:tt)*
+    ) => {
+        $crate::__worth_query_complete_feature!(@members $head
+            [$($actions)* ($Binding, $Delivery, [owned])]
+            $handlers [$($bodies)* ($Binding)] $roles
+            [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
+        );
+    };
     (@members $head:tt $actions:tt $handlers:tt $bodies:tt [$($roles:tt)*] [$($spec:tt)*];
         required_pair $field:ident($Roles:ty, $InitialHandler:ty, $PreserveHandler:ty) {
             initial_operation: $initial:expr;

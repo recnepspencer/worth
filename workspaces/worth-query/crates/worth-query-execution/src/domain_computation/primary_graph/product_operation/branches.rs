@@ -37,7 +37,7 @@ pub use expected_basis::WorthQueryExpectedProductBasisSelectionDenial;
 pub use expected_source::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork,
+    WorthQueryExpectedProductBranchCreationContinuation, WorthQueryExpectedProductBranchFork,
 };
 pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure};
 

@@ -90,13 +90,12 @@ impl WorldDurableCreationCustody {
                 self.phase = CreationPhase::Released;
                 Ok(())
             }
+            Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
+                Err(Denial::OwnerUnavailable)
+            }
             Err(
-                WorldDurablePublicationStop::Pending
-                | WorldDurablePublicationStop::Busy
-                | WorldDurablePublicationStop::Refused(_),
-            ) => Err(Denial::OwnerUnavailable),
-            Err(
-                WorldDurablePublicationStop::Unresolved
+                WorldDurablePublicationStop::Refused(_)
+                | WorldDurablePublicationStop::Unresolved
                 | WorldDurablePublicationStop::EvidenceRequired
                 | WorldDurablePublicationStop::BlockedByPriorBarrier { .. },
             ) => {

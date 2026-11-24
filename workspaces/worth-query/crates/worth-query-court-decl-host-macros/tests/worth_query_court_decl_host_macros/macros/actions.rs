@@ -51,7 +51,7 @@ pub struct Reschedule {
 }
 
 /// The same declaration written out with the declaration macros.
-#[derive(Clone, Debug, WorthValue)]
+#[derive(Clone, Debug, WorthValue, serde::Deserialize)]
 pub struct Complete {
     pub task: u64,
     pub done: bool,
@@ -114,18 +114,11 @@ pub fn reschedule_definition() -> ApplicationOperationDefinition<Schema, Resched
         .expect("the body belongs to its operation")
 }
 
-pub fn complete_definition() -> ApplicationOperationDefinition<Schema, CompleteTask, Complete> {
-    let body = CompleteTask::reference()
+pub fn complete_body() -> ApplicationOperationBody<Schema, CompleteTask, Complete> {
+    CompleteTask::reference()
         .body()
         .assign_input(Done::at("Done"), "done")
         .expect("the column is writable")
         .finish()
-        .expect("the complete body is complete");
-    CompleteTask::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .expect("the body belongs to its operation")
+        .expect("the complete body is complete")
 }
