@@ -8,6 +8,7 @@ use crate::branch::root::RelationalBranchRootIdentityIssuer;
 use crate::history::data::BranchId;
 use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 
 /// Lookup-only custody for one actual prepared target. It grants no Source READ.
 pub struct ManagedIndexSourceForkPreparation<'a> {

@@ -1,6 +1,5 @@
 //! Directory disagreement and row amplification refuse bounded reconstruction.
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::region_image::*;
 use super::layered_history_tests::{counted, encode_layer};
 use super::*;
@@ -35,7 +34,7 @@ fn an_undeclared_base_is_refused_before_its_payload_is_read() {
 
 #[test]
 fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);

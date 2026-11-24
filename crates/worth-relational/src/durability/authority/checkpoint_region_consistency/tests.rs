@@ -13,7 +13,7 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
     validate_value(
         &selected,
         &matching,
-        crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
             selected.directory.portable_oracle_for_test(lane)
         })
         .unwrap()
@@ -38,7 +38,7 @@ fn every_leaf_disagreement_refuses_with_the_selected_region_and_capture_posture(
         let error = validate_value(
             &selected,
             &captured,
-            crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+            crate::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
                 selected.directory.portable_oracle_for_test(lane)
             })
             .unwrap()
@@ -107,7 +107,7 @@ fn leaf_values() -> (RelationalRootRegionCheckpoint, RelationalCheckpointRegion)
         partition_id,
         content_digest: selected.content_digest,
         kind_authority: selected.kind_commitment,
-        directory: crate::branch::root::capture::with_reconstruction_fixture(|lane| {
+        directory: crate::branch::root::capture::with_reconstruction_fixture_for_test(|lane| {
             selected.directory.portable_oracle_for_test(lane)
         })
         .unwrap(),

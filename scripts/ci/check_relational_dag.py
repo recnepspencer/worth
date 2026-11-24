@@ -67,9 +67,11 @@ class OwnerMap:
         """The virtual package and, where governed, its internal responsibility."""
         for directory, owner in self.physical.items():
             if source.is_relative_to(directory):
-                return owner, None
-        relative = source.relative_to(self.root / SOURCE)
-        owner = self.paths[self.rule(relative)]
+                relative = source.relative_to(directory)
+                break
+        else:
+            relative = source.relative_to(self.root / SOURCE)
+            owner = self.paths[self.rule(relative)]
         if owner not in self.boundaries:
             return owner, None
         boundary = self.boundaries[owner]
@@ -155,6 +157,8 @@ class Audit:
                             if target != '<external>' and (words is None or name in words)]
             else:
                 defining = [self.definition(module, item)]
+                if resolved and self.model.is_physical_forward(resolved, origin):
+                    explicit = defining[0]
         return explicit, defining
 
     def definition(self, module, item):

@@ -10,6 +10,8 @@ use std::sync::{
     Mutex,
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational_branch::internal_port::branch::projection_view::companion_slot::CompanionBranchCellCoreFixturePort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
 mod retained_affinity;
 struct Probe {
     core: Arc<Mutex<Weak<CompanionBranchCellCore>>>,
@@ -20,7 +22,7 @@ impl Drop for Probe {
     fn drop(&mut self) {
         let core = self.core.lock().unwrap().upgrade().unwrap();
         assert!(
-            core.try_lock_unpoisoned_image().is_some(),
+            core.try_lock_unpoisoned_image_for_test().is_some(),
             "opaque Drop is outside current-image coordination"
         );
         let _new_registration = self

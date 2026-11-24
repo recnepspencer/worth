@@ -1,6 +1,7 @@
 use crate::internal_port::content::schema::RelationalContentSchemaSnapshotOwnerPort as _;
 use crate::internal_port::derived_relation::definition::DerivedRelationDefinitionPartsOwnerPort as _;
 use crate::internal_port::projected_member_domain::definition::ProjectedMemberDomainPartsOwnerPort as _;
+#[cfg(test)]
 use crate::internal_port::schema::data::authority_snapshot::carried_projection::SchemaAuthoritySnapshotOwnerPort as _;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

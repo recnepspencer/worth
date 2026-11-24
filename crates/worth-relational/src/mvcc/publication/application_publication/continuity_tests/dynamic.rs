@@ -1,8 +1,7 @@
 //! One real succession replaces a dynamic member and retains its complete roster.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
 
 #[test]
@@ -187,7 +186,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &native_meaning_fixture("dynamic-creator"),
+            &native_meaning_for_test("dynamic-creator"),
             &cold_roles,
         )
         .unwrap();
@@ -219,7 +218,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &fresh_basis,
             "dynamic-preserver",
             &[2; 32],
-            &native_meaning_fixture("dynamic-creator"),
+            &native_meaning_for_test("dynamic-creator"),
             &cold_roles,
         )
         .unwrap();
@@ -241,8 +240,8 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &renewed_basis,
             "native-preserver",
             &[3; 32],
-            &native_meaning_fixture("dynamic-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("dynamic-creator"),
+            &native_roles_for_test(
                 &[(ids[0], KindId(1)), (joined_id, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -257,7 +256,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &native_meaning_fixture("dynamic-creator"),
+            &native_meaning_for_test("dynamic-creator"),
             &[cold_roles[0].clone(), cold_roles[2].clone()]
         )
         .is_err());
@@ -272,7 +271,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &native_meaning_fixture("dynamic-creator"),
+            &native_meaning_for_test("dynamic-creator"),
             &roles_with_wrong_posture
         )
         .is_err());
@@ -310,8 +309,8 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "native-preserver",
             &[3; 32],
-            &native_meaning_fixture("dynamic-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("dynamic-creator"),
+            &native_roles_for_test(
                 &[(ids[0], KindId(1)), (joined_id, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),

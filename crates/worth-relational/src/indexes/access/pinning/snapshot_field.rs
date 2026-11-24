@@ -5,6 +5,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
 };
 use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 impl IndexAccess<'_> {
     pub(in crate::indexes::access) fn lookup_snapshot(
         &self,

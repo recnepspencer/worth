@@ -1,5 +1,6 @@
 //! Retain each reconstructed branch transition under the original recovery request.
 use super::*;
+use worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociationOwnerPort as _;
 pub(super) fn copy_transition(
     entry: &crate::durability::source_initial_inputs::normalized::TransitionOriginalRecord,
     graph: &OriginalSchemaGraph,

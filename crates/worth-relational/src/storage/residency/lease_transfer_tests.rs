@@ -44,7 +44,7 @@ fn consuming_full_custody_releases_its_lease_and_keeps_shared_history_immutable(
         observer
             .full_view()
             .partition()
-            .authoritative_content_digest(&fixture.cold.symbols.interner_snapshot())
+            .partition_content_digest_for_test(&fixture.cold.symbols.interner_snapshot())
             .unwrap(),
         fixture.expected_digest
     );

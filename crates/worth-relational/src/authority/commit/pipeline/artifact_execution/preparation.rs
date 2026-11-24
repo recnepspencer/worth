@@ -1,4 +1,5 @@
 use super::super::phase_backing::CommitPhaseBacking;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 mod authoritative_publication;
 use crate::authority::commit::phases::publication::canonicalize_changed_records;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
@@ -269,7 +270,7 @@ fn finish_publication_preparation(
             diagnostics_entry_count: authority.artifacts.diagnostics_summary.entries.len(),
             lineage_event_count: authority.lineage_event_count,
             patch_position: None,
-            final_snapshot_id: Some(authority.artifacts.snapshot.snapshot_id),
+            final_snapshot_id: Some(*authority.artifacts.snapshot.owner_snapshot_id()),
             merge_parent_count: commit_reference.parents.len().saturating_sub(1),
         };
 

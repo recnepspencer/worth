@@ -1,4 +1,5 @@
 //! Whole-record graph selection touches use actual before/after structural views.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
 use crate::identity::data::EntityId;
 use crate::identity::data::PartitionId;

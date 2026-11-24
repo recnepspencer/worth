@@ -5,6 +5,7 @@ use crate::visibility::materialization::read_records::projection::query_locus_pr
 use crate::visibility::materialization::read_records::projection::query_locus_projection::relation_query_locus_value;
 use crate::visibility::materialization::read_records::read_stop::ReadStop;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 impl IndexProjectionSource<'_> {
     pub(in crate::indexes) fn try_for_each_entity_field<E>(

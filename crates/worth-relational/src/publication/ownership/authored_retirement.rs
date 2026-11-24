@@ -1,4 +1,6 @@
 //! Authorize the exact live source closure and its submitted retirement roster.
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 mod foreign_member;
 mod roster;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -103,13 +105,13 @@ pub(crate) fn select_authored_source_retirement<'r>(
                         .source_scope_ownership
                         .scope_kind(&origin.producer)
                         .ok_or_else(|| reject(Cause::CorruptPublication, source))?;
-                    basis
-                        .inner
+                    (*basis
+                        .owner_inner())
                         .root
                         .demand_full_partition(execution, source.partition_id)
                         .map_err(|cause| stopped(request(cause)))?;
-                    let partition = basis
-                        .inner
+                    let partition = (*basis
+                        .owner_inner())
                         .root
                         .partition_state(source.partition_id)
                         .map_err(|cause| stopped(cause.into()))?
@@ -145,8 +147,8 @@ pub(crate) fn select_authored_source_retirement<'r>(
                     .filter(|role| matches!(role.target, EntityReference::Existing(id) if anchors.contains(&id)))
                 {
                     let EntityReference::Existing(id) = role.target else { unreachable!() };
-                    let partition = basis
-                        .inner
+                    let partition = (*basis
+                        .owner_inner())
                         .root
                         .partition_state(id.partition_id)
                         .map_err(|cause| stopped(cause.into()))?

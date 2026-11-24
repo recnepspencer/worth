@@ -1,12 +1,11 @@
 //! Preserve request control while retaining the replay failure for bad evidence.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::{
     CommitExecutionDenialKind, TransactionCommitError,
 };
+#[cfg(test)]
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn replay_commit_stop(
     error: TransactionCommitError,
@@ -115,3 +114,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;

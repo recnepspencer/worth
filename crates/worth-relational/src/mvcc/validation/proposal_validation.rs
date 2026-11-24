@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
@@ -141,7 +143,7 @@ impl RelationalPreparationRuntime {
         })?;
         require_not_interrupted(
             &transaction.control,
-            &transaction.basis.inner.retention_binding,
+            &(*transaction.basis.owner_inner()).retention_binding,
             crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         let complexity_before = self.performance_access().complexity_counters_snapshot();

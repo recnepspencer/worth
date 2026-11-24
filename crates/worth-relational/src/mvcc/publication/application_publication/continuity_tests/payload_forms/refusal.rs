@@ -1,5 +1,4 @@
 //! Actual installed publication denial exposes metadata, never proposal strings.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 #[test]
 fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_strings() {
@@ -67,8 +66,7 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
     let edge_id = baseline.created_relation(&edge).unwrap();
     release_test_commit_snapshot(&runtime, &baseline);
     let before = test_owner_main_basis(&runtime).unwrap();
-    let before_partition = before
-        .inner
+    let before_partition = (*before.owner_inner())
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
@@ -175,11 +173,10 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
     assert_eq!(after.reference(), before.reference());
     assert_eq!(after.truth_version(), before.truth_version());
     assert_eq!(
-        after.inner.root.canonical_envelope(),
-        before.inner.root.canonical_envelope()
+        (*after.owner_inner()).root.canonical_envelope(),
+        (*before.owner_inner()).root.canonical_envelope()
     );
-    let after_partition = after
-        .inner
+    let after_partition = (*after.owner_inner())
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")

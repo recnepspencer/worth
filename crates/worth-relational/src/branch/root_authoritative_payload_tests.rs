@@ -1,6 +1,7 @@
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 use super::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
 use crate::config::data::CascadeDeletePolicy;
@@ -8,8 +9,7 @@ use crate::history::data::BranchId;
 use crate::schema::data::SchemaVersionId;
 use crate::tests::support::*;
 
-#[path = "root_authoritative_payload_tests/word_codec.rs"]
-mod word_codec;
+pub(crate) use worth_relational_branch::internal_port::branch::root::authoritative_payload_tests::word_codec;
 
 #[test]
 fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_is_removed() {
@@ -47,7 +47,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     .build_registry()
     .register_content_format(
         format,
-        Arc::new(word_codec::WordCodec(
+        Arc::new(word_codec::WordCodecForTest(
             ContentFormat::new("word", 1).unwrap(),
         )),
     )
@@ -109,7 +109,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     )
     .expect("configuration compilation cannot refuse")
     .unwrap();
-    let descriptor = super::RelationalBranchRootDescriptor::new(
+    let descriptor = crate::branch::target::RelationalBranchRootDescriptor::new(
         *root.descriptor().unwrap().truth_root(),
         authority.registry().authority_digest_bytes(),
     );

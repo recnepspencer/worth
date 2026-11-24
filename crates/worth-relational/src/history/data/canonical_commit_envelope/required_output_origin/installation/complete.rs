@@ -1,8 +1,11 @@
 //! Complete one live required-output publication against the admitted branch.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::readmission::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::super::history_request::{OutputPreparationInputs, OutputPreparationRequest};
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::publication::application_publication::RequiredOutputPublication as Publication;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_required_output_origin<'r>(
@@ -82,7 +85,11 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
         .map_err(origin_request)?;
     if installed.runtime_instance_id != runtime.runtime_instance_id
         || installed.custom_invariant_generation != runtime.custom_invariant_generation
-        || installed.schema_digest != basis.inner.root.schema_authority().authority_digest()
+        || installed.schema_digest
+            != (*basis.owner_inner())
+                .root
+                .schema_authority()
+                .authority_digest()
         || !publication.admitted_by(&installed)
         || envelope.branch_context != *basis.descriptor().branch_id()
         || !envelope.is_unmerged_output_publication_step()
@@ -226,7 +233,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
             )?;
             super::super::source_scope_ownership::require_cascade(
                 origin,
-                envelope.authored_cascade_retirement.as_deref(),
+                (*envelope.owner_authored_cascade_retirement()).as_deref(),
             )?;
             predecessor::require_complete_retirement(origin, roles)?;
             (meaning, roles, Some(origin))

@@ -1,4 +1,5 @@
 use crate::history::data::BranchId;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::VisibilitySubsystemFixturePort as _;
 fn prove_registry_lookup_work_is_population_independent(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     branch_population: usize,
@@ -128,7 +129,7 @@ fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
         let branch_scans_before = runtime
             .phase4_reference_cost_counters()
             .branch_population_scans;
-        let visibility_before = runtime.visibility.visibility_cache_cost_counters();
+        let visibility_before = runtime.visibility.visibility_cache_cost_counters_for_test();
 
         crate::tests::support::create_entity(
             execution,
@@ -139,7 +140,7 @@ fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
         let branch_scans_after = runtime
             .phase4_reference_cost_counters()
             .branch_population_scans;
-        let visibility_after = runtime.visibility.visibility_cache_cost_counters();
+        let visibility_after = runtime.visibility.visibility_cache_cost_counters_for_test();
         assert_eq!(branch_scans_after, branch_scans_before);
         assert_eq!(
             visibility_after.branch_head_population_scans,

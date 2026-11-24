@@ -1,4 +1,5 @@
 use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
 
 /// Caller-authored mutation policy before the Relational owner binds it to an
 /// exact branch basis. It carries no branch selector or operational authority.

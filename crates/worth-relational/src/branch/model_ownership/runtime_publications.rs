@@ -4,6 +4,7 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 impl RelationalRuntime {
     pub fn observe_owned_model_publications(
@@ -17,7 +18,11 @@ impl RelationalRuntime {
         use RelationalModelOwnershipDenial as Denial;
         if selected.identity().runtime_instance_id() != self.runtime_instance_id()
             || installed.runtime_instance_id != self.runtime_instance_id()
-            || installed.schema_digest != selected.inner.root.schema_authority().authority_digest()
+            || installed.schema_digest
+                != (*selected.owner_inner())
+                    .root
+                    .schema_authority()
+                    .authority_digest()
         {
             return Err(Denial::ForeignBasis);
         }

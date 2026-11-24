@@ -1,8 +1,10 @@
 //! Compare an issued native source stamp with one exact commit snapshot.
 
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::registered_snapshot_projection::VisibilityProjectionViewOwnerPort as _;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 use crate::snapshots::data::SnapshotHandle;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
@@ -27,7 +29,7 @@ impl RelationalAuthorizationDependencySnapshots<'_> {
         self,
         snapshot: &SnapshotHandle,
     ) -> Result<VisibilityProjectionView, Denial> {
-        if snapshot.runtime_instance_id != self.projection.runtime_identity {
+        if (*snapshot.owner_runtime_instance_id()) != self.projection.runtime_identity {
             return Err(Denial::ForeignRuntime);
         }
         VisibilityProjectionView::from_snapshot(self.projection, self.directory, snapshot)

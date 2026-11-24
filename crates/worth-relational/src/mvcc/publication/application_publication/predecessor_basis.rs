@@ -5,6 +5,9 @@ use crate::branch::basis_denial::RelationalBranchBasisDenial;
 use crate::history::data::CommitId;
 use crate::history::retention::PublicationBasisImage;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 
 /// Exact consumed inputs. A coupled image is an applied proposal, never a
 /// committed branch basis or a snapshot. Only the publication owner issues it.
@@ -136,13 +139,16 @@ pub(crate) fn predecessor_publication_input(
         .head_retention()
         .publication_bases()
         .unwrap_or_else(|| {
-            PublicationBasisImage::at_for_owner(&selected.inner.root, &history.retention_binding())
+            PublicationBasisImage::at_for_owner(
+                &(*selected.owner_inner()).root,
+                &history.retention_binding(),
+            )
         });
     let work = u64::from(usize::BITS - image.routes().len().max(1).leading_zeros())
         .saturating_add(1)
         .saturating_mul(prior.origin.meaning.family.len() as u64 + 1)
         .saturating_mul(2);
-    let positions = &selected.inner.root.output_publication_positions;
+    let positions = &(*selected.owner_inner()).root.output_publication_positions;
     let position = execution
         .run_native_with_checkpoint(|context| {
             crate::execution::request_stage::checkpoint(context, work)?;

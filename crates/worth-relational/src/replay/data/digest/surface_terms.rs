@@ -5,6 +5,7 @@ use crate::indexes::data::{DerivedIndexArtifacts, DerivedIndexEntries};
 #[cfg(test)]
 use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
 use crate::replay::data::ReplaySnapshotSurface;
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 
 use super::primitive_terms::ReplayDigestBuilder;
 

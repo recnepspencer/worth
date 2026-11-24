@@ -5,6 +5,8 @@ use crate::identity::data::VersionId;
 use crate::mvcc::observation::RelationalBranchObservation;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::assemble_admitted_relational_branch_basis;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 pub(super) fn select_registered_retained_commit(
     history: &HistorySubsystem,
@@ -39,14 +41,14 @@ pub(super) fn select_registered_retained_commit(
         let Some(inner) = entry.upgrade() else {
             continue;
         };
-        let actual = AdmittedRelationalBranchBasis { inner };
+        let actual = assemble_admitted_relational_branch_basis(inner);
         let observation = actual.observation();
         if observation.commit_receipt().is_none_or(|receipt| {
             receipt.commit_id != request.source_commit_id || receipt.version_id != version
         }) {
             continue;
         }
-        if actual.inner.retention.owner_relationship(&owner)
+        if (*actual.owner_inner()).retention.owner_relationship(&owner)
             != RelationalRetentionOwnerRelationship::SameOwner
         {
             continue;

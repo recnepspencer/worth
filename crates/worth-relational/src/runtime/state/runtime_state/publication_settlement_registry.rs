@@ -8,10 +8,7 @@ use crate::history::data::CommitId;
 
 pub(crate) mod record;
 
-pub(crate) use record::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
-    RelationalSettlementClaim, ReservedRelationalSettlement,
-};
+pub(crate) use record::{PendingRelationalPublicationSettlement, ReservedRelationalSettlement};
 
 /// Why one publication attempt could not install its pending-settlement record
 /// before movement.

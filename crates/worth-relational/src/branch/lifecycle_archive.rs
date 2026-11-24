@@ -5,6 +5,7 @@ use crate::branch::{
     RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop,
 };
 use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
+use worth_relational_branch::internal_port::branch::lifecycle::outcomes::assemble_archived_relational_branch;
 
 impl crate::runtime::RelationalRuntime {
     /// Archive a live branch: it stops accepting commits and its generation
@@ -92,9 +93,9 @@ impl crate::runtime::RelationalRuntime {
             || Ok(transition),
             |_, _| state.install_archive(archived.clone()),
         )?;
-        Ok(ArchivedRelationalBranch {
-            identity: identity.clone(),
-            observation: archived,
-        })
+        Ok(assemble_archived_relational_branch(
+            identity.clone(),
+            archived,
+        ))
     }
 }

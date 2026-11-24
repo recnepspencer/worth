@@ -9,10 +9,11 @@ use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_execution::SerialMemoryBudget;
 use worth_foundational::facade::AspectValue;
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingEntryOwnerPort as _;
 
 fn generations() -> Vec<DerivedIndexGeneration> {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let entity = EntityId::new(PartitionId::main(), 1, 1);
         let other = EntityId::new(PartitionId::main(), 2, 1);
         let relation = RelationId::new(PartitionId::main(), 3, 1);
@@ -70,7 +71,7 @@ fn generations() -> Vec<DerivedIndexGeneration> {
 }
 #[test]
 fn full_and_delta_index_tuples_preserve_all_entry_families() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let mut expected = generations();
         let mut repeated = expected[0].clone();
         repeated.generation_id = DerivedIndexGenerationId(5);
@@ -123,7 +124,7 @@ fn full_and_delta_index_tuples_preserve_all_entry_families() {
 
 #[test]
 fn funded_decode_admits_every_entry_family_in_both_tuples() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         // One generation per index, so the delta tuple carries full rows only.
         let expected = generations();
         let lane = fixture_lane;
@@ -168,7 +169,7 @@ fn funded_decode_admits_every_entry_family_in_both_tuples() {
 
 #[test]
 fn join_leg_state_is_priced_per_decoded_container() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let entity = EntityId::new(PartitionId::main(), 1, 1);
         let relations: Vec<_> = (0..40)
             .map(|slot| RelationId::new(PartitionId::main(), 10 + slot, 1))

@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::merge::data::{

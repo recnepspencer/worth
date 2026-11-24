@@ -3,6 +3,7 @@ use super::availability::ManagedIndexSourceAvailability as Availability;
 use super::image::{HistorySourceDirectory, ManagedIndexBranchImage};
 use super::program::ManagedIndexSourceProgram as Program;
 use crate::identity::data::EntityId;
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageOwnerPort as _;
 use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
 
 /// Original-paid retention of exact immutable historical material only.

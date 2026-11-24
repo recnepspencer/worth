@@ -19,7 +19,7 @@ fn latest_bundle_remains_a_convenience_surface_not_the_subscriber_contract() {
     assert_eq!(observation.latest_commit_id, Some(bundle.commit.commit_id));
     assert_eq!(
         observation.publication_snapshot_id,
-        Some(bundle.snapshot.snapshot_id)
+        Some(bundle.snapshot.snapshot_id())
     );
     assert_eq!(
         observation.latest_patch_position,

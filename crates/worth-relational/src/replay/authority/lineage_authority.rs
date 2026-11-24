@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use crate::lineage::data::PublishedLineageArtifact;
 use crate::performance::ReplayLineageAuthorityIndexedSource;

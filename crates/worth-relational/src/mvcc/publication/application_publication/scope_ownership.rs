@@ -3,6 +3,7 @@ use super::RelationalInstalledApplicationPublicationAuthority;
 use crate::identity::data::KindId;
 use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
 use crate::storage::overlay::PartitionAccess;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
@@ -15,8 +16,7 @@ impl RelationalInstalledApplicationPublicationAuthority {
         (),
         crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
-        if (*basis
-            .inner
+        if (*(*basis.owner_inner())
             .root
             .schema_authority()
             .registry()
@@ -72,8 +72,7 @@ impl RelationalInstalledApplicationPublicationAuthority {
             return Ok(());
         };
         if self.source_scope_ownership.scope_kind(producer).is_some() {
-            basis
-                .inner
+            (*basis.owner_inner())
                 .root
                 .demand_full_partition(execution, meaning.source_scope.partition_id)
                 .map_err(super::custody::execution_stop)?;

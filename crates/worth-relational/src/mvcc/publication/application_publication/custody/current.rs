@@ -1,4 +1,6 @@
 //! Current custody is readmitted from Native's durable roster, without history.
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -155,8 +157,7 @@ fn owner_matches(
             .source_scope_ownership
             .scope_kind(&origin.producer)
             == Some(kind)
-        && basis
-            .inner
+        && (*basis.owner_inner())
             .root
             .get_current_partition(origin.meaning.source_scope.partition_id)
             .and_then(|partition| partition.entity_arena().get(&origin.meaning.source_scope))

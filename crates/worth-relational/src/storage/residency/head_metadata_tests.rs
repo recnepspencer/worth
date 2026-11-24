@@ -7,7 +7,7 @@ use crate::storage::residency::region_image::{
 
 #[test]
 fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let head = decode_head(&fixture);
         let head_rows = &head.partition.entity_arena.metadata_history[0];
@@ -49,7 +49,7 @@ fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
 
 #[test]
 fn a_head_append_matches_a_separately_recomputed_full_history_root() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let backing = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&backing);
@@ -231,7 +231,7 @@ fn the_head_historical_projection_is_authenticated_without_a_history_read() {
 }
 
 pub(super) fn decode_head(fixture: &RegionFixture) -> RegionHeadImage {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let bytes = fixture.source.members.get(&fixture.cold.head).unwrap();
         let frame = RelationalRegionImage::decode(
             fixture_lane,
@@ -251,7 +251,7 @@ fn cell_with_head(
     fixture: RegionFixture,
     head: RegionHeadImage,
 ) -> (Arc<RelationalRegionResidency>, Arc<CountedSource>) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let mut cold = fixture.cold;
         let (locator, bytes) = RelationalRegionImage::encode(
             fixture_lane,

@@ -50,11 +50,13 @@ impl RecordedReplayResultSchema {
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthorityFixturePort as _;
+
     use super::*;
 
     #[test]
     fn a_recorded_result_schema_admits_only_the_authority_its_envelope_recorded() {
-        let recorded = RelationalBranchRootSchemaAuthority::empty();
+        let recorded = RelationalBranchRootSchemaAuthority::empty_for_test();
         let own = crate::schema::data::RelationalSchemaRegistry::default().authority_snapshot();
         let admitted =
             RecordedReplayResultSchema::admit_recorded(recorded.clone(), &own, CommitId(1))

@@ -6,6 +6,7 @@ use crate::storage::data::SymbolPageSelection;
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 use std::collections::BTreeSet;
+use worth_relational_storage::internal_port::storage::data::symbol_residency::RuntimeSymbolResidency;
 
 #[test]
 fn region_symbol_admission_is_retryable_and_owned_by_each_fork() {

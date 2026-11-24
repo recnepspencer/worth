@@ -5,7 +5,6 @@ pub use laws::{
     DerivedRelationCardinality, DerivedRelationGraphLaws, DerivedRelationLaw,
     DerivedRelationLawViolation, DerivedRelationMinimumReachability,
 };
-pub(crate) use worth_relational_contracts::internal_port::derived_relation::canonical;
 pub(crate) mod evaluation;
 mod ordered_events;
 pub(crate) mod pinned;

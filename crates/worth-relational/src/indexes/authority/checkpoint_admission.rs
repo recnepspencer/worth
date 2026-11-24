@@ -6,6 +6,8 @@ use crate::indexes::data::IndexBasisCheckpoint;
 use crate::runtime::state::subsystems::indexing::IndexingState;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::collections::BTreeMap;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 #[derive(Debug)]

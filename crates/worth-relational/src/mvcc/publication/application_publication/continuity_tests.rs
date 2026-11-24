@@ -2,11 +2,12 @@
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
 use crate::tests::support::*;
 use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 fn publish(
     runtime: &crate::runtime::RelationalRuntime,
@@ -120,12 +121,12 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
     .unwrap();
     let partial_id = partial.commit.commit_id;
     assert_eq!(partial.changed_records, [RecordRef::Entity(ids[0])]);
-    let partial_origin = partial
+    let partial_origin = (*partial
         .publication()
         .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap();
+        .owner_required_output_origin())
+    .as_ref()
+    .unwrap();
     assert_eq!(partial_origin.members.len(), 2);
     assert_eq!(partial_origin.birth, born_at);
     assert_ne!(
@@ -177,8 +178,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &native_meaning_fixture("native-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve,
             ),
@@ -189,7 +190,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         "membership wins over two different latest member writes"
     );
     for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {
-        let mut wrong = native_meaning_fixture("native-creator");
+        let mut wrong = native_meaning_for_test("native-creator");
         wrong.implementation =
             RequiredOutputProducingImplementation::from_checkpoint(build, edition).unwrap();
         assert!(
@@ -201,7 +202,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                     "native-preserver",
                     &[4; 32],
                     &wrong,
-                    &native_roles_fixture(
+                    &native_roles_for_test(
                         &ids.map(|id| (id, KindId(1))),
                         crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                     ),
@@ -218,8 +219,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                 &basis,
                 "native-preserver",
                 &[4; 32],
-                &native_meaning_fixture("native-creator"),
-                &native_roles_fixture(
+                &native_meaning_for_test("native-creator"),
+                &native_roles_for_test(
                     &subset.iter().map(|id| (*id, KindId(1))).collect::<Vec<_>>(),
                     crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                 )
@@ -286,8 +287,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &native_meaning_fixture("native-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
             )

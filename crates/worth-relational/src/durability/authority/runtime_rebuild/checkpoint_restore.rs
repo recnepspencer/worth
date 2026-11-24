@@ -227,7 +227,7 @@ fn prepare_lineage(
         })
         .collect::<Vec<_>>();
     let mut events = events;
-    events.sort_by_key(|(event, _)| (*event.owner_event_id()));
+    events.sort_by_key(|(event, _)| *event.owner_event_id());
     lineage.replace_events(lane, events);
     lineage
 }

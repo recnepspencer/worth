@@ -5,7 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RELATIONAL_ROOT="$ROOT_DIR/crates/worth-relational/src"
 CONTRACTS_ROOT="$ROOT_DIR/crates/worth-relational-contracts/src"
 STORAGE_ROOT="$ROOT_DIR/crates/worth-relational-storage/src"
-RELATIONAL_SOURCES=("$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT")
+BRANCH_ROOT="$ROOT_DIR/crates/worth-relational-branch/src"
+RELATIONAL_SOURCES=("$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT" "$BRANCH_ROOT")
 RAW_REQUESTS="$CONTRACTS_ROOT/merge/data/requests/raw.rs"
 
 failures=0
@@ -118,7 +119,7 @@ if rg -n "RelationalCommitArtifact::from_envelope" "${RELATIONAL_SOURCES[@]}" --
   failures=1
 fi
 
-if rg -n "pub\(crate\) fn append\(" "$RELATIONAL_ROOT/history/commit/catalog.rs" >/tmp/worth-relational-phase4-residue.txt 2>&1; then
+if rg -n "pub\(crate\) fn append\(" "$BRANCH_ROOT/history/commit/catalog.rs" >/tmp/worth-relational-phase4-residue.txt 2>&1; then
   echo "[relational-phase4-residue] FAIL: catalog artifact append door is wider than its envelope boundary" >&2
   cat /tmp/worth-relational-phase4-residue.txt >&2
   failures=1

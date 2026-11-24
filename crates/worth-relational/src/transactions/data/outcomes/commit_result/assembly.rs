@@ -10,6 +10,8 @@ use crate::transactions::data::outcomes::commit_result::CommitPublication;
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
 use crate::transactions::data::outcomes::live_commit_validation::CommitValidation;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 
 pub(crate) struct CommitResultSeal {
     snapshot_release: std::sync::Arc<PublishedSnapshotReleaseObservation>,

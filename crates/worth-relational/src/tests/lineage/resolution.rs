@@ -22,12 +22,12 @@ fn historical_lineage_resolution_follows_replace_events() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -83,12 +83,12 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     for index in 0..6 {
         let label = format!("unrelated-{index}");
@@ -128,12 +128,12 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(

@@ -159,6 +159,8 @@ mod boundary_tests;
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_branch::internal_port::branch::reference::root_access::RelationalBranchReferenceCellFixturePort as _;
+
     use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyCommitRequestOwnerPort as _;
     use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyInputArtifactOwnerPort as _;
     use worth_relational_contracts::internal_port::commit_strategies::data::execution::execution_draft::StrategyExecutionDraftOwnerPort as _;

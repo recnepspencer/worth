@@ -9,6 +9,7 @@
 //! and its cutover. Its sequence is its own: it never consumes a position.
 
 use std::sync::{Arc, Mutex, MutexGuard};
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 use worth_relational_contracts::internal_port::branch::transition::sequence::RelationalBranchTransitionSequenceOwnerPort as _;
 
 use crate::branch::transition::durable_step::RelationalBranchTransitionDurableStep;

@@ -1,4 +1,5 @@
 //! Canonical authored targets, independent of semantic-delta equality.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
 use crate::identity::data::EntityId;
 use crate::indexes::data::DerivedIndexKind;
@@ -6,6 +7,7 @@ use crate::storage::data::AuthoritativeFieldComparisonKey as Comparison;
 use crate::transactions::data::intents::mutation_intent::EntityMutationIntent as Entity;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use worth_foundational::facade::{PortableAspectPatchOperation, PortableRecordAspectPatch};
+use worth_relational_branch::internal_port::history::access::relevant_writes::selection::RelationalAuthoredEntityIndexDefinitionOwnerPort as _;
 
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,

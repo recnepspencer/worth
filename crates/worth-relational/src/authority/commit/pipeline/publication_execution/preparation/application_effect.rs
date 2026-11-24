@@ -1,4 +1,6 @@
 //! Judge the actual applied body before current-publication bookkeeping.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatchOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -14,7 +16,7 @@ pub(super) fn unchanged(
     merge_parents: &[crate::history::data::BranchId],
 ) -> Result<bool, TransactionCommitError> {
     if !adjacency.is_empty()
-        || !envelope.content.records().is_empty()
+        || !(*envelope.owner_content()).records().is_empty()
         || !envelope.record_allocations().is_empty()
         || symbols.has_reserved_meanings()
         || envelope.schema_transition.is_some()

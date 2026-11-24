@@ -1,6 +1,7 @@
 use super::live_access::IndexAuthority;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 use super::{failed_build_outcome, IndexProjectionSource};
 
@@ -46,8 +47,7 @@ impl IndexAuthority<'_> {
         if let Err(refusal) = self.demand_build_index_image(execution, &request) {
             return refusal;
         }
-        if let Err(failure) = basis
-            .inner
+        if let Err(failure) = (*basis.owner_inner())
             .root
             .demand_all_full(execution, &self.runtime.services.symbols)
         {

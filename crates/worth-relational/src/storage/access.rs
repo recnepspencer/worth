@@ -7,7 +7,6 @@ use crate::storage::data::{
     StorageStats,
 };
 use crate::storage::substrate::RecordKind;
-use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;
 
 pub struct StorageAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -232,3 +231,6 @@ pub(crate) struct RecordSlotSurface {
 pub(crate) mod chunk_inspection;
 pub(crate) mod neighborhood;
 mod storage_stats;
+
+#[cfg(test)]
+use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;

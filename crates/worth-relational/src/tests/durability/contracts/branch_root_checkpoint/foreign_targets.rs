@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
@@ -84,15 +85,15 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         .observation
         .target()
         .clone();
-    let tail_cell = plan
+    let tail_cell = (*plan
         .tail_log
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == tail_commit.commit.commit_id)
         .unwrap()
-        .branch_cell_checkpoint
-        .as_mut()
-        .unwrap();
+        .owner_branch_cell_checkpoint_mut())
+    .as_mut()
+    .unwrap();
     replace_checkpoint_target(tail_cell, foreign_target);
 
     let recovered_medium = OwnedTestDurableMedium::new();

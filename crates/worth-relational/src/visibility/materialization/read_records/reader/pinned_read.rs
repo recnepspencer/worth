@@ -1,4 +1,5 @@
 //! Immutable native custody independent of the installed runtime's borrow.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::retention::VisibilitySnapshotBasis;
 use crate::indexes::access::selected_index::PinnedIndex;

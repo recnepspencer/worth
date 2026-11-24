@@ -1,6 +1,6 @@
 //! Scratch and work limits at the actual native invariant packet boundary.
 use super::super::validation_engine_fixtures::*;
-use crate::branch::basis_admission_tests::installed_history;
+use crate::branch::basis_fixture::installed_history_for_test as installed_history;
 use crate::config::data::RelationalRuntimeConfig;
 use crate::execution::{execute_read_only_packets, PacketExecutionStop, ReadOnlyPacket};
 use crate::history::data::coordinates::BranchId;

@@ -1,10 +1,9 @@
 //! Real producer ownership must survive exact subset materialization maintenance.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::branch::materialization::RelationalEntityMaterialization;
 use crate::branch::materialization::RelationalRelationMaterialization;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
 
 #[path = "materialization/incident_owner.rs"]
@@ -238,8 +237,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         &basis,
         "native-creator",
         &[1; 32],
-        &native_meaning_fixture("native-creator"),
-        &native_roles_fixture(
+        &native_meaning_for_test("native-creator"),
+        &native_roles_for_test(
             &ids.map(|id| (id, KindId(1))),
             RequiredOutputRolePosture::Create,
         ),
@@ -258,7 +257,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             execution,
             &runtime,
             &basis,
-            &native_meaning_fixture("native-creator")
+            &native_meaning_for_test("native-creator")
         )
         .unwrap(),
         Some(crate::history::data::RequiredOutputRoutePosition::Published(original_commit))
@@ -267,7 +266,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     assert_eq!(origin.birth, original_commit);
     assert_eq!(origin.birth_producer, "native-creator");
     assert_eq!(origin.producer, "native-creator");
-    assert_eq!(origin.meaning, native_meaning_fixture("native-creator"));
+    assert_eq!(origin.meaning, native_meaning_for_test("native-creator"));
     let preserved = publish(
         &runtime,
         execution,
@@ -284,8 +283,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             &test_owner_main_basis(&runtime).unwrap(),
             "native-preserver",
             &[2; 32],
-            &native_meaning_fixture("native-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),

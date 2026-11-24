@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use super::*;
 use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
@@ -141,9 +142,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         performed.durability_posture(),
         crate::mvcc::RelationalPublicationDurabilityPosture::OwnerAcknowledgementDeferred
     );
-    assert!(performed
-        .next_basis()
-        .inner
+    assert!((*performed.next_basis().owner_inner())
         .root
         .is_complete(execution, &runtime.services.symbols.interner_snapshot()));
     let observation = performed.next_basis().observation();

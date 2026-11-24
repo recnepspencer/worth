@@ -1,0 +1,116 @@
+//! A historical verifier admits only source commits on the selected basis's ancestry.
+use super::*;
+use crate::execution::request_stage::checkpoint;
+use crate::history::envelope_demand::CanonicalHistoryRead;
+use crate::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
+use std::collections::BTreeSet;
+/// The exact canonical history and identity of an installed read owner.
+#[doc(hidden)]
+pub struct HistoricalSelectionAncestry<'a> {
+    pub runtime_instance_id: u64,
+    pub history: CanonicalHistoryRead<'a>,
+}
+
+impl RelationalHistoricalSelectionRead {
+    /// Branch names are not ancestry. Read actual canonical parents, including
+    /// across forks; a cold or missing artifact never becomes a positive answer.
+    pub fn includes_source<'history>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        owner: impl Into<HistoricalSelectionAncestry<'history>>,
+        source: &PositionedRelationalSnapshot,
+    ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
+        use RelationalHistoricalSelectionReadDenial as Denial;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
+        let owner = owner.into();
+        if !self
+            .latest()
+            .restored
+            .is_from_runtime(owner.runtime_instance_id)
+            || !self
+                .latest()
+                .restored
+                .is_from_runtime(source.runtime_instance_id())
+        {
+            return Err(Denial::ForeignOwner);
+        }
+        if source.version_id() > self.latest().selected.version_id() {
+            return Ok(false);
+        }
+        let Some(requested) = source.commit_id() else {
+            return Ok(false);
+        };
+        let bound = owner.history.branch.catalog_len();
+        let mut visited = BTreeSet::new();
+        let initial = execution
+            .reserve_retained_memory(
+                512u64.saturating_add((self.stages.len() as u64).saturating_mul(32)),
+            )
+            .map_err(Denial::Request)?;
+        execution
+            .run_native_with_checkpoint(|context| checkpoint(context, self.stages.len() as u64))
+            .map_err(Denial::Request)?
+            .0
+            .map_err(|stop| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(stop)))?;
+        // Each source coordinate is an independently authenticated selected
+        // basis. Their canonical parent union includes earlier selected futures
+        // even when a later selection's physical parent lies on another branch.
+        let mut pending = self
+            .stages
+            .iter()
+            .filter_map(|stage| {
+                stage
+                    .selected
+                    .selected_root()
+                    .and_then(|root| root.commit_id())
+            })
+            .collect::<Vec<_>>();
+        let mut memory = vec![initial];
+        while let Some(commit) = pending.pop() {
+            execution
+                .run_native_with_checkpoint(|context| {
+                    checkpoint(context, (bound as u64).saturating_add(1))
+                })
+                .map_err(Denial::Request)?
+                .0
+                .map_err(|stop| {
+                    Denial::Request(worth_execution::WorkCeilingDenial::Stopped(stop))
+                })?;
+            if visited.contains(&commit) {
+                continue;
+            }
+            if visited.len() >= bound {
+                return Ok(false);
+            }
+            memory.push(
+                execution
+                    .reserve_retained_memory(512)
+                    .map_err(Denial::Request)?,
+            );
+            visited.insert(commit);
+            let Some(envelope) = owner
+                .history
+                .demand_commit_envelope(execution, commit)
+                .map_err(Denial::Execution)?
+            else {
+                return Ok(false);
+            };
+            if commit == requested {
+                return Ok(envelope.commit.version_id == source.version_id());
+            }
+            if envelope.commit.version_id < source.version_id() {
+                continue;
+            }
+            memory.push(
+                execution
+                    .reserve_retained_memory(
+                        (envelope.commit.parents.len() as u64).saturating_mul(32),
+                    )
+                    .map_err(Denial::Request)?,
+            );
+            pending.extend(envelope.commit.parents.iter().copied());
+        }
+        Ok(false)
+    }
+}

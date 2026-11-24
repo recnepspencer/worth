@@ -7,6 +7,7 @@ use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariant
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 mod body_digest;
 mod body_validation;
@@ -172,10 +173,11 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let snapshot = self.configuration_binding().snapshot();
-        let source_generation = retain_root_execution_contracts(&predecessor.inner.root).map_or(
-            snapshot.schema_contract_runtime.custom_invariant_generation,
-            |source| source.contracts.custom_invariant_generation,
-        );
+        let source_generation = retain_root_execution_contracts(&(*predecessor.owner_inner()).root)
+            .map_or(
+                snapshot.schema_contract_runtime.custom_invariant_generation,
+                |source| source.contracts.custom_invariant_generation,
+            );
         let generation = source_generation
             .checked_add(1)
             .ok_or(Denial::GenerationExhausted)?;
@@ -188,7 +190,7 @@ impl RelationalRuntime {
                 .schema
                 .descriptor_semantics_policy
                 .current_write_version(),
-            predecessor.inner.root.schema_authority(),
+            (*predecessor.owner_inner()).root.schema_authority(),
         )
         .map_err(schema_compilation_denial::translate)?;
         let digest =

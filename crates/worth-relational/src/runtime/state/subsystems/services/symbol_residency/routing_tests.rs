@@ -10,7 +10,9 @@ use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
+use worth_relational_branch::internal_port::symbols::data::selected_field_text::RelationalFieldTextFixturePort as _;
 use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
+use worth_relational_storage::internal_port::storage::data::symbol_residency::RuntimeSymbolResidency;
 
 fn colliding_texts() -> Vec<String> {
     (0..)
@@ -41,7 +43,7 @@ fn collision_dictionary() -> (
             let admitted = runtime
                 .admit_field_text(&execution, &transaction.basis, &input)
                 .unwrap();
-            (admitted.symbol, text)
+            (admitted.selected_symbol_for_test(), text)
         })
         .collect();
     let (table, directory, source, _) = checkpoint_dictionary(&execution, &runtime);

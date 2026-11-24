@@ -1,4 +1,6 @@
 //! Authentic tenure and the real admission handshake, not Arc-count authority.
+use worth_relational_branch::internal_port::history::retention::head_cell::RelationalBranchHeadRetentionCellFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::cache::memory_close::VisibilityCacheFixturePort as _;
 use super::*;
 use crate::change_source::memory_close_observation::RelationalMemoryCloseObservation as O;
 use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
@@ -119,13 +121,13 @@ fn memory_terminal_close_cache_contention_preserves_exact_and_historical_allocat
     drop(original);
     drop(next);
     let cache = runtime.visibility.cache.clone();
-    let original_entries = cache.memory_close_entry_count();
+    let original_entries = cache.memory_close_entry_count_for_test();
     assert!(original_entries >= 2);
     let mut close = RelationalRuntimeHandle::immutable(std::sync::Arc::new(runtime))
         .into_memory_close()
         .unwrap();
     assert!(matches!(close.advance(request), O::Advanced));
-    cache.while_live_entries_locked(original_entries, || {
+    cache.while_live_entries_locked_for_test(original_entries, || {
         assert!(matches!(close.advance(request), O::Busy));
     });
     let mut complete = false;
@@ -140,7 +142,7 @@ fn memory_terminal_close_cache_contention_preserves_exact_and_historical_allocat
         }
     }
     assert!(complete);
-    let key = cache.assert_entries_retired(original_entries);
+    let key = cache.assert_entries_retired_for_test(original_entries);
     assert!(
         cache.state(&key).is_none(),
         "retired allocations cannot be read as a synthetic basis"
@@ -177,7 +179,7 @@ fn memory_terminal_close_head_contention_retires_actual_token_without_dropping_r
         .unwrap();
     assert!(matches!(close.advance(request), O::Advanced));
     assert!(matches!(close.advance(request), O::Advanced)); // empty cache inventory
-    let token = head.while_obligation_locked(|token| {
+    let token = head.while_obligation_locked_for_test(|token| {
         assert!(token.is_live());
         assert!(matches!(close.advance(request), O::Busy));
         assert!(token.is_live());

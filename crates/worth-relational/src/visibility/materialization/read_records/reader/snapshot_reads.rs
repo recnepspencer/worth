@@ -10,6 +10,10 @@ use crate::visibility::snapshot_states::{
         resolve_snapshot_state,
     },
 };
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
+use worth_relational_branch::internal_port::visibility::snapshot_read_view::RelationalReadViewFieldsPort as _;
+use worth_relational_branch::internal_port::visibility::snapshot_states::retained_state_building::RelationalBranchObservationOwnerPort as _;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_snapshot(
@@ -140,8 +144,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             root.query_schema_context();
         Some(QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
-            snapshot_id: snapshot.snapshot_id,
-            version_id: snapshot.version_id,
+            snapshot_id: (*snapshot.owner_snapshot_id()),
+            version_id: (*snapshot.owner_version_id()),
             schema_version,
             descriptor_semantics_version,
             evidence_basis,
@@ -245,7 +249,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 }
 
 fn read_view_bytes(view: &RelationalReadView) -> u64 {
-    super::super::read_footprint::entities(&view.entities)
-        .saturating_add(super::super::read_footprint::relations(&view.relations))
-        .saturating_add(view.snapshot.branch_id.0.capacity() as u64)
+    super::super::read_footprint::entities(&(*view.owner_entities()))
+        .saturating_add(super::super::read_footprint::relations(
+            &(*view.owner_relations()),
+        ))
+        .saturating_add((*(*view.owner_snapshot()).owner_branch_id()).0.capacity() as u64)
 }

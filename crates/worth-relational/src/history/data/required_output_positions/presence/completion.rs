@@ -1,4 +1,8 @@
 //! Position transitions independently maintain presence; no roster row is consulted.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::historical_selection::absence::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
@@ -25,8 +29,7 @@ pub(crate) fn complete(
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedCurrentRecords, TransactionCommitError> {
-    let storage = (*basis
-        .inner
+    let storage = (*(*basis.owner_inner())
         .root
         .schema_authority()
         .registry()
@@ -57,7 +60,12 @@ pub(crate) fn complete(
                 })
         })
     {
-        *positions = Some(basis.inner.root.output_publication_positions.clone());
+        *positions = Some(
+            (*basis.owner_inner())
+                .root
+                .output_publication_positions
+                .clone(),
+        );
     }
     let mut positions = positions.as_mut();
     let mut writer = Writer::in_stage(
@@ -129,7 +137,7 @@ pub(crate) fn complete(
         }
         replace(&mut writer, storage, old, None)?;
     }
-    for event in &candidate.required_output_codec_retirements {
+    for event in &(*candidate.owner_required_output_codec_retirements()) {
         writer.checkpoint(current.len() + 1)?;
         // A codec event for a non-opted-in route has no presence row.
         if let Some(old) = current

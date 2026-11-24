@@ -5,6 +5,7 @@ use crate::replay::data::{
     ReplayVerificationLayer,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use super::super::SelectedPublishedLineageAuthority;
 

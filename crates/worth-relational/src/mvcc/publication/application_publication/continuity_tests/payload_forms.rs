@@ -1,9 +1,10 @@
 //! Real installed publication of generic Query-shaped string struct outputs.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
 use worth_foundational::facade::{
     ContractValidatedAspectValueView, PortableAspectContractBasis, PortableAspectPatchOperation,
@@ -38,7 +39,7 @@ fn succession(
         admission,
         predecessor: previous,
         meaning,
-        roles: native_roles_fixture(members, RequiredOutputRolePosture::Preserve),
+        roles: native_roles_for_test(members, RequiredOutputRolePosture::Preserve),
     }
 }
 
@@ -132,7 +133,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .collect::<Vec<_>>();
     let born_at = birth.commit.commit_id;
     let envelope = &birth.publication().envelope;
-    assert_eq!(envelope.record_allocations.len(), 8);
+    assert_eq!(envelope.record_allocations().len(), 8);
     assert_eq!(envelope.patch.authoritative_record_patches.len(), 8);
     for patch in &envelope.patch.authoritative_record_patches {
         assert_eq!(
@@ -227,8 +228,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .unwrap();
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
-    let partition = basis
-        .inner
+    let partition = (*basis.owner_inner())
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
@@ -266,8 +266,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-preserver",
             &[3; 32],
-            &native_meaning_fixture("generic-creator"),
-            &native_roles_fixture(&members, RequiredOutputRolePosture::Preserve),
+            &native_meaning_for_test("generic-creator"),
+            &native_roles_for_test(&members, RequiredOutputRolePosture::Preserve),
         )
         .unwrap();
     assert_eq!(readmitted.origin.commit.commit_id, completed_at);
@@ -303,8 +303,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-creator",
             &[1; 32],
-            &native_meaning_fixture("generic-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("generic-creator"),
+            &native_roles_for_test(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create
             )

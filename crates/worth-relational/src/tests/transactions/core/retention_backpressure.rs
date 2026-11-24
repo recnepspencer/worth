@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::branch::{
     RelationalBranchBasisDenial, RelationalBranchDeleteDenial, RelationalBranchTransitionStop,
     RelationalForkDenial,
@@ -333,7 +335,9 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
     else {
         panic!("a prepared system-allocated root must publish");
     };
-    let cost = performed.next_basis().inner.root.publication_cost();
+    let cost = (*performed.next_basis().owner_inner())
+        .root
+        .publication_cost();
     assert!(cost.new_authoritative_bytes > 0);
     assert_eq!(cost.touched_regions, 1);
     assert_eq!(
@@ -347,7 +351,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         .read_truth()
         .try_project_historical_version(committed.commit.version_id)
         .unwrap()
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .expect("read request remains live");
     let record = records
         .iter()

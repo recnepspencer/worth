@@ -13,7 +13,7 @@ pub(crate) use selection_state::IndexSelectionState;
 mod basis_selection;
 pub(crate) use basis_selection::PreparedIndexBasisSelection;
 mod admitted_definition;
-pub(crate) mod catalog_coverage;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::indexing::catalog_coverage;
 mod catalog_publication;
 mod definition_catalog;
 mod definition_preparation;

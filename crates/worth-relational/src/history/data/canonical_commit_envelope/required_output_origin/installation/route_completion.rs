@@ -1,9 +1,13 @@
 //! Capture one authenticated route for ordinary and grouped publication.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::super::retention_budget::origin_retention_bytes;
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 pub(super) struct RouteCompletion<'a> {
     pub(super) inputs: crate::mvcc::publication::application_publication::RequiredOutputInputs,
     pub(super) contribution_records: Option<&'a [crate::transactions::data::primitives::RecordRef]>,
@@ -49,7 +53,7 @@ pub(super) fn install_route(
         CanonicalOutputPublication::AuthoredRetirement { .. }
             | CanonicalOutputPublication::ProducerRetirement { .. }
     );
-    super::source_scope_ownership::validate(
+    super::super::source_scope_ownership::validate(
         basis,
         installed,
         producer,
@@ -134,7 +138,7 @@ pub(super) fn install_route(
     context.checkpoint(bytes).map_err(origin_request)?;
     let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
         .map_err(|stop| origin_request(crate::execution::denial::lease_denial(stop)))?;
-    let members = super::members::capture(
+    let members = super::super::members::capture(
         envelope,
         &runtime.history,
         basis,
@@ -154,7 +158,7 @@ pub(super) fn install_route(
         state,
         &outputs,
         previous.map_or(0, |prior| prior.relations.len()),
-        basis.inner.root.schema_authority().registry(),
+        (*basis.owner_inner()).root.schema_authority().registry(),
         contribution_records,
         lease,
         context,
@@ -170,7 +174,10 @@ pub(super) fn install_route(
             context,
         )?;
     }
-    let mut positions = basis.inner.root.output_publication_positions.clone();
+    let mut positions = (*basis.owner_inner())
+        .root
+        .output_publication_positions
+        .clone();
     positions.insert(
         meaning,
         crate::history::data::RequiredOutputRoutePosition::Published(envelope.commit.commit_id),
@@ -183,38 +190,39 @@ pub(super) fn install_route(
             "output basis cannot be recorded in the canonical frame: {denial:?}"
         ))
     })?;
-    envelope.required_output_origin = Some(std::sync::Arc::new(CanonicalRequiredOutputOrigin {
-        inputs: inputs.meanings,
-        _input_memory: inputs.memory,
-        commit: envelope.commit.clone(),
-        basis: recorded_basis,
-        source_scope_owned: previous.map_or_else(
-            || {
-                installed
-                    .source_scope_ownership
-                    .scope_kind(producer)
-                    .is_some()
-            },
-            |prior| prior.source_scope_owned,
-        ),
-        producer: producer.to_owned(),
-        dependency_identity: worth_foundational::CanonicalDigestId::new(dependency_identity),
-        outputs,
-        relations,
-        meaning: meaning.clone(),
-        members,
-        publication: completion,
-        birth: previous.map_or(envelope.commit.commit_id, |prior| prior.birth),
-        birth_producer: previous
-            .map_or_else(|| producer.to_owned(), |prior| prior.birth_producer.clone()),
-        birth_dependency: previous.map_or(
-            worth_foundational::CanonicalDigestId::new(dependency_identity),
-            |prior| prior.birth_dependency,
-        ),
-        issuer: Some(installed.authority.clone()),
-        _funding: Some(memory),
-        _cascade_memory: None,
-    }));
+    (*envelope.owner_required_output_origin_mut()) =
+        Some(std::sync::Arc::new(CanonicalRequiredOutputOrigin {
+            inputs: inputs.meanings,
+            _input_memory: inputs.memory,
+            commit: envelope.commit.clone(),
+            basis: recorded_basis,
+            source_scope_owned: previous.map_or_else(
+                || {
+                    installed
+                        .source_scope_ownership
+                        .scope_kind(producer)
+                        .is_some()
+                },
+                |prior| prior.source_scope_owned,
+            ),
+            producer: producer.to_owned(),
+            dependency_identity: worth_foundational::CanonicalDigestId::new(dependency_identity),
+            outputs,
+            relations,
+            meaning: meaning.clone(),
+            members,
+            publication: completion,
+            birth: previous.map_or(envelope.commit.commit_id, |prior| prior.birth),
+            birth_producer: previous
+                .map_or_else(|| producer.to_owned(), |prior| prior.birth_producer.clone()),
+            birth_dependency: previous.map_or(
+                worth_foundational::CanonicalDigestId::new(dependency_identity),
+                |prior| prior.birth_dependency,
+            ),
+            issuer: Some(installed.authority.clone()),
+            _funding: Some(memory),
+            _cascade_memory: None,
+        }));
     if contribution_records.is_none() {
         use crate::history::data::publication_relations::CurrentPublicationFrame;
         let current = if retiring {
@@ -225,9 +233,9 @@ pub(super) fn install_route(
             )?)
         };
         crate::history::data::publication_relations::validate(
-        &basis.inner.root,
+        &(*basis.owner_inner()).root,
         Some(state),
-        envelope.required_output_origin.as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
+        (*envelope.owner_required_output_origin()).as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
         Some(current),
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |version, context| runtime.history.canonical_envelope_for_version(version, context),
@@ -239,8 +247,7 @@ pub(super) fn install_route(
     .map_err(|stop| relation_context(stop, "candidate", basis.descriptor(), envelope))?;
     }
     if retiring
-        && envelope
-            .required_output_origin
+        && (*envelope.owner_required_output_origin())
             .as_ref()
             .is_some_and(|origin| !origin.relations.is_empty())
     {

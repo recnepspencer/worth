@@ -2,6 +2,7 @@
 use super::*;
 use std::cmp::Ordering;
 use worth_foundational::facade::AspectValue;
+use worth_relational_branch::internal_port::indexes::data::related_entity_prefix::BoundedRelatedEntityPrefixBoundaryFieldsPort as _;
 type Rows = DerivedIndexRows<RelatedEntityOrderingEntry>;
 
 pub(super) fn entry<'a>(
@@ -74,7 +75,7 @@ pub(super) fn select(
     meter: &mut MapKernelContext<'_, '_>,
 ) -> Result<(usize, usize, usize), Denial> {
     let Some(rows) = rows else {
-        return if request.after.is_some() {
+        return if (*request.owner_after()).is_some() {
             Err(Denial::ForeignBoundary)
         } else {
             Ok((0, 0, 0))
@@ -82,57 +83,57 @@ pub(super) fn select(
     };
     let ordering = prepared.contract.ordering();
     let mut comparisons = 0;
-    let start = if request.prefix.is_empty() {
+    let start = if (*request.owner_prefix()).is_empty() {
         0
     } else {
         bound(
             rows,
-            request.prefix,
+            *request.owner_prefix(),
             ordering,
             false,
             meter,
             &mut comparisons,
         )?
     };
-    let end = if request.prefix.is_empty() {
+    let end = if (*request.owner_prefix()).is_empty() {
         rows.len()
     } else {
         bound(
             rows,
-            request.prefix,
+            *request.owner_prefix(),
             ordering,
             true,
             meter,
             &mut comparisons,
         )?
     };
-    let Some(after) = request.after else {
+    let Some(after) = *request.owner_after() else {
         return Ok((start, end, comparisons));
     };
-    charge(meter, 1 + after.basis.branch_id().0.len() as u64)?;
-    if after.runtime != read.runtime_identity
-        || after.basis.root_id() != read.basis().root_id()
-        || after.basis.branch_id() != read.basis().branch_id()
-        || after.generation.generation_id != prepared.generation_id
-        || after.generation.index_id != request.ordered.index_id()
-        || after.parent != request.ordered.parent_entity_id()
-        || after.child_kind != request.ordered.child_kind()
-        || after.prefix_len != request.prefix.len()
+    charge(meter, 1 + (*after.owner_basis()).branch_id().0.len() as u64)?;
+    if (*after.owner_runtime()) != read.runtime_identity
+        || (*after.owner_basis()).root_id() != read.basis().root_id()
+        || (*after.owner_basis()).branch_id() != read.basis().branch_id()
+        || (*after.owner_generation()).generation_id != prepared.generation_id
+        || (*after.owner_generation()).index_id != (*request.owner_ordered()).index_id()
+        || (*after.owner_parent()) != (*request.owner_ordered()).parent_entity_id()
+        || (*after.owner_child_kind()) != (*request.owner_ordered()).child_kind()
+        || (*after.owner_prefix_len()) != (*request.owner_prefix()).len()
     {
         return Err(Denial::ForeignBoundary);
     }
-    if after.last < start || after.last >= end {
+    if (*after.owner_last()) < start || (*after.owner_last()) >= end {
         return Err(Denial::ForeignBoundary);
     }
     // Same immutable generation and position; changed scope/prefix is nevertheless rejected.
     if compare_prefix(
-        entry(rows, after.last, meter)?,
-        request.prefix,
+        entry(rows, *after.owner_last(), meter)?,
+        *request.owner_prefix(),
         ordering,
         meter,
     )? != Ordering::Equal
     {
         return Err(Denial::ForeignBoundary);
     }
-    Ok((after.last + 1, end, comparisons))
+    Ok(((*after.owner_last()) + 1, end, comparisons))
 }

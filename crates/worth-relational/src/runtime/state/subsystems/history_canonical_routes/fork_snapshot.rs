@@ -118,7 +118,7 @@ mod tests {
     use crate::history::commit::{
         original_payload::RelationalOriginalRootCommitEvidence, RelationalCommitEnvelopeResidency,
     };
-    use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+    use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update_for_test as envelope_with_patch_and_update;
     use crate::identity::data::{EntityId, PartitionId};
     use crate::publication::patch::data::PatchStreamPosition;
     use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
@@ -129,7 +129,7 @@ mod tests {
         let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let history = RelationalPublicationHistory::from_branch(
-            crate::branch::basis_admission_tests::installed_history(1),
+            crate::branch::basis_fixture::installed_history_for_test(1),
         );
         let entity = EntityId::new(PartitionId::main(), 1, 1);
         let envelope = Arc::new(envelope_with_patch_and_update(

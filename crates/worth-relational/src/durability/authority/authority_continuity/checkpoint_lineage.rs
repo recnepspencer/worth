@@ -5,6 +5,7 @@ use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailur
 use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::LineageCheckpointDigestBasis;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 pub(super) fn validate_checkpoint_lineage_artifact(
     checkpoint: &DurableCheckpoint,

@@ -8,7 +8,7 @@ use crate::indexes::data::{
 
 #[test]
 fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

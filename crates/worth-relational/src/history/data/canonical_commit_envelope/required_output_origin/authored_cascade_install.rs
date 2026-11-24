@@ -10,6 +10,8 @@ use crate::transactions::data::outcomes::created_relation_bindings::CommitCreate
 use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 use super::authored_cascade::CanonicalAuthoredRetirement;
@@ -101,15 +103,19 @@ pub(super) fn install(
     }
     // Only this private installer, after consuming Native's sealed cascade,
     // establishes the enclosing retirement event used by per-route installation.
-    envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
-        _decoded_memory: None,
-        anchor: predecessor.anchor,
-        owned_members: predecessor.owned_members,
-        birth: predecessor.birth,
-        co_anchors: predecessor.co_anchors.clone(),
-        publications: Vec::new(),
-    }));
-    let mut positions = basis.inner.root.output_publication_positions.clone();
+    (*envelope.owner_authored_cascade_retirement_mut()) =
+        Some(Arc::new(CanonicalAuthoredRetirement {
+            _decoded_memory: None,
+            anchor: predecessor.anchor,
+            owned_members: predecessor.owned_members,
+            birth: predecessor.birth,
+            co_anchors: predecessor.co_anchors.clone(),
+            publications: Vec::new(),
+        }));
+    let mut positions = (*basis.owner_inner())
+        .root
+        .output_publication_positions
+        .clone();
     let mut publications = Vec::with_capacity(predecessor.publications.len());
     for prior in predecessor.publications {
         let origin = &prior.origin;
@@ -197,7 +203,9 @@ pub(super) fn install(
             }
             other => other,
         })?;
-        let retired = envelope.required_output_origin.take().ok_or_else(refuse)?;
+        let retired = (*envelope.owner_required_output_origin_mut())
+            .take()
+            .ok_or_else(refuse)?;
         positions.insert(
             &retired.meaning,
             crate::history::data::RequiredOutputRoutePosition::Published(envelope.commit.commit_id),
@@ -206,13 +214,14 @@ pub(super) fn install(
         )?;
         publications.push(retired);
     }
-    envelope.authored_cascade_retirement = Some(Arc::new(CanonicalAuthoredRetirement {
-        _decoded_memory: None,
-        anchor: predecessor.anchor,
-        owned_members: predecessor.owned_members,
-        birth: predecessor.birth,
-        co_anchors: predecessor.co_anchors,
-        publications,
-    }));
+    (*envelope.owner_authored_cascade_retirement_mut()) =
+        Some(Arc::new(CanonicalAuthoredRetirement {
+            _decoded_memory: None,
+            anchor: predecessor.anchor,
+            owned_members: predecessor.owned_members,
+            birth: predecessor.birth,
+            co_anchors: predecessor.co_anchors,
+            publications,
+        }));
     Ok(positions)
 }

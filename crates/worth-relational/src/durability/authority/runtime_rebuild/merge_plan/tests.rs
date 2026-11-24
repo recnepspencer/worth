@@ -1,7 +1,8 @@
 use super::*;
-use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
 use crate::identity::data::{EntityId, PartitionId};
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update_for_test as envelope_with_patch_and_update;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 #[test]
 fn corrupt_replay_keeps_its_durability_failure() {

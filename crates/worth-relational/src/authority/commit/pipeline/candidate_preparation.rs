@@ -8,6 +8,7 @@ use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRunti
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 pub(crate) mod registration;
 pub(super) mod stages;
 use super::phase_backing::CommitPhaseBacking;
@@ -77,7 +78,7 @@ where
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         crate::validation::engine::request::InvariantPreparationSource {
             operation: context.validation_input.control(),
-            retention: &context.validation_input.basis().inner.retention_binding,
+            retention: &(*context.validation_input.basis().owner_inner()).retention_binding,
         },
         allocation_policy,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation,
@@ -88,16 +89,14 @@ where
     let transaction_id = context.transaction_id;
     let branch_id = context.validation_input.target_branch().clone();
     let control = context.validation_input.control().clone();
-    let retention_binding = context
-        .validation_input
-        .basis()
-        .inner
+    let retention_binding = (*context.validation_input.basis().owner_inner())
         .retention_binding
         .clone();
     let decision_basis = context.validation_input.basis().clone();
     let coupled_proposal = context.validation_input.coupled_proposal().cloned();
     let expected_basis = decision_basis.descriptor().clone();
-    let expected_root = std::sync::Arc::clone(&context.validation_input.basis().inner.root);
+    let expected_root =
+        std::sync::Arc::clone(&(*context.validation_input.basis().owner_inner()).root);
     if let Some(interruption) =
         control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation)
     {

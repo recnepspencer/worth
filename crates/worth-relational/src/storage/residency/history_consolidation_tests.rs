@@ -42,7 +42,7 @@ fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
 
 #[test]
 fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let fixture = region_with_history();
@@ -92,7 +92,7 @@ fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
             assert_eq!(
                 full.full_view()
                     .partition()
-                    .authoritative_content_digest(&cold.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(&cold.symbols.interner_snapshot())
                     .unwrap(),
                 fixture.expected_digest
             );
@@ -226,7 +226,7 @@ fn reopened(
     cold: &RelationalColdRegion,
     captured: super::super::checkpoint_capture::RelationalCapturedRegionCheckpoint,
 ) -> RelationalColdRegion {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let source = counted(
             place(&captured.members, &archive(cold)),
             captured.leaf.history,

@@ -4,6 +4,8 @@ use crate::durability::checkpoint_admission::{AdmissionRowKey, EncodedAdmissionR
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_foundational::CanonicalDigestId;
+use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
@@ -18,8 +20,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
         envelope, descriptor, request,
     )
     .map_err(super::super::root_stop)?;
-    let predecessor = envelope
-        .branch_cell_checkpoint
+    let predecessor = (*envelope.owner_branch_cell_checkpoint())
         .as_ref()
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
     let generation = predecessor

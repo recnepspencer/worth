@@ -1,4 +1,7 @@
 //! Index this candidate's actual writes once; ownership remains the shared selector's.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::historical_selection::absence::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::*;
 use crate::{
     history::data::{CanonicalRequiredOutputOrigin, CommitId},
@@ -31,7 +34,9 @@ impl<'a> CandidateWrites<'a> {
             .checked_mul(2)
             .and_then(|n| n.checked_add(adjacency.len()))
             .and_then(|n| n.checked_add(candidate.output_origins().count()))
-            .and_then(|n| n.checked_add(candidate.required_output_codec_retirements.len()))
+            .and_then(|n| {
+                n.checked_add((*candidate.owner_required_output_codec_retirements()).len())
+            })
             .and_then(|n| n.checked_add(candidate.historical_absent_routes().count()))
             .and_then(|n| {
                 n.checked_mul(4 * std::mem::size_of::<(RecordRef, (EntityId, EntityId))>())
@@ -99,7 +104,7 @@ impl<'a> CandidateWrites<'a> {
                 absence.publication,
             ));
         }
-        for retirement in &candidate.required_output_codec_retirements {
+        for retirement in &(*candidate.owner_required_output_codec_retirements()) {
             crate::publication::ownership::checkpoint(
                 context,
                 retirement.meaning.family.len() as u64 + 1,

@@ -2,10 +2,11 @@
 use super::borrowed_payload::{malformed, BorrowedPayload};
 use super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociationOwnerPort as _;
 
 mod admission;
 mod checkpoint_effect;
-pub(crate) mod checkpoint_effect_data;
+pub(crate) use worth_relational_branch::internal_port::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data;
 pub(super) use admission::admit_canonical;
 pub(crate) use checkpoint_effect::decode_checkpoint_effect;
 mod aspects;

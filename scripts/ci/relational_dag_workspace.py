@@ -48,6 +48,13 @@ class WorkspaceModel(LibraryModel):
                       if not self.surface.in_family(names)}
         self._references = {}
 
+    def is_physical_forward(self, resolved, origin):
+        """Charge a name forwarded through a package port to its defining owner."""
+        mount, remainder = resolved
+        target, _ = origin
+        return bool(remainder and target and target[0] in self.roots
+                    and (not mount or mount[0] not in self.roots))
+
     def resolve(self, segments, current, index):
         if not segments:
             return None

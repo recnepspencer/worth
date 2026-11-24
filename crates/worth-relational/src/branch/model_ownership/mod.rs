@@ -2,14 +2,14 @@
 use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 
-mod basis;
-pub(crate) mod native_read;
+pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
 use native_read::ModelOwnershipReadPlan;
 pub use native_read::RelationalModelOwnershipDomain;
 pub use read_denial::{RelationalModelOwnershipConflict, RelationalModelOwnershipDenial};
+pub(crate) use worth_relational_branch::internal_port::branch::model_ownership::basis;
+pub(crate) use worth_relational_branch::internal_port::branch::model_ownership::custody_observation;
+pub(crate) use worth_relational_branch::internal_port::branch::model_ownership::native_read;
 pub(crate) use worth_relational_contracts::internal_port::branch::model_ownership::read_denial;
-mod custody_observation;
-pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
 pub(crate) mod current_publications;
 mod graph_admission;
 mod graph_denial;
@@ -22,8 +22,8 @@ pub(crate) use publication::validate_candidate_ownership;
 mod runtime_publications;
 mod runtime_selection;
 mod selection;
-mod traversal;
 pub use selection::RelationalOwnedModelEntityBoundary;
+pub(crate) use worth_relational_branch::internal_port::branch::model_ownership::traversal;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct RelationalModelOwnership {

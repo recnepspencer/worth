@@ -9,8 +9,8 @@ use crate::runtime::RelationalRuntime;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-pub(super) mod work;
 pub use work::RelationalRetainedStorageWork;
+pub(crate) use worth_relational_branch::internal_port::inspection::mvcc::retained_storage::work;
 
 /// Failure yields no partial or weakened byte total.
 #[derive(Debug, Clone, PartialEq, Eq)]

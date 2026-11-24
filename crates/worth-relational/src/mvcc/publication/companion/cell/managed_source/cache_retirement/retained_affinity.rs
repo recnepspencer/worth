@@ -3,6 +3,8 @@ use super::*;
 use crate::branch::lifecycle::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
 use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceForkPreparation;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationFixturePort as _;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedSourceRootImageFixturePort as _;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);
@@ -86,7 +88,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         !old.same_source(&main_observation),
         "fork owns a fresh affinity even when material is shared"
     );
-    let selected = old.selected_position().clone();
+    let selected = old.selected_position_for_test().clone();
     assert!(ManagedSourceReadConditions::from_observation(
         &old,
         runtime.runtime_instance_id(),
@@ -138,8 +140,8 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     ));
     assert!(matches!(
         crate::branch::projection_view::managed_source::affinity::admit_affinity(
-            image.affinity(),
-            main_observation.selected_position(),
+            image.affinity_for_test(),
+            main_observation.selected_position_for_test(),
             generation
         ),
         Err(Denial::ForeignSource)
@@ -152,7 +154,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .unwrap();
     assert!(matches!(
         crate::branch::projection_view::managed_source::affinity::admit_affinity(
-            image.affinity(),
+            image.affinity_for_test(),
             &foreign_selected,
             generation
         ),

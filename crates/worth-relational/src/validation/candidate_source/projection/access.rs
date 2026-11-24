@@ -15,6 +15,8 @@ use std::{
     sync::Arc,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexPublishedSourceRootFieldsPort as _;
 
 pub(in crate::validation::candidate_source) enum SourceProjectionBacking<'a> {
     Invariant {
@@ -362,7 +364,7 @@ pub(crate) fn selected_rows<'a>(
     expected: &'a Arc<ManagedIndexPublishedSourceRoot>,
     execution: ExecutionRequest<'a, 'a>,
 ) -> ManagedIndexSourceRows<'a> {
-    let association = &expected.association;
+    let association = &(*expected.owner_association());
     ManagedIndexSourceRows {
         scope: association.scope,
         projection: ManagedIndexSourceProjection {

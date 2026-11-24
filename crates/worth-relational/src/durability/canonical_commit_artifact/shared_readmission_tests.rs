@@ -3,7 +3,6 @@ use crate::durability::canonical_commit_artifact::{
     checkpoint_body::readmit_checkpoint_body, frame_encoding::encode_canonical_frame_for_request,
     verified_frame::VerifiedCanonicalCommitFrame as Frame,
 };
-use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{CanonicalEnvelopeControlAllocation, SharedCanonicalCommitEnvelope};
 use crate::identity::data::{EntityId, PartitionId};
@@ -15,6 +14,9 @@ use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionRequestArrayBuilder, SerialMemoryBudget,
     SerialRequest,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update_for_test as envelope_with_patch_and_update;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFieldsPort as _;
 
 #[test]
 fn shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_until_last_drop() {
@@ -48,7 +50,7 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
     let positioned = artifact.readmitted_body(&request).unwrap();
-    let retained = crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition::from_positioned(&positioned);
+    let retained = worth_relational_branch::internal_port::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition::from_positioned(&positioned);
     let same = retained.clone();
     let fixed = fixed_allocation_bill();
     drop(artifact);
@@ -86,7 +88,7 @@ fn source_artifact() -> Frame {
     let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let envelope = canonical_source();
-    assert!(envelope.control_allocation.is_none());
+    assert!((*envelope.control_allocation_for_test()).is_none());
     let positioned =
         readmit_positioned_canonical_commit(PatchStreamPosition(1), Arc::new(envelope)).unwrap();
     encode_canonical_frame_for_request(&positioned, &request).unwrap()
@@ -112,7 +114,7 @@ fn fixed_allocation_bill() -> u64 {
 
 #[test]
 fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining_their_heaps() {
-    use crate::history::data::EmbeddedCheckpointEnvelopeRef;
+    use worth_relational_branch::internal_port::history::data::EmbeddedCheckpointEnvelopeRef;
     #[derive(serde::Serialize)]
     struct Extended<'a, T> {
         #[serde(flatten)]

@@ -3,6 +3,9 @@ use super::commit_selection::*;
 use crate::history::{data::CommitId, CommitAncestryPosture};
 use crate::mvcc::observation::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::change_source::commit_selection::assemble_commit_selection;
+use worth_relational_branch::internal_port::change_source::commit_selection::assemble_commit_selection_work;
+use worth_relational_branch::internal_port::change_source::commit_selection::assemble_selected_commit;
 
 impl RelationalRuntime {
     /// Select `requested` if it is the observation's commit or one of its
@@ -37,7 +40,7 @@ impl RelationalRuntime {
             }
             CommitAncestryPosture::Reachable => Ok(self.selected(requested, observation)),
         };
-        RelationalCommitSelection { outcome, work }
+        assemble_commit_selection(outcome, work)
     }
 
     /// Select `requested` only if it is exactly the observation's commit.
@@ -60,7 +63,7 @@ impl RelationalRuntime {
                 requested,
             })
         };
-        RelationalCommitSelection { outcome, work }
+        assemble_commit_selection(outcome, work)
     }
 
     fn observed_commit(
@@ -82,19 +85,12 @@ impl RelationalRuntime {
         commit_id: CommitId,
         observation: &RelationalBranchObservation,
     ) -> RelationalSelectedCommit {
-        RelationalSelectedCommit {
-            runtime_instance_id: self.runtime_instance_id(),
-            commit_id,
-            observation: observation.clone(),
-        }
+        assemble_selected_commit(self.runtime_instance_id(), commit_id, observation.clone())
     }
 
     fn count_commit_selection(&self, ancestry_visits: usize) -> RelationalCommitSelectionWork {
         self.performance_access()
             .count_observation_commit_selection(ancestry_visits);
-        RelationalCommitSelectionWork {
-            selections: 1,
-            ancestry_visits,
-        }
+        assemble_commit_selection_work(1, ancestry_visits)
     }
 }

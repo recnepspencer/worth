@@ -131,7 +131,7 @@ impl crate::durability::medium::RelationalDurableColdSource for ColdPinSource {
 #[test]
 fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
     use crate::durability::data::{RecoveryVerificationMode, RelationalCheckpointArtifactPolicy};
-    use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
+    use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
     use crate::storage::data::{
         RelationalStorageSubject, RelationalStorageUnavailableCause as Cause,
     };
@@ -171,13 +171,13 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
     slots.set(entity.slot_index(), true);
     let version = cold.current_version_id();
     let state = SnapshotState {
-        handle: SnapshotHandle {
-            runtime_instance_id: cold.runtime_instance_id(),
-            branch_id: branch.clone(),
-            snapshot_id: SnapshotId(1),
-            version_id: version,
-            read_policy: SnapshotReadPolicy::ImmutablePinned,
-        },
+        handle: worth_relational_branch::internal_port::snapshots::data::assemble_snapshot_handle(
+            cold.runtime_instance_id(),
+            branch.clone(),
+            SnapshotId(1),
+            version,
+            SnapshotReadPolicy::ImmutablePinned,
+        ),
         basis: SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_applied_root(
             branch, version, root,
         )),
@@ -213,7 +213,7 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
     cold.acquire_partition_edition()
         .demand_all(execution, &cold.services.symbols)
         .unwrap();
-    let fence = state.handle.version_id;
+    let fence = state.handle.version_id();
     let leases = cold.visibility_pins().resident_replay_pins(state).unwrap();
     assert_eq!(cold.entity_replay_pin_count(entity), Some(0));
     cold.visibility_pins().pin_replay_state(&leases, fence);

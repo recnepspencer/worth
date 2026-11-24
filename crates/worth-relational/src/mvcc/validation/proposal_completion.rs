@@ -6,6 +6,7 @@ use super::validated_proposal::{ValidatedProposalState, ValidatedRelationalPropo
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::CommitValidation;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
@@ -31,7 +32,7 @@ pub(super) fn complete(
     let branch = basis.identity().branch_id().clone();
     require_not_interrupted(
         &transaction.control,
-        &transaction.basis.inner.retention_binding,
+        &(*transaction.basis.owner_inner()).retention_binding,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     let transaction_id = transaction.transaction_id;
@@ -69,7 +70,7 @@ pub(super) fn complete(
         );
     require_not_interrupted(
         &transaction.control,
-        &transaction.basis.inner.retention_binding,
+        &(*transaction.basis.owner_inner()).retention_binding,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     // All inner and outer abandoning probes have completed. Transfer the exact

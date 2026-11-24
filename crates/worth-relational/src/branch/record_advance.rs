@@ -13,6 +13,9 @@ use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, WorkCeilingDenial,
 };
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
@@ -185,8 +188,7 @@ impl RelationalRuntime {
             let envelope = artifact
                 .demand_envelope(execution, limits.maximum_evidence_bytes.get())
                 .map_err(|cause| Denial::Read(cause.into()))?;
-            let prior = envelope
-                .branch_cell_checkpoint
+            let prior = (*envelope.owner_branch_cell_checkpoint())
                 .as_ref()
                 .ok_or(Denial::SourceUnavailable)?;
             if prior.runtime_instance_id != super::CANONICAL_RUNTIME_INSTANCE_ID

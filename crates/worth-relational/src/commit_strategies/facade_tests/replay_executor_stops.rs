@@ -1,5 +1,3 @@
-use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyCommitRequestOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::native_strategy_fixtures::*;
 use crate::authority::commit::pipeline::{stage_observation, CommitStage};
 use crate::commit_strategies::data::execution::executor_registration::{

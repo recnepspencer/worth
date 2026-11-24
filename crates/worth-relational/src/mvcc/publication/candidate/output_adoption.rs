@@ -1,4 +1,7 @@
 //! Judge executed application effects before any new publication can be adopted.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::PreparedRelationalCommitCandidate;
@@ -98,7 +101,7 @@ impl PreparedRelationalCommitCandidate {
                     return Ok(None);
                 }
                 let envelope = payload.execution.canonical_envelope();
-                let Some(next) = envelope.required_output_origin.as_ref() else {
+                let Some(next) = (*envelope.owner_required_output_origin()).as_ref() else {
                     return Ok(None);
                 };
                 crate::execution::request_stage::checkpoint(

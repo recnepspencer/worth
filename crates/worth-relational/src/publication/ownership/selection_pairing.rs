@@ -3,13 +3,14 @@ use super::*;
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::CanonicalCommitEnvelope;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(crate) fn validate(
     execution: &ExecutionRequest<'_, '_>,
     root: &RelationalBranchRoot,
     candidate: &CanonicalCommitEnvelope,
 ) -> Result<(), TransactionCommitError> {
-    let Some(event) = &candidate.historical_output_selection else {
+    let Some(event) = &(*candidate.owner_historical_output_selection()) else {
         return Ok(());
     };
     let _funding = execution

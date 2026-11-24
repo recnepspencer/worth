@@ -43,19 +43,13 @@ pub use intents::{
 };
 pub use mutation_planning::CommitTopology;
 pub use outcomes::{
-    AspectDeltaFailureFields, AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial,
-    AspectDeltaRecordClass, AspectFieldTargetRejectionReason, AuthoritativeApplyPlan,
-    BulkImportRowDomain, BulkImportStage, BulkMutationAdmissionDenial, CommitConflict,
-    CommitExecution, CommitExecutionDenial, CommitExecutionDenialKind, CommitOutcome,
-    CommitPhaseTiming, CommitPreparationError, CommitPreparationReason, CommitPublication,
-    CommitResult, CommitSchemaSummary, CommitStructuralSummary, CommitValidation,
-    CommitValidationSummary, ConflictClass, EntityAuthoritativeAspectStateDenial,
-    EntityCascadeDeleteMissingState, EntityFieldUpdateMissingState, MergeCommitMutationPlan,
-    MergeExecutionOutcome, MergeExecutionStructuralSummary, MergeExecutionSummary,
-    MergedCommitPlan, MutationStateInconsistencyEvidence, PublishedMergeExecutionAuthority,
-    RecordAllocationDenial, RecordAspectPatchDenial, RecordAspectPatchTarget,
-    RelationEndpointUpdateMissingState, RollbackEffect, RollbackOutcome, RollbackSummary,
-    SelectedBranchRootDenialReason, TransactionCommitError, UndoRecord,
+    AuthoritativeApplyPlan, CommitConflict, CommitExecutionDenial, CommitExecutionDenialKind,
+    CommitOutcome, CommitPhaseTiming, CommitPreparationError, CommitPreparationReason,
+    CommitResult, CommitSchemaSummary, CommitStructuralSummary, CommitValidation, ConflictClass,
+    MergeCommitMutationPlan, MergeExecutionOutcome, MergeExecutionStructuralSummary,
+    MergeExecutionSummary, MergedCommitPlan, PublishedMergeExecutionAuthority,
+    RecordAspectPatchDenial, RecordAspectPatchTarget, RollbackEffect, RollbackOutcome,
+    RollbackSummary, SelectedBranchRootDenialReason, TransactionCommitError, UndoRecord,
 };
 pub(crate) use primitives::{
     lineage_safe_bulk_mutation_batch, naming_stable_bulk_mutation_batch,
@@ -71,3 +65,8 @@ pub use primitives::{
 };
 
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::copy_denial;
+
+#[cfg(test)]
+pub(crate) use outcomes::conflict_class::{
+    AspectFieldTargetRejectionReason, EntityFieldUpdateMissingState,
+};

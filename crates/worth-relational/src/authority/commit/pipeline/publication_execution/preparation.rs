@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 mod application_effect;
@@ -111,7 +112,8 @@ pub(super) fn prepare_publication_phase<
                 ),
             );
         }
-        canonical_commit_envelope.required_output_materialization = required_output_materialization;
+        (*canonical_commit_envelope.owner_required_output_materialization_mut()) =
+            required_output_materialization;
         if recovered_codec_publication_custody.is_some() && required_output_publication.is_some() {
             return Err(
                 crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -205,7 +207,7 @@ pub(super) fn prepare_publication_phase<
             &additional_aspects,
             additional_adjacency,
         )?;
-        canonical_commit_envelope.caller_association = caller_association;
+        (*canonical_commit_envelope.owner_caller_association_mut()) = caller_association;
         let semantic_result = super::super::semantic_result::prepare_semantic_result(
             symbols,
             super::super::semantic_result::SemanticResultInput {
@@ -343,7 +345,7 @@ pub(super) fn prepare_publication_phase<
         let symbol_meanings = mutation_identities
             .symbols
             .seal_for_publication(
-                &canonical_commit_envelope.symbol_texts,
+                &(*canonical_commit_envelope.owner_symbol_texts()),
                 symbols,
                 symbol_publication.required(),
             )

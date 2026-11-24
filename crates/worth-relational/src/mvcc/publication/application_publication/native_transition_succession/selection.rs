@@ -1,5 +1,7 @@
 //! Select one exact current route and its actual canonical publication.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 pub(super) fn select(
     inputs: RetirementHistoryInputs<'_>,
@@ -28,8 +30,7 @@ pub(super) fn select(
     }
     let selected = execution
         .run_native_with_checkpoint(|context| {
-            basis
-                .inner
+            (*basis.owner_inner())
                 .root
                 .output_publication_positions
                 .get(meaning, context)
@@ -38,8 +39,7 @@ pub(super) fn select(
         .0?;
     consult_stage(execution, CommitStage::Admission)?;
     let selected = if selected.is_none()
-        && basis
-            .inner
+        && (*basis.owner_inner())
             .root
             .output_publication_positions
             .unresolved_prefix()

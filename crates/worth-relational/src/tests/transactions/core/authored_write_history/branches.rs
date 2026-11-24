@@ -1,4 +1,6 @@
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 fn fork(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name: &str) {
     super::super::owner_service_phase3::fork_from_main(execution, runtime, name);
@@ -40,8 +42,8 @@ fn closed_original_and_target_cursor_holds_exact_private_custody_until_release()
     for outcome in [&created, &changed] {
         release_test_commit_snapshot(&runtime, outcome);
     }
-    let original_custody = std::sync::Arc::downgrade(&original.inner);
-    let target_custody = std::sync::Arc::downgrade(&target.inner);
+    let original_custody = std::sync::Arc::downgrade(&(*original.owner_inner()));
+    let target_custody = std::sync::Arc::downgrade(&(*target.owner_inner()));
     let cursor = cursor(&runtime, execution, &original, &target, entity);
     drop(original);
     drop(target);

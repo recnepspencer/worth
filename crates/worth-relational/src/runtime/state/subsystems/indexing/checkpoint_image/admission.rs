@@ -1,5 +1,6 @@
 //! Validate decoded index data against the admitted definition and history basis.
 use crate::durability::data::recovery_errors::DurabilityError;
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 use worth_relational_contracts::internal_port::durability::data::recovery_errors::DurabilityErrorOwnerPort as _;
 
 pub(crate) fn validate_checkpoint_generation(

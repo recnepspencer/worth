@@ -5,6 +5,7 @@ use crate::branch::basis_descriptor::{
 use crate::branch::recorded_basis::RecordedRelationalComponentReference as Recorded;
 use crate::history::commit::RelationalCommitIndexEntry;
 use crate::history::data::BranchId;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 
 #[derive(Debug)]
 pub enum RelationalRecordedSuccessorRefusal {

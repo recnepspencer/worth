@@ -1,10 +1,10 @@
 //! Ordinary authored retirement carries complete relation custody into warm/cold reissue.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::identity::data::RelationId;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 #[path = "authored/request.rs"]
 mod request;
 
@@ -45,10 +45,7 @@ fn birth_with_edge(
     .unwrap();
     let ids = targets.map(|target| born.created_entity(&target).unwrap());
     let relation = born.created_relation(&edge).unwrap();
-    let membership = born
-        .publication()
-        .envelope
-        .required_output_origin
+    let membership = (*born.publication().envelope.owner_required_output_origin())
         .as_ref()
         .unwrap();
     assert_eq!(membership.outputs, ids);
@@ -65,7 +62,7 @@ fn birth_with_edge(
 }
 
 fn retire_roles(ids: [EntityId; 2]) -> Vec<RequiredOutputRoleTarget> {
-    native_roles_fixture(
+    native_roles_for_test(
         &ids.map(|id| (id, KindId(1))),
         RequiredOutputRolePosture::Retire,
     )
@@ -128,12 +125,12 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             authored(&owner, previous, retire_roles(ids)),
         )
         .unwrap();
-        let origin = retired
+        let origin = (*retired
             .publication()
             .envelope
-            .required_output_origin
-            .as_ref()
-            .unwrap();
+            .owner_required_output_origin())
+        .as_ref()
+        .unwrap();
         assert!(
             matches!(origin.publication, crate::history::data::CanonicalOutputPublication::AuthoredRetirement { predecessor } if predecessor == born.commit.commit_id)
         );
@@ -175,11 +172,12 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             .canonical_envelope(retired.commit.commit_id)
             .unwrap();
         assert_eq!(
-            restored.required_output_origin, canonical.required_output_origin,
+            (*restored.owner_required_output_origin()),
+            (*canonical.owner_required_output_origin()),
             "canonical authored succession survives real checkpoint reconstruction"
         );
         let basis = test_owner_main_basis(runtime).unwrap();
-        let meaning = native_meaning_fixture("authored-creator");
+        let meaning = native_meaning_for_test("authored-creator");
         assert!(
             runtime
                 .readmit_required_output_route_absence(execution, installed, &basis, &meaning)
@@ -204,12 +202,12 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
         assert!(new_ids
             .iter()
             .all(|id| !ids.contains(id) && id.generation_value() != 0));
-        let current = replacement
+        let current = (*replacement
             .publication()
             .envelope
-            .required_output_origin
-            .as_ref()
-            .unwrap();
+            .owner_required_output_origin())
+        .as_ref()
+        .unwrap();
         assert_eq!(current.outputs, new_ids);
         assert_eq!(
             current.birth, born.commit.commit_id,

@@ -122,7 +122,7 @@ impl DurabilityState {
 
     #[cfg(test)]
     pub(super) fn remove_log_commit(&mut self, commit_id: CommitId) -> bool {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let before = self.log.len();
             self.log.retain(|entry| entry.0 != commit_id);
             let changed = before != self.log.len();

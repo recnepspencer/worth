@@ -1,5 +1,8 @@
 //! Full image meaning and admission survive shared DATA aliases.
-use super::*;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::identity::data::KindId;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::schema_carrier::*;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -81,7 +84,7 @@ fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() 
             .len(),
         1
     );
-    let data = &image.0;
+    let data = image.schema_data_for_test();
     let legacy = rmp_serde::to_vec(&(
         data.format_version,
         data.schema_root,
@@ -100,7 +103,10 @@ fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() 
     );
     assert_eq!(image.carrier_digest(), <[u8; 32]>::from(digest.finalize()));
     let alias = image.clone();
-    assert!(Arc::ptr_eq(&image.0, &alias.0));
+    assert!(Arc::ptr_eq(
+        image.schema_data_for_test(),
+        alias.schema_data_for_test()
+    ));
     drop(image);
     assert_eq!(budget.charged_memory_bytes(), charged);
     drop(alias);

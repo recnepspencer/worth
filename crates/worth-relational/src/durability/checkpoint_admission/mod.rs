@@ -1,6 +1,6 @@
 //! Verified-original projection and protected checkpoint-root admission.
 mod admit_row;
-pub(crate) mod admitted_commit;
+pub(crate) use worth_relational_branch::internal_port::durability::checkpoint_admission::admitted_commit;
 mod capture_base;
 pub(crate) mod effect;
 pub(crate) use capture_base::{
@@ -13,14 +13,14 @@ pub(crate) use custody::{
     CheckpointAdmissionBinding, CheckpointAdmissionOwner, DirectoryAdmissionIdentity,
 };
 mod authentication;
+pub(crate) use worth_relational_branch::internal_port::durability::checkpoint_admission::read_image;
+pub(crate) use worth_relational_branch::internal_port::durability::checkpoint_admission::recorded_reference;
 pub(crate) use worth_relational_contracts::internal_port::durability::checkpoint_admission::binary_encoding;
-pub(crate) mod read_image;
-pub(crate) mod recorded_reference;
 pub(crate) use worth_relational_contracts::internal_port::durability::checkpoint_admission::refusal;
 mod root_positions;
-mod row_custody;
 pub(crate) use refusal::native_stop;
 pub(crate) use refusal::projected_stop;
+pub(crate) use worth_relational_branch::internal_port::durability::checkpoint_admission::row_custody;
 mod wire;
 
 pub use artifact::RelationalCheckpointAdmissionArtifact;

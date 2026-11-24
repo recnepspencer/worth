@@ -6,10 +6,7 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(
     let rich_fanout_compile_samples = capture_counted_samples(|| {
         let mut runtime =
             runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
-        apply_perf_diagnostics_policy(
-            &mut runtime,
-            PerfDiagnosticsPolicy::ChipRichCertification,
-        );
+        apply_perf_diagnostics_policy(&mut runtime, PerfDiagnosticsPolicy::ChipRichCertification);
         let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
         let source =
             create_entity_in_partition(execution, &runtime, "rich-net-driver", PartitionId(7));

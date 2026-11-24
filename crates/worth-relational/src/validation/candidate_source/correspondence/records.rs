@@ -35,9 +35,7 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = source
-        .basis()
-        .inner
+    let backing = (*source.basis().owner_inner())
         .root
         .symbol_admitted_projection(symbols);
     let before = InvariantStateView::new(&backing, source.basis().observation().version_id());

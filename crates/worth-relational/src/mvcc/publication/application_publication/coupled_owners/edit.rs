@@ -1,6 +1,8 @@
 //! Ordinary edit custody is selected by the current ownership owner.
 use super::*;
 use crate::storage::overlay::CurrentPartitionAccess;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 impl AuthoredPublicationReads<'_> {
     /// Admit synchronous writers for an ordinary authored source. Unlike a
@@ -25,13 +27,11 @@ impl AuthoredPublicationReads<'_> {
         {
             return Err(foreign());
         }
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_head_partition(execution, source.partition_id)
             .map_err(custody::execution_stop)?;
-        if !basis
-            .inner
+        if !(*basis.owner_inner())
             .root
             .get_current_partition(source.partition_id)
             .and_then(|partition| partition.entity_arena().get(&source))

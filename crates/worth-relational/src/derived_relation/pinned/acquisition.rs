@@ -1,4 +1,5 @@
 //! One controlled acquisition owner serves both old and receipt-bearing doors.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 
 impl PinnedDerivedRelationRead {

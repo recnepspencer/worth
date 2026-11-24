@@ -9,6 +9,7 @@ use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
     ContractValidatedAspectValueView,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 pub(super) fn borrowed_matches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     index: DerivedIndexId,

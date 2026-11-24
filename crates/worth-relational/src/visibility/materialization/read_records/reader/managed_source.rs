@@ -1,4 +1,6 @@
 //! Source material follows the real pinned Native root, including pending World custody.
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use crate::mvcc::ManagedIndexSourceRebuild;
 use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::candidate_source::program::ManagedIndexSourceProgram;

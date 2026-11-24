@@ -1,4 +1,7 @@
 //! Complete the group and stage the applied pins for the performed publication routes.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
@@ -76,7 +79,7 @@ pub(super) fn install(
             &full,
             &group.authored_records,
             state,
-            basis.inner.root.schema_authority().registry(),
+            (*basis.owner_inner()).root.schema_authority().registry(),
             context,
         )?;
         let sources = super::coupled_source::install(
@@ -134,7 +137,7 @@ pub(super) fn install(
                 &full,
                 &part.records,
                 state,
-                basis.inner.root.schema_authority().registry(),
+                (*basis.owner_inner()).root.schema_authority().registry(),
                 context,
             )?;
             super::installation::complete::install_completion(
@@ -157,14 +160,13 @@ pub(super) fn install(
                 validated_history,
                 context,
             )?;
-            let origin = envelope
-                .required_output_origin
+            let origin = (*envelope.owner_required_output_origin_mut())
                 .take()
                 .expect("Native installed coupled successor");
             live_inputs.insert(Arc::clone(&origin), part.input);
             participants.push(CanonicalCoupledParticipant {
                 origin,
-                retirement: envelope.producer_cascade_retirement.take(),
+                retirement: (*envelope.owner_producer_cascade_retirement_mut()).take(),
                 participation,
             });
         }
@@ -173,7 +175,10 @@ pub(super) fn install(
             sources,
             participants,
         };
-        let mut positions = basis.inner.root.output_publication_positions.clone();
+        let mut positions = (*basis.owner_inner())
+            .root
+            .output_publication_positions
+            .clone();
         for origin in event.output_origins() {
             positions.insert(
                 &origin.meaning,
@@ -182,7 +187,7 @@ pub(super) fn install(
                 context,
             )?;
         }
-        envelope.coupled_authored_publication = Some(Arc::new(event));
+        (*envelope.owner_coupled_authored_publication_mut()) = Some(Arc::new(event));
         Ok(positions)
     })();
     envelope.patch.authoritative_record_patches = full;
@@ -195,7 +200,7 @@ pub(super) fn install(
         .map_err(super::installation::relation_stop)?;
     for origin in envelope.output_origins() {
         crate::history::data::publication_relations::validate(
-            &basis.inner.root,
+            &(*basis.owner_inner()).root,
             Some(state),
             origin,
             Some(

@@ -9,6 +9,7 @@ use crate::runtime::home_program_transition::coverage::captured_records::Relatio
 use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 use std::sync::Arc;
 use worth_foundational::facade::HomeProgramTransitionStepAssociation;
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
 mod content;
 mod restoration;
 pub(crate) use restoration::NativeSourceRestorationOrigin;

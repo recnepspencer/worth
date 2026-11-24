@@ -1,5 +1,11 @@
 //! Destruction of the final opaque value must not run under its directory lock.
-use super::*;
+use crate::validation::candidate_source::image::ManagedIndexBranchImage;
+use std::sync::{Arc, Mutex};
+use worth_relational_branch::internal_port::validation::candidate_source::image::eviction::ManagedIndexBranchImageFixturePort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
+type Payload = Arc<dyn std::any::Any + Send + Sync>;
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
+use crate::validation::candidate_source::availability::ManagedIndexSourceAvailability as Availability;
 use crate::validation::candidate_source::program::schema_fixture::managed_cache_schema;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -14,7 +20,7 @@ impl Drop for Probe {
     fn drop(&mut self) {
         let image = self.image.lock().unwrap().upgrade().unwrap();
         assert!(
-            image.roots.try_lock().is_ok(),
+            image.try_directory_for_test(),
             "opaque Drop is outside directory mutex"
         );
         self.drops.fetch_add(1, Ordering::SeqCst);
@@ -61,10 +67,12 @@ fn managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard() {
         )
     ));
     assert!(matches!(
-        image.evict_source(&execution, &foreign, scope),
+        image.evict_source_for_test(&execution, &foreign, scope),
         Err(Stop::ForeignCell)
     ));
-    let retired = image.evict_source(&execution, &program, scope).unwrap();
+    let retired = image
+        .evict_source_for_test(&execution, &program, scope)
+        .unwrap();
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     assert!(image
         .retained(&program, scope)

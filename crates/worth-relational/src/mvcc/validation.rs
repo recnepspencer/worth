@@ -1,6 +1,7 @@
 //! Owner-private inputs carried from exact transaction admission through
 //! schema, invariant, footprint, and publication validation.
 
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachmentsOwnerPort as _;
 #[path = "validation/custom_invariant_execution_receipt.rs"]
 pub(crate) mod custom_invariant_execution_receipt;
@@ -154,7 +155,7 @@ impl RelationalTransactionValidationInput {
             home_target_coverage: None,
             schema_origin: crate::mvcc::TransactionSchemaOrigin::BasisRoot,
             recovered_codec_publication_custody: None,
-            schema_authority: basis.inner.root.retained_schema_authority(),
+            schema_authority: (*basis.owner_inner()).root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),

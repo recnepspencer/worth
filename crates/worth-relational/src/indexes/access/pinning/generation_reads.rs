@@ -1,5 +1,4 @@
 //! Fallible generation payload reads admit the existing checkpoint image first.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexId};

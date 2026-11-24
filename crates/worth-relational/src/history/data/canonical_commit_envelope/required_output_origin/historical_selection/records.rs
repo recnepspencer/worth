@@ -14,6 +14,7 @@ use crate::storage::overlay::OverlayStateView;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 pub(super) fn validate(
@@ -24,8 +25,8 @@ pub(super) fn validate(
     version: VersionId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
-    let before = selected.inner.root.as_ref();
-    let after = OverlayStateView::new(basis.inner.root.as_ref(), working);
+    let before = (*selected.owner_inner()).root.as_ref();
+    let after = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), working);
     let original_version = original.commit.version_id;
     let source = original.meaning.source_scope;
     if observe_entity_metadata(&after, source, version).is_none() {
@@ -97,8 +98,7 @@ pub(super) fn entity_version(
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
 ) -> Option<VersionId> {
-    basis
-        .inner
+    (*basis.owner_inner())
         .root
         .get_current_partition(id.partition_id)?
         .entity_arena()
@@ -109,8 +109,7 @@ pub(super) fn relation_version(
     basis: &AdmittedRelationalBranchBasis,
     id: RelationId,
 ) -> Option<VersionId> {
-    basis
-        .inner
+    (*basis.owner_inner())
         .root
         .get_current_partition(id.partition_id)?
         .relation_arena()

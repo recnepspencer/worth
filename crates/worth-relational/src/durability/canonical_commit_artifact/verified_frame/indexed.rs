@@ -8,6 +8,7 @@ use crate::storage::data::{
     RelationalStorageUnavailableCause as Cause,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 impl VerifiedCanonicalCommitFrame {
     pub(crate) fn readmit_indexed(

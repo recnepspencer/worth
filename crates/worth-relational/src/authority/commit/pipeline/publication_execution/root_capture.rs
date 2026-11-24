@@ -1,5 +1,6 @@
 //! Validate the selected publication and capture the exact paid successor.
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 use crate::branch::{
     basis::AdmittedRelationalBranchBasis,
@@ -59,7 +60,7 @@ impl<Attach: FnOnce(&PreparedRelationalBranchRootCapture)> PublicationRootCaptur
             &published_partition_delta,
             selected_branch_state.root(),
             Arc::clone(&envelope),
-            &envelope.content,
+            &(*envelope.owner_content()),
             schema_registry,
             self.symbols,
             self.planned_schema,

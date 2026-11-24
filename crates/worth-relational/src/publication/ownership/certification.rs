@@ -1,4 +1,7 @@
 //! Closed preflight of an external native-only verb against actual current custody.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::publication::ownership::observation::CurrentOwnershipContactsForTestOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::observation::CurrentOwnershipContactsForTest;
@@ -32,7 +35,7 @@ pub(crate) fn probe_coherent_ownership_loss(
             current.positions.clear();
             super::read::anchors::validate(
                 &mut current,
-                &basis.inner.root.output_publication_positions,
+                &(*basis.owner_inner()).root.output_publication_positions,
                 &records,
                 context,
             )
@@ -59,7 +62,7 @@ pub(crate) fn probe_unmatched_ownership_presence(
             current.codec_retired.clear();
             super::read::anchors::validate(
                 &mut current,
-                &basis.inner.root.output_publication_positions,
+                &(*basis.owner_inner()).root.output_publication_positions,
                 &records,
                 context,
             )
@@ -74,7 +77,7 @@ pub(crate) fn current_owned_aggregate_memberships(
     owner: EntityId,
 ) -> Result<Vec<crate::identity::data::RelationId>, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let registry = basis.inner.root.schema_authority().registry();
+    let registry = (*basis.owner_inner()).root.schema_authority().registry();
     Ok(current
         .origins()
         .filter(|o| o.meaning.source_scope == owner)
@@ -152,7 +155,7 @@ pub(crate) fn owned_edge_retarget_intent(
     target: EntityId,
 ) -> Result<MutationIntent, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let registry = basis.inner.root.schema_authority().registry();
+    let registry = (*basis.owner_inner()).root.schema_authority().registry();
     let edge = current
         .origins()
         .filter(|origin| origin.meaning.source_scope == owner)

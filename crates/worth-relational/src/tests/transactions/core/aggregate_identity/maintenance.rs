@@ -3,6 +3,7 @@ use super::read_handoff_rule::{maintenance_registration, Control};
 use crate::branch::{RelationalEntityMaterialization, RelationalRelationMaterialization};
 use crate::tests::support::*;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
 
 #[test]
 fn native_storage_owner_suspends_and_restores_private_records_without_renaming() {

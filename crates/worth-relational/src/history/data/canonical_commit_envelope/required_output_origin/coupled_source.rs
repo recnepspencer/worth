@@ -11,6 +11,8 @@ use crate::transactions::data::outcomes::created_relation_bindings::CommitCreate
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 #[allow(clippy::too_many_arguments)]
@@ -86,7 +88,10 @@ pub(super) fn install_empty(
             context,
         );
     }
-    Ok(basis.inner.root.output_publication_positions.clone())
+    Ok((*basis.owner_inner())
+        .root
+        .output_publication_positions
+        .clone())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -128,8 +133,7 @@ pub(super) fn install(
                 validated_history,
                 context,
             )?;
-            let prefix = envelope
-                .authored_cascade_restoration
+            let prefix = (*envelope.owner_authored_cascade_restoration_mut())
                 .take()
                 .expect("Native installed authored source restoration");
             if custody.source.is_member_edit() {
@@ -175,7 +179,7 @@ pub(super) fn install(
                 )?;
             } else {
                 require_authored_sources(envelope, *anchor, co_anchors, context)?;
-                envelope.authored_cascade_retirement =
+                (*envelope.owner_authored_cascade_retirement_mut()) =
                     Some(Arc::new(CanonicalAuthoredRetirement {
                         _decoded_memory: None,
                         anchor: *anchor,
@@ -185,8 +189,7 @@ pub(super) fn install(
                         publications: Vec::new(),
                     }));
             }
-            let prefix = envelope
-                .authored_cascade_retirement
+            let prefix = (*envelope.owner_authored_cascade_retirement_mut())
                 .take()
                 .expect("Native installed authored source retirement");
             if custody.source.is_member_edit() {

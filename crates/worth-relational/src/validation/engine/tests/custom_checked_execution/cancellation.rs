@@ -1,5 +1,5 @@
 use super::*;
-use crate::branch::basis_admission_tests::installed_history;
+use crate::branch::basis_fixture::installed_history_for_test as installed_history;
 use crate::config::data::RelationalRuntimeConfig;
 use crate::runtime::state::subsystems::{
     history::HistorySubsystem,

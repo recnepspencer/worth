@@ -1,4 +1,8 @@
 //! Reissue the selected producer custody with fresh provenance and exact IDs.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::historical_selection::header::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::super::retention_budget::origin_retention_bytes;
 use super::super::*;
@@ -48,7 +52,10 @@ pub(crate) fn install(
                 "historical selection basis cannot enter canonical frame",
             )
         })?;
-    let mut positions = basis.inner.root.output_publication_positions.clone();
+    let mut positions = (*basis.owner_inner())
+        .root
+        .output_publication_positions
+        .clone();
     let mut publications = Vec::new();
     let mut absences = Vec::new();
     for selection in &selections {
@@ -185,12 +192,13 @@ pub(crate) fn install(
         )?;
         publications.push(origin);
     }
-    envelope.historical_output_selection = Some(Arc::new(CanonicalHistoricalOutputSelection {
-        _decoded_memory: None,
-        selected_basis,
-        publications,
-        absences,
-    }));
+    (*envelope.owner_historical_output_selection_mut()) =
+        Some(Arc::new(CanonicalHistoricalOutputSelection {
+            _decoded_memory: None,
+            selected_basis,
+            publications,
+            absences,
+        }));
     envelope
         .validate_historical_selection_header(context)
         .map_err(|stop| match stop {

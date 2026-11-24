@@ -2,6 +2,9 @@
 use super::successor::{fund_and_charge, live_bytes};
 use super::*;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::assemble_admitted_relational_memory_component;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::AdmittedRelationalMemoryComponentFieldsPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::successor::AdmittedRelationalMemoryComponentOwnerPort as _;
 
 impl RelationalRuntime {
     /// Admit the Live component of the successor `candidate` will publish.
@@ -32,13 +35,13 @@ impl RelationalRuntime {
                 crate::branch::basis_denial::RelationalBranchBasisDenial::WrongImmutableTarget,
             ))??;
         let funding = fund_and_charge(execution, bytes)?;
-        Ok(AdmittedRelationalMemoryComponent {
-            owner: self.services.origin_identity(),
+        Ok(assemble_admitted_relational_memory_component(
+            self.services.origin_identity(),
             expected_root_id,
             expected_commit_id,
             bytes,
             funding,
-        })
+        ))
     }
 
     /// Observe the issued successor on its admitted funding and work. A
@@ -48,7 +51,7 @@ impl RelationalRuntime {
         admitted: AdmittedRelationalMemoryComponent,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<ObservedRelationalMemoryComponent, Refusal> {
-        if !admitted.owner.same_origin(&self.services.origin_identity()) {
+        if !(*admitted.owner_owner()).same_origin(&self.services.origin_identity()) {
             return Err(Refusal::Basis(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));
@@ -60,6 +63,6 @@ impl RelationalRuntime {
         )
         .map_err(Refusal::Basis)?;
         admitted.verify_successor(basis)?;
-        self.live_component(basis, admitted.funding)
+        self.live_component(basis, admitted.into_funding())
     }
 }

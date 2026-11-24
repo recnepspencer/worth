@@ -7,12 +7,12 @@ use crate::transactions::data::outcomes::commit_semantic_result::RecoveredRelati
 use std::sync::{Arc, Weak};
 
 mod created_row;
-mod created_row_read;
+pub(crate) use worth_relational_branch::internal_port::durability::authority::associated_effects::created_row_read;
 pub(super) mod discovery;
 mod readmission;
 pub use created_row_read::ReadmittedRelationalCreatedEntity;
 mod memory_original;
-pub(crate) mod observed_memory_commit;
+pub(crate) use worth_relational_branch::internal_port::durability::authority::associated_effects::observed_memory_commit;
 pub(crate) use worth_relational_contracts::internal_port::durability::authority::associated_effects::refusal;
 pub use observed_memory_commit::ObservedRelationalMemoryCommit;
 pub use refusal::RelationalAssociatedEffectRefusal;

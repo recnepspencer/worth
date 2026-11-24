@@ -1,6 +1,11 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::creation::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
+use worth_relational_branch::internal_port::branch::historical_selection::assemble_historical_selection_read;
+use worth_relational_branch::internal_port::branch::historical_selection::RelationalHistoricalSelectionReadParts;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl VisibilityReadContext<'_> {
     pub fn read_historical_selection(
@@ -76,15 +81,17 @@ impl VisibilityReadContext<'_> {
                 ),
             )
         };
-        Ok(RelationalHistoricalSelectionRead {
-            routes: std::sync::OnceLock::new(),
-            stages: vec![HistoricalSelectionStage {
-                selected: project(selected),
-                restored: project(restored),
-                envelope,
-                _memory: memory,
-            }],
-            _memory: None,
-        })
+        Ok(assemble_historical_selection_read(
+            RelationalHistoricalSelectionReadParts {
+                routes: std::sync::OnceLock::new(),
+                stages: vec![HistoricalSelectionStage {
+                    selected: project(selected),
+                    restored: project(restored),
+                    envelope,
+                    _memory: memory,
+                }],
+                _memory: None,
+            },
+        ))
     }
 }

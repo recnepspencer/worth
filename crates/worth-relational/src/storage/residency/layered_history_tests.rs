@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 
 #[test]
 fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let fixture = region_with_history();
@@ -82,7 +82,7 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
             assert_eq!(
                 full.full_view()
                     .partition()
-                    .authoritative_content_digest(&cold.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(&cold.symbols.interner_snapshot())
                     .unwrap(),
                 expected
             );
@@ -151,9 +151,9 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
         assert_eq!(
             full.full_view()
                 .partition()
-                .authoritative_content_digest(&symbols)
+                .partition_content_digest_for_test(&symbols)
                 .unwrap(),
-            oracle.authoritative_content_digest(&symbols).unwrap()
+            oracle.partition_content_digest_for_test(&symbols).unwrap()
         );
         cold = next;
         source = next_source;
@@ -204,7 +204,7 @@ pub(super) fn encode_layer(
     source: &Arc<CountedSource>,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let symbols = cold.symbols.interner_snapshot();

@@ -1,5 +1,7 @@
 //! Recorded navigation participants retain the next inverse's subject, not its owner.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 pub(super) fn participants(
     history: CanonicalHistoryRead<'_>,
@@ -9,7 +11,7 @@ pub(super) fn participants(
     read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
 ) -> Result<BTreeSet<EntityId>, Denial> {
     let bound = history.branch.catalog_len();
-    let mut next = current.inner.root.commit_id();
+    let mut next = (*current.owner_inner()).root.commit_id();
     for _ in 0..bound {
         let Some(commit) = next else {
             return Ok(BTreeSet::new());

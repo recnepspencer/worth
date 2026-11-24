@@ -1,6 +1,7 @@
 //! Content follows the actual field loan, never a caller-supplied identity.
 use super::*;
 use crate::content::{source::NativeContentSourceView, RelationalContentFrame};
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 impl ManagedIndexSourceProjection<'_> {
     pub(crate) fn with_field_content_at<T>(
         &self,

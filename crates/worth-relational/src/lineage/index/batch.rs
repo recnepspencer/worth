@@ -1,7 +1,6 @@
 //! One commit's canonical naming input to the derived name index.
 
 use std::collections::{BTreeMap, BTreeSet};
-use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
@@ -104,3 +103,6 @@ impl PersistentNameCommittedBatch {
         self
     }
 }
+
+#[cfg(test)]
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;

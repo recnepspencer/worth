@@ -270,7 +270,7 @@ mod tests {
     use super::*;
     #[test]
     fn excess_scalar_columns_refuse_before_schema_lookup() {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let changes: [fn(&mut RecordArenaCheckpointImage<EntityCheckpointImageKind>); 4] = [
                 |image| image.created_at.push(crate::identity::data::VersionId(1)),
                 |image| image.retired_at.push(None),

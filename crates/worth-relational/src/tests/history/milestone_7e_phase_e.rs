@@ -8,6 +8,7 @@ use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
     runtime_with_test_schema,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
 use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;

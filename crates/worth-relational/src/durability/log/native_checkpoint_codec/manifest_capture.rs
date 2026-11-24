@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 mod seal;
 use std::collections::BTreeMap;

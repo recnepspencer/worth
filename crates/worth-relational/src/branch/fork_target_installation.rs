@@ -1,4 +1,7 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::fork::assemble_fork_outcome;
+use worth_relational_branch::internal_port::branch::fork::RelationalForkOutcomeParts;
+use worth_relational_branch::internal_port::branch::fork_source_basis::RelationalForkSourceDescriptorFieldsPort as _;
 
 use super::{
     target_preparation::PreparedForkTarget, RelationalForkDenial, RelationalForkOutcome,
@@ -107,14 +110,14 @@ impl RelationalForkPort {
         if let Some(fork_commit_id) = target.shared_commit_id {
             self.lineage_naming.register_fork_ancestry(
                 target_identity.branch_id().clone(),
-                source.descriptor.source_branch.clone(),
+                (*source.descriptor.owner_source_branch()).clone(),
                 fork_commit_id,
             );
         }
         self.owner
             .install_target(target.reservation, target.target_cell);
         (
-            RelationalForkOutcome {
+            assemble_fork_outcome(RelationalForkOutcomeParts {
                 target_identity,
                 source_observation: source.source_observation.clone(),
                 target_observation: target.target_observation,
@@ -122,7 +125,7 @@ impl RelationalForkPort {
                 source_truth_version: source.source_truth_version,
                 target_truth_version: target.target_truth_version,
                 shared_commit_id: target.shared_commit_id,
-            },
+            }),
             basis,
             target.managed_source,
         )

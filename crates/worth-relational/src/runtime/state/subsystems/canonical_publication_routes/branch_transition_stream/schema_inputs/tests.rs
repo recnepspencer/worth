@@ -9,6 +9,7 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::runtime_with_test_schema;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::FoundationalBranchReferenceGeneration;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 fn controller_memory() -> u64 {

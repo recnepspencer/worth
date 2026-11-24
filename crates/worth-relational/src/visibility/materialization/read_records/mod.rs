@@ -1,12 +1,10 @@
-pub(crate) mod materialization;
-mod native_scan_stop;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::native_scan_stop;
 pub(crate) mod projection;
-pub(crate) mod read_footprint;
-pub(crate) mod read_prices;
-pub(crate) mod read_request;
-pub(crate) mod read_work;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_footprint;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_prices;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_request;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_work;
 pub(crate) mod reader;
-mod visibility;
 
 #[cfg(test)]
 pub(crate) use projection::{
@@ -39,6 +37,9 @@ pub use reader::{
     SnapshotPositionDenial,
 };
 
-pub(crate) mod read_stop;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop;
 
 pub use reader::BoundedFrontierReadStop;
+
+#[cfg(test)]
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::materialization;

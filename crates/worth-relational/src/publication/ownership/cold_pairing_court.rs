@@ -5,6 +5,7 @@ use crate::identity::data::EntityId;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 pub(crate) fn selected_publication(
     execution: &ExecutionRequest<'_, '_>,
@@ -31,7 +32,9 @@ pub(crate) fn observe_unrelated(
 ) -> Result<(), TransactionCommitError> {
     assert!(
         matches!(
-            basis.inner.root.probe_head_region(owner.partition_id),
+            (*basis.owner_inner())
+                .root
+                .probe_head_region(owner.partition_id),
             crate::storage::residency::PartitionHeadProbe::Cold
         ),
         "the pairing court must reach a genuinely cold current member after recovery"

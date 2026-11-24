@@ -11,6 +11,8 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 mod roster;
 use roster::OwnedMemberRoster;
@@ -48,18 +50,16 @@ impl AuthoredPublicationReads<'_> {
                 RecordRef::Entity(anchor),
             ));
         }
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_head_partition(execution, anchor.partition_id)
             .map_err(super::super::custody::execution_stop)?;
-        let axes = basis
-            .inner
+        let axes = (*basis.owner_inner())
             .root
             .axes()
             .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, RecordRef::Entity(anchor)))?;
         let state = InvariantStateView::new(
-            basis.inner.root.as_ref(),
+            (*basis.owner_inner()).root.as_ref(),
             crate::identity::data::VersionId(axes.storage_version),
         );
         use crate::execution::request_stage::checkpoint;
@@ -70,8 +70,7 @@ impl AuthoredPublicationReads<'_> {
                 for &id in edges.iter() {
                     checkpoint(context, kinds.len() as u64 + 1)
                         .map_err(super::super::custody::execution_stop)?;
-                    basis
-                        .inner
+                    (*basis.owner_inner())
                         .root
                         .demand_head_partition(execution, id.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
@@ -85,8 +84,7 @@ impl AuthoredPublicationReads<'_> {
                     else {
                         continue;
                     };
-                    basis
-                        .inner
+                    (*basis.owner_inner())
                         .root
                         .demand_head_partition(execution, edge.source.partition_id)
                         .map_err(super::super::custody::execution_stop)?;

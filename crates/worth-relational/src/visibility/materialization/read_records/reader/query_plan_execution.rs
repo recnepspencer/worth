@@ -1,6 +1,6 @@
 mod explicit;
 mod scan;
-mod scan_selection;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::query_plan_execution::scan_selection;
 mod traversal;
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;

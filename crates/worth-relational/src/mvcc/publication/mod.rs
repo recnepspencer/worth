@@ -5,9 +5,7 @@ pub(crate) mod authority;
 mod caller_association;
 mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
-pub(crate) use application_publication::{
-    origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
-};
+pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
     AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledOwners,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
@@ -34,9 +32,6 @@ pub(crate) mod outcome;
 pub(crate) mod port;
 pub(crate) mod validation;
 
-pub(crate) use authority::{
-    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
-};
 pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissionStop};
 pub use candidate::{
     DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate,
@@ -64,9 +59,6 @@ pub use outcome::{
     RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
     RelationalPublicationProjectionPosture, StaleRelationalBranchObservation,
 };
-
-#[cfg(test)]
-pub(crate) use application_publication::native_birth_fixture;
 
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]

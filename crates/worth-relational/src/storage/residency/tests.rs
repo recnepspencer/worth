@@ -112,7 +112,7 @@ fn concurrent_head_demands_share_the_load_and_count_every_lease() {
 
 #[test]
 fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use super::region_image::{
             RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
         };
@@ -278,7 +278,7 @@ mod request_stop_tests;
 
 #[test]
 fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use super::source_retirement::OriginalResidentSlot::RawHead;
         let fixture = region_with_history();
         let host = worth_harness::facade::execution_fixture::serial_request();
@@ -328,7 +328,7 @@ fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
 
 #[test]
 fn reconstructed_heads_do_not_alias_distinct_cells_with_equal_partition_ids() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixtures = [region_with_history(), region_with_history()];
         assert_eq!(fixtures[0].cold.partition_id, fixtures[1].cold.partition_id);
         let host = worth_harness::facade::execution_fixture::serial_request();
@@ -353,7 +353,7 @@ fn reconstructed_heads_do_not_alias_distinct_cells_with_equal_partition_ids() {
 
 #[test]
 fn reconstructed_heads_check_stopped_requests_and_retain_only_proven_damage() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let cell = &fixture.cell;
         let cancellation = worth_execution::CancellationSource::new();

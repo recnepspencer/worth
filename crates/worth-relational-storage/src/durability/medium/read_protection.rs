@@ -1,5 +1,6 @@
 //! A protected source cut is data custody, never publication or Complete authority.
 use super::{RelationalDurableColdSource, RelationalDurableMemberLocator};
+#[cfg(test)]
 use crate::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 use crate::{
     branch::transition::sequence::RelationalBranchTransitionSequence,

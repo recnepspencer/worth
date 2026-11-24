@@ -1,3 +1,6 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::lineage_rebuild_test::CanonicalCommitEnvelopeBodyFixturePort as _;
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -28,8 +31,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == replay_invalid.commit.commit_id)
         .expect("earlier tail envelope");
-    let checkpoint = invalid_envelope
-        .branch_cell_checkpoint
+    let checkpoint = (*invalid_envelope.owner_branch_cell_checkpoint_mut())
         .as_mut()
         .expect("tail envelope branch-cell checkpoint");
     checkpoint.truth_version = crate::branch::RelationalBranchVersion::new(

@@ -5,6 +5,7 @@ use crate::branch::root::RelationalRootCommitEvidence;
 use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::history::commit::RetainedCanonicalIndex;
 use crate::history::data::CommitId;
+use worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
 
 impl WorldSelectionReplay {
     pub(super) fn entry(

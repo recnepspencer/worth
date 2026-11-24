@@ -4,6 +4,7 @@ use crate::identity::data::EntityId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(super) struct RemovedOwningScopes {
     pub(super) anchors: Vec<EntityId>,
@@ -35,7 +36,7 @@ pub(super) fn select_removed_owning_scopes(
     roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<RemovedOwningScopes>, TransactionCommitError> {
-    if candidate.authored_cascade_retirement.is_some()
+    if (*candidate.owner_authored_cascade_retirement()).is_some()
         || installed.source_scope_ownership.is_empty()
     {
         return Ok(None);

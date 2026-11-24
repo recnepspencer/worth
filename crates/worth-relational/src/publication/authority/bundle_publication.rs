@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::snapshots::data::assemble_snapshot_handle;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativePatchEnvelopeOwnerPort as _;
 use crate::history::data::canonical_commit_envelope::RelationalReplayRecord;
@@ -8,7 +10,7 @@ use crate::publication::authority::artifacts::PublicationArtifacts;
 use crate::publication::authority::PublicationAuthority;
 use crate::publication::authority::PublicationPreparationAuthority;
 use crate::publication::bundle::{PublicationBundle, PublicationStatus};
-use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
+use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
 
 impl<'runtime> PublicationPreparationAuthority<'runtime> {
     pub(crate) fn assemble_publication_bundle(
@@ -28,13 +30,13 @@ impl<'runtime> PublicationPreparationAuthority<'runtime> {
                 "snapshot identity space is exhausted",
             )
         })?;
-        let snapshot = SnapshotHandle {
-            runtime_instance_id: self.runtime_instance_id,
-            branch_id: commit_reference.branch_id.clone(),
+        let snapshot = assemble_snapshot_handle(
+            self.runtime_instance_id,
+            commit_reference.branch_id.clone(),
             snapshot_id,
             version_id,
-            read_policy: SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
-        };
+            SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
+        );
         Ok(PublicationArtifacts {
             commit: commit_reference,
             snapshot,
@@ -70,7 +72,7 @@ impl<'runtime> PublicationAuthority<'runtime> {
             schema_version: ReplaySchemaVersion(1),
             commit_id: commit.commit_id,
             version_id,
-            snapshot_id: snapshot.snapshot_id,
+            snapshot_id: (*snapshot.owner_snapshot_id()),
             patch: patch.clone(),
             schema_authority,
         };
@@ -82,12 +84,12 @@ impl<'runtime> PublicationAuthority<'runtime> {
             replay,
             status: PublicationStatus::Published,
         };
-        let snapshot_id = bundle.snapshot.snapshot_id;
+        let snapshot_id = *bundle.snapshot.owner_snapshot_id();
         self.visibility.insert_published_handle(
             snapshot_id,
             crate::runtime::state::subsystems::visibility::SnapshotHandleBinding::new(
                 basis,
-                bundle.snapshot.read_policy,
+                *bundle.snapshot.owner_read_policy(),
             ),
         );
         published_snapshot_slot.install();

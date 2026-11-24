@@ -1,4 +1,6 @@
 //! Select current custody once in the commit's original work account.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -20,8 +22,7 @@ pub(super) fn select(
         &crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     >,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
-    if (*basis
-        .inner
+    if (*(*basis.owner_inner())
         .root
         .schema_authority()
         .registry()
@@ -77,13 +78,15 @@ pub(super) fn select(
     if let Some(admission) = admission {
         admission.publication.ownership_seeds(&mut scopes);
     }
-    for event in &candidate.required_output_codec_retirements {
+    for event in &(*candidate.owner_required_output_codec_retirements()) {
         scopes.push(crate::transactions::data::primitives::RecordRef::Entity(
             event.meaning.source_scope,
         ));
     }
-    let after_image =
-        crate::storage::overlay::OverlayStateView::new(basis.inner.root.as_ref(), working);
+    let after_image = crate::storage::overlay::OverlayStateView::new(
+        (*basis.owner_inner()).root.as_ref(),
+        working,
+    );
     let after = crate::branch::structural_state::StructuralStateView::new(
         &after_image,
         candidate.commit.version_id,

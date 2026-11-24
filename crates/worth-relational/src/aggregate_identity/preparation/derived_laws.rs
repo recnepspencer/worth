@@ -1,7 +1,7 @@
 //! Canonical source-law admission before aggregate consequence preparation.
 use super::super::derived_source;
 use super::super::funding::{AggregateWork, BuildResult, PlanDenial};
-use crate::derived_relation::{affected, laws, DerivedRelationHandle};
+use crate::derived_relation::{affected, laws};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::sync::Arc;

@@ -18,6 +18,7 @@ use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 mod entities;
 mod relations;
@@ -35,7 +36,9 @@ pub(crate) fn apply(
     budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, MutationApplyDenial> {
     let graph = &retained.graph;
-    let source = graph.entities().selected_basis().inner.root.as_ref();
+    let source = (*graph.entities().selected_basis().owner_inner())
+        .root
+        .as_ref();
     let mut workspace = MutationWorkspace::new(
         *execution,
         state,

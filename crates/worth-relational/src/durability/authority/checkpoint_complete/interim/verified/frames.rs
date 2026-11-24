@@ -1,4 +1,5 @@
 //! Exact original bytes and original schema roles, without Home chronology.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::*;
 use crate::durability::authority::checkpoint_complete::source::OriginalCanonicalCommit;
 use worth_execution::ExecutionRequestArrayBuilder;

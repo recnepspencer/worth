@@ -285,6 +285,6 @@ pub(crate) fn bind_preparation(
         Arc::clone(&history.canonical_publication_routes),
         history.root_identity_issuer.clone(),
         #[cfg(test)]
-        Arc::clone(&history.root_capture_sabotage),
+        history.root_capture_switch_for_test(),
     )
 }

@@ -1,4 +1,6 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupDenialOwnerPort as _;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupOutcomeOwnerPort as _;
 
 use super::selected_index::{PinnedIndex, PinnedIndexLookup};
 use crate::indexes::data::{
@@ -252,7 +254,7 @@ impl RelationJoinVerification {
             && right_endpoints == (entry.shared_entity_id(), self.right_entity_id)
     }
 
-    const fn corrupt(&self) -> BoundedRelationJoinLookupDenial {
+    fn corrupt(&self) -> BoundedRelationJoinLookupDenial {
         BoundedRelationJoinLookupDenial::new(
             BoundedRelationJoinLookupDenialKind::CorruptIndexEntries,
             self.index_id,

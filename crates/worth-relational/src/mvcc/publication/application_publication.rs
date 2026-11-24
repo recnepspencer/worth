@@ -105,7 +105,7 @@ pub(crate) fn native_birth_fixture(
     RequiredOutputPublication::Birth {
         admission,
         absence: None,
-        meaning: meaning_fixture::native_meaning_fixture(&family),
+        meaning: meaning_fixture::native_meaning_for_test(&family),
         roles: targets
             .into_iter()
             .enumerate()
@@ -125,6 +125,5 @@ pub(crate) fn native_birth_fixture(
 pub(crate) mod inline_type_budget;
 
 pub(crate) use publication_appendix::prepare_publication_appendix;
-
 #[cfg(test)]
-pub(crate) mod meaning_fixture;
+pub(crate) use worth_relational_branch::internal_port::mvcc::publication::application_publication::meaning_fixture;

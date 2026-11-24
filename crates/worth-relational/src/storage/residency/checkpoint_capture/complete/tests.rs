@@ -21,7 +21,7 @@ struct Fixture {
 }
 
 fn fixture() -> Fixture {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let (partition, schema) = fixture_data::original_partition();
         let host = worth_harness::facade::execution_fixture::serial_request();
         let request = ExecutionRequest::serial(&host);
@@ -61,7 +61,7 @@ fn bytes(member: &RelationalCheckpointMember) -> &worth_execution::ExecutionImmu
 }
 #[test]
 fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = fixture();
         let region = fixture
             .prepared

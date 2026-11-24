@@ -2,6 +2,7 @@ use super::*;
 use crate::branch::PositionedBranchTransition;
 use crate::facade::durability::{DurabilityError, RecoveryFailureClass, RecoveryVerificationMode};
 use crate::facade::publication::PatchStreamPosition;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 
 fn refusal(
     execution: &ExecutionRequest<'_, '_>,

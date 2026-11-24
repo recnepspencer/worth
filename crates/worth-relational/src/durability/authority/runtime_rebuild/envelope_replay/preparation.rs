@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::{CanonicalCommitEnvelope, HistoryDriftClass};
@@ -73,7 +74,7 @@ fn admit_carried_branch_checkpoint(
             ),
         ).into());
     }
-    let Some(checkpoint) = envelope.branch_cell_checkpoint.clone() else {
+    let Some(checkpoint) = (*envelope.owner_branch_cell_checkpoint()).clone() else {
         return Ok(());
     };
     let recovered_root = match checkpoint.observation.target() {

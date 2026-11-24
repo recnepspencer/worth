@@ -6,6 +6,7 @@ use crate::branch::recorded_basis::{
 };
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::capture::ObservedRelationalMemoryComponentOwnerPort as _;
 
 #[derive(Clone, Debug)]
 pub struct CapturedNativeInterimComponent(Arc<Component>);

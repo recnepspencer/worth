@@ -6,6 +6,9 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 pub(super) fn export_retained_component(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -36,7 +39,7 @@ pub(super) fn export_retained_component(
                 .or_else(|| performed_envelope(commit_id))
                 .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
             if let Some(crate::branch::root::RelationalRootCommitEvidence::Checkpoint(commit)) =
-                basis.inner.root.commit_evidence()
+                (*basis.owner_inner()).root.commit_evidence()
             {
                 let entry = commit.index();
                 let (actual, source) = cell
@@ -46,7 +49,7 @@ pub(super) fn export_retained_component(
                     || actual.as_ref() != entry
                     || entry.commit.commit_id != commit_id
                     || entry.commit.version_id.0 != target.version_id()
-                    || basis.inner.root.descriptor() != Some(target.roots())
+                    || (*basis.owner_inner()).root.descriptor() != Some(target.roots())
                 {
                     return Err(Refusal::CanonicalMismatch { commit_id });
                 }
@@ -69,14 +72,13 @@ pub(super) fn export_retained_component(
                 cell.demand_positioned(execution, 1 << 30)
             }
             .map_err(Refusal::Source)?;
-            let envelope = basis
-                .inner
+            let envelope = (*basis.owner_inner())
                 .root
                 .canonical_envelope()
                 .ok_or(Refusal::CanonicalMismatch { commit_id })?;
             if positioned.commit.commit_id != commit_id
                 || positioned.commit.version_id.0 != target.version_id()
-                || basis.inner.root.descriptor() != Some(target.roots())
+                || (*basis.owner_inner()).root.descriptor() != Some(target.roots())
                 || !Artifact::matches_positioned_payload_for_request(
                     &positioned,
                     envelope,

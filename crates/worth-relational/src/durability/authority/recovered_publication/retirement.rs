@@ -6,6 +6,7 @@ use crate::change_source::retained_observation::retirement::{
     RetiredRelationalRetainedObservation,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::change_source::retained_observation::retirement::RelationalRetainedObservationRetirementOwnerPort as _;
 
 #[derive(Debug)]
 #[must_use]

@@ -1,4 +1,8 @@
 //! Advance current custody while preserving every unchanged claim row.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::historical_selection::absence::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 mod claims_delta;
@@ -30,8 +34,7 @@ pub(crate) fn complete(
     roster: &CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedOwnership, TransactionCommitError> {
-    let Some(storage) = &(*basis
-        .inner
+    let Some(storage) = &(*(*basis.owner_inner())
         .root
         .schema_authority()
         .registry()
@@ -72,7 +75,7 @@ pub(crate) fn complete(
             .output_origins()
             .count()
             .saturating_add(roster.codec_retired.len())
-            .saturating_add(candidate.required_output_codec_retirements.len())
+            .saturating_add((*candidate.owner_required_output_codec_retirements()).len())
             .saturating_add(absent_count)
             .saturating_add(1);
         writer.checkpoint(
@@ -119,7 +122,7 @@ pub(crate) fn complete(
             scopes.push(scope);
         }
     }
-    for retired in &candidate.required_output_codec_retirements {
+    for retired in &(*candidate.owner_required_output_codec_retirements()) {
         writer.checkpoint(
             scopes.len() + roster.publications.len() + roster.codec_retired.len() + 1,
         )?;
@@ -161,8 +164,8 @@ pub(crate) fn complete(
         };
         let changed = |meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning| {
             replaced(meaning)
-                || candidate
-                    .required_output_codec_retirements
+                || (*candidate
+                    .owner_required_output_codec_retirements())
                     .iter()
                     .any(|event| event.meaning.same_route(meaning))
         };
@@ -174,7 +177,7 @@ pub(crate) fn complete(
         {
             writer.checkpoint(
                 candidate.output_origins().count()
-                    + candidate.required_output_codec_retirements.len()
+                    + (*candidate.owner_required_output_codec_retirements()).len()
                     + 1,
             )?;
             if changed(&row.value.origin.meaning)

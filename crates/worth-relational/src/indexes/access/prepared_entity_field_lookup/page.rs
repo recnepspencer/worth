@@ -7,6 +7,10 @@ use worth_execution::{
     ExecutionAllocationPolicy, ExecutionArrayBuilder, ExecutionRequest, ExecutionWorkCeiling,
     MapKernelContext,
 };
+use worth_relational_branch::internal_port::indexes::data::entity_field_page::assemble_bounded_entity_field_boundary;
+use worth_relational_branch::internal_port::indexes::data::entity_field_page::assemble_bounded_entity_field_page;
+use worth_relational_branch::internal_port::indexes::data::entity_field_page::BoundedEntityFieldBoundaryFieldsPort as _;
+use worth_relational_branch::internal_port::indexes::data::entity_field_page::BoundedEntityFieldBoundaryParts;
 
 impl PreparedEntityFieldLookup {
     /// Read a finite posting page from this exact native selection.
@@ -79,13 +83,13 @@ impl PreparedEntityFieldLookup {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
         let start = match after {
             Some(boundary)
-                if boundary.runtime == self.runtime_identity
-                    && boundary.basis.basis().key() == self.basis.basis().key()
-                    && Arc::ptr_eq(&boundary.generation, &self.generation)
-                    && boundary.kind == self.kind
-                    && boundary.key == key =>
+                if (*boundary.owner_runtime()) == self.runtime_identity
+                    && (*boundary.owner_basis()).basis().key() == self.basis.basis().key()
+                    && Arc::ptr_eq(&(*boundary.owner_generation()), &self.generation)
+                    && (*boundary.owner_kind()) == self.kind
+                    && (*boundary.owner_key()) == key =>
             {
-                boundary.next
+                *boundary.owner_next()
             }
             Some(_) => return Err(PageStop::ForeignBoundary),
             None => 0,
@@ -157,22 +161,24 @@ impl PreparedEntityFieldLookup {
         }
         let ids = ids.seal().map_err(PageStop::Allocation)?;
         self.page_admission(execution, check_live)?;
-        let boundary = (start + count < length).then(|| BoundedEntityFieldBoundary {
-            runtime: self.runtime_identity,
-            basis: self.basis.clone(),
-            generation: Arc::clone(&self.generation),
-            kind: self.kind,
-            key,
-            next: start + count,
-            _memory: memory,
+        let boundary = (start + count < length).then(|| {
+            assemble_bounded_entity_field_boundary(BoundedEntityFieldBoundaryParts {
+                runtime: self.runtime_identity,
+                basis: self.basis.clone(),
+                generation: Arc::clone(&self.generation),
+                kind: self.kind,
+                key,
+                next: start + count,
+                _memory: memory,
+            })
         });
         self.instrumentation.count_query_index_path();
-        Ok(BoundedEntityFieldPage {
+        Ok(assemble_bounded_entity_field_page(
             ids,
-            generation: self.generation.generation_id,
-            examined: count,
+            self.generation.generation_id,
+            count,
             boundary,
-        })
+        ))
     }
     fn page_admission<E>(
         &self,

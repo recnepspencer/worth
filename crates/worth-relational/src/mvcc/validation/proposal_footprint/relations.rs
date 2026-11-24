@@ -1,4 +1,5 @@
 //! Relation lifecycle material comes from the validated actor's real applied draft.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::member_restoration::RecordedMemberRestoration;
 use super::relation_mutations::ValidatedRelationMutationFootprint;
 use crate::identity::data::KindId;

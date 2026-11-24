@@ -1,4 +1,5 @@
 //! Independent cold projection from the selected sealed head; no delta dispatcher or edits.
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 pub(super) mod funding;
 use super::{
     changes::ChangedRecords, field_keys, join, ordering, record_metadata, root_view::IndexRootView,

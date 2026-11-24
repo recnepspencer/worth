@@ -1,4 +1,5 @@
 //! Original semantic summaries include the actual late Native ownership effects.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::data::CanonicalCommitEnvelopeDraft;
 use crate::transactions::data::commit_log::CommitChangeSummary;

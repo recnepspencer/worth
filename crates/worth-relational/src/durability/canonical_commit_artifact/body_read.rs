@@ -1,4 +1,5 @@
 //! Canonical body admission uses the original funded bytes and expected coordinates.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::payload_wire::{ArtifactPayloadRef, ArtifactPayloadWire};
 use super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use crate::durability::artifact_canonical_payload::is_canonical_payload_with_original_context;

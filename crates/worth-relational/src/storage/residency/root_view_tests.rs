@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn full_admission_reuses_verified_content_without_recloning_regions() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let authority = RelationalRegionKindAuthority::default();
         authority
@@ -33,7 +33,7 @@ fn full_admission_reuses_verified_content_without_recloning_regions() {
 
 #[test]
 fn a_shared_full_load_requires_a_separate_admitted_view_for_each_root() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let make_root_view = || {
             let authority = Arc::new(RelationalRegionKindAuthority::default());

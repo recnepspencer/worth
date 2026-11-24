@@ -16,8 +16,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
+use worth_relational_branch::internal_port::branch::coordination::RelationalBranchCoordinationCellFixturePort as _;
 
 type Slot = CompanionBranchCellSlot<ManagedIndexBranchImage>;
 struct Owner {
@@ -42,7 +41,7 @@ struct Lookup {
 impl Drop for Lookup {
     fn drop(&mut self) {
         assert!(
-            self.coordination.is_unlocked(),
+            self.coordination.is_unlocked_for_test(),
             "opaque lookup cleanup runs outside source coordination"
         );
         if self.slot.admitted().is_none() {

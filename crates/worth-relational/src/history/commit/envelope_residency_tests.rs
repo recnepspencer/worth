@@ -10,6 +10,8 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 #[derive(Debug)]
 struct Source {
@@ -45,17 +47,18 @@ fn selected(
 ) -> (RetainedCanonicalIndex, Arc<Source>) {
     use crate::branch::target::RelationalBranchRootDescriptor;
     use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
-    use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
     use crate::history::data::PositionedCanonicalCommit;
     use crate::identity::data::{EntityId, PartitionId};
     use crate::transactions::data::primitives::RecordRef;
+    use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update_for_test as envelope_with_patch_and_update;
 
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let canonical = Arc::new(envelope_with_patch_and_update(
         RecordRef::Entity(entity),
         entity,
     ));
-    let positioned = PositionedCanonicalCommit::for_test(PatchStreamPosition(1), canonical);
+    let positioned =
+        PositionedCanonicalCommit::positioned_commit_for_test(PatchStreamPosition(1), canonical);
     let bytes = RelationalCanonicalCommitArtifact::from_positioned(
         &positioned,
         execution.allocation_policy(),
@@ -167,7 +170,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
     for journal_backed in [false, true] {
         let (entry, source) = selected(&execution, None);
         let performed = entry
-            .readmit_journal(source.as_ref(), &execution, 1 << 30)
+            .readmit_journal_for_test(source.as_ref(), &execution, 1 << 30)
             .unwrap();
         let position = performed.position();
         let body = performed.canonical_arc().clone();

@@ -4,6 +4,7 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::{CommitId, MergeConflictRecord, MergeInspection};
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 impl RelationalPreparationHistory {
     pub(crate) fn demand_merge_inspection(

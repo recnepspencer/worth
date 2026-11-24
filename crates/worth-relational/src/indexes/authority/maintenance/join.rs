@@ -11,6 +11,7 @@ use crate::indexes::data::{
     RelationJoinSharedEndpoint,
 };
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 
 type Coordinate = (EntityId, EntityId);
 type Pair = (EntityId, EntityId, EntityId);

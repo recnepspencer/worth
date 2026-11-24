@@ -49,11 +49,7 @@ pub(crate) fn apply<'a>(
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
         Some(
-            retained
-                .graph
-                .entities()
-                .selected_basis()
-                .inner
+            (*retained.graph.entities().selected_basis().owner_inner())
                 .root
                 .retained_content(),
         ),
@@ -63,7 +59,7 @@ pub(crate) fn apply<'a>(
             execution,
             prepared_content.directory().map_err(|_| {
                 crate::content::publication::commit_denial(
-                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                    crate::content::denial::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,

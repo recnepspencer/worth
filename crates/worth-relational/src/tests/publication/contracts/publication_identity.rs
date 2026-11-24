@@ -3,6 +3,8 @@ use crate::capabilities::DurabilityRead;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::tests::support::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 #[test]
 fn publication_rejects_envelope_identity_drift_before_any_effect() {
@@ -104,7 +106,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         .admitted_branch_basis_for_identity(&identity)
         .expect("main binding");
     let commit_id = runtime.history.preview_next_commit_id();
-    let version_id = runtime.history.preview_next_version_id();
+    let version_id = runtime.history.preview_next_version_id_for_test();
     let mut future_envelope = copy_original_for_test(&committed.publication().envelope, execution);
     future_envelope.body_mut_for_test().commit = crate::history::data::RelationalCommitReceipt {
         commit_id,
@@ -142,7 +144,9 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
             (
                 id,
                 partition
-                    .authoritative_content_digest(&runtime.services.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(
+                        &runtime.services.symbols.interner_snapshot(),
+                    )
                     .expect("installed storage symbols resolve"),
             )
         })
@@ -150,8 +154,8 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
     let before_cells = runtime.history.branch_cells_snapshot();
     let before_catalog = runtime.history.catalog_len();
     let before_envelopes = runtime.history.recorded_commit_envelope_count();
-    let before_patch_index = runtime.history.recorded_patch_position_count();
-    let before_sequences = runtime.history.reserved_sequence_floors();
+    let before_patch_index = runtime.history.recorded_patch_position_count_for_test();
+    let before_sequences = runtime.history.reserved_sequence_floors_for_test();
 
     let selected_branch_state = runtime
         .selected_branch_state(&binding)
@@ -184,7 +188,9 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
             (
                 id,
                 partition
-                    .authoritative_content_digest(&runtime.services.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(
+                        &runtime.services.symbols.interner_snapshot(),
+                    )
                     .expect("failed preparation cannot corrupt installed storage"),
             )
         })
@@ -197,10 +203,13 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         before_envelopes
     );
     assert_eq!(
-        runtime.history.recorded_patch_position_count(),
+        runtime.history.recorded_patch_position_count_for_test(),
         before_patch_index
     );
-    assert_eq!(runtime.history.reserved_sequence_floors(), before_sequences);
+    assert_eq!(
+        runtime.history.reserved_sequence_floors_for_test(),
+        before_sequences
+    );
 }
 
 #[test]
@@ -219,7 +228,9 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
             (
                 id,
                 partition
-                    .authoritative_content_digest(&runtime.services.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(
+                        &runtime.services.symbols.interner_snapshot(),
+                    )
                     .expect("installed storage symbols resolve"),
             )
         })
@@ -228,10 +239,10 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
     let before_catalog = runtime.history.catalog_len();
     let before_durable = runtime.durable_log().len();
     let before_envelopes = runtime.history.recorded_commit_envelope_count();
-    let before_patch_index = runtime.history.recorded_patch_position_count();
-    let before_sequences = runtime.history.reserved_sequence_floors();
+    let before_patch_index = runtime.history.recorded_patch_position_count_for_test();
+    let before_sequences = runtime.history.reserved_sequence_floors_for_test();
 
-    runtime.history.sabotage_next_root_capture();
+    runtime.history.sabotage_next_root_capture_for_test();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -253,7 +264,9 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
             (
                 id,
                 partition
-                    .authoritative_content_digest(&runtime.services.symbols.interner_snapshot())
+                    .partition_content_digest_for_test(
+                        &runtime.services.symbols.interner_snapshot(),
+                    )
                     .expect("failed publication cannot corrupt installed storage"),
             )
         })
@@ -267,10 +280,13 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
         before_envelopes
     );
     assert_eq!(
-        runtime.history.recorded_patch_position_count(),
+        runtime.history.recorded_patch_position_count_for_test(),
         before_patch_index
     );
-    assert_eq!(runtime.history.reserved_sequence_floors(), before_sequences);
+    assert_eq!(
+        runtime.history.reserved_sequence_floors_for_test(),
+        before_sequences
+    );
 }
 
 #[test]

@@ -5,6 +5,7 @@ use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::storage::residency::RelationalRegionHeadView;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 #[derive(Clone)]
 pub(super) struct IndexRootView {

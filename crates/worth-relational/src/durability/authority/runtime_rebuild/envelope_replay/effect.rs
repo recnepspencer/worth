@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
 
 use crate::authority::commit::pipeline::execution::execute_authoritative_commit;
@@ -192,7 +193,7 @@ pub(super) fn replay_ordinary_commit(
                 format!("failed to admit durable transaction basis: {error:?}"),
             )
         })?;
-    txn.content = envelope.content.records().clone();
+    txn.content = (*envelope.owner_content()).records().clone();
     txn.stage_recovered_intents(
         execution,
         envelope.commit.commit_id,
@@ -273,7 +274,7 @@ pub(super) fn replay_merge_commit(
             configure_recovered_schema(options, &schema_basis),
             recorded_result_schema,
         )
-        .with_recovered_content(envelope.content.records().clone()),
+        .with_recovered_content((*envelope.owner_content()).records().clone()),
         merge_plan,
     )
     .map_err(|_| {

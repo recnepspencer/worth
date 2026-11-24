@@ -7,6 +7,7 @@ use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTabl
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity;
 use crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 pub(super) struct CoupledCandidateReadContext {
     dictionary: RuntimeSymbolTable,
@@ -28,7 +29,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let payload = payload.as_mut().expect("newly registered candidate");
         assert!(std::sync::Arc::ptr_eq(
-            &before.inner.root,
+            &(*before.owner_inner()).root,
             &payload.expected_root
         ));
         assert_eq!(proposal.runtime_instance_id(), self.runtime_instance_id);

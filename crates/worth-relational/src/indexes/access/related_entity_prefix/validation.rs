@@ -12,15 +12,15 @@ pub(super) fn prefix(
     charge(meter, 1)?;
     let source = IndexProjectionSource::exact(projection).ok_or(Denial::InvalidPrefix)?;
     let ordering = prepared.contract.ordering();
-    if request.prefix.len() > ordering.len() {
+    if (*request.owner_prefix()).len() > ordering.len() {
         return Err(Denial::InvalidPrefix);
     }
     let _catalog = source.aspect_plans().ok_or(Denial::InvalidPrefix)?;
 
     let plan = source
-        .entity_aspect_plan(request.ordered.child_kind())
+        .entity_aspect_plan((*request.owner_ordered()).child_kind())
         .ok_or(Denial::InvalidPrefix)?;
-    for (value, field) in request.prefix.iter().zip(ordering) {
+    for (value, field) in (*request.owner_prefix()).iter().zip(ordering) {
         let mut expected = None;
         for binding in &plan.executable_bindings {
             charge(
@@ -90,7 +90,7 @@ pub(super) fn row(
     let corrupt = || {
         Denial::Lookup(BoundedRelatedEntityOrderedLookupDenial::new(
             BoundedRelatedEntityOrderedLookupDenialKind::CorruptIndexEntries,
-            request.ordered.index_id(),
+            (*request.owner_ordered()).index_id(),
         ))
     };
     if entry.ordering_values().len() != prepared.contract.ordering().len() {
@@ -130,7 +130,7 @@ pub(super) fn row(
         RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
     };
     if relation.kind_id != *relation_kind
-        || parent != request.ordered.parent_entity_id()
+        || parent != (*request.owner_ordered()).parent_entity_id()
         || child != entry.child_entity_id()
     {
         return Err(corrupt());
@@ -164,7 +164,7 @@ pub(super) fn row(
     {
         let matched = super::super::field_candidate_comparison::borrowed_matches(
             execution,
-            request.ordered.index_id(),
+            (*request.owner_ordered()).index_id(),
             projection,
             child,
             field.locator(),

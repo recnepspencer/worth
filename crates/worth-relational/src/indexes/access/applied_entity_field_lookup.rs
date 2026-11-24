@@ -1,5 +1,6 @@
 //! Native data entries derived from a selected C generation through applied deltas.
 //! No proposed index generation or Current entity identity is fabricated.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
@@ -15,6 +16,7 @@ use crate::visibility::materialization::read_records::projection::VisibilityProj
 use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
 use worth_execution::ExecutionMemoryReservation;
 use worth_foundational::facade::AspectValue;
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AppliedEntityFieldMatch {

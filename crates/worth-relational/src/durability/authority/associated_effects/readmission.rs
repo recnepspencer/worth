@@ -1,4 +1,5 @@
 //! Read the exact discovered source outside owner locks and match actual state.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::*;
 use crate::durability::authority::runtime_access::DurabilityAuthority;

@@ -2,6 +2,7 @@
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalIndexDefinitionDelta;
 use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(super) mod predecessor;
@@ -57,7 +58,7 @@ pub(super) fn readmit(
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     >,
 ) -> Result<RecoveredIndexCatalog, RelationalRecoveryStop> {
-    let delta = &original.envelope().index_definition_delta;
+    let delta = &(*original.envelope().owner_index_definition_delta());
     for _ in delta.definitions() {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     }
@@ -73,6 +74,6 @@ pub(super) fn readmit(
     Ok(RecoveredIndexCatalog {
         runtime_instance_id,
         delta: delta.clone(),
-        authored: original.envelope().authored_index_writes.clone(),
+        authored: (*original.envelope().owner_authored_index_writes()).clone(),
     })
 }

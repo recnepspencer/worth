@@ -1,9 +1,9 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::RelationalObservationReadDenial;
 use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::HistoricalLineageResolution;
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// Resolve the lineage history of one entity as `observation`'s retained

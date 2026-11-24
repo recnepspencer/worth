@@ -5,6 +5,7 @@ use crate::authority::mutation::{
 };
 use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 use crate::storage::overlay::WorkingState;
@@ -155,7 +156,7 @@ pub(crate) fn apply_mutation_draft<'a>(
             execution,
             core.content.directory().map_err(|_| {
                 crate::content::publication::commit_denial(
-                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                    crate::content::denial::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,
@@ -212,14 +213,14 @@ pub(crate) fn apply_retained_entity_selection_draft<'a>(
         &state,
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
-        Some(retained._source.inner.root.retained_content()),
+        Some((*retained._source.owner_inner()).root.retained_content()),
     )?;
     source_interpretation
         .bind_content(
             execution,
             prepared_content.directory().map_err(|_| {
                 crate::content::publication::commit_denial(
-                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                    crate::content::denial::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,

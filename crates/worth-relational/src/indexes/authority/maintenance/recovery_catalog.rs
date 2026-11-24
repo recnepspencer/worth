@@ -10,6 +10,7 @@ use crate::mvcc::observation::RelationalBranchObservation;
 use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 pub(super) fn missing_build_request(
     indexes: &IndexingSubsystem,

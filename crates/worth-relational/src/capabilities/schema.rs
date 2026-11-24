@@ -59,26 +59,6 @@ impl SchemaSource for crate::branch::RelationalBranchRootSchemaAuthority {
     }
 }
 
-impl AspectPlanSource for crate::branch::RelationalBranchRootSchemaAuthority {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
-        self.aspect_plans()
-    }
-
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        crate::branch::RelationalBranchRootSchemaAuthority::entity_aspect_plan(self, kind_id)
-    }
-
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        crate::branch::RelationalBranchRootSchemaAuthority::relation_aspect_plan(self, kind_id)
-    }
-}
-
 impl SchemaSource for RelationalRuntimeConfig {
     fn schema_registry(&self) -> &RelationalSchemaRegistry {
         &self.schema.registry

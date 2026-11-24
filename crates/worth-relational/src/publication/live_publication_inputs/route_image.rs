@@ -1,5 +1,10 @@
 //! Install the exact applied route pins into the selected branch's retained route image.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 
 use super::BoundLivePublicationInputs;
 use crate::branch::{basis::AdmittedRelationalBranchBasis, root::RelationalBranchRoot};
@@ -19,13 +24,15 @@ impl BoundLivePublicationInputs {
         basis: &AdmittedRelationalBranchBasis,
         next: &Arc<RelationalBranchRoot>,
     ) -> Result<Arc<dyn PublicationBasisAccess>, TransactionCommitError> {
-        let previous =
-            PublicationBasisImage::at_for_owner(&basis.inner.root, &basis.inner.retention_binding);
+        let previous = PublicationBasisImage::at_for_owner(
+            &(*basis.owner_inner()).root,
+            &(*basis.owner_inner()).retention_binding,
+        );
         let envelope = next
             .canonical_envelope()
             .expect("candidate has its canonical commit");
-        let changes =
-            envelope.output_origins().count() + envelope.required_output_codec_retirements.len();
+        let changes = envelope.output_origins().count()
+            + (*envelope.owner_required_output_codec_retirements()).len();
         if changes == 0 {
             return Ok(previous);
         }
@@ -60,7 +67,7 @@ impl BoundLivePublicationInputs {
                         let applied = self.take_verified(envelope, origin);
                         // Cold/deep-cloned coupled envelopes have no issuance
                         // for D. Never approximate that input with committed C.
-                        if (envelope.coupled_authored_publication.is_some() && applied.is_none())
+                        if ((*envelope.owner_coupled_authored_publication()).is_some() && applied.is_none())
                             || !origin.source_scope_owned
                             || matches!(
                                 origin.publication,
@@ -93,8 +100,8 @@ impl BoundLivePublicationInputs {
                             .reserve_retained_memory(bytes as u64)
                             .map_err(request)?;
                         let hold = RelationalObservationRetentionObligation::acquire(
-                            &basis.inner.retention_binding,
-                            Arc::clone(&basis.inner.root),
+                            &(*basis.owner_inner()).retention_binding,
+                            Arc::clone(&(*basis.owner_inner()).root),
                         )
                         .map_err(|_| {
                             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -106,8 +113,8 @@ impl BoundLivePublicationInputs {
                             Arc::new(RetainedPublicationBasis {
                                 publication: origin.commit.commit_id,
                                 descriptor: basis.descriptor().clone(),
-                                root: Arc::clone(&basis.inner.root),
-                                binding: basis.inner.retention_binding.clone(),
+                                root: Arc::clone(&(*basis.owner_inner()).root),
+                                binding: (*basis.owner_inner()).retention_binding.clone(),
                                 applied,
                                 publication_cell: basis.publication_cell().clone(),
                                 _hold: hold,
@@ -117,7 +124,7 @@ impl BoundLivePublicationInputs {
                             context,
                         )?;
                     }
-                    for retired in &envelope.required_output_codec_retirements {
+                    for retired in &(*envelope.owner_required_output_codec_retirements()) {
                         crate::execution::request_stage::checkpoint(
                             context,
                             (height + 1)
@@ -137,7 +144,7 @@ impl BoundLivePublicationInputs {
             .map_err(request)?;
         answer.expect("completed retention preparation recorded its result")?;
         Ok(PublicationBasisImage::from_funded_routes(
-            basis.inner.retention_binding.clone(),
+            (*basis.owner_inner()).retention_binding.clone(),
             routes,
             funding,
         ))

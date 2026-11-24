@@ -16,6 +16,7 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(crate) fn enforce_patch_budget(
     max_patch_records_per_commit: Option<usize>,
@@ -111,8 +112,9 @@ pub(crate) fn canonical_commit_envelope<'a>(
         schema_continuity.schema_reconciliation_descriptor.clone(),
         schema_continuity.descriptor_semantics_version,
     );
-    envelope.revision_symbol_references = inputs.symbol_references.iter().copied().collect();
-    envelope.symbol_texts = inputs
+    (*envelope.owner_revision_symbol_references_mut()) =
+        inputs.symbol_references.iter().copied().collect();
+    (*envelope.owner_symbol_texts_mut()) = inputs
         .symbols
         .with_read(|symbols| {
             symbols.commit_texts(
@@ -131,7 +133,7 @@ pub(crate) fn canonical_commit_envelope<'a>(
     // frame, so its bytes do not depend on which process produced it (D11).
     envelope.merged_plan.transaction_id =
         crate::branch::reference_checkpoint_data::CANONICAL_TRANSACTION_ID;
-    envelope.branch_cell_checkpoint = inputs
+    (*envelope.owner_branch_cell_checkpoint_mut()) = inputs
         .history
         .branch_cell(branch_id)
         .map(|cell| cell.checkpoint().in_canonical_frame())

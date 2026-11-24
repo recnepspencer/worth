@@ -1,5 +1,6 @@
 //! Each truth seam must refuse without returning a partial row set.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use super::super::read_prices::{
     ASPECT_BINDING, ASPECT_COMPARISON, EXAMINE_SLOT, KEYED_RECORD, RESERVE_RECORD,
 };
@@ -169,10 +170,10 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                     let view = truth.project_snapshot(&edge.snapshot).unwrap();
                     match seam {
                         12 => view
-                            .authoritative_entity_records(request, KindId(1))
+                            .authoritative_entity_records_for_test(request, KindId(1))
                             .map(|rows| rows.len()),
                         13 => view
-                            .authoritative_entity_records_in(
+                            .authoritative_entity_records_in_for_test(
                                 request,
                                 source.partition_id,
                                 KindId(1),
@@ -182,17 +183,17 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                             .authoritative_relation_records(request, KindId(2))
                             .map(|rows| rows.len()),
                         15 => view
-                            .authoritative_relation_records_in(
+                            .authoritative_relation_records_in_for_test(
                                 request,
                                 source.partition_id,
                                 KindId(2),
                             )
                             .map(|rows| rows.len()),
                         16 => view
-                            .all_authoritative_entity_records(request)
+                            .all_authoritative_entity_records_for_test(request)
                             .map(|rows| rows.len()),
                         17 => view
-                            .all_authoritative_relation_records(request)
+                            .all_authoritative_relation_records_for_test(request)
                             .map(|rows| rows.len()),
                         _ => unreachable!(),
                     }

@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::exact_observation::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::visibility::snapshot_states::resolution::resolve_snapshot_basis;

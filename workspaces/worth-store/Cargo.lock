@@ -1701,6 +1701,26 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-branch"
+version = "0.1.0"
+dependencies = [
+ "crossbeam-queue",
+ "dashmap",
+ "im",
+ "indexmap",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
  "worth-relational-contracts",
  "worth-relational-storage",
 ]

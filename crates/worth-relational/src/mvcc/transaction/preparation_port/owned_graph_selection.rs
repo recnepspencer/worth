@@ -9,6 +9,7 @@ use crate::{
     },
 };
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 impl RelationalPreparationPort {
     pub fn admit_owned_graph_selection(
         &self,
@@ -98,7 +99,7 @@ impl RelationalPreparationPort {
             .map_err(Error::Source)?;
         crate::mvcc::validation::require_not_interrupted(
             &input.transaction.control,
-            &input.transaction.basis.inner.retention_binding,
+            &(*input.transaction.basis.owner_inner()).retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )
         .map_err(Error::Preparation)?;

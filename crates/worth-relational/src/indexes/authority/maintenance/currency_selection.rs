@@ -11,6 +11,7 @@ use crate::indexes::data::{
 use crate::mvcc::observation::RelationalBranchObservation;
 use crate::runtime::state::subsystems::{history::HistorySubsystem, indexing::IndexingSubsystem};
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 pub(super) fn verify_index_basis_for_commit(
     indexes: &IndexingSubsystem,

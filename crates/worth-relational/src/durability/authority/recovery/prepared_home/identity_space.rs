@@ -1,4 +1,5 @@
 //! Historical schema roles reserve identities even after a role is removed.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::*;
 use crate::identity::data::KindId;
 use worth_foundational::facade::AspectIdentity;

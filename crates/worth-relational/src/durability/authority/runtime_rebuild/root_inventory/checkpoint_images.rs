@@ -4,6 +4,7 @@ use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };
 use crate::durability::data::RelationalRecoveryStop;
+use worth_relational_branch::internal_port::branch::recorded_basis::readmission::RelationalBranchBasisDescriptorOwnerPort as _;
 
 impl RecoveredRootInventory {
     pub(super) fn install_checkpoint_headers(

@@ -1,5 +1,4 @@
 //! Suspension preserves structural identity across a required mixed relation.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::facade::{runtime::RelationalRuntimeApi, schema::*};

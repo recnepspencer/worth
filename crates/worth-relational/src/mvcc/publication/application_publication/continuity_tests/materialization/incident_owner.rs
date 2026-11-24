@@ -1,8 +1,7 @@
 //! Relation custody follows its producer even when only its other endpoint suspends.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
 
 #[test]
@@ -178,8 +177,8 @@ fn run(replace_endpoint: bool) {
                 &basis,
                 producer,
                 &dependency,
-                &native_meaning_fixture(family),
-                &native_roles_fixture(&[(id, KindId(1))], posture),
+                &native_meaning_for_test(family),
+                &native_roles_for_test(&[(id, KindId(1))], posture),
             )
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
@@ -204,7 +203,7 @@ fn replace_birth_endpoint(
         kind_id: KindId(1),
         client_key: crate::symbols::data::ClientKey::raw("replacement-a"),
     };
-    let mut roles = native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
+    let mut roles = native_roles_for_test(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
     roles.push(RequiredOutputRoleTarget {
         role: "joined-a".into(),
         entity_name: "native-unit-output".into(),
@@ -236,9 +235,9 @@ fn replace_birth_endpoint(
     .unwrap();
     let joined = moved.created_entity(&replacement).unwrap();
     release_test_commit_snapshot(runtime, &moved);
-    let mut roles = native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
+    let mut roles = native_roles_for_test(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
     roles[0].role = "retired-a".into();
-    roles.extend(native_roles_fixture(
+    roles.extend(native_roles_for_test(
         &[(joined, KindId(1))],
         RequiredOutputRolePosture::Preserve,
     ));
@@ -266,7 +265,7 @@ fn replace_birth_endpoint(
         complete(
             owner,
             retired.required_output_publication(installed).unwrap(),
-            native_roles_fixture(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
+            native_roles_for_test(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
             5,
         ),
     )
@@ -279,8 +278,8 @@ fn replace_birth_endpoint(
             &test_owner_main_basis(runtime).unwrap(),
             "group-a-current",
             &[5; 32],
-            &native_meaning_fixture("group-a"),
-            &native_roles_fixture(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
+            &native_meaning_for_test("group-a"),
+            &native_roles_for_test(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
         )
         .expect("the later complete publication is valid before materialization");
     assert_eq!(cold.origin.commit.commit_id, current.commit.commit_id);

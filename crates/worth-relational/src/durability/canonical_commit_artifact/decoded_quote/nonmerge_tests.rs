@@ -343,7 +343,7 @@ fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
 fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
     let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let (_, basis) = crate::branch::basis_admission_tests::observed_empty_branch(1);
+    let (_, basis) = crate::branch::basis_fixture::observed_empty_branch_for_test(1);
     let source = EntityId::new(PartitionId::main(), 1, 1);
     let receipt = crate::history::data::RelationalCommitReceipt {
         commit_id: crate::history::data::CommitId(1),
@@ -355,7 +355,7 @@ fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
         .in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
-                    crate::history::data::source_scope_closure::assert_exact_owner_refusals(
+                    crate::history::data::source_scope_closure::assert_exact_owner_refusals_for_test(
                         receipt,
                         basis.descriptor(),
                         source,

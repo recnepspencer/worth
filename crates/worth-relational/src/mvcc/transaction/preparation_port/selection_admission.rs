@@ -5,6 +5,8 @@ use crate::mvcc::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial as Denial,
 };
 use crate::runtime::RelationalPreparationRuntime;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 impl RelationalPreparationPort {
     /// Transfer the original current transaction and an actual retained source
@@ -90,8 +92,8 @@ impl RelationalPreparationRuntime {
         if historical.commit_identity().is_none() {
             return Err(Denial::HistoricalSourceUnavailable);
         }
-        let target_schema = current.inner.root.retained_schema_authority();
-        let source_schema = historical.inner.root.retained_schema_authority();
+        let target_schema = (*current.owner_inner()).root.retained_schema_authority();
+        let source_schema = (*historical.owner_inner()).root.retained_schema_authority();
         let same_authority = std::sync::Arc::ptr_eq(&source_schema, &target_schema);
         if !same_authority
             && (source_schema.authority_digest() != target_schema.authority_digest()

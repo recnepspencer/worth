@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
@@ -7,6 +6,7 @@ use crate::transactions::data::primitives::CreatedEntityRef;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{AspectBinding, ContractValidatedAspectValueView};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
 fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
@@ -80,8 +80,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         let entity = changed_entities(&committed)[0];
         release_test_commit_snapshot(&runtime, &committed);
         let basis = test_owner_main_basis(&runtime).unwrap();
-        let partition = basis
-            .inner
+        let partition = (*basis.owner_inner())
             .root
             .partition_state(entity.partition_id)
             .expect("fixture root has admitted Full custody")

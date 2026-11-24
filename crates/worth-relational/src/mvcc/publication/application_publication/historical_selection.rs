@@ -1,4 +1,6 @@
 //! Exact selected-basis producer custody; a caller supplies no ownership roster.
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use super::*;
@@ -94,9 +96,19 @@ fn require_bases(
     if current.identity().runtime_instance_id() != runtime_instance_id
         || selected.identity().runtime_instance_id() != runtime_instance_id
         || installed.runtime_instance_id != runtime_instance_id
-        || installed.schema_digest != current.inner.root.schema_authority().authority_digest()
-        || current.inner.root.schema_authority().authority_digest()
-            != selected.inner.root.schema_authority().authority_digest()
+        || installed.schema_digest
+            != (*current.owner_inner())
+                .root
+                .schema_authority()
+                .authority_digest()
+        || (*current.owner_inner())
+            .root
+            .schema_authority()
+            .authority_digest()
+            != (*selected.owner_inner())
+                .root
+                .schema_authority()
+                .authority_digest()
         || !current.is_current()
     {
         return Err(TransactionCommitError::publication(
@@ -167,8 +179,7 @@ fn admit_publication(
     origin: Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ordinal: usize,
 ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
-    let source_kind = basis
-        .inner
+    let source_kind = (*basis.owner_inner())
         .root
         .get_current_partition(origin.meaning.source_scope.partition_id)
         .and_then(|region| region.entity(origin.meaning.source_scope))
@@ -219,10 +230,9 @@ fn existing_entities(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let view = crate::validation::engine::state_view::InvariantStateView::new(
-        basis.inner.root.as_ref(),
+        (*basis.owner_inner()).root.as_ref(),
         crate::identity::data::VersionId(
-            basis
-                .inner
+            (*basis.owner_inner())
                 .root
                 .axes()
                 .map_or(0, |axes| axes.storage_version),
@@ -231,8 +241,7 @@ fn existing_entities(
     let mut records = Vec::new();
     for id in entities {
         crate::execution::request_stage::checkpoint(context, 1).map_err(custody::execution_stop)?;
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_head_partition(execution, id.partition_id)
             .map_err(|stop| {

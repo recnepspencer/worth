@@ -1,4 +1,7 @@
 //! Exact applied-record comparison admits reuse, never committed Source READ.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshotParts;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::assemble_positioned_relational_snapshot;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use super::{ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram};
 use crate::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
 use crate::history::data::coordinates::CommitId;
@@ -48,8 +51,10 @@ pub(super) fn prepare<'a>(
         .ok_or(Denial::ForeignSource)?;
     let basis = owner.physical_basis();
     if !std::sync::Arc::ptr_eq(
-        &basis.inner.root.retained_schema_authority(),
-        &source.basis().inner.root.retained_schema_authority(),
+        &(*basis.owner_inner()).root.retained_schema_authority(),
+        &(*source.basis().owner_inner())
+            .root
+            .retained_schema_authority(),
     ) {
         return Ok(None);
     }
@@ -86,14 +91,14 @@ pub(super) fn prepare<'a>(
     let Some(position) = position? else {
         return Ok(None);
     };
-    let selected = PositionedRelationalSnapshot {
+    let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
         runtime_instance_id: identity.runtime_instance_id(),
         branch_id: identity.branch_id().clone(),
-        root_id: basis.inner.root.id(),
+        root_id: (*basis.owner_inner()).root.id(),
         version_id: basis.observation().version_id(),
         commit_id: basis.observation().commit_id(),
         position: Some(position),
-    };
+    });
     let issuer = ManagedIndexSourceCorrespondenceIssuer::fresh();
     Ok(Some(NativeManagedSourceCorrespondence {
         owner,
@@ -114,10 +119,7 @@ impl NativeManagedSourceCorrespondence<'_> {
         if !self.authority.admits(&self.proof) {
             return Err(Denial::ForeignSource);
         }
-        let Some(image) = self
-            .owner
-            .physical_basis()
-            .inner
+        let Some(image) = (*self.owner.physical_basis().owner_inner())
             .root
             .managed_source_image
             .get()

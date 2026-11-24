@@ -1,4 +1,6 @@
 //! Assemble canonical authority for the checked complete semantic plan.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::CommitPhaseBacking;
 use super::{
@@ -120,7 +122,8 @@ pub(super) fn prepare_authoritative_publication(
             crate::indexes::data::DerivedIndexArtifacts::default(),
             input.schema_continuity,
         )?;
-        canonical_commit_envelope.authored_index_writes = input.authored_index_writes;
+        (*canonical_commit_envelope.owner_authored_index_writes_mut()) =
+            input.authored_index_writes;
         canonical_commit_envelope.install_record_allocations(input.record_allocations.to_vec());
         PreparedPublicationAuthority {
             artifacts,

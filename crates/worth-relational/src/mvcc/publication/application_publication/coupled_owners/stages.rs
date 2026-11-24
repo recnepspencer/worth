@@ -1,5 +1,6 @@
 //! One edit envelope admits every authored stage's source before any handler runs.
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 impl AuthoredPublicationReads<'_> {
     /// Admit synchronous writers for an edit envelope. `prefix` is the authored

@@ -10,20 +10,24 @@ pub(crate) use worth_relational_contracts::internal_port::validation::data::cust
 pub use crate::validation::custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,
     CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
-    CustomInvariantNonApplicability, CustomInvariantProvenance, CustomInvariantReadBudget,
-    CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
-    CustomInvariantScopePlanner, CustomInvariantTraversalSummary, StructuralAspectStateView,
-    StructuralReadError, StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
-    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
+    CustomInvariantNonApplicability, CustomInvariantReadBudget, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
+    StructuralWalkStep,
+};
+#[cfg(test)]
+pub(crate) use crate::validation::custom_rule::{
+    CustomInvariantProvenance, CustomInvariantTraversalSummary,
 };
 pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
 };
+#[cfg(test)]
+pub(crate) use touched_scope::TouchedStructuralSet;
 pub use touched_scope::{
-    CustomInvariantTouchedSummary, InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds,
-    PlannedRelationEndpointUpdate, StructuralCountView,
+    InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
 };
-pub(crate) use touched_scope::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
 
-pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantExecution;
-pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantScope;
+#[cfg(test)]
+pub(crate) use touched_scope::StructuralCountView;

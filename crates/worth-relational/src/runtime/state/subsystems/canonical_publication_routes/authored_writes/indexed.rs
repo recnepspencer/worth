@@ -3,6 +3,8 @@ use super::*;
 use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
 use crate::history::access::relevant_writes::RelationalAuthoredWriteSelector as Selector;
 use crate::history::data::CanonicalCommitEnvelope;
+use worth_relational_branch::internal_port::history::access::relevant_writes::selection::RelationalAuthoredEntityIndexDefinitionOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(super) fn append(
     generation: &mut AuthoredWriteGeneration,
@@ -10,7 +12,7 @@ pub(super) fn append(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Denial> {
-    let Some(entries) = envelope.authored_index_writes.verified_entries() else {
+    let Some(entries) = (*envelope.owner_authored_index_writes()).verified_entries() else {
         crate::history::access::relevant_writes::ordered_visit(
             context,
             generation.incomplete_indexes.len(),
@@ -20,8 +22,7 @@ pub(super) fn append(
             .insert_cloned_native_for_request(&generation.ordinal, &(), execution)?;
         return Ok(());
     };
-    let coverage = envelope
-        .authored_index_writes
+    let coverage = (*envelope.owner_authored_index_writes())
         .coverage()
         .expect("verified entries retain actual catalog coverage");
     if generation

@@ -1,5 +1,4 @@
 //! Controlled member emission over actual immutable source DATA.
-use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 mod dictionary;
 mod indexes;
 mod lineage;

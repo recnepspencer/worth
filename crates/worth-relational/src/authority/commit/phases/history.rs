@@ -11,6 +11,7 @@ use crate::runtime::state::subsystems::history::history_preparation_binding::Rel
 use crate::transactions::data::commit_log::CommitHistorySummary;
 use crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) struct CommitHistoryPreparation<'a> {

@@ -5,6 +5,7 @@ use crate::indexes::data::{
     BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupRequest,
 };
 use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupDenialOwnerPort as _;
 fn denial(
     kind: BoundedRelationJoinLookupDenialKind,
     request: &BoundedRelationJoinLookupRequest,

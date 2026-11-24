@@ -1,2 +1,3 @@
 pub(crate) mod complete;
-pub use worth_relational_storage::internal_port::storage::residency::checkpoint_capture::*;
+#[cfg(test)]
+pub(crate) use worth_relational_storage::internal_port::storage::residency::checkpoint_capture::RelationalCapturedRegionCheckpoint;

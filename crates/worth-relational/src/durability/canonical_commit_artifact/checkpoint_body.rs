@@ -1,5 +1,7 @@
 //! The fixed checkpoint projection uses the same quote, wire and leaf handoff.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::fixture_image::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
+use worth_relational_branch::internal_port::indexes::data::allocation_accounting::DerivedIndexArtifactsFixturePort as _;
 use super::{
     borrowed_payload::BorrowedPayload, decoded_quote,
     readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal,
@@ -77,20 +79,22 @@ pub(crate) fn copy_original_for_test(
     source: &CanonicalCommitEnvelope,
     request: &ExecutionRequest<'_, '_>,
 ) -> CanonicalCommitEnvelope {
-    let bytes = rmp_serde::to_vec_named(&crate::history::data::EmbeddedCheckpointEnvelopeRef::new(
-        source,
-    ))
+    let bytes = rmp_serde::to_vec_named(
+        &worth_relational_branch::internal_port::history::data::EmbeddedCheckpointEnvelopeRef::new(
+            source,
+        ),
+    )
     .expect("the actual original checkpoint projection encodes");
     let input =
         ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(bytes.into_boxed_slice()));
     let extra = source
         .derived_index_artifacts
-        .clone_header_storage_bytes()
+        .clone_header_storage_bytes_for_test()
         .ok_or_else(super::borrowed_payload::malformed)
         .expect("the exact derived-index header must be quotable");
     let mut copied = decode(input.bytes(), Some(input.clone()), request, extra)
         .expect("the funded copy preserves the complete original meaning");
-    source.restore_fixture_custody(&mut copied);
+    source.restore_fixture_custody_for_test(&mut copied);
     copied
 }
 

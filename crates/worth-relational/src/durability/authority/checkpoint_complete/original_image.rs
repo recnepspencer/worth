@@ -1,4 +1,5 @@
 //! Borrow the frozen original prefix; serialization never reads a live owner.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::source::OriginalCanonicalCommit;
 use crate::durability::source_initial_inputs::normalized::{
     CanonicalOriginalRecord, NormalizedOriginalInputsRef,
@@ -7,6 +8,7 @@ use crate::durability::source_initial_inputs::producer_roster::OriginalBranchSch
 use serde::ser::SerializeSeq;
 use serde::{Serialize, Serializer};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 
 pub(super) fn emit(
     source: &super::source::FrozenOriginalInputs,

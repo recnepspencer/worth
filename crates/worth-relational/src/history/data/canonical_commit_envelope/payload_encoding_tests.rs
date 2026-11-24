@@ -1,11 +1,12 @@
 //! Schema-continuity codec evidence from a genuine Native transition source.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_encoding::CanonicalCommitEnvelopeFixturePort as _;
 use crate::history::data::{BranchId, RelationalCommitReceipt};
 use crate::identity::data::KindId;
 use crate::schema::data::*;
 use crate::tests::support::AspectSchemaFixture;
-use schema_input::canonical_schema_envelope_input;
-#[path = "payload_encoding_tests/schema_input.rs"]
-mod schema_input;
+use schema_input::canonical_schema_envelope_input_for_test as canonical_schema_envelope_input;
+pub(crate) use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_encoding::tests::schema_input;
 use serde::de::IgnoredAny;
 use serde::Deserialize;
 #[path = "payload_encoding_tests/transition_source.rs"]
@@ -108,7 +109,7 @@ fn transition_payload_round_trips_schema_material_and_transition_identity() {
         .branch_context = Some(BranchId("main".into()));
     let proposed = lowered.validated.proposed.clone();
     let input = canonical_schema_envelope_input(&registry, Some(lowered));
-    assert!(input.authored_index_writes.is_unavailable());
+    assert!((*input.owner_authored_index_writes()).is_unavailable());
     let envelope = transition_source::commit(&registry, proposed, policy);
     crate::schema::validate_schema_continuity_bundle(&envelope).unwrap();
     assert_eq!(&*envelope.schema_authority, &*input.schema_authority);
@@ -116,7 +117,7 @@ fn transition_payload_round_trips_schema_material_and_transition_identity() {
         envelope.schema_transition.as_ref(),
         input.schema_transition.as_ref()
     );
-    let bytes = envelope.encode_authoritative_payload().unwrap();
+    let bytes = envelope.encode_authoritative_payload_for_test().unwrap();
     let Payload(domain, identity, _, decoded, _, semantic) =
         rmp_serde::from_slice::<Payload>(&bytes).unwrap();
     assert_eq!(domain, "worth.relational.original-root.v4");

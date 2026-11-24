@@ -10,7 +10,7 @@ use crate::identity::data::LineageId;
 use crate::lineage::data::{
     FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageDecisionKind, LineageDecisionLog, LineageDecisionRecord, LineageEventKind,
-    LineageFinalizationArtifact, LineageNode, LineagePostureClaim, LineageRecordTarget,
+    LineageFinalizationArtifact, LineagePostureClaim, LineageRecordTarget,
     PersistentNameBirthRecord, PreparedLineageFinalization,
 };
 use crate::runtime::state::subsystems::lineage_identity::LineageIdentityAllocator;

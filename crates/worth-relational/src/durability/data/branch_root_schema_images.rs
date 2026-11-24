@@ -3,9 +3,7 @@ use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use serde::{Deserialize, Serialize};
 
-pub(crate) use crate::history::data::canonical_commit_envelope::schema_carrier::{
-    DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory,
-};
+pub(crate) use crate::history::data::canonical_commit_envelope::schema_carrier::DurableEntitySchemaRegistration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -24,7 +22,7 @@ impl DurableBranchRootSchemaImage {
 
     #[cfg(test)]
     pub(crate) fn corrupt_schema_root_for_test(&mut self) {
-        self.0.corrupt_schema_root();
+        self.0.corrupt_schema_root_for_test();
     }
 }
 
@@ -41,3 +39,6 @@ impl std::ops::Deref for DurableBranchRootSchemaImage {
         &self.0
     }
 }
+
+#[cfg(test)]
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImageFixturePort as _;

@@ -1,4 +1,5 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_relation_kind_scan::BoundedRelationKindTruthReadFieldsPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
@@ -39,7 +40,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     memory,
                 )
             },
-            |result| super::super::super::read_footprint::relations(&result.records),
+            |result| super::super::super::read_footprint::relations(&(*result.owner_records())),
         )
     }
 }

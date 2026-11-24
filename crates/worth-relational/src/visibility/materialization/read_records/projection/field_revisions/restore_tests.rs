@@ -3,7 +3,7 @@ use crate::tests::support::*;
 
 #[test]
 fn checkpoint_restore_rejects_incomplete_field_revision_column() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

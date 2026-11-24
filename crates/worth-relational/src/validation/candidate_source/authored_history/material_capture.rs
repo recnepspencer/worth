@@ -11,6 +11,7 @@ use crate::validation::candidate_source::{
     NativeManagedSourceInterpretation,
 };
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 pub(crate) fn capture(
     execution: ExecutionRequest<'_, '_>,
@@ -21,9 +22,7 @@ pub(crate) fn capture(
         .prepared
         .get()
         .ok_or(Denial::IncompletePreparation)?;
-    let image = interpretation
-        .physical_basis()
-        .inner
+    let image = (*interpretation.physical_basis().owner_inner())
         .root
         .managed_source_image
         .get();

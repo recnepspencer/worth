@@ -1,9 +1,9 @@
 //! Complete publication position survives total membership replacement.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 #[path = "retirement/authored.rs"]
 mod authored;
 
@@ -127,8 +127,7 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
     release_test_commit_snapshot(&runtime, &replacement);
     let before = test_owner_main_basis(&runtime).unwrap();
     for id in ids {
-        assert!(!before
-            .inner
+        assert!(!(*before.owner_inner())
             .root
             .partition_state(id.partition_id)
             .unwrap()
@@ -176,8 +175,8 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             &basis,
             "native-preserver",
             &[5; 32],
-            &native_meaning_fixture("retirement-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("retirement-creator"),
+            &native_roles_for_test(
                 &replacement_ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -210,7 +209,7 @@ fn cold_replacement(
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let meaning = native_meaning_fixture("retirement-creator");
+    let meaning = native_meaning_for_test("retirement-creator");
     let denied = runtime
         .readmit_required_output_publication(
             execution,

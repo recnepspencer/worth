@@ -2,6 +2,8 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::HistoryDriftClass;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 pub(super) fn validate_recovered_history_parity(
     recovered_envelope: Option<&CanonicalCommitEnvelope>,
@@ -55,14 +57,18 @@ fn canonical_effect_drift(
     compare!(commit);
     compare!(branch_context);
     if !branch_cell_checkpoint_truth_matches(
-        durable.branch_cell_checkpoint.as_ref(),
-        replayed.branch_cell_checkpoint.as_ref(),
+        (*durable.owner_branch_cell_checkpoint()).as_ref(),
+        (*replayed.owner_branch_cell_checkpoint()).as_ref(),
     ) {
         drifted.push("branch_cell_checkpoint");
     }
     compare!(authority_kind);
-    compare!(index_definition_delta);
-    compare!(authored_index_writes);
+    if durable.owner_index_definition_delta() != replayed.owner_index_definition_delta() {
+        drifted.push("index_definition_delta");
+    }
+    if durable.owner_authored_index_writes() != replayed.owner_authored_index_writes() {
+        drifted.push("authored_index_writes");
+    }
     compare!(merge_execution_authority);
     compare!(merge_parent_branches);
     compare!(merge_base_commits);
@@ -74,7 +80,9 @@ fn canonical_effect_drift(
     if durable.record_allocations() != replayed.record_allocations() {
         drifted.push("record_allocations");
     }
-    if durable.revision_symbol_references != replayed.revision_symbol_references {
+    if (*durable.owner_revision_symbol_references())
+        != (*replayed.owner_revision_symbol_references())
+    {
         drifted.push("revision_symbol_references");
     }
     compare!(patch);

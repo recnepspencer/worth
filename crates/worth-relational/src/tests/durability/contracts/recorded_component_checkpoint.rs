@@ -6,6 +6,9 @@ use crate::facade::mvcc::RelationalCallerAssociation as Association;
 use crate::tests::support::*;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
 
 fn current(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) -> Recorded {
     let port = runtime.owner_component_services().basis_port();
@@ -176,8 +179,7 @@ fn original_custody(empty: bool, retire: bool) {
             &basis.descriptor().in_canonical_frame().unwrap(),
             recorded.descriptor()
         );
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();
@@ -211,7 +213,7 @@ fn original_custody(empty: bool, retire: bool) {
             .external_retention_terminal_accounting();
         let before = terminal.snapshot();
         let mut task = proof.consume(|original| original.into_retirement());
-        crate::history::retention::assert_recovered_cut_and_lane_busy(&basis, || {
+        crate::history::retention::assert_recovered_cut_and_lane_busy_for_test(&basis, || {
             task.advance(execution)
         });
         drop(basis);

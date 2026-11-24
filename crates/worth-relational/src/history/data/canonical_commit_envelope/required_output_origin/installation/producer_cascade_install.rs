@@ -11,6 +11,7 @@ use crate::publication::patch::data::RecordStructuralChange as Change;
 use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 #[path = "producer_cascade/roster.rs"]
 mod roster;
@@ -179,8 +180,7 @@ pub(super) fn install(
         validated_history,
         context,
     )?;
-    let root_origin = envelope
-        .required_output_origin
+    let root_origin = (*envelope.owner_required_output_origin_mut())
         .take()
         .expect("installed generator route");
     let mut publications = Vec::with_capacity(closure.selected.len());
@@ -256,8 +256,7 @@ pub(super) fn install(
             context,
         )
         .map_err(|failure| typed_corruption(failure, origin.meaning.source_scope))?;
-        let retired = envelope
-            .required_output_origin
+        let retired = (*envelope.owner_required_output_origin_mut())
             .take()
             .expect("installed retired route");
         positions.insert(
@@ -268,12 +267,13 @@ pub(super) fn install(
         )?;
         publications.push(retired);
     }
-    envelope.required_output_origin = Some(root_origin);
-    envelope.producer_cascade_retirement = Some(Arc::new(CanonicalProducerRetirement {
-        _decoded_memory: None,
-        anchors: closure.anchors,
-        publications,
-    }));
+    (*envelope.owner_required_output_origin_mut()) = Some(root_origin);
+    (*envelope.owner_producer_cascade_retirement_mut()) =
+        Some(Arc::new(CanonicalProducerRetirement {
+            _decoded_memory: None,
+            anchors: closure.anchors,
+            publications,
+        }));
     Ok(positions)
 }
 

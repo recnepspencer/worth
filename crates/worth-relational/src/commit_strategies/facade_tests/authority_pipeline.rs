@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::native_strategy_fixtures::*;
 
 #[test]
@@ -138,7 +137,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
 
     assert_ne!(
         validated_version,
-        runtime.history().preview_next_version_id(),
+        runtime.history().preview_next_version_id_for_test(),
         "the sibling commit advances the allocator beyond the reserved proposal version"
     );
 

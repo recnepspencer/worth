@@ -7,6 +7,7 @@ use crate::derived_relation::{
 };
 use crate::identity::data::KindId;
 use crate::validation::data::structural_read::StructuralRelationRecord;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 impl ManagedIndexSourceScope<'_> {
     pub fn ordered_predecessor(&self) -> Result<Option<EntityId>, Denial> {
@@ -58,8 +59,7 @@ impl ManagedIndexSourceScope<'_> {
             });
         }
         let basis = self.interpretation.physical_basis();
-        let image = basis
-            .inner
+        let image = (*basis.owner_inner())
             .root
             .managed_source_image
             .get()

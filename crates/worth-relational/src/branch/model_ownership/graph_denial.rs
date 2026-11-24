@@ -4,6 +4,7 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::RelationId;
 use crate::schema::data::EndpointDeletionIntegrityDeclaration;
 use crate::validation::data::structural_read::StructuralRelationRecord;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[derive(Debug)]
 pub enum RelationalOwnedModelSelectionDenial {
@@ -83,8 +84,7 @@ impl RelationalOwnedModelForeignRelation {
         entity: EntityId,
         edge: StructuralRelationRecord,
     ) -> Result<Self, RelationalOwnedModelSelectionDenial> {
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .schema_authority()
             .registry()
@@ -104,9 +104,7 @@ impl RelationalOwnedModelForeignRelation {
         })
     }
     pub fn deletion_contracts(&self) -> &[EndpointDeletionIntegrityDeclaration] {
-        &self
-            .basis
-            .inner
+        &(*self.basis.owner_inner())
             .root
             .schema_authority()
             .registry()

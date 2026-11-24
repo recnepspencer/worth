@@ -7,6 +7,7 @@ use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::state::subsystems::indexing::checkpoint_image::CapturedCheckpointGenerations;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::indexes::data::DerivedIndexArtifactsOwnerPort as _;
 
 pub(crate) fn decode(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,

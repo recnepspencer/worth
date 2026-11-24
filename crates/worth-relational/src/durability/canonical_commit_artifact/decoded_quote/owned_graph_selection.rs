@@ -1,4 +1,5 @@
 //! Graph-selection DATA is funded before its concrete entity and edge vectors decode.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
 use crate::history::data::CanonicalOwnedGraphSelection;
 use crate::identity::data::EntityId;

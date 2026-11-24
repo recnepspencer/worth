@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn head_symbol_identity_survives_full_promotion_without_covering_history() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let fixture = region_with_history();
@@ -40,7 +40,7 @@ fn head_symbol_identity_survives_full_promotion_without_covering_history() {
 
 #[test]
 fn metadata_only_freezes_forward_coverage_without_an_intermediate_cell_chain() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let fixture = region_with_history();

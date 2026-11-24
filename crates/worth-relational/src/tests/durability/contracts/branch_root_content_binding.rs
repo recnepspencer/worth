@@ -1,5 +1,6 @@
 use super::*;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
@@ -161,7 +162,7 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == tail_commit.commit.commit_id)
-        .and_then(|envelope| envelope.branch_cell_checkpoint.as_mut())
+        .and_then(|envelope| (*envelope.owner_branch_cell_checkpoint_mut()).as_mut())
         .expect("production tail carries its exact pre-commit branch cell");
     let target = basis_target(checkpoint);
     let mut substituted_truth_root = *target.roots().truth_root();

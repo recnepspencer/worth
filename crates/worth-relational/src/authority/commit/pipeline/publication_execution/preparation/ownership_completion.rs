@@ -1,4 +1,6 @@
 //! Complete current ownership inside the original commit publication preparation.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::publication::authority::diagnostic_emission::PreparationDiagnostics;
@@ -46,7 +48,7 @@ pub(super) fn complete(
         let handoff = execution.run_native_with_checkpoint(|context| {
             answer = Some((|| {
                 let mut position =
-                    crate::history::data::current_route_presence::completion::complete(
+                    crate::history::data::required_output_positions::presence::completion::complete(
                         execution,
                         inputs.storage,
                         basis,
@@ -159,19 +161,21 @@ pub(super) fn complete(
             crate::transactions::data::outcomes::conflict_class::ConflictClass::RecordAllocationDenied { denial },
         ))
     })?;
-    canonical.revision_symbol_references = identities
+    (*canonical.owner_revision_symbol_references_mut()) = identities
         .symbols
         .required_references()
         .iter()
         .copied()
         .collect();
-    canonical.symbol_texts = inputs
+    (*canonical.owner_symbol_texts_mut()) = inputs
         .symbols
         .with_read(|symbols| {
             symbols.commit_texts(
                 &canonical.merged_plan,
                 &canonical.patch,
-                canonical.revision_symbol_references.iter().copied(),
+                (*canonical.owner_revision_symbol_references())
+                    .iter()
+                    .copied(),
             )
         })
         .map_err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial)?;

@@ -281,7 +281,7 @@ fn checkpoint_dictionary(
     Arc<PageSource>,
     crate::symbols::data::SymbolTableSnapshot,
 ) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let native = runtime
             .durability_authority()
             .native_checkpoint(

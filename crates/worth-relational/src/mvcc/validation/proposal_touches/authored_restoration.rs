@@ -1,4 +1,5 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::RelationalAuthoredRestoration;
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;

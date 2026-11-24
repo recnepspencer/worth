@@ -10,9 +10,6 @@ use super::HistorySubsystem;
 
 #[path = "history_catalog_recovery/checkpoint_root.rs"]
 mod checkpoint_root;
-#[cfg(test)]
-#[path = "history_catalog_recovery/court_catalog.rs"]
-mod court_catalog;
 #[path = "history_catalog_recovery/inventory.rs"]
 pub(crate) mod inventory;
 #[path = "history_catalog_recovery/source_binding.rs"]

@@ -1,5 +1,4 @@
 //! Generation routing queries used by the test-only index execution entry.
-use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness_rows::RelationalMergeCorrespondenceWitnessRowOwnerPort as _;
 use super::{
     Arc, BranchId, DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
     IndexingSubsystem, SchemaVersionId, VersionId,

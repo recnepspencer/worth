@@ -151,7 +151,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
 
 #[test]
 fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -264,7 +264,7 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
 
 #[test]
 fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

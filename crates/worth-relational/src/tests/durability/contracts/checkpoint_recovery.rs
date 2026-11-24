@@ -12,18 +12,18 @@ fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
     let second = create_entity_outcome(execution, &runtime, "second");
     let first_entity = changed_entities(&first)[0];
     let second_entity = changed_entities(&second)[0];
-    let first_lineage = (*runtime
+    let first_lineage = *runtime
         .lineage_access()
         .for_record(execution, first_entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
-    let second_lineage = (*runtime
+        .owner_lineage_id();
+    let second_lineage = *runtime
         .lineage_access()
         .for_record(execution, second_entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
     let checkpoint = runtime
         .durability_authority()
         .checkpoint(execution)

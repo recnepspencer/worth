@@ -10,6 +10,7 @@ use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::runtime::RelationalRuntime;
 use std::sync::Weak;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentOwnerPort as _;
 
 #[derive(Clone, Debug)]
 pub struct AdmittedNativeInterimReceiver {

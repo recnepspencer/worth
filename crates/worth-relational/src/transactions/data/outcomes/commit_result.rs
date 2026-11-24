@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 pub(crate) mod assembly;
 mod seal;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
@@ -383,7 +384,7 @@ impl CommitResult {
     }
 
     pub fn final_snapshot_id(&self) -> SnapshotId {
-        self.outcome.snapshot.snapshot_id
+        *self.outcome.snapshot.owner_snapshot_id()
     }
 
     pub fn merge_parent_count(&self) -> usize {

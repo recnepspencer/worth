@@ -13,6 +13,7 @@ use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::{
     AspectKey, CanonicalFieldPath, PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 pub(super) fn append(
     execution: ExecutionRequest<'_, '_>,

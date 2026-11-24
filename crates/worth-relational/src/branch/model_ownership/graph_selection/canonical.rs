@@ -1,4 +1,5 @@
 //! Capture canonical meaning from the original Native graph selection.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::RelationalOwnedModelGraphSelection;
 use crate::history::data::canonical_commit_envelope::owned_graph_selection::{
     CanonicalOwnedGraphSelection, SelectedEntity,
@@ -12,6 +13,8 @@ use crate::transactions::data::outcomes::transaction_commit_error::{
     origin_denial, TransactionCommitError,
 };
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 impl RelationalOwnedModelGraphSelection {
@@ -21,9 +24,7 @@ impl RelationalOwnedModelGraphSelection {
         let entities = self.entities();
         let mut selected_entities = Vec::new();
         for &id in self.restored_entities() {
-            let kind = entities
-                .selected_basis()
-                .inner
+            let kind = (*entities.selected_basis().owner_inner())
                 .root
                 .get_current_partition(id.partition_id)
                 .and_then(|region| region.entity(id))

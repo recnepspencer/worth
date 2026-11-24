@@ -1,4 +1,5 @@
 //! Immutable index handles and the resident basis used to verify their rows.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use crate::history::retention::VisibilitySnapshotBasis;
 use crate::{
     identity::data::VersionId,

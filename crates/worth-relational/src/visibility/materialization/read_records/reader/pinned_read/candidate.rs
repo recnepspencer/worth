@@ -1,6 +1,7 @@
 //! Candidate-qualified native reads have no snapshot or Current observation door.
 use super::*;
 use crate::execution::request_stage::checkpoint;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::indexes::data::applied_candidate_qualification::assemble_applied_candidate_read_qualification;
 mod changes;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -114,7 +115,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             }
             previous.resident_basis().basis().retain_root()
         } else {
-            basis.inner.root.clone()
+            (*basis.owner_inner()).root.clone()
         };
         let answer = execution
             .run_native_with_checkpoint(|context| {
@@ -251,7 +252,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         };
         let fields = crate::indexes::authority::maintenance::AppliedFieldImage::capture(
             execution,
-            Arc::clone(&basis.inner.root),
+            Arc::clone(&(*basis.owner_inner()).root),
             Arc::clone(&root),
             identity.proposal.proposed_version_id(),
             changed_records,
@@ -267,7 +268,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             .map_err(request_stop)?;
         let applied_changes = changes::capture(
             execution,
-            basis.inner.root.id(),
+            (*basis.owner_inner()).root.id(),
             aggregate,
             previous_changes,
             fields,

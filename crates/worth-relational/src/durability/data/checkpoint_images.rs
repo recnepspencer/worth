@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let lane = fixture_lane;
             let fixture = crate::durability::native_region_fixture::populated_partition();
             let contracts = CheckpointAspectContractCatalog::from_contracts(

@@ -50,7 +50,7 @@ pub(crate) fn prepare_coupled_candidate(
                     &mutation.state,
                     &mutation.outcome.created_entities,
                     &mutation.outcome.created_relations,
-                    restoration,
+                    restoration.as_ref(),
                     crate::authority::commit::pipeline::request_lease(execution),
                     context,
                 )

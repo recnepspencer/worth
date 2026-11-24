@@ -6,6 +6,7 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitRe
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[derive(Debug, Clone, Copy)]

@@ -1,5 +1,7 @@
 //! Corrupt only a real Query-prepared participant at this Native receiver.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Closed corruption, never an alternate assembly door. Every argument came
     /// through the real installed writer; Native's ordinary admission still runs.
@@ -44,11 +46,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     batches,
                 );
             };
-            let registry = self
-                .binding
-                .owners
-                .before
-                .inner
+            let registry = (*self.binding.owners.before.owner_inner())
                 .root
                 .schema_authority()
                 .registry();

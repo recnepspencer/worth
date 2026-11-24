@@ -12,6 +12,7 @@ use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::{CanonicalDigestId, WorldOriginalFate};
 use worth_proof::VerifiedHomeWorldSelection;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 mod sources;
 mod transitions;
 
@@ -278,9 +279,7 @@ impl WorldSelectionReplay {
             .ok_or_else(|| corrupt("released Native effect has no source evidence"))?
         {
             crate::branch::root::RelationalRootCommitEvidence::Original(original) => {
-                let checkpoint = original
-                    .envelope()
-                    .branch_cell_checkpoint
+                let checkpoint = (*original.envelope().owner_branch_cell_checkpoint())
                     .clone()
                     .ok_or_else(|| corrupt("released Native original has no predecessor cell"))?;
                 let predecessor =

@@ -2,6 +2,7 @@
 //! reuse an event id, and allocate every `Create` and `Restore` lineage once,
 //! in ascending order within each commit.
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};

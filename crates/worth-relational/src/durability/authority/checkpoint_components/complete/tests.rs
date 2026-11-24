@@ -8,6 +8,7 @@ use crate::history::data::BranchId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+use worth_relational_branch::internal_port::branch::root::empty::RelationalBranchRootFixturePort as _;
 
 // Borrow both requests explicitly. The metadata predecessor is admitted inside
 // the SAME genuine epochs; finite component-only controls use a separate budget
@@ -36,7 +37,7 @@ fn controller() -> u64 {
 fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
     let setup = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&setup);
-    let history = crate::branch::basis_admission_tests::installed_history(1);
+    let history = crate::branch::basis_fixture::installed_history_for_test(1);
     let schema = RelationalSchemaRegistry::new();
     let instrumentation = RuntimeInstrumentation::new();
     let inputs = BranchObservationInputs {
@@ -62,7 +63,7 @@ fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
         RelationalBranchReferenceCell::empty(history.runtime_instance_id, branch.clone()).unwrap(),
     );
     history
-        .install_branch_root(&branch, RelationalBranchRoot::empty())
+        .install_branch_root(&branch, RelationalBranchRoot::empty_for_test())
         .unwrap();
     let (descriptor_b, basis_b) = inputs
         .observe(&inputs.branch_identity(&branch).unwrap(), || None)
@@ -84,7 +85,7 @@ fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
     );
     let before = instrumentation.basis_counters();
     let (entries, _, mutations) = history.basis_registry_metrics();
-    crate::history::retention::assert_controlled_component_capture_winner(
+    assert_controlled_component_capture_winner(
         &history,
         &instrumentation,
         &basis_b,
@@ -119,7 +120,7 @@ fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
 fn complete_component_capture_refuses_original_roster_before_effects() {
     let setup = worth_harness::facade::execution_fixture::serial_request();
     let metadata = ExecutionRequest::serial(&setup);
-    let history = crate::branch::basis_admission_tests::installed_history(1);
+    let history = crate::branch::basis_fixture::installed_history_for_test(1);
     let before = history.retention_cost_counters();
     let bill = std::alloc::Layout::array::<Current>(1).unwrap().size() as u64;
     let budget = SerialMemoryBudget::new(Some(controller() + bill - 1));
@@ -146,7 +147,7 @@ fn complete_component_capture_refuses_original_roster_before_effects() {
 fn complete_component_holds_keep_actual_read_obligations_until_drop() {
     let setup = worth_harness::facade::execution_fixture::serial_request();
     let metadata = ExecutionRequest::serial(&setup);
-    let history = crate::branch::basis_admission_tests::installed_history(1);
+    let history = crate::branch::basis_fixture::installed_history_for_test(1);
     let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let (_, _, mutations) = history.basis_registry_metrics();
@@ -165,4 +166,72 @@ fn complete_component_holds_keep_actual_read_obligations_until_drop() {
     drop(holds);
     assert!(!history.has_detached_retention_obligations());
     assert_eq!(budget.charged_memory_bytes(), 0);
+}
+
+/// Exact private assertion for the controlled component SDK leaf. No owner or
+/// request is constructed here, and the callback returns descriptive DATA only.
+fn assert_controlled_component_capture_winner(
+    history: &crate::runtime::state::subsystems::history::HistorySubsystem,
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+    basis_b: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    lease_a: crate::history::retention::RelationalBranchRetentionLease,
+    capture: impl FnOnce() -> Vec<crate::branch::RelationalBranchBasisDescriptor> + Send,
+) {
+    let coordinate = |descriptor: &crate::branch::RelationalBranchBasisDescriptor| {
+        (
+            descriptor.branch_id().clone(),
+            descriptor.reference().generation(),
+        )
+    };
+    let first = coordinate(lease_a.descriptor());
+    let second = coordinate(basis_b.descriptor());
+    let (entered_tx, entered_rx) = std::sync::mpsc::sync_channel(0);
+    let (resume_tx, resume_rx) = std::sync::mpsc::sync_channel(0);
+    let capture_cut =
+        crate::history::retention::arm_component_capture_for_test(history, entered_tx, resume_rx);
+    std::thread::scope(|scope| {
+        let selecting = scope.spawn(capture);
+        entered_rx.recv().unwrap();
+        assert!(
+            capture_cut.external_cut_held_for_test(),
+            "actual controlled capture owns the complete external cut"
+        );
+        let (started_tx, started_rx) = std::sync::mpsc::sync_channel(0);
+        let changing = scope.spawn(move || {
+            started_tx.send(()).unwrap();
+            crate::branch::basis_retention::release_component_basis(
+                history,
+                history.runtime_instance_id,
+                lease_a,
+            )
+            .unwrap();
+            crate::branch::basis_retention::retain_component_basis(
+                history,
+                history.runtime_instance_id,
+                instrumentation,
+                basis_b,
+            )
+            .unwrap()
+        });
+        started_rx.recv().unwrap();
+        resume_tx.send(()).unwrap();
+        let selected = selecting.join().unwrap();
+        let selected = selected.iter().map(coordinate).collect::<Vec<_>>();
+        let lease_b = changing.join().unwrap();
+        drop(capture_cut);
+        assert!(
+            selected.contains(&first),
+            "original A external component is captured"
+        );
+        assert!(
+            !selected.contains(&second),
+            "A-old and B-old never coexist across the actual cut"
+        );
+        crate::branch::basis_retention::release_component_basis(
+            history,
+            history.runtime_instance_id,
+            lease_b,
+        )
+        .unwrap();
+    });
 }

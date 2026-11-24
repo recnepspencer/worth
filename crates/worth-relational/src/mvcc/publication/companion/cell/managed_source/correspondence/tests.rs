@@ -1,4 +1,8 @@
 //! Receiver protocol only. The public court proves actual correspondence issuance.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::{assemble_positioned_relational_snapshot, PositionedRelationalSnapshotParts};
+use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshotFixturePort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshotFieldsPort as _;
 use super::*;
 use crate::branch::projection_view::companion_slot::transfer::PreparedCompanionSlotSwap;
 use crate::identity::data::{PartitionId, VersionId};
@@ -20,7 +24,7 @@ fn source_image(
             program,
             scope,
             availability,
-            selected.commit_id.unwrap(),
+            (*selected.owner_commit_id()).unwrap(),
             true,
             Some(payload),
         )
@@ -40,18 +44,18 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     let scope = EntityId::new(PartitionId::main(), 0, 1);
     let other_scope = EntityId::new(PartitionId::main(), 1, 1);
     let original_payload: Arc<dyn Any + Send + Sync> = Arc::new(7u64);
-    let selected = PositionedRelationalSnapshot {
+    let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
         runtime_instance_id: 1,
         branch_id: BranchId("main".into()),
         root_id: 1,
         version_id: VersionId(1),
         commit_id: Some(CommitId(1)),
         position: Some(PatchStreamPosition(1)),
-    };
+    });
     let initial = CompanionRootImage::new(
-        selected.root_id,
-        selected.commit_id,
-        selected.position,
+        *selected.owner_root_id(),
+        *selected.owner_commit_id(),
+        *selected.owner_position(),
         source_image(
             &execution,
             &program,
@@ -63,8 +67,8 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     );
     let generation = 1;
     let cell = CompanionBranchCellCore::new(
-        selected.runtime_instance_id,
-        selected.branch_id.clone(),
+        *selected.owner_runtime_instance_id(),
+        (*selected.owner_branch_id()).clone(),
         generation,
         Arc::clone(&initial),
     );
@@ -103,11 +107,11 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     for axis in 0..5 {
         let mut foreign = selected.clone();
         match axis {
-            0 => foreign.runtime_instance_id += 1,
-            1 => foreign.branch_id.0.push_str("-foreign"),
-            2 => foreign.root_id += 1,
-            3 => foreign.commit_id = None,
-            4 => foreign.position = None,
+            0 => (*foreign.owner_runtime_instance_id_mut()) += 1,
+            1 => foreign.append_foreign_branch_suffix_for_test("-foreign"),
+            2 => (*foreign.owner_root_id_mut()) += 1,
+            3 => (*foreign.owner_commit_id_mut()) = None,
+            4 => (*foreign.owner_position_mut()) = None,
             _ => unreachable!(),
         }
         assert!(
@@ -118,18 +122,20 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
             "receiver rejects changed selected axis {axis}"
         );
     }
-    let resumed_selected = PositionedRelationalSnapshot {
-        root_id: 2,
-        version_id: VersionId(2),
-        commit_id: Some(CommitId(2)),
-        position: Some(PatchStreamPosition(2)),
-        ..selected.clone()
-    };
+    let resumed_selected =
+        assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
+            runtime_instance_id: selected.runtime_instance_id(),
+            branch_id: selected.branch_id().clone(),
+            root_id: 2,
+            version_id: VersionId(2),
+            commit_id: Some(CommitId(2)),
+            position: Some(PatchStreamPosition(2)),
+        });
     let mut swap = PreparedCompanionSlotSwap::prepare(
         cell.reserve_for_publication().unwrap(),
         initial,
-        resumed_selected.root_id,
-        resumed_selected.commit_id.unwrap(),
+        *resumed_selected.owner_root_id(),
+        (*resumed_selected.owner_commit_id()).unwrap(),
         source_image(
             &execution,
             &program,
@@ -144,7 +150,7 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     swap.check(generation).unwrap();
     swap.enter()
         .unwrap()
-        .install_at(resumed_selected.position.unwrap());
+        .install_at((*resumed_selected.owner_position()).unwrap());
     drop(swap);
     let resumed_image = ManagedSourceRootImage::capture_current(&cell).unwrap();
     assert!(

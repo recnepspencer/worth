@@ -10,6 +10,8 @@ use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
+use worth_relational_branch::internal_port::history::data::canonical_commit_allocation::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 #[test]
 fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent() {

@@ -1,4 +1,8 @@
 //! Capture only complete decisions from the native retirement court.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::readmission::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::publication_custody::RecoveredCodecPublicationCustody;
@@ -39,7 +43,7 @@ pub(super) fn capture(
                 crate::history::data::CodecRetirementClosureStop::Request(cause) => Denial::request(cause),
                 crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
             })?;
-            let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
+            let activation_kind = (*source.owner_inner()).root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                 .and_then(|partition| partition.entity_arena.get(&activation.entity_id))
                 .filter(|row| row.is_live()).and_then(|row| row.kind_id())
                 .ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
@@ -51,7 +55,7 @@ pub(super) fn capture(
                 for (index, kind_id) in origin.members.iter().map(|member| member.kind).chain(std::iter::once(activation_kind)).enumerate() {
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
-                    for registry in [source.inner.root.schema_authority().registry(), target] {
+                    for registry in [(*source.owner_inner()).root.schema_authority().registry(), target] {
                         let kind = (*registry.owner_entity_kinds()).get(&kind_id).ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
                         let quote = crate::durability::data::DurableEntitySchemaRegistration::capture_bytes(kind).ok_or_else(overflow)?;
                         context.checkpoint(quote as u64).map_err(|stop| Denial::request(stop.into()))?;
@@ -67,7 +71,7 @@ pub(super) fn capture(
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
                     kinds.push(CanonicalCodecRetirementKind {
-                        source: crate::durability::data::DurableEntitySchemaRegistration::capture(&(*source.inner.root.schema_authority().registry().owner_entity_kinds())[&kind_id]),
+                        source: crate::durability::data::DurableEntitySchemaRegistration::capture(&(*(*source.owner_inner()).root.schema_authority().registry().owner_entity_kinds())[&kind_id]),
                         target: crate::durability::data::DurableEntitySchemaRegistration::capture(&(*target.owner_entity_kinds())[&kind_id]),
                     });
                 }
@@ -105,9 +109,8 @@ impl RecoveredCodecPublicationCustody {
         if self.source.descriptor() != source.descriptor()
             || envelope.schema_transition.is_none()
             || !envelope.is_unmerged_output_publication_step()
-            || envelope.required_output_origin.is_some()
-            || envelope
-                .branch_cell_checkpoint
+            || (*envelope.owner_required_output_origin()).is_some()
+            || (*envelope.owner_branch_cell_checkpoint())
                 .as_ref()
                 .map(|cell| &cell.observation)
                 != Some(recorded_source.reference())
@@ -119,7 +122,7 @@ impl RecoveredCodecPublicationCustody {
         let result = execution.in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
-                    let mut positions = source.inner.root.output_publication_positions.clone();
+                    let mut positions = (*source.owner_inner()).root.output_publication_positions.clone();
                     for prepared in &self.retirements {
                         let origin = &prepared.origin;
                         for member in &origin.members {
@@ -173,12 +176,13 @@ impl RecoveredCodecPublicationCustody {
                             lease,
                             context,
                         )?;
-                        envelope.required_output_codec_retirements.push(Arc::new(
+                        let retiring = envelope.commit.clone();
+                        envelope.owner_required_output_codec_retirements_mut().push(Arc::new(
                             CanonicalRequiredOutputCodecRetirement {
                                 publication: origin.commit.commit_id,
                                 meaning: origin.meaning.clone(),
                                 source: recorded_source.clone(),
-                                retiring: envelope.commit.clone(),
+                                retiring,
                                 kinds: Arc::clone(&prepared.kinds),
                                 activation: Arc::clone(&self.activation),
                                 _funding: Some(Arc::clone(&self.retirement_funding)),

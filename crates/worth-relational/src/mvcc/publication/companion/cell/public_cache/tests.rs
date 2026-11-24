@@ -1,8 +1,11 @@
 //! Opaque cache destruction must run beyond the exact owner guards.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::{assemble_positioned_relational_snapshot, PositionedRelationalSnapshotParts};
 use super::super::*;
 use crate::identity::data::VersionId;
 use crate::validation::candidate_source::image::ManagedIndexBranchImage;
 use std::sync::Weak;
+use worth_relational_branch::internal_port::branch::projection_view::companion_slot::CompanionBranchCellCoreFixturePort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexBranchImageFieldsPort as _;
 
 type Payload = Arc<dyn Any + Send + Sync>;
 use crate::mvcc::publication::companion::registration::CompanionRegistry;
@@ -21,13 +24,9 @@ impl Drop for Probe {
             .core
             .upgrade()
             .unwrap()
-            .try_lock_unpoisoned_image()
+            .try_lock_unpoisoned_image_for_test()
             .is_some());
-        assert!(self
-            .image
-            .upgrade()
-            .unwrap()
-            .public_caches
+        assert!((*self.image.upgrade().unwrap().owner_public_caches())
             .try_lock()
             .is_ok());
         self.registry
@@ -46,14 +45,14 @@ fn public_cache_retirement_defers_opaque_drop_and_releases_original_backing() {
     let execution = ExecutionRequest::serial(&host);
     let registry = Arc::new(CompanionRegistry::new());
     let generation = registry.begin_required().unwrap();
-    let selected = PositionedRelationalSnapshot {
+    let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
         runtime_instance_id: 1,
         branch_id: BranchId("cache-retirement".into()),
         root_id: 7,
         version_id: VersionId(1),
         commit_id: Some(CommitId(3)),
         position: Some(PatchStreamPosition(3)),
-    };
+    });
     let image = Arc::new(ManagedIndexBranchImage::default());
     let cell = CompanionBranchCell::new(&selected, generation, Arc::clone(&image));
     cell.core.retain_source_affinity(&execution).unwrap();
@@ -70,14 +69,18 @@ fn public_cache_retirement_defers_opaque_drop_and_releases_original_backing() {
         .unwrap();
     drop(payload);
     let epoch = registry.enter().unwrap();
-    let current = cell.core.lock_unpoisoned_image();
+    let current = cell.core.lock_unpoisoned_image_for_test();
     let retired = cache.retire();
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop((current, epoch));
     drop(cache);
     drop(retired);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
-    assert!(image.public_caches.lock().unwrap().entries.is_empty());
+    assert!((*image.owner_public_caches())
+        .lock()
+        .unwrap()
+        .entries
+        .is_empty());
     drop((root, cell, image, registry));
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
 }

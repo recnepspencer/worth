@@ -1,4 +1,5 @@
 //! Frontier work uses one captured exact root and preserves caller interruption.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::frontier_adjacency::VisibilityProjectionViewOwnerPort as _;
 use super::super::{
     frontier_admission::BoundedFrontierReadStop,
     projection_record_reader::ProjectionRecordReader,

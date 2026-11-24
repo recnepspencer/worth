@@ -1,4 +1,6 @@
 //! Prepare only the full-generation records in the two owned closures.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
@@ -45,11 +47,7 @@ where
             RecordRef::Relation(id) => id.partition_id,
         };
         partitions.insert(partition);
-        retained
-            .graph
-            .entities()
-            .selected_basis()
-            .inner
+        (*retained.graph.entities().selected_basis().owner_inner())
             .root
             .demand_head_partition(execution, partition)
             .map_err(|cause| {

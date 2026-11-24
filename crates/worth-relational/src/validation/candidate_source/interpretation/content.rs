@@ -1,6 +1,7 @@
 //! Logical content posture follows the actual Source interpretation.
 use super::*;
-use crate::content::{source::NativeContentSourceView, RelationalContentDenial as Denial};
+use crate::content::{denial::RelationalContentDenial as Denial, source::NativeContentSourceView};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 #[derive(Debug)]
 pub(super) struct ContentViews {
     before: NativeContentSourceView,
@@ -17,7 +18,7 @@ impl NativeManagedSourceInterpretation {
         let memory = execution
             .reserve_retained_memory(size_of::<ContentViews>() as u64)
             .map_err(|cause| Denial::Execution(cause.into()))?;
-        let root = &self.physical_basis.inner.root;
+        let root = &(*self.physical_basis.owner_inner()).root;
         let before = NativeContentSourceView::new(
             root.retained_content().clone(),
             root.retained_schema_authority().as_ref().clone(),
@@ -55,7 +56,7 @@ impl NativeManagedSourceInterpretation {
     pub(crate) fn restoration_content(&self) -> Option<&crate::content::ContentDirectory> {
         if self.has_restoration_origin() {
             self.materialization_source()
-                .map(|source| source.basis().inner.root.retained_content())
+                .map(|source| (*source.basis().owner_inner()).root.retained_content())
         } else {
             None
         }

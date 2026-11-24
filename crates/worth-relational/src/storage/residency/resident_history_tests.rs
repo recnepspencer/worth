@@ -7,7 +7,7 @@ use crate::identity::data::VersionId;
 
 #[test]
 fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -145,7 +145,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         assert_eq!(
             full.full_view()
                 .partition()
-                .authoritative_content_digest(&symbols)
+                .partition_content_digest_for_test(&symbols)
                 .unwrap(),
             captured.leaf.content_digest
         );
@@ -165,7 +165,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             .apply_extra_update_for_test(fixture.entity.slot_index(), extra, VersionId(1_000))
             .expect("fixture slot is materialized");
         assert_eq!(
-            oracle.authoritative_content_digest(&symbols).unwrap(),
+            oracle.partition_content_digest_for_test(&symbols).unwrap(),
             captured.leaf.content_digest
         );
         assert!(full
@@ -180,7 +180,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
 
 #[test]
 fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -226,7 +226,7 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
 #[test]
 fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trusting_a_cached_digest()
 {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -291,7 +291,7 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         assert_eq!(
             digest,
             complete
-                .authoritative_content_digest(&fixture.cold.symbols.interner_snapshot())
+                .partition_content_digest_for_test(&fixture.cold.symbols.interner_snapshot())
                 .unwrap()
         );
         assert!(

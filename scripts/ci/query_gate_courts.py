@@ -15,7 +15,7 @@ def packages(*names):
     return [part for name in names for part in ("-p", name)]
 
 
-RELATIONAL = ("worth-relational", "worth-relational-contracts", "worth-relational-storage")
+RELATIONAL = ("worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-relational-branch")
 LOWER = (*RELATIONAL, "worth-execution", "worth-signal",
          "worth-runtime-bridge", "worth-runtime-world")
 FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",

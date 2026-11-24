@@ -1,5 +1,6 @@
 //! Admit the declared input footprint before a draft can issue identities.
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::PartitionId;
@@ -23,8 +24,7 @@ pub(crate) fn demand_mutation_inputs<'intent>(
     for intent in intents {
         intent.seed_touched_partitions(&mut partitions);
     }
-    basis
-        .inner
+    (*basis.owner_inner())
         .root
         .demand_regions_head(execution, symbols, partitions)
         .map_err(|failure| super::storage_read_denial(basis, failure))

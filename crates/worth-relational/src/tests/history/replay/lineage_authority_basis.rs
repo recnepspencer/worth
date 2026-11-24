@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
 use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 

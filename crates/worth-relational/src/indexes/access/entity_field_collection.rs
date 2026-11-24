@@ -3,6 +3,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialKind as Denial, DerivedIndexId, DerivedIndexRows,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 
 /// Each entry lane owns its existing admission and exact-root comparison.
 pub(super) trait EntityFieldCollectionRead<E> {

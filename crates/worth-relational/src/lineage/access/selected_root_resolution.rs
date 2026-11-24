@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 use crate::lineage::data::{HistoricalLineageResolution, HistoricalResolutionBoundednessBasis};
 

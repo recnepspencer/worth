@@ -1,5 +1,6 @@
 //! Readmit only the directory and the envelopes of its distinct heads.
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 use super::{manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts};
@@ -39,7 +40,7 @@ pub(super) fn readmit(
             1 << 30,
         )?;
         symbols
-            .import_canonical_snapshot(&commit.symbol_texts)
+            .import_canonical_snapshot(&(*commit.owner_symbol_texts()))
             .map_err(corrupt)?;
         envelopes.push(commit);
     }

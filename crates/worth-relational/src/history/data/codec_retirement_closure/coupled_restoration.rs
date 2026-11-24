@@ -1,4 +1,6 @@
 //! Restore surviving writers from the authenticated original coupled event.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use crate::history::data::{CanonicalCoupledAuthoredSources, CodecRetirementClosureStop as Stop};
 use crate::identity::data::EntityId;
 use crate::mvcc::RelationalAuthoredCoupledOwners;
@@ -11,6 +13,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 impl RelationalRuntime {
@@ -30,11 +33,7 @@ impl RelationalRuntime {
                 restoration,
             );
         }
-        let owners = if restoration
-            .retirement
-            .coupled_authored_publication
-            .is_some()
-        {
+        let owners = if (*restoration.retirement.owner_coupled_authored_publication()).is_some() {
             self.readmit_authored_restoration_coupled_owners(execution, installed, restoration)?
                 .ok_or_else(|| {
                     crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -88,7 +87,7 @@ impl RelationalRuntime {
         installed: &RelationalInstalledApplicationPublicationAuthority,
         restoration: RelationalAuthoredRestoration,
     ) -> Result<Option<RelationalAuthoredCoupledOwners>, TransactionCommitError> {
-        let Some(group) = &restoration.retirement.coupled_authored_publication else {
+        let Some(group) = &(*restoration.retirement.owner_coupled_authored_publication()) else {
             return Ok(None);
         };
         let Some(source) = restoration.retirement.authored_source_retirement() else {

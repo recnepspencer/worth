@@ -11,6 +11,7 @@ use crate::transactions::data::primitives::{
     EntityReference, EntitySpec, RecordRef, RelationSpec, WorkerIntentBatch,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 pub(crate) fn inspect_metadata_writes(
@@ -22,8 +23,7 @@ pub(crate) fn inspect_metadata_writes(
     ) -> Result<Result<(), TransactionCommitError>, TransactionCommitError>,
 ) -> Result<Vec<(KindId, u8, Result<(), TransactionCommitError>)>, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let storage = (*basis
-        .inner
+    let storage = (*(*basis.owner_inner())
         .root
         .schema_authority()
         .registry()
@@ -131,8 +131,8 @@ pub(crate) fn inspect_metadata_writes(
                     })),
                 },
                 RecordRef::Relation(id) => {
-                    let endpoints = basis
-                        .inner
+                    let endpoints = (*basis
+                        .owner_inner())
                         .root
                         .get_current_partition(id.partition_id)
                         .and_then(|p| p.relation_arena().get(id))

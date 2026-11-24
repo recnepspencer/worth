@@ -1,7 +1,6 @@
 use crate::identity::data::VersionId;
 use crate::storage::residency::{Full, RelationalResidencyLease};
 use crate::storage::substrate::{PinClass, RecordKind};
-use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::RecordArenaFixturePort as _;
 
 use super::StorageAuthority;
 
@@ -37,3 +36,6 @@ impl StorageAuthority<'_> {
         self.refresh_retention_state::<K>(partition, slot, retired_at, retention_fence);
     }
 }
+
+#[cfg(test)]
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::RecordArenaFixturePort as _;

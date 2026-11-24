@@ -102,12 +102,14 @@ impl RelationalPreparedOutputPublications {
             ),
         >,
     >{
-        self.envelope.required_output_origin.as_ref().map(|origin| {
-            origin
-                .members
-                .iter()
-                .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
-        })
+        (*self.envelope.owner_required_output_origin())
+            .as_ref()
+            .map(|origin| {
+                origin
+                    .members
+                    .iter()
+                    .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
+            })
     }
 
     /// Descriptive canonical roles of one prepared participant, without custody.

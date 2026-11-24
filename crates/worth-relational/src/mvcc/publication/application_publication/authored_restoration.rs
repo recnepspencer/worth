@@ -37,14 +37,6 @@ impl<'restoration> From<&'restoration RelationalAuthoredRestoration>
     }
 }
 
-impl<'restoration> From<&'restoration Arc<RelationalAuthoredRestoration>>
-    for crate::history::data::canonical_commit_envelope::required_output_origin::restoration_candidate::AuthoredRestorationFacts<'restoration>
-{
-    fn from(restoration: &'restoration Arc<RelationalAuthoredRestoration>) -> Self {
-        restoration.as_ref().into()
-    }
-}
-
 impl std::fmt::Debug for RelationalAuthoredRestoration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RelationalAuthoredRestoration")

@@ -7,6 +7,7 @@ use crate::history::data::RequiredOutputRoutePosition;
 use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 pub(crate) mod independent;
 mod selection;
 
@@ -98,8 +99,7 @@ pub(crate) fn readmit_canonical_publication(
     // storage regions before the historical association court accesses them.
     use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
     for member in &origin.members {
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_full_partition(execution, member.id.partition_id)
             .map_err(|stop| {
@@ -109,8 +109,7 @@ pub(crate) fn readmit_canonical_publication(
             })?;
     }
     for relation in &origin.relations {
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_full_partition(execution, relation.id.partition_id)
             .map_err(|stop| {
@@ -121,8 +120,7 @@ pub(crate) fn readmit_canonical_publication(
     }
     for relation in &origin.relations {
         for endpoint in [relation.source, relation.target] {
-            basis
-                .inner
+            (*basis.owner_inner())
                 .root
                 .demand_head_partition(execution, endpoint.partition_id)
                 .map_err(|stop| {

@@ -3,12 +3,12 @@ pub(crate) mod authority;
 pub mod bundle;
 pub(crate) mod canonical_history;
 pub mod cdc;
+pub(crate) use worth_relational_branch::internal_port::publication::data;
 pub(crate) use worth_relational_contracts::internal_port::publication::close_custody;
-pub mod data;
 pub(crate) mod diagnostic_store;
 pub(crate) mod live_publication_inputs;
 pub(crate) mod ownership;
-pub mod patch;
+pub(crate) use worth_relational_branch::internal_port::publication::patch;
 
 pub(crate) use access::invariant_failure_diagnostic;
 pub use access::{

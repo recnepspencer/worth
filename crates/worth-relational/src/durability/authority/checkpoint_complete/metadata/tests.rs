@@ -10,9 +10,7 @@ use crate::durability::{
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::{EntityId, LineageId, PartitionId, VersionId};
 use crate::indexes::data::*;
-use crate::lineage::data::{
-    LineageCheckpointDigestBasis, LineageEventKind, LineageEventRecord, LineageNode,
-};
+use crate::lineage::data::{LineageCheckpointDigestBasis, LineageEventKind};
 use crate::schema::data::SchemaVersionId;
 use crate::symbols::data::{StoredSymbolText, Symbol, SymbolTableSnapshot};
 use std::{alloc::Layout, sync::Arc};
@@ -49,7 +47,7 @@ fn controller() -> u64 {
 }
 #[test]
 fn borrowed_dictionary_and_selection_cache_match_owned_wire_twins_and_members() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let entries = vec![
             (Symbol(1), StoredSymbolText::from("first".to_owned())),
             (

@@ -1,0 +1,268 @@
+use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+
+use crate::history::data::CommitId;
+use crate::identity::data::VersionId;
+
+use super::{RelationalCommitArtifact, RelationalCommitArtifactDenial, RelationalCommitIdentity};
+
+/// Append-only immutable commit lookup. Branch references are intentionally
+/// not stored here.
+#[derive(Debug)]
+pub struct RelationalCommitCatalog {
+    entries: BTreeMap<CommitId, Arc<RelationalCommitArtifact>>,
+    materializations: Arc<AtomicU64>,
+    lookups: Arc<AtomicU64>,
+}
+
+impl Clone for RelationalCommitCatalog {
+    fn clone(&self) -> Self {
+        Self {
+            entries: self.entries.clone(),
+            // Catalog entries are immutable and may be shared across runtime
+            // forks, but instrumentation is runtime-local. A fork inherits
+            // the observed baseline without sharing future increments.
+            materializations: Arc::new(AtomicU64::new(0)),
+            lookups: Arc::new(AtomicU64::new(0)),
+        }
+    }
+}
+
+impl Default for RelationalCommitCatalog {
+    fn default() -> Self {
+        Self {
+            entries: BTreeMap::new(),
+            materializations: Arc::new(AtomicU64::new(0)),
+            lookups: Arc::new(AtomicU64::new(0)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalCommitCatalogAppendDenial {
+    DuplicateCommit,
+    ChangedDuringPreparation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalCommitCatalogEnvelopeAppendDenial {
+    Artifact(RelationalCommitArtifactDenial),
+    DuplicateCommit,
+}
+
+#[derive(Debug, Clone)]
+pub struct RelationalCommitCatalogEntry {
+    identity: RelationalCommitIdentity,
+}
+
+impl RelationalCommitCatalogEntry {
+    pub fn identity(&self) -> &RelationalCommitIdentity {
+        &self.identity
+    }
+}
+
+impl RelationalCommitCatalog {
+    pub fn install_prepared(&mut self, artifact: Arc<RelationalCommitArtifact>) {
+        let commit_id = artifact.commit_id();
+        assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
+            !self.entries.contains_key(&commit_id),
+            "prepared catalog artifact was validated as unique"
+        );
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.entries.insert(commit_id, artifact);
+    }
+
+    pub fn install_prepared_recovery(&mut self, artifact: Arc<RelationalCommitArtifact>) {
+        let commit_id = artifact.commit_id();
+        debug_assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
+            self.entries.get(&commit_id).is_none_or(|existing| existing
+                .resident_envelope()
+                .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope)))
+        );
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.entries.insert(commit_id, artifact);
+    }
+
+    pub fn source_replacement_matches(
+        &self,
+        id: CommitId,
+        expected: Option<&Arc<RelationalCommitArtifact>>,
+    ) -> bool {
+        match (self.entries.get(&id), expected) {
+            (None, None) => true,
+            (Some(actual), Some(expected)) => Arc::ptr_eq(actual, expected),
+            _ => false,
+        }
+    }
+
+    /// Source preparation and allocation already completed outside the ledger.
+    pub fn install_source_recovery(
+        &mut self,
+        expected: Option<&Arc<RelationalCommitArtifact>>,
+        artifact: Arc<RelationalCommitArtifact>,
+    ) -> Result<(), RelationalCommitCatalogAppendDenial> {
+        let id = artifact.commit_id();
+        if !self.source_replacement_matches(id, expected) {
+            return Err(RelationalCommitCatalogAppendDenial::ChangedDuringPreparation);
+        }
+        if expected.is_some_and(|expected| Arc::ptr_eq(expected, &artifact)) {
+            return Ok(());
+        }
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.entries.insert(id, artifact);
+        Ok(())
+    }
+
+    fn append(
+        &mut self,
+        artifact: Arc<RelationalCommitArtifact>,
+    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
+        let commit_id = artifact.commit_id();
+        if self.entries.contains_key(&commit_id) {
+            return Err(RelationalCommitCatalogAppendDenial::DuplicateCommit);
+        }
+        let identity = artifact.identity().clone();
+        self.entries.insert(commit_id, artifact);
+        Ok(RelationalCommitCatalogEntry { identity })
+    }
+
+    pub fn append_preencoded_recovery(
+        &mut self,
+        artifact: Arc<RelationalCommitArtifact>,
+    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.append(artifact)
+    }
+
+    /// Relink named recovered envelopes without using residency as an index filter.
+    pub fn retained_entries_except(&self, replaced: &std::collections::BTreeSet<CommitId>) -> Self {
+        Self {
+            entries: self
+                .entries
+                .iter()
+                .filter(|(id, _)| !replaced.contains(id))
+                .map(|(id, artifact)| (*id, Arc::clone(artifact)))
+                .collect(),
+            materializations: Arc::new(AtomicU64::new(0)),
+            lookups: Arc::new(AtomicU64::new(0)),
+        }
+    }
+
+    /// Validate an envelope without materializing or mutating the catalog.
+    /// Publication uses this side-effect-free court before durable append so
+    /// an invalid artifact cannot fail after storage or catalog effects.
+    pub fn validate_envelope(
+        &self,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
+        if let Some(existing) = self.entries.get(&envelope.commit.commit_id) {
+            return match existing.resident_envelope() {
+                Some(existing) if existing.as_ref() == envelope => Ok(()),
+                _ => Err(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit),
+            };
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
+    }
+
+    /// Validate an envelope readmitted outside any catalog: with no prior
+    /// entry to compare, only its own commit-artifact invariants apply.
+    pub fn validate_detached_envelope(
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitArtifactDenial> {
+        RelationalCommitArtifact::validate_envelope(envelope)
+    }
+
+    pub fn validate_new_envelope(
+        &self,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
+        if self.entries.contains_key(&envelope.commit.commit_id) {
+            return Err(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit);
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
+    }
+
+    pub fn validate_envelope_against(
+        existing: Option<&crate::history::data::CanonicalCommitEnvelope>,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
+        if let Some(existing) = existing {
+            return (existing == envelope)
+                .then_some(())
+                .ok_or(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit);
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
+    }
+
+    pub fn validate_new_envelope_against(
+        existing: Option<&crate::history::data::CanonicalCommitEnvelope>,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
+        if existing.is_some() {
+            return Err(RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit);
+        }
+        RelationalCommitArtifact::validate_envelope(envelope)
+            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)
+    }
+
+    pub fn materialization_count(&self) -> u64 {
+        self.materializations.load(Ordering::Relaxed)
+    }
+
+    pub fn lookup_count(&self) -> u64 {
+        self.lookups.load(Ordering::Relaxed)
+    }
+
+    pub fn get(&self, commit_id: CommitId) -> Option<&Arc<RelationalCommitArtifact>> {
+        self.lookups.fetch_add(1, Ordering::Relaxed);
+        self.entries.get(&commit_id)
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn latest_identity(&self) -> Option<&RelationalCommitIdentity> {
+        self.entries
+            .values()
+            .max_by_key(|artifact| artifact.commit_id())
+            .map(|artifact| artifact.identity())
+    }
+
+    pub fn latest_artifact(&self) -> Option<&Arc<RelationalCommitArtifact>> {
+        self.entries
+            .values()
+            .max_by_key(|artifact| artifact.commit_id())
+    }
+
+    pub fn find_by_version(&self, version_id: VersionId) -> Option<&Arc<RelationalCommitArtifact>> {
+        self.entries
+            .values()
+            .find(|artifact| artifact.version_id() == version_id)
+    }
+
+    pub fn snapshot_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Arc<RelationalCommitArtifact>>,
+        worth_execution::ExecutionRequestArrayDenial,
+    > {
+        let mut rows =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, self.entries.len())?;
+        for artifact in self.entries.values() {
+            rows.push(artifact.clone())?;
+        }
+        rows.seal()
+    }
+
+    pub fn snapshot(&self) -> Vec<Arc<RelationalCommitArtifact>> {
+        self.entries.values().cloned().collect()
+    }
+}

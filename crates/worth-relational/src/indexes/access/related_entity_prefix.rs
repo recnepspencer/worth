@@ -6,6 +6,11 @@ use worth_execution::{
     ExecutionAllocationPolicy, ExecutionArrayBuilder, ExecutionRequest, ExecutionWorkCeiling,
     MapKernelContext,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_related_entity_ordered_lookup::BoundedRelatedEntityOrderedLookupDenialOwnerPort as _;
+use worth_relational_branch::internal_port::indexes::data::related_entity_prefix::assemble_bounded_related_entity_prefix_boundary;
+use worth_relational_branch::internal_port::indexes::data::related_entity_prefix::assemble_bounded_related_entity_prefix_page;
+use worth_relational_branch::internal_port::indexes::data::related_entity_prefix::BoundedRelatedEntityPrefixBoundaryParts;
+use worth_relational_branch::internal_port::indexes::data::related_entity_prefix::BoundedRelatedEntityPrefixLookupRequestFieldsPort as _;
 use BoundedRelatedEntityPrefixDenial as Denial;
 mod range;
 mod validation;
@@ -43,22 +48,22 @@ fn lookup_prefix(
     meter: &mut MapKernelContext<'_, '_>,
 ) -> Result<BoundedRelatedEntityPrefixPage, Denial> {
     charge(meter, 1)?;
-    if request.ordered.after().is_some() {
+    if (*request.owner_ordered()).after().is_some() {
         return Err(Denial::ForeignBoundary);
     }
 
     let prepared = prepare_related_lookup(
-        read.selected_index(request.ordered.index_id()),
-        &request.ordered,
+        read.selected_index((*request.owner_ordered()).index_id()),
+        &(*request.owner_ordered()),
     )
     .map_err(Denial::Lookup)?;
     let _projection_memory = reserve_basis_copy(read, allocation, meter)?;
     let projection = read
-        .project_snapshot(request.ordered.snapshot())
+        .project_snapshot((*request.owner_ordered()).snapshot())
         .ok_or_else(|| {
             Denial::Lookup(BoundedRelatedEntityOrderedLookupDenial::new(
                 BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
-                request.ordered.index_id(),
+                (*request.owner_ordered()).index_id(),
             ))
         })?;
     validation::prefix(&projection, request, &prepared, meter)?;
@@ -69,9 +74,9 @@ fn lookup_prefix(
         )
     };
 
-    let rows = all.get(&request.ordered.parent_entity_id());
+    let rows = all.get(&(*request.owner_ordered()).parent_entity_id());
     let (start, end, comparisons) = range::select(read, request, &prepared, rows, meter)?;
-    let count = (end - start).min(request.ordered.page_width());
+    let count = (end - start).min((*request.owner_ordered()).page_width());
     // Exactly the native ID allocation, retained in the returned page until last Drop.
     charge(meter, count as u64)?;
     let mut ids = ExecutionArrayBuilder::allocate(count, allocation).map_err(Denial::Allocation)?;
@@ -93,25 +98,27 @@ fn lookup_prefix(
     charge(meter, 1)?;
     let boundary = if start + count < end {
         let memory = reserve_basis_copy(read, allocation, meter)?;
-        Some(BoundedRelatedEntityPrefixBoundary {
-            basis: read.basis().clone(),
-            _memory: memory,
-            runtime: read.runtime_identity,
-            generation: prepared.generation.clone(),
-            parent: request.ordered.parent_entity_id(),
-            child_kind: request.ordered.child_kind(),
-            prefix_len: request.prefix.len(),
-            last: start + count - 1,
-        })
+        Some(assemble_bounded_related_entity_prefix_boundary(
+            BoundedRelatedEntityPrefixBoundaryParts {
+                basis: read.basis().clone(),
+                _memory: memory,
+                runtime: read.runtime_identity,
+                generation: prepared.generation.clone(),
+                parent: (*request.owner_ordered()).parent_entity_id(),
+                child_kind: (*request.owner_ordered()).child_kind(),
+                prefix_len: (*request.owner_prefix()).len(),
+                last: start + count - 1,
+            },
+        ))
     } else {
         None
     };
-    Ok(BoundedRelatedEntityPrefixPage {
+    Ok(assemble_bounded_related_entity_prefix_page(
         ids,
-        generation: prepared.generation_id,
+        prepared.generation_id,
         boundary,
         comparisons,
-    })
+    ))
 }
 
 fn charge(meter: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), Denial> {

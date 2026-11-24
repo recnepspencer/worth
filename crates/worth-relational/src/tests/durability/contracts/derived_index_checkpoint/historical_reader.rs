@@ -192,7 +192,7 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
 // bindings, and `readmit`) on the Memory runtime.
 #[test]
 fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts;
         let host = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host);

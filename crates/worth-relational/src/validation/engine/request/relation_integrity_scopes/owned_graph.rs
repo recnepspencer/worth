@@ -1,4 +1,5 @@
 //! Selected graph edges enter the same relation-integrity scope accumulator.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 use super::*;
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn collect_owned_graph(

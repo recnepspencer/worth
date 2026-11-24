@@ -1,4 +1,6 @@
 //! Exact canonical bytes and their digest are private to the original-payload owner.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_digest::CanonicalEnvelopeDigestFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::payload_encoding::CanonicalCommitEnvelopeFixturePort as _;
 use super::*;
 use crate::config::data::CascadeDeletePolicy;
 
@@ -23,8 +25,8 @@ fn audit_lifecycle_recovery_preserves_exact_original_payload_bytes() {
         .demand_commit_envelope(&execution, retired.commit.commit_id)
         .unwrap()
         .unwrap();
-    let digest = canonical.authoritative_payload_digest().unwrap();
-    let encoded = canonical.encode_authoritative_payload().unwrap();
+    let digest = canonical.authoritative_payload_digest_for_test().unwrap();
+    let encoded = canonical.encode_authoritative_payload_for_test().unwrap();
     runtime
         .durability_authority()
         .checkpoint(&execution)
@@ -47,7 +49,13 @@ fn audit_lifecycle_recovery_preserves_exact_original_payload_bytes() {
         .unwrap()
         .unwrap();
     assert_eq!(cold.descriptive_touches(), canonical.descriptive_touches());
-    assert_eq!(cold.authoritative_payload_digest().unwrap(), digest);
-    assert_eq!(cold.encode_authoritative_payload().unwrap(), encoded);
+    assert_eq!(
+        cold.authoritative_payload_digest_for_test().unwrap(),
+        digest
+    );
+    assert_eq!(
+        cold.encode_authoritative_payload_for_test().unwrap(),
+        encoded
+    );
     release_test_commit_snapshot(&runtime, &retired);
 }

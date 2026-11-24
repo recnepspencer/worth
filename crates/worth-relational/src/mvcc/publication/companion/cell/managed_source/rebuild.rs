@@ -14,10 +14,10 @@ pub struct ManagedIndexSourceRebuild {
 }
 impl ManagedIndexSourceRebuild {
     pub fn program(&self) -> &ManagedIndexSourceProgram {
-        &self.expected.association.program
+        &(*self.expected.owner_association()).program
     }
     pub fn scope(&self) -> EntityId {
-        self.expected.association.scope
+        (*self.expected.owner_association()).scope
     }
     /// Each operation reborrows this caller's original request.
     pub fn rows<'a>(

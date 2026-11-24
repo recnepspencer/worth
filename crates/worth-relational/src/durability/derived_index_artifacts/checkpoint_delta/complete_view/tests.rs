@@ -5,7 +5,6 @@ use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayl
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, PartitionId};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::storage::substrate::maintenance::ReconstructionLane;
 use worth_execution::SerialMemoryBudget;
 use worth_foundational::facade::AspectValue;
 
@@ -47,7 +46,7 @@ fn basis(commit: u64, generation: u64) -> IndexBasisCheckpoint {
 
 #[test]
 fn complete_view_roundtrips_same_index_generations_and_only_retained_selections() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         // Two generations of one index: the owned writer would delta the second.
         let generations = [Arc::new(generation(1, 90)), Arc::new(generation(2, 90))];
         // Commit 7 carries generation 2, authored at version 2, to a later root.

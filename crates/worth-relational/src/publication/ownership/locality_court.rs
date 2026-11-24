@@ -1,4 +1,5 @@
 //! The Native read-locality court builds ordinary intents and observes exact selected residency.
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::{EntityId, KindId, PartitionId};
@@ -33,8 +34,7 @@ pub(crate) fn owner_kind(
     basis: &AdmittedRelationalBranchBasis,
     owner: EntityId,
 ) -> Result<KindId, TransactionCommitError> {
-    basis
-        .inner
+    (*basis.owner_inner())
         .root
         .get_current_partition(owner.partition_id)
         .and_then(|p| p.entity_arena().get(&owner))
@@ -90,7 +90,7 @@ pub(crate) fn inspect_recovered_locality(
         WorkerIntentBatch,
     ) -> Result<Result<(), TransactionCommitError>, TransactionCommitError>,
 ) -> Result<CurrentOwnershipLocalityForTest, TransactionCommitError> {
-    let root = &basis.inner.root;
+    let root = &(*basis.owner_inner()).root;
     let count = || {
         (1002..=1064)
             .filter(|p| {

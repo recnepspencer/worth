@@ -279,6 +279,27 @@ class RelationalDagTests(unittest.TestCase):
         """)
         self.assertEqual(self.audit().exports(), ['facade::Low'])
 
+    def test_physical_owner_keeps_its_internal_direction(self):
+        source = self.extract_low_owner()
+        (source / 'internal_port/low.rs').write_text(
+            'pub mod custody; pub mod projection; pub struct Low;')
+        directory = source / 'internal_port/low'
+        directory.mkdir()
+        (directory / 'custody.rs').write_text('pub struct Custody;')
+        (directory / 'projection.rs').write_text('use super::custody::Custody;')
+        self.config['boundaries'] = [{
+            'owner': 'low',
+            'paths': {
+                'custody': ['internal_port/low/custody'],
+                'projection': ['internal_port/low/projection'],
+            },
+            'allowed': [['custody', 'projection']],
+        }]
+        audit = self.audit()
+        direction = {'low/projection -> low/custody': 1}
+        self.assertEqual(totals(audit.ledger['production_explicit']), direction)
+        self.assertEqual(totals(audit.ledger['production_resolved']), direction)
+
     def test_physical_budget_cannot_include_remaining_runtime_paths(self):
         self.extract_low_owner()
         self.config['paths']['runtime.rs'] = 'low'

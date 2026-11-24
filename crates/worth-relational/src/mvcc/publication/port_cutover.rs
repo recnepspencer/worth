@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::runtime::operation_control::RelationalOperationControlOwnerPort as _;
 
 use super::super::movement::cutover_deadline_elapsed;
@@ -90,8 +91,7 @@ impl PreparedBranchPublicationPreflight {
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::AfterLinearization);
         if let Some(interruption) = late_interruption {
-            self.next_basis
-                .inner
+            (*self.next_basis.owner_inner())
                 .retention_binding
                 .record_interruption(interruption);
         }
@@ -121,8 +121,7 @@ impl PreparedBranchPublicationPreflight {
         let event = self
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::BeforeCriticalSection)?;
-        self.next_basis
-            .inner
+        (*self.next_basis.owner_inner())
             .retention_binding
             .record_interruption(event);
         Some(RelationalPublicationOutcome::interrupted(event))

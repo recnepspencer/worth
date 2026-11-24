@@ -1,4 +1,6 @@
 //! Runtime cleanup checks authentic tenure and exact private snapshot registrations.
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::SnapshotHandlesFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::published_release::PublishedSnapshotReleaseObservationFixturePort as _;
 use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupPending as Pending;
 use crate::branch::result_snapshot_outcome::{
     RelationalCommitResultSnapshotRelease as Outcome,
@@ -160,7 +162,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     assert_eq!(capacity.occupied_handles(), 1);
     let handles = &runtime.visibility.handles;
     let original_root = handles
-        .observe_published_root(result.snapshot.snapshot_id())
+        .observe_published_root_for_test(result.snapshot.snapshot_id())
         .unwrap();
     let (_, fork_source) = runtime
         .observe_fork_source(runtime.main_branch_identity().branch_id())
@@ -174,7 +176,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
         .unwrap()
         .target_identity()
         .clone();
-    let task = handles.while_published_registry_locked(1, || {
+    let task = handles.while_published_registry_locked_for_test(1, || {
         let Progress::Pending {
             task,
             cause: Pending::Busy,
@@ -196,7 +198,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     assert_eq!(capacity.occupied_handles(), 0);
     let original = result.snapshot_release_observation();
     let competing = port.begin_commit_result_snapshot_cleanup(result.clone());
-    let competing = original.while_removed_binding_locked(|| {
+    let competing = original.while_removed_binding_locked_for_test(|| {
         let Progress::Pending {
             task: competing,
             cause: Pending::Busy,

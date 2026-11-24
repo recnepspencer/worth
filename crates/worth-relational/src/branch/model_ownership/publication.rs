@@ -14,6 +14,7 @@ use crate::validation::custom_registry::FrozenCustomInvariantRegistry;
 use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
 use crate::validation::data::results::InvariantViolationFields;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 

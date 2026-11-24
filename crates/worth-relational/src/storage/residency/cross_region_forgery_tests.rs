@@ -189,7 +189,7 @@ impl RelationalDurableColdSource for ForgedSource {
 
 #[test]
 fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host = crate::test_execution_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let medium = OwnedTestDurableMedium::new();

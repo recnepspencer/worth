@@ -7,6 +7,8 @@ use crate::validation::candidate_source::{
 };
 #[cfg(test)]
 use std::sync::Weak;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationOwnerPort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::ManagedIndexPublishedSourceRootFieldsPort as _;
 
 pub use crate::branch::projection_view::managed_source::ManagedIndexSourceObservation;
 pub(crate) use crate::branch::projection_view::managed_source::ManagedSourceRootImage;
@@ -47,7 +49,9 @@ impl ManagedSourceReadConditions {
                 observation.association().scope,
             )
             .map_err(|_| CompanionPreflightStop::ForeignCell)?
-            .is_some_and(|actual| Arc::ptr_eq(&actual.association, observation.association()))
+            .is_some_and(|actual| {
+                Arc::ptr_eq(&(*actual.owner_association()), observation.association())
+            })
         {
             return Err(CompanionPreflightStop::ManagedSourceChanged);
         }

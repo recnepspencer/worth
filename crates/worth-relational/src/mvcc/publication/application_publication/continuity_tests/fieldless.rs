@@ -1,9 +1,10 @@
 //! Schema-classified empty entities keep actual native incidence and custody.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
-    native_meaning_fixture, native_roles_fixture,
+    native_meaning_for_test, native_roles_for_test,
 };
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 #[test]
 fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission() {
@@ -64,7 +65,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     let born_at = birth.commit.commit_id;
     let born_version = birth.commit.version_id;
     let envelope = &birth.publication().envelope;
-    assert_eq!(envelope.record_allocations.len(), 3);
+    assert_eq!(envelope.record_allocations().len(), 3);
     assert_eq!(envelope.patch.authoritative_record_patches.len(), 3);
     for patch in &envelope.patch.authoritative_record_patches {
         assert_eq!(
@@ -125,14 +126,12 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         .unwrap();
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
-    let partition = basis
-        .inner
+    let partition = (*basis.owner_inner())
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
         .unwrap();
-    let plan = basis
-        .inner
+    let plan = (*basis.owner_inner())
         .root
         .schema_authority()
         .entity_aspect_plan(KindId(1))
@@ -152,8 +151,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-preserver",
             &[2; 32],
-            &native_meaning_fixture("native-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -180,8 +179,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-creator",
             &[1; 32],
-            &native_meaning_fixture("native-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create,
             ),

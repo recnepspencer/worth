@@ -1,6 +1,6 @@
 //! Complete frame refusal mapping is pure value logic, with no runtime root.
 use super::{canonical_readmission_stop, initial_inputs_stop, Denial};
-use crate::content::RelationalContentDenial as Content;
+use crate::content::denial::RelationalContentDenial as Content;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Frame;
 use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal as Initial;
 use crate::execution::RelationalExecutionDenialCause as Request;

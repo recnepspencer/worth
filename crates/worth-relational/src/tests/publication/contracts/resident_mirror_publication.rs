@@ -149,7 +149,7 @@ fn publication_edits_the_latest_target_pins_and_preserves_earlier_editions() {
         .read_snapshot(&before_commit.snapshot, execution)
         .unwrap()
         .unwrap();
-    assert_eq!(retained.entities, vec![before_record]);
+    assert_eq!(retained.entities(), vec![before_record]);
     runtime
         .storage_authority()
         .adjust_named_pin::<EntityRecordKind>(

@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let frame = RelationalRegionImage::decode(
             fixture_lane,
@@ -39,7 +39,7 @@ fn kind_cache_disagreement_with_authenticated_projection_is_typed() {
 
 #[test]
 fn historical_projection_is_reconstructed_from_owned_record_history() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let frame = RelationalRegionImage::decode(
             fixture_lane,

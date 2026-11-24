@@ -8,6 +8,8 @@ use crate::schema::data::{
     SchemaContinuationDescriptor,
 };
 use crate::tests::support::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 #[test]
 fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
@@ -65,15 +67,15 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     ));
 
     let crossed = collect_crossed_boundaries(&[
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             first.patch_position(),
             std::sync::Arc::new(first_envelope),
         ),
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             second.patch_position(),
             std::sync::Arc::new(second_envelope),
         ),
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             third.patch_position(),
             std::sync::Arc::new(third_envelope),
         ),

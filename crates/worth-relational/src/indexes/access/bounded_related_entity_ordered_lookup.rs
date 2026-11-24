@@ -6,6 +6,8 @@ use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingBoundary, RelatedEntityOrderingEntry,
     RelatedEntityOrderingField,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_related_entity_ordered_lookup::BoundedRelatedEntityOrderedLookupDenialOwnerPort as _;
+use worth_relational_branch::internal_port::indexes::data::bounded_related_entity_ordered_lookup::BoundedRelatedEntityOrderedLookupOutcomeOwnerPort as _;
 use worth_relational_contracts::internal_port::indexes::data::related_entity_ordering::RelatedEntityOrderingBoundaryOwnerPort as _;
 
 use super::super::projected_field_values::compare_related_entries;

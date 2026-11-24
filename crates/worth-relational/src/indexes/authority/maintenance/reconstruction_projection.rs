@@ -11,6 +11,7 @@ use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 type Denial = DerivedIndexMaintenanceDenialKind;
 
 pub(super) fn reconstruct_for_basis(

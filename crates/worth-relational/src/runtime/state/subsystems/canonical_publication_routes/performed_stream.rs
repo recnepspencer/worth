@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 use arc_swap::ArcSwapOption;
 
@@ -162,7 +163,7 @@ impl PerformedPublicationStream {
                 index_definition_frontier: current
                     .as_ref()
                     .map_or(1, |node| node.index_definition_frontier)
-                    .max(positioned.envelope().index_definition_delta.next_index_id),
+                    .max((*positioned.envelope().owner_index_definition_delta()).next_index_id),
                 position: positioned.position(),
                 route: Arc::clone(&route),
                 previous: current,
@@ -203,7 +204,7 @@ impl PerformedPublicationStream {
             index_definition_frontier: current
                 .as_ref()
                 .map_or(1, |node| node.index_definition_frontier)
-                .max(positioned.envelope().index_definition_delta.next_index_id),
+                .max((*positioned.envelope().owner_index_definition_delta()).next_index_id),
             position: positioned.position(),
             route,
             previous: current,

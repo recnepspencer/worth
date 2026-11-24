@@ -12,6 +12,7 @@ use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedE
 use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn capture(
@@ -26,7 +27,7 @@ pub(super) fn capture(
     dependency: [u8; 32],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalOutputMember>, TransactionCommitError> {
-    let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    let after_image = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
     let mut members = Vec::with_capacity(roles.len());
     for (member_ordinal, role) in roles.iter().enumerate() {
         context
@@ -65,8 +66,8 @@ pub(super) fn capture(
                             "existing target is outside the prior live publication",
                         )
                     })?;
-                let partition = basis
-                    .inner
+                let partition = (*basis
+                    .owner_inner())
                     .root
                     .get_current_partition(id.partition_id)
                     .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output partition absent"))?;
@@ -196,7 +197,7 @@ pub(super) fn capture(
             }
         }
         if role.posture == Posture::Create {
-            let schema = basis.inner.root.schema_authority();
+            let schema = (*basis.owner_inner()).root.schema_authority();
             context
                 .checkpoint(
                     u64::from(usize::BITS - schema.entity_aspect_plan_count().leading_zeros()) + 1,
@@ -207,22 +208,14 @@ pub(super) fn capture(
                     "output physical contract plan absent",
                 )
             })?;
-            payload_coverage::validate_created_output_payload(
+            super::readmission::validate_created_output_for_commit(
                 envelope,
                 id,
                 plan,
                 record.extra().authoritative_aspect_state(),
+                member_ordinal,
                 context,
-            )
-            .map_err(|failure| {
-                super::readmission::coverage_commit_stop(
-                    failure,
-                    envelope,
-                    id,
-                    plan,
-                    member_ordinal,
-                )
-            })?;
+            )?;
         }
         members.push(CanonicalOutputMember {
             role: role.role.clone(),

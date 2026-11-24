@@ -15,6 +15,8 @@ use crate::runtime::{
 use std::sync::{Arc, Mutex, TryLockError};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_proof::AdmittedHomeProgramTransitionCatalog;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 
 #[path = "prefix.rs"]
 mod prefix;
@@ -192,13 +194,18 @@ fn require_root(
     basis: &AdmittedRelationalBranchBasis,
     asset: &PreparedRelationalHomeProgramContracts,
 ) -> Result<(), Denial> {
-    if basis.inner.root.schema_authority().authority_digest()
+    if (*basis.owner_inner())
+        .root
+        .schema_authority()
+        .authority_digest()
         != asset.meaning.schema.authority_digest()
     {
         return Err(Denial::RootSchemaMismatch);
     }
-    if crate::runtime::home_program_transition::retain_root_execution_contracts(&basis.inner.root)
-        .is_some_and(|installed| !Arc::ptr_eq(&installed, &asset.meaning))
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(
+        &(*basis.owner_inner()).root,
+    )
+    .is_some_and(|installed| !Arc::ptr_eq(&installed, &asset.meaning))
     {
         return Err(Denial::ConflictingInventory);
     }
@@ -208,11 +215,13 @@ fn install_root(
     basis: &AdmittedRelationalBranchBasis,
     asset: &PreparedRelationalHomeProgramContracts,
 ) {
-    if crate::runtime::home_program_transition::retain_root_execution_contracts(&basis.inner.root)
-        .is_none()
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(
+        &(*basis.owner_inner()).root,
+    )
+    .is_none()
     {
         crate::runtime::home_program_transition::install_root_execution_contracts(
-            &basis.inner.root,
+            &(*basis.owner_inner()).root,
             &asset.meaning,
         )
         .expect("serialized preflight excluded a conflicting catalog");

@@ -4,6 +4,7 @@ use crate::runtime::state::subsystems::history::history_canonical_routes::pendin
 use crate::tests::support::{
     batch_create, runtime_with_test_schema, test_owner_begin_transaction_for_main,
 };
+use worth_relational_branch::internal_port::branch::reference::root_access::RelationalBranchReferenceCellFixturePort as _;
 
 #[test]
 fn rootless_selected_publication_fails_before_movement_and_releases_preflight_residue() {

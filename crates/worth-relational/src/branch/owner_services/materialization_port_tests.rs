@@ -7,6 +7,7 @@ use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, EntityReference, EntitySpec, MaterializationMutationIntent,
     RelationSpec, SuspendEntityMaterializationIntent,
 };
+use worth_relational_branch::internal_port::branch::root::content_tests::RelationalBranchRootFixturePort as _;
 
 #[path = "materialization_port_tests/generated_group.rs"]
 mod generated_group;
@@ -132,12 +133,12 @@ fn assert_cold_inventory(runtime: &crate::runtime::RelationalRuntime) {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let root = &basis.inner.root;
+    let root = &(*basis.owner_inner()).root;
     assert!(root.is_complete(
         &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
         &runtime.services.symbols.interner_snapshot()
     ));
-    root.assert_derived_inventory_matches_cold();
+    root.assert_derived_inventory_matches_cold_for_test();
 }
 
 fn create_generated_group(
@@ -218,8 +219,7 @@ fn assert_suspended_records(
     entities: &[crate::identity::data::EntityId],
     relation: crate::identity::data::RelationId,
 ) {
-    let partition = basis
-        .inner
+    let partition = (*basis.owner_inner())
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")

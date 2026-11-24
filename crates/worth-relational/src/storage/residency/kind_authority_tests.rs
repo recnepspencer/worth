@@ -5,7 +5,7 @@ use crate::storage::residency::region_image::{
 
 #[test]
 fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let mut cold = fixture.cold;
         let bytes = fixture.source.members.get(&cold.head).unwrap();
@@ -53,7 +53,7 @@ fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
 
 #[test]
 fn intact_history_cannot_omit_authoritative_kind_membership() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let mut cold = fixture.cold;
         let bytes = fixture.source.members.get(&cold.history).unwrap();

@@ -1,7 +1,8 @@
 //! Content is a Native checkpoint member through the existing physical port.
+use crate::content::denial::RelationalContentDenial as Denial;
 use crate::content::{
-    ContentDirectory, RelationalContentAttachments, RelationalContentDenial as Denial,
-    RelationalContentRecord, MAXIMUM_CONTENT_FRAME_BYTES,
+    ContentDirectory, RelationalContentAttachments, RelationalContentRecord,
+    MAXIMUM_CONTENT_FRAME_BYTES,
 };
 use crate::durability::data::{
     RelationalCheckpointContent, RelationalCheckpointMember,

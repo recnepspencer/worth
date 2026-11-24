@@ -10,6 +10,7 @@ use crate::runtime::state::subsystems::{
 use crate::schema::data::RelationalSchemaRegistry;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 
 mod checkpoint_images;
 mod world_handoff;

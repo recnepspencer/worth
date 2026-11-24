@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::history::data::merge_branch_basis::RelationalMergeBranchBasisFieldsPort as _;
 mod aspect_plan_compilation;
 mod authority_verification;
 mod lineage_continuity;
@@ -219,3 +218,6 @@ fn compile_bound_executable_plan(
         (source_reference, source_truth_version),
     ))
 }
+
+#[cfg(test)]
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::RelationalMergeBranchBasisFieldsPort as _;

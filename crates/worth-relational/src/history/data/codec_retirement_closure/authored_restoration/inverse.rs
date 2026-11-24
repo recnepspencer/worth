@@ -2,9 +2,6 @@
 use super::{creation_patch, failure};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::history::data::codec_retirement_closure::{
-    self as closure, authored_cascade::reject, charge, history_request::RuntimeHistoryRequest,
-};
 use crate::history::data::{CanonicalAuthoredRetirement, CanonicalCommitEnvelope};
 use crate::identity::data::{EntityId, RelationId};
 use crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication;
@@ -19,6 +16,11 @@ use crate::transactions::data::primitives::{
     CreatedEntityRef, CreatedRelationRef, EntityReference,
 };
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::codec_retirement_closure::{
+    self as closure, authored_cascade::reject, charge, history_request::RuntimeHistoryRequest,
+};
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) struct RestorationSelection<'a> {
@@ -74,8 +76,7 @@ pub(super) fn prepare(
     for (original, anchor) in std::iter::once((original, anchor))
         .chain(co_anchors.iter().map(|(id, target)| (*id, target)))
     {
-        basis
-            .inner
+        (*basis.owner_inner())
             .root
             .demand_full_partition(execution, original.partition_id)
             .map_err(|cause| {
@@ -83,8 +84,7 @@ pub(super) fn prepare(
                     cause,
                 ))
             })?;
-        let partition = basis
-            .inner
+        let partition = (*basis.owner_inner())
             .root
             .partition_state(original.partition_id)
             .map_err(|cause| failure(cause.into()))?
@@ -149,8 +149,7 @@ pub(super) fn prepare(
             .map_err(failure)?
             .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
         for member in &prior.origin.members {
-            let plan = basis
-                .inner
+            let plan = (*basis.owner_inner())
                 .root
                 .schema_authority()
                 .entity_aspect_plan(member.kind)
@@ -163,10 +162,10 @@ pub(super) fn prepare(
                 validated_history,
                 context,
                 lease,
-                basis.inner.root.schema_authority(),
+                (*basis.owner_inner()).root.schema_authority(),
             )
             .map_err(failure)?;
-            live.content
+            (*live.owner_content())
                 .retain_restoration_content(
                     execution,
                     payload.as_ref().and_then(|p| p.state.as_ref()),
@@ -199,8 +198,7 @@ pub(super) fn prepare(
             .output_origin_for_route(&prior.origin.meaning, context)
             .map_err(failure)?;
         for edge in &live_origin.relations {
-            let plan = basis
-                .inner
+            let plan = (*basis.owner_inner())
                 .root
                 .schema_authority()
                 .relation_aspect_plan(edge.kind)
@@ -213,18 +211,17 @@ pub(super) fn prepare(
                 validated_history,
                 context,
                 lease,
-                basis.inner.root.schema_authority(),
+                (*basis.owner_inner()).root.schema_authority(),
             )
             .map_err(failure)?;
-            live.content
+            (*live.owner_content())
                 .retain_restoration_content(
                     execution,
                     payload.as_ref().and_then(|p| p.state.as_ref()),
                     &mut content,
                 )
                 .map_err(crate::content::publication::commit_denial)?;
-            if (*basis
-                .inner
+            if (*(*basis.owner_inner())
                 .root
                 .schema_authority()
                 .registry()

@@ -1,10 +1,12 @@
 //! One admitted schema graph is shared by source roles and selected roots.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
 use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]

@@ -1,4 +1,6 @@
 //! Assemble exact Native inverse publication custody before effects.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use super::retention_budget::origin_retention_bytes;
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -26,6 +28,8 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 #[allow(clippy::too_many_arguments)]
@@ -120,9 +124,8 @@ pub(super) fn install(
             )
         };
 
-        let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
-        let source = basis
-            .inner
+        let after = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
+        let source = (*basis.owner_inner())
             .root
             .get_current_partition(original_anchor.partition_id)
             .and_then(|part| part.entity_arena().get(&original_anchor))
@@ -153,7 +156,10 @@ pub(super) fn install(
         }
     }
     let mut publications = Vec::with_capacity(restoration.publications.len());
-    let mut positions = basis.inner.root.output_publication_positions.clone();
+    let mut positions = (*basis.owner_inner())
+        .root
+        .output_publication_positions
+        .clone();
     for prior in &restoration.publications {
         if !admission.is_some_and(|admission| {
             installed
@@ -311,16 +317,17 @@ pub(super) fn install(
         )?;
         publications.push(restored);
     }
-    envelope.authored_cascade_restoration = Some(Arc::new(CanonicalAuthoredRestoration {
-        _decoded_memory: None,
-        retirement: restoration.retirement.commit.commit_id,
-        owned_members: old.owned_members,
-        original_anchor: old.anchor,
-        anchor,
-        co_anchors,
-        entities,
-        relations,
-        publications,
-    }));
+    (*envelope.owner_authored_cascade_restoration_mut()) =
+        Some(Arc::new(CanonicalAuthoredRestoration {
+            _decoded_memory: None,
+            retirement: restoration.retirement.commit.commit_id,
+            owned_members: old.owned_members,
+            original_anchor: old.anchor,
+            anchor,
+            co_anchors,
+            entities,
+            relations,
+            publications,
+        }));
     Ok(positions)
 }

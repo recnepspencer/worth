@@ -11,7 +11,7 @@ use crate::identity::data::PartitionId;
 #[test]
 #[ignore = "counted native checkpoint restore and digest campaign; run with -- --ignored --nocapture"]
 fn synthetic_native_restore_and_image_digest_benchmark() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

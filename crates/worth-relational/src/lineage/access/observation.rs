@@ -5,6 +5,7 @@ use crate::lineage::data::LineageNode;
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::{RelationalRuntime, ResidentLineageNode};
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 /// One immutable semantic node with its original counted page lease.
 #[derive(Debug)]

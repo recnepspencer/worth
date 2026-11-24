@@ -135,7 +135,7 @@ fn head_prefixes_rebuild_owned_history_after_endpoint_edits_and_generation_reuse
 
 #[test]
 fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_record() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -213,9 +213,9 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
             reconstructed
                 .full_view()
                 .partition()
-                .authoritative_content_digest(&symbols)
+                .partition_content_digest_for_test(&symbols)
                 .unwrap(),
-            oracle.authoritative_content_digest(&symbols).unwrap()
+            oracle.partition_content_digest_for_test(&symbols).unwrap()
         );
         assert!(source.history_reads.load(Ordering::SeqCst) > 0,
         "Full promotion follows the adopted relation's own source as well as the original entity source");
@@ -269,10 +269,10 @@ fn a_full_target_adopting_head_prefixes_keeps_history_readmission() {
             rebuilt
                 .full_view()
                 .partition()
-                .authoritative_content_digest(&symbols)
+                .partition_content_digest_for_test(&symbols)
                 .unwrap(),
             full.partition
-                .authoritative_content_digest(&symbols)
+                .partition_content_digest_for_test(&symbols)
                 .unwrap(),
         );
     }
@@ -316,7 +316,7 @@ fn update_target(
 }
 
 fn assert_owned_history(partial: &mut PartitionState, full: &mut PartitionState) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         for partition in [&mut *partial, &mut *full] {
             for table in [&mut partition.adjacency, &mut partition.reverse_adjacency] {
                 let slots = table.iter().map(|(&slot, _)| slot).collect::<Vec<_>>();

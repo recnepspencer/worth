@@ -28,8 +28,7 @@ mod patch_position_reservation;
 mod pending_settlement;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
-#[path = "canonical_publication_routes/position_admission.rs"]
-pub(crate) mod position_admission;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::history::canonical_publication_routes::position_admission;
 #[path = "canonical_publication_routes/recovered_source.rs"]
 mod recovered_source;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
@@ -38,25 +37,19 @@ pub(crate) use authored_writes::AuthoredWriteGeneration;
 mod indexed_catalog;
 #[path = "canonical_publication_routes/position_retention.rs"]
 mod position_retention;
-#[path = "canonical_publication_routes/retained_position.rs"]
-pub(crate) mod retained_position;
 #[path = "canonical_publication_routes/source_retirement.rs"]
 mod source_retirement;
-pub(crate) use crate::branch::transition::BranchTransitionRecordError;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
     BranchTransitionPublication, ForkTransitionRoutes, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
 };
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
 use performed_stream::PerformedPublicationStream;
+pub(crate) use position_admission::CanonicalPositionAdmission;
 pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
-pub(crate) use position_admission::{
-    readmit_positioned_canonical_commit, CanonicalPositionAdmission,
-};
 pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 pub(crate) struct RelationalCanonicalPublicationRoutes {

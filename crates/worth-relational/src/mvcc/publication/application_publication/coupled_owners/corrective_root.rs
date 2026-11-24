@@ -1,7 +1,10 @@
 //! An authenticated correction's root mapping does not depend on a cascade event.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
 use crate::transactions::data::primitives::CreatedEntityRef;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 use worth_relational_contracts::internal_port::symbols::data::client_key::ClientKeyOwnerPort as _;
 
@@ -71,15 +74,11 @@ impl AuthoredPublicationReads<'_> {
                 })
                 .map_err(custody::execution_stop)?
                 .0?;
-            owners
-                .before
-                .inner
+            (*owners.before.owner_inner())
                 .root
                 .demand_full_partition(execution, old.partition_id)
                 .map_err(custody::execution_stop)?;
-            if !owners
-                .before
-                .inner
+            if !(*owners.before.owner_inner())
                 .root
                 .get_current_partition(old.partition_id)
                 .and_then(|partition| partition.entity_arena().get(&old))

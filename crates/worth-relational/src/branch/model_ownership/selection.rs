@@ -3,6 +3,7 @@ use super::traversal::Read;
 use super::{basis, traversal, *};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 #[cfg(test)]
 #[path = "selection_schema_tests.rs"]
 mod schema_tests;

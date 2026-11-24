@@ -12,10 +12,10 @@ crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_rest
 crates/worth-relational/src/durability/data/native_checkpoint/roster_corruption.rs
 crates/worth-relational/src/runtime/state/runtime_state/runtime_court_doors_for_test.rs
 # Initial publication mints only in the no-prior-root or no-prior-region branch.
-crates/worth-relational/src/branch/root_capture.rs
-crates/worth-relational/src/branch/root_capture_preparation.rs
+crates/worth-relational-branch/src/branch/root_capture.rs
+crates/worth-relational-branch/src/branch/root_capture_preparation.rs
 # Readmit a fully authenticated checkpoint root.
-crates/worth-relational/src/branch/root_readmission/region_binding.rs
+crates/worth-relational-branch/src/branch/root_readmission/region_binding.rs
 # Generic certification oracle; never a production fallback.
 crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_encoding.rs
 crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs
@@ -46,7 +46,7 @@ crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_de
 crates/worth-relational/src/durability/authority/checkpoint_native_capture.rs
 
 # A changed content schema authority alone admits full directory reconstruction.
-crates/worth-relational/src/content/schema_transition.rs
+crates/worth-relational-branch/src/content/schema_transition.rs
 
 # D1638: closed residency-only symbol placement setup over actual resident leases.
 crates/worth-relational/src/runtime/cold_symbol_placement.rs

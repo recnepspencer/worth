@@ -107,7 +107,7 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
         .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     assert_eq!(
-        head.partition.authoritative_content_digest(&symbols),
+        head.partition.partition_content_digest_for_test(&symbols),
         Err(PartitionContentDigestError::InvalidHistoryCoverage)
     );
     let slot = fixture.entity.slot_index();
@@ -154,7 +154,7 @@ fn removing_a_prefix_discards_its_opaque_tree_before_rematerialization() {
 
 #[test]
 fn an_adopted_opening_is_independent_of_the_destination_physical_row() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -293,7 +293,7 @@ pub(super) fn recapture(
     cold: &RelationalColdRegion,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let symbols = cold.symbols.interner_snapshot();
@@ -353,8 +353,8 @@ fn assert_content(
     symbols: &crate::symbols::data::StringInterner,
     incremental: &PartitionContentCommitment,
 ) {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
-        let oracle = full.authoritative_content_digest(symbols).unwrap();
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
+        let oracle = full.partition_content_digest_for_test(symbols).unwrap();
         assert_eq!(incremental.digest(head.partition_id), oracle);
         assert_eq!(
             PartitionContentCommitment::capture_layered(

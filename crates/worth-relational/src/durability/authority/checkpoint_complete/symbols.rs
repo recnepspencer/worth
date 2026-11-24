@@ -1,4 +1,5 @@
 //! An admitted private lookup index over authentic already-owned text leaves.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 mod retained;
 use super::source::OriginalCanonicalCommit;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
@@ -23,7 +24,7 @@ impl<'a> OriginalSymbolDictionary<'a> {
             dictionary.insert(*symbol, text, execution)?;
         }
         for commit in commits {
-            for (symbol, text) in &commit.envelope.symbol_texts.entries {
+            for (symbol, text) in &(*commit.envelope.owner_symbol_texts()).entries {
                 dictionary.insert(*symbol, text, execution)?;
             }
         }

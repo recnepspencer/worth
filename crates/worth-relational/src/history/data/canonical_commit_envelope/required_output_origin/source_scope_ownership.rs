@@ -8,6 +8,7 @@ use crate::storage::overlay::OverlayStateView;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 #[allow(clippy::too_many_arguments)]
@@ -52,7 +53,7 @@ pub(super) fn validate(
     }) {
         return Err(invalid());
     }
-    let source_root = source_input.map_or(basis.inner.root.as_ref(), |input| {
+    let source_root = source_input.map_or((*basis.owner_inner()).root.as_ref(), |input| {
         input.resident_basis().root().as_ref()
     });
     let row = source_root
@@ -63,7 +64,7 @@ pub(super) fn validate(
                 .get(&meaning.source_scope)
                 .map(|row| (row.is_live(), row.kind_id()))
         });
-    let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    let after = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
     let live_after = after
         .get_current_partition(meaning.source_scope.partition_id)
         .and_then(|partition| {

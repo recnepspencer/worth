@@ -1,4 +1,5 @@
 //! Reconstructed original DATA enters the same stream and commit catalog owners.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::original_schemas::OriginalSchemaGraph;
 use crate::branch::transition::original_inputs::{
     OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
@@ -17,6 +18,7 @@ use crate::runtime::state::subsystems::durability::checkpoint_selection::Relatio
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 mod transition;
 use transition::copy_transition;
 use worth_execution::ExecutionRequest;

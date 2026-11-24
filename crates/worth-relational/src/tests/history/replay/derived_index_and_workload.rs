@@ -1,5 +1,6 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_branch::internal_port::indexes::data::DerivedIndexArtifactsFixturePort as _;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 #[test]
@@ -73,7 +74,6 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
 fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_workload() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_declared_aspect_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::CertificationCore,
         CascadeDeletePolicy::RetainDanglingForAudit,
@@ -114,12 +114,12 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         .checkpoint(execution)
         .unwrap();
 
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, anchor)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     let replay = runtime
         .replay_authority()
@@ -269,12 +269,12 @@ fn hostile_commit_replay_equivalence_test() {
         .checkpoint(execution)
         .unwrap();
 
-    let anchor_lineage = (*runtime
+    let anchor_lineage = *runtime
         .lineage_access()
         .for_record(execution, anchor)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
     let original_bundle = capture_aspect_truth_bundle(
         execution,
         &runtime,

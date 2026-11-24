@@ -1,6 +1,7 @@
 //! Select the runtime's immutable validation inputs from one owner epoch.
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
 use crate::validation::engine::{InvariantRuntimeInputs, InvariantRuntimeView};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn invariant_validation_view(&self) -> InvariantRuntimeView<'_> {
@@ -46,7 +47,7 @@ impl<'a> From<&'a crate::mvcc::RelationalTransactionValidationInput>
     fn from(input: &'a crate::mvcc::RelationalTransactionValidationInput) -> Self {
         Self {
             operation: input.control(),
-            retention: &input.basis().inner.retention_binding,
+            retention: &(*input.basis().owner_inner()).retention_binding,
         }
     }
 }
@@ -60,7 +61,7 @@ impl From<&crate::mvcc::RelationalTransactionValidationInput>
             .map(|target| target.meaning.catalog_receipt())
             .or_else(|| {
                 crate::runtime::home_program_transition::retain_root_execution_contracts(
-                    &input.basis().inner.root,
+                    &(*input.basis().owner_inner()).root,
                 )
                 .map(|meaning| meaning.catalog_receipt())
             });

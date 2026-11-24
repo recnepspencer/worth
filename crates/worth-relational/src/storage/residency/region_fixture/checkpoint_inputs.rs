@@ -12,7 +12,6 @@ use crate::durability::medium::{
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
-use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, Weak};
@@ -35,7 +34,7 @@ pub(super) fn readmit(
     fixture: &RegionFixture,
     request: &ExecutionRequest<'_, '_>,
 ) -> CheckpointFixture {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let native = Arc::new(selected_region_archive(
             &fixture.partition,
             fixture.cold.schema.as_ref(),

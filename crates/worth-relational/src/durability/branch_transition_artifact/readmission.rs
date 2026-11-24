@@ -1,4 +1,6 @@
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociationOwnerPort as _;
 
 use super::frame::BranchTransitionArtifactHeader;
 use super::payload_wire::{TransitionPayloadRef, TransitionPayloadWire};

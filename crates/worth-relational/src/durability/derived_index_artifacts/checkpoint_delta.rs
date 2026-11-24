@@ -1,4 +1,3 @@
-use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 mod complete_view;
 mod readmission;
 mod request_quote;
@@ -245,7 +244,7 @@ mod tests {
     }
 
     fn capture(generations: Vec<DerivedIndexGeneration>) -> DerivedIndexCheckpointArtifacts {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             DerivedIndexCheckpointArtifacts::capture(
                 fixture_lane,
                 generations.into_iter().map(Arc::new).collect(),
@@ -257,7 +256,7 @@ mod tests {
 
     #[test]
     fn delta_checkpoint_roundtrips_exact_payload_and_shares_unchanged_bytes() {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let generations = vec![generation(1, 90), generation(2, 90)];
             let checkpoint = capture(generations.clone());
             let wire = rmp_serde::to_vec_named(&checkpoint).unwrap();
@@ -270,7 +269,7 @@ mod tests {
 
     #[test]
     fn delta_checkpoint_denies_corrupt_missing_and_incompatible_payloads() {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let generations = vec![generation(1, 10), generation(2, 90)];
             let mut checkpoint = capture(generations);
             checkpoint.generations[1].changed_bytes[0] ^= 1;
@@ -288,7 +287,7 @@ mod tests {
 
     #[test]
     fn self_consistent_digest_cannot_relabel_generation_to_foreign_branch() {
-        crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+        crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
             let mut foreign = generation(1, 10);
             foreign.applicability.branch_id = BranchId("foreign".into());
             let checkpoint = capture(vec![foreign]);

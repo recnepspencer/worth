@@ -1,8 +1,7 @@
 //! Both retirement readmission checkpoints retain the original cancellation.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::authority::commit::pipeline::{stage_observation as observation, CommitStage};
-use crate::mvcc::publication::application_publication::meaning_fixture::native_roles_fixture;
+use crate::mvcc::publication::application_publication::meaning_fixture::native_roles_for_test;
 
 #[test]
 fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_head() {
@@ -160,7 +159,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
         let ids = targets.map(|target| born.created_entity(&target).unwrap());
         release_test_commit_snapshot(&runtime, &born);
         let before = test_owner_main_basis(&runtime).unwrap();
-        let roles = native_roles_fixture(
+        let roles = native_roles_for_test(
             &[anchor, ids[0], ids[1]].map(|id| (id, KindId(1))),
             RequiredOutputRolePosture::Retire,
         );

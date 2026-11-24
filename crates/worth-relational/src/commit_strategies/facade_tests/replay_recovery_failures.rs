@@ -13,7 +13,11 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
     let branch_head_before = runtime.history().branch_head(&BranchId("main".to_string()));
     let mut recovered = persisted_intent_runtime(&medium, false);
     let mut recovery_plan = medium
-        .recovery_plan(execution, &recovered, RecoveryMode::AuditRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &recovered,
+            RecoveryMode::AuditRecoveryVerification,
+        )
         .unwrap();
     recovery_plan.commit_strategy_executors = Default::default();
 
@@ -67,7 +71,11 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
 
     let mut recovered = persisted_intent_runtime_with_failing_executor(&medium);
     let mut recovery_plan = medium
-        .recovery_plan(execution, &recovered, RecoveryMode::AuditRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &recovered,
+            RecoveryMode::AuditRecoveryVerification,
+        )
         .unwrap();
     recovery_plan.commit_strategy_executors = recovered.commit_strategy_executor_registry().clone();
     recovered

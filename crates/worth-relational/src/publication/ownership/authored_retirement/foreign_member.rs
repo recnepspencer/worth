@@ -1,4 +1,5 @@
 //! Extra roster entries cannot expand closure; classify their actual provenance.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 
 pub(super) fn classify(
@@ -30,8 +31,7 @@ pub(super) fn classify(
     }
     // Independent producers deliberately have no ownership roster. Their birth
     // provenance is historical evidence, not an alternative current owner set.
-    let Some(partition) = basis
-        .inner
+    let Some(partition) = (*basis.owner_inner())
         .root
         .partition_state(id.partition_id)
         .map_err(|cause| stopped(Stop::from(cause)))?

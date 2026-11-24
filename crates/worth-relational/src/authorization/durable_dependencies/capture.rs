@@ -1,4 +1,5 @@
 use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
 
 use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::RecordLifecycleState;

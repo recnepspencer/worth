@@ -3,6 +3,7 @@ use super::{origin_request, CanonicalCommitEnvelopeBody, CanonicalRequiredOutput
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::MapKernelContext;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 /// Prior edges retain native before-write fences; only actual candidate changes
 /// can update or retire them. New edges were captured from real allocations.
@@ -18,13 +19,12 @@ pub(super) fn continue_relations(
     use crate::publication::patch::data::RecordStructuralChange as Change;
     use crate::storage::overlay::{current_relation_partition_source_for_slot, OverlayStateView};
     use crate::transactions::data::primitives::RecordRef;
-    let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    let after_image = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
     for relation in &prior.relations {
         context
             .checkpoint(2 + envelope.patch.authoritative_record_patches.len() as u64)
             .map_err(origin_request)?;
-        let before = basis
-            .inner
+        let before = (*basis.owner_inner())
             .root
             .get_current_partition(relation.id.partition_id)
             .ok_or_else(|| {

@@ -5,7 +5,6 @@ use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::publication::live_publication_inputs::BoundLivePublicationInputs;
 use crate::transactions::data::commit_log::CommitLog;
-use worth_relational_contracts::internal_port::commit_strategies::data::lowering_meaning::StrategyLoweringErrorOwnerPort as _;
 
 pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     {

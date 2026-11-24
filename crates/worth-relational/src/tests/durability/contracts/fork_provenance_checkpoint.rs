@@ -2,6 +2,7 @@ use super::*;
 use worth_foundational::{
     FoundationalBranchId, FoundationalBranchReferenceObservation, FoundationalBranchTarget,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 fn fork_checkpoint_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -70,8 +71,7 @@ fn fork_tail_plan(
         .find(|envelope| envelope.branch_context == BranchId("storm".to_owned()))
         .expect("fork tail envelope is selected");
     mutate(
-        envelope
-            .branch_cell_checkpoint
+        (*envelope.owner_branch_cell_checkpoint_mut())
             .as_mut()
             .expect("tail carries an exact fork checkpoint"),
     );

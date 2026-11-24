@@ -4,6 +4,7 @@ use crate::indexes::data::{
     DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexKind,
     DerivedIndexMaintenanceDenialKind,
 };
+use worth_relational_branch::internal_port::indexes::data::relation_join_index::RelationJoinIndexOwnerPort as _;
 pub(super) fn empty_entries(
     kind: &DerivedIndexKind,
     work: &mut MaintenanceWork,

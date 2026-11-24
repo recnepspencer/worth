@@ -7,11 +7,12 @@ use crate::indexes::data::{
     DerivedIndexArtifacts, DerivedIndexEntries, RelationJoinDefinition, RelationJoinLeg,
     RelationJoinSharedEndpoint,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 #[test]
 fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let medium = OwnedTestDurableMedium::new();
@@ -92,7 +93,7 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
 
 #[test]
 fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let medium = OwnedTestDurableMedium::new();
@@ -156,7 +157,7 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
 
 #[test]
 fn legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let source_medium = OwnedTestDurableMedium::new();

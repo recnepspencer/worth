@@ -311,9 +311,9 @@ fn replay_retention_preserves_historical_live_entity_aspects_across_updates() {
         .read_version(execution, created.version_id)
         .expect("read request remains live");
 
-    assert_eq!(historical.entities.len(), 1);
+    assert_eq!(historical.entities().len(), 1);
     assert_eq!(
-        read_entity_name(&historical.entities[0]),
+        read_entity_name(&historical.entities()[0]),
         Some("replay-history".into())
     );
 

@@ -68,7 +68,7 @@ pub(crate) fn read_snapshot_probe(
     CaseTruthProbe {
         case_role: case,
         stage,
-        snapshot_id: snapshot.snapshot_id.0,
+        snapshot_id: snapshot.snapshot_id().0,
         entity_count: result.entities.len(),
         relation_count: result.relations.len(),
         corrected_trade_count: result

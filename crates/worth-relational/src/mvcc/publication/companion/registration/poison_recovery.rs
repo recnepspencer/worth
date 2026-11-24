@@ -1,5 +1,4 @@
 //! A fault at each registry door leaves typed state usable by the next publisher.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::{
     CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
 };

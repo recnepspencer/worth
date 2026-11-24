@@ -5,6 +5,7 @@ use worth_execution::{
     CancellationSource, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
     SerialMemoryBudget, SerialRequest,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 #[test]
 fn strategy_input_clone_retains_only_its_original_decoded_bytes_grant() {
@@ -205,9 +206,7 @@ fn source_artifact(large_input: bool) -> Artifact {
         committed.commit.commit_id
     );
     assert!(
-        positioned
-            .envelope()
-            .authored_index_writes
+        (*positioned.envelope().owner_authored_index_writes())
             .verified_entries()
             .unwrap()
             .iter()

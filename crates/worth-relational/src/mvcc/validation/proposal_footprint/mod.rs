@@ -1,4 +1,5 @@
 //! Exact mutation truth projected from one owner-validated mutation.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
 mod field_projection;
 mod member_restoration;
 mod relation_mutations;

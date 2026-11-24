@@ -12,6 +12,7 @@ use crate::indexes::{
 };
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 
 impl RelationalPinnedRead {
     fn index_lookup(&self) -> PinnedIndexLookup<'_> {

@@ -2,6 +2,7 @@
 use super::*;
 use crate::indexes::data::DerivedIndexKind;
 use std::sync::atomic::{AtomicU64, Ordering};
+use worth_relational_branch::internal_port::indexes::retained_definition::RetainedDerivedIndexDefinitionOwnerPort as _;
 mod routing;
 
 fn incarnation() -> u64 {

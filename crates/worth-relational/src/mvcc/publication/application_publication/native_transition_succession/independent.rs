@@ -1,4 +1,5 @@
 //! Independent succession comes from the current route's actual canonical coordinate.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::execution::request_stage::checkpoint;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;

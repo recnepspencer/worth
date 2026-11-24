@@ -128,7 +128,7 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
 
 #[test]
 fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
@@ -180,7 +180,7 @@ fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() 
 
 #[test]
 fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_rows() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = region_with_history();
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);

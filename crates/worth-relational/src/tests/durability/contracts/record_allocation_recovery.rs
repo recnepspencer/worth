@@ -4,6 +4,7 @@
 //! Memory runtime (Embedded checkpoint plus tail recovery plan), since these
 //! claims exercise record-identity allocator frontiers and tail replay without
 //! physical-medium content.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use super::*;
@@ -393,7 +394,6 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         .recover(execution, plan)
         .expect_err("a metadata-only merge cannot carry allocation evidence");
     let error = crate::tests::support::expect_durability_failure(error);
-
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("without a mutation replay path"));
     assert_eq!(recovered.history().immutable_commit_count(), 0);

@@ -1,7 +1,7 @@
 pub(super) mod work_observation;
 use crate::authority::mutation::intents::{field_authoring_candidate, record_aspect_patch};
 use crate::schema::aspect_plan_source::AspectPlanSource;
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::EntityReadRecord;
 use crate::transactions::data::intents::mutation_intent::{
     EntityMutationIntent, RelationMutationIntent,
 };

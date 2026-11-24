@@ -2,7 +2,7 @@ pub(crate) mod access;
 mod authority;
 pub(crate) mod commit;
 pub mod data;
-pub(crate) mod envelope_demand;
+pub(crate) use worth_relational_branch::internal_port::history::envelope_demand;
 pub mod retention;
 
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};
@@ -23,8 +23,7 @@ pub use access::{
 };
 pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
 pub(crate) use commit::{
-    OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
-    RelationalCommitCatalog,
+    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
@@ -33,10 +32,6 @@ pub use commit::{
     RelationalRetainedSelectionArtifactDenial,
 };
 
-pub(crate) use commit::{
-    RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
-    RetiredCanonicalPlacement,
-};
+pub(crate) use commit::RelationalCommitEnvelopeResidency;
 #[cfg(test)]
-#[path = "mod_inline_type_budget.rs"]
-pub(crate) mod inline_type_budget;
+pub(crate) use commit::{RelationalCommitIndexEntry, RetainedCanonicalIndex};

@@ -4,6 +4,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
     BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 
 pub(crate) fn lookup(
     read: PinnedIndexLookup<'_>,

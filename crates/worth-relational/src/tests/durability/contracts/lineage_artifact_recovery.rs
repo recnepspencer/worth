@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::lineage_rebuild_test::CanonicalCommitEnvelopeBodyFixturePort as _;
 use super::*;
 use crate::durability::canonical_commit_artifact::checkpoint_body::mutable_positioned_fixture_body;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
@@ -90,7 +92,6 @@ fn tail_duplicate_lineage_event_ids_deny() {
 fn checkpoint_and_tail_lineage_event_id_collision_denies() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "cross-checkpoint-head");
@@ -131,7 +132,6 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
 fn tail_lineage_commit_and_branch_cross_splices_deny() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "cross-splice-checkpoint");

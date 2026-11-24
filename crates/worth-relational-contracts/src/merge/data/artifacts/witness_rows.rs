@@ -1,4 +1,5 @@
 //! Shared merge rows retain their own admitted backing through every clone.
+#[cfg(test)]
 use crate::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::{Arc, OnceLock};

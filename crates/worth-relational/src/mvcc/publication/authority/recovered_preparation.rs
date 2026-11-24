@@ -1,5 +1,7 @@
 //! Prepare reconstructed publication through the same root owner.
 use super::*;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 impl RelationalPublicationAuthority<'_> {
     pub(crate) fn prepare_recovered_commit(
@@ -21,9 +23,8 @@ impl RelationalPublicationAuthority<'_> {
             .map(|root| root.schema_authority().registry().clone())
             .unwrap_or_else(|| self.schema.clone());
         let original_artifact = self.history.commit_artifact(commit_id);
-        let content = envelope
-            .content
-            .readmit_unchanged_root(execution, &binding.inner.root)
+        let content = (*envelope.owner_content())
+            .readmit_unchanged_root(execution, &(*binding.owner_inner()).root)
             .map_err(|cause| {
                 PublicationPreparationDenial::from(
                     crate::branch::root::RelationalBranchRootCaptureDenial::Content(cause),

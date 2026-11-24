@@ -1,4 +1,7 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::BoundedAdjacencyTruthReadFieldsPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::AdjacencyTruthReadLimitExceededOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_adjacency::BoundedAdjacencyTruthReadOwnerPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
@@ -91,7 +94,7 @@ impl VisibilityReadContext<'_> {
                             &super::super::super::native_scan_stop::NativeScanStop::Request,
                         )
                     },
-                    |read| super::super::super::read_footprint::relations(&read.records),
+                    |read| super::super::super::read_footprint::relations(&(*read.owner_records())),
                 )
             },
         )
@@ -184,7 +187,7 @@ impl VisibilityReadContext<'_> {
                             &super::super::super::native_scan_stop::NativeScanStop::Request,
                         )
                     },
-                    |read| super::super::super::read_footprint::relations(&read.records),
+                    |read| super::super::super::read_footprint::relations(&(*read.owner_records())),
                 )
             },
         )

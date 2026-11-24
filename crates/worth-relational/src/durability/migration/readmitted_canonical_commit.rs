@@ -2,6 +2,7 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::publication::patch::data::position_denial::RelationalCanonicalPositionAdmissionDenial;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 /// A canonical commit that passed current readmission at its stream
 /// position. Only Relational readmission doors construct it; holding one
@@ -93,9 +94,7 @@ impl ReadmittedCanonicalCommit {
     }
     /// Whether this readmitted commit's symbol dictionary carries `text`.
     pub fn contains_symbol_text(&self, text: &str) -> bool {
-        self.positioned
-            .envelope()
-            .symbol_texts
+        (*self.positioned.envelope().owner_symbol_texts())
             .entries
             .iter()
             .any(|(_, entry)| entry.as_str() == text)

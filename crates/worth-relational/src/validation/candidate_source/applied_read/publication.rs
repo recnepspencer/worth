@@ -5,6 +5,7 @@ use crate::branch::projection_view::managed_source::ManagedIndexSourceObservatio
 use crate::{runtime::RelationalRuntime, snapshots::data::SnapshotHandle};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationOwnerPort as _;
 
 pub struct ManagedIndexAppliedSourcePublication {
     affinity: Arc<AppliedSourceAffinity>,

@@ -1,6 +1,8 @@
 use crate::indexes::data::{DerivedIndexBuildRequest, DerivedIndexMaintenanceDenialKind as Denial};
 use crate::mvcc::observation::RelationalBranchObservation;
 use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(super) fn validate(
     request: &DerivedIndexBuildRequest,
@@ -105,8 +107,7 @@ pub(super) fn validate_root_predecessor(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
     prior: &crate::branch::root::RelationalBranchRoot,
 ) -> Result<(), Denial> {
-    let checkpoint = envelope
-        .branch_cell_checkpoint
+    let checkpoint = (*envelope.owner_branch_cell_checkpoint())
         .as_ref()
         .ok_or(Denial::BeforeRootMismatch)?;
     match checkpoint.observation.target() {

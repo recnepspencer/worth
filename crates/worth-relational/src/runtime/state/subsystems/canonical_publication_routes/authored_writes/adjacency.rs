@@ -11,6 +11,7 @@ use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest, MapKernelContext};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 pub(super) fn append(
     generation: &mut AuthoredWriteGeneration,

@@ -1,4 +1,6 @@
 //! Exact current cells and external obligations, retained by the actual capture.
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 mod complete;
 use crate::branch::{
     basis_descriptor::RelationalBranchBasisDescriptor, root::RelationalBranchRoot,
@@ -62,7 +64,7 @@ pub(super) fn capture(history: &HistorySubsystem) -> Result<CapturedComponents, 
         insert(
             &mut observations,
             basis.descriptor().clone(),
-            basis.inner.root.clone(),
+            (*basis.owner_inner()).root.clone(),
         )?;
     }
     let mut roots = BTreeMap::new();

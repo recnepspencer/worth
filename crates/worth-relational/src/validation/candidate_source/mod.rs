@@ -6,7 +6,7 @@ mod correspondence;
 pub(crate) use worth_relational_contracts::internal_port::validation::candidate_source::denial;
 mod interpretation;
 mod interpretation_identity;
-pub(crate) mod opaque_custody;
+pub(crate) use worth_relational_branch::internal_port::validation::candidate_source::opaque_custody;
 pub(crate) mod registration_observation;
 pub use context::{
     ManagedIndexSourceContextFactory, ManagedIndexSourceContextReceipt,

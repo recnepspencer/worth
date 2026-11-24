@@ -20,7 +20,12 @@ while IFS= read -r file; do
       violations=1
     fi
   fi
-done < <(find crates/worth-relational{,-contracts,-storage}/src -type f -name '*.rs' | sort)
+done < <(find \
+  crates/worth-relational/src \
+  crates/worth-relational-contracts/src \
+  crates/worth-relational-storage/src \
+  crates/worth-relational-branch/src \
+  -type f -name '*.rs' | sort)
 
 if (( violations != 0 )); then
   exit 1

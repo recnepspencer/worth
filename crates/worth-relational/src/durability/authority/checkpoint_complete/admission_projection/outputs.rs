@@ -7,6 +7,7 @@ use serde::{
     ser::{SerializeSeq, SerializeStruct},
     Serialize, Serializer,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 pub(super) struct Projection<'a>(pub(super) &'a CanonicalCommitEnvelope);
 impl Serialize for Projection<'_> {
@@ -14,12 +15,17 @@ impl Serialize for Projection<'_> {
         let mut record = serializer.serialize_struct("CheckpointRequiredOutputs", 3)?;
         record.serialize_field(
             "origin",
-            &self.0.required_output_origin.as_deref().map(Origin),
+            &(*self.0.owner_required_output_origin())
+                .as_deref()
+                .map(Origin),
         )?;
-        record.serialize_field("materialization", &self.0.required_output_materialization)?;
+        record.serialize_field(
+            "materialization",
+            &(*self.0.owner_required_output_materialization()),
+        )?;
         record.serialize_field(
             "retirements",
-            &Retirements(&self.0.required_output_codec_retirements),
+            &Retirements(&(*self.0.owner_required_output_codec_retirements())),
         )?;
         record.end()
     }

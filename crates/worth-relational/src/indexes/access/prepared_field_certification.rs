@@ -13,6 +13,7 @@ use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionWorkCeiling, MapKernelFailure, ScopeStop,
 };
 use worth_foundational::facade::AspectValue;
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 
 /// Certification traverses the pinned authoritative storage. Its original
 /// request pays each temporary clone/key and vector growth before allocation.

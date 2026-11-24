@@ -4,6 +4,7 @@ use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };
 use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::branch::version::RelationalBranchVersionOwnerPort as _;
 
 pub(super) fn validate(
@@ -15,8 +16,7 @@ pub(super) fn validate(
     match effect.origin() {
         super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
             let source = source.envelope();
-            let original = source
-                .branch_cell_checkpoint
+            let original = (*source.owner_branch_cell_checkpoint())
                 .as_ref()
                 .ok_or(Cause::MissingOriginalPredecessor)?;
             let original = original
@@ -66,8 +66,7 @@ pub(super) fn validate_pruned_predecessor(
     match effect.origin() {
         super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
             let source = source.envelope();
-            let original = source
-                .branch_cell_checkpoint
+            let original = (*source.owner_branch_cell_checkpoint())
                 .as_ref()
                 .ok_or(Cause::MissingOriginalPredecessor)?;
             let original = original

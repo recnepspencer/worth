@@ -1,4 +1,3 @@
-pub(crate) use record_identity::MutationRecordAllocations;
 mod commit_strategies;
 pub(crate) mod durability;
 pub(crate) mod history;
@@ -12,7 +11,7 @@ pub(crate) mod schema_contract_runtime;
 pub(crate) mod services;
 pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::storage;
 mod storage_lifecycle;
-pub(crate) mod visibility;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::visibility;
 
 pub(crate) trait RuntimeSubsystem: Sized {
     type Config;
@@ -23,18 +22,11 @@ pub(crate) trait RuntimeSubsystem: Sized {
 
 pub(crate) use crate::storage::substrate::owned_state::RuntimeOwnedState;
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
-pub(crate) use durability::{
-    DurabilitySubsystem, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection,
-};
+pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestSelection};
 pub(crate) use history::canonical_publication_routes::{
-    authored_write_commit_denial, readmit_positioned_canonical_commit, BranchTransitionPublication,
-    BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPublicationRecordError, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
-    RelationalPerformedSourceWalk, RetainedBranchTransition,
+    BranchTransitionPublication, CanonicalCheckpointAdmissionError,
+    OriginalBranchSchemaInputsDenial, PerformedCheckpointSelection,
+    RelationalCanonicalPublicationRoutes, RelationalPerformedSourceWalk,
 };
 pub use history::canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
@@ -44,42 +36,33 @@ pub(crate) use history::history_preparation_binding::RelationalPreparationHistor
 pub(crate) use history::history_source_retirement::RelationalSourceHistoryBinding;
 pub use history::RelationalPhase4ReferenceCostCounters;
 pub(crate) use history::{
-    BranchHeadVersionIndexAuthority, HistorySubsystem, PreparedCommitSequence,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, RelationalForkMaterializationCost,
+    BranchHeadVersionIndexAuthority, HistorySubsystem, RelationalForkMaterializationCost,
     RelationalForkOwnerBinding,
 };
-pub(crate) use indexing::{
-    CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
-    IndexingState, OriginalCheckpointIndexes,
-};
+pub(crate) use indexing::IndexDefinitionReadBinding;
 pub use indexing::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,
 };
-pub(crate) use lineage::{
-    LineageNamingBasisBinding, LineageState, LineageSubsystem, ResidentLineageEventPage,
-    ResidentLineageNode, ValidatedLineageEventBatch,
-};
+pub(crate) use lineage::{LineageNamingBasisBinding, LineageSubsystem, ResidentLineageNode};
+#[cfg(test)]
+pub(crate) use lineage::{LineageState, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use publication::PublicationSubsystem;
-pub(crate) use record_identity::{
-    PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
-};
+pub(crate) use record_identity::{ReclaimedRecordSlot, RecordIdentitySubsystem};
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
+#[cfg(test)]
+pub(crate) use services::SymbolReservationDenial;
 pub(crate) use services::{
-    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable, SymbolReservationDenial,
+    PendingSymbolMeanings, RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable,
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,
-    PartitionEditionWriter, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    StorageSubsystem,
+    PartitionEditionWriter, ResidentPartitionEdition, ResidentPartitionEntry, StorageSubsystem,
 };
 pub(crate) use visibility::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,
-    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandleBinding,
-    VisibilityResidency, VisibilitySubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilitySubsystem,
 };
 
 pub use record_identity::{

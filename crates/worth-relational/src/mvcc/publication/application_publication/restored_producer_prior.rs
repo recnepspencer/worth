@@ -1,4 +1,5 @@
 //! A Native-restored publication and its actual producer antecedent, without replay inputs.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;

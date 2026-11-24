@@ -9,9 +9,8 @@ use worth_relational_contracts::internal_port::lineage::data::events::LineageEve
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::LineageId;
 use crate::facade::lineage::{
-    LineageEventKind, LineageEventRecord, LineageRecordTarget, LineageSubject,
-    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameHolder,
-    PersistentNameOfRecord,
+    LineageEventKind, LineageRecordTarget, LineageSubject, PersistentNameBranchIndex,
+    PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameOfRecord,
 };
 
 use super::name_index_fixtures::{main_branch, rebuild};

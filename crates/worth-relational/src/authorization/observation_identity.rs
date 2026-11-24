@@ -1,4 +1,5 @@
 use std::sync::atomic::{AtomicU64, Ordering};
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 use super::{RelationalAuthorizationObservationIdentity, RelationalAuthorizationObservationPlan};
 
@@ -28,9 +29,9 @@ pub(super) fn mint_observation_identity(
     .ok()?;
     let snapshot = plan.snapshot();
     let mut bytes = [0_u8; 32];
-    bytes[0..8].copy_from_slice(&snapshot.runtime_instance_id.to_le_bytes());
-    bytes[8..16].copy_from_slice(&snapshot.snapshot_id.0.to_le_bytes());
-    bytes[16..24].copy_from_slice(&snapshot.version_id.as_u64().to_le_bytes());
+    bytes[0..8].copy_from_slice(&(*snapshot.owner_runtime_instance_id()).to_le_bytes());
+    bytes[8..16].copy_from_slice(&(*snapshot.owner_snapshot_id()).0.to_le_bytes());
+    bytes[16..24].copy_from_slice(&(*snapshot.owner_version_id()).as_u64().to_le_bytes());
     bytes[24..32].copy_from_slice(&ordinal.to_le_bytes());
     Some(RelationalAuthorizationObservationIdentity::mint(bytes))
 }

@@ -22,6 +22,13 @@
 
 #![forbid(unsafe_code)]
 #![deny(unreachable_patterns)]
+// These examples exercise the consumer facade. Their text also documents the Branch types.
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/canonical_envelope.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/shared_canonical_envelope.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/retired_branch_basis.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/retained_fork_source.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/pinned_entity_metadata.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/caller_association.md"))]
 
 mod aggregate_identity;
 pub(crate) use worth_relational_contracts::internal_port::aspect_wire;
@@ -62,15 +69,15 @@ mod performance;
 mod presentation;
 mod projected_member_domain;
 mod publication;
-mod query;
+pub(crate) use worth_relational_branch::internal_port::query;
 mod replay;
 mod runtime;
-mod schema;
+pub(crate) use worth_relational_branch::internal_port::schema;
 mod simulation;
-mod snapshots;
+pub(crate) use worth_relational_branch::internal_port::snapshots;
 mod storage;
+pub(crate) use worth_relational_branch::internal_port::symbols;
 pub(crate) use worth_relational_contracts::internal_port::structural_traversal;
-mod symbols;
 mod transactions;
 mod validation;
 mod visibility;

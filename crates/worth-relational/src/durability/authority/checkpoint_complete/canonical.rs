@@ -12,6 +12,7 @@ use crate::history::commit::RelationalCommitEnvelopeResidency;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use RelationalNativeCheckpointCaptureDenial as Denial;
 pub(super) struct CanonicalOutput {
     pub(super) index: CheckpointCommitIndex,

@@ -26,7 +26,7 @@ fn shares_partition_generation(
 
 #[test]
 fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let lane = fixture_lane;
@@ -49,7 +49,7 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 
 #[test]
 fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use crate::history::data::CommitId;
         use crate::storage::substrate::SlotInit;
 
@@ -81,7 +81,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 
 #[test]
 fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use crate::storage::substrate::{RelationEndpoints, RelationExtra, SlotInit};
 
         let request = worth_harness::facade::execution_fixture::serial_request();
@@ -140,7 +140,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
 
 #[test]
 fn equal_image_cannot_bypass_global_contract_readmission() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let host_request = worth_harness::facade::execution_fixture::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

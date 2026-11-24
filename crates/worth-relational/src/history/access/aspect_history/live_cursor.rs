@@ -1,5 +1,8 @@
 //! Public finite cursor binding to the installed owner and original request.
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::access::aspect_history::page::assemble_prepared_record_history_page;
+use worth_relational_branch::internal_port::history::access::aspect_history::page::RelationalPreparedRecordHistoryPageFieldsPort as _;
+use worth_relational_branch::internal_port::history::access::aspect_history::page::RelationalRecordHistoryPageFieldsPort as _;
 
 use super::{
     cursor::{prepare_page, RetainedCanonicalRecordHistory},
@@ -64,12 +67,12 @@ impl RelationalCanonicalRecordHistoryCursor {
                 limits,
             )
         })?;
-        Ok(RelationalPreparedRecordHistoryPage {
-            source: Arc::clone(&self.source),
+        Ok(assemble_prepared_record_history_page(
+            Arc::clone(&self.source),
             execution,
-            expected_record: self.next_record,
+            self.next_record,
             page,
-        })
+        ))
     }
 
     /// Return a sealed successor only for this cursor's still-current offset.
@@ -79,19 +82,18 @@ impl RelationalCanonicalRecordHistoryCursor {
         &self,
         prepared: RelationalPreparedRecordHistoryPage<'_, '_>,
     ) -> Result<(RelationalRecordHistoryPage, Self), Denial> {
-        if !Arc::ptr_eq(&self.source, &prepared.source)
-            || self.next_record != prepared.expected_record
+        if !Arc::ptr_eq(&self.source, &(*prepared.owner_source()))
+            || self.next_record != (*prepared.owner_expected_record())
         {
             return Err(Denial::InvalidContinuation);
         }
-        let (accepted, _) = prepared
-            .execution
+        let (accepted, _) = (*prepared.owner_execution())
             .run_native(|_| {
                 let successor = Self {
                     source: Arc::clone(&self.source),
-                    next_record: prepared.page.next_record,
+                    next_record: (*prepared.page().owner_next_record()),
                 };
-                (prepared.page, successor)
+                (prepared.into_page(), successor)
             })
             .map_err(Denial::Request)?;
         Ok(accepted)

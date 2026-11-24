@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
 
 use crate::branch::{
     AdmittedRelationalBranchBasis, PreparedRelationalMaterializationSuspension,
@@ -42,21 +44,19 @@ impl RelationalMaterializationPort {
             .owner
             .admitted_runtime()
             .ok_or(RelationalMaterializationError::OwnerUnavailable)?;
-        let source_commit = basis
-            .inner
+        let source_commit = (*basis.owner_inner())
             .root
             .commit_id()
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
         let records = crate::storage::residency::probe_full(
             execution,
-            &basis
-                .inner
+            &(*basis.owner_inner())
                 .root
                 .symbol_admitted_projection(&runtime.services.symbols),
             |state| {
                 source_generated_manifest(
                     state,
-                    basis.inner.root.schema_authority().registry(),
+                    (*basis.owner_inner()).root.schema_authority().registry(),
                     generated_entities,
                 )
             },
@@ -245,7 +245,7 @@ fn validate_custody_basis(
     if custody.data().branch_identity != *basis.identity() {
         return Err(RelationalMaterializationError::BranchMismatch);
     }
-    if basis.inner.root.commit_id() != Some(custody.suspension_commit()) {
+    if (*basis.owner_inner()).root.commit_id() != Some(custody.suspension_commit()) {
         return Err(RelationalMaterializationError::SuspensionCommitMismatch);
     }
     Ok(())

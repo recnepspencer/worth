@@ -4,6 +4,7 @@
 //! readmission.
 
 use serde::{Deserialize, Serialize};
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
 
 use crate::branch::transition::{
     sequence::RelationalBranchTransitionSequence, PositionedBranchTransition,

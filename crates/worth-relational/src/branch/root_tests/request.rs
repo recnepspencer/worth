@@ -1,13 +1,12 @@
 //! Owner-level fork preflight and interim recovery refusal.
-use worth_relational_contracts::internal_port::branch::transition::sequence::RelationalBranchTransitionSequenceOwnerPort as _;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
+use worth_execution::{ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
 fn fork_target_materialization_overflow_refuses_before_installing_target() {
-    crate::branch::root::capture::with_reconstruction_fixture(|fixture_lane| {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         use crate::identity::data::PartitionId;
         use crate::storage::overlay::RelationalPartitionAllocationInventory as Inv;
         let host_request = worth_harness::facade::execution_fixture::serial_request();
@@ -23,7 +22,7 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
         let target_branch = BranchId("overflow-refused-fork".to_owned());
 
         let mut overflowing_root = source_root.as_ref().clone();
-        let base_region = source_root.regions.values().next().unwrap();
+        let base_region = source_root.regions_for_test().values().next().unwrap();
         let inventory = |authoritative_bytes| Inv {
             authoritative_bytes,
             ..Default::default()
@@ -45,13 +44,15 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
                 inventory(16),
             )),
         );
-        overflowing_root.regions = super::super::RelationalPersistentRegionSet::initial(
-            fixture_lane,
-            77_001,
-            regions,
-            &super::RelationalBranchRootIdentityIssuer::default(),
-        )
-        .unwrap();
+        overflowing_root.replace_regions_for_test(
+            crate::branch::root_regions::RelationalPersistentRegionSet::initial(
+                fixture_lane,
+                77_001,
+                regions,
+                &super::RelationalBranchRootIdentityIssuer::default(),
+            )
+            .unwrap(),
+        );
         let overflowing_root = Arc::new(overflowing_root);
         assert!(!overflowing_root.shares_authoritative_regions_with(&source_root));
         assert_eq!(
@@ -153,7 +154,10 @@ fn interim_predecessor_memory_exhaustion_preserves_typed_request_refusal() {
         .observe_branch(&receiver.main_branch_identity())
         .unwrap();
     assert!(
-        interim_basis.inner.root.canonical_envelope().is_none(),
+        (*interim_basis.owner_inner())
+            .root
+            .canonical_envelope()
+            .is_none(),
         "interim restored head carries no resident canonical envelope"
     );
 

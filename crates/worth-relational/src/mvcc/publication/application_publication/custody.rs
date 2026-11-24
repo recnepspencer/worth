@@ -1,4 +1,7 @@
 //! Runtime custody is issued from sealed performed results or cold native readmission.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::execution::request_stage::checkpoint;
@@ -84,8 +87,7 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
     ) -> Option<RelationalRequiredOutputPublication> {
         let envelope = &self.publication().envelope;
         (self.snapshot.runtime_instance_id() == installed.runtime_instance_id
-            && envelope
-                .required_output_origin
+            && (*envelope.owner_required_output_origin())
                 .as_ref()
                 .and_then(|origin| origin.issuer.as_ref())
                 .is_some_and(|issuer| issuer.same_publication_owner(&installed.authority)))
@@ -95,8 +97,7 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
                 envelope.clone().into_arc(),
             ),
             origin: Arc::clone(
-                envelope
-                    .required_output_origin
+                (*envelope.owner_required_output_origin())
                     .as_ref()
                     .expect("performed single publication"),
             ),
@@ -289,9 +290,7 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
             ),
         >,
     > {
-        self.publication()
-            .envelope
-            .required_output_origin
+        (*self.publication().envelope.owner_required_output_origin())
             .as_ref()
             .map(|origin| {
                 origin
