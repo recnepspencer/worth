@@ -10,3 +10,5 @@ pub mod cell_history;
 pub mod document_retention_model;
 #[path = "certification/application_graph/document_retention_model/host/world_resources.rs"]
 pub mod document_world_resources;
+#[path = "managed_probe_binding.rs"]
+pub mod managed_probe_binding;

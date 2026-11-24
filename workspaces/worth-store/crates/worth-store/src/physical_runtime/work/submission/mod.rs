@@ -30,6 +30,8 @@ mod shutdown;
 #[cfg(feature = "certification-test-authority")]
 mod yieldpoint;
 
+#[cfg(feature = "certification-test-authority")]
+pub use abandonment::CertificationPhysicalAbandonmentWaitObserver;
 pub(in crate::physical_runtime) use abandonment::{
     physical_work_abandonment_channel, PhysicalWorkAbandonmentInbox,
     PhysicalWorkAbandonmentPublisher, PhysicalWorkAbandonmentWake,
@@ -225,6 +227,17 @@ impl PhysicalWorkSubmissionOwner {
         self.shared
             .terminal_ledger
             .resolve_derived_reconciliation(identity);
+    }
+
+    pub(in crate::physical_runtime) fn await_abandonment_idle(&self) {
+        self.shared.abandonment.await_idle();
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn abandonment_wait_observer_for_certification(
+        &self,
+    ) -> CertificationPhysicalAbandonmentWaitObserver {
+        self.shared.abandonment.wait_observer()
     }
 
     pub(super) fn state(&self) -> &Arc<PhysicalSubmissionState> {

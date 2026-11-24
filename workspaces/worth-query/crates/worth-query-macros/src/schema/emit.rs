@@ -50,6 +50,14 @@ fn root(
             > {
                 #frag::declare(Self)
             }
+            fn visit_correction<
+                Visitor: #decl::application_aftermath::ApplicationCorrectionVisitor<Self>,
+            >(
+                source_binding: ::core::any::TypeId,
+                visitor: Visitor,
+            ) -> Visitor::Output {
+                #frag::visit_correction(Self, source_binding, visitor)
+            }
         }
         impl #schema::ApplicationSchemaComposition for #ident {
             type Contributions = <Self as #frag::Fragment>::Members;

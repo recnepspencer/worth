@@ -1,3 +1,4 @@
+pub mod group_finalization;
 pub mod lineage_preparation;
 pub mod phases;
 pub mod pipeline;

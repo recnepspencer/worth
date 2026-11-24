@@ -155,3 +155,24 @@ binding = "Lookalike"
 posture = "domain"
 reason = "Reference-free catalog text exercised by source-field binding refusal courts."
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-declaration/src/application_query/managed_index/probe/tests.rs"
+binding = "ProbeByteBinding"
+posture = "domain"
+reason = "Reference-free single-byte value exercised by managed-index probe profile tests."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-package-archive/src/record/application_schema/tests/managed_index.rs"
+binding = "BinaryProbeBinding"
+posture = "domain"
+reason = "Reference-free single-byte value exercised by managed-index archive round-trip tests."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-document-retention/src/managed_probe_binding.rs"
+binding = "TagBytesProbeBinding"
+posture = "domain"
+reason = "Reference-free two-byte prefix value exercised by public managed-index probe and watch courts."
+forbidden_types = []

@@ -1,4 +1,5 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod branch_preview;
 mod changed_build;
 pub(in crate::host) mod correction_material;
 pub(crate) mod managed_cleanup;

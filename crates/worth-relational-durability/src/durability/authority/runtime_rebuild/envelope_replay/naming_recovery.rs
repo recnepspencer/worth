@@ -33,15 +33,17 @@ pub fn reconstruct_replay_naming_plan(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<Option<CommitNamingPlan>, DurabilityError> {
     let events = envelope.lineage_events();
-    let has_naming_or_postures = events.iter().any(|event| {
-        event.name_birth().is_some()
-            || event.kept_name().is_some()
-            || event.subject() == LineageSubject::Relation
-            || matches!(
-                event.kind(),
-                LineageEventKind::Split | LineageEventKind::Merge | LineageEventKind::Restore
-            )
-    });
+    let groups = super::group_recovery::replay_group_claims(envelope)?;
+    let has_naming_or_postures = !groups.is_empty()
+        || events.iter().any(|event| {
+            event.name_birth().is_some()
+                || event.kept_name().is_some()
+                || event.subject() == LineageSubject::Relation
+                || matches!(
+                    event.kind(),
+                    LineageEventKind::Split | LineageEventKind::Merge | LineageEventKind::Restore
+                )
+        });
     if !has_naming_or_postures {
         return Ok(None);
     }
@@ -278,11 +280,12 @@ pub fn reconstruct_replay_naming_plan(
     }
 
     drop(basis);
-    if postures.is_empty() {
+    if postures.is_empty() && groups.is_empty() {
         return Ok(None);
     }
     Ok(Some(CommitNamingPlan {
         postures,
+        groups,
         ..Default::default()
     }))
 }

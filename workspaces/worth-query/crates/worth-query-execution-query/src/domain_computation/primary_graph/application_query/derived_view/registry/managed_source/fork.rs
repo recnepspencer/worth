@@ -1,7 +1,7 @@
 //! Identity-bound lookup custody releases every refused fork's staged metadata.
 use super::*;
 use std::sync::Weak;
-use worth_relational::facade::{history::BranchId, mvcc::ManagedIndexSourceForkPreparation};
+use worth_relational::facade::{history::BranchId, mvcc::ManagedIndexSourceCellPlacement};
 
 #[cfg(test)]
 mod tests;
@@ -11,13 +11,17 @@ struct PreparedLookup {
     branch: BranchId,
     slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
     _allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+    retired: Option<SourceBranchSlot>,
 }
 impl Drop for PreparedLookup {
     fn drop(&mut self) {
+        let displaced = self.retired.take();
         if self.slot.admitted().is_some() {
+            drop(displaced);
             return;
         }
         let Some(registry) = self.registry.upgrade() else {
+            drop(displaced);
             return;
         };
         let mut state = registry
@@ -36,13 +40,14 @@ impl Drop for PreparedLookup {
         drop(state);
         drop(empty);
         drop(retired);
+        drop(displaced);
     }
 }
 impl ManagedDerivedViewRegistry {
-    pub fn prepare_source_fork(
+    pub fn prepare_source_placement(
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn std::any::Any + Send + Sync>, Stop> {
         if self.native_runtime != Some(target.runtime_instance_id()) {
             return Err(Stop::ForeignCell);
@@ -54,13 +59,17 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if state.source_branches.contains_key(target.target_branch()) {
+        if state
+            .source_branches
+            .get(target.branch())
+            .is_some_and(|existing| !existing.slot.is_expired_pending())
+        {
             return Err(Stop::TopologyPending);
         }
         let slot = target.lookup_slot();
         let entry = SourceBranchSlot::new(
             execution,
-            target.target_branch(),
+            target.branch(),
             slot.clone(),
             state.source_branches.len(),
         )
@@ -71,22 +80,21 @@ impl ManagedDerivedViewRegistry {
                 execution,
                 u64::try_from(
                     size_of::<PreparedLookup>()
-                        .checked_add(target.target_branch().0.len())
+                        .checked_add(target.branch().0.len())
                         .ok_or(Stop::PreparationMemoryCounterOverflow)?,
                 )
                 .map_err(|_| Stop::PreparationMemoryCounterOverflow)?,
             )
             .map_err(Stop::Execution)?;
-        let lookup = PreparedLookup {
-            registry: Arc::downgrade(self),
-            branch: target.target_branch().clone(),
-            slot,
-            _allocation: Arc::clone(&entry.allocation),
-        };
-        state
-            .source_branches
-            .insert(target.target_branch().clone(), entry);
+        let allocation = Arc::clone(&entry.allocation);
+        let retired = state.source_branches.insert(target.branch().clone(), entry);
         drop(state);
-        Ok(Box::new(lookup))
+        Ok(Box::new(PreparedLookup {
+            registry: Arc::downgrade(self),
+            branch: target.branch().clone(),
+            slot,
+            _allocation: allocation,
+            retired,
+        }))
     }
 }

@@ -11,6 +11,12 @@ impl ReservedProductUnpublishedRecordUpdate {
         if !record.is_durable_creation() {
             return Err(Denial::MissingRecord);
         }
+        if record
+            .next_actions()
+            .contains(&crate::recovery::ProductUnpublishedNextAction::ReopenRequired)
+        {
+            return Err(Denial::ReopenRequired);
+        }
         let bytes = record.metadata_bytes();
         let catalog = self.catalog.clone();
         let mut state = catalog.locked_state();

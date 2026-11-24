@@ -298,6 +298,7 @@ impl LineageState {
                 &self.branch_forks,
             )
         };
+        self.fork_group_state(&target, &source, fork_commit_id);
         self.fork_name_index(&target, &source, fork_commit_id);
         self.branch_naming_states.insert(target, seeded);
     }

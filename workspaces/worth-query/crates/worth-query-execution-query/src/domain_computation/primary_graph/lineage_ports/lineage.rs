@@ -31,13 +31,13 @@ pub fn downcast_managed_views_arc(
 }
 
 impl ManagedDerivedViewPort for ManagedDerivedViewRegistry {
-    fn prepare_source_fork(
+    fn prepare_source_placement(
         self: Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+        target: &worth_relational::facade::mvcc::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, worth_relational::facade::mvcc::CompanionPreflightStop>
     {
-        ManagedDerivedViewRegistry::prepare_source_fork(&self, execution, target)
+        ManagedDerivedViewRegistry::prepare_source_placement(&self, execution, target)
     }
 
     fn prepare_sources(

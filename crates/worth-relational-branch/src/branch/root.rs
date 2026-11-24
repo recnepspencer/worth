@@ -137,7 +137,7 @@ pub struct RelationalBranchRoot {
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub managed_source_image:
-        std::sync::OnceLock<crate::branch::projection_view::managed_source::ManagedSourceRootImage>,
+        crate::branch::projection_view::managed_source::ManagedSourceRootImages,
 }
 
 impl AsRef<RelationalBranchRoot> for RelationalBranchRoot {

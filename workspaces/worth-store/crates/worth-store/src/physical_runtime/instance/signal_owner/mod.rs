@@ -96,6 +96,14 @@ impl PhysicalWorkSignalOwner {
     }
 
     #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn pause_abandonment_after_dequeue_for_certification(
+        &self,
+    ) -> CertificationPhysicalSignalPauseGate {
+        self.graph_worker
+            .pause_abandonment_after_dequeue_for_certification()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn fail_next_abandonment_for_certification(&self) {
         self.graph_worker.fail_next_abandonment_for_certification();
     }

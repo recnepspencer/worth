@@ -28,6 +28,13 @@ impl ManagedSourceInstallation {
     pub fn is_empty(&self) -> bool {
         self.sources.is_empty() && !self.public_cache_owner
     }
+    #[cfg(test)]
+    pub(crate) fn with_public_cache_owner() -> Self {
+        Self {
+            public_cache_owner: true,
+            ..Self::default()
+        }
+    }
     pub fn compile<S: ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         providers: &ManagedIndexProviderCatalog<S>,

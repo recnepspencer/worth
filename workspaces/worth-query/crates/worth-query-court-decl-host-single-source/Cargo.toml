@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { path = "../worth-query-decl" }
 worth-query-host = { path = "../worth-query-host" }

@@ -16,6 +16,7 @@ const FIELD_KEYS: &[&str] = &[
     "reverse_from",
     "nested",
     "name",
+    "group_name",
     "slot",
     "selector",
 ];
@@ -43,6 +44,9 @@ pub(super) struct NameSlot {
     pub(super) value: Type,
     /// `Option<..>`: an entity carrying no name projects `None`.
     pub(super) optional: bool,
+    /// `group_name`: the name of the group, of the field's group kind, the
+    /// row's own name belongs to.
+    pub(super) group: bool,
 }
 
 enum Member {
@@ -148,6 +152,7 @@ struct KindKeys {
 fn member(field: &Field, namespace: Option<&Path>) -> syn::Result<Member> {
     let member = field.ident.clone().expect("named fields carry identifiers");
     let mut named = Once::<bool>::new("name");
+    let mut grouped = Once::<bool>::new("group_name");
     let mut kind = KindKeys {
         selection: Once::new("field"),
         column: Once::new("column"),
@@ -166,11 +171,19 @@ fn member(field: &Field, namespace: Option<&Path>) -> syn::Result<Member> {
         "nested" => kind.nested.set(meta, value(meta)?),
         "name" if meta.input.peek(syn::Token![=]) => output.set(meta, value(meta)?),
         "name" => named.set(meta, flag(meta)?),
+        "group_name" => grouped.set(meta, flag(meta)?),
         "slot" => explicit.set(meta, value(meta)?),
         "selector" => selector.set(meta, value(meta)?),
         _ => Err(unknown_key(meta, DERIVE, FIELD_KEYS)),
     })?;
-    if named.is_set() {
+    if let (Some(span), true) = (grouped.span(), named.is_set()) {
+        return Err(syn::Error::new(
+            span,
+            "a field projects either the row's `name` or its `group_name`, not both",
+        ));
+    }
+    let group = grouped.is_set();
+    if named.is_set() || group {
         let role = "a name slot, which projects the row's own persistent name";
         kind.selection.refuse_unless(false, role)?;
         kind.column.refuse_unless(false, role)?;
@@ -184,6 +197,7 @@ fn member(field: &Field, namespace: Option<&Path>) -> syn::Result<Member> {
             optional: option_inner(&field.ty).is_some(),
             value: field.ty.clone(),
             member,
+            group,
         }));
     }
     let kind = slot_kind(kind, &member, &field.ty)?;

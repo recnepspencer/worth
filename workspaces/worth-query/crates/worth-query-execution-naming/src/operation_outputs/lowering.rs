@@ -131,6 +131,7 @@ impl BoundOperationNaming {
         });
         let resolved = resolve_same_commit_names(catalog, self.candidate(), outputs)?;
         identities.extend(resolved.iter().map(|name| name.identity));
+        let same_commit: Vec<_> = resolved.iter().map(|name| name.identity).collect();
         // Consumed in the declaration order the outputs were resolved in.
         let mut resolved = resolved.into_iter();
         let mut next = || resolved.next().expect("one resolved name per named output");
@@ -188,9 +189,19 @@ impl BoundOperationNaming {
                     plan.add_merge_posture(parents, target, keeper)
                         .map_err(assembly)?;
                 }
+                OperationNamingEntry::GroupPartition { .. } => {}
             }
         }
-        Ok(plan.build().into_relational_plan())
+        let mut lowered = plan.build().into_relational_plan();
+        super::group_lowering::lower_group_partitions(
+            self.entries(),
+            catalog,
+            &view,
+            self.candidate(),
+            &same_commit,
+            &mut lowered,
+        )?;
+        Ok(lowered)
     }
 }
 
@@ -198,7 +209,7 @@ fn held_names(
     entry: &OperationNamingEntry<PendingBirthTarget>,
 ) -> Vec<(ApplicationNameSubjectKind, [u8; 32])> {
     match entry {
-        OperationNamingEntry::Birth(_) => Vec::new(),
+        OperationNamingEntry::Birth(_) | OperationNamingEntry::GroupPartition { .. } => Vec::new(),
         OperationNamingEntry::Retire { subject, name } => vec![(*subject, *name)],
         OperationNamingEntry::Split {
             subject, parent, ..
@@ -226,7 +237,9 @@ fn parent_identities(
     held: &BTreeMap<[u8; 32], HeldName>,
 ) -> Vec<PersistentNameIdentity> {
     match entry {
-        OperationNamingEntry::Birth(_) | OperationNamingEntry::Retire { .. } => Vec::new(),
+        OperationNamingEntry::Birth(_)
+        | OperationNamingEntry::Retire { .. }
+        | OperationNamingEntry::GroupPartition { .. } => Vec::new(),
         OperationNamingEntry::Split { parent, .. } => vec![held[parent].0],
         OperationNamingEntry::Merge { parents, .. } => {
             parents.iter().map(|parent| held[parent].0).collect()

@@ -22,6 +22,9 @@ pub struct PublishedLineageArtifact {
     counters: LineageArtifactCounters,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     relation_lineages: Vec<(RelationId, LineageId)>,
+    /// Canonical group lineage frame (`durability::naming` group codec).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    group_lineage: Vec<u8>,
 }
 
 impl PublishedLineageArtifact {
@@ -41,7 +44,18 @@ impl PublishedLineageArtifact {
             digest_basis,
             counters,
             relation_lineages: Vec::new(),
+            group_lineage: Vec::new(),
         }
+    }
+
+    pub(super) fn with_group_lineage(mut self, group_lineage: Vec<u8>) -> Self {
+        self.group_lineage = group_lineage;
+        self
+    }
+
+    /// This commit's canonical group lineage frame; empty when it has none.
+    pub fn group_lineage(&self) -> &[u8] {
+        &self.group_lineage
     }
 
     pub(super) fn with_relation_lineages(
@@ -110,7 +124,9 @@ impl PublishedLineageArtifact {
     }
 
     pub fn has_authority_content(&self) -> bool {
-        !self.lineage_events.is_empty() || !self.lineage_decision_log.is_empty()
+        !self.lineage_events.is_empty()
+            || !self.lineage_decision_log.is_empty()
+            || !self.group_lineage.is_empty()
     }
 
     pub fn owned_allocation_capacity_bytes(&self) -> u64 {
@@ -122,6 +138,7 @@ impl PublishedLineageArtifact {
             .saturating_add(vector_capacity_bytes(&self.lineage_event_ids))
             .saturating_add(vector_capacity_bytes(&self.lineage_events))
             .saturating_add(vector_capacity_bytes(&self.lineage_decision_log))
+            .saturating_add(vector_capacity_bytes(&self.group_lineage))
     }
 
     pub(crate) fn lineage_events_mut(&mut self) -> &mut Vec<LineageEventRecord> {
@@ -142,6 +159,7 @@ fn vector_capacity_bytes<T>(values: &Vec<T>) -> u64 {
 pub trait PublishedLineageArtifactFixturePort: Sized {
     fn lineage_decision_log_mut_for_test(&mut self) -> &mut Vec<LineageDecisionRecord>;
     fn lineage_events_mut_for_test(&mut self) -> &mut Vec<LineageEventRecord>;
+    fn group_lineage_mut_for_test(&mut self) -> &mut Vec<u8>;
 }
 
 impl PublishedLineageArtifactFixturePort for PublishedLineageArtifact {
@@ -151,5 +169,9 @@ impl PublishedLineageArtifactFixturePort for PublishedLineageArtifact {
 
     fn lineage_events_mut_for_test(&mut self) -> &mut Vec<LineageEventRecord> {
         self.lineage_events_mut()
+    }
+
+    fn group_lineage_mut_for_test(&mut self) -> &mut Vec<u8> {
+        &mut self.group_lineage
     }
 }

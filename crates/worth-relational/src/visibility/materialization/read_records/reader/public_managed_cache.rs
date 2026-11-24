@@ -31,7 +31,7 @@ impl VisibilityReadContext<'_> {
         basis
             .root()
             .managed_source_image
-            .get()
+            .for_branch(selected.branch_id())
             .ok_or(Denial::RootUnavailable)?
             .retain_public_cache(execution, selected, generation, payload, memory)
     }
@@ -60,7 +60,7 @@ impl VisibilityReadContext<'_> {
         basis
             .root()
             .managed_source_image
-            .get()
+            .for_branch(selected.branch_id())
             .ok_or(Denial::RootUnavailable)?
             .public_cache_payload(&selected, generation, cache)
     }

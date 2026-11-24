@@ -1,10 +1,12 @@
 //! One feature, contribution and program; an in-memory Host under bounded
 //! serial limits; and the local-process principal that uses it.
+use super::completion_correction::{self, CorrectCompletion, RestoreDoneBinding, RestoredDone};
 use super::{actions::*, reads, relations, schema::*};
 use std::time::Duration;
 use worth_query_decl::facade::application_schema::fragment::Registration;
 use worth_query_decl::facade::{application_program::*, application_schema::*, authentication::*};
 use worth_query_host::facade::admission::authenticated_principal::*;
+use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{
     application_contribution::*, application_installation::*, primary_graph::*,
     worth_query_application_contribution,
@@ -25,10 +27,13 @@ worth_query_application_contribution! {
                 .application_query_binding::<reads::DueBinding>()
                 .application_query(relations::outline())
                 .application_query_binding::<relations::OutlineQueryBinding>()
+                .application_query(completion_correction::task_details())
+                .declared_operation(completion_correction::restore_done())
         };
         body_action(RenameBinding, Renamed) { operation: rename_definition(); };
         body_action(RescheduleBinding, Rescheduled) { operation: reschedule_definition(); };
-        body_action(CompleteBinding, Completed) { operation: complete_definition(); };
+        body_action_ref(CompleteBinding, Completed) {};
+        body_action_ref(RestoreDoneBinding, RestoredDone) {};
     }
 }
 
@@ -36,7 +41,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("macros.board-contribution.v1");
-    type Members = (Board, PrincipalBinding, Features);
+    type Members = (Board, PrincipalBinding, CorrectCompletion, Features);
 }
 /// Registers the feature definition's declared members.
 pub struct Features;
@@ -109,49 +114,50 @@ pub fn install(clock: &WorthQueryAdmissionClock) -> Host {
         (BoardRuntime::new(),),
         ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a").unwrap(),
         limits,
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed
-                    .principal_binding(PrincipalBinding::reference())
-                    .unwrap(),
-                WorthQueryApplicationPrincipalKey::new("board-owner").unwrap(),
-                1_u64,
-                owner_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            for project in [1_u64, 2] {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Project::reference(),
-                        key("project", project),
-                    )
-                    .field(ProjectKey::at("ProjectKey"), project),
-                )?;
-            }
-            for (task, project, title, notes, due) in TASKS {
-                let mut seed =
-                    WorthQueryApplicationEntitySeed::new(Task::reference(), key("task", task))
-                        .field(TaskKey::at("TaskKey"), task)
-                        .field(Title::at("Title"), title.to_owned())
-                        .field(Done::at("Done"), false);
-                if let Some(notes) = notes {
-                    seed = seed.field(Notes::at("Notes"), notes.to_owned());
-                }
-                if let Some(due) = due {
-                    seed = seed.field(Due::at("Due"), day(due));
-                }
-                graph.bind_entity(seed)?;
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    Contains::reference(),
-                    format!("contains-{task}"),
-                    key("project", project),
-                    key("task", task),
-                ))?;
-            }
-            Ok(())
-        },
+        |_, graph, installed| seed(graph, installed),
     )
     .expect("the derived board installs")
+}
+
+pub fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &WorthQueryInstalledApplicationSchema<Schema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed
+            .principal_binding(PrincipalBinding::reference())
+            .unwrap(),
+        WorthQueryApplicationPrincipalKey::new("board-owner").unwrap(),
+        1_u64,
+        owner_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    for project in [1_u64, 2] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(Project::reference(), key("project", project))
+                .field(ProjectKey::at("ProjectKey"), project),
+        )?;
+    }
+    for (task, project, title, notes, due) in TASKS {
+        let mut seed = WorthQueryApplicationEntitySeed::new(Task::reference(), key("task", task))
+            .field(TaskKey::at("TaskKey"), task)
+            .field(Title::at("Title"), title.to_owned())
+            .field(Done::at("Done"), false);
+        if let Some(notes) = notes {
+            seed = seed.field(Notes::at("Notes"), notes.to_owned());
+        }
+        if let Some(due) = due {
+            seed = seed.field(Due::at("Due"), day(due));
+        }
+        graph.bind_entity(seed)?;
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            Contains::reference(),
+            format!("contains-{task}"),
+            key("project", project),
+            key("task", task),
+        ))?;
+    }
+    Ok(())
 }
 
 fn key<E>(kind: &str, key: u64) -> WorthQueryApplicationEntityKey<Schema, E> {

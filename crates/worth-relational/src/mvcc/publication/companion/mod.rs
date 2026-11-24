@@ -5,7 +5,7 @@ pub use cell::{
     ManagedIndexPublicCacheRetirement, ManagedIndexSourceObservation, ManagedIndexSourceRebuild,
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, ReservedCompanionBranchCell,
 };
-pub use managed_fork::ManagedIndexSourceForkPreparation;
+pub use managed_fork::ManagedIndexSourceCellPlacement;
 pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
 pub(crate) use preflight::CandidateCompanionBinding;
 pub use preflight::{

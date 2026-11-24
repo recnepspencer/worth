@@ -17,6 +17,30 @@ worth_query_declaration::worth_query_value_binding!(pub ProbeBinding for Probe {
     canonical: ValueDecodeBounds::new(1024, 512, 4, 4),
 });
 
+struct BinaryProbeDelegate;
+pub struct BinaryProbe(u8);
+impl BinaryValueDelegate for BinaryProbeDelegate {
+    type Value = BinaryProbe;
+    const MAXIMUM_WIRE_BYTES: usize = 1;
+    fn encode(value: &BinaryProbe, writer: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
+        writer.write(&[value.0])
+    }
+    fn admit(
+        bytes: &[u8],
+        admission: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<BinaryProbe, ValueCodecDenial> {
+        admission.admit(1, 0)?;
+        let [byte] = bytes else {
+            return Err(ValueCodecDenial::Malformed);
+        };
+        Ok(BinaryProbe(*byte))
+    }
+}
+worth_query_declaration::worth_query_value_binding!(pub BinaryProbeBinding for BinaryProbe {
+    identity: "worth.query.tests.archive.binary-index-probe.v1",
+    binary: BinaryProbeDelegate,
+});
+
 pub(super) fn definition() -> ErasedApplicationManagedIndexDefinition {
     ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
         WorthQueryPortableManagedIndexParts {
@@ -119,6 +143,18 @@ fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_pay
     );
     let mut parts = definition().parts().clone();
     parts.probe = ApplicationManagedIndexProbeMeaning::of::<StringApplicationValueBinding>();
+    let native = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+    };
+    assert_eq!(decode_member(&encode_member(&native)), native);
+    parts.probe = ApplicationManagedIndexProbeMeaning::of::<BinaryProbeBinding>();
+    let binary = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+    };
+    assert_eq!(decode_member(&encode_member(&binary)), binary);
+    let mut unfunded = parts.probe.parts().clone();
+    unfunded.supports_admitted_decode = false;
+    parts.probe = ApplicationManagedIndexProbeMeaning::from_untrusted_parts(unfunded);
     assert_eq!(
         ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts).validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedProbeProfile)

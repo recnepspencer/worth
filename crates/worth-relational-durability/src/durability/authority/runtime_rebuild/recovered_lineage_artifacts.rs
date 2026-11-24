@@ -122,6 +122,7 @@ fn validate_envelope_lineage(
         contracts::lineage::data::artifacts::decision_log::LineageDecisionLog::new(envelope.lineage_decision_log().to_vec()),
     )
     .with_relation_lineages(relation_lineages.to_vec())
+    .with_group_lineage(envelope.published_lineage().group_lineage().to_vec())
     .publish();
     if &observed != envelope.published_lineage() {
         return Err(DurabilityError::new(
@@ -251,6 +252,23 @@ pub fn reconcile_recovered_lineage_artifacts(
                     )));
                 }
             }
+        }
+    }
+
+    for positioned in tail_log {
+        let envelope = positioned.envelope();
+        let durable = super::recovered_group_lineage::recovered_group_lineage(
+            [envelope],
+            RecoveryFailureClass::ReplayFailure,
+        )?;
+        let durable = durable.into_iter().next().map(|(_, _, t)| t);
+        let replayed =
+            lineage.published_group_lineage_at(&envelope.branch_context, envelope.commit.commit_id);
+        if replayed != durable.unwrap_or_default() {
+            return Err(replay_failure(format!(
+                "replayed group lineage of commit {} disagrees with its durable canonical frame",
+                envelope.commit.commit_id.0
+            )));
         }
     }
 

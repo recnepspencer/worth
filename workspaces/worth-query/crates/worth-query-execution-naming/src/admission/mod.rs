@@ -37,7 +37,9 @@ pub(crate) fn test_name<K>(byte: u8) -> WorthQueryName<K> {
 }
 pub(crate) use observed::entity_scheme_subject;
 pub use observed::ObservedEntityNames;
-pub(crate) use resolved::{kind_verified_resolved_name, verify_resolved_subject, RequestedSubject};
+pub(crate) use resolved::{
+    kind_verified_resolved_name, resolved_group_handle, verify_resolved_subject, RequestedSubject,
+};
 pub use same_commit::same_commit_name_of;
 
 /// Sealed collection of persistent names minted during one committed
