@@ -20,7 +20,7 @@ impl IndexAccess<'_> {
     ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
         crate::execution::check_request(execution)
             .map_err(|cause| denied(Denial::Execution(cause), index))?;
-        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
+        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime.runtime_instance_id()) {
             return Err(denied(Denial::SnapshotUnavailable, index));
         }
         let pinned = self.runtime.read_truth().pin_view_read_capability_checked(

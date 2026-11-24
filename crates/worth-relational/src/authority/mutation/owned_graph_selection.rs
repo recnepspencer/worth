@@ -4,15 +4,20 @@ use super::{
     outcomes::{MutationEvent, MutationOutcome, RecordMutation},
     *,
 };
-use crate::{
-    config::data::MutationConfig,
-    identity::data::{EntityId, RelationId, VersionId},
-    mvcc::owned_graph_selection::PreparedOwnedGraphSelection,
-    runtime::{PendingRecordAllocations, PendingSymbolMeanings},
-    schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry},
-    storage::overlay::{CurrentPartitionAccess, WorkingState},
-    transactions::data::{CommitConflict, ConflictClass, RecordRef},
-};
+use crate::config::data::MutationConfig;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::identity::data::VersionId;
+use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
+use crate::runtime::state::subsystems::record_identity::PendingRecordAllocations;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
+use crate::schema::data::AspectContractPlanCatalog;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::RecordRef;
 mod entities;
 mod relations;
 
@@ -90,12 +95,12 @@ pub(crate) fn apply(
 fn request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> MutationApplyDenial {
-    crate::publication::ownership::request(cause.into()).into()
+    crate::publication::ownership::read_request::request(cause.into()).into()
 }
 fn stale(record: RecordRef, detail: impl Into<String>) -> CommitConflict {
     CommitConflict::new(ConflictClass::MutationStateInconsistency {
         detail: detail.into(),
-        evidence: crate::transactions::data::MutationStateInconsistencyEvidence::MaterializationTransition { record },
+        evidence: crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence::MaterializationTransition { record },
     })
 }
 

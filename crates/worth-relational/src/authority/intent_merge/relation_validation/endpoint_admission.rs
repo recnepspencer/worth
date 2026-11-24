@@ -1,7 +1,9 @@
 use std::collections::BTreeSet;
 
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitConflict, ConflictClass, CreatedEntityRef, EntityReference};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::{CreatedEntityRef, EntityReference};
 
 use super::super::record_lookup::entity_exists_in_state;
 

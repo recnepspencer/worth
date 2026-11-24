@@ -1,11 +1,14 @@
 //! A verified schema transition is the sole publication-time reconstruction entrance.
 use super::candidate_publication::PreparedCandidateIndexPublication;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::maintenance::CommitChange;
+use crate::branch::root::RelationalBranchRoot;
 use crate::indexes::data::{
     DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::runtime::{IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions};
-use crate::storage::substrate::maintenance::{CommitChange, ReconstructionLane};
+use crate::runtime::state::subsystems::indexing::{
+    IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions,
+};
+use crate::storage::substrate::maintenance::ReconstructionLane;
 use std::sync::Arc;
 
 impl IndexDefinitionReadBinding {

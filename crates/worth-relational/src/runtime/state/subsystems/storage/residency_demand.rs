@@ -1,11 +1,11 @@
 //! Read-only demand authority for the mirror's impending publication set.
 use super::StorageSubsystem;
-use crate::runtime::state::subsystems::RuntimeOwnedState;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 
 #[derive(Debug)]
 pub(crate) struct MirrorResidencyDemandBinding {
     partitions: RuntimeOwnedState<super::CurrentMirror>,
-    main_branch: crate::history::data::BranchId,
+    main_branch: crate::history::data::coordinates::BranchId,
 }
 
 impl Clone for MirrorResidencyDemandBinding {
@@ -20,7 +20,7 @@ impl Clone for MirrorResidencyDemandBinding {
 impl StorageSubsystem {
     pub(crate) fn residency_demand_binding(
         &self,
-        main_branch: crate::history::data::BranchId,
+        main_branch: crate::history::data::coordinates::BranchId,
     ) -> MirrorResidencyDemandBinding {
         MirrorResidencyDemandBinding {
             partitions: self.partitions.share(),
@@ -30,90 +30,32 @@ impl StorageSubsystem {
 }
 
 impl MirrorResidencyDemandBinding {
-    pub(crate) fn prepare_publication(
+    pub(crate) fn is_main_branch(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        branch: &crate::history::data::BranchId,
-        root: &crate::branch::RelationalBranchRoot,
-        publication: &crate::storage::residency::SymbolPublicationAdmission,
-        clone_mode: crate::storage::overlay::PartitionCloneMode,
-        committed: std::collections::BTreeMap<
-            crate::identity::data::PartitionId,
-            (
-                crate::storage::overlay::PartitionState,
-                crate::storage::overlay::PartitionMutationJournal,
-            ),
-        >,
+        branch: &crate::history::data::coordinates::BranchId,
+    ) -> bool {
+        branch == &self.main_branch
+    }
+
+    pub(crate) fn edition(&self) -> super::PartitionEdition {
+        self.partitions.read().edition.clone()
+    }
+
+    pub(crate) fn admit_current_target(
+        &self,
+        id: crate::identity::data::PartitionId,
     ) -> Result<
-        crate::storage::PreparedMirrorPublication,
+        Option<super::ResidentMirrorTarget>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        crate::execution::check_request(execution)
-            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
-        let mut prepared = crate::storage::PreparedMirrorPublication::empty();
-        if branch != &self.main_branch {
-            return Ok(prepared);
-        }
-        let edition = self.partitions.read().edition.clone();
-        for (id, (partition, journal)) in committed {
-            crate::storage::overlay::CurrentPartitionAccess::demand_head_partition(
-                &edition.with_symbol_admission(symbols),
-                execution,
-                id,
-            )?;
-            let target = self.partitions.write().admit_current_target(id)?;
-            match target {
-                Some(target) => {
-                    let retention = target.retention();
-                    let head = target.current_lease().ok_or(crate::storage::data::RelationalStorageUnavailable {
-                        subject: crate::storage::data::RelationalStorageSubject::Region(id),
-                        cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-                    })?;
-                    if head.has_complete_history() {
-                        retention
-                            .demand_full(execution, 1 << 30)?
-                            .admit_symbols(execution, symbols)?;
-                    } else {
-                        head.admit_owned_symbols(execution, symbols)?;
-                    }
-                    prepared.prepare_existing(
-                    target,
-                    clone_mode,
-                    partition,
-                    journal,
-                    crate::storage::residency::ResidentHistoryReadmission::new(
-                        root.retained_schema_authority(),
-                        symbols,
-                    ).with_symbol_publication(publication.for_region(root.commit_change().expect(/* Proof: SymbolPublicationAdmission::prepare requires this exact prepared root's CommitChange before mirror preparation. */ "publication root has change"), id).ok_or(crate::storage::data::RelationalStorageUnavailable {
-                        subject: crate::storage::data::RelationalStorageSubject::Region(id),
-                        cause: crate::storage::data::RelationalStorageUnavailableCause::MissingSymbolMaintenancePredecessor,
-                    })?),
-                );
-                }
-                None => {
-                    let lease = root.resident_full_region_witness(id)?.ok_or(
-                        crate::storage::data::RelationalStorageUnavailable {
-                            subject: crate::storage::data::RelationalStorageSubject::Region(id),
-                            cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-                        }
-                    )?;
-                    // The immutable branch root is a real reader. Give the mirror
-                    // its own owned payload now, rather than depending on a
-                    // later no-op lifecycle edit to detach this initial cell.
-                    let mirror = lease.into_edit().freeze();
-                    prepared.prepare_new(super::ResidentMirrorTarget::new(mirror, false), &journal);
-                }
-            }
-        }
-        Ok(prepared)
+        Ok(self.partitions.write().admit_current_target(id)?)
     }
 
     pub(crate) fn demand_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        branch: &crate::history::data::BranchId,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        branch: &crate::history::data::coordinates::BranchId,
         ids: impl IntoIterator<Item = crate::identity::data::PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         if branch != &self.main_branch {
@@ -131,8 +73,8 @@ impl MirrorResidencyDemandBinding {
     pub(crate) fn demand_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        branch: &crate::history::data::BranchId,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        branch: &crate::history::data::coordinates::BranchId,
         ids: impl IntoIterator<Item = crate::identity::data::PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         if branch != &self.main_branch {

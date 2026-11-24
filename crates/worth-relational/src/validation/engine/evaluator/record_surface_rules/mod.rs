@@ -1,7 +1,9 @@
 mod live_record_sidecars;
 mod snapshot_entity_limits;
 
-use crate::validation::data::{InvariantClass, InvariantViolation, RecordKindTag};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::rules::RecordKindTag;
 
 use super::super::context::InvariantExecutionContext;
 

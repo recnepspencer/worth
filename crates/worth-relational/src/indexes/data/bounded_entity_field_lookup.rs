@@ -77,7 +77,7 @@ impl BoundedEntityFieldLookupRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundedEntityFieldLookupOutcome {
-    definition: crate::indexes::RetainedDerivedIndexDefinition,
+    definition: crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
     generation_id: DerivedIndexGenerationId,
     candidate_entity_ids: Vec<EntityId>,
     examined_entry_count: usize,
@@ -87,7 +87,7 @@ pub struct BoundedEntityFieldLookupOutcome {
 
 impl BoundedEntityFieldLookupOutcome {
     pub(crate) fn new(
-        definition: crate::indexes::RetainedDerivedIndexDefinition,
+        definition: crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
         generation_id: DerivedIndexGenerationId,
         candidate_entity_ids: Vec<EntityId>,
         examined_entry_count: usize,
@@ -110,7 +110,9 @@ impl BoundedEntityFieldLookupOutcome {
 
     /// The installed semantic definition selected with this bounded lookup.
     /// A later generation may refresh without changing this definition.
-    pub fn retain_definition(&self) -> crate::indexes::RetainedDerivedIndexDefinition {
+    pub fn retain_definition(
+        &self,
+    ) -> crate::indexes::retained_definition::RetainedDerivedIndexDefinition {
         self.definition.clone()
     }
 

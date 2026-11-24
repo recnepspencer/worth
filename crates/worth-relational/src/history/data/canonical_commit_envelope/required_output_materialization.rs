@@ -1,7 +1,7 @@
 //! Native maintenance links preserve producer meaning across payload restoration.
 use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use serde::{Deserialize, Serialize};
 
 /// Captured native write position before the exact record was suspended.

@@ -12,7 +12,7 @@ use crate::merge::data::{
     MergePolicyOwnershipSurface, MergePolicyProofBoundary, MergePolicyRejectClass,
     MergePolicyResolutionRecord, ResolvedAspectMergePolicy, TopologyRewireAdmissionPolicy,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AspectKey;
 
 #[test]

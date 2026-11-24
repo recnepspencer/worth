@@ -6,7 +6,7 @@ use crate::aggregate_identity::projected_storage::{
     domain_for_contract, encode_cases, MEMBERSHIP_ASPECT,
 };
 use crate::aggregate_identity::transition::AggregateTransition;
-use crate::transactions::data::ApplyRelationAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::ApplyRelationAspectPatchIntent;
 use worth_foundational::facade::{
     AspectKey, AspectValue, ContractValidationInput, FieldKey, PortableAspectContractBasis,
     PortableAspectPatchOperation, PortableRecordAspectPatch, StructAspectValue,

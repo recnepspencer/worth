@@ -6,5 +6,6 @@ pub(crate) struct InvariantSourceAffinity {
     pub(crate) observation: InvariantObservationIdentity,
     pub(crate) committed: bool,
     pub(crate) version: crate::identity::data::VersionId,
-    pub(crate) proposal: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    pub(crate) proposal:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
 }

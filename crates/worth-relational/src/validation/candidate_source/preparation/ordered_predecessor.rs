@@ -4,7 +4,7 @@ use crate::derived_relation::{
     evaluation::SourceRead, DerivedRelationAdjacency, DerivedRelationReads, StructuralSource,
 };
 use crate::identity::data::KindId;
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 impl ManagedIndexSourceScope<'_> {
     pub fn ordered_predecessor(&self) -> Result<Option<EntityId>, Denial> {
@@ -118,8 +118,8 @@ impl ManagedIndexSourceScope<'_> {
                         Ok(kind) => kind == self.program.row_kind(),
                         Err(ReadDenial::Definition(Definition::RecordUnavailable))
                         | Err(ReadDenial::Structural(
-                            crate::validation::data::StructuralWalkDenialKind::Read(
-                                crate::validation::data::StructuralReadError::RecordUnavailable,
+                            crate::validation::data::structural_walk_denial::StructuralWalkDenialKind::Read(
+                                crate::validation::data::structural_read::StructuralReadError::RecordUnavailable,
                             ),
                         )) => false,
                         Err(cause) => return Err(cause.into()),

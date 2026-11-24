@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::aggregate_identity::AggregateGroupLineageEvent as Event;
+use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Event;
 use crate::history::data::CommitId;
 use crate::lineage::data::{PersistentNameKey, PersistentNameTarget};
 

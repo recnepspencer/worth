@@ -188,7 +188,7 @@ impl<'runtime> HistoryAccess<'runtime> {
 
     pub(crate) fn branch_cells_snapshot(
         &self,
-    ) -> Vec<crate::branch::RelationalBranchCellCheckpoint> {
+    ) -> Vec<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint> {
         self.runtime.history.branch_cells_snapshot()
     }
 

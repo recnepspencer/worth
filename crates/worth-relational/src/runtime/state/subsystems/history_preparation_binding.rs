@@ -145,7 +145,7 @@ impl RelationalPreparationHistory {
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<
-        super::PreparedCanonicalPublicationRoute,
+        super::canonical_publication_routes::PreparedCanonicalPublicationRoute,
         crate::transactions::data::TransactionCommitError,
     > {
         let resident = envelope.get().ok_or_else(|| {
@@ -162,7 +162,7 @@ impl RelationalPreparationHistory {
             .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
         let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
             .map_err(|cause| match cause {
-                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::commit_denial(cause),
+                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::publication::commit_denial(cause),
                 crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
                 crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
                 crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
@@ -224,7 +224,7 @@ impl RelationalPreparationHistory {
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
         execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
@@ -265,4 +265,19 @@ impl RelationalPreparationHistory {
             cell.publication_cell().record_sharing_cost(update);
         }
     }
+}
+
+pub(crate) fn bind_preparation(history: &super::HistorySubsystem) -> RelationalPreparationHistory {
+    let ledger = history.ledger.read();
+    RelationalPreparationHistory::new(
+        history.branch_cells.clone(),
+        Arc::clone(&history.commit_identity_allocator),
+        Arc::clone(&history.version_identity_allocator),
+        ledger.next_commit_id,
+        ledger.next_version_id,
+        Arc::clone(&history.canonical_publication_routes),
+        history.root_identity_issuer.clone(),
+        #[cfg(test)]
+        Arc::clone(&history.root_capture_sabotage),
+    )
 }

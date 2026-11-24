@@ -1,10 +1,14 @@
 //! Native and custom invariant registration execution.
 
-use crate::validation::data::{
-    CustomInvariantExecutionContext, CustomInvariantFailure, CustomInvariantFailureKind,
-    CustomInvariantProvenance, CustomInvariantRuntimePhase, InvariantReportedRule,
-    InvariantVerdict,
+use crate::validation::custom_rule::CustomInvariantExecutionContext;
+use crate::validation::custom_rule::CustomInvariantProvenance;
+use crate::validation::data::custom_rule::errors::{
+    CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
+    CustomInvariantRuntimePhase, CustomInvariantVerdict,
+    PreparedCustomInvariantExecutionOutcome as Outcome,
 };
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantVerdict;
 use crate::validation::engine::budget::InvariantBudget;
 use crate::validation::engine::context::InvariantExecutionContext;
 use crate::validation::engine::evaluator::evaluate_rule;
@@ -14,8 +18,8 @@ use super::super::packets::InvariantWorkPacket;
 
 pub(super) struct RegisteredInvariantEvaluation {
     pub(super) reported_rule: InvariantReportedRule,
-    pub(super) groups: crate::validation::data::InvariantGroupSet,
-    pub(super) cost: crate::validation::data::InvariantCostClass,
+    pub(super) groups: crate::validation::data::groups::InvariantGroupSet,
+    pub(super) cost: crate::validation::data::groups::InvariantCostClass,
     pub(super) custom_provenance: Option<CustomInvariantProvenance>,
     pub(super) verdicts: Vec<InvariantVerdict>,
 }
@@ -78,7 +82,7 @@ pub(super) fn evaluate_registered_rule<'state>(
 fn evaluate_native_registration<'state>(
     runtime: &InvariantRuntimeView<'state>,
     packet: &InvariantWorkPacket<'state>,
-    registration: &crate::validation::data::InvariantRegistration,
+    registration: &crate::validation::data::catalog::InvariantRegistration,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
     let mut context = InvariantExecutionContext::from_semantic_plan(
@@ -93,7 +97,7 @@ fn evaluate_native_registration<'state>(
     if let Some(budget) = budget {
         context = context.with_budget(budget);
     }
-    if let crate::validation::data::InvariantRule::EndpointKindContract(contract) =
+    if let crate::validation::data::rules::InvariantRule::EndpointKindContract(contract) =
         &registration.rule
     {
         context = context.with_created_endpoint_scope(contract.relation_kind_id);
@@ -124,12 +128,14 @@ fn evaluate_custom_registration<'state>(
     runtime: &InvariantRuntimeView<'state>,
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
-    registration: &crate::validation::data::CustomInvariantRegistration,
+    registration: &crate::validation::custom_rule::CustomInvariantRegistration,
     prepared_execution: &std::sync::Arc<
-        dyn crate::validation::data::PreparedCustomInvariantExecution,
+        dyn crate::validation::custom_rule::PreparedCustomInvariantExecution,
     >,
-    prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
-    retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
+    prepared_scope: &crate::validation::custom_rule::PreparedCustomInvariantScope,
+    retained_touched: &std::sync::Arc<
+        crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet,
+    >,
     budget: Option<&dyn InvariantBudget>,
 ) -> RegisteredInvariantEvaluation {
     let structural_budget = budget.and_then(InvariantBudget::custom_structural_budget);
@@ -162,9 +168,7 @@ fn evaluate_custom_registration<'state>(
             .as_ref()
             .is_some_and(|budget| budget.stop().is_some())
     {
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Pass,
-        )
+        Outcome::Verdict(CustomInvariantVerdict::Pass)
     } else if let Some(budget) = budget {
         match prepared_execution.evaluate_checked(&context, budget.custom_meter()) {
             Some(outcome) => outcome,
@@ -175,22 +179,20 @@ fn evaluate_custom_registration<'state>(
             }
             None => {
                 budget.deny_unchecked_custom();
-                crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-                    crate::validation::data::CustomInvariantVerdict::Pass,
-                )
+                Outcome::Verdict(CustomInvariantVerdict::Pass)
             }
         }
     } else {
         prepared_execution.evaluate(&context)
     };
     let mut verdicts = match outcome {
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Pass,
+        Outcome::Verdict(
+            CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Violation(refusal),
+        Outcome::Verdict(
+            CustomInvariantVerdict::Violation(refusal),
         ) => vec![InvariantVerdict::Violation(
-            crate::validation::data::InvariantViolation {
+            crate::validation::data::results::InvariantViolation {
                 class: registration.execution_point().class(),
                 code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
                 detail: format!(
@@ -198,13 +200,13 @@ fn evaluate_custom_registration<'state>(
                     registration.rule_id().as_str()
                 ),
                 fields:
-                    crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
+                    crate::validation::data::results::InvariantViolationFields::CustomInvariantViolation {
                         identity: registration.descriptor().identity.clone(),
                         refusal,
                     },
             },
         )],
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Failure(failure) => {
+        Outcome::Failure(failure) => {
             if failure.kind == CustomInvariantFailureKind::Panic
                 && failure.phase == CustomInvariantRuntimePhase::Execution
             {
@@ -228,7 +230,7 @@ fn evaluate_custom_registration<'state>(
                 registration.execution_point().class(),
                 &CustomInvariantFailure::execution_error(
                     &registration.descriptor().identity,
-                    crate::validation::data::CustomInvariantExecutionError::new(
+                    CustomInvariantExecutionError::new(
                         "custom invariant exceeded its installed work budget",
                     ),
                 ),
@@ -245,10 +247,10 @@ fn evaluate_custom_registration<'state>(
 }
 
 fn custom_invariant_failure_violation(
-    class: crate::validation::data::InvariantClass,
+    class: crate::validation::data::execution::InvariantClass,
     failure: &CustomInvariantFailure,
-) -> crate::validation::data::InvariantViolation {
-    crate::validation::data::InvariantViolation {
+) -> crate::validation::data::results::InvariantViolation {
+    crate::validation::data::results::InvariantViolation {
         class,
         code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
         detail: format!(
@@ -257,43 +259,44 @@ fn custom_invariant_failure_violation(
             failure.phase.diagnostic_label(),
             failure.detail
         ),
-        fields: crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
-            identity: crate::validation::data::CustomInvariantFailureIdentity::new(
-                failure.identity.clone(),
-            ),
-            phase: custom_invariant_failure_phase(failure.phase),
-            failure: custom_invariant_failure_kind(failure.kind),
-            cause: failure.cause.clone(),
-            detail: failure.detail.to_string(),
-        },
+        fields:
+            crate::validation::data::results::InvariantViolationFields::CustomInvariantFailure {
+                identity: crate::validation::data::results::CustomInvariantFailureIdentity::new(
+                    failure.identity.clone(),
+                ),
+                phase: custom_invariant_failure_phase(failure.phase),
+                failure: custom_invariant_failure_kind(failure.kind),
+                cause: failure.cause.clone(),
+                detail: failure.detail.to_string(),
+            },
     }
 }
 
 fn custom_invariant_failure_phase(
     phase: CustomInvariantRuntimePhase,
-) -> crate::validation::data::CustomInvariantFailurePhase {
+) -> crate::validation::data::results::CustomInvariantFailurePhase {
     match phase {
         CustomInvariantRuntimePhase::Preparation => {
-            crate::validation::data::CustomInvariantFailurePhase::Preparation
+            crate::validation::data::results::CustomInvariantFailurePhase::Preparation
         }
         CustomInvariantRuntimePhase::Execution => {
-            crate::validation::data::CustomInvariantFailurePhase::Execution
+            crate::validation::data::results::CustomInvariantFailurePhase::Execution
         }
     }
 }
 
 fn custom_invariant_failure_kind(
     failure: CustomInvariantFailureKind,
-) -> crate::validation::data::ResultCustomInvariantFailureKind {
+) -> crate::validation::data::results::CustomInvariantFailureKind {
     match failure {
         CustomInvariantFailureKind::PreparationError => {
-            crate::validation::data::ResultCustomInvariantFailureKind::PreparationError
+            crate::validation::data::results::CustomInvariantFailureKind::PreparationError
         }
         CustomInvariantFailureKind::ExecutionError => {
-            crate::validation::data::ResultCustomInvariantFailureKind::ExecutionError
+            crate::validation::data::results::CustomInvariantFailureKind::ExecutionError
         }
         CustomInvariantFailureKind::Panic => {
-            crate::validation::data::ResultCustomInvariantFailureKind::Panic
+            crate::validation::data::results::CustomInvariantFailureKind::Panic
         }
     }
 }

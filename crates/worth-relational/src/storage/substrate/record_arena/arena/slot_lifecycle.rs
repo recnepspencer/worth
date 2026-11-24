@@ -1,7 +1,7 @@
 mod birth;
 mod current_slot_data;
 mod metadata;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
 pub(crate) use metadata::MetadataWriteDenial;

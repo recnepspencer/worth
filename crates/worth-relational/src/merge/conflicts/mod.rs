@@ -18,113 +18,92 @@ use crate::merge::data::{
     ConflictClassificationSummary, ConflictClassifiedMergePlan, IdentityScopedMergePlan,
     MergeConflictClass, MergeConflictClassification, MergePlanningError,
 };
-use crate::merge::MergeAccess;
 
-impl<'runtime> MergeAccess<'runtime> {
-    pub(in crate::merge) fn plan_conflict_scope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: &crate::merge::request_normalization::BoundMergeInputs,
-    ) -> Result<ConflictClassifiedMergePlan, MergePlanningError> {
-        let identity_plan = self.plan_identity_scope(execution, request)?;
-        self.classify_conflict_scope(execution, identity_plan)
-    }
+use crate::identity::data::VersionId;
+use crate::schema::data::AspectContractPlanCatalog;
+use crate::visibility::snapshot_read_view::RelationalReadView;
+pub(super) use relation_topology::TopologyRegionWork;
 
-    fn classify_conflict_scope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity_plan: IdentityScopedMergePlan,
-    ) -> Result<ConflictClassifiedMergePlan, MergePlanningError> {
-        let target_view = self
-            .runtime
-            .read_truth()
-            .read_version(execution, identity_plan.basis.target_head.version_id)
-            .map_err(crate::merge::data::MergePlanningError::Execution)?;
-        let history = self.runtime.history();
-        let base_commit = history
-            .immutable_commit_receipt(identity_plan.basis.merge_base.commit.commit_id)
-            .ok_or(MergePlanningError::MissingMergeBaseCommit {
-                commit_id: identity_plan.basis.merge_base.commit.commit_id,
-            })?;
-        let base_version_id = base_commit.version_id;
-        let base_view = self
-            .runtime
-            .read_truth()
-            .read_version(execution, base_version_id)
-            .map_err(crate::merge::data::MergePlanningError::Execution)?;
-        let ancestor_basis = AncestorRecordBasisContext::new(&base_view);
-        let source_records_by_ref = identity_plan
-            .source_records
-            .iter()
-            .map(|record| (record.record_ref.clone(), record))
-            .collect::<BTreeMap<_, _>>();
-        let validated_by_source = identity_plan
-            .validated_schema_correspondences
-            .iter()
-            .map(|correspondence| (correspondence.source_record.clone(), correspondence))
-            .collect::<BTreeMap<_, _>>();
-        let source_touched_by_record = identity_plan
-            .source_delta
-            .touched_records
-            .iter()
-            .map(|delta| (delta.target.clone(), delta))
-            .collect::<BTreeMap<_, _>>();
-        let target_touched_by_record = identity_plan
-            .target_delta
-            .touched_records
-            .iter()
-            .map(|delta| (delta.target.clone(), delta))
-            .collect::<BTreeMap<_, _>>();
+pub(super) fn classify_conflict_scope(
+    aspect_plans: &AspectContractPlanCatalog,
+    identity_plan: IdentityScopedMergePlan,
+    base_version_id: VersionId,
+    base_view: &RelationalReadView,
+    target_view: &RelationalReadView,
+) -> Result<(ConflictClassifiedMergePlan, TopologyRegionWork), MergePlanningError> {
+    let ancestor_basis =
+        AncestorRecordBasisContext::new(base_view.entities(), base_view.relations());
+    let source_records_by_ref = identity_plan
+        .source_records
+        .iter()
+        .map(|record| (record.record_ref.clone(), record))
+        .collect::<BTreeMap<_, _>>();
+    let validated_by_source = identity_plan
+        .validated_schema_correspondences
+        .iter()
+        .map(|correspondence| (correspondence.source_record.clone(), correspondence))
+        .collect::<BTreeMap<_, _>>();
+    let source_touched_by_record = identity_plan
+        .source_delta
+        .touched_records
+        .iter()
+        .map(|delta| (delta.target.clone(), delta))
+        .collect::<BTreeMap<_, _>>();
+    let target_touched_by_record = identity_plan
+        .target_delta
+        .touched_records
+        .iter()
+        .map(|delta| (delta.target.clone(), delta))
+        .collect::<BTreeMap<_, _>>();
 
-        let classifications = refine_relation_topology_conflicts(
-            self.runtime,
-            &source_records_by_ref,
-            &ancestor_basis,
-            &target_view,
-            identity_plan
-                .candidates
-                .iter()
-                .map(|candidate| {
-                    let record = source_records_by_ref
-                        .get(&candidate.source_record)
-                        .ok_or_else(|| MergePlanningError::MissingConflictSourceRecord {
-                            record: candidate.source_record.clone(),
-                        })?;
-                    Ok(classify_candidate(
-                        self.runtime,
-                        record,
-                        candidate.target_record.clone(),
-                        validated_by_source.contains_key(&candidate.source_record),
-                        base_version_id,
-                        &base_view,
-                        &ancestor_basis,
-                        &target_view,
-                        &source_touched_by_record,
-                        &target_touched_by_record,
-                        candidate.match_class.clone(),
-                        candidate.reason.clone(),
-                    ))
-                })
-                .collect::<Result<Vec<_>, MergePlanningError>>()?,
-        );
-        let classifications = Arc::<[MergeConflictClassification]>::from(classifications);
-        let conflict_summary = summarize_classifications(classifications.clone());
+    let (classifications, topology) = refine_relation_topology_conflicts(
+        &source_records_by_ref,
+        &ancestor_basis,
+        target_view,
+        identity_plan
+            .candidates
+            .iter()
+            .map(|candidate| {
+                let record = source_records_by_ref
+                    .get(&candidate.source_record)
+                    .ok_or_else(|| MergePlanningError::MissingConflictSourceRecord {
+                        record: candidate.source_record.clone(),
+                    })?;
+                Ok(classify_candidate(
+                    aspect_plans,
+                    record,
+                    candidate.target_record.clone(),
+                    validated_by_source.contains_key(&candidate.source_record),
+                    base_version_id,
+                    base_view,
+                    &ancestor_basis,
+                    target_view,
+                    &source_touched_by_record,
+                    &target_touched_by_record,
+                    candidate.match_class.clone(),
+                    candidate.reason.clone(),
+                ))
+            })
+            .collect::<Result<Vec<_>, MergePlanningError>>()?,
+    );
+    let classifications = Arc::<[MergeConflictClassification]>::from(classifications);
+    let conflict_summary = summarize_classifications(classifications.clone());
 
-        Ok(ConflictClassifiedMergePlan {
-            request: identity_plan.request,
-            basis: identity_plan.basis,
-            ancestry: identity_plan.ancestry,
-            target_delta: identity_plan.target_delta,
-            source_delta: identity_plan.source_delta,
-            effective_identity_declarations: identity_plan.effective_identity_declarations,
-            source_records: identity_plan.source_records,
-            candidates: identity_plan.candidates,
-            validated_schema_correspondences: identity_plan.validated_schema_correspondences,
-            identity_summary: identity_plan.identity_summary,
-            classifications,
-            conflict_summary,
-        })
-    }
+    let plan = ConflictClassifiedMergePlan {
+        request: identity_plan.request,
+        basis: identity_plan.basis,
+        ancestry: identity_plan.ancestry,
+        target_delta: identity_plan.target_delta,
+        source_delta: identity_plan.source_delta,
+        effective_identity_declarations: identity_plan.effective_identity_declarations,
+        source_records: identity_plan.source_records,
+        candidates: identity_plan.candidates,
+        validated_schema_correspondences: identity_plan.validated_schema_correspondences,
+        identity_summary: identity_plan.identity_summary,
+        classifications,
+        conflict_summary,
+    };
+    Ok((plan, topology))
 }
 
 fn summarize_classifications(

@@ -19,6 +19,20 @@ impl ManagedIndexSourceRebuild {
     pub fn scope(&self) -> EntityId {
         self.expected.association.scope
     }
+    /// Each operation reborrows this caller's original request.
+    pub fn rows<'a>(
+        &'a self,
+        execution: ExecutionRequest<'a, 'a>,
+    ) -> crate::validation::candidate_source::ManagedIndexSourceRows<'a> {
+        crate::validation::candidate_source::selected_rows(
+            &self.projection,
+            &self.expected,
+            self.program(),
+            self.scope(),
+            execution,
+        )
+    }
+
     pub(crate) fn finish(
         &self,
         execution: &ExecutionRequest<'_, '_>,

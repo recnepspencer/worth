@@ -6,9 +6,7 @@ use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{LineageEventRecord, LineageNode};
 
 use super::name_indexes::BranchNameIndexes;
-use super::naming_basis::{
-    rebuild_all_branch_naming_states, AuthoritativeBranchNamingState,
-};
+use super::naming_basis::{rebuild_all_branch_naming_states, AuthoritativeBranchNamingState};
 use super::resolution_indexes::LineageResolutionIndexes;
 
 /// The lineage subsystem's authoritative contents.
@@ -24,7 +22,7 @@ pub(crate) struct LineageState {
     pub(super) published_events: Vec<PublishedLineageEvent>,
     pub(super) published_event_positions: BTreeMap<u64, usize>,
     resolution_indexes: LineageResolutionIndexes,
-    pub(crate) identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator,
+    pub(crate) identity_allocator: super::LineageIdentityAllocator,
 }
 
 /// One published lineage event, held by shared ownership so a reader can carry
@@ -58,7 +56,7 @@ impl LineageState {
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
             resolution_indexes: LineageResolutionIndexes::default(),
-            identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator::new(),
+            identity_allocator: super::LineageIdentityAllocator::new(),
         }
     }
 

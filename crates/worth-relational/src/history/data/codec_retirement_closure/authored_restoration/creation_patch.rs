@@ -1,5 +1,9 @@
 //! Recreate portable authored fields, leaving relation endpoints to their own authority.
-use super::*;
+use super::super::{charge, CodecRetirementClosureStop as Stop};
+use worth_foundational::facade::{
+    AuthoritativeRecordAspectState, ContractValidatedAspectValueView, ContractValidationInput,
+    PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
+};
 pub(in crate::history::data::codec_retirement_closure) fn creation_patch(
     state: Option<&AuthoritativeRecordAspectState>,
     plan: &crate::schema::data::LoweredAspectContractPlan,

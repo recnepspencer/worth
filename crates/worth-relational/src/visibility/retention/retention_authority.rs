@@ -47,7 +47,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             .partitions
             .demand_resident_edit(
                 execution,
-                &self.runtime.services.instrumentation,
+                &self.runtime.services.instrumentation.complexity_counters,
                 &self.runtime.services.symbols,
             )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
@@ -132,7 +132,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             .partitions
             .demand_resident_edit(
                 execution,
-                &self.runtime.services.instrumentation,
+                &self.runtime.services.instrumentation.complexity_counters,
                 &self.runtime.services.symbols,
             )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;

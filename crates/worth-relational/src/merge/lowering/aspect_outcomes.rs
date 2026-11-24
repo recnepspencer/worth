@@ -1,24 +1,25 @@
 use std::collections::BTreeMap;
 
-use crate::capabilities::AspectPlanSource;
 use crate::merge::data::{
     AspectComparisonState, AuthorizedAspectValueSurface, AuthorizedAspectValueUsage,
     LoweredAspectDenialIntent, LoweredAspectExecutionIntent, LoweredAspectOutcome,
     LoweredMergeRejectedReason, MergeExecutionReadiness, MergePlanningError,
-    MergePolicyDecisionBoundary, MergeResolutionClass, VisibleMergeRecordKind,
+    MergePolicyDecisionBoundary, MergeResolutionClass,
 };
-use crate::schema::data::LoweredAspectContractPlan;
+use crate::schema::data::AspectContractPlanCatalog;
 
 use super::record_intents::lowered_aspect_action_for_resolution;
 use super::resolution::blocked_reason_for_aspect;
 
 pub(super) fn lowered_aspect_outcomes_for_record(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source_record: &crate::merge::data::VisibleMergeRecord,
     policy_record: &crate::merge::data::MergePolicyResolutionRecord,
     resolution_class: MergeResolutionClass,
 ) -> Result<Vec<LoweredAspectOutcome>, MergePlanningError> {
-    let Some(plan) = lowered_plan_for_source_record(runtime, source_record) else {
+    let Some(plan) =
+        crate::merge::aspect_plan_lookup::lowered_plan_for_record(aspect_plans, source_record)
+    else {
         return Ok(Vec::new());
     };
     let policy_by_aspect = policy_record
@@ -87,17 +88,6 @@ pub(super) fn lowered_aspect_outcomes_for_record(
             }
         })
         .collect())
-}
-
-fn lowered_plan_for_source_record<'a>(
-    runtime: &'a crate::runtime::RelationalRuntime,
-    source_record: &crate::merge::data::VisibleMergeRecord,
-) -> Option<&'a LoweredAspectContractPlan> {
-    let kind_id = source_record.source_kind_id.or(source_record.kind_id)?;
-    match source_record.record_kind {
-        VisibleMergeRecordKind::Entity => runtime.entity_aspect_plan(kind_id),
-        VisibleMergeRecordKind::Relation => runtime.relation_aspect_plan(kind_id),
-    }
 }
 
 pub(super) fn readiness_for_policy_decision(

@@ -4,7 +4,7 @@ use super::current_metadata::FrozenCurrentCheckpointMetadata;
 use super::{source::FrozenOriginalInputs, Denial};
 use crate::branch::CheckpointBranchMetadata;
 use crate::durability::data::DurableRecordIdentityState;
-use crate::runtime::{FrozenCheckpointIndexes, OriginalCheckpointIndexes, RelationalRuntime};
+use crate::runtime::{OriginalCheckpointIndexes, RelationalRuntime};
 use worth_execution::ExecutionRequest;
 
 pub(super) struct FrozenCompleteMetadata {
@@ -12,7 +12,7 @@ pub(super) struct FrozenCompleteMetadata {
     branches: CheckpointBranchMetadata,
     components: CapturedCompleteComponents,
     identity: DurableRecordIdentityState,
-    indexes: FrozenCheckpointIndexes,
+    indexes: crate::durability::derived_index_artifacts::FrozenIndexCheckpoint,
     symbol_frontier: u32,
     main_cell: usize,
 }
@@ -40,7 +40,9 @@ impl FrozenCompleteMetadata {
             main_cell,
         } = self;
         original.protect_original_read(request)?;
-        let indexes = indexes.resolve_for_request(request)?;
+        let indexes = crate::durability::authority::checkpoint_image::capture_frozen_indexes(
+            indexes, request,
+        )?;
         Ok(CapturedCompleteMetadata {
             original,
             branches,

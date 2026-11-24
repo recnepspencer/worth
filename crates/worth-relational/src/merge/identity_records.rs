@@ -1,15 +1,15 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::capabilities::RuntimeConfigSource;
 use crate::merge::data::{
     BranchTouchedRecordDelta, IdentityBasisDeclaration, IdentityBasisKind,
     IdentityDiscoverySummary, IdentityMatchCandidate, IdentityMatchClass, IdentityResolutionReason,
     SchemaDeclaredCorrespondenceValidationSummary, ValidatedSchemaDeclaredCorrespondence,
     VisibleMergeRecord, VisibleMergeRecordKind,
 };
-use crate::storage::data::RelationalReadView;
-use crate::transactions::data::RecordRef;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(crate) fn source_visible_records(
     source_view: &RelationalReadView,
@@ -23,11 +23,10 @@ pub(crate) fn source_visible_records(
 }
 
 pub(crate) fn effective_identity_declarations(
-    runtime: &crate::runtime::RelationalRuntime,
+    registry: &RelationalSchemaRegistry,
     source_records: &[VisibleMergeRecord],
 ) -> Vec<IdentityBasisDeclaration> {
     let mut declarations = Vec::<IdentityBasisDeclaration>::new();
-    let registry = &runtime.runtime_config().schema.registry;
     for record in source_records {
         match record.record_kind {
             VisibleMergeRecordKind::Entity => {

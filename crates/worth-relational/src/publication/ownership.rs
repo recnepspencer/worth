@@ -11,13 +11,13 @@ pub(crate) mod corruption;
 mod evidence;
 mod merge_custody;
 mod metadata_guard_court;
-mod read;
+pub(crate) mod read;
 pub(crate) mod record;
 pub(crate) mod selection_pairing;
 pub(crate) use completion::complete;
 pub(crate) use evidence::PublicationEvidence;
 pub(crate) use read::{
-    decode_payload, linked_selectors, read, read_candidate, read_selected, CurrentPublicationRoster,
+    linked_selectors, read, read_candidate, read_selected, CurrentPublicationRoster,
 };
 
 pub(crate) fn select_current(
@@ -60,31 +60,8 @@ pub(crate) fn reserve_symbols(
     Ok(())
 }
 
-use crate::{
-    history::data::CommitId,
-    publication::data::{AuthoredRetirementRefusal, PublicationError},
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::transactions::data::{RecordRef, TransactionCommitError};
 
-fn corrupt(publication: CommitId, record: RecordRef) -> TransactionCommitError {
-    TransactionCommitError::publication(PublicationError::authored_retirement(
-        AuthoredRetirementRefusal::CorruptCurrentOwnership { publication },
-        record,
-    ))
-}
-
-pub(crate) fn checkpoint(
-    context: &mut worth_execution::MapKernelContext<'_, '_>,
-    work: u64,
-) -> Result<(), TransactionCommitError> {
-    crate::execution::request_stage::checkpoint(context, work).map_err(request)
-}
-
-pub(crate) fn request(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
-) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
-        partition_identity: None,
-    })
-}
+pub(crate) mod read_request;
+use read_request::corrupt;
+pub(crate) use read_request::{checkpoint, request};

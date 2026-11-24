@@ -6,18 +6,19 @@ use std::collections::BTreeMap;
 use std::sync::RwLockWriteGuard;
 
 use crate::identity::data::PartitionId;
-use crate::runtime::state::subsystems::RuntimeInstrumentation;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionState};
 #[cfg(test)]
 use crate::storage::residency::{RelationalRegionRetention, ResidentRegionLease};
 use crate::storage::residency::{ResidentHistoryReadmission, ResidentRegionEdit};
+use std::sync::Mutex;
 
 use super::edition_copy_lane::{PartitionCopyTally, PartitionEditionCopyLane};
 use super::{CurrentMirror, MirrorRegion, PartitionMap, ResidentMirrorTarget};
 
 pub(crate) struct PartitionEditionWriter<'subsystem> {
     mirror: RwLockWriteGuard<'subsystem, CurrentMirror>,
-    instrumentation: &'subsystem RuntimeInstrumentation,
+    copy_counters: &'subsystem Mutex<RuntimeComplexityCounters>,
     lane: PartitionEditionCopyLane,
     copies: PartitionCopyTally,
     edits: BTreeMap<PartitionId, TargetEdit>,
@@ -39,8 +40,11 @@ impl ResidentPartitionEditionWriter<'_> {
         &mut self,
         mut visit: impl FnMut(
             ResidentPartitionEntry<'_>,
-        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for target in &self.targets {
             visit(ResidentPartitionEntry {
                 target,
@@ -54,12 +58,12 @@ impl ResidentPartitionEditionWriter<'_> {
 impl<'subsystem> PartitionEditionWriter<'subsystem> {
     pub(super) fn new(
         mirror: RwLockWriteGuard<'subsystem, CurrentMirror>,
-        instrumentation: &'subsystem RuntimeInstrumentation,
+        copy_counters: &'subsystem Mutex<RuntimeComplexityCounters>,
         lane: PartitionEditionCopyLane,
     ) -> Self {
         Self {
             mirror,
-            instrumentation,
+            copy_counters,
             lane,
             copies: PartitionCopyTally::default(),
             edits: BTreeMap::new(),
@@ -68,7 +72,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
 
     pub(super) fn accept_resident(
         mut self,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<ResidentPartitionEditionWriter<'subsystem>, Self> {
         let mut targets = Vec::new();
         for id in self.mirror.edition.partition_ids() {
@@ -285,7 +289,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
 impl Drop for PartitionEditionWriter<'_> {
     fn drop(&mut self) {
         self.finish_edits();
-        self.lane.settle(self.instrumentation, self.copies);
+        self.lane.settle(self.copy_counters, self.copies);
     }
 }
 
@@ -293,12 +297,13 @@ impl ResidentTargetEditor for PartitionEditionWriter<'_> {
     fn read_target(
         &self,
         target: &ResidentMirrorTarget,
-    ) -> Result<&PartitionState, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<&PartitionState, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if let Some(entry) = self.edits.get(&target.partition_id()) {
             return Ok(entry.edit.partition());
         }
-        self.mirror.edition.try_full_partition(target.partition_id()).map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)?
-            .ok_or_else(|| crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+        self.mirror.edition.try_full_partition(target.partition_id()).map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable)?
+            .ok_or_else(|| crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
                 crate::storage::data::RelationalStorageUnavailable {
                     subject: crate::storage::data::RelationalStorageSubject::Region(target.partition_id()),
                     cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,

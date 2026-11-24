@@ -1,6 +1,6 @@
 //! Keep one hostile patch fixture consistent at the earlier semantic boundary.
 use super::CanonicalCommitEnvelope;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::ExecutionRequest;
 

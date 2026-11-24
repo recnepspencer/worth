@@ -2,8 +2,12 @@ use std::collections::BTreeSet;
 
 use super::adjacency_work_ledger::AdjacencyLeaseLedger;
 use super::truth_record_access::sort_authoritative_relation_records;
-use super::*;
+use super::{
+    context::VisibilityReadContext, frontier_admission::BoundedFrontierReadStop,
+    projection_record_reader::ProjectionRecordReader,
+};
 use crate::storage::partition::{AdjacencyDirection, AdjacencyKindBasis};
+use crate::{storage::data::RelationReadRecord, storage::overlay::PartitionAccess};
 
 #[derive(Debug)]
 pub struct BoundedFrontierAdjacencyTruthRead {
@@ -29,7 +33,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
@@ -63,7 +67,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(

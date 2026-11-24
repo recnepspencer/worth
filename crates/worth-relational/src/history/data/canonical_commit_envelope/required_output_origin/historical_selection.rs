@@ -37,19 +37,25 @@ pub(super) fn install(
         envelope.authority_kind,
         super::super::CanonicalCommitAuthorityKind::OwnedGraphSelection(_)
     ) {
-        return Err(crate::mvcc::origin_denial(
-            "historical publication selection requires the Native graph selection constituent",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "historical publication selection requires the Native graph selection constituent",
+            ),
+        );
     }
-    let first = selections
-        .first()
-        .ok_or_else(|| crate::mvcc::origin_denial("empty historical publication selection"))?;
+    let first = selections.first().ok_or_else(|| {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+            "empty historical publication selection",
+        )
+    })?;
     let selected_basis = first
         .selected
         .descriptor()
         .in_canonical_frame()
         .map_err(|_| {
-            crate::mvcc::origin_denial("historical selection basis cannot enter canonical frame")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "historical selection basis cannot enter canonical frame",
+            )
         })?;
     let mut positions = basis.inner.root.output_publication_positions.clone();
     let mut publications = Vec::new();
@@ -73,13 +79,13 @@ pub(super) fn install(
             || original
                 .members
                 .iter()
-                .all(|m| m.posture == crate::mvcc::RequiredOutputRolePosture::Retire)
+                .all(|m| m.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
         {
             return Err(refuse());
         }
         if !selection.select_version {
             absences.push(absence::install(
-                selection,
+                original,
                 basis,
                 working,
                 envelope.commit.commit_id,
@@ -102,7 +108,8 @@ pub(super) fn install(
             }
         }
         records::validate(
-            selection,
+            original,
+            &selection.selected,
             basis,
             working,
             envelope.commit.version_id,
@@ -121,13 +128,13 @@ pub(super) fn install(
         let members = original
             .members
             .iter()
-            .filter(|m| m.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+            .filter(|m| m.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
             .map(|m| CanonicalOutputMember {
                 role: m.role.clone(),
                 entity_name: m.entity_name.clone(),
                 id: m.id,
                 kind: m.kind,
-                posture: crate::mvcc::RequiredOutputRolePosture::Preserve,
+                posture: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve,
                 birth: m.birth,
                 birth_producer: m.birth_producer.clone(),
                 birth_dependency: m.birth_dependency,
@@ -200,7 +207,7 @@ pub(super) fn install(
                 origin_request(cause)
             }
             crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
-                crate::mvcc::origin_denial(detail)
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail)
             }
         })?;
     Ok(positions)

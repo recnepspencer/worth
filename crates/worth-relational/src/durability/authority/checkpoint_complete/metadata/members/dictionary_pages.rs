@@ -4,7 +4,7 @@ use super::*;
 use crate::symbols::data::{StoredSymbolText, Symbol};
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequestArrayBuilder;
-const CAPACITY: usize = crate::durability::checkpoints::symbol_pages::SYMBOL_PAGE_CAPACITY;
+const CAPACITY: usize = crate::storage::data::SYMBOL_PAGE_CAPACITY;
 pub(super) fn capture(
     dictionary: &OriginalSymbolDictionary<'_>,
     request: &ExecutionRequest<'_, '_>,

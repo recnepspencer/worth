@@ -1,6 +1,7 @@
 use super::fixture::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{CancellationSource, CancellationToken, ExecutionRequest};
 
 #[test]

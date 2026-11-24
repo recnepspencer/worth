@@ -1,4 +1,5 @@
 use super::*;
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 
 #[test]
 fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
@@ -239,7 +240,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         "the losing candidate must not enter canonical history"
     );
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         0,
         "the stale candidate releases its private canonical route reservation"
     );

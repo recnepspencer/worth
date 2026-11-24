@@ -33,20 +33,21 @@ impl RelationalRuntime {
                 publication,
                 change,
             );
-            let recovery = crate::durability::medium::RelationalDurableRecoverySource::new(
-                Some(
-                    crate::durability::medium::RelationalDurableCheckpointSource::new(
-                        native.covered_position().expect("recorded position"),
-                        native
-                            .covered_branch_transitions()
-                            .expect("recorded branches"),
-                        native,
+            let recovery =
+                crate::durability::published_medium::RelationalDurableRecoverySource::new(
+                    Some(
+                        crate::durability::published_medium::RelationalDurableCheckpointSource::new(
+                            native.covered_position().expect("recorded position"),
+                            native
+                                .covered_branch_transitions()
+                                .expect("recorded branches"),
+                            native,
+                        ),
                     ),
-                ),
-                Vec::new(),
-                Vec::new(),
-                source,
-            );
+                    Vec::new(),
+                    Vec::new(),
+                    source,
+                );
             let mut cold = self.fork().map_err(|e| fail(format!("{e:?}")))?;
             let plan = cold
                 .durability()

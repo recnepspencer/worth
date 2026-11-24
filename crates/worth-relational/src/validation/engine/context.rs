@@ -1,8 +1,8 @@
 mod created_kinds;
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use crate::identity::data::KindId;
 use crate::schema::data::LoweredAspectContractPlan;
-use crate::transactions::data::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::validation::engine::InvariantRuntimeView;
 
 use super::budget::InvariantBudget;
@@ -76,7 +76,7 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
 
     pub(crate) fn applied_created_entities(
         &self,
-    ) -> Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings> {
+    ) -> Option<&'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings>{
         self.observation.applied_created_entities()
     }
 
@@ -126,13 +126,13 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     pub(crate) fn claim_contract_violation(
         &self,
         contract_id: &crate::schema::data::ContractId,
-        references: &[&crate::transactions::data::EntityReference],
+        references: &[&crate::transactions::data::primitives::EntityReference],
     ) -> bool {
         let reference_bytes = references
             .iter()
             .map(|reference| match reference {
-                crate::transactions::data::EntityReference::Existing(_) => 0,
-                crate::transactions::data::EntityReference::Created(created) => {
+                crate::transactions::data::primitives::EntityReference::Existing(_) => 0,
+                crate::transactions::data::primitives::EntityReference::Created(created) => {
                     created.client_key.owned_allocation_capacity_bytes()
                 }
             })
@@ -206,17 +206,18 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     pub(crate) fn required_relation_integrity_scope(
         &self,
         relation_kind_id: KindId,
-        class: crate::validation::data::InvariantClass,
-    ) -> Result<&PreparedRelationIntegrityScope, crate::validation::data::InvariantViolation> {
+        class: crate::validation::data::execution::InvariantClass,
+    ) -> Result<&PreparedRelationIntegrityScope, crate::validation::data::results::InvariantViolation>
+    {
         self.relation_integrity_scope(relation_kind_id)
-            .ok_or_else(|| crate::validation::data::InvariantViolation {
+            .ok_or_else(|| crate::validation::data::results::InvariantViolation {
                 class,
                 code: crate::diagnostics::data::DiagnosticCode::PreparationFailure,
                 detail: format!(
                     "required relation integrity scope for relation kind {:?} was not prepared",
                     relation_kind_id
                 ),
-                fields: crate::validation::data::InvariantViolationFields::None,
+                fields: crate::validation::data::results::InvariantViolationFields::None,
             })
     }
 

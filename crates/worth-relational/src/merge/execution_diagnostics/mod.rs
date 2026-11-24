@@ -10,7 +10,9 @@ use crate::diagnostics::data::{
 use crate::merge::data::{
     ExecutedMergeRecordDiagnosticRow, MergeExecutionDiagnosticsPlan, PreparedMergeExecution,
 };
-use crate::transactions::data::{MergeExecutionStructuralSummary, MergeExecutionSummary};
+use crate::transactions::data::outcomes::plan_artifacts::{
+    MergeExecutionStructuralSummary, MergeExecutionSummary,
+};
 
 use record_row_fields::executed_record_diagnostic_fields;
 use summary_fields::{
@@ -72,16 +74,6 @@ pub(crate) fn merge_execution_failure_artifact(
             merge_execution_failure_fields(prepared, error),
         )],
     )
-}
-
-pub(super) fn emit_merge_execution_failure_artifact(
-    runtime: &crate::runtime::RelationalRuntime,
-    prepared: &PreparedMergeExecution,
-    error: &crate::merge::data::MergeExecutionError,
-) {
-    runtime
-        .publication_authority()
-        .push_diagnostic_artifact(merge_execution_failure_artifact(prepared, error));
 }
 
 fn executed_record_diagnostics_entry(

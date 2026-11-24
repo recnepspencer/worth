@@ -1,5 +1,5 @@
 //! Canonical descriptive membership writes and their separate live issuance.
-use crate::history::RelationalAuthoredEntityIndexDefinition;
+use crate::history::access::relevant_writes::RelationalAuthoredEntityIndexDefinition;
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ impl CanonicalAuthoredIndexWrite {
 
 #[derive(Debug)]
 struct LiveIndexWriteVerification {
-    coverage: crate::runtime::IndexCatalogCoverage,
+    coverage: crate::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage,
 }
 
 #[derive(Debug)]
@@ -122,7 +122,7 @@ impl CanonicalAuthoredIndexWrites {
     pub(crate) fn prepared(
         entries: Vec<CanonicalAuthoredIndexWrite>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
-        coverage: crate::runtime::IndexCatalogCoverage,
+        coverage: crate::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage,
     ) -> Self {
         Self(Some(Arc::new(Backing {
             entries,
@@ -137,7 +137,10 @@ impl CanonicalAuthoredIndexWrites {
         Some(&data.entries)
     }
 
-    pub(crate) fn coverage(&self) -> Option<crate::runtime::IndexCatalogCoverage> {
+    pub(crate) fn coverage(
+        &self,
+    ) -> Option<crate::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage>
+    {
         Some(self.0.as_ref()?.verified.as_ref()?.coverage)
     }
 

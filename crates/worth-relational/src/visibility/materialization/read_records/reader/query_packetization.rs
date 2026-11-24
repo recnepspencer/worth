@@ -1,9 +1,9 @@
-use super::*;
+use super::super::projection::contracts::ProjectionAspectFilter;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 #[derive(Debug, Clone)]
 pub(super) enum PacketizedQueryWork {
-    ExplicitTargets(Vec<crate::transactions::data::RecordRef>),
+    ExplicitTargets(Vec<crate::transactions::data::primitives::RecordRef>),
     EntityKindScan {
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
@@ -64,10 +64,10 @@ pub(super) fn partition_count_for_targets(packets: &[PacketizedQueryWork]) -> us
             PacketizedQueryWork::ExplicitTargets(targets) => {
                 for target in targets {
                     match target {
-                        crate::transactions::data::RecordRef::Entity(entity_id) => {
+                        crate::transactions::data::primitives::RecordRef::Entity(entity_id) => {
                             partitions.insert(entity_id.partition_id);
                         }
-                        crate::transactions::data::RecordRef::Relation(relation_id) => {
+                        crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
                             partitions.insert(relation_id.partition_id);
                         }
                     }

@@ -1,14 +1,14 @@
 //! Whole-record graph selection touches use actual before/after structural views.
 use super::*;
-use crate::{
-    identity::data::{EntityId, PartitionId, RelationId},
-    transactions::data::RecordRef,
-};
+use crate::identity::data::EntityId;
+use crate::identity::data::PartitionId;
+use crate::identity::data::RelationId;
+use crate::transactions::data::primitives::RecordRef;
 pub(super) fn collect(
     selection: &crate::history::data::CanonicalOwnedGraphSelection,
     after: &InvariantStateView<'_>,
     before: Option<&InvariantStateView<'_>>,
-    access: &crate::validation::data::CustomInvariantAccessContract,
+    access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
     work: &super::super::CustomInvariantWorkMeter,
     entities: &mut BTreeSet<EntityId>,
     relations: &mut BTreeSet<RelationId>,

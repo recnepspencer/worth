@@ -1,3 +1,4 @@
+pub(crate) mod applied_candidate_qualification;
 pub(crate) mod definition;
 pub(crate) mod execution_denial;
 pub(crate) mod publication_posture;

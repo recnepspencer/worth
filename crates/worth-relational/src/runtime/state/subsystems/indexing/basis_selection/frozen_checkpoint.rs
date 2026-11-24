@@ -1,8 +1,8 @@
 //! Complete emission freezes exact-root selections as owner Arcs, then resolves portable rows.
 use super::{BasisSelections, PreparedIndexBasisSelection};
-use crate::durability::checkpoint_history::capture::array_capture_stop;
-use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::durability::data::native_checkpoint_capture_denial::array_capture_stop;
+use crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::indexes::data::{
     DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId, IndexBasisCheckpoint,
 };

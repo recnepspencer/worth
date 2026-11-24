@@ -1,9 +1,8 @@
 //! Lend an actual verified original's weak position to its admitted image cell.
 use super::*;
-use crate::durability::checkpoint_admission::{
-    CheckpointAdmissionBindingMismatch, CheckpointAdmittedCommit,
-    RelationalCheckpointAdmissionRefusal as Refusal,
-};
+use crate::durability::checkpoint_admission::refusal::CheckpointAdmissionBindingMismatch;
+use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
+use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
 
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn bind_interim_original(
@@ -22,8 +21,8 @@ impl RelationalCommitEnvelopeResidency {
             .and_then(|n| n.checked_mul(2))
             .and_then(|n| n.checked_add(1))
             .ok_or(Refusal::CapacityOverflow)?;
-        crate::durability::artifact_payload_emission::request::account_work(request, work as u64)
-            .map_err(crate::durability::checkpoint_admission::native_stop)?;
+        crate::durability::data::recovery_stop::account_work(request, work as u64)
+            .map_err(crate::durability::checkpoint_admission::refusal::native_stop)?;
         let interim = match admitted.scope() {
             worth_foundational::facade::CheckpointAdmissionScope::Interim { .. } => true,
             worth_foundational::facade::CheckpointAdmissionScope::Home { .. } => false,
@@ -33,9 +32,9 @@ impl RelationalCommitEnvelopeResidency {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(failure) = state.damage {
-            return Err(crate::durability::checkpoint_admission::native_stop(
-                failure.into(),
-            ));
+            return Err(
+                crate::durability::checkpoint_admission::refusal::native_stop(failure.into()),
+            );
         }
         let selected = match &state.backing {
             EnvelopeBacking::SelectedCheckpoint { entry, .. } => entry.as_ref() == index,

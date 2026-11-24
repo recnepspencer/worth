@@ -2,6 +2,9 @@
 use super::*;
 use crate::durability::data::*;
 use crate::durability::medium::*;
+use crate::durability::published_medium::{
+    RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+};
 use crate::identity::data::PartitionId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;

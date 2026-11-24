@@ -1,7 +1,7 @@
 //! One bounded visited/frontier extent, reused through all planned-edge searches.
 use std::mem::size_of;
 
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use crate::validation::engine::context::InvariantExecutionContext;
 
 use super::graph::TraversalGraph;

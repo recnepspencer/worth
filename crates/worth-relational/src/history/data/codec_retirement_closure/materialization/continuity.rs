@@ -1,13 +1,14 @@
 //! Retained suspension custody rejoins matching canonical producer groups on restoration.
 use super::capture::stop;
 use super::*;
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationCustody};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::materialization::RelationalMaterializationCustody;
 use crate::history::data::{
     canonical_commit_envelope::OutputOriginHistory, CanonicalRequiredOutputMaterialization as Event,
 };
 use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 
 pub(crate) fn prepare_materialization_continuity(

@@ -10,7 +10,7 @@ use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as 
 use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 use memo::{Key, MemoValues};
 use navigation::Frame;
 use std::collections::{BTreeMap, BTreeSet};

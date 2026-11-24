@@ -1,6 +1,7 @@
 //! Native inverse records retain only the historical bytes their actual fields reference.
 use super::{
-    control, ContentPublication, RelationalContentAttachments, RelationalContentDenial as Denial,
+    control, publication::ContentPublication, RelationalContentAttachments,
+    RelationalContentDenial as Denial,
 };
 use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView};
 

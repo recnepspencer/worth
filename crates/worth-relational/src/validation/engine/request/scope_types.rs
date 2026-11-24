@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::transactions::data::{CreatedEntityRef, EntityReference};
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PlannedRelationEdge {

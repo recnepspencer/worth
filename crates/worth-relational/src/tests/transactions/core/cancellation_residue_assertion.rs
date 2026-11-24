@@ -1,4 +1,5 @@
 use crate::history::data::BranchId;
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct CancellationResidueSnapshot {
@@ -21,7 +22,7 @@ impl CancellationResidueSnapshot {
                 .branch_reference_state(branch_id)
                 .expect("cancellation evidence branch remains registered"),
             immutable_commit_count: runtime.history().immutable_commit_count(),
-            pending_publication_routes: runtime.history.pending_canonical_publication_route_count(),
+            pending_publication_routes: pending_canonical_publication_route_count(&runtime.history),
             patch_stream: runtime
                 .publication()
                 .read_patch_stream(

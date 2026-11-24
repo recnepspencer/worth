@@ -1,14 +1,16 @@
 //! Cold native readmission of the exact present derived payload retirement set.
 
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::runtime::{CodecFieldLocus, RelationalRuntime};
+use crate::runtime::RelationalRuntime;
+use crate::schema::codec_field_comparison::CodecFieldLocus;
 
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 mod coupled_restoration;
+mod coupled_selection;
 mod historical_selection;
 mod history_request;
 pub(crate) use historical_selection::antecedent as historical_producer_antecedent;
@@ -59,7 +61,7 @@ pub(crate) struct OwnedCodecRetirementClosure {
 
 #[derive(Debug)]
 pub(crate) enum CodecRetirementClosureStop {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Payload(String),
 }
 
@@ -251,7 +253,7 @@ fn derive_metered(
         .checked_mul((usize::BITS - affected.len().leading_zeros()) as usize + 1)
         .and_then(|work| work.checked_mul(2))
         .ok_or(CodecRetirementClosureStop::Request(
-            crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+            crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
         ))?;
     charge(context, sort_work)?;
     affected.sort_unstable();
@@ -274,17 +276,22 @@ fn derive_metered(
     })
 }
 
-fn intent_writes_entity(intent: &crate::transactions::data::MutationIntent, id: EntityId) -> bool {
+fn intent_writes_entity(
+    intent: &crate::transactions::data::intents::mutation_intent::MutationIntent,
+    id: EntityId,
+) -> bool {
     if matches!(
         intent,
-        crate::transactions::data::MutationIntent::Entity(
-            crate::transactions::data::EntityMutationIntent::Revalidate(_)
+        crate::transactions::data::intents::mutation_intent::MutationIntent::Entity(
+            crate::transactions::data::intents::mutation_intent::EntityMutationIntent::Revalidate(
+                _
+            )
         )
     ) {
         return false;
     }
     intent.existing_record_target()
-        == Some(crate::transactions::data::ExistingRecordTarget::Entity(id))
+        == Some(crate::transactions::data::primitives::ExistingRecordTarget::Entity(id))
 }
 
 fn require_linear_history(
@@ -304,7 +311,7 @@ pub(super) fn charge(
         context,
         u64::try_from(work).map_err(|_| {
             CodecRetirementClosureStop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         })?,
     )
@@ -312,14 +319,14 @@ pub(super) fn charge(
 }
 
 pub(super) fn request(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+    cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(cause.into())
 }
 
 fn memory_overflow() -> CodecRetirementClosureStop {
     CodecRetirementClosureStop::Request(
-        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )
 }
 
@@ -338,7 +345,11 @@ fn reserve(
 
 impl From<crate::storage::data::RelationalStorageUnavailable> for CodecRetirementClosureStop {
     fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
-        Self::Request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure))
+        Self::Request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
+                failure,
+            ),
+        )
     }
 }
 

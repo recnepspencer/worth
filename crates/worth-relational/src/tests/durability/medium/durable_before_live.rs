@@ -103,7 +103,10 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
         ),
         "expected ProvenNoEffect durable refusal, got {refused:?}"
     );
-    let offered = medium.offered_commits().pop().expect("the medium was asked");
+    let offered = medium
+        .offered_commits()
+        .pop()
+        .expect("the medium was asked");
     assert_eq!(offered.position(), PatchStreamPosition(2));
     assert_eq!(live_footprint(execution, &runtime), before);
     assert_eq!(medium.head(), PatchStreamPosition(1));
@@ -140,7 +143,10 @@ fn a_refused_position_is_not_consumed() {
 
     medium.script_next_publication(ScriptedPublication::ProvenNoEffect);
     commit_one(execution, &runtime, "refused").expect_err("the medium refused");
-    let refused = medium.offered_commits().pop().expect("the medium was asked");
+    let refused = medium
+        .offered_commits()
+        .pop()
+        .expect("the medium was asked");
     let accepted = commit_one(execution, &runtime, "accepted").expect("the medium accepts");
 
     assert_eq!(accepted.patch_position(), PatchStreamPosition(2));
@@ -152,4 +158,31 @@ fn a_refused_position_is_not_consumed() {
     assert_eq!(accepted.commit.parents, vec![anchor.commit.commit_id]);
     assert_eq!(medium.head(), PatchStreamPosition(2));
     release_test_commit_snapshot(&runtime, &accepted);
+}
+
+#[test]
+fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
+    use crate::durability::medium::RelationalDurableStepStop;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let source = runtime_with_test_schema();
+    let committed = create_entity_outcome(execution, &source, "positioned");
+    release_test_commit_snapshot(&source, &committed);
+    let positioned = source.history.positioned_canonical_commits_snapshot()[0].clone();
+    let artifact = source
+        .history
+        .commit_artifact(positioned.commit.commit_id)
+        .unwrap();
+
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let binding = runtime.durability.medium().unwrap();
+    assert!(binding.detach().is_some() && binding.detach().is_none());
+    assert!(matches!(
+        binding.publish(positioned, artifact.roots(), execution),
+        Err(RelationalDurableStepStop::Refused(
+            RelationalDurablePublicationRefusal::MediumMoved
+        ))
+    ));
+    assert!(medium.offered_commits().is_empty());
 }

@@ -7,7 +7,7 @@ use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
@@ -235,7 +235,7 @@ fn classify(
                 .len()
                 .checked_mul(1 + (usize::BITS - selected.outputs.len().leading_zeros()) as usize)
                 .ok_or(Stop::Request(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                 ))?;
             charge(context, overlap_work)?;
             if !producer_owned

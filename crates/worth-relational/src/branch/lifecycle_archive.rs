@@ -1,10 +1,10 @@
 use super::{require_local_identity, ArchivedRelationalBranch, RelationalBranchArchiveDenial};
+use crate::branch::transition::BranchTransitionRecordError;
 use crate::branch::{
-    LiveBranchTransitionStep, RelationalBranchIdentity, RelationalBranchLifecyclePosture,
-    RelationalBranchTransition, RelationalBranchTransitionDurableStep,
-    RelationalBranchTransitionStop,
+    RelationalBranchIdentity, RelationalBranchLifecyclePosture, RelationalBranchTransition,
+    RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop,
 };
-use crate::runtime::BranchTransitionRecordError;
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 
 impl crate::runtime::RelationalRuntime {
     /// Archive a live branch: it stops accepting commits and its generation
@@ -45,9 +45,9 @@ impl crate::runtime::RelationalRuntime {
         BranchTransitionRecordError<RelationalBranchArchiveDenial, S::Stop>,
     > {
         let denied = BranchTransitionRecordError::Denied;
-        require_local_identity(self, identity)
+        require_local_identity(self.runtime_instance_id(), identity)
             .map_err(|()| denied(RelationalBranchArchiveDenial::ForeignRuntime))?;
-        let publication = self.history.begin_branch_transition();
+        let publication = crate::runtime::state::subsystems::history::history_branch_transition::begin_branch_transition(&self.history);
         let publication_cell = self
             .history
             .branch_cell(identity.branch_id())

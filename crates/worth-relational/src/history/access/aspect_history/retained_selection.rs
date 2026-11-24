@@ -1,6 +1,7 @@
 //! One sealed selection shared by exact canonical-commit cursors; no continuation authority.
-use super::{RelationalRecordHistoryDenial as Denial, RelationalRecordHistorySubject};
-use crate::runtime::RelationalRuntime;
+use super::{
+    denial::RelationalRecordHistoryDenial as Denial, selection::RelationalRecordHistorySubject,
+};
 use std::{num::NonZeroUsize, sync::Arc};
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::AspectKey;
@@ -38,63 +39,61 @@ impl RelationalRecordHistorySelection {
     }
 }
 
-impl RelationalRuntime {
-    /// Limits are checked before walking, copying, or canonicalizing the input.
-    pub fn retain_record_history_selection(
-        &self,
-        execution: ExecutionRequest<'_, '_>,
-        subjects: &[RelationalRecordHistorySubject],
-        aspects: &[AspectKey],
-        limits: RelationalRecordHistorySelectionLimits,
-    ) -> Result<RelationalRecordHistorySelection, Denial> {
-        if subjects.is_empty() {
-            return Err(Denial::EmptySubjectSelection);
+/// Limits are checked before walking, copying, or canonicalizing the input.
+pub(super) fn retain_record_history_selection(
+    runtime_id: u64,
+    execution: ExecutionRequest<'_, '_>,
+    subjects: &[RelationalRecordHistorySubject],
+    aspects: &[AspectKey],
+    limits: RelationalRecordHistorySelectionLimits,
+) -> Result<RelationalRecordHistorySelection, Denial> {
+    if subjects.is_empty() {
+        return Err(Denial::EmptySubjectSelection);
+    }
+    if aspects.is_empty() {
+        return Err(Denial::EmptyAspectSelection);
+    }
+    if subjects.len() > limits.maximum_subjects.get()
+        || aspects.len() > limits.maximum_aspects.get()
+    {
+        return Err(Denial::SelectionLimitExceeded);
+    }
+    super::request_stage::run(execution, |checkpoint| {
+        for subject in subjects {
+            charge(checkpoint, 1)?;
+            if subject.runtime_instance_id() != runtime_id {
+                return Err(Denial::ForeignOwner);
+            }
         }
-        if aspects.is_empty() {
-            return Err(Denial::EmptyAspectSelection);
-        }
-        if subjects.len() > limits.maximum_subjects.get()
-            || aspects.len() > limits.maximum_aspects.get()
-        {
+        let bytes = selection_bytes(subjects, aspects, checkpoint)?;
+        if bytes > limits.maximum_owned_bytes.get() as u64 {
             return Err(Denial::SelectionLimitExceeded);
         }
-        super::request_stage::run(execution, |checkpoint| {
-            for subject in subjects {
-                charge(checkpoint, 1)?;
-                if subject.runtime_instance_id() != self.runtime_instance_id() {
-                    return Err(Denial::ForeignOwner);
-                }
-            }
-            let bytes = selection_bytes(subjects, aspects, checkpoint)?;
-            if bytes > limits.maximum_owned_bytes.get() as u64 {
-                return Err(Denial::SelectionLimitExceeded);
-            }
-            let memory = execution
-                .reserve_retained_memory(bytes)
-                .map_err(Denial::Request)?;
-            for count in [subjects.len(), aspects.len()] {
-                let count = u64::try_from(count).map_err(|_| Denial::SizeOverflow)?;
-                let work = count
-                    .checked_mul(u64::from(count.checked_ilog2().unwrap_or(0)) + 1)
-                    .ok_or(Denial::SizeOverflow)?;
-                charge(checkpoint, work)?;
-            }
-            let mut subjects = subjects.to_vec();
-            subjects.sort_unstable_by(|left, right| left.record().cmp(right.record()));
-            subjects.dedup_by(|left, right| left.record() == right.record());
-            let mut aspects = aspects.to_vec();
-            aspects.sort_unstable();
-            aspects.dedup();
-            Ok(RelationalRecordHistorySelection {
-                owner: Arc::new(RetainedSelection {
-                    subjects,
-                    aspects,
-                    runtime: self.runtime_instance_id(),
-                    _memory: memory,
-                }),
-            })
+        let memory = execution
+            .reserve_retained_memory(bytes)
+            .map_err(Denial::Request)?;
+        for count in [subjects.len(), aspects.len()] {
+            let count = u64::try_from(count).map_err(|_| Denial::SizeOverflow)?;
+            let work = count
+                .checked_mul(u64::from(count.checked_ilog2().unwrap_or(0)) + 1)
+                .ok_or(Denial::SizeOverflow)?;
+            charge(checkpoint, work)?;
+        }
+        let mut subjects = subjects.to_vec();
+        subjects.sort_unstable_by(|left, right| left.record().cmp(right.record()));
+        subjects.dedup_by(|left, right| left.record() == right.record());
+        let mut aspects = aspects.to_vec();
+        aspects.sort_unstable();
+        aspects.dedup();
+        Ok(RelationalRecordHistorySelection {
+            owner: Arc::new(RetainedSelection {
+                subjects,
+                aspects,
+                runtime: runtime_id,
+                _memory: memory,
+            }),
         })
-    }
+    })
 }
 
 fn charge(checkpoint: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), Denial> {

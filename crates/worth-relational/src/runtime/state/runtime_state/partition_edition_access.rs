@@ -35,7 +35,7 @@ impl RelationalRuntimeState {
     /// observes that partition's previous state.
     pub(crate) fn edit_partitions(&self) -> PartitionEditionWriter<'_> {
         self.partitions.edit(
-            &self.services.instrumentation,
+            &self.services.instrumentation.complexity_counters,
             PartitionEditionCopyLane::Ordinary,
         )
     }
@@ -47,7 +47,7 @@ impl RelationalRuntimeState {
     /// the ordinary lane.
     pub(crate) fn rebuild_partitions(&self) -> PartitionEditionWriter<'_> {
         self.partitions.edit(
-            &self.services.instrumentation,
+            &self.services.instrumentation.complexity_counters,
             PartitionEditionCopyLane::Reconstructive,
         )
     }
@@ -63,7 +63,7 @@ impl RelationalRuntimeState {
         partitions: impl IntoIterator<Item = (PartitionId, PartitionState)>,
     ) {
         self.partitions.install_owned(
-            &self.services.instrumentation,
+            &self.services.instrumentation.complexity_counters,
             PartitionEditionCopyLane::Reconstructive,
             partitions,
         );

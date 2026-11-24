@@ -48,7 +48,8 @@ pub enum RelationalInitialSchemaInstallationDenialKind {
 pub struct RelationalInitialSchemaInstallationDenial {
     kind: RelationalInitialSchemaInstallationDenialKind,
     detail: String,
-    publication: Option<crate::durability::medium::RelationalInitialInputsPublicationStop>,
+    publication:
+        Option<crate::durability::published_medium::RelationalInitialInputsPublicationStop>,
 }
 
 impl RelationalInitialSchemaInstallationDenial {
@@ -87,13 +88,13 @@ impl std::error::Error for RelationalInitialSchemaInstallationDenial {}
 impl RelationalInitialSchemaInstallationDenial {
     pub fn publication_stop(
         &self,
-    ) -> Option<&crate::durability::medium::RelationalInitialInputsPublicationStop> {
+    ) -> Option<&crate::durability::published_medium::RelationalInitialInputsPublicationStop> {
         self.publication.as_ref()
     }
     pub(super) fn publication(
-        cause: crate::durability::medium::RelationalInitialInputsPublicationStop,
+        cause: crate::durability::published_medium::RelationalInitialInputsPublicationStop,
     ) -> Self {
-        use crate::durability::medium::RelationalInitialInputsPublicationStop as Stop;
+        use crate::durability::published_medium::RelationalInitialInputsPublicationStop as Stop;
         let kind = match &cause {
             Stop::Request(cause) => RelationalInitialSchemaInstallationDenialKind::Request(*cause),
             Stop::Refused(_) => {

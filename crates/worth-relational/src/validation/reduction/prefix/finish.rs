@@ -4,14 +4,17 @@ use crate::authority::commit::preparation::{
     diagnostics::{counters::ValidationPreparationCounters, failures::PreparationFailureClass},
     planning::strategy::PreparationStrategySelection,
 };
-use crate::validation::{
-    data::{InvariantCheckResult, InvariantDecisionRecord},
-    engine::{
-        InvariantExecutionDisposition, InvariantExecutionMetadata, InvariantExecutionRequest,
-        InvariantExecutionResult, InvariantPlanScopeClass, InvariantProofBoundarySummary,
-    },
-    execution::{composed_proof_boundary_summary, decision_clone_bytes, decision_record_bytes},
-};
+use crate::validation::data::execution::InvariantDecisionRecord;
+use crate::validation::engine::result::InvariantCheckResult;
+use crate::validation::engine::InvariantExecutionDisposition;
+use crate::validation::engine::InvariantExecutionMetadata;
+use crate::validation::engine::InvariantExecutionRequest;
+use crate::validation::engine::InvariantExecutionResult;
+use crate::validation::engine::InvariantPlanScopeClass;
+use crate::validation::engine::InvariantProofBoundarySummary;
+use crate::validation::execution::composed_proof_boundary_summary;
+use crate::validation::execution::decision_clone_bytes;
+use crate::validation::execution::decision_record_bytes;
 
 pub(crate) struct CompletedInvariantReduction {
     reduced: super::super::ReducedInvariants,

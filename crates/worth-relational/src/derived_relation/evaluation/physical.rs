@@ -4,7 +4,7 @@ use super::{insert_member, Adjacency, DefinitionDenial, Denial, Evaluation, Memb
 use crate::graph_member::{NativeMemberDomain as Domain, ProjectedMemberCoordinate};
 use crate::identity::data::{EntityId, KindId};
 use crate::projected_member_domain::ProjectedMemberDomainIdentity;
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 

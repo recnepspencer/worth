@@ -1,9 +1,8 @@
 //! The canonical inverse has an exact fresh-generation anchor and a bijective roster.
 use super::*;
-use crate::{
-    history::data::CodecRetirementClosureStop as Stop,
-    publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
-};
+use crate::history::data::CodecRetirementClosureStop as Stop;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::{HashMap, HashSet};
 use worth_execution::MapKernelContext;
 
@@ -104,7 +103,7 @@ impl CanonicalCommitEnvelopeBody {
                 || !matches!(origin.publication, CanonicalOutputPublication::AuthoredRestoration { retirement, .. } if retirement == event.retirement)
                 || origin.members.iter().any(|member| {
                     index.anchors.contains(&member.id)
-                        || member.posture != crate::mvcc::RequiredOutputRolePosture::Create
+                        || member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Create
                         || !new_entities.contains(&member.id)
                 })
             {

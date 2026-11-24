@@ -1,18 +1,21 @@
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-use crate::facade::{
-    runtime::RelationalRuntimeApi,
-    schema::{
-        EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
-        RelationalSchemaRegistry, SchemaId, SchemaVersionId,
-    },
-};
+use crate::facade::runtime::RelationalRuntimeApi;
 use crate::identity::data::{KindId, PartitionId};
+use crate::schema::data::EntityKindRegistration;
+use crate::schema::data::KindAspectContractDeclarations;
+use crate::schema::data::RelationKindRegistration;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::data::SchemaId;
+use crate::schema::data::SchemaVersionId;
 use crate::schema::data::{EndpointKindContractDeclaration, RelationIntegrityDeclarations};
-use crate::transactions::data::EntityReference;
-use crate::transactions::data::{
-    CreateIntent, EntitySpec, MergedCommitPlan, MutationIntent, RelationSpec, WorkerIntentBatch,
-};
-use crate::validation::data::InvariantPlanContract;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::data::contracts::InvariantPlanContract;
 use crate::validation::engine::{
     InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
 };
@@ -98,7 +101,7 @@ pub(super) fn create_relation_of_kind(
                 client_key: crate::symbols::data::ClientKey::raw(client_key),
                 source: EntityReference::Existing(source),
                 target: EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         )),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -109,8 +112,10 @@ pub(super) fn create_relation_of_kind(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Relation(relation_id) => Some(*relation_id),
-            crate::facade::transactions::RecordRef::Entity(_) => None,
+            crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
+                Some(*relation_id)
+            }
+            crate::transactions::data::primitives::RecordRef::Entity(_) => None,
         })
         .expect("created relation")
 }
@@ -127,7 +132,7 @@ pub(super) fn create_entity(
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(name),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         )),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -138,8 +143,8 @@ pub(super) fn create_entity(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(entity_id) => Some(*entity_id),
-            crate::facade::transactions::RecordRef::Relation(_) => None,
+            crate::transactions::data::primitives::RecordRef::Entity(entity_id) => Some(*entity_id),
+            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
         })
         .expect("created entity")
 }

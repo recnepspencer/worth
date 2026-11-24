@@ -46,7 +46,6 @@ impl ContentDirectory {
             ContentFrameAdmission::readmit_closure(execution, &schema.content_formats, records)?;
         let empty = Self::default();
         let mut directory = Self::default();
-        let view = InvariantStateView::new(state, version);
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
             &schema.content_formats,
@@ -56,7 +55,7 @@ impl ContentDirectory {
             &mut resolved,
         );
         crate::content::reconstruction::visit_records(lane, execution, state, &mut |record| {
-            directory.replace_record(execution, schema, &view, record, &mut resolution)
+            directory.replace_record(execution, schema, state, version, record, &mut resolution)
         })?;
         // Require the exact closure: omitted bytes refuse during field traversal;
         // extraneous records cannot silently obtain retention in the new root.
@@ -80,7 +79,6 @@ impl ContentDirectory {
     ) -> Result<Self, Denial> {
         let staged = ContentFrameAdmission::admit(execution, &schema.content_formats, attachments)?;
         let mut next = Self::default();
-        let view = InvariantStateView::new(state, version);
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
             &schema.content_formats,
@@ -90,7 +88,7 @@ impl ContentDirectory {
             &mut resolved,
         );
         crate::content::reconstruction::visit_records(lane, execution, state, &mut |record| {
-            next.replace_record(execution, schema, &view, record, &mut resolution)
+            next.replace_record(execution, schema, state, version, record, &mut resolution)
         })?;
         Ok(next)
     }

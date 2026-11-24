@@ -4,7 +4,7 @@ use crate::identity::data::LineageId;
 use crate::storage::substrate::{EntityRecordKind, StorageAllocation};
 #[derive(Debug)]
 pub(crate) enum ExtraLineageDenial {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Missing(&'static str),
 }
 impl RecordArena<EntityRecordKind> {

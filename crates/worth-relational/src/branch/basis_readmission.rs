@@ -1,10 +1,10 @@
 use super::{
+    basis_admission::issue_admitted_relational_branch_basis_with_retention,
     basis_axis_validation::{
         reject_cross_branch_target_substitution, require_current_descriptor_axes,
     },
     basis_descriptor_resolution::resolve_relational_branch_basis_descriptor,
     basis_identity_validation::identity_denial,
-    basis_observation::issue_admitted_relational_branch_basis_with_retention,
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
     RelationalBranchRoot,
 };

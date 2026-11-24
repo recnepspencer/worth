@@ -1,12 +1,13 @@
 //! Canonical authored writes, including writes whose semantic after-image is unchanged.
 mod cursor;
+pub(crate) mod generation;
+pub(super) mod live_cursor;
 mod maintenance;
 mod managed_source;
 mod page;
 pub(crate) mod posting_key;
 mod selection;
 
-pub use cursor::RelationalAuthoredWriteCursor;
 pub(crate) use managed_source::source_impact;
 pub use managed_source::{
     RelationalAuthoredManagedSourceImpact, RelationalAuthoredManagedSourceMaterial,
@@ -54,9 +55,9 @@ pub enum RelationalAuthoredWriteDenial {
     OrderedStorage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
-    Retention(crate::branch::RelationalBranchBasisDenial),
+    Retention(crate::branch::basis_denial::RelationalBranchBasisDenial),
     /// The original request or selected durable body could not be admitted.
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 impl From<worth_execution::WorkCeilingDenial> for RelationalAuthoredWriteDenial {

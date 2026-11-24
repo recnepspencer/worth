@@ -1,84 +1,70 @@
 use std::collections::BTreeSet;
 
+use super::selected_index::{PinnedIndex, PinnedIndexLookup};
 use crate::indexes::data::{
     BoundedIndexParityMode, BoundedRelationJoinLookupDenial, BoundedRelationJoinLookupDenialKind,
     BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupRequest,
     BoundedRelationJoinLookupWork, DerivedIndexEntries, DerivedIndexKind, RelationJoinEntry,
     RelationJoinKey,
 };
-use crate::runtime::RelationalPinnedRead;
 
-impl RelationalPinnedRead {
-    /// Verify the relation join selected at pin time without an installed owner.
-    pub fn execute_bounded_relation_join_lookup(
-        &self,
-        request: BoundedRelationJoinLookupRequest,
-        parity_mode: BoundedIndexParityMode,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
-        self.performance_access().count_query_index_attempt();
-        self.lookup_pinned_relation_join(request, parity_mode, execution)
-    }
-    pub(super) fn lookup_pinned_relation_join(
-        &self,
-        request: BoundedRelationJoinLookupRequest,
-        parity_mode: BoundedIndexParityMode,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
-        crate::execution::check_request(execution).map_err(|cause| {
-            denial(
-                BoundedRelationJoinLookupDenialKind::Execution(cause),
-                &request,
-            )
-        })?;
-        let projection = self.project_snapshot(request.snapshot()).ok_or_else(|| {
+pub(crate) fn lookup(
+    read: PinnedIndexLookup<'_>,
+    request: BoundedRelationJoinLookupRequest,
+    parity_mode: BoundedIndexParityMode,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupDenial> {
+    crate::execution::request_custody::check_request(execution).map_err(|cause| {
+        denial(
+            BoundedRelationJoinLookupDenialKind::Execution(cause),
+            &request,
+        )
+    })?;
+    let projection = read.project_snapshot(request.snapshot()).ok_or_else(|| {
+        denial(
+            BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
+            &request,
+        )
+    })?;
+    let source = super::super::projected_field_values::IndexProjectionSource::exact(&projection)
+        .ok_or_else(|| {
             denial(
                 BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
                 &request,
             )
         })?;
-        let source =
-            super::super::projected_field_values::IndexProjectionSource::exact(&projection)
-                .ok_or_else(|| {
-                    denial(
-                        BoundedRelationJoinLookupDenialKind::SnapshotUnavailable,
-                        &request,
-                    )
-                })?;
-        let prepared = prepare_relation_join_lookup(self, &request)?;
-        let indexed_entries = prepared.indexed_entries();
-        let overflowed = indexed_entries.len() > request.candidate_limit();
-        let examined_entry_count = indexed_entries.len().min(request.candidate_limit());
-        let candidate_entity_ids = prepared.verification.verify_entries(
+    let prepared = prepare_relation_join_lookup(read.selected_index(request.index_id()), &request)?;
+    let indexed_entries = prepared.indexed_entries();
+    let overflowed = indexed_entries.len() > request.candidate_limit();
+    let examined_entry_count = indexed_entries.len().min(request.candidate_limit());
+    let candidate_entity_ids = prepared.verification.verify_entries(
+        execution,
+        &source,
+        &indexed_entries
+            .iter()
+            .take(examined_entry_count)
+            .copied()
+            .collect::<Vec<_>>(),
+    )?;
+    let outcome = BoundedRelationJoinLookupOutcome::new(
+        prepared.generation_id,
+        candidate_entity_ids,
+        BoundedRelationJoinLookupWork::for_verified_candidates(examined_entry_count),
+        overflowed,
+        parity_mode,
+    );
+    if parity_mode == BoundedIndexParityMode::Certification {
+        certify_storage_parity(
             execution,
             &source,
-            &indexed_entries
-                .iter()
-                .take(examined_entry_count)
-                .copied()
-                .collect::<Vec<_>>(),
+            &prepared.verification,
+            &request,
+            &outcome,
         )?;
-        let outcome = BoundedRelationJoinLookupOutcome::new(
-            prepared.generation_id,
-            candidate_entity_ids,
-            BoundedRelationJoinLookupWork::for_verified_candidates(examined_entry_count),
-            overflowed,
-            parity_mode,
-        );
-        if parity_mode == BoundedIndexParityMode::Certification {
-            certify_storage_parity(
-                execution,
-                &source,
-                &prepared.verification,
-                &request,
-                &outcome,
-            )?;
-            self.performance_access()
-                .count_query_index_parity_verification();
-        }
-        self.performance_access().count_query_index_path();
-        Ok(outcome)
+        read.instrumentation.count_query_index_parity_verification();
     }
+    read.instrumentation.count_query_index_path();
+    Ok(outcome)
 }
 
 /// The generation this lookup is pinned to, carried by shared ownership so the
@@ -100,10 +86,10 @@ impl PreparedRelationJoinLookup {
 }
 
 fn prepare_relation_join_lookup(
-    read: &RelationalPinnedRead,
+    selected: Option<&PinnedIndex>,
     request: &BoundedRelationJoinLookupRequest,
 ) -> Result<PreparedRelationJoinLookup, BoundedRelationJoinLookupDenial> {
-    let selected = read.selected_index(request.index_id()).ok_or_else(|| {
+    let selected = selected.ok_or_else(|| {
         denial(
             BoundedRelationJoinLookupDenialKind::IndexNotInstalled,
             request,

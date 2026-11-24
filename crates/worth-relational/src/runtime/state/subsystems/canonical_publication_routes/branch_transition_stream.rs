@@ -15,6 +15,11 @@ use crate::branch::{
     RelationalBranchTransitionSequence, RelationalTransitionPublication,
 };
 
+pub(crate) use crate::branch::transition::original_inputs::{
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+};
+use crate::branch::transition::BranchTransitionRecordError;
+
 use super::RelationalCanonicalPublicationRoutes;
 
 #[path = "branch_transition_stream/associated_originals.rs"]
@@ -25,10 +30,7 @@ mod retained_log;
 mod schema_inputs;
 #[path = "branch_transition_stream/source_recovery.rs"]
 mod source_recovery;
-pub(crate) use schema_inputs::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
-};
+pub(crate) use schema_inputs::{OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial};
 
 #[derive(Debug, Default)]
 pub(super) struct BranchTransitionStream {
@@ -55,26 +57,6 @@ struct BranchTransitionStreamState {
         >,
     >,
     _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
-}
-
-/// Why a transition was not recorded. None of these left a live effect;
-/// only an unresolved `Step` stop may have left a durable one.
-#[derive(Debug)]
-pub(crate) enum BranchTransitionRecordError<D, S> {
-    /// The transition's preparation, re-checked inside the reservation,
-    /// refused.
-    Denied(D),
-    /// The original request stopped during reservation or storage preparation.
-    ReservationWaitStopped(worth_execution::WorkCeilingDenial),
-    /// No sequence remains after the last performed one.
-    SequenceCapacityExhausted,
-    /// The actual retained transition backing cannot be represented.
-    StorageCapacityExhausted,
-    /// A restored sequence disagrees with this stream's original prefix.
-    OriginalPrefixMismatch,
-    OriginalInputsStopped(crate::durability::data::RelationalRecoveryStop),
-    /// The durable step did not admit the cutover.
-    Step(S),
 }
 
 /// Lifecycle admission acquired before any live branch coordination or state.

@@ -1,8 +1,8 @@
 //! Request-aware point probes at an exact owner-issued snapshot.
-use super::VisibilityReadContext;
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use worth_foundational::facade::AspectKey;
 impl VisibilityReadContext<'_> {
     /// An unavailable handle differs from an absent or retired entity. Cold
@@ -13,7 +13,7 @@ impl VisibilityReadContext<'_> {
         handle: &SnapshotHandle,
         entity: EntityId,
     ) -> Result<Option<Option<KindId>>, RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
@@ -54,7 +54,7 @@ impl VisibilityReadContext<'_> {
         entity: EntityId,
         aspect: &AspectKey,
     ) -> Result<Option<Option<u64>>, RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
             return Ok(None);
         }

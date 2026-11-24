@@ -1,10 +1,9 @@
 //! A cold current route is selected from independently authenticated current facts.
 use super::*;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::RequiredOutputRoutePosition,
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::RequiredOutputRoutePosition;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 pub(crate) fn read_current(
     execution: &ExecutionRequest<'_, '_>,
@@ -19,7 +18,7 @@ pub(crate) fn read_current(
     execution
         .run_native_with_checkpoint(|context| {
             for (_, position) in &reached.positions {
-                crate::publication::ownership::checkpoint(
+                crate::publication::ownership::read_request::checkpoint(
                     context,
                     (position.meaning.family.len() + meaning.family.len() + 1) as u64,
                 )?;
@@ -36,6 +35,6 @@ pub(crate) fn read_current(
             }
             Ok(None)
         })
-        .map_err(crate::publication::ownership::request)?
+        .map_err(crate::publication::ownership::read_request::request)?
         .0
 }

@@ -15,7 +15,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             crate::identity::data::RelationId,
             crate::identity::data::LineageId,
         )>>("relation_lineages");
-        owner.field::<crate::storage::overlay::PublicationArtifacts>("artifacts");
+        owner.field::<crate::publication::authority::artifacts::PublicationArtifacts>("artifacts");
         owner.field::<Vec<crate::transactions::data::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
         owner.field::<Option<VersionId>>("previous_branch_head_version");
@@ -41,7 +41,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             crate::identity::data::RelationId,
             crate::identity::data::LineageId,
         )>>("relation_lineages");
-        owner.field::<crate::storage::overlay::PublicationArtifacts>("artifacts");
+        owner.field::<crate::publication::authority::artifacts::PublicationArtifacts>("artifacts");
         owner.field::<Vec<crate::transactions::data::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
         owner.field::<Option<VersionId>>("previous_branch_head_version");

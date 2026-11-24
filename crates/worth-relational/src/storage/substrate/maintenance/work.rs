@@ -28,6 +28,11 @@ impl ChangeWork<'_> {
             |cause| MaintenanceRefusal::Execution(cause).into(),
         )
     }
+    pub(crate) fn prepare_route_lookup(&mut self, routes: usize) -> Result<(), MaintenanceRefusal> {
+        let levels = routes.checked_ilog2().map_or(1, |bits| u64::from(bits) + 1);
+        self.prepare(11 * levels + 1, 0)
+    }
+
     pub fn prepare(&mut self, units: u64, bytes: u64) -> Result<(), MaintenanceRefusal> {
         (self.prepare)(units, bytes)
     }

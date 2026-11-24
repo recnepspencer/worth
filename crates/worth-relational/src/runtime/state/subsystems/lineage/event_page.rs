@@ -1,8 +1,8 @@
 //! Request-funded readmission of one event payload and its complete range routing.
-use crate::durability::data::{
+use crate::durability::data::lineage_event_pages::{
     RelationalCheckpointLineageEventPage, RelationalCheckpointLineageEventRow,
 };
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -78,7 +78,7 @@ impl<'de> Visitor<'de> for EventPageVisitor<'_, '_, '_> {
             if rows.len() == width {
                 return Err(A::Error::custom("lineage page width drift"));
             }
-            crate::execution::check_request(self.execution).map_err(|cause| {
+            crate::execution::request_custody::check_request(self.execution).map_err(|cause| {
                 *self.denial = Some(Failure::Request(cause));
                 A::Error::custom("lineage page request stopped")
             })?;

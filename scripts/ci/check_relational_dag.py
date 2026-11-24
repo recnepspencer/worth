@@ -282,6 +282,21 @@ def totals(directions):
     return {direction: counts.total() for direction, counts in sorted(directions.items())}
 
 
+def ordinary_storage_totals(projection, directions):
+    """Count the Storage cut while retaining the residency ledger separately."""
+    residency = (SOURCE / 'storage/residency').as_posix() + '/'
+    counts = {}
+    for direction, references in directions.items():
+        caller, callee = direction.split(' -> ')
+        if caller != 'storage' and not (projection == 'inherent_impl' and callee == 'storage'):
+            continue
+        count = sum(value for (path, _), value in references.items()
+                    if not path.startswith(residency))
+        if count:
+            counts[direction] = count
+    return counts
+
+
 def compare(directions, ceilings, rows):
     """Each direction and each named reference can only shrink."""
     failures = []
@@ -320,6 +335,16 @@ def main():
         for failure in failures:
             print(f'{projection}: {failure}', file=sys.stderr)
         failed |= bool(failures)
+        ordinary = ordinary_storage_totals(projection, directions)
+        ordinary_ceiling = baseline['ordinary_storage_ceilings'][projection]
+        print(f'{projection} ordinary storage: {sum(ordinary.values())} / '
+              f'{sum(ordinary_ceiling.values())}')
+        for direction, count in ordinary.items():
+            limit = ordinary_ceiling.get(direction, 0)
+            if count > limit:
+                print(f'{projection} ordinary storage: {direction}: {count} > {limit}',
+                      file=sys.stderr)
+                failed = True
     for direction, counts in audit.reexports.items():
         for path, symbol in counts:
             print(f'upward pub use: {direction}: {path} :: {symbol}', file=sys.stderr)

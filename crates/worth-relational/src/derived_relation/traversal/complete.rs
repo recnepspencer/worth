@@ -8,7 +8,7 @@ use crate::derived_relation::{
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 pub(in crate::derived_relation) fn acquire(
     registry: &RelationalSchemaRegistry,

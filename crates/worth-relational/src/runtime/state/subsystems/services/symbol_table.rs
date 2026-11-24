@@ -23,7 +23,7 @@ pub(crate) use reservations::{
 #[derive(Debug)]
 pub(crate) struct RuntimeSymbolTable {
     state: Arc<RwLock<RuntimeSymbolState>>,
-    cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
+    cold: Arc<RwLock<Option<Arc<crate::storage::data::symbol_residency::RuntimeSymbolResidency>>>>,
     reservations: Arc<std::sync::Mutex<reservations::SymbolReservationDirectory>>,
     _memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }

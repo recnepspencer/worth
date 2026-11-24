@@ -15,7 +15,10 @@ pub(super) fn execute_stage<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     lease: Option<&ExecutionResourceLease<'_>>,
     stage: InvariantStage,
-) -> Result<Option<InvariantStageOutput>, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    Option<InvariantStageOutput>,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let metrics = InvariantMetrics::new(runtime.performance_access());
     let (planned, retained_bytes) = if let Some(lease) = lease {
         let preparation = crate::validation::execution::plan_checked_invariant_preparation(

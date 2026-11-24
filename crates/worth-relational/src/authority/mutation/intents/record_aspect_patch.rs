@@ -5,9 +5,10 @@ use worth_foundational::facade::{
 use worth_proof::TransitionOutcome;
 
 use crate::schema::data::LoweredAspectContractPlan;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, RecordAspectPatchDenial, RecordAspectPatchTarget,
-};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchDenial;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 
 use super::super::outcomes::MutationAspectPatch;
 mod controlled;
@@ -51,7 +52,7 @@ fn readmit_patch(
 
 pub(crate) fn readmit_field_authoring(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    fields: &crate::transactions::data::AspectFieldPatch,
+    fields: &crate::transactions::data::aspect_field_patch::AspectFieldPatch,
     purpose: PortablePatchReadmissionPurpose,
     plan: Option<&LoweredAspectContractPlan>,
     target: RecordAspectPatchTarget,
@@ -74,8 +75,10 @@ pub(crate) fn apply_entity(
     current: Option<&AuthoritativeRecordAspectState>,
     patch: &MutationAspectPatch,
     target: RecordAspectPatchTarget,
-) -> Result<crate::storage::substrate::EntityExtra, crate::transactions::data::TransactionCommitError>
-{
+) -> Result<
+    crate::storage::substrate::EntityExtra,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     crate::storage::substrate::EntityExtra::apply_payload(execution, current, patch.as_patch())
         .map_err(|denial| payload_denial(target, denial))
 }
@@ -86,7 +89,7 @@ pub(crate) fn apply_relation(
     target: RecordAspectPatchTarget,
 ) -> Result<
     crate::storage::substrate::RelationExtra,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     crate::storage::substrate::RelationExtra::apply_payload(execution, current, patch.as_patch())
         .map_err(|denial| payload_denial(target, denial))
@@ -94,13 +97,13 @@ pub(crate) fn apply_relation(
 pub(crate) fn payload_denial(
     target: RecordAspectPatchTarget,
     denial: crate::storage::substrate::ExtraPayloadDenial,
-) -> crate::transactions::data::TransactionCommitError {
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
     match denial {
         crate::storage::substrate::ExtraPayloadDenial::Request(cause) => {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         }
         crate::storage::substrate::ExtraPayloadDenial::Application(denial) => {
-            crate::transactions::data::TransactionCommitError::conflict(conflict(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(conflict(
                 target,
                 RecordAspectPatchDenial::ApplicationDenied(denial),
             ))

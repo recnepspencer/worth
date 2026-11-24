@@ -24,13 +24,13 @@ pub(super) fn compare_retained_origin(
                 .checked_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
                 .ok_or_else(|| {
                     origin_request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                     )
                 })?,
         ] {
             work = work.checked_add(bytes).ok_or_else(|| {
                 origin_request(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                 )
             })?;
         }
@@ -43,7 +43,7 @@ pub(super) fn compare_retained_origin(
             ] {
                 work = work.checked_add(bytes).ok_or_else(|| {
                     origin_request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                     )
                 })?;
             }
@@ -52,7 +52,7 @@ pub(super) fn compare_retained_origin(
             context,
             u64::try_from(work).map_err(|_| {
                 origin_request(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                 )
             })?,
         )
@@ -60,10 +60,9 @@ pub(super) fn compare_retained_origin(
     }
     if carried != canonical {
         if canonical.source_scope_owned {
-            use crate::{
-                publication::data::{AuthoredRetirementRefusal, PublicationError},
-                transactions::data::RecordRef,
-            };
+            use crate::publication::data::AuthoredRetirementRefusal;
+            use crate::publication::data::PublicationError;
+            use crate::transactions::data::primitives::RecordRef;
             let mut subject = RecordRef::Entity(canonical.meaning.source_scope);
             for (index, member) in canonical.members.iter().enumerate() {
                 let other = carried.members.get(index);
@@ -108,9 +107,11 @@ pub(super) fn compare_retained_origin(
                 ),
             ));
         }
-        return Err(crate::mvcc::origin_denial(
-            "retained publication custody differs from exact canonical membership",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "retained publication custody differs from exact canonical membership",
+            ),
+        );
     }
     Ok(())
 }

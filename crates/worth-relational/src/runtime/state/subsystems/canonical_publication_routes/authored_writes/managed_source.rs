@@ -1,5 +1,6 @@
 //! Optional Source impact postings derive only from the actual frozen envelope.
 use super::*;
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
 use crate::history::data::{CanonicalCommitEnvelope, LiveManagedSourceHistory};
 
 pub(super) fn append(

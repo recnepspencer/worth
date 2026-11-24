@@ -100,7 +100,7 @@ fn relink_rejects_schema_authority_mutation() {
     let denial = root
         .relink_canonical_envelope(
             execution,
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::new(envelope),
             )
@@ -130,7 +130,7 @@ fn relink_rejects_visibility_tuple_mutation() {
     let denial = root
         .relink_canonical_envelope(
             execution,
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::new(envelope),
             )
@@ -282,7 +282,7 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
         assert!(
             root.relink_canonical_envelope(
                 execution,
-                crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                     execution,
                     Arc::new(mutant)
                 )
@@ -320,13 +320,17 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
 
     let mut overflowing_root = source_root.as_ref().clone();
     let base_region = source_root.regions.values().next().unwrap();
+    let inventory = |authoritative_bytes| Inv {
+        authoritative_bytes,
+        ..Default::default()
+    };
     let mut regions = std::collections::BTreeMap::new();
     regions.insert(
         PartitionId(101),
         Arc::new(base_region.clone_with_inventory_for_test(
             99_001,
             PartitionId(101),
-            Inv { authoritative_bytes: u64::MAX - 8, ..Default::default() },
+            inventory(u64::MAX - 8),
         )),
     );
     regions.insert(
@@ -334,7 +338,7 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
         Arc::new(base_region.clone_with_inventory_for_test(
             99_002,
             PartitionId(102),
-            Inv { authoritative_bytes: 16, ..Default::default() },
+            inventory(16),
         )),
     );
     overflowing_root.regions = super::RelationalPersistentRegionSet::initial(
@@ -357,10 +361,11 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
         .fork_binding()
         .reserve_target(target_branch.clone())
         .expect("target reservation succeeds");
-    let source_cell = runtime.history.branch_cell(&BranchId("main".to_owned())).unwrap();
+    let main = BranchId("main".to_owned());
+    let source_cell = runtime.history.branch_cell(&main).unwrap();
     let mut target_cell = source_cell.publication_cell().enter_state().snapshot_cell();
     target_cell.install_root(overflowing_root);
-    let prepared = crate::branch::fork::PreparedForkTarget {
+    let prepared = crate::branch::fork::target_preparation::PreparedForkTarget {
         target_cell,
         source_root,
         target_observation: source_cell.observation(),
@@ -377,7 +382,10 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
         .prepare_installation(prepared, true)
         .err()
         .expect("overflowing materialized fork must refuse before installation");
-    assert_eq!(denial, crate::branch::RelationalForkDenial::AllocationAccountingOverflow);
+    assert_eq!(
+        denial,
+        crate::branch::fork::RelationalForkDenial::AllocationAccountingOverflow
+    );
     assert!(runtime.history.branch_cell(&target_branch).is_none());
     assert_eq!(
         runtime.retention_cost_counters().head_installs,
@@ -386,7 +394,7 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
     );
     runtime
         .history_authority()
-        .fork_branch_from(execution, target_branch.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, target_branch.clone(), &main)
         .expect("dropped reservation allows a clean subsequent fork");
     assert!(runtime.history.branch_cell(&target_branch).is_some());
 }

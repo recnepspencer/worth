@@ -1,6 +1,6 @@
 //! One request pattern owns a complete maintenance pass and its typed preparation.
 use super::work::MaintenanceWork;
-use crate::execution::{self, RelationalExecutionDenialCause as Cause};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::indexes::data::{
     DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
@@ -41,9 +41,9 @@ pub(super) fn run<T>(
     let result = execution
         .in_scope(|lease| {
             let mut memory = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
-                .map_err(|denial| Denial::Execution(execution::denial::lease_denial(denial)))?;
+                .map_err(|denial| Denial::Execution(crate::execution::denial::lease_denial(denial)))?;
             let mut prepared = None;
-            let scan = execution::admit_ordered_scan(vec![(PartitionIdentity::new(0), ())])
+            let scan = crate::execution::ordered_scan::admit_ordered_scan(vec![(PartitionIdentity::new(0), ())])
                 .map_err(|stop| {
                     let crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause) =
                         crate::indexes::data::DerivedIndexExecutionDenial::from(stop).kind;
@@ -87,12 +87,12 @@ pub(super) fn run<T>(
                     Ok(_) => unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "a domain failure carries the preparation refusal"),
                 },
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
-                    MapStop::Admission(denial) => execution::denial::lease_denial(denial),
+                    MapStop::Admission(denial) => crate::execution::denial::lease_denial(denial),
                     MapStop::Allocation(_) => Cause::AllocationFailed,
                     MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
                     MapStop::Failure { cause, .. } => match cause {
                         MapKernelFailure::Stop(stop) => {
-                            execution::kernel_failure(MapKernelFailure::Stop(stop))
+                            crate::execution::denial::kernel_failure(MapKernelFailure::Stop(stop))
                         }
                         MapKernelFailure::Panic => Cause::WorkerFailed,
                         MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
@@ -112,8 +112,10 @@ pub(super) fn run<T>(
 
 fn request_denial(denial: WorkCeilingDenial) -> Denial {
     Denial::Execution(match denial {
-        WorkCeilingDenial::Admission(denial) => execution::denial::lease_denial(denial),
-        WorkCeilingDenial::Stopped(stop) => execution::kernel_failure(MapKernelFailure::Stop(stop)),
+        WorkCeilingDenial::Admission(denial) => crate::execution::denial::lease_denial(denial),
+        WorkCeilingDenial::Stopped(stop) => {
+            crate::execution::denial::kernel_failure(MapKernelFailure::Stop(stop))
+        }
         WorkCeilingDenial::Panicked => Cause::WorkerFailed,
     })
 }

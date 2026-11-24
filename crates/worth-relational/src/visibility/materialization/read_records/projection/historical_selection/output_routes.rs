@@ -11,12 +11,12 @@ impl RelationalHistoricalSelectionRead {
     ) -> Result<
         impl Iterator<
                 Item = Result<
-                    &'a crate::mvcc::RequiredOutputPublicationMeaning,
+                    &'a crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
                     RelationalHistoricalSelectionReadDenial,
                 >,
             > + 'a,
         RelationalHistoricalSelectionReadDenial,
-    > {
+    >{
         let origins = self
             .latest()
             .envelope
@@ -116,9 +116,9 @@ impl RelationalHistoricalSelectionRead {
         source: crate::identity::data::EntityId,
         partition: worth_foundational::facade::CanonicalDigestId,
     ) -> Result<
-        Option<&crate::mvcc::RequiredOutputPublicationMeaning>,
+        Option<&crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning>,
         RelationalHistoricalSelectionReadDenial,
-    > {
+    >{
         let Some(selection) = &self.latest().envelope.historical_output_selection else {
             poll(execution, 1)?;
             return Ok(None);

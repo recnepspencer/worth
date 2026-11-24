@@ -1,12 +1,12 @@
 //! Public API boundary for `worth-relational`.
 pub mod content {
+    pub use crate::content::read_closure::RelationalContentReadClosure;
     pub use crate::content::{
         RelationalContentAttachments, RelationalContentCodec, RelationalContentControl,
         RelationalContentDenial, RelationalContentFieldBinding, RelationalContentFormat,
         RelationalContentFormatDeclaration, RelationalContentFormatRegistry,
-        RelationalContentFrame, RelationalContentReadClosure, RelationalContentRejection,
-        RelationalContentSchemaSnapshot, RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES,
-        MAXIMUM_STAGED_CONTENT_BYTES,
+        RelationalContentFrame, RelationalContentRejection, RelationalContentSchemaSnapshot,
+        RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES, MAXIMUM_STAGED_CONTENT_BYTES,
     };
 }
 #[path = "facade/authorization.rs"]
@@ -208,7 +208,7 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
-    pub use crate::execution::RelationalWorkAccountRecorderForTest;
+    pub use crate::execution::request_work::observation::RelationalWorkAccountRecorderForTest;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
@@ -267,8 +267,7 @@ pub mod runtime {
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
-        RelationReadRecord, RelationalFieldPresence, RelationalFieldRevision, RelationalReadView,
-        StorageStats,
+        RelationReadRecord, RelationalFieldPresence, RelationalFieldRevision, StorageStats,
     };
     pub use crate::visibility::authority::VisibilityAuthority as SnapshotAuthority;
     pub use crate::visibility::exact_commit_snapshot::{
@@ -287,6 +286,7 @@ pub mod runtime {
     pub use crate::visibility::materialization::read_records::{
         ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
     };
+    pub use crate::visibility::snapshot_read_view::RelationalReadView;
     pub use crate::visibility::snapshot_states::HistoricalVisibilityDenial;
 }
 
@@ -371,14 +371,14 @@ pub mod visibility {
 }
 
 pub mod storage {
+    /// SDK-internal incremental maintenance contracts.
+    pub use crate::branch::maintenance;
     pub use crate::storage::data::{
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
         AuthoritativeFieldComparisonKeyDecodeDenial,
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
-    /// SDK-internal incremental maintenance contracts.
-    pub use crate::storage::substrate::maintenance;
 }
 
 pub mod symbols {

@@ -15,12 +15,23 @@ mod denials;
 #[path = "lifecycle_outcomes.rs"]
 mod outcomes;
 
-pub(crate) use delete::RelationalBranchDeletionKind;
 pub use denials::{RelationalBranchArchiveDenial, RelationalBranchDeleteDenial};
 pub use outcomes::{
     ArchivedRelationalBranch, DeletedRelationalBranch, RelationalBranchDeletionOutcome,
     RelationalBranchDeletionPending,
 };
+
+/// Which deletion transition to perform.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RelationalBranchDeletionKind {
+    /// Decide from the branch's active operations, as a live delete does:
+    /// request deletion while any remain, otherwise delete.
+    ByActiveOperations,
+    /// Mark the branch for deletion and retire its name.
+    Requested,
+    /// Remove the branch, retire its head and its name.
+    Delete,
+}
 
 /// Runtime-local posture of one mutable branch reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -35,24 +46,30 @@ impl super::reference::RelationalBranchReferenceMutableState {
     /// generation. Computing it changes nothing.
     pub(super) fn archived_observation(
         &self,
-    ) -> Result<super::RelationalBranchReferenceObservation, super::RelationalBranchCellDenial>
-    {
+    ) -> Result<
+        crate::branch::reference::observation::RelationalBranchReferenceObservation,
+        crate::branch::reference::RelationalBranchCellDenial,
+    > {
         let generation = self
             .observation
             .generation()
             .checked_advance()
-            .map_err(|_| super::RelationalBranchCellDenial::GenerationOverflow)?;
-        Ok(super::RelationalBranchReferenceObservation::new(
-            self.observation.branch_id().clone(),
-            self.observation.target().clone(),
-            generation,
-        ))
+            .map_err(|_| {
+                crate::branch::reference::RelationalBranchCellDenial::GenerationOverflow
+            })?;
+        Ok(
+            crate::branch::reference::observation::RelationalBranchReferenceObservation::new(
+                self.observation.branch_id().clone(),
+                self.observation.target().clone(),
+                generation,
+            ),
+        )
     }
 
     /// Install a prepared archive. Cannot fail.
     pub(super) fn install_archive(
         &mut self,
-        observation: super::RelationalBranchReferenceObservation,
+        observation: crate::branch::reference::observation::RelationalBranchReferenceObservation,
     ) {
         self.observation = observation;
         self.lifecycle = RelationalBranchLifecyclePosture::Archived;
@@ -63,7 +80,7 @@ impl super::reference::RelationalBranchReferenceMutableState {
     }
 }
 
-impl super::RelationalBranchReferenceCell {
+impl crate::branch::reference::RelationalBranchReferenceCell {
     /// Give a cell restored from a checkpoint the posture the checkpoint
     /// recorded for it.
     pub(crate) fn restore_lifecycle_posture(&self, posture: RelationalBranchLifecyclePosture) {
@@ -72,10 +89,10 @@ impl super::RelationalBranchReferenceCell {
 }
 
 fn require_local_identity(
-    runtime: &crate::runtime::RelationalRuntime,
-    identity: &super::RelationalBranchIdentity,
+    runtime_instance_id: u64,
+    identity: &crate::branch::identity::RelationalBranchIdentity,
 ) -> Result<(), ()> {
-    (identity.runtime_instance_id() == runtime.runtime_instance_id())
+    (identity.runtime_instance_id() == runtime_instance_id)
         .then_some(())
         .ok_or(())
 }

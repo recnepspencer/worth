@@ -54,7 +54,7 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                     .demand_envelope(&execution, *commit)
                     .map_err(|cause| Denial::Execution(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-                generation.extend(execution, context, &envelope)?;
+                super::extend_generation(&mut generation, execution, context, &envelope)?;
             }
             Ok((
                 generation,

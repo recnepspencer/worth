@@ -75,7 +75,7 @@ impl HistorySubsystem {
                 let commit_id = root
                     .commit_id()
                     .ok_or_else(|| "live recovery root has no commit identity".to_owned())?;
-                if self.is_readmitted_checkpoint_root(&root)? {
+                if checkpoint_root::is_readmitted_checkpoint_root(self, &root)? {
                     if roots
                         .get(&commit_id)
                         .is_some_and(|actual| !Arc::ptr_eq(actual, &root))
@@ -95,7 +95,8 @@ impl HistorySubsystem {
                 } else if root.links_envelope(&canonical) {
                     Arc::clone(&root)
                 } else {
-                    let original = self.original_for_envelope(execution, &canonical)?;
+                    let original =
+                        source_binding::original_for_envelope(self, execution, &canonical)?;
                     if let Some(source) = admitted.get(&commit_id) {
                         root.readmit_canonical_envelope(execution, source, original, symbols)
                     } else {
@@ -293,8 +294,12 @@ impl HistorySubsystem {
             }
             self.rebuild_catalog_with_live_roots(execution, symbols)?;
         } else if catalog_artifact.is_none() {
-            let artifact =
-                self.prepare_catalog_artifact_for_envelope(execution, Arc::clone(envelope), None)?;
+            let artifact = source_binding::prepare_catalog_artifact_for_envelope(
+                self,
+                execution,
+                Arc::clone(envelope),
+                None,
+            )?;
             self.with_ledger_mut(|ledger| {
                 ledger
                     .commit_catalog

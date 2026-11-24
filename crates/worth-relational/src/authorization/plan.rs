@@ -2,7 +2,7 @@ use worth_foundational::facade::AspectFieldLocator;
 
 use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::{
     plan_validation::validate_plan, RelationalAuthorizationEntityAnchor,

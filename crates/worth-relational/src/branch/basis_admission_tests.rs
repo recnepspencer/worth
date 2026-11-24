@@ -1,9 +1,10 @@
 use super::*;
-use crate::branch::{
-    relational_branch_observation, RelationalBranchBasisMismatchAxis, RelationalBranchVersion,
-};
+use crate::branch::basis_denial::RelationalBranchBasisMismatchAxis;
+use crate::branch::reference::observation::relational_branch_observation;
+use crate::branch::version::RelationalBranchVersion;
+use crate::config::data::runtime_config::RelationalRuntimeConfig;
 use crate::history::data::BranchId;
-use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig};
+use crate::runtime::RelationalRuntime;
 
 #[derive(serde::Serialize)]
 struct DescriptorTransportPayload {
@@ -135,7 +136,7 @@ fn repeated_observation_shares_one_registry_entry_and_final_drop_removes_it() {
 
 #[test]
 fn retained_basis_readmits_after_owner_publication_moves_the_reference() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -160,7 +161,7 @@ fn retained_basis_readmits_after_owner_publication_moves_the_reference() {
 
 #[test]
 fn observation_opens_the_same_snapshot_after_reference_movement() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -185,7 +186,7 @@ fn observation_opens_the_same_snapshot_after_reference_movement() {
 
 #[test]
 fn external_pin_retains_once_and_release_consumes_the_obligation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -208,7 +209,7 @@ fn external_pin_retains_once_and_release_consumes_the_obligation() {
 
 #[test]
 fn reset_retention_owner_reports_unavailable_readmission_and_terminal_release() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = crate::tests::support::runtime_with_test_schema();
@@ -233,7 +234,7 @@ fn reset_retention_owner_reports_unavailable_readmission_and_terminal_release() 
 
 #[test]
 fn superseded_unretained_descriptor_denies_without_reconstructing_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -299,7 +300,7 @@ fn archived_and_unsupported_descriptors_deny_distinctly() {
 
 #[test]
 fn malformed_truth_and_root_identity_substitutions_deny_distinctly() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -342,7 +343,7 @@ fn malformed_truth_and_root_identity_substitutions_deny_distinctly() {
 
 #[test]
 fn schema_and_visibility_commitment_substitutions_deny_distinctly() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();

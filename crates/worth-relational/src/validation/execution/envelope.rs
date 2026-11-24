@@ -3,9 +3,10 @@ use crate::authority::commit::preparation::diagnostics::failures::PreparationFai
 use crate::authority::commit::preparation::diagnostics::observations::ValidationDiagnosticObservation;
 use crate::authority::commit::preparation::reduction::identity::ValidationResultIdentity;
 use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
-use crate::validation::data::{
-    InvariantCheckResult, InvariantDecisionRecord, InvariantReportedRule, InvariantVerdict,
-};
+use crate::validation::data::execution::InvariantDecisionRecord;
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::engine::result::InvariantCheckResult;
 
 pub(crate) struct InvariantStageOutput {
     pub(crate) strategy:

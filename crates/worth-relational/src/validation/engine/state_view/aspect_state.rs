@@ -27,18 +27,11 @@ impl<'state> InvariantStateView<'state> {
         let slot = entity_id.slot_index();
         let (source, partition) =
             self.entity_partition_source_for_slot(entity_id.partition_id, slot)?;
-        if partition
-            .entity_arena()
-            .get(&entity_id)
-            .map(|slot_view| slot_view.generation())
-            != Some(entity_id.generation_value())
-        {
-            return None;
-        }
-        let metadata = partition.entity_arena().current_metadata_at(slot)?;
-        if !self.metadata_is_visible(metadata) {
-            return None;
-        }
+        let metadata = crate::storage::overlay::record_observation::visible_record_metadata(
+            partition.entity_arena(),
+            entity_id,
+            self.version_id,
+        )?;
         metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })
     }
@@ -64,18 +57,11 @@ impl<'state> InvariantStateView<'state> {
         let slot = relation_id.slot_index();
         let (source, partition) =
             self.relation_partition_source_for_slot(relation_id.partition_id, slot)?;
-        if partition
-            .relation_arena()
-            .get(&relation_id)
-            .map(|slot_view| slot_view.generation())
-            != Some(relation_id.generation_value())
-        {
-            return None;
-        }
-        let metadata = partition.relation_arena().current_metadata_at(slot)?;
-        if !self.metadata_is_visible(metadata) {
-            return None;
-        }
+        let metadata = crate::storage::overlay::record_observation::visible_record_metadata(
+            partition.relation_arena(),
+            relation_id,
+            self.version_id,
+        )?;
         metadata.authoritative_aspect_state()?;
         Some(AspectLocation { source })
     }

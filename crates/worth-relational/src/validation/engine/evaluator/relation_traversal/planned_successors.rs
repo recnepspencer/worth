@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::super::super::context::InvariantExecutionContext;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 pub(super) type PlannedSuccessorMap = BTreeMap<EntityReference, Vec<EntityReference>>;
 

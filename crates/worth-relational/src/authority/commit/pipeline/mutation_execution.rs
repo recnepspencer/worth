@@ -12,6 +12,7 @@ mod telemetry;
 pub(super) struct MutatedCommitExecution {
     pub(super) prepared: PreparedCommitState,
     pub(super) working_state: WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
     pub(super) invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     pub(super) outcome: MutationApplyOutcome,
     pub(super) mutation_identities: PendingMutationIdentities,
@@ -45,6 +46,7 @@ pub(super) fn mutate_commit_execution(
             mut prepared,
             AppliedMutationDraft {
                 state: working_state,
+                content,
                 outcome,
                 identities: mutation_identities,
                 aggregate,
@@ -64,6 +66,7 @@ pub(super) fn mutate_commit_execution(
         MutatedCommitExecution {
             prepared,
             working_state,
+            content,
             invariant_executions,
             outcome,
             mutation_identities,

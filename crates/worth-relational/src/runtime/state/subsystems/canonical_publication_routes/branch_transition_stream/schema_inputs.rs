@@ -2,41 +2,12 @@
 
 use std::sync::Arc;
 
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
-use worth_foundational::FoundationalBranchReferenceGeneration;
-
-use crate::branch::{
-    PositionedBranchTransition, RelationalBranchLifecyclePosture,
-    RelationalBranchRootSchemaAuthority, RelationalBranchTransitionSequence,
-    RelationalBranchVersion,
+use crate::branch::transition::original_inputs::{
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 
 use super::super::RelationalCanonicalPublicationRoutes;
-
-/// The branch name comes from the same source's existing main-branch binding.
-/// Empty live branches cannot be forked, and main cannot be deleted.
-#[derive(Clone, Debug)]
-pub(crate) struct OriginalEmptySchemaObservation {
-    pub(crate) generation: FoundationalBranchReferenceGeneration,
-    pub(crate) truth_version: RelationalBranchVersion,
-    pub(crate) lifecycle: RelationalBranchLifecyclePosture,
-    pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct OriginalEmptySchemaInstallation {
-    pub(crate) before: OriginalEmptySchemaObservation,
-    pub(crate) after: OriginalEmptySchemaObservation,
-    /// Initial installation is possible only before the first canonical write.
-    pub(crate) follows_transition: RelationalBranchTransitionSequence,
-}
-
-/// The actual performed transition supplies its own branch name and C/T axes.
-#[derive(Clone, Debug)]
-pub(crate) struct RetainedBranchTransition {
-    pub(crate) positioned: Arc<PositionedBranchTransition>,
-    pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
-}
 
 /// An independently admitted capture roster. Cloning existing schema/record
 /// Arcs does not copy their backing or retroactively fund ordinary producers.
@@ -53,20 +24,6 @@ pub(crate) struct OriginalBranchSchemaInputs {
 impl OriginalBranchSchemaInputs {
     pub(crate) fn transitions(&self) -> &[RetainedBranchTransition] {
         &self.transitions
-    }
-}
-
-impl OriginalEmptySchemaObservation {
-    pub(crate) fn from_empty_cell(
-        cell: &crate::branch::RelationalBranchReferenceCell,
-    ) -> Option<Self> {
-        let (generation, truth_version, lifecycle, schema) = cell.retained_empty_schema_data()?;
-        Some(Self {
-            generation,
-            truth_version,
-            lifecycle,
-            schema,
-        })
     }
 }
 

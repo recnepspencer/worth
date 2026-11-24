@@ -2,7 +2,7 @@
 use super::metadata::include_relation_metadata;
 use crate::identity::data::{EntityId, PartitionId, RelationId};
 use crate::validation::custom_rule::CustomInvariantWorkMeter;
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::BTreeSet;
 

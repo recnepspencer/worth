@@ -3,9 +3,8 @@ use super::{charge, CodecRetirementClosureStop as Stop, RelationalRuntime};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
-use crate::{
-    history::data::CanonicalOutputPublication, mvcc::RequiredOutputRolePosture as Posture,
-};
+use crate::history::data::CanonicalOutputPublication;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
 use worth_execution::MapKernelContext;
 
 pub(crate) fn antecedent(

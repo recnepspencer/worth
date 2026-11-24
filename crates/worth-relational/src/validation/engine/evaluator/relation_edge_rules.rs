@@ -3,8 +3,10 @@ use crate::schema::data::{
     EndpointDeletionIntegrityMode, LoweredEndpointDeletionIntegrityContract,
     LoweredSymmetryContract, LoweredUniquenessContract, SymmetryMode, UniquenessScope,
 };
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::super::context::InvariantExecutionContext;
 use super::common::{canonicalize_violations, relation_violation};

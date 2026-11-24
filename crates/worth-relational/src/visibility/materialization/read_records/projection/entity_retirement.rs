@@ -34,9 +34,11 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
-    ) -> Result<Option<RelationalEntityRetirement>, crate::execution::RelationalExecutionDenialCause>
-    {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Option<RelationalEntityRetirement>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         if !self.is_exact_basis() || entity.generation.is_zero() {
             return Ok(None);
         }

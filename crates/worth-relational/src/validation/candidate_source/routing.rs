@@ -13,8 +13,9 @@ impl SourceProgramPostings {
     pub(crate) fn compile(
         groups: &[SourcePreparationGroup],
         control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Self, crate::validation::CustomInvariantCompilationDenial> {
-        use crate::validation::CustomInvariantCompilationDenial as Denial;
+    ) -> Result<Self, crate::validation::data::compilation_denial::CustomInvariantCompilationDenial>
+    {
+        use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as Denial;
         let mut postings = Self::default();
         for (slot, group) in groups.iter().enumerate() {
             for source in group.programs() {

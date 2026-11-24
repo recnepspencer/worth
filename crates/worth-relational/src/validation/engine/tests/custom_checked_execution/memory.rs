@@ -37,11 +37,11 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
     // The claim is charged to the lease before it is made, so the request's
     // own memory policy refuses it: the claim alone exceeds the request.
-    let Err(crate::transactions::data::TransactionCommitError::Execution {
+    let Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
         denial:
-            crate::transactions::data::CommitExecutionDenial {
+            crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
                 kind:
-                    crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                             requested,
                             admitted,

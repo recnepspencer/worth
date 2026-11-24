@@ -39,7 +39,7 @@ impl RecordPinCounts {
         &mut self,
         values: Vec<u32>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let mut result = Self::new();
         result.len = values.len();
         for (index, value) in values.into_iter().enumerate() {
@@ -72,7 +72,7 @@ impl RecordPinCounts {
         index: usize,
         value: u32,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         if let Some(request) = request {
             assert!(index < self.len, "pin row is absent");
             if value == 0 {

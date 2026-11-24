@@ -2,9 +2,10 @@ use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::{RelationalPinnedRead, SnapshotPinnedQueryPlan};
+use super::super::RelationalPinnedRead;
 use super::leased_explicit::execute_leased_explicit_fragment;
 use super::leased_map::{execute_leased_query_packets, QueryReadExecutionStop};
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::storage::overlay::PartitionAccess;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_explicit_query_fragments_from_exact_basis(
@@ -29,8 +30,12 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
                 .demand_regions_full(
                     execution,
                     targets.iter().map(|target| match target {
-                        crate::transactions::data::RecordRef::Entity(id) => id.partition_id,
-                        crate::transactions::data::RecordRef::Relation(id) => id.partition_id,
+                        crate::transactions::data::primitives::RecordRef::Entity(id) => {
+                            id.partition_id
+                        }
+                        crate::transactions::data::primitives::RecordRef::Relation(id) => {
+                            id.partition_id
+                        }
                     }),
                 )
                 .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;

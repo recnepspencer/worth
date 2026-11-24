@@ -1,8 +1,14 @@
 //! Quote private payload backing before deserializing the closed Native grammar.
-use super::*;
+use super::super::read_request::{checkpoint, corrupt, damaged, request};
+use super::super::record::Route;
+use crate::history::data::{CanonicalRequiredOutputOrigin, CommitId};
+use crate::identity::data::EntityId;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use serde::de::{DeserializeOwned, DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserializer, Serialize};
 use std::fmt;
+use worth_execution::{ExecutionMemoryReservation, MapKernelContext};
 
 pub(crate) fn decode<T: DeserializeOwned + Serialize>(
     bytes: &[u8],
@@ -17,8 +23,8 @@ pub(crate) fn decode<T: DeserializeOwned + Serialize>(
     grow(
         funding,
         (bytes.len() as u64).checked_mul(2).ok_or_else(|| {
-            super::super::request(
-                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
             )
         })?,
     )?;
@@ -26,7 +32,7 @@ pub(crate) fn decode<T: DeserializeOwned + Serialize>(
         // Publication is the only payload with an Arc-owned origin. Counting
         // it for the smaller catalog/edge payloads is a conservative fixed quote.
         bytes: (std::mem::size_of::<T>()
-            + std::mem::size_of::<crate::history::data::CanonicalRequiredOutputOrigin>()
+            + std::mem::size_of::<CanonicalRequiredOutputOrigin>()
             + 2 * std::mem::size_of::<usize>()) as u64,
         context,
         stop: None,
@@ -34,8 +40,8 @@ pub(crate) fn decode<T: DeserializeOwned + Serialize>(
     checkpoint(
         quote.context,
         (bytes.len() as u64).checked_mul(3).ok_or_else(|| {
-            super::super::request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+            request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         })?,
     )?;
@@ -78,8 +84,8 @@ impl Quote<'_, '_, '_> {
     fn add<E: Error>(&mut self, bytes: usize) -> Result<(), E> {
         let result = checkpoint(self.context, 1).and_then(|()| {
             self.bytes.checked_add(bytes as u64).ok_or_else(|| {
-                super::super::request(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 )
             })
         });
@@ -160,7 +166,7 @@ impl<'de> Visitor<'de> for Probe<'_, '_, '_, '_> {
                 "members" => std::mem::size_of::<CanonicalOutputMember>(),
                 "relations" => std::mem::size_of::<CanonicalRequiredOutputRelation>(),
                 "outputs" => std::mem::size_of::<EntityId>(),
-                "routes" => std::mem::size_of::<record::Route>(),
+                "routes" => std::mem::size_of::<Route>(),
                 "parents" | "parent_commit_ids" => std::mem::size_of::<CommitId>(),
                 _ => 0,
             };
@@ -192,12 +198,12 @@ fn grow(
     bytes: u64,
 ) -> Result<(), TransactionCommitError> {
     let extent = funding.bytes().checked_add(bytes).ok_or_else(|| {
-        super::super::request(
-            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
         )
     })?;
     funding.resize(extent).map_err(|cause| {
-        super::super::request(crate::execution::denial::lease_denial(
+        request(crate::execution::denial::lease_denial(
             worth_execution::LeaseDenial::MemoryExhausted(cause),
         ))
     })

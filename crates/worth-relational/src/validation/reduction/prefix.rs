@@ -3,7 +3,7 @@ mod finish;
 mod measured;
 
 use crate::execution::PacketAdmissionDenial;
-use crate::validation::data::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantExecutionPoint;
 use crate::validation::engine::InvariantExecutionSummary;
 use crate::validation::execution::{
     identity_bytes, InvariantStageOutput, InvariantWorkerEnvelope, ValidationReducerConflict,

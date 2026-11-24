@@ -1,13 +1,12 @@
-use super::PreparedEntityFieldLookup;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::indexes::access::prepared_entity_field_lookup::PreparedEntityFieldLookup;
 use crate::indexes::data::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupOutcome,
 };
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::materialization::read_records::{
-    entity_query_locus_value, ProjectionRecordSource,
-};
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_value;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 use crate::visibility::materialization::read_records::{read_prices, read_work::record_memory};
 use std::cell::{Cell, RefCell};
 use worth_execution::{

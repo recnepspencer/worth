@@ -6,7 +6,7 @@ pub(super) fn declared_aspects_for_entity_kind(
     kind_id: crate::identity::data::KindId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     runtime
         .schema_contract_runtime
         .aspect_contract_plans
@@ -21,7 +21,7 @@ pub(super) fn declared_aspects_for_relation_kind(
     kind_id: crate::identity::data::KindId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     runtime
         .schema_contract_runtime
         .aspect_contract_plans
@@ -35,7 +35,7 @@ fn plan_aspect_keys(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let mut aspects = Vec::new();
     for binding in &plan.executable_bindings {
         charge(super::super::read_prices::ASPECT_BINDING)

@@ -1,20 +1,20 @@
 //! Borrow scalar projections from the actual Native-admitted observation.
-use crate::runtime::RelationalProjectedFieldObservation as Observation;
+use crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation as Observation;
 use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_proof::AdmittedManagedIndexSourceAudience;
 
 use super::program::ManagedIndexSourceProgram;
-use crate::derived_relation::{
-    DerivedRelationDenial as Definition, DerivedRelationReadDenial as Denial,
-};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::identity::data::EntityId;
-use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
+use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 
 /// Valid only while its actual preparation/observation borrow is alive. The
 /// concrete audience witness is consumed with Native views, never in isolation.
 pub struct ManagedIndexSourceProjection<'source> {
     pub(crate) program: &'source ManagedIndexSourceProgram,
-    pub(crate) backing: SourceProjectionBacking<'source>,
+    pub(in crate::validation::candidate_source) backing: SourceProjectionBacking<'source>,
 }
 
 impl<'source> ManagedIndexSourceProjection<'source> {
@@ -79,7 +79,8 @@ fn field_value<'a>(
         .map_or(Observation::FieldAbsent, Observation::Present))
 }
 mod access;
+pub(crate) use access::selected_rows;
 mod content;
 pub use access::PreparedManagedIndexRelationRead;
-pub(crate) use access::SourceProjectionBacking;
+pub(in crate::validation::candidate_source) use access::SourceProjectionBacking;
 pub(in crate::validation::candidate_source) use access::SourceProjectionRetention;

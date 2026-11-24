@@ -35,8 +35,10 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
-    pub(super) relation_lineages:
-        Vec<(crate::identity::data::RelationId, crate::identity::data::LineageId)>,
+    pub(super) relation_lineages: Vec<(
+        crate::identity::data::RelationId,
+        crate::identity::data::LineageId,
+    )>,
     pub(super) lineage_events: Vec<crate::durability::data::RelationalCheckpointLineageEventRow>,
     pub(super) lineage_event_pages_resident: bool,
     pub(super) lineage_event_leases: Vec<crate::runtime::ResidentLineageEventPage>,
@@ -48,6 +50,9 @@ pub(super) struct CapturedCheckpointBasis {
         ),
     >,
     pub(super) index_state: crate::runtime::IndexingState,
+    pub(super) index_original: Option<
+        std::sync::Arc<super::super::derived_index_artifacts::cold_checkpoint::DeferredIndexImage>,
+    >,
     pub(super) retained_indexes: crate::history::retention::RetainedIndexRoots,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(super) carried_index_image:
@@ -199,7 +204,7 @@ impl CapturedCheckpointBasis {
                     .or_insert_with(|| row.clone());
             }
         }
-        let index_state = runtime.indexes.snapshot();
+        let (index_state, index_original) = runtime.indexes.snapshot_with_original();
         let derived_index_checkpoint =
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
                 |lane| {
@@ -259,12 +264,20 @@ impl CapturedCheckpointBasis {
                 .into_iter()
                 .chain(runtime.lineage.node_export_sources())
                 .chain(runtime.services.symbols.checkpoint_export_sources())
-                .chain(runtime.indexes.checkpoint_export_sources())
+                .chain(
+                    index_original
+                        .clone()
+                        .into_iter()
+                        .flat_map(|image| image.checkpoint_export_sources()),
+                )
                 .collect(),
             lineage_events: lineage_events.into_values().collect(),
             index_definitions: index_state.definition_snapshot(),
-            carried_index_image: runtime.indexes.carried_checkpoint_image(),
+            carried_index_image: index_original
+                .as_ref()
+                .map(|image| image.directory().manifest.derived_indexes),
             index_state,
+            index_original,
             retained_indexes: retained,
             derived_index_checkpoint,
             symbol_table: runtime.services.symbols.snapshot(),

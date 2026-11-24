@@ -1,7 +1,6 @@
 //! Immutable native custody independent of the installed runtime's borrow.
-use crate::indexes::data::{
-    DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
-};
+use crate::indexes::access::selected_index::PinnedIndex;
+use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId};
 use crate::query::data::QueryPlanContextId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::snapshots::data::SnapshotHandle;
@@ -11,16 +10,19 @@ use crate::visibility::snapshot_states::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 
+mod aggregate_reads;
 mod candidate;
 #[cfg(test)]
 mod commit_tests;
+mod derived_source;
 mod frontier_reads;
 #[cfg(test)]
 mod historical_relations_tests;
+mod index_lookups;
 mod pinning;
-pub use candidate::{
-    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
-};
+use crate::indexes::data::applied_candidate_qualification::CandidateReadPhase;
+pub use crate::indexes::data::applied_candidate_qualification::RelationalAppliedCandidateReadQualification;
+pub use candidate::RelationalAppliedCandidateReadIdentity;
 mod record_reads;
 #[cfg(test)]
 mod tests;
@@ -72,18 +74,7 @@ pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct PinnedIndex {
-    pub definition: crate::indexes::RetainedDerivedIndexDefinition,
-    pub generation: Option<Arc<DerivedIndexGeneration>>,
-}
-
-#[derive(Debug)]
-pub enum RelationalPinnedReadAdmissionDenial {
-    Request(crate::execution::RelationalExecutionDenialCause),
-    SnapshotUnavailable,
-    IndexNotInstalled(DerivedIndexId),
-}
+pub use super::pin_denial::RelationalPinnedReadAdmissionDenial;
 
 impl RelationalPinnedRead {
     /// Schema and canonical source revisions captured at pin time.
@@ -172,7 +163,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    pub(crate) fn applied_field_image(&self) -> Option<&crate::indexes::AppliedFieldImage> {
+    pub(crate) fn applied_field_image(
+        &self,
+    ) -> Option<&crate::indexes::authority::maintenance::AppliedFieldImage> {
         self.applied_changes
             .as_ref()
             .map(|changes| changes.fields.as_ref())
@@ -198,9 +191,6 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     }
     pub(crate) fn pinned_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
         &self.instrumentation
-    }
-    pub(crate) fn selected_index(&self, index: DerivedIndexId) -> Option<&PinnedIndex> {
-        self.indexes.get(&index)
     }
 }
 
@@ -262,6 +252,21 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// Project the exact retained physical root without a snapshot claim.
     pub fn project_read(&self) -> super::super::projection::VisibilityProjectionView {
-        super::super::projection::VisibilityProjectionView::from_pinned(self)
+        super::super::projection::VisibilityProjectionView::from_resident_basis(
+            self.resident_basis(),
+            self.runtime_instance_id(),
+            self.pinned_current_version(),
+            self.pinned_instrumentation(),
+        )
+    }
+}
+
+impl RelationalPinnedRead {
+    /// Project this exact snapshot. No installed owner is borrowed or consulted.
+    pub fn project_snapshot(
+        &self,
+        handle: &SnapshotHandle,
+    ) -> Option<super::super::projection::VisibilityProjectionView> {
+        (handle == self.snapshot()).then(|| self.project_read())
     }
 }

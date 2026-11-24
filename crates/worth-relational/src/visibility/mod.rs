@@ -13,3 +13,5 @@ pub(crate) mod store_correlation_reference;
 
 pub use snapshot_admission::RelationalSnapshotAdmissionDenial;
 pub use snapshot_release::{RelationalSnapshotReleaseDenial, RelationalSnapshotReleaseReceipt};
+
+pub(crate) mod snapshot_read_view;

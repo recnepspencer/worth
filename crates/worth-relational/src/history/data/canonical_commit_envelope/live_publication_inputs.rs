@@ -74,7 +74,7 @@ impl LivePublicationInputs {
                 (origin, Arc::new(input)),
             );
     }
-    pub(super) fn bind(&self, owner: &Weak<CanonicalCommitEnvelope>) {
+    fn bind(&self, owner: &Weak<CanonicalCommitEnvelope>) {
         self.owner.get_or_init(|| owner.clone());
     }
     pub(crate) fn take_verified(
@@ -99,5 +99,11 @@ impl LivePublicationInputs {
                 .proposed_version_id()
                 == envelope.commit.version_id)
             .then_some(read)
+    }
+}
+
+pub(crate) fn bind_live_envelope(envelope: &Arc<CanonicalCommitEnvelope>) {
+    if let Some(event) = &envelope.coupled_authored_publication {
+        event.live_inputs.bind(&Arc::downgrade(envelope));
     }
 }

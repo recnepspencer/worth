@@ -13,7 +13,7 @@ impl RelationalHistoricalSelectionRead {
         source: &PositionedRelationalSnapshot,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        crate::execution::check_request(execution).map_err(Denial::Execution)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
         if runtime.runtime_instance_id() != self.latest().restored.runtime_identity
             || source.runtime_instance_id() != self.latest().restored.runtime_identity
         {

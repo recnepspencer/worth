@@ -3,7 +3,7 @@ use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
 mod coupled_authored;
@@ -87,7 +87,7 @@ pub(crate) struct CanonicalOutputMember {
     pub(crate) entity_name: String,
     pub(crate) id: EntityId,
     pub(crate) kind: KindId,
-    pub(crate) posture: crate::mvcc::RequiredOutputRolePosture,
+    pub(crate) posture: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture,
     pub(crate) birth: CommitId,
     pub(crate) birth_producer: String,
     pub(crate) birth_dependency: worth_foundational::CanonicalDigestId,
@@ -97,7 +97,7 @@ pub(crate) struct CanonicalOutputMember {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct CanonicalRequiredOutputOrigin {
-    pub(crate) inputs: Vec<crate::mvcc::RequiredOutputPublicationMeaning>,
+    pub(crate) inputs: Vec<crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning>,
     #[serde(skip)]
     pub(crate) _input_memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) commit: crate::history::data::RelationalCommitReceipt,
@@ -107,7 +107,7 @@ pub(crate) struct CanonicalRequiredOutputOrigin {
     pub(crate) dependency_identity: worth_foundational::CanonicalDigestId,
     pub(crate) outputs: Vec<EntityId>,
     pub(crate) relations: Vec<CanonicalRequiredOutputRelation>,
-    pub(crate) meaning: crate::mvcc::RequiredOutputPublicationMeaning,
+    pub(crate) meaning: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     pub(crate) publication: CanonicalOutputPublication,
     pub(crate) birth: CommitId,
     pub(crate) birth_producer: String,

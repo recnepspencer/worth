@@ -106,7 +106,7 @@ impl ManagedIndexSourceRows<'_> {
             Err(ReadDenial::Definition(Definition::RecordUnavailable)) => return Ok(None),
             Err(ReadDenial::Structural(
                 crate::validation::custom_rule::StructuralWalkDenialKind::Read(
-                    crate::validation::data::StructuralReadError::RecordUnavailable,
+                    crate::validation::data::structural_read::StructuralReadError::RecordUnavailable,
                 ),
             )) => return Ok(None),
             Err(cause) => return Err(cause),
@@ -135,7 +135,7 @@ impl ManagedIndexSourceRows<'_> {
         &self,
         occurrence: &ManagedIndexSourceOccurrence,
         column: usize,
-        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
+        project: impl FnOnce(crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.prepare_row(occurrence)?.with_field(column, project)
     }

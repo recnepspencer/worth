@@ -5,7 +5,7 @@ use crate::tests::support::runtime_with_test_schema;
 
 #[test]
 fn memory_terminal_close_head_contention_retires_actual_token_without_dropping_root() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let cell = runtime

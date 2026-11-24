@@ -3,75 +3,32 @@
 
 use std::collections::BTreeMap;
 
-use crate::capabilities::SchemaSource;
 use crate::history::data::RelationalCommitReceipt;
-use crate::identity::data::{EntityId, LineageId};
-use crate::lineage::authority::LineagePreparationAuthority;
+use crate::identity::data::LineageId;
 use crate::lineage::data::{
     FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageDecisionKind, LineageDecisionLog, LineageDecisionRecord, LineageEventKind,
     LineageFinalizationArtifact, LineageNode, LineagePostureClaim, LineageRecordTarget,
     PersistentNameBirthRecord, PreparedLineageFinalization,
 };
-use crate::runtime::{LineageIdentityAllocator, WorkingState};
+use crate::runtime::state::subsystems::lineage_identity::LineageIdentityAllocator;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::{MutationIntent, RecordRef, TransactionCommitError};
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::posture_drafts::{build_posture_drafts, PostureEventDraft};
 use super::posture_events::AssignedPostureEvent;
 use super::posture_validation::{validate_commit_postures, ValidatedMergeTarget};
 use super::selection_continuity::{rematerialized_entity, selection_postures};
-use super::staged_effects::{entity_lineage, install_lineage_id, lineage_error};
+use super::staged_effects::{entity_lineage, lineage_error};
 use crate::history::data::CanonicalOwnedGraphSelection;
 
-impl<'runtime> LineagePreparationAuthority<'runtime> {
-    /// Production entry over Relational's own installed schema (fail-closed
-    /// `MissingBirth`) and branch naming state (zero-clone read guard).
-    pub(super) fn finalize_commit_with_installed_schema(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        staged: &mut WorkingState,
-        commit: &RelationalCommitReceipt,
-        merged_plan: &[MutationIntent],
-        changed_records: &[RecordRef],
-        postures: &[LineagePostureClaim],
-        graph_selection: Option<&CanonicalOwnedGraphSelection>,
-    ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-        let schema = self.runtime.schema_registry();
-        let basis = self
-            .runtime
-            .lineage_naming_basis
-            .read_guard(commit.branch_id.clone());
-        let prepared = finalize_postures_with_installer(
-            &self.runtime.lineage_identity,
-            staged,
-            commit,
-            merged_plan,
-            changed_records,
-            schema.persistent_name_schemes(),
-            Some(schema),
-            &basis,
-            postures,
-            graph_selection,
-            |staged, entity_id, lineage_id| {
-                install_lineage_id(execution, staged, entity_id, lineage_id)
-            },
-        )?;
-        drop(basis);
-        self.runtime
-            .performance_access()
-            .count_lineage_finalization(
-                prepared.artifact().event_batch().events().len(),
-                prepared.artifact().decision_log().decisions().len(),
-            );
-        Ok(prepared)
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
-pub(super) fn finalize_postures_with_installer<F>(
+pub(crate) fn prepare_posture_finalization(
     allocator: &LineageIdentityAllocator,
-    staged: &mut WorkingState,
+    staged: &WorkingState,
     commit: &RelationalCommitReceipt,
     merged_plan: &[MutationIntent],
     changed_records: &[RecordRef],
@@ -80,11 +37,7 @@ pub(super) fn finalize_postures_with_installer<F>(
     basis: &dyn LineageBasisView,
     postures: &[LineagePostureClaim],
     graph_selection: Option<&CanonicalOwnedGraphSelection>,
-    mut install_entity_lineage: F,
-) -> Result<PreparedLineageFinalization, TransactionCommitError>
-where
-    F: FnMut(&mut WorkingState, EntityId, LineageId) -> Result<(), TransactionCommitError>,
-{
+) -> Result<PreparedLineageFinalization, TransactionCommitError> {
     let mut validated = validate_commit_postures(
         staged,
         commit.version_id,
@@ -133,9 +86,10 @@ where
         "all verified persistent name births must attach to emitted Create events"
     );
 
-    for repair in repairs {
-        install_entity_lineage(staged, repair.entity_id, repair.lineage_id)?;
-    }
+    let mut entity_bindings: Vec<_> = repairs
+        .into_iter()
+        .map(|repair| (repair.entity_id, repair.lineage_id))
+        .collect();
     let mut events = Vec::with_capacity(assigned.len());
     let mut decisions = Vec::with_capacity(assigned.len());
     let mut new_nodes = Vec::new();
@@ -144,7 +98,7 @@ where
     for (offset, item) in assigned.into_iter().enumerate() {
         if let Some((entity_id, lineage_id, install)) = item.entity_node {
             if install {
-                install_entity_lineage(staged, entity_id, lineage_id)?;
+                entity_bindings.push((entity_id, lineage_id));
             }
             new_nodes.push(LineageNode {
                 lineage_id,
@@ -186,7 +140,8 @@ where
         artifact,
         new_nodes,
         new_relation_lineages,
-    ))
+    )
+    .with_entity_bindings(entity_bindings))
 }
 
 fn assign_posture_drafts(

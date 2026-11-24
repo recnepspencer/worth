@@ -1,13 +1,12 @@
 //! Live publication holds are owned by heads/candidates, never canonical origins.
-use crate::{
-    branch::{
-        AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchRoot,
-    },
-    history::data::{CanonicalOutputPublication, CommitId},
-    identity::data::EntityId,
-    mvcc::RequiredOutputPublicationMeaning,
-    transactions::data::TransactionCommitError,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::data::CanonicalOutputPublication;
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::{Arc, Weak};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -130,10 +129,10 @@ impl PublicationBasisImage {
                         }
                         if origin.basis
                             != basis.descriptor().in_canonical_frame().map_err(|_| {
-                                crate::mvcc::origin_denial("invalid publication basis frame")
+                                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("invalid publication basis frame")
                             })?
                         {
-                            return Err(crate::mvcc::origin_denial(
+                            return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                                 "publication decision basis differs from candidate basis",
                             ));
                         }
@@ -146,7 +145,7 @@ impl PublicationBasisImage {
                                 origin.meaning.family.len(), origin.basis.branch_id().0.len(),
                                 origin.basis.reference().branch_id().as_str().len()]
                                 .into_iter().try_fold(0usize, usize::checked_add)
-                        }).ok_or_else(|| request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
+                        }).ok_or_else(|| request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
                         let funding = execution
                             .reserve_retained_memory(bytes as u64)
                             .map_err(request)?;
@@ -155,7 +154,7 @@ impl PublicationBasisImage {
                             Arc::clone(&basis.inner.root),
                         )
                         .map_err(|_| {
-                            crate::mvcc::origin_denial(
+                            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                                 "publication predecessor retention unavailable",
                             )
                         })?;
@@ -213,10 +212,10 @@ impl PublicationBasisImage {
     }
 }
 pub(super) fn request(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+    cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

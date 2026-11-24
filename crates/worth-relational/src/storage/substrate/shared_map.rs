@@ -1,6 +1,6 @@
 //! Ordered storage index with path-copying updates and borrowed traversal.
 use super::{StorageAllocation as Arc, StoredValue};
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionRequest;
 
 mod allocation;

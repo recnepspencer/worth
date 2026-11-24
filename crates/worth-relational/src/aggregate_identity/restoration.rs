@@ -1,11 +1,15 @@
 //! Rebind private memberships only to actual Native consequence allocations.
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    identity::data::{EntityId, KindId, RelationId},
-    publication::data::{AuthoredRetirementRefusal, PublicationError},
-    storage::overlay::{CurrentPartitionAccess, WorkingState},
-    transactions::data::{CommitCreatedRelationBindings, RecordRef, TransactionCommitError},
-};
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::RelationId;
+use crate::publication::data::AuthoredRetirementRefusal;
+use crate::publication::data::PublicationError;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::{AspectKey, AuthoritativeRecordAspectState};
 
@@ -100,8 +104,8 @@ impl RestoredMembership {
 fn stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

@@ -186,7 +186,10 @@ impl<K: RecordKind> RecordArena<K> {
         &mut self,
         slot: usize,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<Option<&mut AspectVersions>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<&mut AspectVersions>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
@@ -196,7 +199,10 @@ impl<K: RecordKind> RecordArena<K> {
         &mut self,
         slot: usize,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<Option<&mut FieldRevisions>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<&mut FieldRevisions>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
@@ -211,7 +217,7 @@ impl<K: RecordKind> RecordArena<K> {
         aspect_versions: AspectVersions,
         field_revisions: Option<FieldRevisions>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<()>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<()>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };

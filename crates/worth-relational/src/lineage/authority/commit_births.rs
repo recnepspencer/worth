@@ -6,9 +6,7 @@ use std::collections::BTreeMap;
 
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::{EntityId, LineageId, RelationId};
-use crate::lineage::data::{
-    LineageSubject, PersistentNameBirthRecord, PersistentNameHolder,
-};
+use crate::lineage::data::{LineageSubject, PersistentNameBirthRecord, PersistentNameHolder};
 
 pub(crate) fn extract_committed_name_births(
     envelope: &CanonicalCommitEnvelope,
@@ -18,10 +16,8 @@ pub(crate) fn extract_committed_name_births(
         return Vec::new();
     }
     let entity_by_lineage: BTreeMap<LineageId, EntityId> =
-        crate::durability::authority::lineage_allocation::entity_allocation_bindings(
-            &crate::durability::authority::lineage_allocation::CommitAllocationView::of_envelope(
-                envelope,
-            ),
+        super::committed_allocations::entity_allocation_bindings(
+            &super::committed_allocations::CommitAllocationView::of_envelope(envelope),
         )
         .unwrap_or_default()
         .into_iter()

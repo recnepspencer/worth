@@ -5,7 +5,8 @@ use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::transactions::data::{MaterializationMutationIntent as Materialization, MutationIntent};
+use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent as Materialization;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use source_ancestry::{source_gap, source_write};
 
 pub(in super::super) fn validate(
@@ -207,7 +208,7 @@ pub(super) fn owns(
 ) -> bool {
     match record {
         RecordRef::Entity(id) => origin.members.iter().any(|member| {
-            member.id == *id && member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
+            member.id == *id && member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire
         }),
         RecordRef::Relation(id) => origin.relations.iter().any(|relation| relation.id == *id),
     }

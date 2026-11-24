@@ -1,7 +1,7 @@
 //! Original-request content ingress; serde strings never replace typed refusals.
 use super::{
-    ContentPublication, RelationalContentAttachments, RelationalContentDenial as Denial,
-    RelationalContentRecord, MAXIMUM_STAGED_CONTENT_BYTES,
+    publication::ContentPublication, RelationalContentAttachments,
+    RelationalContentDenial as Denial, RelationalContentRecord, MAXIMUM_STAGED_CONTENT_BYTES,
 };
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;

@@ -4,7 +4,7 @@ mod proof;
 pub use proof::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 
 use super::{DefinitionDenial, Denial, Handle, Reads, StructuralRelationView, StructuralSource};
-use crate::validation::data::TouchedStructuralSet;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use std::sync::Arc;
 
 pub(crate) fn prepare(

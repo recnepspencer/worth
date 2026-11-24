@@ -9,7 +9,7 @@ pub(super) fn visit<Stop>(
     entity: EntityId,
     kind: KindId,
     direction: RelationalAdjacencyDirection,
-    instrumentation: &crate::runtime::RuntimeInstrumentation,
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     mut visit: impl FnMut(RelationalAdjacencyVisit) -> Result<(), Stop>,
 ) -> Result<(), Stop> {
     visit(RelationalAdjacencyVisit::List)?;

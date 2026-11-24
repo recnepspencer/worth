@@ -10,15 +10,15 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::validation::data::{
-    InvariantCostClass, InvariantExecutionPoint, InvariantGroupSet, InvariantPlanContract,
-    InvariantRegistration,
-};
-use crate::{
-    identity::data::KindId,
-    validation::data::{CustomInvariantRegistration, InvariantRule},
-};
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::identity::data::KindId;
+use crate::validation::custom_rule::CustomInvariantRegistration;
+use crate::validation::data::catalog::InvariantRegistration;
+use crate::validation::data::contracts::InvariantPlanContract;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::rules::InvariantRule;
 
 use super::observation::InvariantObservation;
 use super::policy::RelationalInvariantRuntime;
@@ -53,7 +53,8 @@ pub(crate) struct InvariantExecutionRequest<'runtime> {
     plan_contract: Option<InvariantPlanContract>,
     semantic_plan: Option<RelationalSemanticPlan<'runtime>>,
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
 }
 
 impl<'runtime> InvariantExecutionRequest<'runtime> {
@@ -127,7 +128,8 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
 
     pub(crate) fn proposal_identity(
         &self,
-    ) -> Option<&crate::mvcc::RelationalMutationProposalIdentity> {
+    ) -> Option<&crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>
+    {
         self.proposal_identity.as_ref()
     }
 

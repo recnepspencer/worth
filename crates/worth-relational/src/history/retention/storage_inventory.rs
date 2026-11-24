@@ -1,5 +1,5 @@
 //! Diagnostic custody snapshots use the reclaimer's actual physical-root predicate.
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use std::sync::Arc;
 
 pub(crate) struct RelationalRetiredRootStorageSnapshot {

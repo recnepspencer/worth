@@ -1,7 +1,8 @@
 //! Physical before/after journal projection for relation-law source selection.
 use super::successor_scope::reference_quote;
 use super::RelationIntegrityScopeAccumulator;
-use crate::transactions::data::{EntityReference, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     /// The physical journal includes generated writes as well as authored commands.
     pub(super) fn collect_candidate_slots(&mut self) -> Result<(), TransactionCommitError> {

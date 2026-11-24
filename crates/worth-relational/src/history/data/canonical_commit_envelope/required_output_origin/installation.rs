@@ -2,7 +2,8 @@
 use super::*;
 use crate::mvcc::RequiredOutputPublication as Publication;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 mod predecessor;
 mod producer_cascade;
@@ -71,7 +72,7 @@ impl CanonicalCommitEnvelopeBody {
         created_relations: &CommitCreatedRelationBindings,
         state: &WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
-        contribution_records: Option<&[crate::transactions::data::RecordRef]>,
+        contribution_records: Option<&[crate::transactions::data::primitives::RecordRef]>,
         source_input: Option<
             &crate::runtime::RelationalPinnedRead<
                 crate::runtime::RelationalAppliedCandidateReadIdentity,
@@ -104,9 +105,11 @@ impl CanonicalCommitEnvelopeBody {
             || self.schema_continuation_descriptor.is_some()
             || self.schema_reconciliation_descriptor.is_some()
         {
-            return Err(crate::mvcc::origin_denial(
-                "required-output installation changed before native preparation",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "required-output installation changed before native preparation",
+                ),
+            );
         }
         if let Publication::HistoricalSelection {
             admission,
@@ -176,7 +179,7 @@ impl CanonicalCommitEnvelopeBody {
         }
         let (producer, dependency_identity) =
             publication.lineage_attribution().ok_or_else(|| {
-                crate::mvcc::origin_denial(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                     "cascade attribution requires per-publication provenance",
                 )
             })?;

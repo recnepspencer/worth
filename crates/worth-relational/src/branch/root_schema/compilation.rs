@@ -15,7 +15,7 @@ impl RelationalBranchRootSchemaAuthority {
         retained: RetainedContracts<'_>,
         funding: Option<Arc<compiled_retention::SchemaCompilationFunding>>,
         control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Arc<Self>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Arc<Self>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         registry
             .content_formats
             .bind_carried_snapshot(&expected.content_formats);

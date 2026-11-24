@@ -1,6 +1,6 @@
 //! Cold association authenticates owned succession before independent reference classification.
 use super::{charge, CodecRetirementClosureStop as Stop};
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use std::sync::Arc;

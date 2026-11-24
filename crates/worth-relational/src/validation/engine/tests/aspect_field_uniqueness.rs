@@ -1,14 +1,18 @@
 use super::validation_engine_fixtures::*;
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::{KindId, PartitionId};
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use crate::symbols::data::ClientKey;
 use crate::tests::support::{aspect_key, field_key};
-use crate::transactions::data::{
-    ApplyEntityAspectPatchIntent, CommitConflict, ConflictClass, CreateIntent,
-    EntityAspectCreateIntent, EntityMutationIntent, MutationIntent, TransactionCommitError,
-    WorkerIntentBatch,
-};
-use crate::validation::data::InvariantViolationFields;
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityAspectCreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::data::results::InvariantViolationFields;
 use worth_foundational::facade::{
     AspectValue, ContractValidatedAspectValueView, ContractValidationInput, InternedString,
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
@@ -19,7 +23,7 @@ mod scratch;
 
 #[test]
 fn unique_entity_aspect_field_invariant_rejects_duplicate_struct_field_projection() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_summary_title_uniqueness();
@@ -36,7 +40,7 @@ fn unique_entity_aspect_field_invariant_rejects_duplicate_struct_field_projectio
 
 #[test]
 fn unique_entity_aspect_field_invariant_ignores_sibling_struct_field_values() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_summary_title_uniqueness();
@@ -50,7 +54,7 @@ fn unique_entity_aspect_field_invariant_ignores_sibling_struct_field_values() {
 
 #[test]
 fn unique_entity_aspect_field_rejects_entity_aspect_create() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_summary_title_commit_boundary_uniqueness();
@@ -95,7 +99,7 @@ fn unique_entity_aspect_field_rejects_entity_aspect_create() {
 
 #[test]
 fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_summary_title_commit_boundary_uniqueness();
@@ -107,8 +111,8 @@ fn unique_entity_aspect_field_rejects_entity_aspect_patch() {
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(entity_id) => Some(*entity_id),
-            crate::facade::transactions::RecordRef::Relation(_) => None,
+            crate::transactions::data::primitives::RecordRef::Entity(entity_id) => Some(*entity_id),
+            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
         })
         .expect("second entity id");
     let patch = whole_summary_patch(
@@ -193,7 +197,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
     );
     assert_eq!(
         field_locator,
-        crate::transactions::data::planned_single_field_locator(
+        crate::transactions::data::aspect_field_patch::planned_single_field_locator(
             aspect_key("summary"),
             field_key("title"),
         )

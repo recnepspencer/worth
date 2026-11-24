@@ -5,8 +5,10 @@
 //! reclamation authority.
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
-use super::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner};
-use crate::branch::{RelationalBranchRoot, RelationalBranchRootSchemaAuthority};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::RelationalBranchRoot;
 use std::sync::{Arc, Weak};
 
 /// Weak identity of one admitted basis observation and its root.
@@ -96,6 +98,6 @@ impl RelationalBasisCustodyWitness {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBasisCustodyReadDenial {
     ForeignRuntime,
-    Demand(crate::execution::RelationalExecutionDenialCause),
+    Demand(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Snapshot,
 }

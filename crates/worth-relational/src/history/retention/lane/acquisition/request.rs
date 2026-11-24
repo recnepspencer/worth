@@ -5,7 +5,7 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMapDenial, Exec
 pub(crate) enum RelationalRetentionRequestAcquisitionDenial {
     Retention(RelationalRetentionAcquisitionDenial),
     Storage(ExecutionOrderedMapDenial),
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 fn prepare<V>(
     key: u64,
@@ -46,7 +46,7 @@ impl RelationalBranchRetentionBinding {
     pub(super) fn acquire_prepared_subject(
         &self,
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+        component: Option<Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>>,
         roots: RetainedRoots,
         operation_branch: Option<RelationalBranchIdentity>,
         request: Option<&ExecutionRequest<'_, '_>>,

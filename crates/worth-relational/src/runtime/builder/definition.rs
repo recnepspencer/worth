@@ -62,14 +62,14 @@ impl RelationalRuntimeDefinition {
 
     pub fn build_durable(
         self,
-        medium: Box<dyn crate::durability::medium::RelationalDurableMedium>,
+        medium: Box<dyn crate::durability::published_medium::RelationalDurableMedium>,
     ) -> Result<RelationalRuntime, RelationalRuntimeConstructionDenial> {
         self.build_with(Some(medium))
     }
 
     pub(super) fn build_with(
         self,
-        medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+        medium: Option<Box<dyn crate::durability::published_medium::RelationalDurableMedium>>,
     ) -> Result<RelationalRuntime, RelationalRuntimeConstructionDenial> {
         RelationalRuntime::build_from_extensions(
             self.configuration,

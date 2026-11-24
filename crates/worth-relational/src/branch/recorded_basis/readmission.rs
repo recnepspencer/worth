@@ -1,8 +1,8 @@
 //! Rebind only an owner-readmitted exact root to the recovering Native frame.
 use super::super::basis::RelationalLiveBranchBasisDescriptorAxes;
-use crate::branch::{
-    RelationalBranchBasisDenial, RelationalBranchBasisDescriptor, RelationalBranchRoot,
-};
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
+use crate::branch::root::RelationalBranchRoot;
 
 impl RelationalBranchBasisDescriptor {
     pub(crate) fn bind_readmitted_root(
@@ -29,7 +29,7 @@ impl RelationalBranchBasisDescriptor {
                 )
             }
         };
-        let reference = crate::branch::relational_branch_observation(
+        let reference = crate::branch::reference::observation::relational_branch_observation(
             runtime_instance_id,
             &self.branch_id().0,
             target,

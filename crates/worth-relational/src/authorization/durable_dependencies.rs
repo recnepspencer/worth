@@ -5,13 +5,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
-use crate::runtime::RelationalRuntime;
 
 use super::{
     RelationalAuthorizationObservationEvidence, RelationalAuthorizationTraversalDirection,
 };
 
-mod capture;
+pub(super) mod capture;
 mod currentness;
 mod storage;
 mod wire;
@@ -148,18 +147,5 @@ impl RelationalAuthorizationDurableDependencies {
     /// Equality is meaningful only against a fresh Relational-owned capture.
     pub fn matches(&self, fresh: &Self) -> bool {
         self == fresh && self.owned.data.version == DURABLE_DEPENDENCY_VERSION
-    }
-}
-
-impl RelationalRuntime {
-    /// Capture exact source revisions from the evidence's own immutable root.
-    /// Cost is O(tracked reads); no graph reconstruction is permitted here.
-    pub fn capture_authorization_durable_dependencies(
-        &self,
-        evidence: &RelationalAuthorizationObservationEvidence,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<RelationalAuthorizationDurableDependencies, RelationalAuthorizationDependencyDenial>
-    {
-        capture::capture(self, execution, evidence)
     }
 }

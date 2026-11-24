@@ -1,5 +1,5 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 
-pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     super::commit::inline_type_budget::collect(census);
 }

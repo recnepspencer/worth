@@ -1,6 +1,6 @@
 use super::super::super::QueryReadExecutionStop;
 use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use worth_execution::ExecutionResourceLease;
 
@@ -26,7 +26,7 @@ impl Drop for Payload<'_, '_> {
 #[test]
 fn rejected_fragment_disposes_under_its_original_ticket_and_preserves_stop() {
     for panic_during_disposal in [false, true] {
-        let lease = crate::tests::support::test_execution_lease();
+        let lease = crate::execution::test_authority::test_execution_lease();
         let sibling = lease.reserve_memory(23).unwrap();
         let observed = AtomicU64::new(0);
         let pointer = AtomicUsize::new(0);

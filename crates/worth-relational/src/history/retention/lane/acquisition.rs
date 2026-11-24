@@ -13,7 +13,7 @@ impl RelationalBranchRetentionBinding {
 
     pub(crate) fn acquire_component(
         &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {
         self.acquire_subject(
             RelationalRetentionObligationKind::ExternalComponentBasis,
@@ -25,7 +25,7 @@ impl RelationalBranchRetentionBinding {
 
     pub(crate) fn checkpoint_components(
         &self,
-    ) -> Vec<crate::branch::AdmittedRelationalBranchBasis> {
+    ) -> Vec<crate::branch::basis::AdmittedRelationalBranchBasis> {
         lock_lane(&self.lane)
             .obligations
             .values()
@@ -34,7 +34,7 @@ impl RelationalBranchRetentionBinding {
                     .component
                     .as_ref()?
                     .upgrade()
-                    .map(|inner| crate::branch::AdmittedRelationalBranchBasis { inner })
+                    .map(|inner| crate::branch::basis::AdmittedRelationalBranchBasis { inner })
             })
             .collect()
     }
@@ -49,7 +49,10 @@ impl RelationalBranchRetentionBinding {
     pub(in crate::history::retention) fn capture_checkpoint_components_into(
         &self,
         lane: usize,
-        held: &mut ExecutionOrderedMap<(usize, u64), crate::branch::AdmittedRelationalBranchBasis>,
+        held: &mut ExecutionOrderedMap<
+            (usize, u64),
+            crate::branch::basis::AdmittedRelationalBranchBasis,
+        >,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalRetentionRequestAcquisitionDenial> {
         use RelationalRetentionRequestAcquisitionDenial as Denial;
@@ -59,7 +62,7 @@ impl RelationalBranchRetentionBinding {
                 .consult()
                 .map_err(|cause| Denial::Request(cause.into()))?;
             if let Some(inner) = record.component.as_ref().and_then(Weak::upgrade) {
-                let basis = crate::branch::AdmittedRelationalBranchBasis { inner };
+                let basis = crate::branch::basis::AdmittedRelationalBranchBasis { inner };
                 if !Weak::ptr_eq(&basis.inner.retention_binding.owner, &self.owner) {
                     return Err(Denial::Retention(
                         RelationalRetentionAcquisitionDenial::BindingMismatch,
@@ -74,7 +77,7 @@ impl RelationalBranchRetentionBinding {
     fn acquire_subject(
         &self,
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::AdmittedRelationalBranchBasisInner>>,
+        component: Option<Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>>,
         roots: Vec<Arc<RelationalBranchRoot>>,
         operation_branch: Option<RelationalBranchIdentity>,
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {

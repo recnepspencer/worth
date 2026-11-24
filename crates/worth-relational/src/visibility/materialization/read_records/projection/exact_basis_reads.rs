@@ -47,7 +47,7 @@ impl<'view> ExactProjectionReader<'view> {
         partition: PartitionId,
     ) -> Result<
         crate::storage::residency::RelationalRegionHeadView<'_>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.view.demand_regions_head(execution, [partition])?;
         self.view
@@ -57,8 +57,8 @@ impl<'view> ExactProjectionReader<'view> {
     pub(in crate::visibility::materialization::read_records) fn membership_failure(
         &self,
         partition: PartitionId,
-    ) -> crate::execution::RelationalExecutionDenialCause {
-        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+    ) -> crate::execution::denial_cause::RelationalExecutionDenialCause {
+        crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(
             crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Region(partition),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
@@ -71,7 +71,8 @@ impl<'view> ExactProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.view
             .reader()
             .entities_from_directory(execution, self, kind, None, None, charge, memory)
@@ -85,7 +86,8 @@ impl<'view> ExactProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.view
             .reader()
             .entities_from_directory(execution, self, kind, Some(partition), None, charge, memory)
@@ -98,7 +100,10 @@ impl<'view> ExactProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.view
             .reader()
             .relations_from_directory(execution, self, kind, None, None, charge, memory)
@@ -112,7 +117,10 @@ impl<'view> ExactProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.view
             .reader()
             .relations_from_directory(execution, self, kind, Some(partition), None, charge, memory)
@@ -129,7 +137,8 @@ impl<'view> ExactProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.collect_entity_records(None, charge, memory)
     }
     #[cfg(test)]
@@ -137,17 +146,20 @@ impl<'view> ExactProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.collect_relation_records(None, charge, memory)
     }
 }
 fn unbounded_stop<L>(
     stop: super::super::native_scan_stop::NativeScanStop<L>,
-) -> crate::execution::RelationalExecutionDenialCause {
+) -> crate::execution::denial_cause::RelationalExecutionDenialCause {
     match stop {
         super::super::native_scan_stop::NativeScanStop::Request(cause) => cause,
         super::super::native_scan_stop::NativeScanStop::Limit(_) => {
-            crate::execution::RelationalExecutionDenialCause::WorkExhausted
+            crate::execution::denial_cause::RelationalExecutionDenialCause::WorkExhausted
         }
     }
 }

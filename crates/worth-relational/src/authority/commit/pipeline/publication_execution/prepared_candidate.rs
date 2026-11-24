@@ -39,7 +39,7 @@ impl PreparedCommitPublicationExecution {
     }
     pub(crate) fn attach_prepared_indexes(
         &mut self,
-        prepared: crate::indexes::PreparedCandidateIndexPublication,
+        prepared: crate::indexes::authority::PreparedCandidateIndexPublication,
     ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
         if self.prepared_indexes.is_some() {
             return Err(

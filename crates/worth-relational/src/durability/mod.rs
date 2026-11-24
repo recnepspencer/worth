@@ -30,16 +30,20 @@ pub(crate) mod checkpoint_history;
 pub(crate) mod checkpoints;
 pub mod data;
 pub(crate) mod derived_index_artifacts;
+pub(crate) mod history_source_readmission;
 pub(crate) mod log;
 pub(crate) mod medium;
 pub(crate) mod migration;
 pub(crate) mod naming;
+pub(crate) mod published_medium;
 pub(crate) mod recovery;
 pub(crate) mod source_initial_inputs;
 
-mod home_world_catalog;
+pub(crate) mod home_world_catalog;
 pub use home_world_catalog::{
     RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates,
     RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,
     RelationalWorldSourceDescription,
 };
+
+pub(crate) mod checkpoint_coverage;

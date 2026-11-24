@@ -15,7 +15,7 @@ use super::{RelationalCommitIdentity, RelationalCommitParentage};
 /// Descriptive roots carried by a commit identity before the Phase-5 branch
 /// root becomes the read/currentness authority. The branch target owns the
 /// concrete vocabulary so commit and reference observations cannot drift.
-pub type RelationalCommitRootDescriptor = crate::branch::RelationalBranchRootDescriptor;
+pub type RelationalCommitRootDescriptor = crate::branch::target::RelationalBranchRootDescriptor;
 
 /// Sealed immutable catalog artifact. The envelope is held behind an `Arc` and
 /// is never exposed mutably after catalog insertion.
@@ -94,8 +94,8 @@ impl RelationalCommitArtifact {
         Ok(Self {
             identity,
             parentage,
-            roots: crate::branch::RelationalBranchRootDescriptor::new(
-                *crate::branch::RelationalBranchTarget::roots_for_commit(&envelope.commit)
+            roots: crate::branch::target::RelationalBranchRootDescriptor::new(
+                *crate::branch::target::RelationalBranchTarget::roots_for_commit(&envelope.commit)
                     .truth_root(),
                 crate::schema::data::schema_authority_snapshot_digest_bytes(
                     &envelope.schema_authority,

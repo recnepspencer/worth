@@ -1,9 +1,10 @@
 //! Reborrow staged roots through the actual rule observation, never proposal numbers.
 use std::sync::Arc;
 
-use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::identity::data::EntityId;
-use crate::validation::data::StructuralRelationView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::engine::InvariantSourceAffinity;
 
 use super::preparation::{RootPayload, SourceViews};
@@ -22,7 +23,7 @@ pub struct PreparedManagedIndexSourceRead {
     proposed: Option<RootPayload>,
     availability: ManagedIndexSourceAvailability,
     committed_available: bool,
-    audience: crate::validation::data::CustomInvariantSemanticIdentity,
+    audience: crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
     /// The receiving rule's declared Source set, as the retain that checked
     /// this program's membership saw it; later reads compare it by identity.
     sources: Arc<[ManagedIndexSourceProgram]>,
@@ -46,7 +47,7 @@ impl PreparedManagedIndexSourceRead {
         &self,
         scope: EntityId,
         sources: &Arc<[ManagedIndexSourceProgram]>,
-        audience: &crate::validation::data::CustomInvariantSemanticIdentity,
+        audience: &crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
     ) -> bool {
         // Membership was checked once at retain; the same declared set, by
         // identity, carries that proof without a search.
@@ -142,7 +143,7 @@ impl ManagedIndexSourceRead<'_> {
 pub(crate) fn prepare(
     program: &ManagedIndexSourceProgram,
     scope: EntityId,
-    audience: &crate::validation::data::CustomInvariantSemanticIdentity,
+    audience: &crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
     sources: &Arc<[ManagedIndexSourceProgram]>,
     committed: &StructuralRelationView<'_>,
     proposed: &StructuralRelationView<'_>,
@@ -212,7 +213,7 @@ pub(crate) fn scopes(
                         .map_err(DerivedRelationReadDenial::Structural)?;
                     scopes.insert(*scope);
                 }
-                Err(crate::validation::data::StructuralReadError::RecordUnavailable) => {}
+                Err(crate::validation::data::structural_read::StructuralReadError::RecordUnavailable) => {}
                 Ok(_) => return Err(Denial::ForeignSource),
                 Err(cause) => {
                     return Err(DerivedRelationReadDenial::Structural(

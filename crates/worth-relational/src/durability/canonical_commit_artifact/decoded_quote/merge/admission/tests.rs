@@ -284,7 +284,7 @@ fn fixture_with_options(with_link: bool) -> PublishedMergeExecutionAuthority {
     let strategy = RelationalMergeStrategyWitness::retained(
         request_digest,
         basis_digest,
-        crate::merge::lowered_artifact_execution_authority_contract(),
+        crate::merge::data::execution_authority_contract::lowered_artifact_execution_authority_contract(),
         Arc::from([RelationalMergeAspectPolicyWitnessRow::retained(
             record.clone(),
             None,

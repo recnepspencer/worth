@@ -7,7 +7,7 @@ use crate::authority::mutation::patch_details::{
 };
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchDetail;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::outcomes::RecordMutation;
 use super::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect, MutationWorkspace};
@@ -199,7 +199,7 @@ fn record_entity_publication_fragment(
     detail_kind: EntityPatchDetailKind,
     entity_id: crate::identity::data::EntityId,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     effect
         .publication
         .changed_records
@@ -221,7 +221,7 @@ fn record_relation_publication_fragment(
     source: crate::identity::data::EntityId,
     target: crate::identity::data::EntityId,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     let relation_birth = (canonical_delta.structural_change
         == crate::publication::patch::data::RecordStructuralChange::Created)
         .then_some(crate::publication::patch::data::PublishedRelationBirth {
@@ -276,7 +276,7 @@ fn record_patch_fragment(
     detail: PatchDetail,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
     relation_birth: Option<crate::publication::patch::data::PublishedRelationBirth>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     let mut patch_fragment =
         canonical_publication_fragment(&canonical_delta, detail, authoritative_patch)?;
     patch_fragment.relation_birth = relation_birth;
@@ -291,7 +291,7 @@ pub(super) fn canonical_publication_fragment(
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
 ) -> Result<
     crate::authority::mutation::FoundationalPatchFragment,
-    crate::transactions::data::CommitConflict,
+    crate::transactions::data::outcomes::commit_conflict::CommitConflict,
 > {
     Ok(match authoritative_patch {
         Some(patch) => {

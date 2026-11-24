@@ -18,7 +18,7 @@ struct Payload(
     IgnoredAny,
     Schema,
     IgnoredAny,
-    crate::transactions::data::RelationalCommitSemanticResult,
+    crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
 );
 #[derive(Deserialize)]
 struct Identity(

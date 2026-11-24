@@ -1,13 +1,12 @@
 //! One atomic authored retirement retains every genuine route's own provenance.
 use super::*;
-use crate::{
-    history::data::RequiredOutputPublicationPositions,
-    mvcc::{RelationalAuthoredRetirement, RequiredOutputPublication},
-    storage::overlay::WorkingState,
-    transactions::data::{
-        CommitCreatedEntityBindings, CommitCreatedRelationBindings, EntityReference,
-    },
-};
+use crate::history::data::RequiredOutputPublicationPositions;
+use crate::mvcc::RelationalAuthoredRetirement;
+use crate::mvcc::RequiredOutputPublication;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
@@ -48,9 +47,8 @@ pub(super) fn install(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
-    use crate::{
-        publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
-    };
+    use crate::publication::patch::data::RecordStructuralChange as Change;
+    use crate::transactions::data::primitives::RecordRef;
     let roles = std::mem::take(&mut predecessor.roles);
     let anchor = predecessor.anchor;
     let refuse = || {
@@ -146,7 +144,7 @@ pub(super) fn install(
         for record in origin
             .members
             .iter()
-            .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+            .filter(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
             .map(|member| RecordRef::Entity(member.id))
             .chain(
                 origin

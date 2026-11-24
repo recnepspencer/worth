@@ -3,8 +3,25 @@ use super::{
     traversal::{walk, Read},
     *,
 };
-use crate::validation::data::*;
-use crate::validation::StructuralPresenceDenial;
+use crate::validation::custom_rule::structural_views::{
+    StructuralPresenceDenial, StructuralRelationView,
+};
+use crate::validation::custom_rule::{
+    CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+};
+use crate::validation::data::custom_rule::errors::{
+    CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
+};
+use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
+use crate::validation::data::descriptor::{
+    CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
+};
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet};
+use crate::validation::data::rule_id::{
+    CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
+};
 use std::sync::Arc;
 
 impl RelationalModelOwnership {

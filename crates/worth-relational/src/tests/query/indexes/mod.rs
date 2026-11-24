@@ -1,3 +1,16 @@
+// The parity driver is compiled exclusively by this source court. The recorded
+// source paths keep the existing caller and runtime-root registrations.
+#[path = "../../../indexes/access/execution.rs"]
+mod index_parity_execution;
+#[path = "../../../indexes/access/routing.rs"]
+mod index_parity_routing;
+#[path = "../../../indexes/access/scratch.rs"]
+pub(crate) mod index_parity_scratch;
+#[path = "../../../indexes/access/query_index_parity.rs"]
+mod index_query_parity;
+#[path = "../../../indexes/access/pinning/resident_index_inspection.rs"]
+mod resident_index_inspection;
+
 mod admitted_entity_field_lookup;
 mod bounded_entity_field_lookup;
 mod bounded_relation_join_lookup;

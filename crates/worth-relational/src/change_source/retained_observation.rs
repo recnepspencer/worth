@@ -1,11 +1,9 @@
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
 use crate::history::retention::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseReceipt,
 };
-use crate::mvcc::RelationalBranchObservation;
-use crate::runtime::RelationalRuntime;
+use crate::mvcc::observation::RelationalBranchObservation;
 use crate::snapshots::data::SnapshotId;
-mod retirement;
+pub(crate) mod retirement;
 pub use retirement::{
     RelationalRetainedObservationRetirement, RelationalRetainedObservationRetirementDenial,
     RelationalRetainedObservationRetirementProgress, RetiredRelationalRetainedObservation,
@@ -25,6 +23,18 @@ pub struct RelationalRetainedObservation {
 }
 
 impl RelationalRetainedObservation {
+    pub(super) fn from_admitted(
+        snapshot_id: SnapshotId,
+        observation: RelationalBranchObservation,
+        retention: RelationalBranchRetentionLease,
+    ) -> Self {
+        Self {
+            snapshot_id,
+            observation,
+            retention,
+        }
+    }
+
     /// The snapshot id allocated for this retention.
     pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
@@ -38,32 +48,5 @@ impl RelationalRetainedObservation {
     /// End the retention exactly once and report how it ended.
     pub fn release(self) -> RelationalBranchRetentionReleaseReceipt {
         self.retention.release()
-    }
-}
-
-impl RelationalRuntime {
-    /// Retain `basis` and allocate its snapshot id, in that order, as one
-    /// operation.
-    ///
-    /// # Errors
-    ///
-    /// Returns the basis denial when `basis` belongs to another runtime or
-    /// can no longer be retained, and
-    /// [`RelationalBranchBasisDenial::SnapshotIdentityExhausted`] when the
-    /// runtime has no snapshot id left; the retention is then dropped.
-    pub fn retain_observation_snapshot(
-        &self,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Result<RelationalRetainedObservation, RelationalBranchBasisDenial> {
-        let retention = self.retain_component_basis(basis)?;
-        let snapshot_id = self
-            .visibility
-            .allocate_snapshot_id()
-            .ok_or(RelationalBranchBasisDenial::SnapshotIdentityExhausted)?;
-        Ok(RelationalRetainedObservation {
-            snapshot_id,
-            observation: basis.observation(),
-            retention,
-        })
     }
 }

@@ -1,9 +1,10 @@
-use crate::capabilities::SchemaSource;
-use crate::runtime::RuntimeInstrumentation;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CommitConflict, CreateIntent, CreatedEntityRef, MutationIntent, RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::primitives::CreatedEntityRef;
 use std::collections::BTreeSet;
 
 use super::entity_validation::validate_entity_intent;
@@ -11,19 +12,19 @@ use super::relation_validation::validate_relation_intent;
 
 pub(crate) fn validate_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     created_entities: &BTreeSet<CreatedEntityRef>,
     deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     intent: &MutationIntent,
 ) -> Result<(), CommitConflict> {
-    validate_entity_intent(state, schema_source, intent)?;
+    validate_entity_intent(state, schema, intent)?;
     validate_relation_intent(
         state,
-        schema_source,
+        schema,
         default_cross_context_policy,
-        instrumentation,
+        candidates_scanned,
         created_entities,
         deleted_relations,
         intent,

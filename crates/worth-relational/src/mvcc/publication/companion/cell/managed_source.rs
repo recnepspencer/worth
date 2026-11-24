@@ -10,7 +10,6 @@ pub(in crate::mvcc::publication::companion) mod affinity;
 mod correspondence;
 mod history;
 mod ordered_predecessor;
-pub(crate) use history::ManagedSourceHistoryOwner;
 
 pub struct ManagedIndexSourceObservation {
     pub(in crate::mvcc) core: Weak<CompanionBranchCellCore>,
@@ -136,11 +135,7 @@ impl ManagedIndexSourceObservation {
         selected: &PositionedRelationalSnapshot,
         registration_generation: u64,
     ) -> bool {
-        if self
-            .affinity
-            .admit(selected, registration_generation)
-            .is_err()
-        {
+        if affinity::admit_affinity(&self.affinity, selected, registration_generation).is_err() {
             return false;
         }
         let Some(core) = self.core.upgrade() else {

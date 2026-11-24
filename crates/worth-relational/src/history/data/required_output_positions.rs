@@ -6,8 +6,8 @@ mod readmission;
 use super::CommitId;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
-use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;
-use crate::transactions::data::TransactionCommitError;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning as Meaning;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::{cmp::Ordering, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
@@ -198,7 +198,9 @@ fn node(
         .max(height(&right))
         .checked_add(1)
         .ok_or_else(|| {
-            request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
+            request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+            )
         })?;
     Ok(Arc::new(PositionNode {
         route,
@@ -314,10 +316,10 @@ fn reserve(
 }
 
 fn request(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+    cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

@@ -77,8 +77,10 @@ impl DurabilityAuthority<'_> {
                 )
             }
             None => {
-                let positioned = residency
-                    .readmit_original_positioned(execution)
+                let positioned =
+                    crate::durability::history_source_readmission::readmit_original_positioned(
+                        &residency, execution,
+                    )
                     .map_err(Refusal::Recovery)?;
                 if positioned.envelope().caller_association() != subject.association() {
                     return Err(Refusal::SubjectMismatch);

@@ -19,18 +19,16 @@ mod tests;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use crate::history::data::{
+use crate::history::data::canonical_record_allocation::{
     CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
 use crate::storage::substrate::SharedMap;
-use crate::transactions::data::RecordAllocationDenial;
+use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
 
 pub(crate) use pending_allocations::PendingRecordAllocations;
 pub(crate) use reclaimed::ReclaimedRecordSlot;
 use reservation::{RecordSlotReservation, ReservationOrigin};
-
-use super::RuntimeSubsystem;
 
 type RecordSlotKey = (RecordAllocationClass, PartitionId, usize);
 type RecordFrontierKey = (RecordAllocationClass, PartitionId);
@@ -157,14 +155,8 @@ impl RecordIdentitySubsystem {
     }
 }
 
-impl RuntimeSubsystem for RecordIdentitySubsystem {
-    type Config = ();
-
-    fn new(_: &Self::Config) -> Self {
-        Self::default()
-    }
-
-    fn fork(&self) -> Self {
+impl RecordIdentitySubsystem {
+    pub(super) fn detached(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
         let fork = Self {

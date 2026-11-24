@@ -1,7 +1,7 @@
 //! Typed refusals of the allocation-independent group naming authority.
 use worth_foundational::facade::AggregateIdentity;
 
-use super::{AggregateContinuityRule, AggregateGroupClaimant};
+use super::model::{AggregateContinuityRule, AggregateGroupClaimant};
 use crate::lineage::data::PersistentNameIdentity;
 
 /// Why a group naming transition was refused. Every refusal has zero effects.

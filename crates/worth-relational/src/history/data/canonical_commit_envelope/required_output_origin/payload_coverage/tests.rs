@@ -27,7 +27,7 @@ fn validate(
 
 #[test]
 fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let runtime = AspectSchemaFixture::default().build_runtime();
     let result = create_entity_outcome(execution, &runtime, "real-empty-birth");
@@ -128,7 +128,7 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
 
 #[test]
 fn classified_nonempty_birth_cannot_use_empty_storage_or_lose_operation_coverage() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     let result = create_entity_outcome(execution, &runtime, "real-present-birth");

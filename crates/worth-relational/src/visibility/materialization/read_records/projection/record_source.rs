@@ -5,14 +5,14 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
     fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.demand_all_full(execution)
     }
     fn demand_regions_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.demand_regions_head(execution, partitions)
     }
     fn admitted_head_region(
@@ -25,7 +25,7 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.demand_regions_full(execution, partitions)
     }
 

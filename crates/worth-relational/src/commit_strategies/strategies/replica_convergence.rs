@@ -20,13 +20,11 @@ use crate::commit_strategies::data::{
 };
 use crate::identity::data::EntityId;
 use crate::storage::data::authoritative_aspect_value_field_comparison_key;
-use crate::transactions::data::{
-    AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
 };
-
-#[cfg(test)]
-mod tests;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplicaConvergenceInput {
@@ -216,7 +214,9 @@ impl ReplicaConvergenceStrategy {
         let replicas = FieldKey::new("replicas").expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "static field key must be valid");
         let aspect_key =
             Self::require_lowered_entity_scalar_field(observation, existing, &replicas)?;
-        let target = crate::transactions::data::planned_single_field_locator(aspect_key, replicas);
+        let target = crate::transactions::data::aspect_field_patch::planned_single_field_locator(
+            aspect_key, replicas,
+        );
         let desired_value = AspectValue::UInt64(desired_replicas);
         let fields =
             AspectFieldPatch::new(BTreeMap::from([(target.clone(), desired_value.clone())]));

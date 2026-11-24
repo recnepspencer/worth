@@ -6,13 +6,15 @@ use super::{
     ManagedIndexSourceAvailability as Availability, ManagedIndexSourcePreparationDenial as Denial,
 };
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
-use crate::branch::SelectedRelationalBranchRead;
-use crate::derived_relation::DerivedRelationReadDenial;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::OverlayStateView;
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::custom_rule::CustomInvariantWorkMeter;
-use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
@@ -28,8 +30,8 @@ impl AppliedMutationDraft {
         execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalPreparationRuntime,
         selected: SelectedRelationalBranchRead<'_>,
-        proposal: &crate::mvcc::RelationalMutationProposalIdentity,
-        authored: Option<&crate::transactions::data::MergedCommitPlan>,
+        proposal: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        authored: Option<&crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
         crate::execution::transaction_stage(&execution, runtime.commit_work_budget.as_ref(), || {
             self.prepare_managed_sources_in_original_stage(
@@ -42,8 +44,8 @@ impl AppliedMutationDraft {
         execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalPreparationRuntime,
         selected: SelectedRelationalBranchRead<'_>,
-        proposal: &crate::mvcc::RelationalMutationProposalIdentity,
-        authored: Option<&crate::transactions::data::MergedCommitPlan>,
+        proposal: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        authored: Option<&crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
         let basis = self.source_interpretation.physical_basis();
         let commit_error = |cause: Denial| {
@@ -98,7 +100,7 @@ impl AppliedMutationDraft {
         } else {
             stage::prepare(execution, |budget| {
                 let (history, mut discovered) =
-                    super::authored_history::prepare(&context, budget, authored)?;
+                    super::authored_history::preparation::prepare(&context, budget, authored)?;
                 install_history(self, history)?;
                 prepare(&context, budget, &groups, &mut discovered)
             })

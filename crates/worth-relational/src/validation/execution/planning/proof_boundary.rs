@@ -29,7 +29,7 @@ pub(crate) fn planned_proof_boundary_summary(
 }
 
 fn collect_partition_scope_evidence(
-    packet: &crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+    packet: &crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>,
     widened_causes: &mut Vec<InvariantScopeWideningCause>,
     touched_partitions: &mut BTreeSet<crate::identity::data::PartitionId>,
 ) {
@@ -46,7 +46,7 @@ fn collect_partition_scope_evidence(
 }
 
 fn collect_read_set_evidence(
-    packet: &crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+    packet: &crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>,
     widened_causes: &mut Vec<InvariantScopeWideningCause>,
     saw_touched_only: &mut bool,
 ) {

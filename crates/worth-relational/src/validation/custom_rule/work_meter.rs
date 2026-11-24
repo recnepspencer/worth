@@ -313,7 +313,9 @@ impl CustomInvariantWorkMeter {
     }
 }
 
-impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWorkMeter {
+impl crate::validation::custom_rule::registration::CustomInvariantLeaseBudget
+    for CustomInvariantWorkMeter
+{
     fn checkpoint(&self, units: u64) -> bool {
         self.try_charge_work(units)
     }

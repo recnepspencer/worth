@@ -1,6 +1,6 @@
 mod base_commit_patch_basis;
 mod numeric_value_basis;
-mod performance_receipt;
+pub(super) mod performance_receipt;
 mod record_read_basis;
 mod scalar_policy_binding;
 mod source_basis;

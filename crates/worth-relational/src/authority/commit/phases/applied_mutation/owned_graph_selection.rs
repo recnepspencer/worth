@@ -42,7 +42,7 @@ pub(crate) fn apply(
         &outcome.effect.adjacency.deltas,
         identity.proposed_version_id(),
     )?;
-    state.content = content::prepare(
+    let prepared_content = content::prepare(
         execution,
         runtime,
         selected_state.selected().state().root(),
@@ -64,14 +64,14 @@ pub(crate) fn apply(
     source_interpretation
         .bind_content(
             execution,
-            state.content.directory().map_err(|_| {
-                crate::content::commit_denial(
+            prepared_content.directory().map_err(|_| {
+                crate::content::publication::commit_denial(
                     crate::content::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,
         )
-        .map_err(crate::content::commit_denial)?;
+        .map_err(crate::content::publication::commit_denial)?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
         schema,
         selected_state.selected(),
@@ -82,6 +82,7 @@ pub(crate) fn apply(
         None,
     );
     Ok(AppliedMutationDraft {
+        content: prepared_content,
         source_interpretation,
         aggregate,
         state,

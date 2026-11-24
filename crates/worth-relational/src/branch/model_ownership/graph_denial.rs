@@ -1,9 +1,9 @@
 //! Refusals retain the actual foreign source and its original schema contracts.
 use super::*;
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::RelationId,
-    schema::data::EndpointDeletionIntegrityDeclaration, validation::data::StructuralRelationRecord,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::RelationId;
+use crate::schema::data::EndpointDeletionIntegrityDeclaration;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 #[derive(Debug)]
 pub enum RelationalOwnedModelSelectionDenial {

@@ -1,4 +1,5 @@
-use crate::validation::data::{InvariantCostClass, InvariantFailureEffect};
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::groups::InvariantCostClass;
 
 use super::super::policy::{cost_allowed, RelationalInvariantRuntime};
 
@@ -24,20 +25,20 @@ impl InvariantRegistrationAdmission {
 
 pub(crate) fn for_failure_effect(
     runtime_policy: &RelationalInvariantRuntime,
-    checkpoint: crate::validation::data::InvariantExecutionPoint,
+    checkpoint: crate::validation::data::execution::InvariantExecutionPoint,
     failure_effect: InvariantFailureEffect,
     cost: InvariantCostClass,
 ) -> InvariantRegistrationAdmission {
     let enforcement_checkpoint = matches!(
         (checkpoint, failure_effect),
         (
-            crate::validation::data::InvariantExecutionPoint::ProposedState
-                | crate::validation::data::InvariantExecutionPoint::CommitBoundary
-                | crate::validation::data::InvariantExecutionPoint::MutationSensitive,
+            crate::validation::data::execution::InvariantExecutionPoint::ProposedState
+                | crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
+                | crate::validation::data::execution::InvariantExecutionPoint::MutationSensitive,
             InvariantFailureEffect::BlockCommit,
         ) | (
-            crate::validation::data::InvariantExecutionPoint::SnapshotPublication
-                | crate::validation::data::InvariantExecutionPoint::ProposedState,
+            crate::validation::data::execution::InvariantExecutionPoint::SnapshotPublication
+                | crate::validation::data::execution::InvariantExecutionPoint::ProposedState,
             InvariantFailureEffect::BlockPublication,
         )
     );
@@ -53,9 +54,9 @@ pub(crate) fn for_failure_effect(
 #[cfg(test)]
 mod tests {
     use super::{for_failure_effect, InvariantRegistrationAdmission};
-    use crate::validation::data::{
-        InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect,
-    };
+    use crate::validation::data::execution::InvariantExecutionPoint;
+    use crate::validation::data::execution::InvariantFailureEffect;
+    use crate::validation::data::groups::InvariantCostClass;
     use crate::validation::engine::policy::{
         InvariantContext, InvariantScale, RelationalInvariantRuntime,
     };

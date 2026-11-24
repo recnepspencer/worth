@@ -1,9 +1,11 @@
 //! Immutable installed Source requirements, independent of rule execution.
 use super::ManagedIndexSourceProgram;
+use crate::derived_relation::definition::DerivedRelationDenial;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::schema::SchemaCompilationControl;
-use crate::validation::data::{CustomInvariantAccessContract, CustomInvariantRegistration};
-use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
-use crate::{derived_relation::DerivedRelationDenial, schema::data::RelationalSchemaRegistry};
+use crate::validation::custom_rule::CustomInvariantRegistration;
+use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as CompilationDenial;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use std::{num::NonZeroU64, sync::Arc};
 
 #[derive(Debug, PartialEq, Eq)]

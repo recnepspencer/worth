@@ -17,7 +17,10 @@ pub struct RelationalBranchBasisCostCounters {
 impl RelationalBranchBasisCostCounters {
     pub(crate) fn record_readmission(
         &mut self,
-        result: &Result<super::AdmittedRelationalBranchBasis, super::RelationalBranchBasisDenial>,
+        result: &Result<
+            crate::branch::basis::AdmittedRelationalBranchBasis,
+            crate::branch::basis_denial::RelationalBranchBasisDenial,
+        >,
     ) {
         self.descriptor_resolution_attempts = self.descriptor_resolution_attempts.saturating_add(1);
         match result {
@@ -26,7 +29,7 @@ impl RelationalBranchBasisCostCounters {
                 self.readmission_denials = self.readmission_denials.saturating_add(1);
                 if matches!(
                     denial,
-                    super::RelationalBranchBasisDenial::StaleReferenceGeneration
+                    crate::branch::basis_denial::RelationalBranchBasisDenial::StaleReferenceGeneration
                 ) {
                     self.stale_readmission_denials =
                         self.stale_readmission_denials.saturating_add(1);

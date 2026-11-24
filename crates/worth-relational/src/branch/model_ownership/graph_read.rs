@@ -1,6 +1,7 @@
 //! Paid exact-generation relation facts at the original immutable basis.
 use super::*;
-use crate::{identity::data::RelationId, validation::data::StructuralRelationRecord};
+use crate::identity::data::RelationId;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
     pub(in crate::branch::model_ownership) fn relation(

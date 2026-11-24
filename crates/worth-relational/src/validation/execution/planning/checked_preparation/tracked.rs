@@ -43,7 +43,7 @@ pub(super) fn prepare<'state>(
                     }
                     let owned = (plan.packets.capacity() as u64)
                         .checked_mul(size_of::<
-                            crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+                            crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>,
                         >() as u64)
                         .and_then(|bytes| bytes.checked_add(meter.claimed_memory()))
                         .ok_or(MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(

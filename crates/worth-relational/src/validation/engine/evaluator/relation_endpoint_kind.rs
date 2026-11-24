@@ -1,9 +1,10 @@
 use crate::config::data::CrossContextPolicy;
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredEndpointKindContract;
-use crate::validation::data::{
-    InvariantClass, InvariantViolation, InvariantViolationFields, RelationEndpointBoundary,
-};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::results::RelationEndpointBoundary;
 
 use super::super::context::InvariantExecutionContext;
 use super::common::{canonicalize_violations, entity_reference_kind, relation_violation};

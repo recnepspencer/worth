@@ -14,25 +14,11 @@ impl super::BranchBoundRelationalTransaction {
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<Option<PlannedBulkMutationBatch>, CommitConflict> {
         self.ensure_runtime_affinity_for_runtime(runtime)?;
-        let intents =
-            crate::transactions::planning::bulk::canonical_bulk_mutation_intents(self.batches());
-        if intents.is_empty() {
-            return Ok(None);
-        }
-
-        Ok(Some(PlannedBulkMutationBatch {
-            transaction_id: self.transaction_id,
-            scope: crate::transactions::planning::bulk::bulk_mutation_scope(&intents),
-            locality: crate::transactions::planning::bulk::bulk_mutation_locality(&intents),
-            naming: crate::transactions::planning::bulk::bulk_mutation_naming(&intents),
-            lineage: crate::transactions::planning::bulk::bulk_mutation_lineage(&intents),
-            provenance: crate::transactions::planning::bulk::bulk_mutation_provenance(
-                self.transaction_id,
-                Some(self.basis.identity().branch_id().clone()),
-                self.batches(),
-            ),
-            intents: intents.into(),
-        }))
+        Ok(crate::transactions::planning::bulk::plan_batch(
+            self.transaction_id,
+            Some(self.basis.identity().branch_id()),
+            self.batches(),
+        ))
     }
 
     pub fn admit_naming_stable_bulk_mutation_batch(

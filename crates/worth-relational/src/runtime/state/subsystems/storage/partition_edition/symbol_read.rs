@@ -1,7 +1,7 @@
 //! Bind mirror reads to the demanding runtime's dictionary authority.
 use super::PartitionEdition;
 use crate::identity::data::PartitionId;
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess, PartitionState};
 use crate::storage::residency::{
     PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView, RelationalResidencyDemandFailure,

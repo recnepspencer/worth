@@ -12,9 +12,9 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: ClientKey::raw("edge-a"),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(source),
+                target: crate::transactions::data::primitives::EntityReference::Existing(target),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             },
         ))],
     };
@@ -26,7 +26,9 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
-            Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+            Some(
+                crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan),
+            ),
         ),
     );
 
@@ -34,7 +36,9 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
         .results()
         .iter()
         .find_map(|result| match &result.verdict {
-            crate::validation::data::InvariantVerdict::Violation(violation) => Some(violation),
+            crate::validation::data::execution::InvariantVerdict::Violation(violation) => {
+                Some(violation)
+            }
             _ => None,
         })
         .expect("partition isolation violation");
@@ -52,11 +56,11 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
             assert_eq!(*target_partition_id, PartitionId(2));
             assert_eq!(
                 actual_source,
-                &crate::transactions::data::EntityReference::Existing(source)
+                &crate::transactions::data::primitives::EntityReference::Existing(source)
             );
             assert_eq!(
                 actual_target,
-                &crate::transactions::data::EntityReference::Existing(target)
+                &crate::transactions::data::primitives::EntityReference::Existing(target)
             );
         }
         other => panic!("expected partition isolation violation, got {other:?}"),
@@ -75,17 +79,17 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: ClientKey::raw("edge-ab"),
-                source: crate::transactions::data::EntityReference::Existing(a),
-                target: crate::transactions::data::EntityReference::Existing(b),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(a),
+                target: crate::transactions::data::primitives::EntityReference::Existing(b),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             })),
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: ClientKey::raw("edge-ba"),
-                source: crate::transactions::data::EntityReference::Existing(b),
-                target: crate::transactions::data::EntityReference::Existing(a),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(b),
+                target: crate::transactions::data::primitives::EntityReference::Existing(a),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             })),
         ],
     };
@@ -97,7 +101,9 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
-            Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+            Some(
+                crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan),
+            ),
         ),
     );
 
@@ -105,7 +111,9 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
         .results()
         .iter()
         .find_map(|result| match &result.verdict {
-            crate::validation::data::InvariantVerdict::Violation(violation) => Some(violation),
+            crate::validation::data::execution::InvariantVerdict::Violation(violation) => {
+                Some(violation)
+            }
             _ => None,
         })
         .expect("acyclicity violation");
@@ -119,7 +127,7 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
 
 #[test]
 fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_acyclicity_and_connectivity();
@@ -139,9 +147,9 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: ClientKey::raw("edge-ea"),
-                source: crate::transactions::data::EntityReference::Existing(e),
-                target: crate::transactions::data::EntityReference::Existing(a),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(e),
+                target: crate::transactions::data::primitives::EntityReference::Existing(a),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             },
         ))],
     };
@@ -164,11 +172,11 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
             assert_eq!(contract_id.as_str(), "no_cycles");
             assert_eq!(
                 source,
-                &crate::transactions::data::EntityReference::Existing(e)
+                &crate::transactions::data::primitives::EntityReference::Existing(e)
             );
             assert_eq!(
                 target,
-                &crate::transactions::data::EntityReference::Existing(a)
+                &crate::transactions::data::primitives::EntityReference::Existing(a)
             );
         }
         other => panic!("expected actual acyclicity violation, got {other:?}"),
@@ -177,7 +185,7 @@ fn prepared_acyclicity_scope_follows_all_visible_edges_to_late_cycle() {
 
 #[test]
 fn commit_publication_stage_rejects_sources_without_required_connectivity() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_acyclicity_and_connectivity();
@@ -188,7 +196,7 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: ClientKey::raw("node-a"),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             },
         ))),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -199,7 +207,7 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
         .commit(execution, &runtime)
         .expect_err("connectivity publication failure");
     match error {
-        crate::facade::transactions::TransactionCommitError::Publication { error, .. } => {
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Publication { error, .. } => {
             assert!(error.detail.contains("reachable_anchor"));
             assert!(error.detail.contains("at least 1 reachable target"));
         }
@@ -209,7 +217,7 @@ fn commit_publication_stage_rejects_sources_without_required_connectivity() {
 
 #[test]
 fn minimum_cardinality_current_version_scans_only_live_slots() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_cardinality_minimum();
@@ -257,10 +265,12 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         .iter()
         .filter_map(|result| match (&result.rule, &result.verdict) {
             (
-                crate::validation::data::InvariantReportedRule::Native(
-                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                crate::validation::data::execution::InvariantReportedRule::Native(
+                    crate::validation::data::rules::InvariantRule::CardinalityMinimumContract(
+                        contract,
+                    ),
                 ),
-                crate::validation::data::InvariantVerdict::Violation(_),
+                crate::validation::data::execution::InvariantVerdict::Violation(_),
             ) => Some(contract.contract_id.as_str()),
             _ => None,
         })
@@ -284,7 +294,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
 
 #[test]
 fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_cardinality_minimum();
@@ -309,10 +319,12 @@ fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
         .iter()
         .filter_map(|result| match (&result.rule, &result.verdict) {
             (
-                crate::validation::data::InvariantReportedRule::Native(
-                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                crate::validation::data::execution::InvariantReportedRule::Native(
+                    crate::validation::data::rules::InvariantRule::CardinalityMinimumContract(
+                        contract,
+                    ),
                 ),
-                crate::validation::data::InvariantVerdict::Pass,
+                crate::validation::data::execution::InvariantVerdict::Pass,
             ) => Some(contract.contract_id.as_str()),
             _ => None,
         })

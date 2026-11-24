@@ -67,7 +67,7 @@ fn bound(
     Ok(lo)
 }
 pub(super) fn select(
-    read: &RelationalPinnedRead,
+    read: &PinnedIndexLookup<'_>,
     request: &BoundedRelatedEntityPrefixLookupRequest<'_>,
     prepared: &PreparedRelatedLookup<'_>,
     rows: Option<&Rows>,
@@ -110,9 +110,9 @@ pub(super) fn select(
         return Ok((start, end, comparisons));
     };
     charge(meter, 1 + after.basis.branch_id().0.len() as u64)?;
-    if after.runtime != read.query_context().runtime_instance_id
-        || after.basis.root_id() != read.pinned_basis().root_id()
-        || after.basis.branch_id() != read.pinned_basis().branch_id()
+    if after.runtime != read.runtime_identity
+        || after.basis.root_id() != read.basis().root_id()
+        || after.basis.branch_id() != read.basis().branch_id()
         || after.generation.generation_id != prepared.generation_id
         || after.generation.index_id != request.ordered.index_id()
         || after.parent != request.ordered.parent_entity_id()

@@ -1,13 +1,17 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    ApplyEntityAspectPatchIntent, CommitConflict, ConflictClass, EntityFieldUpdateMissingState,
-};
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::EntityFieldUpdateMissingState;
 
 pub(super) fn apply(
     intent: &ApplyEntityAspectPatchIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let slot = intent.entity_id.slot_index();
     let super::entity_aspect_preparation::PreparedEntityAspectMutation {
         kind_id,
@@ -25,13 +29,13 @@ pub(super) fn apply(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let partition = context
             .state
             .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         if let Some(prior) = &old_state {
             new_state.lineage_id = prior.lineage_id;
@@ -41,10 +45,10 @@ pub(super) fn apply(
             .entity_arena
             .apply_extra_update_for_request(&context.execution, slot, new_state, version_id)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?
             .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     let new_state = workspace.with_context(|context| {
         context

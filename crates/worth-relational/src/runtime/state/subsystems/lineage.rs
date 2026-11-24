@@ -1,22 +1,24 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::lineage_identity::LineageIdentityAllocator;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{
     LineageEventRecord, LineageNode, PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 
 mod event_page;
 mod event_residency;
 mod name_indexes;
 mod naming_basis;
+mod naming_basis_binding;
 mod node_page;
 mod page_admission;
 mod source_close;
 mod source_retirement;
 pub(crate) use event_residency::ResidentLineageEventPage;
-pub(crate) use naming_basis::LineageNamingBasisBinding;
+pub(crate) use naming_basis_binding::LineageNamingBasisBinding;
 mod node_residency;
 mod resolution_indexes;
 mod state;
@@ -65,7 +67,7 @@ impl LineageSubsystem {
         Option<ResidentLineageNode>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         let residency = self.node_residency.read().clone();
         if let Some(residency) = residency
@@ -108,7 +110,7 @@ impl LineageSubsystem {
         self.state.read().clone()
     }
 
-    pub(crate) fn identity_allocator(&self) -> super::LineageIdentityAllocator {
+    pub(crate) fn identity_allocator(&self) -> LineageIdentityAllocator {
         self.state.read().identity_allocator.clone()
     }
 
@@ -326,10 +328,8 @@ impl LineageSubsystem {
     }
 }
 
-impl RuntimeSubsystem for LineageSubsystem {
-    type Config = ();
-
-    fn new(_: &Self::Config) -> Self {
+impl LineageSubsystem {
+    pub(crate) fn new() -> Self {
         Self {
             discovery_metadata: Default::default(),
             state: RuntimeOwnedState::new(LineageState::empty()),
@@ -339,7 +339,7 @@ impl RuntimeSubsystem for LineageSubsystem {
         }
     }
 
-    fn fork(&self) -> Self {
+    pub(crate) fn fork(&self) -> Self {
         // Admission membership and the copied resolution index form one basis.
         let admissions = self.event_admissions.read();
         Self {

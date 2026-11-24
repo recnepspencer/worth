@@ -1,6 +1,6 @@
 //! Current-image cache edits retain retired material until Native guards end.
 use super::*;
-use crate::mvcc::CompanionPreflightStop as Stop;
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
 use worth_execution::ExecutionRequest;
 
 /// Completed cleanup retains old backing solely for destruction after the

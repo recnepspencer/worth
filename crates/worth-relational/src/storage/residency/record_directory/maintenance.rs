@@ -2,12 +2,10 @@
 use super::{membership::key, *};
 use crate::storage::overlay::{PartitionMutationJournal, PartitionState};
 use crate::storage::substrate::maintenance::{
-    ChangeWork, CommitChange, Maintained, MaintenanceConsistency, MaintenanceRefusal,
-    MaintenanceRoute, ReconstructionLane, ReconstructionWork, RecordChangeState,
+    ChangeWork, MaintenanceRefusal, PartitionChange, RecordChangeState,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
 use crate::transactions::data::RecordRef;
-use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub(crate) enum DirectoryError {
@@ -23,30 +21,18 @@ impl From<MaintenanceRefusal> for DirectoryError {
 pub(super) struct DirectoryMaintainer<'a> {
     pub(super) partition: &'a PartitionState,
     pub(super) before: &'a PartitionState,
-    pub(super) routes: BTreeSet<MaintenanceRoute>,
 }
-impl Maintained for DirectoryMaintainer<'_> {
-    type State = RegionRecordDirectory;
-    type Error = DirectoryError;
-    type Retirement = std::convert::Infallible;
-    fn routes(&self) -> &BTreeSet<MaintenanceRoute> {
-        &self.routes
-    }
-    fn consistency(&self) -> MaintenanceConsistency {
-        MaintenanceConsistency::Synchronous
-    }
-    fn apply(
+impl DirectoryMaintainer<'_> {
+    fn apply_change(
         &mut self,
-        previous: &Arc<Self::State>,
-        change: &CommitChange,
+        previous: &Arc<RegionRecordDirectory>,
+        change: &PartitionChange,
         work: &mut ChangeWork<'_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        let Some(changed) = change.partition(self.partition.partition_id) else {
-            return Ok(previous.clone());
-        };
+    ) -> Result<Arc<RegionRecordDirectory>, DirectoryError> {
+        work.prepare_route_lookup(1)?;
         let mut next = previous.as_ref().clone();
         let mut any = false;
-        for record in changed.records() {
+        for record in change.records() {
             // Membership is the actual selected arena's live bit. In
             // particular audit-retained relations can remain current while
             // their lifecycle/retirement metadata is no longer Live/None.
@@ -72,23 +58,6 @@ impl Maintained for DirectoryMaintainer<'_> {
             previous.clone()
         })
     }
-    fn cold(
-        &mut self,
-        lane: &ReconstructionLane<'_>,
-        work: &mut ReconstructionWork<'_, '_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        RegionRecordDirectory::capture(lane, self.partition, &mut |units, bytes| {
-            work.prepare(units, bytes).map_err(Into::into)
-        })
-    }
-    fn retire(
-        &mut self,
-        _: &Arc<Self::State>,
-        horizon: &Self::Retirement,
-        _: &mut ChangeWork<'_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        match *horizon {}
-    }
 }
 impl RegionRecordDirectory {
     pub(crate) fn updated(
@@ -97,24 +66,15 @@ impl RegionRecordDirectory {
         before: &PartitionState,
         partition: &PartitionState,
         journal: &PartitionMutationJournal,
-        change: Option<&CommitChange>,
+        change: Option<&PartitionChange>,
     ) -> Result<Arc<Self>, DirectoryError> {
         if previous.partition != partition.partition_id {
             return Err(DirectoryError::Corrupt);
         }
-        let mut owner = DirectoryMaintainer {
-            partition,
-            before,
-            routes: BTreeSet::from([MaintenanceRoute::Partition(partition.partition_id)]),
-        };
+        let mut owner = DirectoryMaintainer { partition, before };
         ChangeWork::run_phase(execution, "record_directory", |work| {
             if let Some(change) = change {
-                return crate::storage::substrate::maintenance::apply_change(
-                    &mut owner,
-                    Some(previous),
-                    change,
-                    work,
-                );
+                return owner.apply_change(previous, change, work);
             }
             owner.apply_journal(previous, journal, work)
         })

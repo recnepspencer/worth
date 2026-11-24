@@ -49,7 +49,11 @@ pub(super) fn install(
     let old = restoration
         .retirement
         .authored_source_retirement()
-        .ok_or_else(|| crate::mvcc::origin_denial("restoration lost its exact retirement"))?;
+        .ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "restoration lost its exact retirement",
+            )
+        })?;
     let refuse = || {
         TransactionCommitError::publication(
             crate::publication::data::PublicationError::authored_retirement(

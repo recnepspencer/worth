@@ -1,16 +1,18 @@
 pub(crate) mod materialization;
 mod native_scan_stop;
 pub(crate) mod projection;
-pub(crate) use projection::CheckpointProjectionContext;
 pub(crate) mod read_footprint;
 pub(crate) mod read_prices;
 pub(crate) mod read_request;
 pub(crate) mod read_work;
-mod reader;
+pub(crate) mod reader;
 mod visibility;
 
 pub(crate) use projection::{
     authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
+};
+#[cfg(test)]
+pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
     relation_query_locus_comparison_key, relation_query_locus_value,
 };
@@ -51,8 +53,5 @@ impl RelationalRuntime {
 }
 
 pub(crate) mod read_stop;
-pub(crate) use projection::ProjectionRecordSource;
 
 pub use reader::BoundedFrontierReadStop;
-
-pub(crate) use reader::KindScanVisibility;

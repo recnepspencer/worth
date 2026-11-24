@@ -51,7 +51,9 @@ impl CapturedCheckpointBasis {
             })
             .collect();
         self.lineage_event_pages_resident = true;
-        self.index_state.demand_checkpoint_image(execution)?;
+        if let Some(image) = self.index_original.take() {
+            image.readmit_into_snapshot(execution, &mut self.index_state)?;
+        }
         self.derived_index_checkpoint =
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
                 |lane| {

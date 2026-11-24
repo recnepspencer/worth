@@ -13,7 +13,7 @@ impl RelationalBranchRootSchemaAuthority {
         let quote =
             compilation_quote::SchemaCompilationQuote::for_target(&registry, previous, control)?;
         let (memory, temporary) = quote.reserve(request)?;
-        crate::execution::check_request(request)
+        crate::execution::request_custody::check_request(request)
             .map_err(super::super::RelationalBranchRootCaptureDenial::Request)?;
         let expected = registry
             .snapshot_for_compilation(control)

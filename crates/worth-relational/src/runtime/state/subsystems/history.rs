@@ -3,22 +3,24 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use crate::branch::{
-    RelationalBranchBasisRegistryMetrics, RelationalBranchReferenceCell,
-    RelationalBranchReferenceRegistry, RelationalBranchRootIdentityIssuer,
-};
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::root::RelationalBranchRootIdentityIssuer;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
-use crate::runtime::state::subsystems::RuntimeOwnedState;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 
 #[path = "canonical_publication_routes.rs"]
-pub(super) mod canonical_publication_routes;
+pub(crate) mod canonical_publication_routes;
 #[path = "history_branch_cells.rs"]
-mod history_branch_cells;
+pub(crate) mod history_branch_cells;
 #[path = "history_branch_lifecycle.rs"]
 mod history_branch_lifecycle;
+#[path = "history_branch_transition.rs"]
+pub(crate) mod history_branch_transition;
 #[path = "history_canonical_routes.rs"]
-mod history_canonical_routes;
+pub(crate) mod history_canonical_routes;
 #[path = "history_catalog_recovery.rs"]
 mod history_catalog_recovery;
 #[path = "history_checkpoint_catalog.rs"]
@@ -31,7 +33,7 @@ use history_identity_allocation::reserve_identity;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]
-pub(super) mod history_costs;
+pub(crate) mod history_costs;
 #[path = "history_fork_binding.rs"]
 mod history_fork_binding;
 #[path = "history_head_versions.rs"]
@@ -43,15 +45,10 @@ mod history_ledger_access;
 pub(crate) use history_fork_binding::RelationalForkOwnerBinding;
 pub(crate) use history_ledger::HistoryLedger;
 #[path = "history_preparation_binding.rs"]
-mod history_preparation_binding;
+pub(crate) mod history_preparation_binding;
 pub(crate) use history_head_versions::BranchHeadVersionIndexAuthority;
-pub(crate) use history_preparation_binding::RelationalPreparationHistory;
 #[path = "history_memory_close.rs"]
 mod history_memory_close;
-#[path = "history_source_retirement.rs"]
-mod history_source_retirement;
-pub(crate) use canonical_publication_routes::RelationalPerformedSourceWalk;
-pub(crate) use history_source_retirement::RelationalSourceHistoryBinding;
 #[path = "history_publication.rs"]
 mod history_publication;
 #[path = "history_recovery.rs"]
@@ -66,15 +63,10 @@ mod history_recovery_validation;
 mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
-use canonical_publication_routes::RelationalPatchPositionReservationCounters;
-pub(crate) use canonical_publication_routes::{
-    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
-    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, PatchPositionReservationAdmission,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    RelationalCanonicalPublicationRoutes, RetainedBranchTransition, RetainedCanonicalPosition,
+#[path = "history_source_retirement.rs"]
+pub(crate) mod history_source_retirement;
+use canonical_publication_routes::{
+    BranchTransitionPublication, RelationalCanonicalPublicationRoutes,
 };
 use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
@@ -140,21 +132,6 @@ impl HistorySubsystem {
         )
     }
 
-    pub(crate) fn preparation_binding(&self) -> RelationalPreparationHistory {
-        let ledger = self.ledger.read();
-        RelationalPreparationHistory::new(
-            self.branch_cells.clone(),
-            Arc::clone(&self.commit_identity_allocator),
-            Arc::clone(&self.version_identity_allocator),
-            ledger.next_commit_id,
-            ledger.next_version_id,
-            Arc::clone(&self.canonical_publication_routes),
-            self.root_identity_issuer.clone(),
-            #[cfg(test)]
-            Arc::clone(&self.root_capture_sabotage),
-        )
-    }
-
     pub(crate) fn from_main_cell(mut main_cell: RelationalBranchReferenceCell) -> Self {
         let main_branch = main_cell.identity().branch_id().clone();
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
@@ -193,8 +170,8 @@ impl HistorySubsystem {
 
     pub(crate) fn move_branch_head_basis(
         &self,
-        previous: Option<&crate::branch::RelationalBranchRoot>,
-        next: Option<&crate::branch::RelationalBranchRoot>,
+        previous: Option<&crate::branch::root::RelationalBranchRoot>,
+        next: Option<&crate::branch::root::RelationalBranchRoot>,
     ) {
         self.branch_head_versions.move_head(previous, next);
     }
@@ -250,14 +227,14 @@ impl HistorySubsystem {
 
     pub(crate) fn fork_snapshot(
         &self,
-    ) -> Result<Self, crate::runtime::RelationalRuntimeForkDenial> {
+    ) -> Result<Self, crate::runtime::fork_denial::RelationalRuntimeForkDenial> {
         let _fork_guard = self.canonical_publication_routes.enter_fork()?;
         if let Some(commit_id) = self
             .canonical_publication_routes
             .has_unsettled_performed_publication()
         {
             return Err(
-                crate::runtime::RelationalRuntimeForkDenial::PerformedPublicationRequiresSettlement {
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::PerformedPublicationRequiresSettlement {
                     commit_id,
                 },
             );
@@ -272,7 +249,7 @@ impl HistorySubsystem {
                 .max()
             {
                 ledger.next_commit_id = ledger.next_commit_id.max(maximum.checked_add(1).ok_or(
-                    crate::runtime::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
+                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
                 )?);
             }
             if let Some(maximum) = positioned
@@ -281,7 +258,7 @@ impl HistorySubsystem {
                 .max()
             {
                 ledger.next_version_id = ledger.next_version_id.max(maximum.checked_add(1).ok_or(
-                    crate::runtime::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
+                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
                 )?);
             }
             (ledger.next_commit_id, ledger.next_version_id)
@@ -294,9 +271,9 @@ impl HistorySubsystem {
         );
         routes.install_checkpoint_catalog(fork.commit_artifacts());
         for commit in positioned {
-            let artifact = fork
-                .commit_artifact(commit.commit.commit_id)
-                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            let artifact = fork.commit_artifact(commit.commit.commit_id).ok_or(
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,
+            )?;
             routes
                 .install_recovered(
                     commit,
@@ -304,7 +281,7 @@ impl HistorySubsystem {
                     artifact.roots().clone(),
                 )
                 .map_err(|_| {
-                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
                 })?;
         }
         fork.canonical_publication_routes = routes;
@@ -314,7 +291,10 @@ impl HistorySubsystem {
     pub(crate) fn bind_fork_runtime(
         &mut self,
         runtime_instance_id: u64,
-    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+    ) -> Result<
+        (),
+        crate::branch::reference::observation::RelationalBranchObservationConstructionDenial,
+    > {
         self.set_runtime_instance_id(runtime_instance_id)?;
         self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
         self.branch_population_scans = Arc::new(AtomicU64::new(0));

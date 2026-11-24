@@ -10,10 +10,10 @@ mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::data::RelationalRecoveryStop;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::runtime::RetainedCanonicalPosition;
+use crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -43,7 +43,8 @@ enum EnvelopeBacking {
 }
 #[derive(Debug)]
 struct EnvelopeState {
-    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
+    authored_writes:
+        Option<crate::history::access::relevant_writes::generation::AuthoredWriteGeneration>,
     backing: EnvelopeBacking,
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,

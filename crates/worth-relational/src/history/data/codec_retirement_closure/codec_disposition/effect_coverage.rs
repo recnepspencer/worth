@@ -36,7 +36,7 @@ pub(super) fn validate(
             {
                 activation_updates += 1;
                 if update.fields
-                    != crate::transactions::data::AspectFieldPatch::from(
+                    != crate::transactions::data::aspect_field_patch::AspectFieldPatch::from(
                         std::collections::BTreeMap::from([(
                             event.activation.field_locator.clone(),
                             event.activation.replacement.clone(),
@@ -89,7 +89,7 @@ fn covered_entity(
     for origin in groups {
         charge(context, origin.members.len())?;
         if origin.members.iter().any(|member| {
-            member.id == id && member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
+            member.id == id && member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire
         }) {
             return Ok(true);
         }

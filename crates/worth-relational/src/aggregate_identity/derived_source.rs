@@ -7,7 +7,7 @@ use crate::derived_relation::{
     DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads,
 };
 use crate::identity::data::{EntityId, KindId};
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::cell::RefCell;
 use worth_execution::MapKernelFailure;

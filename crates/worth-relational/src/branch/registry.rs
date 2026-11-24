@@ -7,7 +7,8 @@ use std::sync::{Arc, RwLock};
 
 use crate::history::data::BranchId;
 
-use super::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
+use crate::branch::reference::RelationalBranchCellCheckpoint;
+use crate::branch::reference::RelationalBranchReferenceCell;
 mod checkpoint_capture;
 pub(crate) use checkpoint_capture::{
     CheckpointBranchMetadata, CheckpointBranchMetadataCaptureDenial, CheckpointBranchMetadataFields,
@@ -159,16 +160,16 @@ impl RelationalBranchReferenceRegistry {
     /// Every branch's lifecycle posture, in branch order.
     pub(crate) fn lifecycle_postures(
         &self,
-    ) -> Vec<crate::durability::data::DurableBranchLifecycleImage> {
+    ) -> Vec<crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage> {
         let mut postures = self
             .values()
             .iter()
-            .map(
-                |cell| crate::durability::data::DurableBranchLifecycleImage {
+            .map(|cell| {
+                crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage {
                     branch_id: cell.identity().branch_id().clone(),
                     posture: cell.lifecycle_posture(),
-                },
-            )
+                }
+            })
             .collect::<Vec<_>>();
         postures.sort_by(|left, right| left.branch_id.cmp(&right.branch_id));
         postures
@@ -215,7 +216,7 @@ impl RelationalBranchReferenceRegistry {
         let mut restored = HashSet::with_capacity(names.len());
         for name in names {
             let deleting = postures.get(name).is_some_and(|posture| {
-                *posture == super::RelationalBranchLifecyclePosture::Deleting
+                *posture == crate::branch::lifecycle::RelationalBranchLifecyclePosture::Deleting
             });
             if state.cells.contains_key(name) && !deleting {
                 return Err(format!(
@@ -231,7 +232,7 @@ impl RelationalBranchReferenceRegistry {
             }
         }
         for (name, posture) in &postures {
-            if *posture == super::RelationalBranchLifecyclePosture::Deleting
+            if *posture == crate::branch::lifecycle::RelationalBranchLifecyclePosture::Deleting
                 && !restored.contains(name)
             {
                 return Err(format!("deleting branch `{}` has no retired name", name.0));

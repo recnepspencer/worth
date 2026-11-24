@@ -6,7 +6,7 @@ use crate::indexes::data::{
     RelatedEntityEndpoint, RelatedEntityOrderingDirection, RelatedEntityOrderingEntry,
     RelatedEntityOrderingField,
 };
-use crate::visibility::materialization::read_records::entity_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_value;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
 use super::selected_projection_scopes::source_entity_index_projection_scope_for_kind;
@@ -40,7 +40,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,
-    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    context: &mut crate::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<
     BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>,
     IndexKernelStop,
@@ -73,7 +73,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
                             budget.borrow_mut().checkpoint(units)?;
                             budget.borrow().settle_temporary_scratch(
                         stream_bytes.get().checked_add(bytes).ok_or_else(||
-                            super::checked_entry_map::read_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?
+                            super::checked_entry_map::read_request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow))?
                     )
                         },
                         |record| -> Result<
@@ -159,7 +159,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
     contract: &RelatedEntityOrderingProjection<'_>,
 ) -> Result<
     BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>,
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let mut entries =
         BTreeMap::<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>::new();

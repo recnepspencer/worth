@@ -1,3 +1,4 @@
+use crate::runtime::state::subsystems::history::history_canonical_routes::canonical_publication_reservation_counters;
 use std::sync::Arc;
 
 use super::{
@@ -20,7 +21,7 @@ pub struct RelationalPublicationPort {
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
     index_definitions: crate::runtime::IndexDefinitionReadBinding,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 pub(crate) struct PreparedCanonicalBranchMovement {
@@ -45,7 +46,7 @@ struct PreparedBranchPublicationPreflight {
     candidate_retention: Option<crate::history::retention::RelationalCandidateRetentionObligation>,
     control: crate::mvcc::RelationalOperationControl,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 impl RelationalPublicationPort {
@@ -57,7 +58,7 @@ impl RelationalPublicationPort {
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
         index_definitions: crate::runtime::IndexDefinitionReadBinding,
-        medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+        medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -163,8 +164,8 @@ impl crate::runtime::RelationalRuntime {
             self.owner_binding(),
             self.publication_binding(),
             self.history.branch_head_version_index(),
-            self.history.preparation_binding(),
-            self.indexes.definition_read_binding(),
+            crate::runtime::state::subsystems::history::history_preparation_binding::bind_preparation(&self.history),
+            self.indexes.catalog_binding(),
             self.durability.medium(),
         )
     }
@@ -172,7 +173,7 @@ impl crate::runtime::RelationalRuntime {
     pub fn patch_position_reservation_counters(
         &self,
     ) -> crate::runtime::RelationalPatchPositionReservationCounters {
-        self.history.canonical_publication_reservation_counters()
+        canonical_publication_reservation_counters(&self.history)
     }
 }
 

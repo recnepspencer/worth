@@ -6,7 +6,8 @@ mod native_prerequisites;
 mod packet_capacity;
 
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use fixture::*;
 use worth_execution::{CancellationToken, ExecutionRequest};
 
@@ -38,8 +39,8 @@ fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
         .iter()
         .all(|result| matches!(
             result.verdict,
-            crate::validation::data::InvariantVerdict::Pass
-                | crate::validation::data::InvariantVerdict::NotApplicable
+            crate::validation::data::execution::InvariantVerdict::Pass
+                | crate::validation::data::execution::InvariantVerdict::NotApplicable
         )));
     assert_eq!(fixture.head(), before, "validation grants no publication");
     drop(candidate);
@@ -79,7 +80,7 @@ fn unfunded_native_validation_preserves_the_branch_and_releases_request_memory()
 #[test]
 fn late_visible_plus_planned_cycle_retains_the_actual_planned_edge() {
     let fixture = DagFixture::new(12);
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&setup);
     fixture.publish(&execution, fixture.chain_batch(1)).unwrap();
     let before = fixture.head();
@@ -94,9 +95,9 @@ fn late_visible_plus_planned_cycle_retains_the_actual_planned_edge() {
         .expect_err("the last-to-first edge closes the real committed chain");
     match failure {
         TransactionCommitError::Conflict { error, .. } => match error.class {
-            crate::transactions::data::ConflictClass::InvariantViolation {
+            crate::transactions::data::outcomes::conflict_class::ConflictClass::InvariantViolation {
                 fields:
-                    crate::validation::data::InvariantViolationFields::Acyclicity {
+                    crate::validation::data::results::InvariantViolationFields::Acyclicity {
                         contract_id,
                         source: actual_source,
                         target: actual_target,
@@ -107,11 +108,11 @@ fn late_visible_plus_planned_cycle_retains_the_actual_planned_edge() {
                 assert_eq!(contract_id.as_str(), "no_cycles");
                 assert_eq!(
                     actual_source,
-                    crate::transactions::data::EntityReference::Existing(source)
+                    crate::transactions::data::primitives::EntityReference::Existing(source)
                 );
                 assert_eq!(
                     actual_target,
-                    crate::transactions::data::EntityReference::Existing(target)
+                    crate::transactions::data::primitives::EntityReference::Existing(target)
                 );
             }
             other => panic!("expected precise cycle diagnostic, got {other:?}"),

@@ -1,6 +1,6 @@
 //! Original roots, not reconstructed expected hashes, are the independent oracle.
 use super::*;
-use crate::branch::RelationalBranchRootIdentityIssuer;
+use crate::branch::root::identity::RelationalBranchRootIdentityIssuer;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
 #[test]
@@ -39,7 +39,7 @@ fn request_root_refusal_preserves_original_and_releases_partial_backing() {
     assert!(matches!(
         attempt(),
         Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
+            crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
         ))
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
@@ -47,7 +47,7 @@ fn request_root_refusal_preserves_original_and_releases_partial_backing() {
     assert!(matches!(
         attempt(),
         Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
+            crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
         ))
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
@@ -94,14 +94,15 @@ fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
             &ExecutionRequest::serial(&host),
         ),
         Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
+            crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
         ))
     ));
 }
 
 #[test]
 fn successor_memory_component_admission_binds_owner_and_exact_candidate_successor() {
-    use crate::branch::{RelationalBranchBasisDenial, RelationalRecordedComponentRefusal as Refusal};
+    use crate::branch::basis_denial::RelationalBranchBasisDenial;
+    use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Refusal;
 
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
@@ -116,7 +117,9 @@ fn successor_memory_component_admission_binds_owner_and_exact_candidate_successo
             .owner_component_services()
             .basis_port()
             .admit_successor_memory_component(&execution, &foreign_candidate),
-        Err(Refusal::Basis(RelationalBranchBasisDenial::ForeignRuntime { .. }))
+        Err(Refusal::Basis(
+            RelationalBranchBasisDenial::ForeignRuntime { .. }
+        ))
     ));
 
     let candidate_a = prepare_main_candidate(&runtime, &execution, "candidate-a");
@@ -167,7 +170,7 @@ fn successor_memory_component_admission_binds_owner_and_exact_candidate_successo
             .basis_port()
             .admit_successor_memory_component(&ExecutionRequest::serial(&tight_host), &candidate_c),
         Err(Refusal::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
+            crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
         ))
     ));
     assert_eq!(tight_budget.charged_memory_bytes(), 0);
@@ -198,8 +201,8 @@ fn successor_memory_component_admission_binds_owner_and_exact_candidate_successo
 
 #[test]
 fn interim_predecessor_memory_exhaustion_preserves_typed_request_refusal() {
-    use crate::branch::RelationalRecordedComponentRefusal as Refusal;
-    use crate::execution::RelationalExecutionDenialCause as Cause;
+    use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Refusal;
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);

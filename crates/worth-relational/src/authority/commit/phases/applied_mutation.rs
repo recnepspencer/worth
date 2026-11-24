@@ -4,16 +4,10 @@ use crate::authority::mutation::{
     apply_plan_with_publication_edges, MutationApplyDenial, MutationApplyOutcome,
 };
 use crate::branch::SelectedRelationalBranchRead;
-use crate::runtime::{
-    PendingRecordAllocations, PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState,
-};
+use crate::runtime::{PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState};
 use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan};
 
-#[derive(Debug)]
-pub(crate) struct PendingMutationIdentities {
-    pub(crate) records: PendingRecordAllocations,
-    pub(crate) symbols: PendingSymbolMeanings,
-}
+pub(crate) use crate::authority::mutation::pending_identities::PendingMutationIdentities;
 
 mod aggregate_consequences;
 mod coupled_return;
@@ -27,6 +21,7 @@ pub(crate) use ordinary_apply::AppliedMutationCore;
 
 pub(crate) struct AppliedMutationDraft {
     pub(crate) state: WorkingState,
+    pub(crate) content: crate::content::publication::ContentPublication,
     pub(crate) outcome: MutationApplyOutcome,
     pub(crate) identities: PendingMutationIdentities,
     pub(crate) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
@@ -138,7 +133,7 @@ pub(crate) fn apply_mutation_draft(
             materialization,
         )?)
     };
-    core.state.content = content::prepare(
+    core.content = content::prepare(
         execution,
         runtime,
         selected_state.selected().state().root(),
@@ -152,14 +147,14 @@ pub(crate) fn apply_mutation_draft(
     source_interpretation
         .bind_content(
             execution,
-            core.state.content.directory().map_err(|_| {
-                crate::content::commit_denial(
+            core.content.directory().map_err(|_| {
+                crate::content::publication::commit_denial(
                     crate::content::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,
         )
-        .map_err(crate::content::commit_denial)?;
+        .map_err(crate::content::publication::commit_denial)?;
     Ok(core.into_draft(source_interpretation))
 }
 
@@ -209,7 +204,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
             )
         },
     )?;
-    state.content = content::prepare(
+    let prepared_content = content::prepare(
         execution,
         runtime,
         selected_state.selected().state().root(),
@@ -223,14 +218,14 @@ pub(crate) fn apply_retained_entity_selection_draft(
     source_interpretation
         .bind_content(
             execution,
-            state.content.directory().map_err(|_| {
-                crate::content::commit_denial(
+            prepared_content.directory().map_err(|_| {
+                crate::content::publication::commit_denial(
                     crate::content::RelationalContentDenial::EncodingInconsistency,
                 )
             })?,
             schema,
         )
-        .map_err(crate::content::commit_denial)?;
+        .map_err(crate::content::publication::commit_denial)?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
         schema,
         selected_state.selected(),
@@ -241,6 +236,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
         None,
     );
     Ok(AppliedMutationDraft {
+        content: prepared_content,
         source_interpretation,
         state,
         outcome,

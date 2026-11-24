@@ -2,7 +2,9 @@
 use super::InvariantExecutionContext;
 use crate::identity::data::{KindId, PartitionId};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{CreateIntent, CreatedEntityRef, MutationIntent};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 type CreatedKey<'a> = (PartitionId, KindId, &'a ClientKey);
 pub(super) type CreatedKinds<'a> = Vec<CreatedKey<'a>>;

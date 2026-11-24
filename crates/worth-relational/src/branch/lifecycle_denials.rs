@@ -1,4 +1,4 @@
-use crate::branch::RelationalBranchTransitionDenial;
+use crate::branch::transition::durable_step::RelationalBranchTransitionDenial;
 use crate::durability::medium::RelationalDurablePublicationRefusal;
 use crate::history::data::BranchId;
 

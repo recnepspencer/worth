@@ -1,10 +1,10 @@
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::VersionId;
+use crate::publication::authority::artifacts::PublicationArtifacts;
 use crate::publication::bundle::{PublicationBundle, PublicationStatus};
 use crate::publication::{PublicationAuthority, PublicationPreparationAuthority};
 use crate::runtime::{RelationalReplayRecord, ReplaySchemaVersion};
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
-use crate::storage::overlay::PublicationArtifacts;
 
 impl<'runtime> PublicationPreparationAuthority<'runtime> {
     pub(crate) fn assemble_publication_bundle(

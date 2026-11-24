@@ -1,9 +1,8 @@
 //! Current owned publications whose exact source would be removed by a candidate.
 use super::{charge, CodecRetirementClosureStop as Stop, PublicationHistoryFailure as Failure};
-use crate::{
-    history::data::CanonicalRequiredOutputOrigin, identity::data::EntityId,
-    mvcc::RequiredOutputRolePosture,
-};
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 

@@ -6,10 +6,10 @@ mod historical_retirement;
 pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
-#[doc(hidden)]
-pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 #[cfg(test)]
 pub(crate) use lane::{assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy};
+#[doc(hidden)]
+pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 mod lease;
 mod obligation;
 mod owner;
@@ -19,6 +19,7 @@ mod publication_reclamation;
 pub(crate) use publication_basis::{
     PublicationBasisAccess, PublicationBasisImage, PublicationBasisRoute,
 };
+mod live_reclamation;
 mod reclamation;
 mod root_locators;
 mod storage_inventory;

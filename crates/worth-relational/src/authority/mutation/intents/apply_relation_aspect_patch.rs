@@ -4,17 +4,21 @@ use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_relation_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    ApplyRelationAspectPatchIntent, CommitConflict, ConflictClass, RecordAspectPatchTarget,
-    RelationEndpointUpdateMissingState,
-};
+use crate::transactions::data::intents::mutation_intent::ApplyRelationAspectPatchIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::conflict_class::RelationEndpointUpdateMissingState;
 
 use super::record_aspect_patch;
 
 pub(super) fn apply(
     intent: &ApplyRelationAspectPatchIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let slot = intent.relation_id.slot_index();
     let (kind_id, endpoints, old_state) = workspace.with_context(|context| {
         ensure_relation_target_is_current(context.state, intent.relation_id)?;
@@ -34,7 +38,7 @@ pub(super) fn apply(
             .endpoints
             .clone()
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Endpoints))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>((
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>((
             kind_id,
             endpoints,
             Some(slot_view.retained_extra()),
@@ -70,22 +74,22 @@ pub(super) fn apply(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let partition = context
             .state
             .get_partition_mut_for_request(intent.relation_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         partition
             .relation_arena
             .apply_extra_update_for_request(&context.execution, slot, new_state, version_id)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     let new_state = workspace.with_context(|context| {
         context

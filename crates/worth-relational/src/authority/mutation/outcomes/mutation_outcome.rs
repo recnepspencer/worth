@@ -17,7 +17,10 @@ impl MutationOutcome {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         change_count: usize,
         event_count: usize,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::default();
         outcome.reserve(execution, change_count, event_count)?;
         Ok(outcome)
@@ -28,7 +31,10 @@ impl MutationOutcome {
         entity_id: EntityId,
         kind_id: KindId,
         authoritative_patch: Option<MutationAspectPatch>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 1, 1)?;
         outcome.record_change(
             execution,
@@ -52,7 +58,10 @@ impl MutationOutcome {
         old_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
         new_authoritative_aspect_state: Option<StorageAllocation<EntityExtra>>,
         authoritative_patch: MutationAspectPatch,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 1, 1)?;
         outcome.record_change(
             execution,
@@ -84,7 +93,10 @@ impl MutationOutcome {
     pub(crate) fn entity_deleted(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 0, 1)?;
         outcome.record_event(execution, MutationEvent::EntityDeleted { entity_id })?;
         Ok(outcome)
@@ -96,7 +108,10 @@ impl MutationOutcome {
         replacement_entity_id: EntityId,
         kind_id: KindId,
         authoritative_patch: Option<MutationAspectPatch>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 1, 1)?;
         outcome.record_change(
             execution,
@@ -124,7 +139,10 @@ impl MutationOutcome {
         target: EntityId,
         kind_id: KindId,
         authoritative_patch: Option<MutationAspectPatch>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 1, 1)?;
         outcome.record_change(
             execution,
@@ -159,7 +177,10 @@ impl MutationOutcome {
         old_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
         new_authoritative_aspect_state: Option<StorageAllocation<RelationExtra>>,
         authoritative_patch: Option<MutationAspectPatch>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 1, 1)?;
         outcome.record_change(
             execution,
@@ -182,7 +203,10 @@ impl MutationOutcome {
     pub(crate) fn relation_deleted(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let mut outcome = Self::with_capacity(execution, 0, 1)?;
         outcome.record_event(execution, MutationEvent::RelationDeleted { relation_id })?;
         Ok(outcome)
@@ -192,7 +216,10 @@ impl MutationOutcome {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         change: RecordMutation,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         self.reserve(
             execution,
             self.changes
@@ -208,7 +235,10 @@ impl MutationOutcome {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         event: MutationEvent,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         self.reserve(
             execution,
             self.changes.len(),
@@ -224,7 +254,10 @@ impl MutationOutcome {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         other: Self,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         self.reserve(
             execution,
             self.changes

@@ -51,7 +51,7 @@ pub(super) fn validate(
             .and_then(|work| work.checked_add(3))
             .and_then(|work| u64::try_from(work).ok())
             .ok_or(Stop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             ))?;
         context
             .checkpoint(work)

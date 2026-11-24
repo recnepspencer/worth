@@ -4,7 +4,7 @@ use super::{IndexingState, IndexingSubsystem};
 mod artifact_settlement;
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexGeneration, SelectedIndexGenerationAdmissionStop};
-use crate::runtime::state::subsystems::RuntimeOwnedState;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 pub(super) use artifact_settlement::CatalogArtifactVisibility;
 use artifact_settlement::IndexArtifactSettlement;
 use std::sync::Arc;

@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::schema::data::LoweredCardinalityMinimumContract;
 use crate::storage::substrate::VersionedRelationMetadata;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::super::state_view::InvariantStateView;

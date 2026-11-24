@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use crate::history::commit::RelationalCommitArtifact;
+use crate::history::commit::RelationalCommitCatalog;
+use crate::history::commit::RelationalCommitCatalogEnvelopeAppendDenial;
+use crate::history::commit::RelationalCommitIdentity;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, VersionNode};
-use crate::history::{
-    RelationalCommitArtifact, RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial,
-    RelationalCommitIdentity,
-};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 

@@ -4,7 +4,7 @@ use crate::authority::mutation::canonical_deltas::data::{
     CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
 use crate::authority::mutation::RecordMutation;
-use crate::capabilities::AspectPlanSource;
+use crate::schema::aspect_plan_source::AspectPlanSource;
 
 use super::entity_delta::{
     evaluate_entity_delta, evaluate_entity_lifecycle_delta, evaluate_entity_update_delta,

@@ -4,10 +4,13 @@ use crate::authority::mutation::intents::{
     field_authoring_candidate::{self, FieldAuthoringDomain},
     record_aspect_patch::MutationPatchDenial,
 };
-use crate::transactions::data::{
-    ApplyEntityAspectPatchIntent, CommitCreatedEntityBindings, CreateIntent, CreatedEntityRef,
-    EntityMutationIntent, EntityReference, RecordAspectPatchTarget,
-};
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 impl OwnedNormalizedPlan {
     /// A successor round re-creates its chain's records under the same keys.
@@ -124,9 +127,11 @@ impl OwnedNormalizedPlan {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, TransactionCommitError> {
         if prefix > self.plan.merged_intents.len() {
-            return Err(crate::mvcc::origin_denial(
-                "coupled suffix starts beyond its normalized source",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "coupled suffix starts beyond its normalized source",
+                ),
+            );
         }
         request
             .run_native_with_checkpoint(|context| {
@@ -179,8 +184,8 @@ impl OwnedNormalizedPlan {
 fn stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

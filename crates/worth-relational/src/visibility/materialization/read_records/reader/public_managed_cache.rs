@@ -1,9 +1,8 @@
 //! Conservative cache access resolves the genuine selected image without a Source program.
-use super::VisibilityReadContext;
-use crate::{
-    mvcc::ManagedIndexPublicCache, snapshots::data::SnapshotHandle,
-    validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial,
-};
+use crate::mvcc::ManagedIndexPublicCache;
+use crate::snapshots::data::SnapshotHandle;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use std::{any::Any, sync::Arc};
 use worth_execution::ExecutionRequest;
 

@@ -30,7 +30,10 @@ impl<'runtime> InvariantEngine<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: InvariantExecutionRequest<'state>,
-    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    ) -> Result<
+        InvariantExecutionResult,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    >
     where
         'runtime: 'state,
     {
@@ -42,14 +45,17 @@ impl<'runtime> InvariantEngine<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: InvariantExecutionRequest<'state>,
         pending: PendingProposedPass,
-    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    ) -> Result<
+        InvariantExecutionResult,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    >
     where
         'runtime: 'state,
     {
         if request.proposal_identity() != Some(&pending.proposal) {
-            return Err(crate::transactions::data::TransactionCommitError::conflict(
-                crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::StaleValidationBasis {
+            return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                         detail: "native prerequisite evidence belongs to a different proposal"
                             .into(),
                     },
@@ -64,7 +70,10 @@ impl<'runtime> InvariantEngine<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: InvariantExecutionRequest<'state>,
         pending: Option<PendingProposedPass>,
-    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    ) -> Result<
+        InvariantExecutionResult,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    >
     where
         'runtime: 'state,
     {
@@ -89,8 +98,11 @@ impl<'runtime> InvariantEngine<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &InvariantExecutionRequest<'_>,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
-        let lease = crate::authority::commit::pipeline::request_lease(execution);
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
+        let lease = crate::execution::request_custody::request_lease(execution);
         if lease.is_some_and(|lease| {
             lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
         }) && self
@@ -102,9 +114,9 @@ impl<'runtime> InvariantEngine<'runtime> {
             .any(|registration| !registration.supports_checked_preparation())
         {
             return Err(
-                crate::transactions::data::TransactionCommitError::execution(
-                    crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+                    crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                             crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel,
                         ),
                         partition_identity: None,
@@ -120,12 +132,15 @@ impl<'runtime> InvariantEngine<'runtime> {
         execution: worth_execution::ExecutionRequest<'state, 'state>,
         request: InvariantExecutionRequest<'state>,
         pending: Option<PendingProposedPass>,
-    ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
+    ) -> Result<
+        InvariantExecutionResult,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    >
     where
         'runtime: 'state,
     {
         check_live(execution)?;
-        let lease = crate::authority::commit::pipeline::request_lease(&execution);
+        let lease = crate::execution::request_custody::request_lease(&execution);
         let mut runtime = self.runtime.with_candidate_input_plan(&request);
         runtime.custom_kernel_posture = lease.map_or(
             worth_foundational::ExecutionPosture::Serial,
@@ -205,16 +220,17 @@ impl<'runtime> InvariantEngine<'runtime> {
 
 pub(crate) fn check_live(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     execution.check_live().map_err(request_failure)
 }
 
 fn request_failure(
     stop: impl Into<crate::execution::RelationalExecutionDenialCause>,
-) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::execution(
-        crate::transactions::data::CommitExecutionDenial {
-            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(stop.into()),
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(stop.into()),
             partition_identity: None,
         },
     )

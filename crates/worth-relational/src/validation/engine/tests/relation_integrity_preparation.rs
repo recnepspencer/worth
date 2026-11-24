@@ -1,9 +1,10 @@
 use super::validation_engine_fixtures::*;
-use crate::mvcc::{
-    RelationalInterruptionBoundary as Boundary, RelationalOperationControl,
-    RelationalOperationInterruption as Interruption, RelationalTransactionIntent,
-};
-use crate::transactions::data::{BulkEntityCreateIntent, TransactionCommitError};
+use crate::mvcc::RelationalOperationControl;
+use crate::mvcc::RelationalTransactionIntent;
+use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary as Boundary;
+use crate::runtime::operation_control::interruption_event::RelationalOperationInterruption as Interruption;
+use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{InvariantPreparationControl, InvariantRuntimeView};
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 
@@ -17,7 +18,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         Some(&plan),
-        Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+        Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
     );
     let scope = request
         .relation_integrity_scopes()
@@ -36,9 +37,9 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     let result = InvariantEngine::new(&runtime).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
-        crate::validation::data::InvariantVerdict::Violation(violation)
+        crate::validation::data::execution::InvariantVerdict::Violation(violation)
             if matches!(&violation.fields, InvariantViolationFields::RelationCardinalityEndpoint {
-                contract_id, entity_id: crate::transactions::data::EntityReference::Created(created),
+                contract_id, entity_id: crate::transactions::data::primitives::EntityReference::Created(created),
                 count: 0, limit: 1, ..
             } if contract_id.as_str() == "min_one" && created.client_key.as_raw_str() == Some("node-32768"))
     )));
@@ -46,7 +47,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
 
 #[test]
 fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for interruption in [Interruption::Cancelled, Interruption::TimedOut] {
@@ -103,7 +104,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         let outcome = retry.commit(execution, &runtime).unwrap();
         for index in 0..3 {
             assert!(outcome
-                .created_entity(&crate::transactions::data::CreatedEntityRef {
+                .created_entity(&crate::transactions::data::primitives::CreatedEntityRef {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: ClientKey::raw(format!("node-{index}")),
@@ -118,7 +119,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
 fn relation_scope_preparation_preserves_supplied_allocation_stop() {
     let runtime = runtime_with_cardinality_minimum();
     let cancellation = worth_execution::CancellationSource::new();
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(worth_execution::LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Automatic,
@@ -149,7 +150,7 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
         runtime.current_version_id(),
         runtime.current_version_id(),
         Some(&plan),
-        Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+        Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
         &control,
     ) {
         Err(error) => error,
@@ -190,6 +191,10 @@ fn entity_intent(count: usize) -> MutationIntent {
         client_keys: (0..count)
             .map(|index| ClientKey::raw(format!("node-{index}")))
             .collect(),
-        field_patches: vec![crate::transactions::data::AspectFieldPatch::default(); count],
+        field_patches: vec![
+            crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(
+            );
+            count
+        ],
     }))
 }

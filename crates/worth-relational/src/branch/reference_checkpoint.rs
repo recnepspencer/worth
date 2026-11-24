@@ -6,19 +6,7 @@ use super::{
     RelationalBranchReferenceObservation, RelationalBranchVersion,
 };
 
-/// Exact durable image of one owner branch cell. This is intentionally a
-/// checkpoint DTO rather than the live cell: restoring it must validate the
-/// runtime-affine identity and never synthesize currentness from a legacy
-/// branch-head projection.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub(crate) struct RelationalBranchCellCheckpoint {
-    pub(crate) runtime_instance_id: u64,
-    pub(crate) branch_id: BranchId,
-    pub(crate) observation: RelationalBranchReferenceObservation,
-    pub(crate) truth_version: RelationalBranchVersion,
-    pub(crate) fork_provenance: Option<RelationalBranchReferenceObservation>,
-    pub(crate) fork_source_branch_id: Option<BranchId>,
-}
+pub(crate) use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 
 /// Temporary source custody for a capture already holding the original
 /// configuration/publication epochs. No name-bearing handle is cloned.
@@ -53,16 +41,17 @@ impl CheckpointCellSource {
         branch_id: BranchId,
     ) -> (
         RelationalBranchCellCheckpoint,
-        crate::durability::data::DurableBranchLifecycleImage,
+        crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage,
     ) {
         let state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let lifecycle = crate::durability::data::DurableBranchLifecycleImage {
-            branch_id: branch_id.clone(),
-            posture: state.lifecycle,
-        };
+        let lifecycle =
+            crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage {
+                branch_id: branch_id.clone(),
+                posture: state.lifecycle,
+            };
         (
             RelationalBranchCellCheckpoint {
                 runtime_instance_id: self.runtime_instance_id,
@@ -103,8 +92,8 @@ impl RelationalBranchReferenceCell {
     ) -> Option<(
         worth_foundational::FoundationalBranchReferenceGeneration,
         RelationalBranchVersion,
-        crate::branch::RelationalBranchLifecyclePosture,
-        std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture,
+        std::sync::Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
     )> {
         let state = self.state();
         if !matches!(state.observation.target(), FoundationalBranchTarget::Empty) {
@@ -147,7 +136,7 @@ impl RelationalBranchReferenceCell {
     pub(crate) fn from_checkpoint_with_root(
         expected_runtime_instance_id: u64,
         checkpoint: RelationalBranchCellCheckpoint,
-        root: Option<std::sync::Arc<super::super::RelationalBranchRoot>>,
+        root: Option<std::sync::Arc<crate::branch::root::RelationalBranchRoot>>,
     ) -> Result<Self, RelationalBranchCellDenial> {
         if checkpoint.observation.branch_id().as_str()
             != format!(
@@ -192,19 +181,20 @@ impl RelationalBranchReferenceCell {
                 super::RelationalBranchReferenceMutableState {
                     observation: checkpoint.observation,
                     truth_version: checkpoint.truth_version,
-                    lifecycle: super::super::RelationalBranchLifecyclePosture::Live,
+                    lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live,
                     fork_provenance: checkpoint.fork_provenance,
                     fork_source_branch_id: checkpoint.fork_source_branch_id,
                     root,
                 },
             )),
-            basis_registry: crate::branch::RelationalBranchBasisRegistry::default(),
+            basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry::default(),
             coordination: crate::branch::coordination::RelationalBranchCoordinationCell::fresh(
                 checkpoint.runtime_instance_id,
                 &checkpoint.branch_id,
             ),
             head_retention: crate::history::retention::RelationalBranchHeadRetentionCell::fresh(),
-            sharing_costs: crate::branch::RelationalBranchSharingCostCell::default(),
+            sharing_costs:
+                crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell::default(),
         };
         cell.rebind_runtime(expected_runtime_instance_id)
             .map_err(|denial| match denial {

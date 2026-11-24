@@ -36,7 +36,7 @@ pub(super) fn resolved_entity_field_patch_value(
                 return Ok(None);
             }
             Ok(Some((
-                crate::transactions::data::planned_single_field_locator(
+                crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                     aspect_key.clone(),
                     field.clone(),
                 ),
@@ -138,7 +138,7 @@ fn resolve_pinned_visible_aspect_value(
     plan: &ReconcileRecordPlan,
     aspect_key: &worth_foundational::facade::AspectKey,
     side: crate::merge::data::MergeValueSourceSide,
-    record: &crate::transactions::data::RecordRef,
+    record: &crate::transactions::data::primitives::RecordRef,
     source_entity: &EntityReadRecord,
     target_entity: &EntityReadRecord,
     binding: &LoweredAspectContractBinding,
@@ -177,8 +177,8 @@ fn resolve_pinned_visible_aspect_value(
 fn ensure_pinned_record_matches(
     plan: &ReconcileRecordPlan,
     aspect_key: &worth_foundational::facade::AspectKey,
-    actual: &crate::transactions::data::RecordRef,
-    expected: &crate::transactions::data::RecordRef,
+    actual: &crate::transactions::data::primitives::RecordRef,
+    expected: &crate::transactions::data::primitives::RecordRef,
     side_label: &'static str,
 ) -> Result<(), MergeExecutionMutationPlanError> {
     if actual == expected {

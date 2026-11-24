@@ -4,7 +4,7 @@ use worth_foundational::facade::{
 use worth_proof::TransitionOutcome;
 
 use crate::schema::data::KindAspectContractDeclarations;
-use crate::transactions::data::EntityAuthoritativeAspectStateDenial;
+use crate::transactions::data::outcomes::conflict_class::EntityAuthoritativeAspectStateDenial;
 
 pub(crate) fn plan_entity_authoritative_deletion_patch(
     authoritative_state: Option<&AuthoritativeRecordAspectState>,

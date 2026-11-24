@@ -4,7 +4,7 @@
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::aggregate_identity::AggregateGroupLineageEvent;
+use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::lineage::data::{LineageEventKind, LineageSubject, PersistentNameSubjectKind};
 
 use super::refusal::PersistentNameDurabilityError as Refusal;

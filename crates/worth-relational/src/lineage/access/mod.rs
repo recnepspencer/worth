@@ -10,6 +10,7 @@ mod divergence;
 mod event_demand;
 #[cfg(test)]
 mod graph;
+mod historical_walk;
 mod name_observation_view;
 mod name_of_record;
 mod name_resolution;

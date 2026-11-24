@@ -11,14 +11,14 @@ use worth_foundational::{
 
 use super::custom_rules::AlwaysViolatesCustomRule;
 use super::validation_engine_fixtures::*;
-use crate::facade::runtime::CustomInvariantLeaseBudget;
+use crate::validation::custom_rule::CustomInvariantLeaseBudget;
 
 fn checked_lease(
     memory_bytes: u64,
     work_ceiling: u64,
     cancellation: CancellationToken,
 ) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -166,7 +166,7 @@ fn execute(
     usize,
     Result<
         crate::validation::engine::InvariantExecutionResult,
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     >,
 ) {
     let visits = Arc::new(AtomicUsize::new(0));
@@ -209,7 +209,7 @@ fn checked_custom_rule_executes_under_lease() {
     let result = result.expect("checked custom evaluator should run");
     assert!(matches!(
         result.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
 }
 
@@ -220,7 +220,7 @@ fn checked_custom_rule_without_local_work_ceiling_executes_past_8192() {
     assert_eq!(visits, 8_193);
     assert!(matches!(
         result.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
 }
 
@@ -231,9 +231,9 @@ fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
     assert!(matches!(
         result,
         Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::WorkExhausted
                     ),
                     ..

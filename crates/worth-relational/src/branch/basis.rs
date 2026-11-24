@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 mod retirement;
 pub use retirement::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
@@ -7,14 +8,12 @@ mod component_capture;
 pub(crate) use component_capture::CheckpointComponentDescriptorView;
 use std::sync::{Arc, OnceLock};
 
-use serde::{Deserialize, Serialize};
-
 use crate::history::data::BranchId;
 
-use super::{
-    RelationalBranchIdentity, RelationalBranchReferenceObservation, RelationalBranchRoot,
-    RelationalBranchVersion,
-};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::version::RelationalBranchVersion;
 
 pub const RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION: u16 = 2;
 
@@ -153,7 +152,6 @@ impl ResolvedRelationalBasisDescriptor {
         self.descriptor
     }
 }
-
 /// Owner-admitted immutable read basis.
 ///
 /// Clones share one owner-issued lease and one immutable root. Cloning never
@@ -179,12 +177,14 @@ impl Eq for AdmittedRelationalBranchBasis {}
 pub(crate) struct AdmittedRelationalBranchBasisInner {
     pub(crate) descriptor: RelationalBranchBasisDescriptor,
     pub(crate) identity: RelationalBranchIdentity,
-    pub(crate) admission_identity: super::RelationalBranchBasisAdmissionIdentity,
+    pub(crate) admission_identity:
+        crate::branch::basis_admission_identity::RelationalBranchBasisAdmissionIdentity,
     pub(crate) root: Arc<RelationalBranchRoot>,
-    pub(crate) _authority: super::RelationalBranchObservationAuthority,
+    pub(crate) _authority: crate::branch::authority::RelationalBranchObservationAuthority,
     pub(crate) retention: crate::history::retention::RelationalObservationRetentionObligation,
     pub(crate) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
-    pub(crate) publication_cell: super::RelationalBranchPublicationCell,
+    pub(crate) publication_cell:
+        crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     pub(crate) registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
 }
 
@@ -205,7 +205,9 @@ impl AdmittedRelationalBranchBasis {
     ///
     /// The identity is descriptive binding for later composition; it is not
     /// a descriptor and cannot be used to mint or authorize a basis.
-    pub fn admission_identity(&self) -> &super::RelationalBranchBasisAdmissionIdentity {
+    pub fn admission_identity(
+        &self,
+    ) -> &crate::branch::basis_admission_identity::RelationalBranchBasisAdmissionIdentity {
         &self.inner.admission_identity
     }
 
@@ -229,7 +231,9 @@ impl AdmittedRelationalBranchBasis {
         self.inner.retention.reason()
     }
 
-    pub(crate) fn publication_cell(&self) -> &super::RelationalBranchPublicationCell {
+    pub(crate) fn publication_cell(
+        &self,
+    ) -> &crate::branch::reference_publication_cell::RelationalBranchPublicationCell {
         &self.inner.publication_cell
     }
 
@@ -237,20 +241,23 @@ impl AdmittedRelationalBranchBasis {
         let cell = self.publication_cell();
         let state = cell.enter_state();
         cell.identity() == self.identity()
-            && state.lifecycle_posture() == super::RelationalBranchLifecyclePosture::Live
+            && state.lifecycle_posture()
+                == crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
             && state.observation() == self.reference()
             && state.truth_version() == self.truth_version()
     }
 
     /// Commit identity carried by this exact owner-admitted immutable root.
-    pub(crate) fn commit_identity(&self) -> Option<crate::history::RelationalCommitIdentity> {
+    pub(crate) fn commit_identity(
+        &self,
+    ) -> Option<crate::history::commit::RelationalCommitIdentity> {
         let target = match self.reference().target() {
             worth_foundational::FoundationalBranchTarget::Empty => return None,
             worth_foundational::FoundationalBranchTarget::Basis(target) => target,
         };
         let receipt = self.inner.root.commit_receipt()?;
         (receipt.commit_id.0 == target.selected_commit_id()).then(|| {
-            crate::history::RelationalCommitIdentity::new(
+            crate::history::commit::RelationalCommitIdentity::new(
                 receipt.commit_id,
                 receipt.version_id,
                 receipt.branch_id.clone(),

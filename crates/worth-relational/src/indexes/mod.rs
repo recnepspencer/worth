@@ -1,31 +1,15 @@
-mod retained_definition;
-pub(crate) use authority::{
-    checkpoint_index_projections, verify_checkpoint_index_bases, CheckpointIndexProjections,
-};
-pub use retained_definition::RetainedDerivedIndexDefinition;
-pub(crate) use retained_definition::{IndexDefinitionBacking, RetainedIndexDefinitionMeaning};
-mod access;
-pub use access::{
-    AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
-    BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,
-    PreparedEntityFieldLookup,
-};
-mod authority;
+pub(crate) mod retained_definition;
+pub(crate) use crate::durability::derived_index_artifacts::checkpoint_index_projections;
+pub(crate) use authority::verify_checkpoint_index_bases;
+pub(crate) mod access;
+pub(crate) mod authority;
 #[cfg(test)]
 pub(crate) use authority::at_next_charges;
-pub(crate) use authority::AppliedFieldImage;
 
-pub(crate) use authority::{
-    persistent_map_path_bytes, row_copy_bounds, PreparedCandidateIndexPublication,
-    PreparedForkIndexSelection,
-};
 pub mod data;
-mod projected_field_values;
-
+pub(crate) mod projected_field_values;
 #[cfg(test)]
-pub(crate) use access::index_query_scratch_hint_exists;
-#[cfg(test)]
-pub(crate) use access::purge_index_query_scratch_hints;
+pub(crate) use projected_field_values::verify_native_field_navigation;
 
 #[cfg(test)]
 pub(crate) use authority::last_allocation_bytes;

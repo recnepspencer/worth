@@ -46,7 +46,7 @@ fn canonical_component_order_matches_original_named_messagepack_keys() {
                     RelationalBranchRootDescriptor::new([index as u8; 32], [9; 32]),
                 ))
             };
-            let reference = super::super::super::relational_branch_observation(
+            let reference = crate::branch::reference::observation::relational_branch_observation(
                 7,
                 &name,
                 target,

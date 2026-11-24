@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use crate::history::commit::RelationalCommitCatalog;
 use crate::history::data::{CommitId, VersionNode};
-use crate::history::RelationalCommitCatalog;
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
@@ -21,7 +21,7 @@ pub(crate) struct HistoryLedger {
     /// Durable recovery sidecar holding the same sealed envelope the catalog
     /// already admitted. It cannot mint a branch cell or a fork basis.
     pub(crate) commit_envelopes:
-        BTreeMap<CommitId, Arc<crate::history::RelationalCommitEnvelopeResidency>>,
+        BTreeMap<CommitId, Arc<crate::history::commit::RelationalCommitEnvelopeResidency>>,
     pub(crate) patch_stream_index: BTreeMap<PatchStreamPosition, CommitId>,
     pub(crate) next_commit_id: u64,
     pub(crate) next_version_id: u64,
@@ -45,7 +45,7 @@ impl HistoryLedger {
         &mut self,
         commit_id: CommitId,
         commit_reference: crate::history::data::RelationalCommitReceipt,
-        artifact: Arc<crate::history::RelationalCommitArtifact>,
+        artifact: Arc<crate::history::commit::RelationalCommitArtifact>,
         patch_position: PatchStreamPosition,
         recovery_readmission: bool,
         sequence: super::PreparedCommitSequence,
@@ -67,6 +67,24 @@ impl HistoryLedger {
         );
         self.commit_envelopes.insert(commit_id, envelope);
         self.patch_stream_index.insert(patch_position, commit_id);
+    }
+
+    pub(crate) fn next_retained_envelope(
+        &self,
+        after: Option<CommitId>,
+    ) -> Option<(
+        CommitId,
+        Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+    )> {
+        use std::ops::Bound::{Excluded, Unbounded};
+        let next = match after {
+            None => self.commit_envelopes.first_key_value(),
+            Some(key) => self
+                .commit_envelopes
+                .range((Excluded(key), Unbounded))
+                .next(),
+        };
+        next.map(|(&id, cell)| (id, cell.clone()))
     }
 
     pub(crate) fn set_sequence(&mut self, next_commit_id: u64, next_version_id: u64) {

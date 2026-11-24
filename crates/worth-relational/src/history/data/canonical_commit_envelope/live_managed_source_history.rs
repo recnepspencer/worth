@@ -3,9 +3,8 @@ use super::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope};
 use crate::validation::candidate_source::authored_history::{
     material::RetainedSourceHistoryMaterial, PreparedSourceImpactHistory,
 };
-use crate::validation::candidate_source::NativeManagedSourceInterpretation;
 use std::sync::{Arc, Weak};
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Default)]
 pub(crate) struct LiveManagedSourceHistory(Option<Arc<BoundHistory>>);
@@ -53,74 +52,65 @@ impl LiveManagedSourceHistory {
         Arc::ptr_eq(&owner, envelope).then_some(live)
     }
 }
+/// The exact unpublished envelope whose canonical meaning matches the Source packet.
+pub(crate) struct SelectedManagedSourceHistory {
+    envelope: CanonicalCommitEnvelope,
+    packet: Arc<PreparedSourceImpactHistory>,
+}
+
 impl CanonicalCommitEnvelope {
-    /// Only actual performed publication supplies this prepared Source packet.
-    /// The final immutable envelope binds its entire receipt/schema/plan at once.
-    pub(crate) fn freeze_with_managed_source_history(
+    pub(crate) fn select_managed_source_history(
         mut self,
-        interpretation: &NativeManagedSourceInterpretation,
-        execution: ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, crate::transactions::data::TransactionCommitError> {
-        let prepared = interpretation
-            .prepared_source_impact_history()
-            .filter(|packet| packet_matches(packet, &self));
-        let Some(prepared) = prepared else {
+        packet: Option<Arc<PreparedSourceImpactHistory>>,
+    ) -> Result<SelectedManagedSourceHistory, Arc<Self>> {
+        if let Some(packet) = packet.filter(|packet| packet_matches(packet, &self)) {
+            Ok(SelectedManagedSourceHistory {
+                envelope: self,
+                packet,
+            })
+        } else {
             self.live_managed_source_history = LiveManagedSourceHistory::default();
-            return Ok(if self.coupled_authored_publication.is_some() {
-                Arc::new_cyclic(|owner| {
-                    self.coupled_authored_publication
-                        .as_ref()
-                        .expect("coupled event")
-                        .live_inputs
-                        .bind(owner);
-                    self
-                })
-            } else {
-                Arc::new(self)
-            });
-        };
-        let material = RetainedSourceHistoryMaterial::capture(execution, interpretation, &prepared)
-            .map_err(|cause| {
-                cause.into_commit_error(
-                    interpretation
-                        .physical_basis()
-                        .identity()
-                        .branch_id()
-                        .clone(),
-                    interpretation
-                        .physical_basis()
-                        .observation()
-                        .commit_id()
-                        .map(|id| id.0),
-                    interpretation.physical_basis().observation().version_id(),
-                )
-            })?;
-        let layout = std::alloc::Layout::new::<BoundHistory>()
-            .extend(std::alloc::Layout::new::<[usize; 2]>())
-            .map_err(|_| {
-                storage(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
-            })?
-            .0
-            .pad_to_align();
-        let memory = execution
-            .reserve_retained_memory(layout.size() as u64)
-            .map_err(|cause| storage(cause.into()))?;
-        execution.consult().map_err(|cause| storage(cause.into()))?;
-        Ok(Arc::new_cyclic(|owner| {
-            if let Some(event) = &self.coupled_authored_publication {
-                event.live_inputs.bind(owner);
-            }
-            self.live_managed_source_history =
-                LiveManagedSourceHistory(Some(Arc::new(BoundHistory {
-                    prepared,
-                    material,
-                    owner: owner.clone(),
-                    _memory: memory,
-                })));
-            self
-        }))
+            Err(Arc::new(self))
+        }
     }
 }
+
+impl SelectedManagedSourceHistory {
+    pub(crate) fn packet(&self) -> &PreparedSourceImpactHistory {
+        &self.packet
+    }
+
+    pub(crate) fn freeze(
+        self,
+        material: RetainedSourceHistoryMaterial,
+        memory: Option<ExecutionMemoryReservation>,
+    ) -> Arc<CanonicalCommitEnvelope> {
+        let Self {
+            mut envelope,
+            packet,
+        } = self;
+        Arc::new_cyclic(|owner| {
+            envelope.live_managed_source_history =
+                LiveManagedSourceHistory(Some(Arc::new(BoundHistory {
+                    prepared: packet,
+                    owner: owner.clone(),
+                    material,
+                    _memory: memory,
+                })));
+            envelope
+        })
+    }
+}
+
+pub(crate) fn backing_bytes() -> Option<u64> {
+    let layout = std::alloc::Layout::new::<BoundHistory>()
+        .extend(std::alloc::Layout::new::<[usize; 2]>())
+        .ok()?
+        .0
+        .pad_to_align();
+    Some(layout.size() as u64)
+}
+
 fn packet_matches(
     packet: &PreparedSourceImpactHistory,
     envelope: &CanonicalCommitEnvelope,
@@ -140,15 +130,4 @@ fn packet_matches(
         && envelope.merge_base_commits.is_empty()
         && envelope.required_output_materialization.is_none()
         && envelope.required_output_codec_retirements.is_empty()
-}
-fn storage(
-    cause: crate::execution::RelationalExecutionDenialCause,
-) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{
-        CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-    };
-    TransactionCommitError::execution(CommitExecutionDenial {
-        kind: CommitExecutionDenialKind::Cause(cause),
-        partition_identity: None,
-    })
 }

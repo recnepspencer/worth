@@ -1,6 +1,6 @@
 //! Visit each immutable radix allocation before deciding whether to descend.
 use super::*;
-use crate::branch::RelationalRootAllocationVisitor;
+use crate::branch::root::RelationalRootAllocationVisitor;
 
 impl RelationalPersistentRegionSet {
     pub(crate) fn try_visit_allocation_union<V: RelationalRootAllocationVisitor>(

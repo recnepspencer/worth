@@ -1,5 +1,6 @@
 //! Derive selected-prefix postings only from actual verified canonical owners.
 use super::*;
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::RelationalAuthoredWriteSelector as Selector;
 

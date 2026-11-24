@@ -1,6 +1,7 @@
 //! Durable cutover retains the genuine request through count, emit and hash.
 use super::{
     frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN},
+    frame_contract::ControlledFrameCopyDenial,
     payload_digest::RelationalCanonicalCommitArtifactDigest as Digest,
     payload_wire::ArtifactPayloadRef,
     RelationalCanonicalCommitArtifact as Artifact,
@@ -130,11 +131,6 @@ impl Artifact {
     }
 }
 
-pub(crate) enum ControlledFrameCopyDenial {
-    Frame(super::RelationalCanonicalCommitArtifactFrameRefusal),
-    Request(crate::execution::RelationalExecutionDenialCause),
-    Allocation(worth_execution::ExecutionAllocationDenial),
-}
 fn copy_allocation(cause: ExecutionRequestArrayDenial) -> ControlledFrameCopyDenial {
     match cause {
         ExecutionRequestArrayDenial::Request(cause) => {

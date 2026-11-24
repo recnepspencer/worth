@@ -8,7 +8,8 @@
 //! before any live effect; its fates are those of a commit (D2).
 
 mod committed_evidence;
-mod durable_step;
+pub(crate) mod durable_step;
+pub(crate) mod original_inputs;
 mod positioned;
 mod record;
 pub(crate) mod sequence;
@@ -16,11 +17,15 @@ mod stop;
 
 pub use committed_evidence::RelationalCommittedTransitionEvidence;
 pub(crate) use durable_step::{
-    LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
-    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
+    RelationalBranchTransitionDenial, RelationalBranchTransitionDurableStep,
+    RelationalTransitionPublication, ReplayedBranchTransitionDivergence,
+    ReplayedBranchTransitionStep,
 };
 pub use positioned::PositionedBranchTransition;
 pub use record::RelationalBranchTransition;
 pub use sequence::RelationalBranchTransitionSequence;
+pub(crate) use stop::BranchTransitionRecordError;
 pub use stop::RelationalBranchTransitionStop;
+
+pub(crate) mod durable_publication;
+pub(crate) use durable_publication::RelationalDurableTransitionPublication;

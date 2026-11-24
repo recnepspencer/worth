@@ -1,5 +1,7 @@
 //! Partition navigation borrows the original result-memory loan once.
-use crate::execution::{denial::lease_denial, RelationalExecutionDenialCause as Cause};
+use crate::execution::{
+    denial::lease_denial, denial_cause::RelationalExecutionDenialCause as Cause,
+};
 use worth_execution::{ExecutionResultMemory, LeaseDenial};
 
 pub(crate) fn partition_ids_in_result_memory(

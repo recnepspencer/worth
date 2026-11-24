@@ -1,7 +1,7 @@
 use super::{
     PreparedRelationIntegrityScopes, RelationIntegrityScopeAccumulator, TransactionCommitError,
 };
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn finish(

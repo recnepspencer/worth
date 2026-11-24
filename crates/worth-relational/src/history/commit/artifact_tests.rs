@@ -17,7 +17,7 @@ use super::{
 
 #[test]
 fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -66,7 +66,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
         Err(RelationalCommitArtifactDenial::RootLinkage)
     ));
-    let mismatched_schema = crate::branch::RelationalBranchRootDescriptor::new(
+    let mismatched_schema = crate::branch::target::RelationalBranchRootDescriptor::new(
         *legacy.roots().truth_root(),
         [0xAB; 32],
     );
@@ -78,7 +78,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
 
 #[test]
 fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -191,7 +191,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
 
 #[test]
 fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();
@@ -253,5 +253,3 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
 }
 #[path = "artifact_tests/shared_readmission.rs"]
 mod shared_readmission;
-#[path = "artifact_tests/strategy_readmission.rs"]
-mod strategy_readmission;

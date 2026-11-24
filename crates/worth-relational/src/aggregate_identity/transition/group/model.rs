@@ -7,7 +7,7 @@ use std::collections::btree_map::{self, BTreeMap};
 
 use worth_foundational::facade::AggregateIdentity;
 
-use super::AggregateGroupNamingDenial;
+use super::denial::AggregateGroupNamingDenial;
 use crate::graph_member::NativeMemberKey;
 use crate::lineage::data::PersistentNameIdentity;
 

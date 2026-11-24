@@ -22,8 +22,8 @@ mod completion;
 mod continuation;
 mod managed_source;
 mod managed_source_alignment;
-pub use managed_source_alignment::ManagedIndexParentReadFootprint;
 pub use continuation::RelationalCoupledProducerContinuation;
+pub use managed_source_alignment::ManagedIndexParentReadFootprint;
 mod contribution;
 mod source_effects;
 pub use contribution::RelationalCoupledContribution;
@@ -302,6 +302,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.identity,
             self.applied_parts() as u64,
             self.mutation.state(),
+            &self.mutation.content,
             self.mutation.candidate_symbols(),
             &self.mutation.outcome.effect.publication.changed_records,
             self.aggregate_read(execution)?,

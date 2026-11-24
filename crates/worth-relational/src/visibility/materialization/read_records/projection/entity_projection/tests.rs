@@ -1,18 +1,18 @@
 use super::*;
-use crate::facade::{
-    config::CascadeDeletePolicy,
-    identity::{KindId, PartitionId},
-    mvcc::WorkerIntentBatch,
-    transactions::{CreateIntent, MutationIntent},
-};
+use crate::config::data::CascadeDeletePolicy;
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionAccess;
 use crate::tests::support::*;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::ContractValidatedAspectValueView;
 
 #[test]
 fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_payload() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = AspectSchemaFixture {
@@ -27,7 +27,7 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     transaction
         .push_batch(
             WorkerIntentBatch::new("projection").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw("projection"),
@@ -110,7 +110,7 @@ fn assert_borrowed_title(
 
 #[test]
 fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_bases() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
@@ -191,7 +191,7 @@ fn assert_projection_lifecycle(
 
 #[test]
 fn borrowed_projection_cannot_bypass_installed_mask_contract() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
@@ -208,12 +208,12 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
         )
         .expect_err("projection contract must refuse");
 
-    use crate::facade::runtime::{
-        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
-    };
+    use crate::visibility::materialization::read_records::projection::contracts::denial::ProjectionContractRefusal;
+    use crate::visibility::materialization::read_records::projection::contracts::denial::ProjectionRecordDomain;
+    use crate::visibility::materialization::read_records::projection::contracts::denial::RelationalProjectionContractDenial;
     assert_eq!(
         refusal,
-        crate::execution::RelationalExecutionDenialCause::ProjectionContract(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract(
             RelationalProjectionContractDenial {
                 domain: ProjectionRecordDomain::Entity,
                 kind_id: KindId(1),
@@ -226,7 +226,7 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
 
 #[test]
 fn wrong_kind_refusal_precedes_projection_mask_admission() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(execution, &runtime, "wrong-kind");

@@ -14,7 +14,7 @@ fn lease(
     cancellation: CancellationToken,
     deadline: Option<worth_execution::MonotonicDeadline>,
 ) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -29,7 +29,7 @@ fn lease(
 
 #[test]
 fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let setup_execution = ExecutionRequest::serial(&setup);
     let graph = Graph::new(
         &setup_execution,
@@ -54,7 +54,7 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
             let held = time.hold();
             let deadline = (stop == Some(CustomInvariantInterruption::DeadlineElapsed))
                 .then(|| time.clock().deadline_at(held + Duration::from_secs(1)));
-            let host = crate::test_execution_policy::serial_request()
+            let host = crate::execution::test_policy::serial_request()
                 .with_cancellation(cancellation.token())
                 .with_deadline(deadline.clone());
             let lease = lease(None, cancellation.token(), deadline);
@@ -110,7 +110,7 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
 
 #[test]
 fn complete_walk_work_and_memory_refuse_without_a_partial_result() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let graph = Graph::new(
         &execution,
@@ -167,7 +167,7 @@ fn complete_walk_work_and_memory_refuse_without_a_partial_result() {
 
 #[test]
 fn retained_complete_result_keeps_its_original_payer_until_drop() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let setup = ExecutionRequest::serial(&host);
     let graph = Graph::new(&setup, 3, &[(0, 1, KindId(2)), (1, 2, KindId(2))]);
     let memory = 64 * 1024;
@@ -196,7 +196,7 @@ fn retained_complete_result_keeps_its_original_payer_until_drop() {
 
 #[test]
 fn complete_walk_counts_acquired_metadata_even_when_access_is_denied() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let graph = Graph::new(&execution, 2, &[(0, 1, KindId(2))]);
     let observation =

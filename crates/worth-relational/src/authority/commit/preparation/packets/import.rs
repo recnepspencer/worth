@@ -2,7 +2,8 @@ use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::PreparationLocalityProof;
 use crate::identity::data::{KindId, PartitionId};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{AspectFieldPatch, EntityReference};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::primitives::EntityReference;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ImportFragmentKind {

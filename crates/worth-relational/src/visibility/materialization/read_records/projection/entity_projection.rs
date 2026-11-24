@@ -13,9 +13,11 @@ impl VisibilityProjectionView {
         scope: &ProjectionAspectScope,
         mut project: impl FnMut(
             EntityProjectionRecord<'_>,
-        )
-            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+        ) -> Result<
+            Option<T>,
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let SnapshotStateBasis::Exact(_) = &self.basis else {
             // Historical reconstruction retains its own version-selection rules.
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
@@ -49,8 +51,11 @@ impl VisibilityProjectionView {
         scope: ProjectionAspectScope,
         mut admit_work: impl FnMut(u64) -> Result<(), Stop>,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Result<Option<T>, Stop>, crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Result<Option<T>, Stop>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         if !self.is_exact_basis() {
             return self
                 .entity_record_with_projection_scope(execution, entity, scope, project)
@@ -117,9 +122,11 @@ impl SelectedEntityProjection<'_> {
         scope: &ProjectionAspectScope,
         project: &mut impl FnMut(
             EntityProjectionRecord<'_>,
-        )
-            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+        ) -> Result<
+            Option<T>,
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         project(EntityProjectionRecord::from_selected_record(
             self.actual,
             self.slot.lifecycle(),

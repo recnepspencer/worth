@@ -2,7 +2,6 @@ use super::{admission, Context, ObservationResult, State};
 use crate::authorization::{
     RelationalAuthorizationBudgetedObservationStop, RelationalAuthorizationObservationAdmission,
 };
-use crate::capabilities::AspectPlanSource;
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::data::RecordLifecycleState;
 use worth_foundational::facade::{
@@ -43,7 +42,7 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     let Some(field) = locator.field_path().fields().first() else {
         return Ok(None);
     };
-    let catalog = context.runtime.aspect_plan_catalog();
+    let catalog = context.aspect_plans;
     admission::ordered_lookup(state.admission, catalog.entity_plans.len(), 1)?;
     let Some(plan) = catalog.entity_plans.get(&kind) else {
         return Ok(None);

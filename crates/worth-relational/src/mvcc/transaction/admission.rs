@@ -1,6 +1,8 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchTransactionAdmissionDenial {
-    HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    HomeProgramTransition(
+        crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial,
+    ),
     OwnerUnavailable,
     ForeignRuntime {
         expected_runtime_instance_id: u64,

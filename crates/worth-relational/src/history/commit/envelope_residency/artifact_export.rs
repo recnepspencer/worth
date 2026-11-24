@@ -1,10 +1,8 @@
 //! Export journal frames through the same cell and sticky damage state as body reads.
 use super::{EnvelopeBacking, RelationalCommitEnvelopeResidency};
-use crate::durability::canonical_commit_artifact::{
-    RelationalCanonicalCommitArtifact as Artifact,
-    RelationalCanonicalCommitArtifactEncodeDenial as Denial,
-};
-use crate::durability::data::RelationalRecoveryStop as Stop;
+use crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -21,15 +19,15 @@ impl RelationalCommitEnvelopeResidency {
             ..
         } = &state.backing
         else {
-            return Err(crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+            return Err(crate::durability::data::recovery_errors::DurabilityError::new(
+                crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
                 "original Memory artifact unavailable or damaged",
             )
             .into());
         };
         Artifact::recorded_payload_digest(bytes.bytes()).map_err(|cause| {
             original_frame_stop(
-                crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Frame(
+                crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial::Frame(
                     cause,
                 ),
             )
@@ -43,8 +41,8 @@ impl RelationalCommitEnvelopeResidency {
             &std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
             &crate::durability::medium::RelationalDurableReadProtection,
         )>,
-    ) -> Result<Artifact, crate::durability::data::RelationalRecoveryStop> {
-        crate::execution::check_request(execution).map_err(Stop::Request)?;
+    ) -> Result<Artifact, crate::durability::data::recovery_stop::RelationalRecoveryStop> {
+        crate::execution::request_custody::check_request(execution).map_err(Stop::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(failure.into());
@@ -55,7 +53,7 @@ impl RelationalCommitEnvelopeResidency {
         );
         let result = (|| {
             let failure = |cause| {
-                crate::durability::data::RelationalRecoveryStop::from(
+                crate::durability::data::recovery_stop::RelationalRecoveryStop::from(
                     RelationalStorageUnavailable {
                         subject: RelationalStorageSubject::Envelope(position),
                         cause,
@@ -83,7 +81,7 @@ impl RelationalCommitEnvelopeResidency {
                     protection
                         .read_commit_owned_at(actual, execution, entry.position, 1 << 30)
                         .map_err(|cause| {
-                            crate::durability::checkpoint_history::capture::owned_stop(
+                            crate::durability::medium::owned_read_stop::owned_stop(
                                 cause,
                                 RelationalStorageSubject::Envelope(entry.position),
                             )
@@ -107,7 +105,7 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Artifact, Denial> {
-        crate::execution::check_request(execution).map_err(Denial::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(Denial::StorageUnavailable(failure));
@@ -125,7 +123,8 @@ impl RelationalCommitEnvelopeResidency {
                 entry,
                 directory,
                 execution,
-                crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64,
+                crate::durability::canonical_commit_artifact::frame_contract::MAXIMUM_ARTIFACT_BYTES
+                    as u64,
             );
             if let Err(stop) = &result {
                 state.remember_original_failure(stop);
@@ -153,7 +152,8 @@ impl RelationalCommitEnvelopeResidency {
         // complete bounded temporary before asking it to allocate; never guess
         // a size from unrelated current-root content or read uncharged first.
         const LIMIT: u64 =
-            crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64;
+            crate::durability::canonical_commit_artifact::frame_contract::MAXIMUM_ARTIFACT_BYTES
+                as u64;
         let _read = execution
             .reserve_retained_memory(LIMIT)
             .map_err(|cause| Denial::Request(cause.into()))?;
@@ -161,7 +161,7 @@ impl RelationalCommitEnvelopeResidency {
         let result = match read {
             Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
             Ok(bytes) => {
-                use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+                use crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial as Copy;
                 Artifact::copy_frame_original(&bytes, execution)
                     .map_err(|cause| match cause {
                         Copy::Request(cause) => Denial::Request(cause),
@@ -192,7 +192,8 @@ impl RelationalCommitEnvelopeResidency {
         match result {
             Err(cause) => Err(cause),
             Ok(artifact) => {
-                crate::execution::check_request(execution).map_err(Denial::Request)?;
+                crate::execution::request_custody::check_request(execution)
+                    .map_err(Denial::Request)?;
                 Ok(artifact)
             }
         }
@@ -213,9 +214,9 @@ fn export_stop(stop: Stop) -> Denial {
 }
 
 fn frame_proves_damage(
-    cause: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal,
+    cause: &crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal,
 ) -> bool {
-    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal as Frame;
+    use crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal as Frame;
     match cause {
         Frame::UnsupportedVersion(_) | Frame::SizeLimit { .. } => false,
         Frame::InvalidVersion
@@ -229,9 +230,9 @@ fn frame_proves_damage(
 }
 
 fn frame_copy_denial(
-    cause: crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial,
+    cause: crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial,
 ) -> Denial {
-    use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+    use crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial as Copy;
     match cause {
         Copy::Frame(cause) => Denial::Frame(cause),
         Copy::Request(cause) => Denial::Request(cause),
@@ -240,14 +241,14 @@ fn frame_copy_denial(
 }
 
 pub(super) fn original_frame_stop(
-    cause: crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial,
+    cause: crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial,
 ) -> Stop {
-    use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+    use crate::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial as Copy;
     match cause {
         Copy::Request(cause) => Stop::Request(cause),
         Copy::Allocation(cause) => Stop::Allocation(cause),
         Copy::Frame(cause) => {
-            crate::durability::data::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause)
+            crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause)
                 .into()
         }
     }

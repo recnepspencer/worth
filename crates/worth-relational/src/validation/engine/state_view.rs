@@ -295,10 +295,7 @@ impl<'state> InvariantStateView<'state> {
     }
 
     pub(super) fn metadata_is_visible<T: HistoricalMetadata>(&self, metadata: &T) -> bool {
-        metadata.effective_at() <= self.version_id
-            && metadata
-                .retired_at()
-                .is_none_or(|retired| self.version_id < retired)
+        crate::storage::overlay::record_observation::metadata_is_visible(metadata, self.version_id)
     }
 }
 

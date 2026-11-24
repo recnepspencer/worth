@@ -1,34 +1,9 @@
 //! Metadata selection through the actual installed Native Source roster.
-use super::{RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial as Denial};
-use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
-use crate::validation::candidate_source::ManagedIndexSourceProgram;
-use worth_execution::ExecutionRequest;
-
-impl RelationalRuntime {
-    /// Issue a declared Source impact-candidate coordinate. Shared-row scopes
-    /// and disjoint fields on declared field kinds can be conservative candidates.
-    /// No principal, row,
-    /// Query proof, mutation eligibility or Source READ is admitted here.
-    pub fn authored_managed_source_selector(
-        &self,
-        execution: ExecutionRequest<'_, '_>,
-        program: &ManagedIndexSourceProgram,
-        scope: EntityId,
-    ) -> Result<RelationalAuthoredManagedSourceSelector, Denial> {
-        super::run(execution, |context| {
-            let catalog = &self
-                .schema_contract_runtime
-                .custom_invariant_registries
-                .source_history;
-            super::admit_work(context, catalog.len() as u64)?;
-            catalog.selector(program, scope)
-        })
-    }
-}
+use super::RelationalAuthoredWriteDenial as Denial;
+mod selector_admission;
 
 pub(super) fn require_interval(
-    generation: &crate::runtime::AuthoredWriteGeneration,
+    generation: &crate::history::access::relevant_writes::generation::AuthoredWriteGeneration,
     catalog: &std::sync::Arc<
         crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog,
     >,
@@ -56,7 +31,7 @@ pub(super) fn require_packet(
     catalog: &std::sync::Arc<
         crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog,
     >,
-    keys: &[crate::history::AuthoredWritePostingKey],
+    keys: &[crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey],
     runtime: u64,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<(), Denial> {
@@ -68,7 +43,7 @@ pub(super) fn require_packet(
     }
     for key in keys {
         super::visit(context)?;
-        if let crate::history::AuthoredWritePostingKey::ManagedSource(coordinate) = key {
+        if let crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey::ManagedSource(coordinate) = key {
             super::ordered_visit(context, packet.impacts.len())?;
             if packet.impacts.contains_key(coordinate) {
                 return Ok(());

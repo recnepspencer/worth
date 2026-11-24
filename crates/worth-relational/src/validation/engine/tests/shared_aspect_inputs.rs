@@ -3,10 +3,12 @@ use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView, 
 
 use super::aspect_field_uniqueness::{assert_entity_summary, whole_summary_patch};
 use super::validation_engine_fixtures::*;
-use crate::capabilities::AspectPlanSource;
+use crate::execution::test_authority::test_execution_lease;
 use crate::identity::data::EntityId;
-use crate::tests::support::{test_execution_lease, test_owner_begin_transaction_for_main};
-use crate::transactions::data::{ApplyEntityAspectPatchIntent, EntityMutationIntent};
+use crate::schema::aspect_plan_source::AspectPlanSource;
+use crate::tests::support::test_owner_begin_transaction_for_main;
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 
 struct ReadsSummary {
     id: &'static str,
@@ -27,7 +29,7 @@ impl CustomInvariantRule for ReadsSummary {
             display_name: Arc::from(self.id),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(4096).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract {
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract {
                     read_entity_kinds: if self.allow_read {
                         vec![KindId(1)]
                     } else {
@@ -38,10 +40,12 @@ impl CustomInvariantRule for ReadsSummary {
                     affected_relation_kinds: vec![],
                     include_relation_endpoint_entity_touches: false,
                 },
-                execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
-                cost_class: crate::validation::data::InvariantCostClass::Touched,
-                failure_effect: crate::validation::data::InvariantFailureEffect::BlockCommit,
+                cost_class: crate::validation::data::groups::InvariantCostClass::Touched,
+                failure_effect:
+                    crate::validation::data::execution::InvariantFailureEffect::BlockCommit,
             },
         }
     }
@@ -117,7 +121,7 @@ impl CustomInvariantRule for ReadsSummary {
         };
         Ok(if rejects {
             CustomInvariantVerdict::Violation(
-                crate::validation::data::CustomInvariantRefusal::Empty,
+                crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
             )
         } else {
             CustomInvariantVerdict::Pass
@@ -127,7 +131,7 @@ impl CustomInvariantRule for ReadsSummary {
 
 #[test]
 fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_overlapping_field_reads(execution, false);
@@ -135,7 +139,7 @@ fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis(
 
 #[test]
 fn leased_opaque_field_read_rules_are_denied_before_execution() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_overlapping_field_reads(execution, true);
@@ -182,7 +186,7 @@ fn assert_overlapping_field_reads(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(id) => Some(*id),
+            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
             _ => None,
         })
         .expect("created subject");
@@ -216,7 +220,7 @@ fn assert_overlapping_field_reads(
 
 #[test]
 fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let target = Arc::new(OnceLock::new());
@@ -256,7 +260,7 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(id) => Some(*id),
+            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
             _ => None,
         })
         .unwrap();
@@ -275,11 +279,11 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     );
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
     assert!(matches!(
         results.results()[1].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
     assert!(format!("{:?}", results.results()[1].verdict).contains("OutsideDeclaredAccess"));
     assert_eq!(
@@ -311,9 +315,9 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
             .expect_err("opaque custom rules cannot execute under a lease");
         assert!(matches!(
             denial,
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
                     ),
                     ..
@@ -330,12 +334,12 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
     assert_eq!(results.results().len(), 2);
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
     assert_eq!(
         matches!(
             results.results()[1].verdict,
-            crate::validation::data::InvariantVerdict::Violation(_)
+            crate::validation::data::execution::InvariantVerdict::Violation(_)
         ),
         expect_violation,
     );

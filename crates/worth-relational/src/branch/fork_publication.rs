@@ -2,11 +2,11 @@
 use super::source_validation::ForkSourceInput;
 use super::{RelationalForkDenial, RelationalForkOutcome};
 use crate::branch::fork_source_basis::AdmittedRelationalForkSourceBasis;
+use crate::branch::transition::BranchTransitionRecordError;
 use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchTransitionDurableStep, RelationalForkPort,
     RelationalForkTargetReservation,
 };
-use crate::runtime::BranchTransitionRecordError;
 type ForkFailure<S> = BranchTransitionRecordError<RelationalForkDenial, S>;
 
 pub(super) struct ForkInstallationOutcome {
@@ -14,6 +14,18 @@ pub(super) struct ForkInstallationOutcome {
     pub(super) basis: Option<AdmittedRelationalBranchBasis>,
     pub(super) evidence:
         Option<worth_proof::DurablyCommitted<crate::branch::RelationalCommittedTransitionEvidence>>,
+}
+
+impl ForkInstallationOutcome {
+    pub(super) fn into_association(self) -> super::RelationalAssociatedFork {
+        super::RelationalAssociatedFork::from_parts(
+            self.outcome,
+            self.basis
+                .expect("associated fork requests its owner-admitted basis"),
+            self.evidence
+                .expect("associated live fork requires an attached durable medium"),
+        )
+    }
 }
 
 impl RelationalForkPort {

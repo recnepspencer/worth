@@ -48,7 +48,7 @@ impl From<RelationalPersistentRegionNodeObservation>
     for RelationalRootAuthoritativeAllocationObservation
 {
     fn from(node: RelationalPersistentRegionNodeObservation) -> Self {
-        use crate::branch::RelationalPersistentRegionAllocationKind as Region;
+        use crate::branch::root_regions::RelationalPersistentRegionAllocationKind as Region;
         let kind = match node.allocation_kind {
             Region::SetObject => {
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject

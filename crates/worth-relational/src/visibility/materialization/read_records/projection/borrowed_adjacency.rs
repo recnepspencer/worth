@@ -93,7 +93,8 @@ impl VisibilityProjectionView {
         kind: KindId,
         direction: RelationalAdjacencyDirection,
         mut visit: impl FnMut(RelationalAdjacencyVisit) -> Result<(), Stop>,
-    ) -> Result<Result<(), Stop>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Result<(), Stop>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if self.is_exact_basis() {
             self.demand_regions_head(execution, [entity.partition_id])?;
             let head = self.admitted_head_region(entity.partition_id);

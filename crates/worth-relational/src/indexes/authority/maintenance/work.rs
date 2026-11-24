@@ -164,7 +164,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             .work_units
             .checked_add(units)
             .ok_or(Denial::Execution(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             ))?;
         if let MaintenancePayer::Request(context, _) = &mut self.payer {
             checkpoint(context, 0)?;
@@ -221,7 +221,7 @@ impl<'a, 'run, 'lease> MaintenanceWork<'a, 'run, 'lease> {
             {
                 let Some(required) = remaining.checked_add(1) else {
                     return Denial::Execution(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                     );
                 };
                 return checkpoint(context, required)
@@ -263,7 +263,7 @@ fn checkpoint(
     units: u64,
 ) -> Result<(), Denial> {
     context.checkpoint(units).map_err(|stop| {
-        Denial::Execution(crate::execution::kernel_failure(
+        Denial::Execution(crate::execution::denial::kernel_failure(
             worth_execution::MapKernelFailure::Stop(stop),
         ))
     })
@@ -284,7 +284,7 @@ mod tests {
         assert_eq!(
             work.charge(1),
             Err(Denial::Execution(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow
             ))
         );
         assert_eq!(work.counts().work_units, usize::MAX);
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn child_scan_quote_is_bounded_by_the_callers_remaining_work() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let budget = DerivedIndexMaintenanceBudget {
             maximum_work_units: Some(100),
@@ -313,11 +313,13 @@ mod tests {
             (
                 2,
                 100,
-                Denial::Execution(crate::execution::RelationalExecutionDenialCause::WorkExhausted),
+                Denial::Execution(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::WorkExhausted,
+                ),
             ),
             (100, 2, Denial::WorkBudgetExceeded),
         ] {
-            let host = crate::test_execution_policy::serial_request();
+            let host = crate::execution::test_policy::serial_request();
             let execution = worth_execution::ExecutionRequest::serial(&host);
             let budget = DerivedIndexMaintenanceBudget {
                 maximum_work_units: Some(native_limit),

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+mod field_corruption;
 mod storage_headers;
 mod touched_slots;
 pub(crate) use touched_slots::TouchedSlots;

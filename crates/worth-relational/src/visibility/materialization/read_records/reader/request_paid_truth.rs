@@ -2,8 +2,9 @@
 use super::super::read_prices::{
     ASPECT_BINDING, ASPECT_COMPARISON, EXAMINE_SLOT, KEYED_RECORD, RESERVE_RECORD,
 };
-use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::facade::{config::CascadeDeletePolicy, identity::KindId};
+use crate::config::data::CascadeDeletePolicy;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::identity::data::KindId;
 use crate::tests::support::*;
 use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
@@ -11,7 +12,7 @@ use worth_execution::{
 
 #[test]
 fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&setup);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let first = create_entity_outcome(&execution, &runtime, "truth-paid-first");
@@ -270,7 +271,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
                 _ => unreachable!(),
             }
         };
-        let short = crate::test_execution_policy::serial_request();
+        let short = crate::execution::test_policy::serial_request();
         let request = ExecutionRequest::serial(&short);
         assert_eq!(
             request
@@ -282,7 +283,7 @@ fn truth_seams_spend_the_callers_work_and_preserve_interruption() {
             Err(Cause::WorkExhausted),
             "seam {seam} one short"
         );
-        let live = crate::test_execution_policy::serial_request();
+        let live = crate::execution::test_policy::serial_request();
         let request = ExecutionRequest::serial(&live);
         let (answer, report) = request
             .run(ExecutionWorkCeiling::new(Some(units)), |_| read(&request))

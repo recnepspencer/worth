@@ -3,7 +3,7 @@ use super::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCommitEnvelopeBody,
 };
 use crate::history::{data::CanonicalCommitEnvelope, OutputOriginHeaderCorruptionForTest};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 impl CanonicalCommitEnvelope {
     pub(crate) fn corrupt_output_origin_header_for_test(

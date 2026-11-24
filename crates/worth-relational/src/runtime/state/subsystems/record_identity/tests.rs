@@ -1,6 +1,6 @@
 use super::*;
 use crate::identity::data::EntityId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[test]
 fn rejected_reclaimed_reservation_returns_only_its_lease() {

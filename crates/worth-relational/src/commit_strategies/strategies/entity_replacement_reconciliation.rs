@@ -22,10 +22,11 @@ use crate::commit_strategies::data::{
 use crate::identity::data::EntityId;
 use crate::storage::data::authoritative_aspect_value_field_comparison_key;
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::AspectFieldPatch;
-use crate::transactions::data::{
-    EntityMutationIntent, EntitySpec, MutationIntent, ReplaceEntityIntent, WorkerIntentBatch,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, ReplaceEntityIntent,
 };
+use crate::transactions::data::primitives::{EntitySpec, WorkerIntentBatch};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntityReplacementReconciliationInput {
@@ -322,6 +323,3 @@ impl CommitStrategyExecutor for EntityReplacementReconciliationStrategy {
         Ok(StrategyExecutionResult::new(output, mutation_program))
     }
 }
-
-#[cfg(test)]
-mod tests;

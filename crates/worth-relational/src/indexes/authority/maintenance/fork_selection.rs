@@ -1,12 +1,14 @@
 //! Fork cutover carries the source's immutable index selection before exposing the target.
 use super::request_payment;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::BranchId;
 use crate::indexes::data::{
     DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::runtime::{IndexDefinitionReadBinding, PreparedGenerationBatch};
+use crate::runtime::state::subsystems::indexing::{
+    IndexDefinitionReadBinding, PreparedGenerationBatch,
+};
 use std::sync::Arc;
 
 pub(crate) struct PreparedForkIndexSelection {

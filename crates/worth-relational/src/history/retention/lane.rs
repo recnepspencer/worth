@@ -1,7 +1,7 @@
 mod acquisition;
 mod gate_trial;
-pub use gate_trial::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 pub(crate) use acquisition::RelationalRetentionRequestAcquisitionDenial;
+pub use gate_trial::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 mod record;
 mod root_counts;
 mod roots;
@@ -21,7 +21,8 @@ pub(crate) use retained_release::{
 
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
 
 use super::cost_counters::{record_acquire, record_release};
 use super::owner::{
@@ -146,7 +147,10 @@ impl RelationalBranchRetentionBinding {
         lock_lane(&self.lane).interruption_counters
     }
 
-    pub(crate) fn record_interruption(&self, event: crate::runtime::RelationalInterruptionEvent) {
+    pub(crate) fn record_interruption(
+        &self,
+        event: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) {
         lock_lane(&self.lane).interruption_counters.record(event);
     }
 
@@ -168,7 +172,10 @@ impl RelationalBranchRetentionBinding {
 }
 
 impl RelationalRetentionGuard {
-    pub(crate) fn record_interruption(&self, event: crate::runtime::RelationalInterruptionEvent) {
+    pub(crate) fn record_interruption(
+        &self,
+        event: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) {
         lock_lane(&self.lane).interruption_counters.record(event);
     }
     #[expect(

@@ -138,7 +138,7 @@ pub(super) fn recover_with_rewritten_commit_err(
 ) -> crate::durability::data::DurabilityError {
     use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
     use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
-    use crate::durability::medium::RelationalDurableRecoverySource;
+    use crate::durability::published_medium::RelationalDurableRecoverySource;
     use crate::history::data::PositionedCanonicalCommit;
     use std::sync::Arc;
 
@@ -167,7 +167,10 @@ pub(super) fn recover_with_rewritten_commit_err(
             }
         })
         .collect();
-    assert!(edit.is_none(), "expected merge commit {commit_id:?} in tail");
+    assert!(
+        edit.is_none(),
+        "expected merge commit {commit_id:?} in tail"
+    );
     let transitions: Vec<_> = source_runtime
         .durability()
         .branch_transition_artifacts(execution.allocation_policy())

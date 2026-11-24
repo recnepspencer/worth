@@ -9,11 +9,8 @@ fn ancestor_entity_basis_resolves_by_lineage_when_record_id_changed() {
     let ancestor_id = EntityId::new(PartitionId::main(), 1, 1);
     let branch_id = EntityId::new(PartitionId::main(), 99, 7);
     let lineage_id = LineageId::new(41);
-    let view = read_view(
-        vec![entity_record(ancestor_id, Some(lineage_id))],
-        Vec::new(),
-    );
-    let context = AncestorRecordBasisContext::new(&view);
+    let entities = [entity_record(ancestor_id, Some(lineage_id))];
+    let context = AncestorRecordBasisContext::new(&entities, &[]);
     let branch_record = VisibleMergeRecord {
         record_ref: RecordRef::Entity(branch_id),
         record_kind: VisibleMergeRecordKind::Entity,
@@ -43,8 +40,8 @@ fn ancestor_relation_basis_resolves_by_storage_slot_when_generation_changed() {
     let right = EntityId::new(PartitionId::main(), 2, 1);
     let ancestor_id = RelationId::new(PartitionId::main(), 5, 1);
     let branch_id = RelationId::new(PartitionId::main(), 5, 9);
-    let view = read_view(Vec::new(), vec![relation_record(ancestor_id, left, right)]);
-    let context = AncestorRecordBasisContext::new(&view);
+    let relations = [relation_record(ancestor_id, left, right)];
+    let context = AncestorRecordBasisContext::new(&[], &relations);
     let branch_record = VisibleMergeRecord {
         record_ref: RecordRef::Relation(branch_id),
         record_kind: VisibleMergeRecordKind::Relation,
@@ -67,26 +64,6 @@ fn ancestor_relation_basis_resolves_by_storage_slot_when_generation_changed() {
     assert_eq!(basis.record_ref(), RecordRef::Relation(ancestor_id));
     assert_eq!(basis.source_endpoint(), left);
     assert_eq!(basis.target_endpoint(), right);
-}
-
-fn read_view(
-    entities: Vec<EntityReadRecord>,
-    relations: Vec<RelationReadRecord>,
-) -> RelationalReadView {
-    let runtime =
-        crate::runtime::RelationalRuntime::new(crate::runtime::RelationalRuntimeConfig::default())
-            .expect("valid native runtime configuration");
-    let identity = runtime.main_branch_identity();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let snapshot = runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .unwrap();
-    RelationalReadView {
-        snapshot,
-        entities,
-        relations,
-    }
 }
 
 fn entity_record(entity_id: EntityId, lineage_id: Option<LineageId>) -> EntityReadRecord {

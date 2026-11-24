@@ -1,5 +1,6 @@
 //! Index construction admits restored generation state before allocating a successor.
-use super::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest, IndexAuthority};
+use super::live_access::IndexAuthority;
+use super::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest};
 impl IndexAuthority<'_> {
     pub(super) fn demand_build_index_image(
         &self,

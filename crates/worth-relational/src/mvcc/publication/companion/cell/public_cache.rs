@@ -71,7 +71,7 @@ impl ManagedSourceRootImage {
         cache: &ManagedIndexPublicCache,
     ) -> Result<Payload, Denial> {
         self.admit_selected(selected, generation)?;
-        cache.0.affinity.admit(selected, generation)?;
+        managed_source::affinity::admit_affinity(&cache.0.affinity, selected, generation)?;
         if cache.0.selected != *selected || !Arc::ptr_eq(&self.affinity, &cache.0.affinity) {
             return Err(Denial::RootUnavailable);
         }

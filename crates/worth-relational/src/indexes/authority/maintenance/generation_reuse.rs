@@ -1,7 +1,7 @@
 //! Preserve payload identity when a reached maintainer produces no change.
 use super::work::MaintenanceWork;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexMaintenanceDenialKind as Denial};
-use crate::runtime::PreparedIndexBasisSelection;
+use crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection;
 use std::sync::Arc;
 
 pub(super) fn retain(

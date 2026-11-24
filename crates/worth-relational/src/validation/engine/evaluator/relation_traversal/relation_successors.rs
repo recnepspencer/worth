@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
-use crate::transactions::data::EntityReference;
-use crate::validation::data::InvariantClass;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantClass;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::super::request::PreparedRelationIntegrityScope;

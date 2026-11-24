@@ -26,11 +26,13 @@ use crate::authority::commit::preparation::reduction::merge::{
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    BulkEntityCreateIntent, BulkImportRowDomain, BulkImportStage, CommitConflict,
-    RecordAspectPatchTarget, TransactionCommitError,
-};
-use crate::validation::data::InvariantGroupSet;
+use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::BulkImportRowDomain;
+use crate::transactions::data::outcomes::conflict_class::BulkImportStage;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::validation::data::groups::InvariantGroupSet;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
@@ -78,7 +80,7 @@ pub(super) fn apply<'a>(
 fn stage_bulk_entity_aspect_plans(
     intent: &BulkEntityCreateIntent,
     workspace: &MutationWorkspace<'_>,
-    field_patches: &[crate::transactions::data::AspectFieldPatch],
+    field_patches: &[crate::transactions::data::aspect_field_patch::AspectFieldPatch],
 ) -> Result<
     Vec<(
         crate::authority::mutation::outcomes::MutationAspectPatch,
@@ -112,7 +114,10 @@ fn stage_bulk_entity_rows(
     intent: &BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Vec<crate::transactions::data::AspectFieldPatch>, TransactionCommitError> {
+) -> Result<
+    Vec<crate::transactions::data::aspect_field_patch::AspectFieldPatch>,
+    TransactionCommitError,
+> {
     if let Some(lease) = lease {
         return stage_leased_entity_rows(intent, workspace, lease);
     }
@@ -163,7 +168,7 @@ fn stage_bulk_entity_rows(
             ImportStagedRow::Entity { fields } => Ok(fields),
             ImportStagedRow::Relation { .. } => {
                 Err(TransactionCommitError::conflict(CommitConflict::new(
-                    crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::BulkImportDomainMismatch {
                         expected: BulkImportRowDomain::Entity,
                         actual: BulkImportRowDomain::Relation,
                         stage: BulkImportStage::EntityCreate,

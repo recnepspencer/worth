@@ -169,7 +169,12 @@ impl PreparedRelationalCommitCandidate {
     /// Basis, successor parent count, and fixed-size root/commit identities.
     pub(crate) fn with_successor_shape<R>(
         &self,
-        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize, u64, crate::history::data::CommitId) -> R,
+        read: impl FnOnce(
+            &crate::branch::RelationalBranchBasisDescriptor,
+            usize,
+            u64,
+            crate::history::data::CommitId,
+        ) -> R,
     ) -> Option<R> {
         let payload = self
             ._payload
@@ -294,7 +299,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn attach_prepared_indexes(
         &mut self,
-        prepared: crate::indexes::PreparedCandidateIndexPublication,
+        prepared: crate::indexes::authority::PreparedCandidateIndexPublication,
     ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
         let mut payload = self
             ._payload

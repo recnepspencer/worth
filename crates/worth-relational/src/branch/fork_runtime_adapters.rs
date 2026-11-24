@@ -38,7 +38,7 @@ impl RelationalRuntime {
             ),
             self.durability.medium(),
             self.publication_binding(),
-            self.indexes.definition_read_binding(),
+            self.indexes.catalog_binding(),
             self.lineage.naming_basis_binding(),
         )
     }

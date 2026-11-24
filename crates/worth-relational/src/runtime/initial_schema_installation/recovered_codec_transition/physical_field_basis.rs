@@ -22,29 +22,6 @@ impl std::ops::Deref for OwnedCodecFieldChanges {
     }
 }
 
-/// This comparison grants no retirement permission. Actual present records
-/// separately require complete native producer-publication provenance.
-pub(crate) fn codec_field_changes(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    source: &RelationalSchemaRegistry,
-    target: &RelationalSchemaRegistry,
-) -> Result<OwnedCodecFieldChanges, crate::runtime::RelationalSchemaTransitionAdmissionDenial> {
-    let compared=execution.in_scope(|lease| {
-        worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
-            .run_with_checkpoint(lease,None,|context| {
-                codec_field_changes_in_context(source, target, context, lease)
-            })
-    }).map_err(|stop| crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(stop.into()))
-        .and_then(|result| result.map_err(|stop| crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(stop.into())))
-        .and_then(|result| result.0.map_err(|stop| match stop {
-            CodecFieldComparisonStop::Request(cause) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::request(cause),
-            CodecFieldComparisonStop::Contract(detail) => crate::runtime::RelationalSchemaTransitionAdmissionDenial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::TargetContractMismatch,detail),
-        }));
-    crate::execution::check_request(execution)
-        .map_err(crate::runtime::RelationalSchemaTransitionAdmissionDenial::request)?;
-    compared
-}
-
 pub(crate) fn codec_field_changes_in_context(
     source: &RelationalSchemaRegistry,
     target: &RelationalSchemaRegistry,
@@ -171,7 +148,7 @@ fn change_storage_quote(
 
 fn memory_overflow() -> CodecFieldComparisonStop {
     CodecFieldComparisonStop::Request(
-        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )
 }
 
@@ -230,7 +207,7 @@ fn compare_binding(
 }
 
 pub(crate) enum CodecFieldComparisonStop {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Contract(String),
 }
 impl From<&str> for CodecFieldComparisonStop {
@@ -255,7 +232,7 @@ fn charge_declarations(
             .semantic_byte_width()
             .checked_add(binding.binding.owned_allocation_capacity_bytes())
             .ok_or(CodecFieldComparisonStop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             ))?;
         charge(context, width)?;
     }
@@ -268,7 +245,7 @@ fn charge(
     context
         .checkpoint(u64::try_from(work).map_err(|_| {
             CodecFieldComparisonStop::Request(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         })?)
         .map_err(|stop| CodecFieldComparisonStop::Request(stop.into()))
@@ -284,4 +261,5 @@ fn same_contract_except_shape_revision(old: &AspectContract, new: &AspectContrac
 }
 
 #[cfg(test)]
+#[path = "physical_field_basis/fingerprint_tests.rs"]
 mod fingerprint_tests;

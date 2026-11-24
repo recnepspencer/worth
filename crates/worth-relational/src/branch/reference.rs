@@ -6,7 +6,7 @@ use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBran
 use super::identity::RelationalBranchIdentity;
 use super::reference_state::RelationalBranchReferenceState;
 use super::target::RelationalBranchTarget;
-use super::RelationalBranchVersion;
+use crate::branch::version::RelationalBranchVersion;
 use crate::history::data::BranchId;
 
 #[path = "reference_observation.rs"]
@@ -22,10 +22,10 @@ pub use observation::{
 pub(crate) struct RelationalBranchReferenceCell {
     pub(super) identity: RelationalBranchIdentity,
     pub(super) state: Arc<Mutex<RelationalBranchReferenceMutableState>>,
-    pub(super) basis_registry: super::RelationalBranchBasisRegistry,
+    pub(super) basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry,
     pub(super) coordination: Arc<super::coordination::RelationalBranchCoordinationCell>,
     pub(super) head_retention: Arc<crate::history::retention::RelationalBranchHeadRetentionCell>,
-    pub(super) sharing_costs: super::RelationalBranchSharingCostCell,
+    pub(super) sharing_costs: crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell,
 }
 
 impl Clone for RelationalBranchReferenceCell {
@@ -44,23 +44,25 @@ impl Clone for RelationalBranchReferenceCell {
 pub(crate) struct RelationalBranchReferenceMutableState {
     pub(super) observation: RelationalBranchReferenceObservation,
     pub(super) truth_version: RelationalBranchVersion,
-    pub(super) lifecycle: super::RelationalBranchLifecyclePosture,
+    pub(super) lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture,
     fork_provenance: Option<RelationalBranchReferenceObservation>,
     fork_source_branch_id: Option<BranchId>,
-    pub(super) root: Option<Arc<super::RelationalBranchRoot>>,
+    pub(super) root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
 }
 
 impl RelationalBranchReferenceMutableState {
     pub(super) fn currently_selects_root(
         &self,
-        expected: &Arc<super::RelationalBranchRoot>,
+        expected: &Arc<crate::branch::root::RelationalBranchRoot>,
     ) -> bool {
         self.root
             .as_ref()
             .is_some_and(|current| Arc::ptr_eq(current, expected))
     }
 
-    pub(crate) const fn lifecycle_posture(&self) -> super::RelationalBranchLifecyclePosture {
+    pub(crate) const fn lifecycle_posture(
+        &self,
+    ) -> crate::branch::lifecycle::RelationalBranchLifecyclePosture {
         self.lifecycle
     }
 }
@@ -70,7 +72,7 @@ impl RelationalBranchReferenceCell {
         Self {
             identity: self.identity.clone(),
             state: Arc::new(Mutex::new(self.state_snapshot())),
-            basis_registry: super::RelationalBranchBasisRegistry::default(),
+            basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry::default(),
             coordination: super::coordination::RelationalBranchCoordinationCell::fresh(
                 self.identity.runtime_instance_id(),
                 self.identity.branch_id(),
@@ -117,7 +119,8 @@ impl RelationalBranchReferenceCell {
             basis_registry: self.basis_registry.clone(),
             coordination: Arc::clone(&self.coordination),
             head_retention: crate::history::retention::RelationalBranchHeadRetentionCell::fresh(),
-            sharing_costs: super::RelationalBranchSharingCostCell::default(),
+            sharing_costs:
+                crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell::default(),
         }
     }
 
@@ -136,18 +139,19 @@ impl RelationalBranchReferenceCell {
             state: Arc::new(Mutex::new(RelationalBranchReferenceMutableState {
                 observation,
                 truth_version: RelationalBranchVersion::initial(),
-                lifecycle: super::RelationalBranchLifecyclePosture::Live,
+                lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live,
                 fork_provenance: None,
                 fork_source_branch_id: None,
                 root: None,
             })),
-            basis_registry: super::RelationalBranchBasisRegistry::default(),
+            basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry::default(),
             coordination: super::coordination::RelationalBranchCoordinationCell::fresh(
                 runtime_instance_id,
                 &branch_id,
             ),
             head_retention: crate::history::retention::RelationalBranchHeadRetentionCell::fresh(),
-            sharing_costs: super::RelationalBranchSharingCostCell::default(),
+            sharing_costs:
+                crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell::default(),
         })
     }
 
@@ -163,7 +167,7 @@ impl RelationalBranchReferenceCell {
             branch_id,
             source_branch_id,
             source,
-            super::RelationalBranchRoot::empty(),
+            crate::branch::root::RelationalBranchRoot::empty(),
         )
     }
 
@@ -172,7 +176,7 @@ impl RelationalBranchReferenceCell {
         branch_id: BranchId,
         source_branch_id: BranchId,
         source: &RelationalBranchReferenceObservation,
-        source_root: Arc<super::RelationalBranchRoot>,
+        source_root: Arc<crate::branch::root::RelationalBranchRoot>,
     ) -> Result<Self, RelationalBranchObservationConstructionDenial> {
         let target = match source.target() {
             FoundationalBranchTarget::Empty => FoundationalBranchTarget::empty(),
@@ -191,18 +195,19 @@ impl RelationalBranchReferenceCell {
             state: Arc::new(Mutex::new(RelationalBranchReferenceMutableState {
                 observation,
                 truth_version: RelationalBranchVersion::initial(),
-                lifecycle: super::RelationalBranchLifecyclePosture::Live,
+                lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live,
                 fork_provenance: Some(source.clone()),
                 fork_source_branch_id: Some(source_branch_id),
                 root: Some(source_root),
             })),
-            basis_registry: super::RelationalBranchBasisRegistry::default(),
+            basis_registry: crate::branch::basis_registry::RelationalBranchBasisRegistry::default(),
             coordination: super::coordination::RelationalBranchCoordinationCell::fresh(
                 runtime_instance_id,
                 &branch_id,
             ),
             head_retention: crate::history::retention::RelationalBranchHeadRetentionCell::fresh(),
-            sharing_costs: super::RelationalBranchSharingCostCell::default(),
+            sharing_costs:
+                crate::branch::sharing_cost_cell::RelationalBranchSharingCostCell::default(),
         })
     }
 
@@ -243,7 +248,9 @@ impl RelationalBranchReferenceCell {
         self.state_snapshot().truth_version
     }
 
-    pub(crate) fn lifecycle_posture(&self) -> super::RelationalBranchLifecyclePosture {
+    pub(crate) fn lifecycle_posture(
+        &self,
+    ) -> crate::branch::lifecycle::RelationalBranchLifecyclePosture {
         self.state_snapshot().lifecycle
     }
 

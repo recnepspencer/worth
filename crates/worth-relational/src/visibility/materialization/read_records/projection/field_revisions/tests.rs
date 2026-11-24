@@ -1,13 +1,15 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
-use crate::facade::identity::{KindId, PartitionId};
-use crate::facade::mvcc::WorkerIntentBatch;
-use crate::facade::transactions::{
-    ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, MutationIntent,
-    UpdateEntityFieldsIntent,
-};
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
 use crate::storage::data::RelationalFieldPresence;
 use crate::tests::support::*;
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{
     PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
@@ -22,7 +24,7 @@ fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 
 #[test]
 fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = AspectSchemaFixture {
@@ -37,7 +39,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
     create
         .push_batch(
             WorkerIntentBatch::new("field-revision-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw("field-revision"),
@@ -105,7 +107,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
 
 #[test]
 fn absent_present_absent_aba_has_distinct_native_revision() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
@@ -119,7 +121,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
     create
         .push_batch(
             WorkerIntentBatch::new("aba-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                CreateIntent::Entity(crate::transactions::data::primitives::EntitySpec {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw("aba"),
@@ -215,7 +217,7 @@ fn absent_present_absent_aba_has_distinct_native_revision() {
 
 #[test]
 fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_identity() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -250,7 +252,7 @@ fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_id
     );
     let main = snapshot_for_owner_branch(
         &runtime,
-        &crate::facade::history::BranchId("main".to_owned()),
+        &crate::history::data::coordinates::BranchId("main".to_owned()),
     );
     assert_eq!(
         runtime

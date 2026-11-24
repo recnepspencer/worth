@@ -4,10 +4,10 @@ use crate::branch::basis_axis_validation::{
     require_current_descriptor_axes, require_root_matches_reference,
 };
 use crate::branch::canonical_runtime_frame::CANONICAL_RUNTIME_INSTANCE_ID;
-use crate::branch::{
-    RelationalBranchCellCheckpoint, RelationalBranchLifecyclePosture,
-    RelationalBranchRootDescriptor, RelationalBranchTarget,
-};
+use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
+use crate::branch::reference::RelationalBranchCellCheckpoint;
+use crate::branch::target::RelationalBranchRootDescriptor;
+use crate::branch::target::RelationalBranchTarget;
 use std::cmp::Ordering;
 use worth_foundational::FoundationalBranchTarget;
 
@@ -25,7 +25,7 @@ impl<'a> CheckpointComponentDescriptorView<'a> {
         cell: &'a RelationalBranchCellCheckpoint,
         posture: RelationalBranchLifecyclePosture,
         root: &Arc<RelationalBranchRoot>,
-    ) -> Result<Self, super::super::RelationalBranchBasisDenial> {
+    ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial> {
         require_root_matches_reference(&cell.observation, root)?;
         Ok(Self {
             branch: &cell.branch_id,
@@ -49,13 +49,15 @@ impl<'a> CheckpointComponentDescriptorView<'a> {
     }
     pub(crate) fn retained(
         basis: &'a AdmittedRelationalBranchBasis,
-    ) -> Result<Self, super::super::RelationalBranchBasisDenial> {
+    ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial> {
         let descriptor = basis.descriptor();
         if descriptor.descriptor_version() != RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION
             || descriptor.runtime_instance_id() != basis.identity().runtime_instance_id()
             || descriptor.branch_id() != basis.identity().branch_id()
         {
-            return Err(super::super::RelationalBranchBasisDenial::WrongImmutableTarget);
+            return Err(
+                crate::branch::basis_denial::RelationalBranchBasisDenial::WrongImmutableTarget,
+            );
         }
         require_current_descriptor_axes(
             descriptor,
@@ -94,7 +96,7 @@ impl<'a> CheckpointComponentDescriptorView<'a> {
         &self,
     ) -> Result<
         RelationalBranchBasisDescriptor,
-        super::super::RelationalBranchObservationConstructionDenial,
+        crate::branch::reference::observation::RelationalBranchObservationConstructionDenial,
     > {
         let target = match self.reference.target() {
             FoundationalBranchTarget::Empty => FoundationalBranchTarget::Empty,
@@ -111,7 +113,7 @@ impl<'a> CheckpointComponentDescriptorView<'a> {
                 ))
             }
         };
-        let reference = super::super::relational_branch_observation(
+        let reference = crate::branch::reference::observation::relational_branch_observation(
             CANONICAL_RUNTIME_INSTANCE_ID,
             &self.branch.0,
             target,

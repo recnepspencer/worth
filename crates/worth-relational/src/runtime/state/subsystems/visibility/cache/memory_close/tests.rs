@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequest;
 
 #[test]
 fn memory_terminal_close_cache_contention_preserves_exact_and_historical_allocations() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let original = create_entity_outcome(request, &runtime, "original-cache-root");

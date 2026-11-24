@@ -2,38 +2,17 @@ use std::collections::BTreeSet;
 
 use sha2::Digest;
 
-use crate::capabilities::RuntimeConfigSource;
 use crate::merge::data::{
     BranchTouchedRecordDelta, MergeSchemaKindClass, MergeSchemaKindSemanticSnapshot,
     MergeSchemaSnapshotDigestBasis, VisibleMergeRecord, VisibleMergeRecordKind,
 };
-use crate::runtime::RelationalRuntime;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
-
-pub(crate) fn merge_schema_snapshot_for_execution_ready(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    target_version_id: crate::identity::data::VersionId,
-    source_records: &[VisibleMergeRecord],
-    target_touched_records: &[BranchTouchedRecordDelta],
-) -> Result<MergeSchemaSnapshotDigestBasis, crate::merge::data::MergePlanningError> {
-    let target_view = runtime
-        .read_truth()
-        .read_version(execution, target_version_id)
-        .map_err(crate::merge::data::MergePlanningError::Execution)?;
-    Ok(merge_schema_snapshot(
-        &runtime.runtime_config().schema.registry,
-        source_records,
-        &target_view,
-        target_touched_records,
-    ))
-}
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn merge_schema_snapshot(
     registry: &RelationalSchemaRegistry,
     source_records: &[VisibleMergeRecord],
-    target_view: &crate::storage::data::RelationalReadView,
+    target_view: &crate::visibility::snapshot_read_view::RelationalReadView,
     target_touched_records: &[BranchTouchedRecordDelta],
 ) -> MergeSchemaSnapshotDigestBasis {
     let touched_kind_sets =
@@ -56,7 +35,7 @@ struct TouchedSchemaKindSets {
 fn collect_touched_schema_kind_sets(
     source_records: &[VisibleMergeRecord],
     target_touched_records: &[BranchTouchedRecordDelta],
-    target_view: &crate::storage::data::RelationalReadView,
+    target_view: &crate::visibility::snapshot_read_view::RelationalReadView,
 ) -> TouchedSchemaKindSets {
     let mut touched_entity_kinds = BTreeSet::new();
     let mut touched_relation_kinds = BTreeSet::new();
@@ -101,7 +80,7 @@ fn collect_source_schema_kinds(
 
 fn collect_target_schema_kinds(
     target_touched_records: &[BranchTouchedRecordDelta],
-    target_view: &crate::storage::data::RelationalReadView,
+    target_view: &crate::visibility::snapshot_read_view::RelationalReadView,
     touched_entity_kinds: &mut BTreeSet<crate::identity::data::KindId>,
     touched_relation_kinds: &mut BTreeSet<crate::identity::data::KindId>,
 ) {

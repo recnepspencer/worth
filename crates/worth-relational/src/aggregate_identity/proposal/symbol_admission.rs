@@ -3,16 +3,17 @@ use super::{binding_error, AggregateProposalBorrow, ArtifactState};
 use crate::authority::mutation::MutationApplyDenial;
 use crate::schema::data::AspectBinding;
 use crate::storage::overlay::OverlayStateView;
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::BTreeSet;
 
 impl AggregateProposalBorrow<'_> {
     pub(crate) fn reserve_consequence_symbols(
         self,
-        symbols: &mut crate::runtime::PendingSymbolMeanings,
+        symbols: &mut crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings,
         policy: crate::symbols::data::ClientKeySymbolPolicy,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), MutationApplyDenial> {
@@ -37,8 +38,8 @@ impl AggregateProposalBorrow<'_> {
                 intent
                     .collect_raw_client_keys(&mut raw, allocation)
                     .map_err(|denial| {
-                        crate::transactions::data::TransactionCommitError::conflict(
-                            crate::mvcc::RelationalTransactionStagingDenial::from(denial)
+                        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                            crate::mvcc::transaction::staging::RelationalTransactionStagingDenial::from(denial)
                                 .into_conflict(),
                         )
                     })?;

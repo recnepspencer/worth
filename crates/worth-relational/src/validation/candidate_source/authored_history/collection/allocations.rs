@@ -85,7 +85,7 @@ impl AuthoredSourceInputs {
             })
             .ok_or_else(|| {
                 admission::storage(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                 )
             })?;
         admission::work(budget, units)?;

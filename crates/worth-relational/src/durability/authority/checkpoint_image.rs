@@ -5,8 +5,37 @@ use crate::durability::data::{
     RecoveryFailureClass,
 };
 use crate::lineage::data::LineageCheckpointArtifact;
+use crate::runtime::state::subsystems::indexing::OriginalCheckpointIndexes;
 
 use super::checkpoint_capture::CapturedCheckpointBasis;
+
+/// Resolve original index custody at the checkpoint-image reconstruction boundary.
+pub(super) fn capture_frozen_indexes(
+    frozen: crate::durability::derived_index_artifacts::FrozenIndexCheckpoint,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<
+    OriginalCheckpointIndexes,
+    crate::durability::data::RelationalNativeCheckpointCaptureDenial,
+> {
+    use crate::durability::data::native_checkpoint_capture_denial::{
+        capture_stop, RelationalNativeCheckpointCaptureDenial as Denial,
+    };
+    crate::execution::request_custody::check_request(request).map_err(Denial::Request)?;
+    let (indexes, original) = frozen.into_parts();
+    let original = original
+        .map(|image| {
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    crate::durability::derived_index_artifacts::original_capture::read(
+                        lane, &image, request,
+                    )
+                },
+            )
+            .map_err(capture_stop)
+        })
+        .transpose()?;
+    indexes.resolve_authenticated(original, request)
+}
 
 impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(
@@ -42,6 +71,7 @@ impl CapturedCheckpointBasis {
             lineage_event_leases: _,
             guarded_member_sources: _,
             index_state,
+            index_original: _,
             retained_indexes: _,
             index_definitions,
             carried_index_image: _,

@@ -8,7 +8,7 @@ use crate::history::data::canonical_commit_envelope::{
 };
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate_succession(
@@ -17,7 +17,7 @@ pub(super) fn validate_succession(
     prior: &CanonicalRequiredOutputOrigin,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     super::producer_retirement::validate(runtime, view, validated_history, context, schema)?;
     validate_route(runtime, view, prior, context)
@@ -45,7 +45,7 @@ pub(super) fn validate_route(
     {
         return Err("publication succession changes complete family/source membership".into());
     }
-    use crate::mvcc::RequiredOutputRolePosture as Posture;
+    use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
     if matches!(
         current.publication,
         CanonicalOutputPublication::AuthoredRetirement { .. }
@@ -189,7 +189,7 @@ pub(super) fn validate_gap(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validate_payload: bool,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let mut next = current.commit.parents.first().copied();
     let bound = runtime.runtime.history.catalog_len();

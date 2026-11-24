@@ -14,6 +14,7 @@ mod proof;
 mod source;
 pub(crate) mod source_buffer;
 pub(crate) mod support;
+pub(crate) use pinned::read_projected_source;
 pub use pinned::{
     PinnedDerivedRelationDenial, PinnedDerivedRelationRead, PinnedDerivedRelationScope,
 };

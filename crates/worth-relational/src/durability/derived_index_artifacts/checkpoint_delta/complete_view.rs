@@ -1,8 +1,9 @@
 //! Request-funded format-3 emission over original generation owners, never a delta.
-use super::super::funding::{IndexArray, IndexCheckpointWork};
+use super::super::funding::IndexCheckpointWork;
 use super::*;
 use crate::durability::data::RelationalRecoveryStop as Stop;
 use crate::indexes::data::IndexBasisCheckpoint;
+use crate::runtime::state::subsystems::indexing::checkpoint_image::IndexArray;
 use serde::ser::{SerializeSeq, SerializeStruct, Serializer};
 use worth_execution::ExecutionRequest;
 

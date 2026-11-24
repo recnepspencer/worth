@@ -79,7 +79,7 @@ impl OutputOriginHistory {
 }
 
 fn cache_stop(cause: ExecutionOrderedMapDenial) -> Stop {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
     match cause {
         ExecutionOrderedMapDenial::Request(cause) => Stop::Request(cause.into()),
         ExecutionOrderedMapDenial::CapacityOverflow => Stop::Request(Cause::ChargedBytesOverflow),

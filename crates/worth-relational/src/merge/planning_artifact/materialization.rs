@@ -1,40 +1,15 @@
-use crate::capabilities::RuntimeConfigSource;
 use crate::merge::data::{LoweredMergePlan, MergePlanningArtifactCore};
-use crate::runtime::RelationalRuntime;
 
 use super::super::schema_reconciliation_witness::retained_schema_reconciliation_witness;
 use super::super::strategy_witness::retained_merge_strategy_witness;
 use super::digest_basis::merge_artifact_digest_basis;
 use super::lowered_artifact_execution_authority_contract;
-use super::performance_counters::record_merge_planning_counters;
-use super::schema_snapshot::merge_schema_snapshot;
 use super::summaries::{merge_ancestry_summary, merge_request_summary};
 
-pub(crate) fn materialize_planning_artifact(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+pub(super) fn materialize_planning_observation(
     plan: LoweredMergePlan,
-) -> Result<MergePlanningArtifactCore, crate::merge::data::MergePlanningError> {
-    materialize_planning_observation(execution, runtime, plan)
-        .map(super::super::RelationalMergePlanningObservation::into_artifact)
-}
-
-pub(crate) fn materialize_planning_observation(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    plan: LoweredMergePlan,
-) -> Result<super::super::RelationalMergePlanningObservation, crate::merge::data::MergePlanningError>
-{
-    let target_view = runtime
-        .read_truth()
-        .read_version(execution, plan.basis.target_head.version_id)
-        .map_err(crate::merge::data::MergePlanningError::Execution)?;
-    let schema_snapshot = merge_schema_snapshot(
-        &runtime.runtime_config().schema.registry,
-        plan.source_records.as_ref(),
-        &target_view,
-        plan.target_delta.touched_records.as_ref(),
-    );
+    schema_snapshot: crate::merge::data::MergeSchemaSnapshotDigestBasis,
+) -> super::super::planning_observation::RelationalMergePlanningObservation {
     let execution_authority_contract = lowered_artifact_execution_authority_contract();
     let digest_basis = merge_artifact_digest_basis(
         &plan,
@@ -46,8 +21,6 @@ pub(crate) fn materialize_planning_observation(
     let strategy_witness = retained_merge_strategy_witness(&plan, &execution_authority_contract);
     let request_summary = merge_request_summary(&plan);
     let ancestry_summary = merge_ancestry_summary(&plan);
-
-    record_merge_planning_counters(runtime, &plan, schema_snapshot.touched_kinds.len());
 
     let artifact = MergePlanningArtifactCore {
         request: plan.request.clone(),
@@ -70,9 +43,9 @@ pub(crate) fn materialize_planning_observation(
             ancestry_summary,
         },
     };
-    Ok(super::super::RelationalMergePlanningObservation::new(
+    super::super::planning_observation::RelationalMergePlanningObservation::new(
         artifact,
         plan.target_delta,
         plan.source_delta,
-    ))
+    )
 }

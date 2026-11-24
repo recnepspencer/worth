@@ -1,9 +1,12 @@
 //! Actual Empty producers, original DATA lifetime, and concrete roster admission.
 
 use super::*;
+use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
+use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransitionSequence};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::runtime_with_test_schema;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+use worth_foundational::FoundationalBranchReferenceGeneration;
 
 fn controller_memory() -> u64 {
     let budget = SerialMemoryBudget::new(Some(64 * 1024));

@@ -1,8 +1,8 @@
 use crate::identity::data::KindId;
-use crate::runtime::{
-    RelationalPreparationRuntime, RelationalRuntime, RuntimeInstrumentation,
-    SchemaContractRuntimeSubsystem,
-};
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::runtime::RelationalRuntime;
+use crate::runtime::SchemaContractRuntimeSubsystem;
 
 /// Read-only validation projection shared by the runtime and preparation port.
 ///
@@ -18,10 +18,14 @@ pub(crate) struct InvariantRuntimeView<'a> {
         Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) custom_kernel_posture: worth_foundational::ExecutionPosture,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
-    pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
+    pub(crate) config: std::sync::Arc<crate::config::data::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
     instrumentation: &'a RuntimeInstrumentation,
-    counter_sink: Option<&'a std::sync::Mutex<crate::performance::data::RuntimeComplexityCounters>>,
+    counter_sink: Option<
+        &'a std::sync::Mutex<
+            crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+        >,
+    >,
     shared_candidate_inputs:
         Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
     #[cfg(test)]
@@ -67,7 +71,7 @@ impl<'a> InvariantRuntimeView<'a> {
 
     pub(crate) fn from_preparation_for_state(
         runtime: &'a RelationalPreparationRuntime,
-        state: &crate::branch::RelationalBranchRootState,
+        state: &crate::branch::root::RelationalBranchRootState,
     ) -> Self {
         Self {
             selected_registry: crate::schema::SchemaRegistryCustody::Selected(
@@ -107,7 +111,9 @@ impl<'a> InvariantRuntimeView<'a> {
 
     pub(crate) fn with_counter_sink<'round>(
         &self,
-        counters: &'round std::sync::Mutex<crate::performance::data::RuntimeComplexityCounters>,
+        counters: &'round std::sync::Mutex<
+            crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+        >,
     ) -> InvariantRuntimeView<'round>
     where
         'a: 'round,

@@ -11,8 +11,8 @@ pub(crate) use snapshot_handles::{
     PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, SnapshotHandles,
 };
 
+use crate::config::data::runtime_config::RelationalRuntimeConfig;
 use crate::runtime::state::subsystems::RuntimeSubsystem;
-use crate::runtime::RelationalRuntimeConfig;
 use crate::snapshots::data::SnapshotId;
 
 #[derive(Debug)]
@@ -21,7 +21,8 @@ pub(crate) struct VisibilitySubsystem {
     pub(crate) cache: std::sync::Arc<VisibilityCache>,
     /// Replay-pinned versions, owned behind their own lock so replay retention
     /// is taken and released without exclusive access to the runtime.
-    replay_retention: super::RuntimeOwnedState<ReplayRetentionIndex>,
+    replay_retention:
+        crate::storage::substrate::owned_state::RuntimeOwnedState<ReplayRetentionIndex>,
     published_snapshot_capacity: std::sync::Arc<PublishedSnapshotCapacityOwner>,
 }
 
@@ -50,7 +51,9 @@ impl VisibilitySubsystem {
         Self {
             handles: SnapshotHandles::new(),
             cache: std::sync::Arc::new(VisibilityCache::new(config)),
-            replay_retention: super::RuntimeOwnedState::new(ReplayRetentionIndex::new()),
+            replay_retention: crate::storage::substrate::owned_state::RuntimeOwnedState::new(
+                ReplayRetentionIndex::new(),
+            ),
             published_snapshot_capacity: PublishedSnapshotCapacityOwner::new(
                 config.publication.policy.max_published_snapshot_handles,
             ),
@@ -69,7 +72,9 @@ impl RuntimeSubsystem for VisibilitySubsystem {
         Self {
             handles: self.handles.fork(),
             cache: std::sync::Arc::new(self.cache.fork()),
-            replay_retention: super::RuntimeOwnedState::new(self.replay_retention.read().fork()),
+            replay_retention: crate::storage::substrate::owned_state::RuntimeOwnedState::new(
+                self.replay_retention.read().fork(),
+            ),
             published_snapshot_capacity: PublishedSnapshotCapacityOwner::new(
                 self.published_snapshot_capacity.maximum_handles(),
             ),
@@ -264,7 +269,12 @@ impl VisibilitySubsystem {
     }
 
     pub(crate) fn replay_retention_versions(&self) -> Vec<crate::identity::data::VersionId> {
-        self.replay_retention.read().entries.keys().copied().collect()
+        self.replay_retention
+            .read()
+            .entries
+            .keys()
+            .copied()
+            .collect()
     }
 
     pub(crate) fn increment_replay_retention(

@@ -7,10 +7,9 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
     let before = fixture.head();
     let funded =
         super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
-    let (candidate, charges) = crate::execution::RelationalWorkAccountRecorderForTest::new()
-        .record_for_test(|| {
-            fixture.validate(&ExecutionRequest::leased(&funded), fixture.chain_batch(2))
-        });
+    let (candidate, charges) = crate::execution::request_work::account_observation::observe(|| {
+        fixture.validate(&ExecutionRequest::leased(&funded), fixture.chain_batch(2))
+    });
     let candidate = candidate.unwrap();
     assert!(
         candidate.state.commit_work_budget.is_some(),
@@ -22,7 +21,8 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
         .results()
         .iter()
         .filter(|r| {
-            r.execution_point == crate::validation::data::InvariantExecutionPoint::CommitBoundary
+            r.execution_point
+                == crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
         })
         .collect::<Vec<_>>();
     assert_eq!(declared.len(), 2);
@@ -63,7 +63,7 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
     };
     assert_eq!(
         denial.kind,
-        crate::transactions::data::CommitExecutionDenialKind::Cause(
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
             crate::execution::RelationalExecutionDenialCause::WorkExhausted,
         )
     );

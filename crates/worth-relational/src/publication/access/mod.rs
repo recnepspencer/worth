@@ -2,6 +2,7 @@ mod artifact_snapshots;
 mod bundle_surface;
 mod diagnostics;
 mod failure_diagnostics;
+mod stream_reading;
 mod stream_reads;
 
 use crate::capabilities::PublicationDiagnosticsSource;

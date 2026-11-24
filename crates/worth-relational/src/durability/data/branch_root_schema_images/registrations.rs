@@ -1,5 +1,74 @@
 //! Portable kind-registration capture and structural readmission.
-use super::*;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
+use crate::identity::data::KindId;
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
+};
+use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
+use crate::schema::data::{
+    DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
+    RelationIntegrityDeclarations, RelationKindRegistration, SchemaId, SchemaVersionId,
+};
+use serde::{Deserialize, Serialize};
+use worth_foundational::facade::{AspectBinding, PortableAspectContract};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct DurableEntitySchemaRegistration {
+    pub(super) kind_id: KindId,
+    kind_name: String,
+    schema_id: SchemaId,
+    schema_version_id: SchemaVersionId,
+    pub(super) declarations: DurableKindAspectDeclarations,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(super) struct DurableRelationSchemaRegistration {
+    pub(super) kind_id: KindId,
+    kind_name: String,
+    schema_id: SchemaId,
+    schema_version_id: SchemaVersionId,
+    cross_context_policy: CrossContextPolicy,
+    cascade_delete_policy: CascadeDeletePolicy,
+    pub(super) declarations: DurableKindAspectDeclarations,
+    relation_integrity: RelationIntegrityDeclarations,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(super) struct DurableKindAspectDeclarations {
+    aspects: Vec<DurableDeclaredAspectBinding>,
+    pub(super) identity_declarations: Vec<IdentityBasisDeclaration>,
+    pub(super) merge_policy_declarations: Vec<AspectMergePolicyDeclaration>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(super) struct DurableDeclaredAspectBinding {
+    binding: AspectBinding,
+    contract: PortableAspectContract,
+}
+
+impl DurableEntitySchemaRegistration {
+    /// Capacities, not entry counts: the decoder supplies its checked Vec
+    /// growth/overlap bounds. Nested strings/contracts remain separately quoted.
+    pub(crate) fn declaration_roster_storage_bytes(
+        aspect_capacity: usize,
+        identity_capacity: usize,
+        policy_capacity: usize,
+    ) -> Option<usize> {
+        std::alloc::Layout::array::<DurableDeclaredAspectBinding>(aspect_capacity)
+            .ok()?
+            .size()
+            .checked_add(
+                std::alloc::Layout::array::<IdentityBasisDeclaration>(identity_capacity)
+                    .ok()?
+                    .size(),
+            )?
+            .checked_add(
+                std::alloc::Layout::array::<AspectMergePolicyDeclaration>(policy_capacity)
+                    .ok()?
+                    .size(),
+            )
+    }
+}
 
 impl DurableEntitySchemaRegistration {
     pub(crate) fn capture_bytes(registration: &EntityKindRegistration) -> Option<usize> {
@@ -32,16 +101,16 @@ impl DurableEntitySchemaRegistration {
         }
         for policy in &declarations.merge_policy_declarations {
             bytes = bytes.checked_add(policy.aspect_key.owned_allocation_capacity_bytes())?;
-            if let crate::merge::data::AspectMergePolicyKind::Custom(identity) = &policy.policy {
+            if let AspectMergePolicyKind::Custom(identity) = &policy.policy {
                 bytes = bytes.checked_add(identity.name.len())?;
             }
         }
         for identity in &declarations.identity_declarations {
-            if let crate::merge::data::IdentityBasisScope::AspectKey(key) = &identity.scope {
+            if let IdentityBasisScope::AspectKey(key) = &identity.scope {
                 bytes = bytes.checked_add(key.owned_allocation_capacity_bytes())?;
             }
             match &identity.basis {
-                crate::merge::data::IdentityBasisKind::DeclaredKeySet(keys) => {
+                IdentityBasisKind::DeclaredKeySet(keys) => {
                     bytes = bytes.checked_add(
                         keys.len().checked_mul(std::mem::size_of::<
                             worth_foundational::facade::AspectKey,
@@ -51,7 +120,7 @@ impl DurableEntitySchemaRegistration {
                         bytes = bytes.checked_add(key.owned_allocation_capacity_bytes())?;
                     }
                 }
-                crate::merge::data::IdentityBasisKind::Custom(identity) => {
+                IdentityBasisKind::Custom(identity) => {
                     bytes = bytes.checked_add(identity.name.len())?;
                 }
                 _ => {}

@@ -4,7 +4,7 @@ use crate::storage::residency::RelationalRegionSymbolAdmissionIdentity;
 
 #[derive(Debug)]
 pub(super) struct PreparedSymbolAdmissionTransfer {
-    cold: Option<Arc<super::super::symbol_residency::RuntimeSymbolResidency>>,
+    cold: Option<Arc<crate::storage::data::symbol_residency::RuntimeSymbolResidency>>,
     additions: SymbolTableSnapshot,
     regions: Vec<RelationalRegionSymbolAdmissionIdentity>,
 }
@@ -106,12 +106,12 @@ impl PreparedSymbolAdmissionTransfer {
 }
 
 impl RuntimeSymbolTable {
-    pub(in crate::runtime::state::subsystems::services) fn admissions_snapshot(
+    pub(crate) fn admissions_snapshot(
         &self,
     ) -> im::OrdMap<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity, ()> {
         self.read_state(|state| state.admissions.clone())
     }
-    pub(in crate::runtime::state::subsystems::services) fn publish_admissions(
+    pub(crate) fn publish_admissions(
         &self,
         identities: Vec<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>,
     ) {
@@ -140,7 +140,7 @@ impl RuntimeSymbolTable {
         region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
         publication: &crate::storage::residency::SymbolPublicationKey,
     ) -> Result<bool, crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         Ok(self.update(|state| {
             if !state.admissions.contains_key(&publication.identity()) {

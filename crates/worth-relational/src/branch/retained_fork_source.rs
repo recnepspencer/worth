@@ -1,5 +1,6 @@
 //! Process-local fork custody for one actual retained immutable root.
-use super::{AdmittedRelationalBranchBasis, RelationalForkDenial, RelationalForkPort};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::fork::RelationalForkDenial;
 
 /// A move-only retained source, distinct from a freshly current fork source.
 /// It retains the original admitted basis; descriptors cannot construct it.
@@ -24,59 +25,28 @@ pub struct AdmittedRelationalRetainedForkSource {
     pub(super) basis: AdmittedRelationalBranchBasis,
 }
 
-impl RelationalForkPort {
-    pub fn admit_retained_fork_source(
-        &self,
-        source: &AdmittedRelationalBranchBasis,
-    ) -> Result<AdmittedRelationalRetainedForkSource, RelationalForkDenial> {
-        self.validate_retained_fork_profile()?;
-        let _operation = self
-            .lifecycle
-            .admit()
-            .ok_or(RelationalForkDenial::OwnerUnavailable)?;
-        self.validate_retained_basis(source)?;
-        Ok(AdmittedRelationalRetainedForkSource {
-            basis: source.clone(),
-        })
+pub(super) fn require_retained_fork_cell(
+    source: &AdmittedRelationalBranchBasis,
+    cell: &super::reference::RelationalBranchReferenceCell,
+) -> Result<(), RelationalForkDenial> {
+    if cell.identity() != source.identity() {
+        return Err(RelationalForkDenial::ForeignRuntime);
     }
-
-    pub(super) fn validate_retained_fork_profile(&self) -> Result<(), RelationalForkDenial> {
-        if self.medium.is_some() {
-            return Err(RelationalForkDenial::RetainedSourceDurabilityUnsupported);
+    match cell.lifecycle_posture() {
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live => {}
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Archived => {
+            return Err(RelationalForkDenial::SourceArchived)
         }
-        Ok(())
+        crate::branch::lifecycle::RelationalBranchLifecyclePosture::Deleting => {
+            return Err(RelationalForkDenial::SourceDeleting)
+        }
     }
-
-    pub(super) fn validate_retained_basis(
-        &self,
-        source: &AdmittedRelationalBranchBasis,
-    ) -> Result<(), RelationalForkDenial> {
-        if source.identity().runtime_instance_id() != self.runtime_instance_id {
-            return Err(RelationalForkDenial::ForeignRuntime);
-        }
-        let cell = self
-            .owner
-            .branch_cell(source.identity().branch_id())
-            .ok_or(RelationalForkDenial::SourceBranchMissing)?;
-        if cell.identity() != source.identity() {
-            return Err(RelationalForkDenial::ForeignRuntime);
-        }
-        match cell.lifecycle_posture() {
-            super::RelationalBranchLifecyclePosture::Live => {}
-            super::RelationalBranchLifecyclePosture::Archived => {
-                return Err(RelationalForkDenial::SourceArchived)
-            }
-            super::RelationalBranchLifecyclePosture::Deleting => {
-                return Err(RelationalForkDenial::SourceDeleting)
-            }
-        }
-        if source.reference().target().is_empty() {
-            return Err(RelationalForkDenial::EmptySource);
-        }
-        super::basis_axis_validation::require_root_matches_reference(
-            source.reference(),
-            &source.inner.root,
-        )
-        .map_err(|_| RelationalForkDenial::MissingArtifact)
+    if source.reference().target().is_empty() {
+        return Err(RelationalForkDenial::EmptySource);
     }
+    super::basis_axis_validation::require_root_matches_reference(
+        source.reference(),
+        &source.inner.root,
+    )
+    .map_err(|_| RelationalForkDenial::MissingArtifact)
 }

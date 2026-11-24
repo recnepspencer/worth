@@ -1,8 +1,9 @@
 use std::collections::BTreeSet;
 
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, ExistingRecordTarget, MutationIntent,
-};
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::ExistingRecordTarget;
 
 pub(crate) fn detect_conflicting_updates(intents: &[MutationIntent]) -> Result<(), CommitConflict> {
     let mut seen_updates = BTreeSet::new();

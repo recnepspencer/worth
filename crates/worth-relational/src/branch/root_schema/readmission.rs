@@ -12,7 +12,8 @@ impl RelationalBranchRootSchemaAuthority {
         expected: &SchemaAuthoritySnapshot,
         descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
         control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Option<Arc<Self>>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<Arc<Self>>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let (funding, temporary) = match control {
             crate::schema::SchemaCompilationControl::Configuration => (None, None),
             crate::schema::SchemaCompilationControl::Request(request) => {
@@ -21,10 +22,10 @@ impl RelationalBranchRootSchemaAuthority {
                     &retained_aspect_contracts,
                     control,
                 )
-                .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-                let (memory, temporary) = quote
-                    .reserve(&request)
-                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
+                let (memory, temporary) = quote.reserve(&request).map_err(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::from,
+                )?;
                 (
                     Some(Arc::new(compiled_retention::SchemaCompilationFunding {
                         _memory: memory,

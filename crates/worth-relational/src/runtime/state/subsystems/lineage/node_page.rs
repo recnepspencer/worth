@@ -1,7 +1,7 @@
 //! Request-funded readmission of one authenticated, bounded node-range page.
-use crate::durability::data::RelationalCheckpointPage;
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
 use crate::lineage::data::LineageNode;
+use crate::storage::data::checkpoint_page::RelationalCheckpointPage;
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -96,7 +96,7 @@ impl<'de> Visitor<'de> for NodePageVisitor<'_, '_, '_> {
             if nodes.len() == width {
                 return Err(A::Error::custom("lineage page width drift"));
             }
-            crate::execution::check_request(self.execution).map_err(|cause| {
+            crate::execution::request_custody::check_request(self.execution).map_err(|cause| {
                 *self.denial = Some(Failure::Request(cause));
                 A::Error::custom("lineage page request stopped")
             })?;

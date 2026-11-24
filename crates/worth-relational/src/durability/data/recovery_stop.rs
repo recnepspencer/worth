@@ -109,3 +109,37 @@ impl From<crate::content::denial::RelationalContentDenial> for RelationalRecover
         }
     }
 }
+
+pub(crate) fn map_stop(
+    cause: worth_execution::ExecutionOrderedMapDenial,
+) -> RelationalRecoveryStop {
+    match cause {
+        worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
+            RelationalRecoveryStop::Request(cause.into())
+        }
+        worth_execution::ExecutionOrderedMapDenial::Allocation(cause) => {
+            RelationalRecoveryStop::Allocation(cause)
+        }
+        worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
+            RelationalRecoveryStop::Request(RelationalExecutionDenialCause::MemoryOverflow)
+        }
+    }
+}
+
+pub(crate) fn account_work(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    work: u64,
+) -> Result<(), RelationalRecoveryStop> {
+    let mut answer = None;
+    let scope = request.run_native_with_checkpoint(|context| {
+        answer = Some(crate::execution::request_stage::checkpoint(context, work));
+    });
+    match (scope, answer) {
+        (_, Some(Err(cause))) => Err(RelationalRecoveryStop::Request(
+            worth_execution::WorkCeilingDenial::Stopped(cause).into(),
+        )),
+        (Err(cause), _) => Err(RelationalRecoveryStop::Request(cause.into())),
+        (Ok(_), Some(Ok(()))) => Ok(()),
+        (Ok(_), None) => unreachable!("completed artifact work executes its callback"),
+    }
+}
