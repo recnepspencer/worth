@@ -7,7 +7,8 @@
 //! Unnamed programs carry an empty declaration and attach no naming plan.
 
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameSubjectKind as Subject, WorthQueryName,
+    ApplicationGroupKind, ApplicationNameSubjectKind as Subject, WorthQueryGroupPartition,
+    WorthQueryName,
 };
 use worth_query_execution_lineage::facade::ports::CreatedRelationInternalPort as _;
 use worth_query_execution_lineage::facade::persistent_naming::{
@@ -294,6 +295,34 @@ impl<Schema, Operation, Input, Scope>
             },
             name,
         ))
+    }
+
+    /// Declares group kind `G`'s next partition of its changed scope. Group
+    /// names are never minted here: Relational names each declared group by
+    /// `G`'s continuity rule when the commit finalizes, and an empty
+    /// partition declares nothing.
+    pub fn declare_group_partition<G: ApplicationGroupKind>(
+        &mut self,
+        partition: WorthQueryGroupPartition<G>,
+    ) -> Result<(), Refused> {
+        if partition.is_empty() {
+            return Ok(());
+        }
+        let (groups, dissolved) = partition.into_parts();
+        let groups = groups
+            .into_iter()
+            .map(|members| {
+                let members = members.into_iter();
+                members.map(|(role, name)| (role.to_owned(), name)).collect()
+            })
+            .collect();
+        self.persistent_names
+            .push(OperationNamingEntry::GroupPartition {
+                group_name: G::NAME.to_owned(),
+                dissolved,
+                groups,
+            });
+        Ok(())
     }
 
     fn push_retire(&mut self, subject: Subject, name: [u8; 32]) -> Result<(), Refused> {

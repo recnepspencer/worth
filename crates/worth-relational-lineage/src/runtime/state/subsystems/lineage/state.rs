@@ -23,6 +23,8 @@ pub struct LineageState {
     pub(super) naming_rebuilt_event_frontier: Option<u64>,
     pub(super) published_events: Vec<PublishedLineageEvent>,
     pub(super) published_event_positions: BTreeMap<u64, usize>,
+    pub(super) published_group_lineage: Vec<super::group_states::PublishedGroupLineage>,
+    pub(super) group_states: super::group_states::BranchGroupStates,
     resolution_indexes: LineageResolutionIndexes,
     pub(crate) identity_allocator: super::LineageIdentityAllocator,
 }
@@ -37,11 +39,29 @@ pub(super) struct PublishedLineageEvent {
 
 pub struct ValidatedLineageEventBatch {
     events: Vec<LineageEventRecord>,
+    groups: Option<(
+        BranchId,
+        Vec<crate::lineage::groups::CommittedGroupTransition>,
+    )>,
 }
 
 impl ValidatedLineageEventBatch {
     pub fn from_reserved(events: Vec<LineageEventRecord>) -> Self {
-        Self { events }
+        Self {
+            events,
+            groups: None,
+        }
+    }
+
+    /// Adds `branch`'s decoded canonical group lineage frame.
+    pub fn with_group_lineage(
+        mut self,
+        branch: &BranchId,
+        frame: &[u8],
+    ) -> Result<Self, crate::durability::naming::PersistentNameDurabilityError> {
+        let transitions = crate::durability::naming::decode_group_lineage_frame(frame)?;
+        self.groups = Some((branch.clone(), transitions));
+        Ok(self)
     }
 }
 
@@ -57,6 +77,8 @@ impl LineageState {
             naming_rebuilt_event_frontier: None,
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
+            published_group_lineage: Vec::new(),
+            group_states: Default::default(),
             resolution_indexes: LineageResolutionIndexes::default(),
             identity_allocator: super::LineageIdentityAllocator::new(),
         }
@@ -109,10 +131,14 @@ impl LineageState {
         publication_commit_id: CommitId,
     ) {
         let from = self.published_events.len();
+        let from_group = self.published_group_lineage.len();
         for event in batch.events {
             self.record_event(event, publication_commit_id);
         }
-        self.ingest_installed_name_events(from);
+        if let Some((branch, transitions)) = batch.groups {
+            self.record_group_lineage(&branch, publication_commit_id, transitions);
+        }
+        self.ingest_installed_name_events(from, from_group);
     }
 
     pub(crate) fn install_recovered_event_batch(
@@ -147,10 +173,11 @@ impl LineageState {
             })
             .transpose()?;
         let from = self.published_events.len();
+        let from_group = self.published_group_lineage.len();
         for event in events.iter().cloned() {
             self.record_event(event, publication_commit_id);
         }
-        self.ingest_installed_name_events(from);
+        self.ingest_installed_name_events(from, from_group);
         self.identity_allocator.advance_to(None, next_event_id);
         Ok(())
     }
@@ -276,6 +303,7 @@ impl LineageState {
             .iter()
             .map(|published| published.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
+        self.rebuild_group_states();
         self.branch_naming_states = rebuild_all_branch_naming_states(
             &self.published_events,
             &self.nodes,
@@ -353,6 +381,8 @@ impl Clone for LineageState {
             naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
             published_events: self.published_events.clone(),
             published_event_positions: self.published_event_positions.clone(),
+            published_group_lineage: self.published_group_lineage.clone(),
+            group_states: self.group_states.clone(),
             resolution_indexes: self.resolution_indexes.clone(),
             identity_allocator: self.identity_allocator.detached(),
         }

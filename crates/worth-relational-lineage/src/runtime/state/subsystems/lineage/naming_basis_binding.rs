@@ -43,6 +43,41 @@ impl LineageBasisView for BranchNamingBasisGuard<'_> {
     }
 }
 
+impl BranchNamingBasisGuard<'_> {
+    /// The guarded branch's group state; `None` before its first group
+    /// lineage, and a refusal while it is unavailable.
+    pub fn group_state(
+        &self,
+    ) -> Result<
+        Option<&crate::lineage::groups::BranchGroupState>,
+        &crate::lineage::groups::GroupStateDenial,
+    > {
+        self.guard.branch_group_state(&self.branch_id)
+    }
+
+    /// `branch`'s group state exactly as of `commit`, rebuilt from its
+    /// canonical published group lineage.
+    ///
+    /// Complexity: O(published group lineage along the ancestry).
+    pub fn group_state_at(
+        &self,
+        branch: &BranchId,
+        commit: CommitId,
+    ) -> Result<crate::lineage::groups::BranchGroupState, crate::lineage::groups::GroupStateDenial>
+    {
+        self.guard.rebuild_branch_group_state(branch, commit)
+    }
+
+    /// The holder and name `lineage_id` carried on the guarded branch.
+    pub fn holder_and_name_for_lineage(
+        &self,
+        lineage_id: LineageId,
+    ) -> Option<(PersistentNameHolder, PersistentNameIdentity)> {
+        self.guard
+            .holder_and_name_for_lineage(&self.branch_id, lineage_id)
+    }
+}
+
 /// Narrow read/fork-registration binding handed to `RelationalPreparationRuntime`
 /// and `RelationalForkPort`.
 #[derive(Debug)]

@@ -1,5 +1,30 @@
 use serde::{Deserialize, Serialize};
 
+mod civil_date;
+#[cfg(test)]
+mod tests;
+mod timestamp_text;
+
+/// A civil date or timestamp could not be represented by the native scalar.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CanonicalTemporalTextDenial {
+    InvalidDate,
+    InvalidTime,
+    OutOfRange,
+}
+
+impl std::fmt::Display for CanonicalTemporalTextDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::InvalidDate => "invalid Gregorian date",
+            Self::InvalidTime => "invalid time or UTC offset",
+            Self::OutOfRange => "date or time is outside the representable range",
+        })
+    }
+}
+
+impl std::error::Error for CanonicalTemporalTextDenial {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct CanonicalDate {
     pub days_from_unix_epoch: i32,

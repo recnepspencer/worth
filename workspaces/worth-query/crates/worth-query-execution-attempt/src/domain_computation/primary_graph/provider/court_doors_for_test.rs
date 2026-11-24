@@ -83,4 +83,28 @@ impl WorthQueryPrimaryGraphProvider {
     > {
         self.resolve_idempotency_binding_at_product(execution, binding, product)
     }
+
+    #[doc(hidden)]
+    pub fn committed_dispatch_outbox_count_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<usize, committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial> {
+        use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
+        use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+        self.graph.with_runtime(execution, |runtime| {
+            let (_, basis) = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .map_err(|_| Denial::ExactCommitUnavailable)?;
+            let view = runtime
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(|_| Denial::ExactCommitUnavailable)?;
+            let layout = self.graph.layout_ref().provider_dispatch_outbox();
+            let outboxes = view
+                .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
+                .map_err(|_| Denial::Malformed)?
+                .map_err(|_| Denial::Malformed)?;
+            Ok(outboxes.records().len())
+        })
+    }
 }

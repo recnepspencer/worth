@@ -154,6 +154,13 @@ pub trait SourceQueryReaderPort {
         crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial,
     >;
 
+    /// On a coupled candidate: whether the unpublished envelope already
+    /// claims group scheme `scheme`. When it does not, the decision's group
+    /// read is retained with the envelope's owner, so any member appended
+    /// after it that claims `scheme` refuses the envelope (#361). `None`
+    /// when no coupled candidate is lent to this reader.
+    fn retain_applied_group_read(&self, scheme: &str) -> Option<bool>;
+
     /// Returns `(installed_schema, mutation_projection, installed_packages, predecessor_access, original_access)` as `'static` `Any` refs.
     fn observation_components_any(
         &self,

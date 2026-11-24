@@ -2,6 +2,7 @@
 //! schemes.
 
 mod assembly;
+mod group_partition;
 mod postures;
 
 pub use assembly::{

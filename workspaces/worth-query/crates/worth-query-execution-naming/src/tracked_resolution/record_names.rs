@@ -2,7 +2,7 @@
 
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::lineage::{
-    LineageRecordTarget, PersistentNameOfRecord, PersistentNameSubjectKind,
+    LineageRecordTarget, PersistentNameKey, PersistentNameOfRecord, PersistentNameSubjectKind,
 };
 
 use super::{ExecutionNameReadDenial, ExecutionNameReader, NameReadDependencies};
@@ -44,6 +44,25 @@ impl ExecutionNameReader<'_> {
                         let (scheme_id, subject) = entity_scheme_subject(scheme_id, installed)?;
                         observed.record_named(entity, name, scheme_id, subject);
                         dependencies.record_live_record(&branch, lineage, record);
+                        let PersistentNameKey::Entity(identity) = name else {
+                            continue;
+                        };
+                        for (scheme, group) in view.groups_of_member(&identity) {
+                            let installed = self.runtime.persistent_name_scheme_subject(scheme);
+                            let Some((PersistentNameSubjectKind::Group, kind)) = installed else {
+                                return Err(ExecutionNameReadDenial::UnknownScheme {
+                                    scheme_id: Some(scheme.to_owned()),
+                                });
+                            };
+                            let digest = *group.digest();
+                            observed.record_group(entity, kind, digest);
+                            dependencies.record_group_member(
+                                &branch,
+                                scheme,
+                                *identity.as_bytes(),
+                                Some(digest),
+                            );
+                        }
                     }
                 }
             }

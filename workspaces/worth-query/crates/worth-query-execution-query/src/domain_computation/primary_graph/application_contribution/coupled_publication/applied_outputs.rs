@@ -57,4 +57,7 @@ impl<S: ApplicationSchema> AppliedOutputParticipants for CoupledApplicationAssem
     ) {
         self.alignments.borrow_mut().retain(alignment, observed);
     }
+    fn retain_group_read(&self, scheme: &str) {
+        self.group_reads.borrow_mut().retain(scheme);
+    }
 }

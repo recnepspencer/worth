@@ -2,8 +2,10 @@ use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
 mod records;
 pub use records::*;
+mod groups;
 mod roles;
-pub use roles::{MemberRole, SeamRole};
+pub use groups::{Loop, Shell, Zone, LOOP_SCHEME, SHELL_SCHEME, ZONE_SCHEME};
+pub use roles::{GroupRole, MemberRole, SeamRole};
 #[derive(Clone, Copy, Debug)]
 pub struct Schema;
 impl Fragment for Schema {
@@ -78,8 +80,35 @@ impl Registration<Schema> for Registrations {
         declare(schema)
             .application_name_scheme::<Member>(scheme)?
             .application_name_scheme::<Seam>(seam)
+            .and_then(declare_groups)
     }
 }
+/// One group scheme per continuity rule, roles and anchors typed.
+fn declare_groups(
+    schema: ApplicationSchemaDeclarationBuilder<Schema>,
+) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial> {
+    use worth_query_decl::facade::application_naming::{
+        ApplicationGroupContinuityRule as Rule, ApplicationGroupNameSchemeBuilder as Builder,
+    };
+    let loops = Builder::<Schema, Loop>::from_roles::<GroupRole>(LOOP_SCHEME, Rule::Anchor)
+        .anchor(GroupRole::Host)
+        .build()
+        .expect("the loop scheme is well-formed");
+    let zones = Builder::<Schema, Zone>::from_roles::<GroupRole>(ZONE_SCHEME, Rule::Boundary)
+        .boundary(GroupRole::Wall)
+        .build()
+        .expect("the zone scheme is well-formed");
+    let shells =
+        Builder::<Schema, Shell>::from_roles::<GroupRole>(SHELL_SCHEME, Rule::ProducerRole)
+            .anchor(GroupRole::Producer)
+            .build()
+            .expect("the shell scheme is well-formed");
+    schema
+        .application_group_name_scheme::<Loop>(loops)?
+        .application_group_name_scheme::<Zone>(zones)?
+        .application_group_name_scheme::<Shell>(shells)
+}
+
 #[derive(Clone, Copy)]
 pub struct Actor;
 impl Actor {
@@ -121,13 +150,13 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    coupled::producer::declare(stored::declare(named_read::declare(
+    coupled::producer::declare(retarget::declare(stored::declare(named_read::declare(
         outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(
             query::member::declare(query::model::declare(edit::declare(navigation::declare(
                 schema,
             )))),
         )))),
-    )))
+    ))))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -141,6 +170,7 @@ fn declare(
         .operation::<probe::Binding>("Probe names")
         .operation::<outputs::sculpt::Binding>("Sculpt members")
         .operation::<stored::Binding>("Hold name")
+        .operation::<retarget::Binding>("Retarget name")
         .operation::<coupled::producer::shape::Binding>("Shape pieces")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )

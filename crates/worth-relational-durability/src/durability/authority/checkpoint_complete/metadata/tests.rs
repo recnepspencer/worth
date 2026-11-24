@@ -339,3 +339,50 @@ fn metadata_member_directories_preserve_dictionary_ranges_and_alias_custody() {
     drop(aliases);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
+
+mod prior_symbol_fixtures;
+
+#[test]
+fn dictionary_pages_carry_prior_cold_symbols_merge_new_and_fail_closed() {
+    use super::super::symbols::OriginalSymbolDictionary;
+    use prior_symbol_fixtures::*;
+    let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let lineage = capture_lineage(&[], None, &request).unwrap();
+    let frozen = worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::IndexingSubsystem::default()
+        .checkpoint_inputs_for_request(&request)
+        .unwrap();
+    let indexes = crate::durability::authority::checkpoint_image::capture_frozen_indexes(
+        crate::durability::derived_index_artifacts::FrozenIndexCheckpoint::new(frozen, None),
+        &request,
+    )
+    .unwrap();
+    verify_prior_symbol_carry_and_merge(|interner, prior| {
+        let dict = OriginalSymbolDictionary::capture(interner, &[], &request)?;
+        capture_metadata_members(&dict, &lineage, &indexes, &|_| true, prior, &request)
+    });
+    let base_interner = interner_with(None, &["alpha"]);
+    let base_dict = OriginalSymbolDictionary::capture(&base_interner, &[], &request).unwrap();
+    let base = capture_metadata_members(&base_dict, &lineage, &indexes, &|_| true, None, &request)
+        .unwrap();
+    let prior = manifest_with_symbols(base.symbols.clone(), base.symbol_buckets.clone(), 2);
+    let cancel = CancellationSource::new();
+    cancel.cancel();
+    let cancelled = SerialRequest::from_memory(budget.clone(), cancel.token(), None);
+    assert!(matches!(
+        capture_metadata_members(
+            &base_dict,
+            &lineage,
+            &indexes,
+            &|_| true,
+            Some(&prior),
+            &ExecutionRequest::serial(&cancelled),
+        ),
+        Err(Denial::Request(
+            contracts::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
+        ))
+    ));
+    drop((prior, base, base_dict, indexes, lineage));
+    assert_eq!(budget.charged_memory_bytes(), 0);
+}

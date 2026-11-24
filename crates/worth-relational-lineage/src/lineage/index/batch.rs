@@ -2,6 +2,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use worth_foundational::facade::AggregateIdentity;
+
 use crate::contracts::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
 use crate::contracts::history::data::coordinates::CommitId;
@@ -24,6 +26,8 @@ pub struct PersistentNameCommittedBatch {
     pub(crate) relation_holders: BTreeMap<LineageId, RelationId>,
     pub(crate) group_events: BTreeSet<AggregateGroupLineageEvent>,
     pub(crate) carriers: BTreeMap<PersistentNameKey, BTreeSet<PersistentNameIdentity>>,
+    /// The installed scheme of every group this batch assigns.
+    pub(crate) group_schemes: BTreeMap<AggregateIdentity, String>,
 }
 
 impl PersistentNameCommittedBatch {
@@ -35,6 +39,7 @@ impl PersistentNameCommittedBatch {
             relation_holders: BTreeMap::new(),
             group_events: BTreeSet::new(),
             carriers: BTreeMap::new(),
+            group_schemes: BTreeMap::new(),
         }
     }
 
@@ -75,6 +80,20 @@ impl PersistentNameCommittedBatch {
                 .insert(PersistentNameKey::Group(assignment.identity), members);
         }
         self
+    }
+
+    /// Adds one installed scheme's committed group transition: its lineage,
+    /// each next-state group's members as carriers, and each group's scheme.
+    pub fn with_scheme_group_transition(
+        mut self,
+        scheme_id: &str,
+        transition: &AggregateGroupTransition,
+    ) -> Self {
+        for assignment in &transition.assignments {
+            self.group_schemes
+                .insert(assignment.identity, scheme_id.to_owned());
+        }
+        self.with_group_transition(transition)
     }
 
     /// Declares the carriers `name` is bounded by from this commit on.

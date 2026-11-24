@@ -80,3 +80,16 @@ fn admit_resolved_name_key<K>(
     verify_resolved_subject(runtime, view, key, requested)?;
     Ok(admit_minted_digest(*key.digest()))
 }
+
+/// The live group a verified resolved group target names, as the kind-typed
+/// handle its resolution answers with.
+pub(crate) fn resolved_group_handle<G>(
+    target: &worth_relational::facade::lineage::PersistentNameTarget,
+) -> Option<WorthQueryName<G>> {
+    match target {
+        worth_relational::facade::lineage::PersistentNameTarget::Group { group } => {
+            Some(admit_minted_digest(*group.bytes()))
+        }
+        _ => None,
+    }
+}

@@ -65,7 +65,7 @@ impl PhysicalRecoveryPlatformAuthority {
         Self::from_qualified_media(root, configuration, limits, media, freshness)
     }
 
-    #[cfg(feature = "certification-test-authority")]
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub fn acquire_for_certification(
         root: PathBuf,
         configuration: PhysicalRecoveryStaticConfiguration,

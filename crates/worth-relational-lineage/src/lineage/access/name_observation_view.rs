@@ -80,8 +80,48 @@ impl<'index> PersistentNameObservationView<'index> {
         (born_at <= self.basis).then_some(key)
     }
 
+    /// The live group of installed group scheme `scheme_id` holding `member`
+    /// at the basis.
+    ///
+    /// Complexity: O(1) expected plus O(log t) in the member's own tenure.
+    pub fn group_of_member(
+        &self,
+        scheme_id: &str,
+        member: &PersistentNameIdentity,
+    ) -> Option<PersistentNameKey> {
+        let group = self.index?.group_of_member(scheme_id, member, self.basis)?;
+        Some(PersistentNameKey::Group(group))
+    }
+
+    /// Every `(group scheme, group)` holding `member` at the basis.
+    ///
+    /// Complexity: O(1) expected plus O(S log t) over its S scheme tenures.
+    pub fn groups_of_member(
+        &self,
+        member: &PersistentNameIdentity,
+    ) -> Vec<(&'index str, PersistentNameKey)> {
+        let Some(index) = self.index else {
+            return Vec::new();
+        };
+        let groups = index.groups_of_member(member, self.basis).into_iter();
+        groups
+            .map(|(scheme, group)| (scheme, PersistentNameKey::Group(group)))
+            .collect()
+    }
+
+    /// The member names of `group` at the basis, when it is live there.
+    ///
+    /// Complexity: O(log t) in the group's own timeline plus O(members).
+    pub fn group_members(&self, group: PersistentNameKey) -> Option<Vec<PersistentNameIdentity>> {
+        let PersistentNameKey::Group(group) = group else {
+            return None;
+        };
+        let members = self.index?.group_members_at(group, self.basis)?;
+        Some(members.iter().copied().collect())
+    }
+
     /// The installed scheme `name` was born under, when its birth is visible
-    /// at the basis; groups carry none.
+    /// at the basis.
     ///
     /// Complexity: O(1) expected.
     pub fn scheme_of(&self, name: PersistentNameKey) -> Option<&'index str> {

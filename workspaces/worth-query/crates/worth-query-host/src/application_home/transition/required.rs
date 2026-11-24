@@ -1,5 +1,7 @@
 //! Recorded and requested meaning remain distinct on a refused opening.
-use super::super::refusal::WorthQueryApplicationHomeOpenRefused;
+use super::super::refusal::{
+    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
+};
 use worth_foundational::facade::ApplicationHomeBinding;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_store_application::{ApplicationHomeDescriptorDenial, ApplicationHomeOpenRefusal};
@@ -26,7 +28,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
     /// Inspect a transition requirement without importing the Store composition
     /// facade or interpreting a diagnostic string.
     pub fn transition_required(&self) -> Option<WorthQueryApplicationHomeTransitionRequired<'_>> {
-        let Self::Physical {
+        let WorthQueryApplicationHomeOpenRefusedPhase::Physical {
             cause:
                 ApplicationHomeOpenRefusal::Descriptor(
                     ApplicationHomeDescriptorDenial::TransitionRequired {
@@ -36,7 +38,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
                     },
                 ),
             ..
-        } = self
+        } = self.phase()
         else {
             return None;
         };

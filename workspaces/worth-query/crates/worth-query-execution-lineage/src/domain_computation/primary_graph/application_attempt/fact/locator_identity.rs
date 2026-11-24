@@ -21,6 +21,7 @@ pub fn write(
         WorthQueryApplicationObservedFact::SourcePublication { observation } =>
             write!(output, "application-source-publication:{:?}", observation.address()),
         WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => output.write_str(read_locator),
+        WorthQueryApplicationObservedFact::PersistentGroup { read, .. } => read.write_locator(output),
         WorthQueryApplicationObservedFact::SourceEntity { entity_id } => write!(output,
             "application-source-entity:{}:{}:{}",
             entity_id.partition_value(),

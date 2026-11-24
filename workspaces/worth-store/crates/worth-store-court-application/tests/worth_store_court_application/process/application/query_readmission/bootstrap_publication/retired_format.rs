@@ -1,7 +1,6 @@
 //! A retired completion version cannot initialize or serve an existing Home.
 use super::*;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
-use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused;
 use worth_relational::facade::transactions::*;
 
 #[test]
@@ -98,7 +97,10 @@ fn retired_bootstrap_completion_format_refuses_existing_home_without_replaying_s
     .unwrap()
     .err()
     .expect("retired development format must refuse");
-    let WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } = &refused
+    let worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::ExistingNativeFinalization {
+        query,
+        ..
+    } = refused.phase()
     else {
         panic!("actual Native completion admission must refuse: {refused:?}");
     };

@@ -16,6 +16,7 @@ mod candidates;
 mod candidates_tests;
 mod denial;
 mod dependencies;
+mod group_reads;
 mod reader;
 mod record_names;
 mod resolve;

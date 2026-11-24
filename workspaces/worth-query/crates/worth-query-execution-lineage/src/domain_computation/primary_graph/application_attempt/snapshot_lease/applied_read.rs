@@ -20,6 +20,13 @@ impl WorthQueryApplicationSnapshotLease {
         key: &Key,
     ) -> Option<Result<Fact, Denial>> {
         use super::super::read_set::fact_observation::observe_applied_fact;
+        // A candidate holds no group state of its own: a group fact is
+        // observed at the lease's commit basis, which the decision reader
+        // admitted only where the candidate claimed no partition of its
+        // scheme and left every member it rests on live (#361).
+        if matches!(key, Key::PersistentGroup(_)) {
+            return None;
+        }
         let entity = super::super::fact::touch_key::head_served_record(key);
         let pin = self.applied_projection_of(entity)?;
         let mut observed = observe_applied_fact(execution, &self.layout, key, pin);

@@ -1,6 +1,10 @@
 //! The one World admission and actual A-to-B Native compilation.
 use super::super::{
-    refusal::WorthQueryApplicationHomeOpenRefused as OldRefused, runtime::DirectoryHome,
+    refusal::{
+        WorthQueryApplicationHomeOpenRefused as OldRefused,
+        WorthQueryApplicationHomeOpenRefusedPhase as OldPhase,
+    },
+    runtime::DirectoryHome,
 };
 use super::refusal::{
     WorthQueryHomeProgramTransitionDenial as Denial,
@@ -66,11 +70,11 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Ok(bridge) => bridge,
         Err(cause) => {
             return Err(Refused::predecessor(
-                OldRefused::ExistingBridgeDefinition {
+                OldRefused::from_phase(OldPhase::ExistingBridgeDefinition {
                     query: before,
                     home,
                     cause,
-                },
+                }),
                 after,
             ))
         }
@@ -84,10 +88,10 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Ok(source) => source,
         Err(home) => {
             return Err(Refused::predecessor(
-                OldRefused::ExistingWorldSourcePreparation {
+                OldRefused::from_phase(OldPhase::ExistingWorldSourcePreparation {
                     query: before,
                     home,
-                },
+                }),
                 after,
             ))
         }
@@ -98,10 +102,10 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             Ok(parts) => parts,
             Err(query) => {
                 return Err(Refused::predecessor(
-                    OldRefused::SignalProgramPreparation {
+                    OldRefused::from_phase(OldPhase::SignalProgramPreparation {
                         home: source,
                         query: Box::new(query),
-                    },
+                    }),
                     after,
                 ))
             }
@@ -110,11 +114,11 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Ok(signal) => signal,
         Err(home) => {
             return Err(Refused::predecessor(
-                OldRefused::ExistingWorldReadmission {
+                OldRefused::from_phase(OldPhase::ExistingWorldReadmission {
                     query: before,
                     home,
                     _bindings: bindings,
-                },
+                }),
                 after,
             ))
         }
@@ -123,11 +127,11 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Ok(home) => home.consume(|home| home),
         Err(home) => {
             return Err(Refused::predecessor(
-                OldRefused::ExistingWorldReadmission {
+                OldRefused::from_phase(OldPhase::ExistingWorldReadmission {
                     query: before,
                     home,
                     _bindings: bindings,
-                },
+                }),
                 after,
             ))
         }

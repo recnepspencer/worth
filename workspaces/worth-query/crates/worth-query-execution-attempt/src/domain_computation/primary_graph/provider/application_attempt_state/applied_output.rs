@@ -28,6 +28,9 @@ pub trait AppliedOutputParticipants {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     );
+    /// Retain a group read of `scheme` a decision of this assembly took from
+    /// its committed basis: a later append that claims `scheme` refuses.
+    fn retain_group_read(&self, scheme: &str);
 }
 pub struct AppliedFamilyOutputs {
     pub outputs: Vec<ConsumedOutputEvidence>,

@@ -12,6 +12,7 @@ mod exact_reads;
 mod lineage_at_observation;
 pub(crate) use worth_relational_contracts::internal_port::change_source::memory_close_observation;
 mod names_at_observation;
+mod names_at_snapshot;
 mod observation_read;
 mod partition_projection;
 pub(crate) use worth_relational_branch::internal_port::change_source::receipt;

@@ -24,6 +24,7 @@ use crate::lineage::index::{
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
+use super::group_states::PublishedGroupLineage;
 use super::state::PublishedLineageEvent;
 use super::{LineageState, LineageSubsystem};
 
@@ -105,9 +106,10 @@ impl LineageState {
     ///
     /// Complexity: O(installed events + forks * ancestry depth); a rebuild,
     /// O(installed events), happens only for a fork taken mid-settlement.
-    pub(super) fn ingest_installed_name_events(&mut self, from: usize) {
+    pub(super) fn ingest_installed_name_events(&mut self, from: usize, from_group: usize) {
         let mut name_indexes = std::mem::take(&mut self.name_indexes);
-        let batches = self.name_batches(&self.published_events[from..]);
+        let groups: Vec<_> = self.published_group_lineage[from_group..].iter().collect();
+        let batches = self.name_batches(&self.published_events[from..], &groups);
         for (branch_id, batch) in &batches {
             name_indexes.ingest(branch_id, batch);
         }
@@ -153,7 +155,12 @@ impl LineageState {
             .map(|position| self.published_events[*position].clone())
             .collect();
         let mut name_indexes = std::mem::take(&mut self.name_indexes);
-        for (branch_id, batch) in self.name_batches(&events) {
+        let mut groups: Vec<_> = events
+            .iter()
+            .filter_map(|p| self.group_lineage_at(p.event.branch_id(), p.publication_commit_id))
+            .collect();
+        groups.dedup_by_key(|record| record.commit);
+        for (branch_id, batch) in self.name_batches(&events, &groups) {
             name_indexes.ingest(&branch_id, &batch);
         }
         self.name_indexes = name_indexes;
@@ -223,7 +230,8 @@ impl LineageState {
                 .filter(|p| p.event.branch_id() == ancestor && p.publication_commit_id <= *bound)
                 .cloned()
                 .collect();
-            for (_, batch) in self.name_batches(&own) {
+            let groups = self.own_group_lineage(ancestor, *bound);
+            for (_, batch) in self.name_batches(&own, &groups) {
                 if let Err(denial) = current.apply(&batch) {
                     return BranchNameIndex::Unavailable(denial);
                 }
@@ -235,7 +243,11 @@ impl LineageState {
 
     /// `branch` and its fork ancestors, nearest first, each with the commit
     /// through which its history reaches `branch`.
-    fn ancestry(&self, branch: &BranchId, cutoff: CommitId) -> Vec<(BranchId, CommitId)> {
+    pub(super) fn ancestry(
+        &self,
+        branch: &BranchId,
+        cutoff: CommitId,
+    ) -> Vec<(BranchId, CommitId)> {
         let mut ancestry = vec![(branch.clone(), cutoff)];
         let mut visited = BTreeSet::from([branch.clone()]);
         while let Some((parent, fork_commit)) = ancestry
@@ -252,10 +264,12 @@ impl LineageState {
     }
 
     /// Groups consecutive events by branch and publication commit into
-    /// committed batches, binding each named created lineage to its record.
+    /// committed batches, binding each named created lineage to its record,
+    /// and joins each commit's published group lineage to its batch.
     fn name_batches(
         &self,
         events: &[PublishedLineageEvent],
+        groups: &[&PublishedGroupLineage],
     ) -> Vec<(BranchId, PersistentNameCommittedBatch)> {
         let mut batches: Vec<(BranchId, CommitId, Vec<LineageEventRecord>)> = Vec::new();
         for published in events {
@@ -273,13 +287,29 @@ impl LineageState {
                 )),
             }
         }
+        for record in groups {
+            let joined = batches
+                .iter()
+                .any(|(branch, commit, _)| *branch == record.branch && *commit == record.commit);
+            if !joined {
+                batches.push((record.branch.clone(), record.commit, Vec::new()));
+            }
+        }
+        batches.sort_by_key(|(_, commit, _)| *commit);
         batches
             .into_iter()
             .map(|(branch, commit, run)| {
                 let (entities, relations) =
                     named_holders(&run, &self.nodes, &self.relation_lineage_holders);
-                let batch = PersistentNameCommittedBatch::new(commit)
+                let mut batch = PersistentNameCommittedBatch::new(commit)
                     .with_lineage_events(run, entities, relations);
+                let record = groups
+                    .iter()
+                    .find(|record| record.branch == branch && record.commit == commit);
+                for committed in record.iter().flat_map(|record| record.transitions.iter()) {
+                    batch = batch
+                        .with_scheme_group_transition(committed.scheme_id(), &committed.transition);
+                }
                 (branch, batch)
             })
             .collect()

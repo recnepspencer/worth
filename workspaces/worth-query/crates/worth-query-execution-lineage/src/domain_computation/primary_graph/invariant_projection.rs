@@ -88,6 +88,7 @@ pub use locked_reader::{
 pub use operation_projection_denial::{
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
 };
+pub use operation_reader::group_naming::WorthQueryDecisionGroupResolution;
 pub use operation_reader::naming::{
     NameOwnerOf, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
     WorthQueryDecisionNameResolution,

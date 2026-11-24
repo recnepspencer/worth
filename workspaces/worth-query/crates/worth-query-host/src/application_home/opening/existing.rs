@@ -46,20 +46,26 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let (native, authority, outcome) = match home.recovered_query_finalization_parts() {
         Ok(parts) => parts,
         Err(cause) => {
-            return Err(Refused::NativeFinalizationInput {
+            return Err(Refused::from_phase(Phase::NativeFinalizationInput {
                 query,
                 home,
                 cause: ApplicationHomeOpenRefusal::Relational(cause),
-            })
+            }))
         }
     };
     let query =
         match query.finish_existing_home_native_readmission(phase, native, authority, outcome) {
             Ok(query) => query,
-            Err(query) => return Err(Refused::ExistingNativeFinalization { query, home }),
+            Err(query) => {
+                return Err(Refused::from_phase(Phase::ExistingNativeFinalization {
+                    query,
+                    home,
+                }))
+            }
         };
     Ok((query, home))
 }
@@ -84,52 +90,70 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let bridge = match query.home_bridge_definition() {
         Ok(bridge) => bridge,
-        Err(cause) => return Err(Refused::ExistingBridgeDefinition { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::ExistingBridgeDefinition {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
     let definition =
         ApplicationHomeWorldDefinition::new(bridge, "primary", budgets, clock, policy, execution);
     let source = match prepare_query_home_source(home.share(), definition, &request) {
         Ok(source) => source,
-        Err(home) => return Err(Refused::ExistingWorldSourcePreparation { query, home }),
+        Err(home) => {
+            return Err(Refused::from_phase(Phase::ExistingWorldSourcePreparation {
+                query,
+                home,
+            }))
+        }
     };
     let (registered, ordinary) = source.query_source_parts();
     let (query, builder, mut bindings) =
         match query.prepare_existing_home_signal_program(phase, registered, ordinary) {
             Ok(parts) => parts,
             Err(query) => {
-                return Err(Refused::SignalProgramPreparation {
+                return Err(Refused::from_phase(Phase::SignalProgramPreparation {
                     home: source,
                     query: Box::new(query),
-                })
+                }))
             }
         };
     let signal = match readmit_query_signal(source, builder, &mut bindings, &request) {
         Ok(signal) => signal,
         Err(home) => {
-            return Err(Refused::ExistingWorldReadmission {
+            return Err(Refused::from_phase(Phase::ExistingWorldReadmission {
                 query,
                 home,
                 _bindings: bindings,
-            })
+            }))
         }
     };
     let home = match readmit_query_world(signal, &request) {
         Ok(home) => home.consume(|home| home),
         Err(home) => {
-            return Err(Refused::ExistingWorldReadmission {
+            return Err(Refused::from_phase(Phase::ExistingWorldReadmission {
                 query,
                 home,
                 _bindings: bindings,
-            })
+            }))
         }
     };
     let (_, _, conditional) = match home.query_composition_parts() {
         Ok(parts) => parts,
-        Err(cause) => return Err(Refused::ExistingComposition { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::ExistingComposition {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::QueryReadmission,
@@ -137,7 +161,12 @@ where
     );
     let query = match query.attach_existing_home_authored_signal(conditional) {
         Ok(query) => query,
-        Err(query) => return Err(Refused::ExistingSourceAttachment { query, home }),
+        Err(query) => {
+            return Err(Refused::from_phase(Phase::ExistingSourceAttachment {
+                query,
+                home,
+            }))
+        }
     };
     Ok((query, home))
 }
@@ -159,15 +188,28 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let mut home = home;
     let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
         Ok(operation) => operation,
-        Err(cause) => return Err(Refused::ExistingCheckpointMaintenance { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::ExistingCheckpointMaintenance {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
-        Err(cause) => return Err(Refused::ExistingWorldRoot { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::ExistingWorldRoot {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let ports = home.world();
     let query = match query.attach_existing_home_world(
@@ -182,7 +224,12 @@ where
         home.branch_program_source_owner(),
     ) {
         Ok(query) => query.consume(|query| query),
-        Err(query) => return Err(Refused::ExistingQueryAttachment { query, home }),
+        Err(query) => {
+            return Err(Refused::from_phase(Phase::ExistingQueryAttachment {
+                query,
+                home,
+            }))
+        }
     };
     Ok((query, home))
 }

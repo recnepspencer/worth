@@ -36,3 +36,19 @@ pub enum SeamRole {
     #[worth_query(name = "seam_piece")]
     SeamPiece,
 }
+
+/// The member roles every test group kind declares.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryNameRole)]
+pub enum GroupRole {
+    /// The member a `Loop` follows (its anchor).
+    #[worth_query(name = "host")]
+    Host,
+    /// The enclosing member a `Zone` follows (its boundary).
+    #[worth_query(name = "wall")]
+    Wall,
+    /// The producing member a `Shell` follows.
+    #[worth_query(name = "producer")]
+    Producer,
+    #[worth_query(name = "member")]
+    Member,
+}

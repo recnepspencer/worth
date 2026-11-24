@@ -9,6 +9,7 @@ pub mod original_inputs;
 pub mod original_schemas;
 pub mod recorded_result_schema;
 pub mod recovered_counter_capacity;
+pub mod recovered_group_lineage;
 pub mod recovered_lineage_artifacts;
 #[cfg(test)]
 pub mod recovered_lineage_restore_tests;

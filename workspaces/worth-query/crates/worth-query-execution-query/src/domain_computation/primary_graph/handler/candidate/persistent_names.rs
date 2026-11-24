@@ -2,7 +2,7 @@
 //! outputs. Each call only declares meaning; Relational mints and validates
 //! every name against the performed effects at commit.
 use worth_query_declaration::facade::application_naming::{
-    WorthQueryName, WorthQuerySameCommitName,
+    ApplicationGroupKind, WorthQueryGroupPartition, WorthQueryName, WorthQuerySameCommitName,
 };
 use worth_query_execution_naming::facade::{WorthQueryOutputBirth, WorthQueryOutputMergeKeeper};
 
@@ -94,6 +94,16 @@ where
         )>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.split_relation_name(parent, children)
+    }
+
+    /// Declares group kind `G`'s next partition: which members belong
+    /// together, by name and typed role, and which held groups dissolve.
+    /// Relational names every group by `G`'s continuity rule at commit.
+    pub fn declare_group_partition<G: ApplicationGroupKind>(
+        &mut self,
+        partition: WorthQueryGroupPartition<G>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.declare_group_partition(partition)
     }
 
     /// Merges held entity names under `keeper`.

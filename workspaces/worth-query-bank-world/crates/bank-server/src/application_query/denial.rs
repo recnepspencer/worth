@@ -83,6 +83,9 @@ pub enum BankApplicationQueryDenial {
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    InputPreparation(
+        worth_query_decl::facade::application_query::ApplicationQueryInputPreparationDenial,
+    ),
     RequestMode,
     LiveRetainedBasis,
     LiveControls(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControlDenial),
@@ -130,6 +133,9 @@ impl BankApplicationQueryDenial {
             WorthQueryApplicationLiveOpenRequestDenial::ExecutionRequest(cause) => {
                 Self::from_execution_request(cause)
             }
+            WorthQueryApplicationLiveOpenRequestDenial::InputPreparation(denial) => {
+                Self::InputPreparation(denial)
+            }
             WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis => Self::LiveRetainedBasis,
             WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation(denial) => {
                 Self::from_installation(denial)
@@ -166,6 +172,9 @@ impl BankApplicationQueryDenial {
             }
             WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) => {
                 Self::from_execution_request(cause)
+            }
+            WorthQueryApplicationRequestQueryDenial::InputPreparation(denial) => {
+                Self::InputPreparation(denial)
             }
             WorthQueryApplicationRequestQueryDenial::ProductSelection(denial) => {
                 Self::from_product_selection(denial)

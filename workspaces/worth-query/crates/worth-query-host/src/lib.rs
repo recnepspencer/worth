@@ -86,11 +86,11 @@
 //! # fn _open_refused_payloads<S: worth_query_host::facade::declaration::application_schema::ApplicationSchemaComposition, P>(
 //! #     refused: worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<S, P>,
 //! # ) {
-//! #     match refused {
-//! #         worth_query_host::facade::WorthQueryApplicationHomeOpenRefused::Binding {
+//! #     match *refused.into_phase() {
+//! #         worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::Binding {
 //! #             cause, ..
 //! #         } => { let _: domain::WorthQueryHomeBindingDenial = cause; }
-//! #         other => { let _: Option<&worth_query_host::facade::ApplicationHomePhysicalRefusal> = other.physical_refusal(); }
+//! #         _ => {}
 //! #     }
 //! # }
 //! ```

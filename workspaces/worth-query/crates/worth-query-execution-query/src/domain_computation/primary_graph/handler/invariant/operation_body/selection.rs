@@ -62,7 +62,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                         .body_related_selection(self.scope, selection, execution, context)?;
                     targets.push((selection.clone(), target));
                 }
-                Ok(targets)
+                Ok::<_, HandlerExecutionDenial>(targets)
             })
             .map_err(HandlerExecutionDenial::new)??;
         Ok(PreparedBodySelections {

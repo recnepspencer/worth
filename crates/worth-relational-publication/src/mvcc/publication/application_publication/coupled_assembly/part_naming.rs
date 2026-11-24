@@ -75,8 +75,10 @@ pub fn visit_endpoints_mut<E>(
 /// later authored stage's, then each producer chain's latest round. Nothing is
 /// merged or deduplicated; Relational's finalization judges the whole plan,
 /// so a name two parts mint refuses `DuplicateBirth` and a schemed record no
-/// part names refuses `MissingBirth`, with no effect committed. `None` when no
-/// member declared a name.
+/// part names refuses `MissingBirth`, with no effect committed. Group
+/// partitions compose the same way: claims over one scheme join one changed
+/// scope, so a member two parts both group refuses `OverlappingMember`.
+/// `None` when no member declared a name.
 pub fn compose(
     execution: &ExecutionRequest<'_, '_>,
     root: Option<&CommitNamingPlan>,
@@ -89,13 +91,15 @@ pub fn compose(
                 let charge = part.pending_births.len()
                     + part.pending_splits.len()
                     + part.pending_merges.len()
-                    + part.postures.len();
+                    + part.postures.len()
+                    + part.groups.len();
                 checkpoint(context, charge as u64 + 1).map_err(custody::execution_stop)?;
                 let plan = composed.get_or_insert_with(CommitNamingPlan::default);
                 append(&mut plan.pending_births, part.pending_births)?;
                 append(&mut plan.pending_splits, part.pending_splits)?;
                 append(&mut plan.pending_merges, part.pending_merges)?;
                 append(&mut plan.postures, part.postures)?;
+                append(&mut plan.groups, part.groups)?;
             }
             Ok::<_, TransactionCommitError>(())
         })
@@ -112,4 +116,18 @@ fn append<T>(into: &mut Vec<T>, from: Vec<T>) -> Result<(), TransactionCommitErr
     })?;
     into.extend(from);
     Ok(())
+}
+
+/// Whether the plans the envelope composes so far (`compose`'s root and
+/// members) claim group scheme `scheme`: a partition or dissolve its commit
+/// finalizes against the basis's groups.
+pub fn claims_group_scheme<'p>(
+    root: Option<&'p CommitNamingPlan>,
+    members: impl IntoIterator<Item = Option<&'p CommitNamingPlan>>,
+    scheme: &str,
+) -> bool {
+    root.into_iter()
+        .chain(members.into_iter().flatten())
+        .flat_map(|plan| &plan.groups)
+        .any(|claim| claim.scheme.id().as_str() == scheme)
 }
