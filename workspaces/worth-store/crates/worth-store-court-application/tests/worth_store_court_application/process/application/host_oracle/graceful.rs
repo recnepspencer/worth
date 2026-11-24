@@ -8,7 +8,7 @@ use std::sync::{
 };
 mod discard_derived;
 mod script;
-mod signal;
+pub(super) mod signal;
 
 #[test]
 fn graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes() {

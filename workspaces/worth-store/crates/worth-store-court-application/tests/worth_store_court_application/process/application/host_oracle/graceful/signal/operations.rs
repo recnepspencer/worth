@@ -165,6 +165,78 @@ pub(super) fn installed(home: &Home) -> Vec<product::WorthQueryProductBranch> {
     branches.sort_by_key(|branch| branch.occurrence_ordinal());
     branches
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(in super::super::super) struct SignalOracleDetails {
+    pub signal_generation: u64,
+    pub world_reference_generation: u64,
+    pub installed_conditional_definition_count: usize,
+    pub installed_conditional_target_ref_count: usize,
+    pub owned_signal_active_node_count: usize,
+    pub head_attempt_ordinal: Option<u64>,
+    pub head_native_commit_id: Option<u64>,
+    pub head_native_version_id: Option<u64>,
+    pub head_relational_changed: bool,
+    pub head_signal_changed: bool,
+    pub head_signal_movement: Option<String>,
+}
+
+/// Durable Signal/Bridge generations, installed conditional counts, and head
+/// World occurrence coordinates observed via the authorized Signal testkit boundary.
+pub(in super::super::super) fn signal_oracle_details(
+    home: &Home,
+    branch: product::WorthQueryProductBranch,
+) -> SignalOracleDetails {
+    use worth_runtime_world::facade::{
+        CompositeComponentChangePosture as Posture, CompositeCommitProvenance as Prov,
+    };
+    let app = home.runtime();
+    let selected = app
+        .with_host_advancement(|phase| app.on_branch(branch).select(&phase))
+        .unwrap()
+        .unwrap();
+    let prod = selected.product();
+    let commit_ord = prod.selected_commit().ordinal();
+    let signal_generation = prod.signal_generation_for_test();
+    let world_reference_generation = prod.world_reference_generation_for_test();
+    drop(selected);
+    let rt = app.runtime();
+    let ancestry = rt.application_oracle_ancestry_for_test();
+    let occ = ancestry
+        .occurrences
+        .iter()
+        .find(|e| e.identity.ordinal() == commit_ord)
+        .expect("selected commit must exist in durable World ancestry");
+    let head_attempt_ordinal = match &occ.provenance {
+        Prov::Publication(id) => Some(id.ordinal()),
+        Prov::Bootstrap(_) => None,
+    };
+    let (head_native_commit_id, head_native_version_id) = match &occ.relational_publication {
+        Some(p) => (Some(p.commit_id().0), Some(p.version_id().as_u64())),
+        None => (None, None),
+    };
+    SignalOracleDetails {
+        signal_generation,
+        world_reference_generation,
+        installed_conditional_definition_count: rt.installed_conditional_definition_count_for_test(),
+        installed_conditional_target_ref_count: rt
+            .installed_conditional_target_reference_count_for_test(),
+        owned_signal_active_node_count: rt.owned_signal_active_node_count_for_test(),
+        head_attempt_ordinal,
+        head_native_commit_id,
+        head_native_version_id,
+        head_relational_changed: occ.relational_change == Posture::Published,
+        head_signal_changed: occ.signal_change == Posture::Published,
+        head_signal_movement: occ.signal_movement.map(|m| format!("{m:?}")),
+    }
+}
+
+pub(in super::super::super) fn product_generations(
+    home: &Home,
+    branch: product::WorthQueryProductBranch,
+) -> (u64, u64) {
+    let d = signal_oracle_details(home, branch);
+    (d.signal_generation, d.world_reference_generation)
+}
 /// These are observations for comparison, never reopen identities or authority.
 pub(super) fn frontiers(
     home: &Home,

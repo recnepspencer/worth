@@ -72,7 +72,17 @@ impl HomeIntentPublication {
                     })
                 }
                 OrderedJournalStoppedPoll::Failed(custody) => {
-                    Some(Endpoint::Stopped(custody.into_stopped()))
+                    let observed = custody.observe();
+                    if observed.terminal().is_some() {
+                        let valid = self.matches(observed.source());
+                        self.state().invalid |= !valid;
+                        drop(custody.into_stopped());
+                        Some(Endpoint::Terminal {
+                            _observation: observed,
+                        })
+                    } else {
+                        Some(Endpoint::Stopped(custody.into_stopped()))
+                    }
                 }
             },
             terminal => terminal,

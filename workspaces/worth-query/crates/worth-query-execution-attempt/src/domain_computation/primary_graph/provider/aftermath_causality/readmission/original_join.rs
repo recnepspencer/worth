@@ -8,21 +8,58 @@ pub(super) fn readmit(
 ) -> Result<BTreeMap<CommitId, WorthQueryCanonicalCorrectionFact>, Denial> {
     let mut joined = BTreeMap::new();
     for fact in facts {
-        let child = original_for_commit(originals, fact.child.commit_id, &fact.record)?;
-        match scope {
-            JoinScope::CurrentNativeHead(_) => {}
-            JoinScope::SelectedWorldBranch(branch) => {
-                if !originals
-                    .original_is_ancestor_of(&child, branch.selected_commit(), execution)
-                    .map_err(Denial::World)?
-                {
-                    return Err(Denial::OutsideOriginalAncestry {
+        match original_for_commit(originals, fact.child.commit_id, &fact.record) {
+            Ok(child) => {
+                match scope {
+                    JoinScope::CurrentNativeHead(_, _, _) => {}
+                    JoinScope::SelectedWorldBranch(branch) => {
+                        if !originals
+                            .original_is_ancestor_of(&child, branch.selected_commit(), execution)
+                            .map_err(Denial::World)?
+                        {
+                            return Err(Denial::OutsideOriginalAncestry {
+                                record: fact.record,
+                            });
+                        }
+                    }
+                }
+                join_coordinates(execution, originals, &fact, &child, false)?;
+            }
+            Err(Denial::MissingWorldOriginal { .. }) => {
+                let JoinScope::CurrentNativeHead(_, continuable, _) = scope else {
+                    return Err(Denial::MissingWorldOriginal {
+                        record: fact.record,
+                    });
+                };
+                let attempt = continuable.get(&fact.child.commit_id).ok_or_else(|| {
+                    Denial::MissingWorldOriginal {
+                        record: fact.record.clone(),
+                    }
+                })?;
+                let state = originals.original_state(*attempt).ok_or_else(|| {
+                    Denial::MissingWorldOriginal {
+                        record: fact.record.clone(),
+                    }
+                })?;
+                if !matches!(
+                    state.fate(),
+                    worth_foundational::facade::WorldOriginalFate::Open
+                        | worth_foundational::facade::WorldOriginalFate::Continued
+                ) {
+                    return Err(Denial::MissingWorldOriginal {
                         record: fact.record,
                     });
                 }
+                let predecessor = originals
+                    .original_observations()
+                    .find(|obs| obs.identity() == state.predecessor())
+                    .ok_or_else(|| Denial::MissingWorldOriginal {
+                        record: fact.record.clone(),
+                    })?;
+                join_coordinates(execution, originals, &fact, &predecessor, true)?;
             }
+            Err(cause) => return Err(cause),
         }
-        join_coordinates(execution, originals, &fact, &child)?;
         let record = fact.record.clone();
         if joined.insert(fact.child.commit_id, fact).is_some() {
             return Err(Denial::InconsistentRelationships { record });
@@ -34,7 +71,8 @@ fn join_coordinates(
     execution: &ExecutionRequest<'_, '_>,
     originals: &WorldProgramActivationHistory,
     fact: &WorthQueryCanonicalCorrectionFact,
-    child: &WorldOriginalObservation<'_>,
+    anchor: &WorldOriginalObservation<'_>,
+    allow_equal_anchor: bool,
 ) -> Result<(), Denial> {
     for coordinate in [
         Some(&fact.source),
@@ -49,7 +87,7 @@ fn join_coordinates(
         let original = originals
             .original_observations()
             .find(|original| {
-                original.identity().owner() == child.identity().owner()
+                original.identity().owner() == anchor.identity().owner()
                     && original.identity().ordinal() == coordinate.world_commit()
             })
             .ok_or_else(|| Denial::MissingWorldOriginal {
@@ -60,10 +98,11 @@ fn join_coordinates(
                 record: fact.record.clone(),
             });
         }
-        if !originals
-            .original_precedes_original(&original, child, execution)
-            .map_err(Denial::World)?
-        {
+        let valid_ancestry = (allow_equal_anchor && original.identity() == anchor.identity())
+            || originals
+                .original_precedes_original(&original, anchor, execution)
+                .map_err(Denial::World)?;
+        if !valid_ancestry {
             return Err(Denial::OutsideOriginalAncestry {
                 record: fact.record.clone(),
             });

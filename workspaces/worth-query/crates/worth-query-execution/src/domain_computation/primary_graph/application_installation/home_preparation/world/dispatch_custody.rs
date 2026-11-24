@@ -12,6 +12,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     pub(super) fn admit_dispatch_contracts(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        continuable_native: &std::collections::BTreeMap<
+            worth_relational::facade::history::CommitId,
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        >,
         unpublished_native: &std::collections::BTreeSet<
             worth_relational::facade::history::CommitId,
         >,
@@ -36,6 +40,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     .product_runtime_ref()
                     .owner_ref()
                     .inspection_port(),
+                continuable_native,
+                unpublished_native,
             )
             .map_err(Denial::DispatchOutbox)?
         {

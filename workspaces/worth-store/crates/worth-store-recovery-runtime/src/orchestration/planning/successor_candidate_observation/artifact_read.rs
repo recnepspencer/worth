@@ -38,6 +38,9 @@ pub(super) fn read(
         RecordArtifactFile::RootRoutingBlock { generation, block } => {
             PageAddress::RootRoutingBlock { generation, block }
         }
+        RecordArtifactFile::ReleaseCustodyHeadBlock { generation, block } => {
+            PageAddress::ReleaseCustodyHeadBlock { generation, block }
+        }
         RecordArtifactFile::SegmentMembershipBlock { generation, block } => {
             PageAddress::SegmentMembershipBlock { generation, block }
         }
@@ -97,6 +100,7 @@ pub(super) fn retain_successor(
 ) -> Result<bool, PhysicalRecoverySuccessorCandidateDenial> {
     let generation = match artifact {
         RecordArtifactFile::RootRoutingBlock { generation, .. }
+        | RecordArtifactFile::ReleaseCustodyHeadBlock { generation, .. }
         | RecordArtifactFile::SegmentMembershipBlock { generation, .. }
         | RecordArtifactFile::FreeSpaceMembershipBlock { generation, .. } => generation,
         _ => 0,

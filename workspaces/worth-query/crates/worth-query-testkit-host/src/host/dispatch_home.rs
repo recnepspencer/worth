@@ -82,9 +82,24 @@ pub fn request(
     handler_contacts: Arc<AtomicUsize>,
     seed: bool,
 ) -> WorthQueryApplicationHomeRequest<'static, DispatchHomeSchema, DispatchHomeProgram> {
+    request_at_location(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        build,
+        handler_contacts,
+        seed,
+    )
+}
+
+/// A request for the Home at `location` (`Directory` or `MemoryOnly`).
+pub fn request_at_location(
+    location: WorthQueryApplicationHomeLocation,
+    build: ApplicationBuildIdentity,
+    handler_contacts: Arc<AtomicUsize>,
+    seed: bool,
+) -> WorthQueryApplicationHomeRequest<'static, DispatchHomeSchema, DispatchHomeProgram> {
     let declaration = DispatchHomeSchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
-        WorthQueryApplicationHomeLocation::Directory(location),
+        location,
         ApplicationProgramAuthoring::<DispatchHomeSchema, DispatchHomeProgram>::begin()
             .with_schema(&declaration)
             .validated_program()

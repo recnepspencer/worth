@@ -207,17 +207,24 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 cause: QueryHomeCustodyReadmissionDenial::Activation(cause),
             });
         }
-        if let Err(cause) = corrections::verify(self.runtime.runtime().inner(), execution) {
+        let unpublished = match self.unpublished_native_commits(execution) {
+            Ok(commits) => commits,
+            Err(cause) => return Err(QueryHomeCustodyReadmissionRefused { query: self, cause }),
+        };
+        if let Err(cause) = corrections::verify_with_unpublished(
+            self.runtime.runtime().inner(),
+            execution,
+            &unpublished.continuable,
+            &unpublished.all,
+        ) {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::Correction(cause),
             });
         }
-        let unpublished = match self.unpublished_native_commits(execution) {
-            Ok(commits) => commits,
-            Err(cause) => return Err(QueryHomeCustodyReadmissionRefused { query: self, cause }),
-        };
-        if let Err(cause) = self.admit_dispatch_contracts(execution, &unpublished) {
+        if let Err(cause) =
+            self.admit_dispatch_contracts(execution, &unpublished.continuable, &unpublished.all)
+        {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
         if let Err(cause) = self.admit_dispatch_custody(execution, std::sync::Arc::clone(&dispatch))
