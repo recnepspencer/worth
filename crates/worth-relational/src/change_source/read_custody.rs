@@ -1,5 +1,5 @@
 //! Actual owners retaining reads at a refused Native close cut.
-use crate::history::retention::RelationalRetentionCostCounters;
+use crate::history::retention::cost_counters::snapshot::RelationalRetentionCostCounters;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum RelationalReadCustodyHolders {

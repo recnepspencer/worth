@@ -154,7 +154,7 @@ fn close_ignores_dropped_companion_client_without_weakening_rebind() {
     let refused = runtime.prepare_close().unwrap_err();
     assert!(matches!(
         refused.reason(),
-        crate::runtime::RelationalRuntimeCloseDenial::PublicationCustodyRetained(
+        crate::runtime::close_denial::RelationalRuntimeCloseDenial::PublicationCustodyRetained(
             RelationalPublicationCustodyHolders {
                 candidates: RelationalPublicationRegistryCustody::Empty,
                 settlements: RelationalPublicationRegistryCustody::Empty,

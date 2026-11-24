@@ -1,4 +1,4 @@
-mod cost_counters;
+pub(crate) mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;

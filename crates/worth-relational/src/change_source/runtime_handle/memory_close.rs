@@ -30,14 +30,7 @@ impl RelationalMemoryCloseRefused {
     }
 }
 
-#[derive(Debug)]
-pub enum RelationalMemoryCloseObservation {
-    Advanced,
-    Busy,
-    Stopped(worth_execution::WorkCeilingDenial),
-    Refused(RelationalRuntimeCloseDenial),
-    Complete,
-}
+pub use crate::change_source::memory_close_observation::RelationalMemoryCloseObservation;
 
 /// Owns the authentic runtime across every stop and refusal. Keep this phase
 /// outside disposable callbacks. Generic final Drop is UNBUDGETED abandonment:
@@ -191,7 +184,7 @@ impl RelationalMemoryClose {
                     Holders::BranchHead {
                         index: self.head_cursor,
                     },
-                ))
+                ));
             }
             Ok(Some(false)) => {
                 self.head_cursor += 1;

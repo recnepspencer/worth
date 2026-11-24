@@ -93,7 +93,7 @@ impl PreparedManagedIndexSourceFork {
             generation,
             payload,
         );
-        CompanionBranchCellCore::bind_unshared_fork_funding(&mut cell.core, memory.clone());
+        CompanionBranchCellCore::bind_unshared_fork_funding(&mut cell.core, memory);
         cell.core
             .retain_source_affinity(execution)
             .map_err(denied)?;

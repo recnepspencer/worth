@@ -116,6 +116,7 @@ pub use state::{
 };
 
 pub(crate) use crate::storage::overlay::WorkingState;
+pub(crate) mod close_denial;
 pub(crate) mod fork_denial;
 pub(crate) use construction::RuntimeExtensions;
 pub use fork_denial::RelationalRuntimeForkDenial;

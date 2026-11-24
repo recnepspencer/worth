@@ -74,6 +74,9 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"history/retention/cost_counters/snapshot.rs" = "contracts"
+"runtime/close_denial.rs" = "contracts"
+"change_source/memory_close_observation.rs" = "contracts"
 "durability/data/recovery_verification.rs" = "contracts"
 "branch/result_snapshot_outcome.rs" = "contracts"
 "visibility/snapshot_release.rs" = "contracts"
@@ -225,7 +228,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Only the runtime admits a new observation or commit selection. Their retained
 # witnesses and retirement stay with the immutable Branch basis.
 "change_source/commit_selection.rs" = "branch"
-"change_source/read_custody.rs" = "branch"
+"change_source/read_custody.rs" = "contracts"
 "change_source/retained_observation" = "branch"
 "change_source/consistency" = "contracts"
 "change_source/consistency_expectations" = "contracts"
@@ -541,7 +544,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "publication/bundle/publication_status" = "contracts"
 "publication/canonical_history" = "publication"
 "publication/cdc" = "runtime"
-"publication/close_custody" = "publication"
+"publication/close_custody" = "contracts"
 "publication/live_publication_inputs" = "publication"
 "publication/diagnostic_store" = "publication"
 "publication/data" = "branch"
@@ -745,6 +748,9 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"history/retention/cost_counters/snapshot.rs" = "contracts"
+"runtime/close_denial.rs" = "contracts"
+"change_source/memory_close_observation.rs" = "contracts"
 "branch/projection_view" = "branch"
 "durability/data/recovery_verification.rs" = "contracts"
 "branch/result_snapshot_outcome.rs" = "contracts"
@@ -879,7 +885,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/root_artifact_linkage.rs" = "branch"
 
 # Publication reports exact custody held by its candidate, settlement and companion owners.
-"publication/close_custody" = "publication"
+"publication/close_custody" = "contracts"
 # Stage 2.3B ownership changes relative to certified Stage 2.2+2.3A.
 "authority/commit/preparation/packets/index" = "indexes"
 "authority/commit/preparation/planning/strategy" = "contracts"
@@ -906,7 +912,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/root_runtime_access" = "branch"
 "branch/root_selection_admission.rs" = "runtime"
 "change_source/commit_selection.rs" = "branch"
-"change_source/read_custody.rs" = "branch"
+"change_source/read_custody.rs" = "contracts"
 "change_source/retained_observation" = "branch"
 "durability/canonical_commit_artifact/frame.rs" = "contracts"
 "durability/canonical_commit_artifact/frame_contract" = "contracts"

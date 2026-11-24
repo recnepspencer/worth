@@ -133,7 +133,7 @@ fn native_custody_correction_current_lane_inventory_is_collected_inside_actual_c
 /// request is constructed here, and the callback returns descriptive DATA only.
 pub(crate) fn assert_controlled_component_capture_winner(
     runtime: &crate::runtime::RelationalRuntime,
-    basis_b: &crate::branch::AdmittedRelationalBranchBasis,
+    basis_b: &crate::branch::basis::AdmittedRelationalBranchBasis,
     lease_a: super::RelationalBranchRetentionLease,
     capture: impl FnOnce() -> Vec<(BranchId, CommitId)> + Send,
 ) {
