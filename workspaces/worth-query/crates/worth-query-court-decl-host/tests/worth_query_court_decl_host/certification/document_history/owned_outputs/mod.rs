@@ -14,6 +14,7 @@ mod schema;
 use schema::*;
 mod courts;
 mod custody;
+mod dst;
 mod edit;
 mod family;
 mod historical_source;

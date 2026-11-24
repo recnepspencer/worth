@@ -1,5 +1,6 @@
 //! Installed non-leaf feature/connection meaning for the generic output court.
 use super::*;
+use self::family::dst::DstOperations as _;
 pub struct Parent;
 pub struct Input;
 pub struct Output;
@@ -213,6 +214,7 @@ pub(in super::super) fn feature_specs(
             .conditional_operation::<downstream::preserve::Operation>()
             .conditional_operation::<restricted_owned::initial::Operation>()
             .conditional_operation::<restricted_owned::preserve::Operation>()
+            .dst_operations()
             .finish(),
     ];
     features.extend(family::feature_specs(captured));
