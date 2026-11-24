@@ -10,7 +10,6 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
     WorthQueryApplicationReadExecutionDenialKind,
 };
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
-use std::collections::BTreeMap;
 use worth_foundational::expression_api::{ExpressionInputs, ExpressionValue};
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
@@ -85,8 +84,8 @@ fn admit_filter_fields<ReadIdentity>(
 
 type PreparedOperands = (Vec<(String, ExpressionValue)>, Vec<(String, ExpressionValue)>);
 
-/// Quotes and reserves once-per-query work and memory before converting any
-/// parameter or literal payload. Multiple aliases for one parameter convert
+/// Quotes and reserves once-per-query work and memory before allocating or
+/// converting any operand backing. Multiple aliases for one parameter convert
 /// its payload once and share the resulting backing (`Arc<str>`).
 fn prepare_static_operands<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
@@ -95,37 +94,15 @@ fn prepare_static_operands<ReadIdentity>(
     work: &mut RootSelectionWork<'_>,
 ) -> Result<PreparedOperands, WorthQueryApplicationReadExecutionDenial> {
     let stop = |cause| relational_read_denial(cause, WHERE_FILTER_SUBJECT);
-    let mut unique_params: BTreeMap<&str, (&AspectValue, bool)> = BTreeMap::new();
-    for parameter in filter.parameters() {
-        let value = read
-            .plan
-            .parameters
-            .bindings()
-            .iter()
-            .find(|(name, _)| name.as_ref() == parameter.parameter())
-            .map(|(_, value)| value)
-            .ok_or_else(projection_unavailable)?;
-        unique_params
-            .entry(parameter.parameter())
-            .or_insert((value, parameter.is_optional()));
-    }
-
+    let filter_params = filter.parameters();
+    let filter_literals = filter.literals();
     let mut total_work = 0_u64;
     let mut total_bytes = 0_u64;
-    for (value, is_optional) in unique_params.values() {
-        let payload = payload_bytes(value, *is_optional);
-        total_work = total_work
-            .checked_add(1)
-            .and_then(|n| n.checked_add(payload))
-            .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
-        let alloc = payload
-            .checked_add((size_of::<ExpressionValue>() + 2 * size_of::<usize>()) as u64)
-            .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
-        total_bytes = total_bytes
-            .checked_add(alloc)
-            .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
-    }
-    for parameter in filter.parameters() {
+    let mut unique_count = 0_usize;
+
+    // Zero-allocation quoting pass over installed operand slices.
+    for (index, parameter) in filter_params.iter().enumerate() {
+        let value = lookup_parameter(read, parameter.parameter())?;
         let slot_bytes = (parameter.operand().len()
             + size_of::<(String, ExpressionValue)>()
             + if parameter.is_optional() {
@@ -139,8 +116,29 @@ fn prepare_static_operands<ReadIdentity>(
         total_bytes = total_bytes
             .checked_add(slot_bytes)
             .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
+        let is_first = !filter_params[..index]
+            .iter()
+            .any(|prior| prior.parameter() == parameter.parameter());
+        if is_first {
+            unique_count += 1;
+            let payload = payload_bytes(value, parameter.is_optional());
+            let unique_alloc = payload
+                .checked_add(
+                    (size_of::<(&str, ExpressionValue)>()
+                        + size_of::<ExpressionValue>()
+                        + 2 * size_of::<usize>()) as u64,
+                )
+                .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
+            total_work = total_work
+                .checked_add(1)
+                .and_then(|n| n.checked_add(payload))
+                .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
+            total_bytes = total_bytes
+                .checked_add(unique_alloc)
+                .ok_or_else(|| stop(Cause::ChargedBytesOverflow))?;
+        }
     }
-    for literal in filter.literals() {
+    for literal in filter_literals {
         let payload = payload_bytes(literal.value(), false);
         let slot_bytes = (literal.operand().len()
             + size_of::<(String, ExpressionValue)>()
@@ -167,36 +165,57 @@ fn prepare_static_operands<ReadIdentity>(
         allocation.claim(read.execution, total_bytes).map_err(stop)?;
     }
 
-    let mut converted: BTreeMap<&str, ExpressionValue> = BTreeMap::new();
-    for (name, (value, is_optional)) in unique_params {
-        let expr_value = if is_optional && matches!(value, AspectValue::Null) {
-            ExpressionValue::none()
+    let mut converted: Vec<(&str, ExpressionValue)> = Vec::with_capacity(unique_count);
+    let mut parameters = Vec::with_capacity(filter_params.len());
+    for parameter in filter_params {
+        let expr_value = if let Some((_, existing)) = converted
+            .iter()
+            .find(|(name, _)| *name == parameter.parameter())
+        {
+            existing.clone()
         } else {
-            let scalar = ExpressionValue::from_aspect_value(value)
-                .map_err(|_| projection_unavailable())?;
-            if is_optional {
-                ExpressionValue::some(scalar)
-            } else {
-                scalar
-            }
+            let value = lookup_parameter(read, parameter.parameter())?;
+            let expr_value = convert_parameter_value(value, parameter.is_optional())?;
+            converted.push((parameter.parameter(), expr_value.clone()));
+            expr_value
         };
-        converted.insert(name, expr_value);
+        parameters.push((parameter.operand().to_owned(), expr_value));
     }
-
-    let mut parameters = Vec::with_capacity(filter.parameters().len());
-    for parameter in filter.parameters() {
-        let value = converted
-            .get(parameter.parameter())
-            .ok_or_else(projection_unavailable)?;
-        parameters.push((parameter.operand().to_owned(), value.clone()));
-    }
-    let mut literals = Vec::with_capacity(filter.literals().len());
-    for literal in filter.literals() {
+    let mut literals = Vec::with_capacity(filter_literals.len());
+    for literal in filter_literals {
         let value = ExpressionValue::from_aspect_value(literal.value())
             .map_err(|_| projection_unavailable())?;
         literals.push((literal.operand().to_owned(), value));
     }
     Ok((parameters, literals))
+}
+
+fn lookup_parameter<'a, ReadIdentity>(
+    read: &'a NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
+    parameter: &str,
+) -> Result<&'a AspectValue, WorthQueryApplicationReadExecutionDenial> {
+    read.plan
+        .parameters
+        .bindings()
+        .iter()
+        .find(|(name, _)| name.as_ref() == parameter)
+        .map(|(_, value)| value)
+        .ok_or_else(projection_unavailable)
+}
+
+fn convert_parameter_value(
+    value: &AspectValue,
+    is_optional: bool,
+) -> Result<ExpressionValue, WorthQueryApplicationReadExecutionDenial> {
+    if is_optional && matches!(value, AspectValue::Null) {
+        return Ok(ExpressionValue::none());
+    }
+    let scalar = ExpressionValue::from_aspect_value(value).map_err(|_| projection_unavailable())?;
+    Ok(if is_optional {
+        ExpressionValue::some(scalar)
+    } else {
+        scalar
+    })
 }
 
 fn payload_bytes(value: &AspectValue, is_optional: bool) -> u64 {

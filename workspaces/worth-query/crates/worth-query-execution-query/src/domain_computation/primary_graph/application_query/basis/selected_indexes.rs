@@ -8,8 +8,9 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::WorthQueryApplicationQueryAdmissionDenial;
 use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
-use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
-use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
+use crate::domain_computation::primary_graph::index_currency::{
+    ensure_selected_field_index_slice_admitted, SelectedFieldIndexAdmissionStop,
+};
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraph;
 
@@ -78,7 +79,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
     // selected and checked by the existing World/session owner on each read.
     let retained_basis = basis.clone();
     native.with_runtime(graph, execution, || SelectedFieldIndexAdmissionStop::Admission(CompanionPreflightStop::ForeignCell), |runtime| {
-            ensure_selected_field_indexes_admitted(execution, runtime, basis, indexes)
+            ensure_selected_field_index_slice_admitted(execution, runtime, basis, &indexes)
         })
         .map_err(|stop| match stop {
             SelectedFieldIndexAdmissionStop::Admission( CompanionPreflightStop::PreparationMemoryCounterOverflow,
@@ -113,7 +114,7 @@ pub fn recover_recorded_query_indexes<Schema, Query, Parameters, QueryResult, Sc
     super::super::ApplicationQueryNativeAccess::acquire().with_runtime(
         graph, execution, || denial(query.name()), |runtime| {
             let mut missing = Vec::new();
-            for index in indexes.into_iter().flatten() {
+            for index in indexes {
                 if !missing.contains(&index) && !selected_index_is_current(execution, runtime, basis, index)
                     .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
                         WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded, query.name()))? {
@@ -146,26 +147,24 @@ fn selected_indexes<Schema, Query, Parameters, QueryResult, Scope>(
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope_index: DerivedIndexId,
-) -> Result<[Option<DerivedIndexId>; 3], WorthQueryApplicationQueryAdmissionDenial> {
+) -> Result<Vec<DerivedIndexId>, WorthQueryApplicationQueryAdmissionDenial> {
     // Installed contract, root-selection mode, and optional live-target visits.
     let contract = query.read_family_binding().planning_contract();
-    let root = if contract.root_paths().is_empty() {
-        match contract.predicates() {
-            [] => None,
-            [predicate] => Some(selected_field_id(graph, predicate.field())?),
-            _ => return Err(denial(query.name())),
+    let mut indexes = Vec::with_capacity(contract.predicates().len() + 2);
+    if contract.root_paths().is_empty() {
+        for predicate in contract.predicates() {
+            indexes.push(selected_field_id(graph, predicate.field())?);
         }
-    } else {
-        None
-    };
-    let target = query
-        .live()
-        .map(|live| {
-            let field = live.target_identity();
-            selected_field_id(graph, (field.entity(), field.aspect(), field.field()))
-        })
-        .transpose()?;
-    Ok([root, target, Some(scope_index)])
+    }
+    if let Some(live) = query.live() {
+        let field = live.target_identity();
+        indexes.push(selected_field_id(
+            graph,
+            (field.entity(), field.aspect(), field.field()),
+        )?);
+    }
+    indexes.push(scope_index);
+    Ok(indexes)
 }
 
 fn selected_field_id(

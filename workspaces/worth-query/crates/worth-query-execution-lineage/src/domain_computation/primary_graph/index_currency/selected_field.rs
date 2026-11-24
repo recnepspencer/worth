@@ -46,16 +46,52 @@ pub fn ensure_selected_field_indexes_admitted<const N: usize>(
         return Ok(());
     }
 
+    let mut selected = Vec::with_capacity(stale_count);
+    for index in stale.into_iter().flatten() {
+        selected.push(index);
+    }
+    refresh_stale_indexes(execution, runtime, basis, selected)
+}
+
+/// Slice variant for queries whose installed finite root shape combines
+/// multiple root-entity structured equality predicates.
+pub fn ensure_selected_field_index_slice_admitted(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+    indexes: &[DerivedIndexId],
+) -> Result<(), SelectedFieldIndexAdmissionStop> {
+    use SelectedFieldIndexAdmissionStop as Stop;
+    let mut selected = Vec::new();
+    for (position, &index) in indexes.iter().enumerate() {
+        if indexes[..position].contains(&index) {
+            continue;
+        }
+        if !selected_index_is_current(execution, runtime, basis, index)
+            .map_err(|cause| Stop::Admission(CompanionPreflightStop::Execution(cause)))?
+        {
+            selected.push(index);
+        }
+    }
+    if selected.is_empty() {
+        return Ok(());
+    }
+    refresh_stale_indexes(execution, runtime, basis, selected)
+}
+
+fn refresh_stale_indexes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+    selected: Vec<DerivedIndexId>,
+) -> Result<(), SelectedFieldIndexAdmissionStop> {
+    use SelectedFieldIndexAdmissionStop as Stop;
+    let stale_count = selected.len();
     let observation = basis.observation();
     let Some(source_commit_id) = observation.commit_id() else {
         return Ok(());
     };
     let branch = observation.identity().branch_id();
-
-    let mut selected = Vec::with_capacity(stale_count);
-    for index in stale.into_iter().flatten() {
-        selected.push(index);
-    }
     let build = runtime
         .index_authority()
         .refresh_field_indexes_for_basis(

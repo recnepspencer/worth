@@ -1,8 +1,7 @@
 //! End-to-end Host courts for optional query parameters (`G7`) and authored
 //! literal equality constants (`DX-2`), including pinned/live consistency and
-//! bounded work metering.
+//! bounded work/memory metering.
 use super::edit::{EditNotes, Edited};
-use super::world::{funded_due, funded_due_with_budget, Host, Seed};
 use super::*;
 use worth_query_decl::facade::application_query::{
     ApplicationQueryParameterRef, ApplicationQueryParameterSet,
@@ -12,18 +11,16 @@ use worth_query_decl::facade::application_schema::{
     ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateUnavailable,
     ApplicationValueValidationDenial,
 };
-use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
-};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRequestQueryDenial as Denial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationOneShotDenialKind as Kind;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
+
+#[path = "optional_and_literals/metering.rs"]
+mod metering;
 
 #[test]
 fn open_inbox_combines_literal_status_equality_and_two_optional_filters() {
@@ -88,158 +85,7 @@ fn exact_root_where_equal_value_matches_only_the_authored_constant() {
     assert!(keys(world::exact_open_task(&host, 3, 3)).is_empty());
 }
 
-fn wide_notes_board(width: usize) -> Vec<Seed> {
-    (1..=16)
-        .map(|key| {
-            (
-                key,
-                1,
-                "task",
-                Some("n".repeat(width)),
-                "open",
-                1,
-                1_000_000,
-                Some(100),
-            )
-        })
-        .collect()
-}
-
-fn cancellable() -> WorthQueryRequestScope {
-    let source = WorthQueryCancellationSource::new();
-    WorthQueryRequestScope::new(None, source.token(), WorthQueryAdmissionClock::system())
-}
-
-fn is_budget_exhaustion(denial: &Denial) -> bool {
-    match denial {
-        Denial::Execution(denial) => matches!(
-            denial.kind(),
-            Kind::ExecutionRequest(_)
-                | Kind::WorkLimitExceeded
-                | Kind::ResultBufferLimitExceeded
-                | Kind::Projection(_)
-        ),
-        Denial::ExecutionRequest(_)
-        | Denial::Admission(_)
-        | Denial::ScopeResolution(_)
-        | Denial::PrincipalResolution(_) => true,
-        _ => false,
-    }
-}
-
-fn minimal_due_budget(host: &Host, intent: &DueBy) -> u64 {
-    let (mut low, mut high) = (1_u64, 1 << 24);
-    let scope = cancellable();
-    assert!(funded_due(host, &scope, high, intent.clone()).is_ok());
-    while low < high {
-        let middle = low + (high - low) / 2;
-        match funded_due(host, &scope, middle, intent.clone()) {
-            Ok(_) => high = middle,
-            Err(denial) if is_budget_exhaustion(&denial) => low = middle + 1,
-            Err(other) => panic!("unexpected denial while calibrating work threshold: {other:?}"),
-        }
-    }
-    low
-}
-
-fn minimal_due_memory_budget(host: &Host, intent: &DueBy) -> u64 {
-    let (mut low, mut high) = (1024_u64, 16 * 1024 * 1024);
-    let scope = cancellable();
-    assert!(funded_due_with_budget(host, &scope, high, 1 << 24, intent.clone()).is_ok());
-    while low < high {
-        let middle = low + (high - low) / 2;
-        match funded_due_with_budget(host, &scope, middle, 1 << 24, intent.clone()) {
-            Ok(_) => high = middle,
-            Err(denial) if is_budget_exhaustion(&denial) => low = middle + 1,
-            Err(other) => panic!("unexpected denial while calibrating memory threshold: {other:?}"),
-        }
-    }
-    low
-}
-
-#[test]
-fn where_filter_refuses_when_memory_budget_exhausts_after_parameter_admission() {
-    let mut single = wide_notes_board(16);
-    single.truncate(1);
-    let host = install(&single);
-    let absent = DueBy {
-        project: 1,
-        max_due_days: None,
-        text: None,
-    };
-    let present = DueBy {
-        project: 1,
-        max_due_days: None,
-        text: Some("m".repeat(60 * 1024)),
-    };
-    let absent_mem = minimal_due_memory_budget(&host, &absent);
-    let present_mem = minimal_due_memory_budget(&host, &present);
-    assert!(
-        present_mem > 60 * 1024 && present_mem > absent_mem,
-        "60 KiB optional parameter must raise peak memory above absent baseline: {absent_mem} vs {present_mem}"
-    );
-    let scope = cancellable();
-    assert!(funded_due_with_budget(&host, &scope, present_mem, 1 << 24, present.clone()).is_ok());
-    // One byte under the calibrated memory floor passes parameter admission
-    // (which peaked earlier) and refuses specifically inside `where_filter`.
-    match funded_due_with_budget(&host, &scope, present_mem - 1, 1 << 24, present) {
-        Err(Denial::Execution(denial)) => {
-            assert!(
-                matches!(denial.kind(), Kind::ExecutionRequest(_)),
-                "{denial:?}"
-            );
-            assert_eq!(denial.subject(), "where_filter");
-        }
-        other => panic!("finite memory exhaustion must refuse inside where_filter: {other:?}"),
-    }
-}
-
-#[test]
-fn optional_parameter_work_scales_when_present_and_short_circuits_when_absent() {
-    let host = install(&wide_notes_board(2048));
-    // Both `absent_intent` and `matching_large` return all 16 rows, holding
-    // projection work identical while `Some(large)` pays parameter and scan work.
-    let absent_intent = DueBy {
-        project: 1,
-        max_due_days: None,
-        text: None,
-    };
-    let matching_large = DueBy {
-        project: 1,
-        max_due_days: None,
-        text: Some("n".repeat(512)),
-    };
-    let none_budget = minimal_due_budget(&host, &absent_intent);
-    let large_budget = minimal_due_budget(&host, &matching_large);
-    assert!(
-        large_budget > none_budget + 16 * 128,
-        "Some(large text) must charge parameter and scanning work beyond short-circuited None: {none_budget} vs {large_budget}"
-    );
-    // With a non-matching optional needle, residual evaluation is the last
-    // metered work so one unit short refuses inside `where_filter`.
-    let non_matching = DueBy {
-        project: 1,
-        max_due_days: None,
-        text: Some("absent".repeat(64)),
-    };
-    let non_matching_budget = minimal_due_budget(&host, &non_matching);
-    let scope = cancellable();
-    let (rows, _) = funded_due(&host, &scope, non_matching_budget, non_matching.clone())
-        .expect("exact minimal budget completes");
-    assert!(rows.is_empty());
-    match funded_due(&host, &scope, non_matching_budget - 1, non_matching) {
-        Err(Denial::Execution(denial)) => {
-            assert!(
-                matches!(denial.kind(), Kind::ExecutionRequest(_)),
-                "{denial:?}"
-            );
-            assert_eq!(denial.subject(), "where_filter");
-        }
-        other => panic!("one unit short must refuse inside where_filter: {other:?}"),
-    }
-}
-
-fn edit_notes(host: &Host, project: u64, task: u64, notes: &str, key: u64) {
+fn edit_notes(host: &world::Host, project: u64, task: u64, notes: &str, key: u64) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let outcome = host
@@ -315,6 +161,28 @@ fn pinned_read_remains_consistent_across_edits_for_literal_and_optional_query() 
         pinned.rows().iter().map(|row| row.key).collect::<Vec<_>>(),
         [5]
     );
+
+    // Chained `.where_equal_value(Status, "open")` + `.where_equal(TaskKey, expected_key)`
+    // on an exact-root query also admits and executes through retained/pinned commits
+    // across subsequent writes.
+    let pinned_exact = |task, expected_key| {
+        host.runtime()
+            .request(&principal, &scope)
+            .at(&pinned_basis)
+            .query(queries::ExactOpenTask { task, expected_key })
+            .execute()
+            .expect("retained multi-predicate exact-root read succeeds")
+            .rows()
+            .iter()
+            .map(|row| row.key)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(pinned_exact(1, 1), [1]);
+    assert!(pinned_exact(1, 2).is_empty());
+    assert!(pinned_exact(3, 3).is_empty());
+    edit_notes(&host, 1, 1, "post-pin update", 2);
+    assert_eq!(pinned_exact(1, 1), [1]);
+    assert_eq!(keys(world::exact_open_task(&host, 1, 1)), [1]);
 }
 
 #[test]
