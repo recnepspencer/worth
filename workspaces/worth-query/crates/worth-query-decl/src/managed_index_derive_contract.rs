@@ -234,9 +234,85 @@
 //! assert!(__WorthBinaryValueBinding::encode(&__WorthBinaryValue { a: 2, b: 2 }).is_err());
 //! ```
 //!
-//! A `#[derive(WorthQuery)]` `#[worth_query(probe)]` field whose type mismatches
-//! the managed index's `ProbeBinding::Value` — INCLUDING a `Deref<Target = String>`
-//! wrapper such as `Box<String>` — fails to compile:
+//! Caller constants matching internal macro names (`__worth_witness`, `__worth_input`,
+//! `__worth_param_val`) cannot break a valid `#[derive(WorthQuery)]` managed-index probe,
+//! while a mismatched `Deref<Target = String>` wrapper such as `Box<String>` still fails
+//! to compile with `E0308`:
+//!
+//! ```
+//! use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
+//! use worth_query_decl::facade::application_query::*;
+//! use worth_query_decl::facade::application_schema::{fragment::*, *};
+//! use worth_query_decl::facade::{
+//!     authentication::*, worth_query_identity_namespace, worth_query_native_scalar_bindings,
+//!     worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryRecord,
+//!     WorthQuerySchema,
+//! };
+//!
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_witness: usize = 0;
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_input: usize = 0;
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_param_val: usize = 0;
+//!
+//! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.ok_probe.src.v1");
+//! const Q_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.ok_probe.q.v1");
+//!
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(schema, owner = "doc.ok_probe", name = "S", members(F))]
+//! pub struct S;
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(fragment, bindings = C, members(M, P, E))]
+//! pub struct F;
+//! worth_query_native_scalar_bindings!(pub C);
+//! impl Scalar<WorthQueryExternalPrincipalIdentity> for C {
+//!     type Binding = WorthQueryExternalPrincipalIdentityBinding;
+//!     const WRITABLE: bool = false;
+//! }
+//! impl Scalar<WorthQueryPrincipalMappingStatus> for C {
+//!     type Binding = WorthQueryPrincipalMappingStatusBinding;
+//! }
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(MA), relations(MT))] pub struct M;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(PA))] pub struct P;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(EA), reference(S, F))] pub struct E;
+//! #[derive(WorthQuerySchema)] #[worth_query(relation, to = P, from = M, reference(S, F))] pub struct MT;
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = MA, fragment = F, entity = M)]
+//! pub struct MRow { #[worth_query(equality)] pub ext: WorthQueryExternalPrincipalIdentity, #[worth_query(equality)] pub st: WorthQueryPrincipalMappingStatus }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = PA, fragment = F, entity = P)]
+//! pub struct PRow { #[worth_query(equality, read_only)] pub pid: u64 }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = EA, fragment = F, entity = E)]
+//! pub struct ERow { #[worth_query(equality, read_only)] pub k: u64 }
+//! #[derive(Clone, Debug, Eq, PartialEq)]
+//! pub struct Row { pub k: u64 }
+//! impl Row { pub fn result_shape<Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplicationQueryResultShape<S, Q, E, Self, RowB> { unimplemented!() } }
+//! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.ok_probe.rowb.v1" });
+//! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.ok_probe.denb.v1" });
+//! pub struct PB;
+//! pub struct Ctx;
+//! impl ApplicationBindingContext<S> for Ctx {
+//!     type PrincipalBinding = PB; type Mapping = M; type Principal = P;
+//!     type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
+//!     type IdempotencyKey = u64; type DenialBinding = DenB;
+//!     const IDEMPOTENCY_IDENTITY: &'static str = "doc.ok_probe.idem.v1";
+//!     fn principal_binding() -> ApplicationPrincipalBindingRef<S, PB, M, P, u64, U64ApplicationValueBinding> { unimplemented!() }
+//! }
+//! #[derive(Clone, Debug, WorthQuery)]
+//! #[worth_query(schema = S, context = Ctx, namespace = S_NS, result = RowB, root = E, scope = K, limits = 8)]
+//! pub struct Src { #[worth_query(scope)] pub k: u64 }
+//! #[derive(WorthManagedIndex)]
+//! #[worth_query(schema = S, entity = E, source = SrcBinding, probe = String)]
+//! pub struct StrIdx;
+//! #[derive(Clone, Debug, WorthQuery)]
+//! #[worth_query(schema = S, context = Ctx, namespace = Q_NS, scope = K, managed_index = StrIdx, limits = 8)]
+//! pub struct ValidProbeQuery {
+//!     #[worth_query(scope)] pub k: u64,
+//!     #[worth_query(probe)] pub prefix: String,
+//! }
+//!
+//! let q = ValidProbeQuery { k: 1, prefix: "cnc".into() };
+//! assert!(q.prepare_parameters().is_ok());
+//! ```
 //!
 //! ```compile_fail,E0308
 //! use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
@@ -244,13 +320,15 @@
 //! use worth_query_decl::facade::application_schema::{fragment::*, *};
 //! use worth_query_decl::facade::{
 //!     authentication::*, worth_query_identity_namespace, worth_query_native_scalar_bindings,
-//!     worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryProjection,
-//!     WorthQueryRecord, WorthQuerySchema,
+//!     worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryRecord,
+//!     WorthQuerySchema,
 //! };
+//!
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_witness: usize = 0;
 //!
 //! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.src.v1");
 //! const Q_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.q.v1");
-//! const R_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.row.v1");
 //!
 //! #[derive(Clone, Copy, WorthQuerySchema)]
 //! #[worth_query(schema, owner = "doc.deref_probe", name = "S", members(F))]
@@ -276,9 +354,9 @@
 //! pub struct PRow { #[worth_query(equality, read_only)] pub pid: u64 }
 //! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = EA, fragment = F, entity = E)]
 //! pub struct ERow { #[worth_query(equality, read_only)] pub k: u64 }
-//! #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
-//! #[worth_query(schema = S, root = E, namespace = R_NS)]
-//! pub struct Row { #[worth_query(field = K)] pub k: u64 }
+//! #[derive(Clone, Debug, Eq, PartialEq)]
+//! pub struct Row { pub k: u64 }
+//! impl Row { pub fn result_shape<Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplicationQueryResultShape<S, Q, E, Self, RowB> { unimplemented!() } }
 //! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.deref_probe.rowb.v1" });
 //! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.deref_probe.denb.v1" });
 //! pub struct PB;

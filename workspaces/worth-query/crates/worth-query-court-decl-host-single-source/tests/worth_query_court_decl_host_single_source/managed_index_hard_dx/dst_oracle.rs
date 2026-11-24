@@ -1,8 +1,9 @@
 //! Brute-force 4-family oracle and tight-budget refusal probe for Hard DX DST.
 use super::operations::AssetSpec;
 use super::schema::*;
-use super::{create_asset, install, keys};
+use super::{create_asset, install};
 use std::collections::BTreeMap;
+use worth_query_decl::facade::application_schema::CanonicalF64;
 use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::*;
@@ -58,41 +59,60 @@ pub fn row_matches_box3d(s: &AssetSpec, p: QueryBox3D) -> bool {
         && p.min_z <= s.max[2]
 }
 
+pub fn expected_row(s: &AssetSpec) -> AssetRow {
+    AssetRow {
+        key: s.key,
+        title: s.title.clone(),
+        start_min: s.start_min,
+        end_min: s.end_min,
+        min_x: s.min[0],
+        min_y: s.min[1],
+        min_z: s.min[2],
+        max_x: s.max[0],
+        max_y: s.max[1],
+        max_z: s.max[2],
+        fmin_x: CanonicalF64(s.fmin_bits[0]),
+        fmin_y: CanonicalF64(s.fmin_bits[1]),
+        fmax_x: CanonicalF64(s.fmax_bits[0]),
+        fmax_y: CanonicalF64(s.fmax_bits[1]),
+    }
+}
+
 #[derive(Default)]
 pub struct FourFamilyOracle {
     pub rows: BTreeMap<u64, AssetSpec>,
 }
 
 impl FourFamilyOracle {
-    pub fn prefix_matches(&self, prefix: &str) -> Vec<u64> {
+    pub fn prefix_rows(&self, prefix: &str) -> Vec<AssetRow> {
         self.rows
-            .iter()
-            .filter(|(_, s)| row_matches_prefix(s, prefix))
-            .map(|(&k, _)| k)
+            .values()
+            .filter(|s| row_matches_prefix(s, prefix))
+            .map(expected_row)
             .collect()
     }
 
-    pub fn interval_matches(&self, start: i64, end: i64) -> Vec<u64> {
+    pub fn interval_rows(&self, start: i64, end: i64) -> Vec<AssetRow> {
         self.rows
-            .iter()
-            .filter(|(_, s)| row_matches_interval(s, start, end))
-            .map(|(&k, _)| k)
+            .values()
+            .filter(|s| row_matches_interval(s, start, end))
+            .map(expected_row)
             .collect()
     }
 
-    pub fn box2d_matches(&self, p: QueryBox2D) -> Vec<u64> {
+    pub fn box2d_rows(&self, p: QueryBox2D) -> Vec<AssetRow> {
         self.rows
-            .iter()
-            .filter(|(_, s)| row_matches_box2d(s, p))
-            .map(|(&k, _)| k)
+            .values()
+            .filter(|s| row_matches_box2d(s, p))
+            .map(expected_row)
             .collect()
     }
 
-    pub fn box3d_matches(&self, p: QueryBox3D) -> Vec<u64> {
+    pub fn box3d_rows(&self, p: QueryBox3D) -> Vec<AssetRow> {
         self.rows
-            .iter()
-            .filter(|(_, s)| row_matches_box3d(s, p))
-            .map(|(&k, _)| k)
+            .values()
+            .filter(|s| row_matches_box3d(s, p))
+            .map(expected_row)
             .collect()
     }
 }
@@ -153,7 +173,7 @@ pub fn check_watch<Q>(
         WorthQueryManagedIndexWatchOutcome<Q, AssetRow>,
         WorthQueryApplicationRequestQueryDenial,
     >,
-    expected: &[u64],
+    expected: &[AssetRow],
     expect_delivery: bool,
 ) -> Result<bool, String> {
     match (
@@ -161,10 +181,10 @@ pub fn check_watch<Q>(
         outcome.map_err(|e| format!("{name}: {e:?}"))?,
     ) {
         (true, WorthQueryManagedIndexWatchOutcome::Delivered(u)) => {
-            let got = keys(u.read().rows());
+            let got = u.read().rows();
             if got != expected {
                 return Err(format!(
-                    "{name} watch mismatch: got {got:?}, expected {expected:?}"
+                    "{name} watch projected row mismatch: got {got:?}, expected {expected:?}"
                 ));
             }
             Ok(true)
@@ -183,7 +203,7 @@ pub fn check_watch<Q>(
 
 pub fn verify_budget_refusal(oracle: &FourFamilyOracle) -> Result<(), String> {
     let seed: Vec<AssetSpec> = oracle.rows.values().take(1).cloned().collect();
-    let expected: Vec<u64> = seed.iter().map(|s| s.key).collect();
+    let expected: Vec<AssetRow> = seed.iter().map(expected_row).collect();
     let tight = install(&seed, None, Some(850_000));
     let scope = request_scope();
     let principal = authenticate_operator(tight.installed_schema(), &scope);
@@ -249,15 +269,14 @@ pub fn verify_budget_refusal(oracle: &FourFamilyOracle) -> Result<(), String> {
     }
 
     // Same-host post-refusal parity: one-shot rows AND existing watch routing both stay intact.
-    let after = keys(
-        req.query(qp(""))
-            .execute()
-            .map_err(|e| format!("post-refusal query: {e:?}"))?
-            .rows(),
-    );
-    if after != expected {
+    let after = req
+        .query(qp(""))
+        .execute()
+        .map_err(|e| format!("post-refusal query: {e:?}"))?;
+    if after.rows() != expected.as_slice() {
         return Err(format!(
-            "same-host post-refusal state {after:?} != {expected:?}"
+            "same-host post-refusal state {:?} != {expected:?}",
+            after.rows()
         ));
     }
     // Unrelated mutation must NOT wake `existing_watch`.
@@ -272,16 +291,14 @@ pub fn verify_budget_refusal(oracle: &FourFamilyOracle) -> Result<(), String> {
         &[],
         false,
     )?;
-    // Matching mutation MUST wake `existing_watch` with exact rows.
-    create_asset(
-        &tight,
-        AssetSpec::i64_only(902, "WatchHit-After-Refusal", (0, 5), [0, 0, 0], [1, 1, 1]),
-        902,
-    );
+    // Matching mutation MUST wake `existing_watch` with exact projected rows.
+    let matching_spec =
+        AssetSpec::i64_only(902, "WatchHit-After-Refusal", (0, 5), [0, 0, 0], [1, 1, 1]);
+    create_asset(&tight, matching_spec.clone(), 902);
     check_watch(
         "post-refusal-matching",
         req.query(qp("WatchHit-")).next_watch(&mut existing_watch),
-        &[902],
+        &[expected_row(&matching_spec)],
         true,
     )?;
     let _ = existing_watch.close();

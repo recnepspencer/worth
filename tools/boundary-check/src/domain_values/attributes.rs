@@ -12,7 +12,8 @@ fn check_with_helpers(
     inherited: &[String],
 ) -> Result<(), String> {
     let mut helpers = inherited.to_vec();
-    helpers.extend(helper_names(attributes));
+    helpers.extend(helper_names(attributes, items));
+    let binary_aliases = worth_binary_derive_aliases(items);
     for attribute in attributes {
         let path = attribute
             .path()
@@ -60,7 +61,7 @@ fn check_with_helpers(
                         "worth_query_macros::WorthBinaryValue",
                     ];
                     let imported_binary_derive =
-                        name == "WorthBinaryValue" && imports_worth_binary_value(items);
+                        binary_aliases.iter().any(|alias| alias == name);
                     if !(known.contains(&name)
                         || imported_binary_derive
                         || (builtins.contains(&name)
@@ -125,16 +126,18 @@ pub(super) fn module(items: &[Item]) -> Result<(), String> {
         match item {
             Item::Struct(value) => {
                 check(&value.attrs, items)?;
+                let inherited = helper_names(&value.attrs, items);
                 for field in &value.fields {
-                    check_with_helpers(&field.attrs, items, &helper_names(&value.attrs))?;
+                    check_with_helpers(&field.attrs, items, &inherited)?;
                 }
             }
             Item::Enum(value) => {
                 check(&value.attrs, items)?;
+                let inherited = helper_names(&value.attrs, items);
                 for variant in &value.variants {
-                    check_with_helpers(&variant.attrs, items, &helper_names(&value.attrs))?;
+                    check_with_helpers(&variant.attrs, items, &inherited)?;
                     for field in &variant.fields {
-                        check_with_helpers(&field.attrs, items, &helper_names(&value.attrs))?;
+                        check_with_helpers(&field.attrs, items, &inherited)?;
                     }
                 }
             }
@@ -170,7 +173,8 @@ pub(super) fn module(items: &[Item]) -> Result<(), String> {
     Ok(())
 }
 
-fn helper_names(attributes: &[Attribute]) -> Vec<String> {
+fn helper_names(attributes: &[Attribute], items: &[Item]) -> Vec<String> {
+    let binary_aliases = worth_binary_derive_aliases(items);
     let mut names = Vec::new();
     for attribute in attributes
         .iter()
@@ -181,7 +185,8 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
         ) {
             for path in paths {
                 let name = path.to_token_stream().to_string().replace(' ', "");
-                match name.trim_start_matches("::") {
+                let trimmed = name.trim_start_matches("::");
+                match trimmed {
                     "serde::Serialize" | "serde::Deserialize" => names.push("serde".into()),
                     "worth_foundational::facade::WorthValue"
                     | "worth_query_decl::facade::application_schema::WorthValue" => {
@@ -194,6 +199,10 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
                         names.push("worth_binary".into());
                         names.push("worth_query".into());
                     }
+                    other if binary_aliases.iter().any(|alias| alias == other) => {
+                        names.push("worth_binary".into());
+                        names.push("worth_query".into());
+                    }
                     _ => (),
                 }
             }
@@ -202,36 +211,55 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
     names
 }
 
-fn imports_worth_binary_value(items: &[Item]) -> bool {
-    items.iter().any(|item| {
+fn worth_binary_derive_aliases(items: &[Item]) -> Vec<String> {
+    let mut out = Vec::new();
+    for item in items {
         let Item::Use(use_item) = item else {
-            return false;
+            continue;
         };
         let mut prefix = Vec::new();
-        use_tree_imports_binary(&use_item.tree, &mut prefix)
-    })
+        collect_approved_binary_imports(&use_item.tree, &mut prefix, &mut out);
+    }
+    out
 }
 
-fn use_tree_imports_binary(tree: &UseTree, prefix: &mut Vec<String>) -> bool {
+fn is_approved_binary_prefix(prefix: &[String]) -> bool {
+    matches!(
+        prefix
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>()
+            .as_slice(),
+        ["worth_query_decl", "facade"] | ["worth_query_macros"]
+    )
+}
+
+fn collect_approved_binary_imports(
+    tree: &UseTree,
+    prefix: &mut Vec<String>,
+    out: &mut Vec<String>,
+) {
     match tree {
         UseTree::Path(path) => {
             prefix.push(path.ident.to_string());
-            let matched = use_tree_imports_binary(&path.tree, prefix);
+            collect_approved_binary_imports(&path.tree, prefix, out);
             prefix.pop();
-            matched
         }
-        UseTree::Name(name) if name.ident == "WorthBinaryValue" => matches!(
-            prefix
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<_>>()
-                .as_slice(),
-            ["worth_query_decl", "facade"] | ["worth_query_macros"]
-        ),
-        UseTree::Group(group) => group
-            .items
-            .iter()
-            .any(|item| use_tree_imports_binary(item, prefix)),
-        _ => false,
+        UseTree::Name(name)
+            if name.ident == "WorthBinaryValue" && is_approved_binary_prefix(prefix) =>
+        {
+            out.push("WorthBinaryValue".into());
+        }
+        UseTree::Rename(rename)
+            if rename.ident == "WorthBinaryValue" && is_approved_binary_prefix(prefix) =>
+        {
+            out.push(rename.rename.to_string());
+        }
+        UseTree::Group(group) => {
+            for item in &group.items {
+                collect_approved_binary_imports(item, prefix, out);
+            }
+        }
+        _ => {}
     }
 }

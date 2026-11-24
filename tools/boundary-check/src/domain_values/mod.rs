@@ -1,5 +1,6 @@
 //! Per-binding source guard for explicit domain-atom contracts.
 mod attributes;
+mod binary_derive_claims;
 mod canonical_claims;
 mod claims;
 mod closure;
@@ -106,6 +107,7 @@ fn check_sources(
                 "ApplicationCanonicalValueContract",
                 "canonical_contract",
                 "WorthBinaryValue",
+                "worth_binary",
             ]
             .iter()
             .any(|marker| text.contains(marker))

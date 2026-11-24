@@ -153,7 +153,7 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
             let expected = quote!(<#scalar_binding as #decl::application_schema::ApplicationScalarValueBinding>::Value);
             quote_spanned! {ty.span()=>
                 let _: fn(*mut #ty) -> *mut #ty =
-                    (|__worth_witness| __worth_witness) as fn(*mut #expected) -> *mut #expected;
+                    ::core::convert::identity::<*mut #expected>;
                 let #value_local: #ty =
                     <#ty as ::core::clone::Clone>::clone(&#input_local.#member);
                 #params_local = #params_local.bind(
@@ -171,21 +171,30 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         impl #query {
             #(#accessors)*
         }
-        #[allow(clippy::clone_on_copy)]
-        impl #request {
-            #[doc(hidden)]
-            fn worth_query_try_parameters(
-                #input_local: &Self,
-            ) -> ::core::result::Result<
-                #decl::application_query::ApplicationQueryParameterSet<#query>,
-                #decl::application_schema::ApplicationValueEncodeDenial,
-            > {
-                let mut #params_local =
-                    #decl::application_query::ApplicationQueryParameterSet::new();
-                #(#binds)*
-                ::core::result::Result::Ok(#params_local)
+        const _: () = {
+            #[allow(dead_code, non_snake_case)]
+            fn #params_local() {}
+            #[allow(dead_code, non_snake_case)]
+            fn #input_local() {}
+            #[allow(dead_code, non_snake_case)]
+            fn #value_local() {}
+
+            #[allow(clippy::clone_on_copy)]
+            impl #request {
+                #[doc(hidden)]
+                fn worth_query_try_parameters(
+                    #input_local: &Self,
+                ) -> ::core::result::Result<
+                    #decl::application_query::ApplicationQueryParameterSet<#query>,
+                    #decl::application_schema::ApplicationValueEncodeDenial,
+                > {
+                    let mut #params_local =
+                        #decl::application_query::ApplicationQueryParameterSet::new();
+                    #(#binds)*
+                    ::core::result::Result::Ok(#params_local)
+                }
             }
-        }
+        };
     })
 }
 
@@ -203,12 +212,19 @@ fn scope_extractor(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
     let input_local = Ident::new("__worth_input", Span::mixed_site());
     let read = quote_spanned!(value_ty.span()=> #input_local.#member);
     Some(quote! {
-        impl #request {
-            #[doc(hidden)]
-            fn worth_query_scope(#input_local: Self) -> <#selection as #frag::RecordSelection>::Value {
-                #read
+        const _: () = {
+            #[allow(dead_code, non_snake_case)]
+            fn #input_local() {}
+
+            impl #request {
+                #[doc(hidden)]
+                fn worth_query_scope(
+                    #input_local: Self,
+                ) -> <#selection as #frag::RecordSelection>::Value {
+                    #read
+                }
             }
-        }
+        };
     })
 }
 

@@ -120,6 +120,86 @@
 //!     WorthQueryOrderedIndexAdapter::new(domain)
 //! }
 //! ```
+//!
+//! Caller constants matching internal macro names (`__worth_managed_index_setup`,
+//! `__worth_managed_index_install`) cannot break a `#[derive(WorthManagedIndex)]`
+//! declaration with `kind = text_prefix(...)`:
+//!
+//! ```
+//! use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
+//! use worth_query_decl::facade::application_query::*;
+//! use worth_query_decl::facade::application_schema::{fragment::*, *};
+//! use worth_query_decl::facade::{
+//!     authentication::*, worth_query_identity_namespace, worth_query_native_scalar_bindings,
+//!     worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryProjection,
+//!     WorthQueryRecord, WorthQuerySchema,
+//! };
+//! use worth_query_host::facade::application_contribution::WorthQueryApplicationManagedIndexRegistration;
+//!
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_managed_index_setup: usize = 0;
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const __worth_managed_index_install: usize = 0;
+//!
+//! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.mi_hyg.src.v1");
+//! const R_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.mi_hyg.row.v1");
+//!
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(schema, owner = "doc.mi_hyg", name = "S", members(F))]
+//! pub struct S;
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(fragment, bindings = C, members(M, P, E))]
+//! pub struct F;
+//! worth_query_native_scalar_bindings!(pub C);
+//! impl Scalar<WorthQueryExternalPrincipalIdentity> for C {
+//!     type Binding = WorthQueryExternalPrincipalIdentityBinding;
+//!     const WRITABLE: bool = false;
+//! }
+//! impl Scalar<WorthQueryPrincipalMappingStatus> for C {
+//!     type Binding = WorthQueryPrincipalMappingStatusBinding;
+//! }
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(MA), relations(MT))] pub struct M;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(PA))] pub struct P;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(EA), reference(S, F))] pub struct E;
+//! #[derive(WorthQuerySchema)] #[worth_query(relation, to = P, from = M, reference(S, F))] pub struct MT;
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = MA, fragment = F, entity = M)]
+//! pub struct MRow { #[worth_query(equality)] pub ext: WorthQueryExternalPrincipalIdentity, #[worth_query(equality)] pub st: WorthQueryPrincipalMappingStatus }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = PA, fragment = F, entity = P)]
+//! pub struct PRow { #[worth_query(equality, read_only)] pub pid: u64 }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = EA, fragment = F, entity = E)]
+//! pub struct ERow { #[worth_query(equality, read_only)] pub k: u64, pub title: String }
+//! #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
+//! #[worth_query(schema = S, root = E, namespace = R_NS)]
+//! pub struct Row { #[worth_query(field = K)] pub k: u64, #[worth_query(field = Title)] pub title: String }
+//! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.mi_hyg.rowb.v1" });
+//! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.mi_hyg.denb.v1" });
+//! pub struct PB;
+//! pub struct Ctx;
+//! impl ApplicationBindingContext<S> for Ctx {
+//!     type PrincipalBinding = PB; type Mapping = M; type Principal = P;
+//!     type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
+//!     type IdempotencyKey = u64; type DenialBinding = DenB;
+//!     const IDEMPOTENCY_IDENTITY: &'static str = "doc.mi_hyg.idem.v1";
+//!     fn principal_binding() -> ApplicationPrincipalBindingRef<S, PB, M, P, u64, U64ApplicationValueBinding> { unimplemented!() }
+//! }
+//! #[derive(Clone, Debug, WorthQuery)]
+//! #[worth_query(schema = S, context = Ctx, namespace = S_NS, result = RowB, root = E, scope = K, limits = 8)]
+//! pub struct Src { #[worth_query(scope)] pub k: u64 }
+//! #[derive(WorthManagedIndex)]
+//! #[worth_index(
+//!     schema = S,
+//!     record = E,
+//!     source = SrcBinding,
+//!     probe = String,
+//!     kind = text_prefix(Row::title()),
+//!     namespace = "doc.mi_hyg.title_prefix",
+//!     version = 1,
+//! )]
+//! pub struct TitleIdx;
+//!
+//! fn assert_registered<I: WorthQueryApplicationManagedIndexRegistration<S>>() {}
+//! assert_registered::<TitleIdx>();
+//! ```
 
 pub use crate::ordered_index::{
     compare_text_fields, compare_text_metered, map_projection_denial, map_text_read_denial,
