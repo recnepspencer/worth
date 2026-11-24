@@ -5,9 +5,11 @@ use contracts::publication::close_custody::RelationalPublicationRegistryCustody;
 use contracts::publication::close_custody::RelationalPublicationRegistryCustodyOwnerPort as _;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex};
 use worth_relational_contracts::internal_port as contracts;
+mod backing;
 pub mod source_registration;
+pub(super) use backing::SharedPublicationLifecycle;
 
 /// Drop-governed publication authority owned directly by one runtime.
 #[derive(Debug)]
@@ -18,11 +20,11 @@ pub struct RelationalRuntimePublicationOwner {
 /// Cloneable runtime binding carried by independently borrowable publication artifacts.
 #[derive(Debug, Clone)]
 pub struct RelationalRuntimePublicationBinding {
-    pub(super) lifecycle: Arc<RelationalRuntimePublicationLifecycle>,
+    pub(super) lifecycle: SharedPublicationLifecycle,
 }
 
 #[derive(Debug)]
-pub(super) struct RelationalRuntimePublicationLifecycle {
+pub(crate) struct RelationalRuntimePublicationLifecycle {
     pub(super) companion: Arc<crate::mvcc::publication::CompanionRegistry>,
     next_candidate_id: AtomicU64,
     candidates: Mutex<HashMap<u64, RegisteredCandidate>>,
@@ -34,7 +36,7 @@ pub(super) struct RelationalRuntimePublicationLifecycle {
 /// without its `Drop`; nothing else evicts a registration.
 #[derive(Debug)]
 struct RegisteredCandidate {
-    payload: Weak<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
+    payload: crate::mvcc::publication::candidate::WeakCandidatePayload,
 }
 
 pub(crate) enum RelationalCandidateRegistrationDenial {
@@ -108,7 +110,7 @@ impl RelationalRuntimePublicationOwner {
     fn with_companion(companion: crate::mvcc::publication::CompanionRegistry) -> Self {
         Self {
             binding: RelationalRuntimePublicationBinding {
-                lifecycle: Arc::new(RelationalRuntimePublicationLifecycle {
+                lifecycle: SharedPublicationLifecycle::new(RelationalRuntimePublicationLifecycle {
                     companion: Arc::new(companion),
                     next_candidate_id: AtomicU64::new(1),
                     candidates: Mutex::new(HashMap::new()),
@@ -128,9 +130,9 @@ impl RelationalRuntimePublicationOwner {
     ) -> bool {
         // State and its close authority are the two native owner handles.
         // Prepared candidates and independently bound services retain another.
-        Arc::ptr_eq(&self.binding.lifecycle, &close.lifecycle)
-            && Arc::strong_count(&self.binding.lifecycle) == 2
-            && Arc::weak_count(&self.binding.lifecycle) == 0
+        self.binding.lifecycle.ptr_eq(&close.lifecycle)
+            && self.binding.lifecycle.strong_count() == 2
+            && self.binding.lifecycle.weak_count() == 0
             && self
                 .binding
                 .lifecycle
@@ -172,7 +174,7 @@ impl RelationalRuntimePublicationBinding {
     pub(crate) fn register_candidate(
         &self,
         maximum_candidates: Option<usize>,
-        payload: &Arc<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
+        payload: &crate::mvcc::publication::candidate::SharedCandidatePayload,
     ) -> Result<u64, RelationalCandidateRegistrationDenial> {
         let mut candidates = self
             .lifecycle
@@ -221,7 +223,7 @@ impl RelationalRuntimePublicationBinding {
         let replaced = candidates.insert(
             id,
             RegisteredCandidate {
-                payload: Arc::downgrade(payload),
+                payload: payload.downgrade(),
             },
         );
         debug_assert!(
@@ -265,7 +267,7 @@ impl RelationalRuntimePublicationBinding {
     }
 
     pub fn belongs_to_same_owner(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.lifecycle, &other.lifecycle)
+        self.lifecycle.ptr_eq(&other.lifecycle)
     }
 
     /// Install the one pending-settlement record for this attempt before the

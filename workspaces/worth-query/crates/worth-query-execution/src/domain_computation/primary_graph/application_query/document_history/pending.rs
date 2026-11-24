@@ -82,13 +82,13 @@ impl PendingDocumentRead {
             if self.identity() != selected.expected {
                 return Err(Denial::HeadDiverged);
             }
-            selected.head.branch()
+            selected.head
         };
         let value = self
             .confirm(phase, document.application(), branch, value)
             .map_err(|(_, denial)| denial)?;
         let selected = document.selection.lock();
-        if self.identity() != selected.expected || selected.head.branch() != branch {
+        if self.identity() != selected.expected || selected.head != branch {
             return Err(Denial::HeadDiverged);
         }
         drop(selected);

@@ -4,10 +4,7 @@ use crate::domain_computation::{
     WorthQueryProposedFact, WorthQueryProviderSessionAffinityIdentity,
     WorthQueryProviderSessionView, WorthQueryProvisionalEffectStep,
 };
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 pub mod candidate_read_support;
 pub mod candidate_support_store;
@@ -23,11 +20,11 @@ pub mod coupled_preparation;
 pub mod coupled_settlement;
 pub mod successor_independence;
 pub mod writer_qualification;
+pub(in crate::domain_computation::primary_graph::provider) use coupled_preparation::rank_consumption;
 pub use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
     CoupledAttemptPreparation, CoupledProducerPreparation, SupersededRound,
 };
-pub(in crate::domain_computation::primary_graph::provider) use coupled_preparation::rank_consumption;
 pub mod commit_preparation;
 pub mod coupled_publication;
 pub use commit_preparation::publish_recovered;
@@ -62,7 +59,9 @@ pub(super) use retained_basis::{
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 
 pub mod lookup_key;
+mod shared_store;
 use lookup_key::WorthQueryApplicationAttemptLookupKey;
+pub use shared_store::SharedApplicationAttemptStore;
 
 #[derive(Default)]
 pub struct WorthQueryPrimaryGraphApplicationAttemptStore {

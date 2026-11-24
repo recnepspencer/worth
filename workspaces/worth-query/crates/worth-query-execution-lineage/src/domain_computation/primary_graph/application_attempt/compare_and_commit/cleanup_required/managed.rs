@@ -9,14 +9,75 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::{
     execution_runtime::product_world::WorthQueryProductRuntime, WorthQueryMutationCleanupFailure,
 };
+trait ManagedCleanupStateBacking: Send + std::fmt::Debug {
+    fn as_state(&self) -> &Option<ManagedCleanupState>;
+    fn as_state_mut(&mut self) -> &mut Option<ManagedCleanupState>;
+}
+
+impl ManagedCleanupStateBacking for Option<ManagedCleanupState> {
+    fn as_state(&self) -> &Option<ManagedCleanupState> {
+        self
+    }
+
+    fn as_state_mut(&mut self) -> &mut Option<ManagedCleanupState> {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ErasedManagedCleanupState(Box<dyn ManagedCleanupStateBacking>);
+
+impl ErasedManagedCleanupState {
+    pub(crate) fn new(state: Option<ManagedCleanupState>) -> Self {
+        Self(Box::new(state))
+    }
+}
+
+impl std::ops::Deref for ErasedManagedCleanupState {
+    type Target = Option<ManagedCleanupState>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_state()
+    }
+}
+
+impl std::ops::DerefMut for ErasedManagedCleanupState {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_state_mut()
+    }
+}
+
+trait CleanupRequiredOwnerBacking: Send + std::fmt::Debug {
+    fn into_boxed(self: Box<Self>) -> Box<super::WorthQueryApplicationCleanupRequired>;
+}
+
+impl CleanupRequiredOwnerBacking for super::WorthQueryApplicationCleanupRequired {
+    fn into_boxed(self: Box<Self>) -> Box<super::WorthQueryApplicationCleanupRequired> {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ErasedCleanupRequiredOwner(Box<dyn CleanupRequiredOwnerBacking>);
+
+impl ErasedCleanupRequiredOwner {
+    pub(crate) fn from_box(owner: Box<super::WorthQueryApplicationCleanupRequired>) -> Self {
+        Self(owner)
+    }
+
+    pub(crate) fn into_boxed(self) -> Box<super::WorthQueryApplicationCleanupRequired> {
+        self.0.into_boxed()
+    }
+}
+
 /// Retains the original managed terminal and exact native World/Bridge owners for cleanup only.
 /// Standalone native use still requires a lawful live issuer; this is no shutdown or durability proof.
 /// A native cleanup receipt cannot become mutation graph-work completion.
 /// The same cleanup owner has a valid native cleanup result.
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
-    pub(crate) state: Box<Option<ManagedCleanupState>>,
-    pub(crate) return_owner: Option<Box<super::WorthQueryApplicationCleanupRequired>>,
+    pub(crate) state: ErasedManagedCleanupState,
+    pub(crate) return_owner: Option<ErasedCleanupRequiredOwner>,
 }
 pub struct ManagedCleanupState {
     pub business_original: Option<crate::domain_computation::primary_graph::query_obligations::QueryManagedCleanupOriginal>,
@@ -39,12 +100,10 @@ impl WorthQueryApplicationManagedCleanup {
     fn state(&self) -> &ManagedCleanupState {
         self.state
             .as_ref()
-            .as_ref()
             .expect("live managed cleanup has initialized state")
     }
     fn state_mut(&mut self) -> &mut ManagedCleanupState {
         self.state
-            .as_mut()
             .as_mut()
             .expect("live managed cleanup has initialized state")
     }

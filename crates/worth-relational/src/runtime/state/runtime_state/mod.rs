@@ -112,10 +112,13 @@ pub struct RelationalRuntime {
     /// runtime lowered from it disagree.
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<super::SchemaContractRuntimeSubsystem>,
-    state: std::sync::Arc<RelationalRuntimeState>,
+    state: state_backing::StrongRelationalRuntimeState,
     tenure: RelationalRuntimeTenure,
     _outer_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
+
+pub(crate) mod state_backing;
+pub(crate) use state_backing::{StrongRelationalRuntimeState, WeakRelationalRuntimeState};
 
 impl RelationalRuntime {
     pub(in crate::runtime) fn from_state(state: RelationalRuntimeState) -> Self {
@@ -128,7 +131,7 @@ impl RelationalRuntime {
         Self {
             config: installed.config,
             schema_contract_runtime: installed.schema_contract_runtime,
-            state: std::sync::Arc::new(state),
+            state: StrongRelationalRuntimeState::new(state),
             tenure: RelationalRuntimeTenure::Owner(close),
             _outer_memory: None,
         }
@@ -139,7 +142,7 @@ impl RelationalRuntime {
     /// The admission is carried by the handle, so the operation cannot outlive
     /// its admission and the handle cannot close the runtime it borrows.
     pub(crate) fn admitted(
-        state: std::sync::Arc<RelationalRuntimeState>,
+        state: StrongRelationalRuntimeState,
         operation: AdmittedRelationalRuntimeOperation,
     ) -> Self {
         let installed = state.configuration.snapshot();
@@ -184,8 +187,8 @@ impl RelationalRuntime {
 
     /// A weak binding to this runtime's exact state, for a service that must
     /// outlive its owner and deny once the owner is gone.
-    pub(crate) fn state_binding(&self) -> std::sync::Weak<RelationalRuntimeState> {
-        std::sync::Arc::downgrade(&self.state)
+    pub(crate) fn state_binding(&self) -> WeakRelationalRuntimeState {
+        self.state.downgrade()
     }
 }
 
@@ -248,7 +251,7 @@ impl RelationalRuntime {
         if !self.is_owner() {
             return None;
         }
-        std::sync::Arc::get_mut(&mut self.state)
+        self.state.get_mut()
     }
 }
 
@@ -285,7 +288,7 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<std::sync::Arc<super::SchemaContractRuntimeSubsystem>>(
             "schema_contract_runtime",
         );
-        owner.field::<std::sync::Arc<RelationalRuntimeState>>("state");
+        owner.field::<StrongRelationalRuntimeState>("state");
         owner.field::<RelationalRuntimeTenure>("tenure");
         owner.field::<Option<worth_execution::ExecutionMemoryReservation>>("_outer_memory");
     }

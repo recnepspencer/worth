@@ -14,12 +14,8 @@ pub struct WorthQueryProductRootIdentity {
     _private: (),
 }
 
-/// One live Query composition of World and its exact source-observation custody.
-///
-/// Application and installed-domain entry points select through this owner. The
-/// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
-pub struct WorthQueryProductRuntime {
+pub(crate) struct WorthQueryProductRuntimeFields {
     pub(super) branch_program_source_owner:
         Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
     pub(crate) home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
@@ -40,9 +36,48 @@ pub struct WorthQueryProductRuntime {
         Option<Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>>,
 }
 
+trait ProductRuntimeBacking: Send + Sync {
+    fn as_fields(&self) -> &WorthQueryProductRuntimeFields;
+    fn as_fields_mut(&mut self) -> &mut WorthQueryProductRuntimeFields;
+}
+
+impl ProductRuntimeBacking for WorthQueryProductRuntimeFields {
+    fn as_fields(&self) -> &WorthQueryProductRuntimeFields {
+        self
+    }
+
+    fn as_fields_mut(&mut self) -> &mut WorthQueryProductRuntimeFields {
+        self
+    }
+}
+
+/// One live Query composition of World and its exact source-observation custody.
+///
+/// Application and installed-domain entry points select through this owner. The
+/// default branch is a caller convenience; World alone resolves its current head.
+#[derive(Clone)]
+pub struct WorthQueryProductRuntime {
+    inner: Arc<dyn ProductRuntimeBacking>,
+}
+
 impl WorthQueryProductRuntime {
+    pub(crate) fn fields(&self) -> &WorthQueryProductRuntimeFields {
+        self.inner.as_fields()
+    }
+
+    pub(crate) fn fields_mut(&mut self) -> &mut WorthQueryProductRuntimeFields {
+        if Arc::strong_count(&self.inner) > 1 || Arc::weak_count(&self.inner) > 0 {
+            let cloned = self.inner.as_fields().clone();
+            self.inner = Arc::new(cloned);
+        }
+        Arc::get_mut(&mut self.inner)
+            .expect("unique product runtime after copy-on-write")
+            .as_fields_mut()
+    }
+
     pub(crate) fn source(&self) -> &RuntimeBridgeRelationalSource {
-        self.source
+        self.fields()
+            .source
             .as_ref()
             .expect("only serving product exposes its source")
     }
@@ -73,32 +108,34 @@ impl WorthQueryProductRuntime {
         #[cfg(not(test))]
         let _ = default_branch;
         Self {
-            home_maintenance: None,
-            branch_program_source_owner: None,
-            owner,
-            adoption_preparation: Arc::default(),
-            named_read_probe: Arc::default(),
-            source: Some(source),
-            activations: Arc::new(activations),
-            clock,
-            relational_lifecycle,
-            signal_basis,
-            signal_lifecycle,
-            owner_cleanup,
-            default_branch,
-            default_occurrence,
-            root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
-            recovered_root_authority,
+            inner: Arc::new(WorthQueryProductRuntimeFields {
+                home_maintenance: None,
+                branch_program_source_owner: None,
+                owner,
+                adoption_preparation: Arc::default(),
+                named_read_probe: Arc::default(),
+                source: Some(source),
+                activations: Arc::new(activations),
+                clock,
+                relational_lifecycle,
+                signal_basis,
+                signal_lifecycle,
+                owner_cleanup,
+                default_branch,
+                default_occurrence,
+                root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
+                recovered_root_authority,
+            }),
         }
     }
 
     pub fn owns_branch_selector(&self, branch: crate::basis::WorthQueryProductBranch) -> bool {
-        branch.occurrence().owner_identity() == self.owner.owner_identity()
+        branch.occurrence().owner_identity() == self.fields().owner.owner_identity()
     }
 
     /// Query token for the installed root product occurrence.
     pub fn root_product_branch(&self) -> crate::basis::WorthQueryProductBranch {
-        crate::basis::WorthQueryProductBranch::from_occurrence(self.default_occurrence)
+        crate::basis::WorthQueryProductBranch::from_occurrence(self.fields().default_occurrence)
     }
 
     #[doc(hidden)]
@@ -106,11 +143,11 @@ impl WorthQueryProductRuntime {
         &self,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> bool {
-        branch.occurrence().owner_identity() == self.owner.owner_identity()
+        branch.occurrence().owner_identity() == self.fields().owner.owner_identity()
     }
 
     pub(crate) fn default_branch(&self) -> &ProductBranchIdentity {
-        &self.default_branch
+        &self.fields().default_branch
     }
 
     pub(crate) fn reserve_public_branch_ordinal(
@@ -121,11 +158,14 @@ impl WorthQueryProductRuntime {
             worth_runtime_world::facade::RuntimeWorldBranchAdmissionDenial,
         >,
     > {
-        self.owner.branch_port().reserve_creation_name_ordinal()
+        self.fields()
+            .owner
+            .branch_port()
+            .reserve_creation_name_ordinal()
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
-        Arc::clone(&self.root_identity)
+        Arc::clone(&self.fields().root_identity)
     }
 }
 

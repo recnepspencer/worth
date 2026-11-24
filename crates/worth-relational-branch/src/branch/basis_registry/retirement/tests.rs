@@ -93,10 +93,7 @@ pub fn assert_successor_registration_preserved(
     let state = registry.retained.lock().unwrap();
     let entry = &state.entries[&key];
     assert_eq!(entry.registration_id, successor_id);
-    assert!(Arc::ptr_eq(
-        &entry.basis.upgrade().unwrap(),
-        &successor.inner
-    ));
+    assert!(entry.basis.upgrade().unwrap().ptr_eq(&successor.inner));
     assert_eq!(registry.metrics.snapshot().0, before.0);
     assert_eq!(registry.metrics.snapshot().2, before.2);
     assert_eq!(registry.metrics.snapshot().0, state.entries.len() as u64);

@@ -18,7 +18,7 @@ pub fn begin_admitted<'a>(
     // This envelope covers the ordered-lookup refusal. Selected claim
     // overflow uses an allocation-free empty subject in the shared core.
 
-    if !std::sync::Arc::ptr_eq(&registry.state, &interest.owner.state) {
+    if !registry.state.ptr_eq(&interest.owner.state) {
         return Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::ForeignDemand,
             "",

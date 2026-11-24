@@ -102,12 +102,16 @@ fn prepare_relation_join_lookup(
         )
     })?;
     let verification = RelationJoinVerification::new(&selected.definition, request)?;
-    let generation = selected.generation.clone().ok_or_else(|| {
-        denial(
-            BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
-            request,
-        )
-    })?;
+    let generation = selected
+        .generation
+        .as_ref()
+        .map(|generation| generation.to_arc())
+        .ok_or_else(|| {
+            denial(
+                BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable,
+                request,
+            )
+        })?;
     if !matches!(generation.entries, DerivedIndexEntries::RelationJoin(_)) {
         return Err(denial(
             BoundedRelationJoinLookupDenialKind::WrongIndexKind,

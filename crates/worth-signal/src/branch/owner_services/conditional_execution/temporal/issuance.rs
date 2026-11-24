@@ -1,5 +1,4 @@
 use std::num::NonZeroUsize;
-use std::sync::Arc;
 
 use crate::branch::owner_services::basis_port::denial_mapping::map_observation_admission_denial;
 use crate::branch::owner_services::owner::basis::map_basis_registry_denial;
@@ -49,7 +48,7 @@ where
             &owner.conditional_retention,
         )?;
         Ok(SignalConditionalTemporalPartition {
-            owner: Arc::downgrade(&owner),
+            owner: self.owner.clone(),
             cell,
             id,
             basis: self.basis.clone(),

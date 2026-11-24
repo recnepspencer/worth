@@ -5,9 +5,14 @@ use super::created_row_read::{read_created_entity, ReadmittedRelationalCreatedEn
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
 use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
 use crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
-use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
+use crate::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use crate::history::data::{
+    PositionedCanonicalCommit, RelationalCommitReceipt, SharedCanonicalCommitEnvelope,
+};
+use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
 use crate::transactions::data::outcomes::commit_semantic_result::RecoveredRelationalSemanticResult;
+use std::sync::Arc;
 
 /// The actual resident Native owner artifact. This cannot qualify a directory
 /// Home, mint a performed effect, or reconstruct a live CommitResult.
@@ -19,7 +24,10 @@ pub struct ObservedRelationalMemoryCommit {
 }
 #[derive(Debug)]
 enum MemoryCommitOrigin {
-    Live(PositionedCanonicalCommit),
+    Live {
+        position: PatchStreamPosition,
+        canonical: SharedCanonicalCommitEnvelope,
+    },
     Interim {
         owner: RelationalRuntimeOrigin,
         admitted: CheckpointAdmittedCommit,
@@ -34,9 +42,9 @@ impl ObservedRelationalMemoryCommit {
     pub fn semantic_result(&self) -> &RecoveredRelationalSemanticResult {
         &self.semantic
     }
-    pub fn position(&self) -> crate::publication::patch::data::PatchStreamPosition {
+    pub fn position(&self) -> PatchStreamPosition {
         match &self.origin {
-            MemoryCommitOrigin::Live(positioned) => positioned.position(),
+            MemoryCommitOrigin::Live { position, .. } => *position,
             MemoryCommitOrigin::Interim { admitted, .. } => admitted.index().position,
         }
     }
@@ -49,10 +57,9 @@ impl ObservedRelationalMemoryCommit {
         expected: &std::sync::Weak<crate::history::data::CanonicalCommitEnvelope>,
     ) -> bool {
         match &self.origin {
-            MemoryCommitOrigin::Live(positioned) => std::sync::Weak::ptr_eq(
-                expected,
-                &std::sync::Arc::downgrade(positioned.canonical_arc()),
-            ),
+            MemoryCommitOrigin::Live { canonical, .. } => {
+                std::ptr::eq(expected.as_ptr(), canonical.as_ref())
+            }
             MemoryCommitOrigin::Interim { .. } => false,
         }
     }
@@ -63,7 +70,7 @@ impl ObservedRelationalMemoryCommit {
         row: &CheckpointAdmittedCommit,
     ) -> bool {
         match &self.origin {
-            MemoryCommitOrigin::Live(_) => false,
+            MemoryCommitOrigin::Live { .. } => false,
             MemoryCommitOrigin::Interim {
                 owner, admitted, ..
             } => owner.same_origin(expected) && admitted.same_owner(row),
@@ -79,8 +86,8 @@ impl ObservedRelationalMemoryCommit {
             execution,
             self.semantic.semantic(),
             match &self.origin {
-                MemoryCommitOrigin::Live(positioned) => {
-                    &positioned.envelope().patch.authoritative_record_patches
+                MemoryCommitOrigin::Live { canonical, .. } => {
+                    &canonical.patch.authoritative_record_patches
                 }
                 MemoryCommitOrigin::Interim { data, .. } => &data.creations,
             },
@@ -102,11 +109,18 @@ pub trait ObservedRelationalMemoryCommitOwnerPort: Sized {
 
 impl ObservedRelationalMemoryCommitOwnerPort for ObservedRelationalMemoryCommit {
     fn from_live(positioned: PositionedCanonicalCommit, digest: [u8; 32]) -> Self {
+        let semantic = assemble_recovered_relational_semantic_result(
+            positioned.envelope().semantic_result_arc(),
+        );
+        let position = positioned.position();
+        let canonical =
+            SharedCanonicalCommitEnvelope::from_arc(Arc::clone(positioned.canonical_arc()));
         Self {
-            semantic: assemble_recovered_relational_semantic_result(
-                positioned.envelope().semantic_result_arc(),
-            ),
-            origin: MemoryCommitOrigin::Live(positioned),
+            semantic,
+            origin: MemoryCommitOrigin::Live {
+                position,
+                canonical,
+            },
             digest,
         }
     }

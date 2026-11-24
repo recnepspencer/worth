@@ -88,9 +88,7 @@ where
             }
             let (observation, after, point) = match &reference.record().record {
                 WorldRecord::Branch {
-                    head,
-                    components,
-                    ..
+                    head, components, ..
                 } => {
                     horizon.root_incarnation = Some(head.incarnation);
                     horizon.bridges.insert(key.0, components.bridge.clone());
@@ -134,10 +132,17 @@ where
                     )
                 }
                 WorldRecord::BranchCreated(created) => {
-                    horizon.bridges.insert(key.0, created.components.bridge.clone());
+                    horizon
+                        .bridges
+                        .insert(key.0, created.components.bridge.clone());
                     horizon.native_branches.insert(
                         key.0,
-                        created.components.relational.descriptor().branch_id().clone(),
+                        created
+                            .components
+                            .relational
+                            .descriptor()
+                            .branch_id()
+                            .clone(),
                     );
                     horizon
                         .creation_boundaries
@@ -274,7 +279,9 @@ where
                 | WorldRecord::BranchRetired { .. }
                 | WorldRecord::HistoryRetired { .. } => return Err(Denial::BranchLineage),
             };
-            horizon.ancestors.insert(commit_id, (observation.clone(), 0));
+            horizon
+                .ancestors
+                .insert(commit_id, (observation.clone(), 0));
             horizon.branch_heads.insert(key.0, observation.clone());
             custody.observations.push(observation.clone());
             insert(&mut observations, key, &observation, execution)?;

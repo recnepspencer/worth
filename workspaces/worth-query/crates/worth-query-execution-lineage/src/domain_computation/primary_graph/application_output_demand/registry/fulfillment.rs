@@ -16,8 +16,8 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandDenial> {
-        if !Arc::ptr_eq(&self.state, &prepared.owner.state)
-            || !Arc::ptr_eq(&self.state, &interest.owner.state)
+        if !self.state.ptr_eq(&prepared.owner.state)
+            || !self.state.ptr_eq(&interest.owner.state)
             || !interest.requires_output
         {
             return Err(refused(Kind::ForeignSource));

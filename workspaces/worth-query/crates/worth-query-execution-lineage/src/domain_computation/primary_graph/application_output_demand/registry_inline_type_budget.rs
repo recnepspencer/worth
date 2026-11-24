@@ -7,7 +7,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
     }
     {
         let mut owner = census.owner::<WorthQueryOutputDemandRegistry>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/registry.rs", "WorthQueryOutputDemandRegistry", 128 * 1024);
-        owner.field::<Arc<Mutex<DemandRegistryState>>>("state");
+        owner.field::<SharedDemandRegistryState>("state");
     }
     {
         let mut owner = census.owner::<WorthQueryOutputDemandInterest>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/registry.rs", "WorthQueryOutputDemandInterest", 128 * 1024);

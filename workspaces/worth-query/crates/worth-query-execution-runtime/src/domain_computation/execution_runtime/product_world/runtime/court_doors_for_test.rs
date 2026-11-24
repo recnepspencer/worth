@@ -13,14 +13,14 @@ impl WorthQueryProductRuntime {
     pub fn inspection_port_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldInspectionPort {
-        self.owner.inspection_port()
+        self.fields().owner.inspection_port()
     }
 }
 
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn owner_cleanup_for_test(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
-        &self.owner_cleanup
+        &self.fields().owner_cleanup
     }
 }
 
@@ -36,14 +36,14 @@ impl WorthQueryProductRuntime {
     pub fn owner_cleanup_mut_for_test(
         &mut self,
     ) -> &mut WorthQueryProductBranchOwnerCleanupRegistry {
-        &mut self.owner_cleanup
+        &mut self.fields_mut().owner_cleanup
     }
 }
 
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn clock_for_test(&self) -> &WorthQueryProductWorldClock {
-        &self.clock
+        &self.fields().clock
     }
 }
 

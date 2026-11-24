@@ -19,7 +19,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             | NavigationPhase::Publication { candidate, .. }
             | NavigationPhase::Unpublished { candidate, .. }
             | NavigationPhase::AwaitingOutputs { candidate, .. }
-            | NavigationPhase::Selecting { candidate, .. } => Some(candidate.branch()),
+            | NavigationPhase::Selecting { candidate, .. } => Some(candidate.branch),
             _ => None,
         }
     }

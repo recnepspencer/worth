@@ -18,10 +18,11 @@ impl WorldInterimCheckpointPort {
         application: CanonicalDigestId,
     ) -> Result<(), Stop> {
         request_scope::run(request, || {
-            origin.validate_transport(origin.0.wrapper.bytes(), request)?;
-            let captured = &origin.0.captured;
+            let inner = origin.0.as_origin();
+            origin.validate_transport(inner.wrapper.bytes(), request)?;
+            let captured = &inner.captured;
             if native_origin.coordinate() != captured.coordinate
-                || native_origin.wrapper_digest() != origin.0.wrapper_digest
+                || native_origin.wrapper_digest() != inner.wrapper_digest
                 || application != captured.application
             {
                 return Err(Stop::BindingMismatch);

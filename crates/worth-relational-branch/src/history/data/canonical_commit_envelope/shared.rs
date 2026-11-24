@@ -1,21 +1,49 @@
 //! A public read share of the owner's existing canonical allocation.
 use super::CanonicalCommitEnvelope;
 use serde::Serialize;
-use std::{fmt, ops::Deref, sync::Arc};
+use std::{any::Any, fmt, ops::Deref, sync::Arc};
+
+trait SharedCanonicalCommitEnvelopeBacking: Send + Sync {
+    fn as_envelope(&self) -> &CanonicalCommitEnvelope;
+    fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
+}
+
+impl SharedCanonicalCommitEnvelopeBacking for CanonicalCommitEnvelope {
+    fn as_envelope(&self) -> &CanonicalCommitEnvelope {
+        self
+    }
+
+    fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
+        self
+    }
+}
 
 /// Immutable canonical data shared without exposing its allocation ownership.
 /// Cloning retains the same original body and its funding; it allocates no
 /// second body or control block and grants no performed-position authority.
 #[cfg_attr(not(doctest), doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/facade_examples/shared_canonical_envelope.md")))]
-#[derive(Clone, PartialEq, Eq, Serialize)]
-#[serde(transparent)]
+#[derive(Clone)]
 pub struct SharedCanonicalCommitEnvelope {
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: Arc<dyn SharedCanonicalCommitEnvelopeBacking>,
+}
+
+impl PartialEq for SharedCanonicalCommitEnvelope {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+
+impl Eq for SharedCanonicalCommitEnvelope {}
+
+impl Serialize for SharedCanonicalCommitEnvelope {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.as_ref().serialize(serializer)
+    }
 }
 
 impl AsRef<CanonicalCommitEnvelope> for SharedCanonicalCommitEnvelope {
     fn as_ref(&self) -> &CanonicalCommitEnvelope {
-        &self.envelope
+        SharedCanonicalCommitEnvelopeBacking::as_envelope(&*self.envelope)
     }
 }
 impl Deref for SharedCanonicalCommitEnvelope {
@@ -26,7 +54,7 @@ impl Deref for SharedCanonicalCommitEnvelope {
 }
 impl fmt::Debug for SharedCanonicalCommitEnvelope {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.envelope.fmt(formatter)
+        self.as_ref().fmt(formatter)
     }
 }
 
@@ -43,5 +71,8 @@ impl SharedCanonicalCommitEnvelopeOwnerPort for SharedCanonicalCommitEnvelope {
 
     fn into_arc(self) -> Arc<CanonicalCommitEnvelope> {
         self.envelope
+            .into_any()
+            .downcast::<CanonicalCommitEnvelope>()
+            .expect("SharedCanonicalCommitEnvelope always wraps CanonicalCommitEnvelope")
     }
 }

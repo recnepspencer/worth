@@ -16,7 +16,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         };
         let walked = walk(runtime, resume);
         // Every release, complete or not, is followed before it reports.
-        runtime.owner_cleanup.history_released();
+        runtime.fields().owner_cleanup.history_released();
         walked?;
         if resume.is_empty() {
             self.history = None;
@@ -37,6 +37,7 @@ fn walk(
     let mut index = 0;
     while let Some(from) = resume.get(index) {
         let release = match runtime
+            .fields()
             .owner
             .recovery_port()
             .release_retired_branch_history(from)

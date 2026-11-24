@@ -9,7 +9,9 @@ impl RelationalRuntime {
             .ok_or("codec recovery destination is not the runtime owner")?;
         // An exclusive borrow alone does not exclude independently held native
         // services. Check the real state allocation, including weak bindings.
-        let state = std::sync::Arc::get_mut(&mut self.state)
+        let state = self
+            .state
+            .get_mut()
             .ok_or("codec recovery destination state is already bound to a service")?;
         if !close
             .exclusively_holds_runtime_bindings(&state.owner_lifecycle, &state.publication_owner)

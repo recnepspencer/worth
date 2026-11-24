@@ -1,14 +1,9 @@
 //! Lineage port adapter for `WorthQueryUnpublishedIdempotencyStore`.
 
-use super::unpublished_idempotency::{
-    preparation, recovered, WorthQueryUnpublishedIdempotencyStore,
-};
-use std::sync::{Arc, Mutex};
+use super::unpublished_idempotency::{preparation, recovered, SharedUnpublishedIdempotencyStore};
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
-pub(super) struct UnpublishedIdempotencyStorePort(
-    pub(super) Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
-);
+pub(super) struct UnpublishedIdempotencyStorePort(pub(super) SharedUnpublishedIdempotencyStore);
 
 impl worth_query_execution_lineage::facade::ports::UnpublishedIdempotencyPort
     for UnpublishedIdempotencyStorePort

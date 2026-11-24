@@ -186,10 +186,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         match pending.confirm(phase, self, document.branch(), document) {
             Ok(document) => Ok(document),
-            Err((document, denial)) => Err(WorthQueryDocumentHistoryAttachmentFailure {
-                head: document.selection.take().head,
-                denial,
-            }),
+            Err((document, denial)) => {
+                let branch = document.selection.take().head;
+                Err(WorthQueryDocumentHistoryAttachmentFailure {
+                    head: crate::domain_computation::primary_graph::WorthQueryOwnedProductHead::from_created_branch(
+                        document.application,
+                        branch,
+                    ),
+                    denial,
+                })
+            }
         }
     }
 

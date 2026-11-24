@@ -4,13 +4,12 @@ use crate::branch::indexes::data::bounded_entity_field_lookup::{
     BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupOutcomeOwnerPort as _,
     BoundedIndexParityMode,
 };
-use std::sync::Arc;
 
 pub mod page;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-use crate::branch::indexes::data::{DerivedIndexEntries, DerivedIndexGeneration};
+use crate::branch::indexes::data::{DerivedIndexEntries, SharedDerivedIndexGeneration};
 use crate::branch::visibility::snapshot_states::resident_basis::ResidentVisibilitySnapshotBasis;
 use crate::contracts::identity::data::primitives::KindId;
 use crate::contracts::identity::data::record_ids::EntityId;
@@ -29,12 +28,12 @@ pub struct PreparedEntityFieldLookup {
         crate::branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     basis: ResidentVisibilitySnapshotBasis,
     definition: crate::branch::indexes::retained_definition::RetainedDerivedIndexDefinition,
-    generation: Arc<DerivedIndexGeneration>,
+    generation: SharedDerivedIndexGeneration,
     kind: KindId,
 }
 
 impl PreparedEntityFieldLookup {
-    pub(super) fn applied_generation(&self) -> &Arc<DerivedIndexGeneration> {
+    pub(super) fn applied_generation(&self) -> &SharedDerivedIndexGeneration {
         &self.generation
     }
     pub(super) fn source_root(&self) -> (u64, u64) {
@@ -227,19 +226,20 @@ impl PreparedEntityFieldLookup {
         }
         Ok(())
     }
-    pub(crate) fn pin(
+    pub(crate) fn pin<G: Into<SharedDerivedIndexGeneration>>(
         runtime_identity: u64,
         basis: ResidentVisibilitySnapshotBasis,
         definition: crate::branch::indexes::retained_definition::RetainedDerivedIndexDefinition,
         kind: KindId,
         locator: &AspectFieldLocator,
         instrumentation: crate::branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
-        generation: impl FnOnce(&DerivedIndexDefinition) -> Option<Arc<DerivedIndexGeneration>>,
+        generation: impl FnOnce(&DerivedIndexDefinition) -> Option<G>,
     ) -> Result<Self, BoundedEntityFieldLookupDenial> {
         let index = definition.index_id;
         Self::validate_definition(&definition, locator)?;
-        let generation = generation(&definition)
-            .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?;
+        let generation: SharedDerivedIndexGeneration = generation(&definition)
+            .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?
+            .into();
         if !matches!(generation.entries, DerivedIndexEntries::EntityField(_)) {
             return Err(denied(Denial::WrongIndexKind, index));
         }

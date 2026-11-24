@@ -170,7 +170,7 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         crate::branch::RuntimeWorldBootstrapOutcome::Performed(_)
     ));
     let world = crate::lifecycle::RuntimeWorldOwner::from_root(root);
-    let weak = Arc::downgrade(&world.root);
+    let weak = Arc::downgrade(&world.root.to_arc());
     let report = world.root.close(&request).unwrap();
     let mut cleanup = world.result_snapshot_cleanup_after_close(&request).unwrap();
     while let crate::lifecycle::RuntimeWorldResultSnapshotCleanupProgress::Advanced = cleanup

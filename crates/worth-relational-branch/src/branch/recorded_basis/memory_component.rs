@@ -12,11 +12,21 @@ use std::sync::{Arc, Weak};
 pub use successor::AdmittedRelationalMemoryComponent;
 use worth_execution::ExecutionRequest;
 
+trait MemoryComponentOriginBacking: std::fmt::Debug + Send + Sync {
+    fn as_origin(&self) -> &MemoryComponentOrigin;
+}
+
+impl MemoryComponentOriginBacking for MemoryComponentOrigin {
+    fn as_origin(&self) -> &MemoryComponentOrigin {
+        self
+    }
+}
+
 /// Actual memory-owner input, with no root, runtime service or live result pin.
 /// Deserialized descriptions cannot construct this observation.
 #[derive(Debug, Clone)]
 pub struct ObservedRelationalMemoryComponent {
-    original: Arc<MemoryComponentOrigin>,
+    original: Arc<dyn MemoryComponentOriginBacking>,
 }
 #[derive(Debug)]
 pub enum MemoryComponentOrigin {
@@ -43,7 +53,7 @@ impl ObservedRelationalMemoryComponent {
         &self,
         original: &crate::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommit,
     ) -> bool {
-        match self.original.as_ref() {
+        match self.original.as_origin() {
             MemoryComponentOrigin::Live(meaning) => meaning
                 .canonical
                 .as_ref()
@@ -104,24 +114,24 @@ impl ObservedRelationalMemoryComponentOwnerPort for ObservedRelationalMemoryComp
         let funding = request
             .reserve_retained_memory(layout.size() as u64)
             .map_err(|cause| Stop::Request(cause.into()))?;
-        Ok(Self {
-            original: Arc::new(MemoryComponentOrigin::Interim(InterimComponentMeaning {
+        let original: Arc<MemoryComponentOrigin> =
+            Arc::new(MemoryComponentOrigin::Interim(InterimComponentMeaning {
                 owner,
                 description,
                 canonical,
                 _funding: funding,
-            })),
-        })
+            }));
+        Ok(Self { original })
     }
 }
 
 pub trait ObservedRelationalMemoryComponentFieldsPort {
-    fn owner_original(&self) -> &Arc<MemoryComponentOrigin>;
+    fn owner_original(&self) -> &MemoryComponentOrigin;
 }
 
 impl ObservedRelationalMemoryComponentFieldsPort for ObservedRelationalMemoryComponent {
-    fn owner_original(&self) -> &Arc<MemoryComponentOrigin> {
-        &self.original
+    fn owner_original(&self) -> &MemoryComponentOrigin {
+        self.original.as_origin()
     }
 }
 

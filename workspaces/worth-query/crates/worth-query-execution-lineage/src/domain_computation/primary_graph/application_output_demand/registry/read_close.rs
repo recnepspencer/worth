@@ -9,7 +9,7 @@ impl WorthQueryOutputDemandRegistry {
         Option<(WorthQueryOutputClaimIdentity, WorthQueryOutputCheckpoint)>,
         WorthQueryOutputReadCloseDenial,
     > {
-        if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(WorthQueryOutputReadCloseDenial::ForeignDemand);
         }
         let mut state = self

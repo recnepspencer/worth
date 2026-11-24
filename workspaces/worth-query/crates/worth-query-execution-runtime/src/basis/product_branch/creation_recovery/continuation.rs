@@ -25,7 +25,7 @@ impl WorthQueryProductBranchCreationRecovery {
         };
         drop(self.effects.take()); // Exclusive World seat refuses any other live inspection.
         let cancellation = worth_runtime_world::facade::RuntimeWorldCancellationSource::new();
-        let answer = self.runtime.owner.branch_port().resume_creation(
+        let answer = self.runtime.fields().owner.branch_port().resume_creation(
             &execution,
             &self.handle,
             &cancellation.token(),

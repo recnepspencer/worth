@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex};
 
 use super::super::aggregate_projection::WorthQueryAggregateProjections;
-use super::super::output_lineage::WorthQueryApplicationOutputLineage;
+use super::super::output_lineage::SharedOutputLineage;
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::application_publication::ApplicationPublication;
 use super::home_retirement::PrimaryGraphSourceCustody;
@@ -16,7 +16,7 @@ pub trait PrimaryGraphIntegrationHandleInternalPort {
     fn layout_ref(&self) -> &Arc<WorthQueryPrimaryGraphLayout>;
     fn primary_index_ids_ref(&self) -> &Arc<[worth_relational::facade::indexes::DerivedIndexId]>;
     fn aggregate_projections_ref(&self) -> &Arc<Mutex<WorthQueryAggregateProjections>>;
-    fn output_lineage_ref(&self) -> &Arc<Mutex<WorthQueryApplicationOutputLineage>>;
+    fn output_lineage_ref(&self) -> &SharedOutputLineage;
 }
 
 impl PrimaryGraphIntegrationHandleInternalPort for WorthQueryPrimaryGraphIntegrationHandle {
@@ -40,7 +40,7 @@ impl PrimaryGraphIntegrationHandleInternalPort for WorthQueryPrimaryGraphIntegra
         &self.aggregate_projections
     }
 
-    fn output_lineage_ref(&self) -> &Arc<Mutex<WorthQueryApplicationOutputLineage>> {
+    fn output_lineage_ref(&self) -> &SharedOutputLineage {
         &self.output_lineage
     }
 }

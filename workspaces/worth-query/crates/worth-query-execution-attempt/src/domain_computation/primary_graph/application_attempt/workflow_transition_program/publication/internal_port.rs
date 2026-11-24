@@ -42,8 +42,8 @@ pub trait WorkflowOperationInternalPort: Sized {
         &mut self,
         captured: Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     );
-    fn authority_slot_ref(&self) -> &Arc<WorkflowOperationAuthoritySlot>;
-    fn set_authority_slot(&mut self, slot: Arc<WorkflowOperationAuthoritySlot>);
+    fn authority_slot_ref(&self) -> &WorkflowOperationAuthoritySlot;
+    fn set_authority_slot(&mut self, slot: WorkflowOperationAuthoritySlot);
 }
 
 impl WorkflowOperationInternalPort for RequiredWorkflowOperation {
@@ -101,11 +101,11 @@ impl WorkflowOperationInternalPort for RequiredWorkflowOperation {
         self.captured_input = captured;
     }
 
-    fn authority_slot_ref(&self) -> &Arc<WorkflowOperationAuthoritySlot> {
+    fn authority_slot_ref(&self) -> &WorkflowOperationAuthoritySlot {
         &self.authority
     }
 
-    fn set_authority_slot(&mut self, slot: Arc<WorkflowOperationAuthoritySlot>) {
+    fn set_authority_slot(&mut self, slot: WorkflowOperationAuthoritySlot) {
         self.authority = slot;
     }
 }

@@ -1,10 +1,10 @@
 //! One registered writer retains the source and handler it actually executed.
 use super::*;
 mod consumption_order;
-pub(in crate::domain_computation::primary_graph::provider) use consumption_order::rank_consumption;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedSourcePublication, output_lineage::ProducerHandlerPreparation,
 };
+pub(in crate::domain_computation::primary_graph::provider) use consumption_order::rank_consumption;
 pub enum CoupledAttemptPreparation {
     Producer(CoupledProducerPreparation),
     AuthoredStage {
@@ -37,10 +37,9 @@ pub struct CoupledProducerPreparation {
 pub struct SupersededRound {
     pub position: usize,
     pub owed: usize,
-    pub after_own:
-        worth_relational::facade::runtime::RelationalPinnedRead<
-            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
-        >,
+    pub after_own: worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
 }
 pub struct AppliedParticipantOutputs {
     pub producer: String,

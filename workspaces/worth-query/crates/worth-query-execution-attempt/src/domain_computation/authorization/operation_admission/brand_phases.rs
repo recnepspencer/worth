@@ -74,24 +74,24 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(crate) const fn graph_work(
+    pub(crate) fn graph_work(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
         self.core.graph_work()
     }
 
     #[inline]
-    pub(crate) const fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
+    pub(crate) fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
         self.core.operation_authority_identity_bytes()
     }
 
     #[inline]
-    pub(crate) const fn operation_definition_identity(&self) -> &[u8; 32] {
+    pub(crate) fn operation_definition_identity(&self) -> &[u8; 32] {
         self.core.operation_definition_identity()
     }
 
     #[inline]
-    pub(crate) const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
+    pub(crate) fn governed_input_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_input_identity()
     }
 

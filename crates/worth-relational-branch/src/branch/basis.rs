@@ -1,5 +1,9 @@
 use crate::internal_port::history::commit::identity::RelationalCommitIdentityOwnerPort as _;
+pub mod backing;
 pub mod retirement;
+pub use backing::{
+    SharedAdmittedRelationalBranchBasisInner, WeakAdmittedRelationalBranchBasisInner,
+};
 pub use retirement::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
@@ -49,7 +53,7 @@ impl ResolvedRelationalBasisDescriptor {
 /// state.
 #[derive(Clone, Debug)]
 pub struct AdmittedRelationalBranchBasis {
-    pub(crate) inner: Arc<AdmittedRelationalBranchBasisInner>,
+    pub(crate) inner: SharedAdmittedRelationalBranchBasisInner,
 }
 
 impl<'basis> From<&'basis AdmittedRelationalBranchBasis>
@@ -137,11 +141,11 @@ impl AdmittedRelationalBranchBasis {
 pub mod inline_type_budget;
 
 pub trait AdmittedRelationalBranchBasisFieldsPort {
-    fn owner_inner(&self) -> &Arc<AdmittedRelationalBranchBasisInner>;
+    fn owner_inner(&self) -> &SharedAdmittedRelationalBranchBasisInner;
 }
 
 impl AdmittedRelationalBranchBasisFieldsPort for AdmittedRelationalBranchBasis {
-    fn owner_inner(&self) -> &Arc<AdmittedRelationalBranchBasisInner> {
+    fn owner_inner(&self) -> &SharedAdmittedRelationalBranchBasisInner {
         &self.inner
     }
 }
@@ -190,7 +194,9 @@ impl AdmittedRelationalBranchBasisOwnerPort for AdmittedRelationalBranchBasis {
 }
 
 pub fn assemble_admitted_relational_branch_basis(
-    inner: Arc<AdmittedRelationalBranchBasisInner>,
+    inner: impl Into<SharedAdmittedRelationalBranchBasisInner>,
 ) -> AdmittedRelationalBranchBasis {
-    AdmittedRelationalBranchBasis { inner }
+    AdmittedRelationalBranchBasis {
+        inner: inner.into(),
+    }
 }

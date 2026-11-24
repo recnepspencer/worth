@@ -33,7 +33,7 @@ pub use contracts::indexes::data::applied_candidate_qualification::RelationalApp
 /// only snapshot-backed pins expose snapshot/plan doors, by type.
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
-    pub(super) applied_changes: Option<Arc<candidate::AppliedReadChanges>>,
+    pub(super) applied_changes: Option<candidate::changes::SharedAppliedReadChanges>,
     pub(super) current_version: contracts::identity::data::primitives::VersionId,
     pub(super) instrumentation:
         branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,

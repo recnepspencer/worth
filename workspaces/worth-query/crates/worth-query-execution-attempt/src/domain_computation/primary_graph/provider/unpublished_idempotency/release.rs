@@ -1,16 +1,16 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 use super::{
-    WorthQueryUnpublishedIdempotencyKey, WorthQueryUnpublishedIdempotencyPosture as Posture,
-    WorthQueryUnpublishedIdempotencyStore,
+    SharedUnpublishedIdempotencyStore, WorthQueryUnpublishedIdempotencyKey,
+    WorthQueryUnpublishedIdempotencyPosture as Posture,
 };
 
 /// Pins the provider's exact partial against a managed checkout while World
 /// performs release. No provider mutex is held across World calls.
 pub struct WorthQueryUnpublishedReleaseReservation {
-    store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: SharedUnpublishedIdempotencyStore,
     key: WorthQueryUnpublishedIdempotencyKey,
     handle: ProductUnpublishedRecoveryHandle,
     armed: bool,
@@ -45,7 +45,7 @@ impl WorthQueryUnpublishedReleaseReservation {
         Ok(())
     }
     pub(super) fn begin(
-        store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+        store: SharedUnpublishedIdempotencyStore,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<Option<Self>, ()> {
         let owner = store

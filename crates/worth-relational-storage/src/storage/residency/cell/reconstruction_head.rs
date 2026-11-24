@@ -29,7 +29,7 @@ impl RelationalRegionResidency {
             let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
             match &**state {
                 ResidencyState::Head { region } | ResidencyState::Full(region) => {
-                    Some(region.clone())
+                    Some(region.to_arc())
                 }
                 _ => None,
             }
@@ -55,6 +55,7 @@ impl RelationalRegionResidency {
                 cell_load_cache::load(&self.raw_head, self.partition_id, || {
                     cold.read_head(&source, execution, 1 << 30)
                 })?
+                .into_arc()
             }
         };
         Ok(ReconstructedRegionHead {

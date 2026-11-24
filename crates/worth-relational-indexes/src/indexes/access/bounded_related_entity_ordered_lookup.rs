@@ -98,7 +98,12 @@ pub(super) fn prepare_related_lookup<'request>(
 ) -> Result<PreparedRelatedLookup<'request>, BoundedRelatedEntityOrderedLookupDenial> {
     let contract = resolve_related_lookup_contract(selected, request)?;
     let generation = selected
-        .and_then(|index| index.generation.clone())
+        .and_then(|index| {
+            index
+                .generation
+                .as_ref()
+                .map(|generation| generation.to_arc())
+        })
         .ok_or_else(|| {
             denial(
                 BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable,

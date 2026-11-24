@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, MutexGuard};
 
 use crate::budget::RuntimeWorldBudgetLimit;
 use crate::identity::{ProductUnpublishedOwnerEffectsIdentity, RuntimeWorldOwnerIdentity};
@@ -22,6 +22,8 @@ pub(crate) use recovered_creation::ClaimedRecoveredCreation;
 mod recovered_publication;
 mod released;
 pub(crate) use released::PreparedReleasedOriginal;
+mod state_backing;
+use state_backing::{SharedRecoveryCatalogState, WeakRecoveryCatalogState};
 #[path = "catalog/update.rs"]
 mod update;
 pub(crate) use update::ReservedProductUnpublishedRecordUpdate;
@@ -71,7 +73,7 @@ struct RecoveryCatalogState {
 /// publication. It is a real bounded resource, not copied budget metadata.
 #[derive(Debug, Clone)]
 pub(crate) struct ProductUnpublishedRecoveryCatalog {
-    state: Arc<Mutex<RecoveryCatalogState>>,
+    state: SharedRecoveryCatalogState,
 }
 
 #[must_use = "an unpublished recovery slot must be retained or dropped"]
@@ -132,12 +134,8 @@ impl ProductUnpublishedRecoveryCatalog {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
-    )]
     pub(crate) fn affinity(&self) -> usize {
-        Arc::as_ptr(&self.state) as usize
+        self.state.affinity()
     }
 
     pub(crate) fn reserve_product_unpublished(

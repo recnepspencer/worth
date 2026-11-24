@@ -165,7 +165,7 @@ pub fn validate_codec_output_correspondence<'r>(
                     if std::sync::Arc::ptr_eq(candidate, &origin) { ordinal = Some(index); break; }
                 }
                 let ordinal = ordinal.ok_or("selected publication lost its canonical route coordinate")?;
-                Ok(SelectedOutputPublication { evidence:crate::publication::ownership::evidence::PublicationEvidence::Canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
+                Ok(SelectedOutputPublication { evidence: crate::publication::ownership::evidence::PublicationEvidence::canonical(std::sync::Arc::clone(&envelope)), origin, ordinal })
             },
         )
     });

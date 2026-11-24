@@ -11,8 +11,8 @@ use crate::domain_computation::{
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub(super) struct NavigationCleanup<'runtime, S> {
-    head: Option<WorthQueryOwnedProductHead<'runtime, S>>,
+pub(super) struct NavigationCleanup {
+    head: Option<crate::basis::WorthQueryProductBranch>,
     _head_denial: Option<WorthQueryApplicationProductBranchCloseDenial>,
     retired: Option<WorthQueryApplicationProductBranchCleanupFailure>,
     fork: Option<custody::ForkCleanup>,
@@ -37,13 +37,14 @@ fn retry_release<S: ApplicationSchema>(
     }
 }
 
-impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
-    pub(super) fn retry_prior_cleanup(
+impl NavigationProgress {
+    pub(super) fn retry_prior_cleanup<S: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         if let Some(prior) = self.prior_cleanup.take()
-            && let Err(prior) = retry_release(&self.application, phase, prior)
+            && let Err(prior) = retry_release(application, phase, prior)
         {
             self.prior_cleanup = Some(prior);
             return Err(WorthQueryHistoryNavigationDenial::Cleanup);
@@ -66,21 +67,19 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             | NavigationPhase::Selected(_)
             | NavigationPhase::Discarded => {}
             NavigationPhase::ForkRecovery(fork) => cleanup.fork = Some(fork),
-            NavigationPhase::Candidate(candidate) => {
-                cleanup.head = Some(candidate.into_owned_head())
-            }
+            NavigationPhase::Candidate(candidate) => cleanup.head = Some(candidate.into_branch()),
             NavigationPhase::Publication {
                 candidate,
                 publication,
             } => {
                 drop(publication);
-                cleanup.head = Some(candidate.into_owned_head());
+                cleanup.head = Some(candidate.into_branch());
             }
             NavigationPhase::Unpublished {
                 candidate,
                 recovery,
             } => {
-                cleanup.head = Some(candidate.into_owned_head());
+                cleanup.head = Some(candidate.into_branch());
                 cleanup.recovery = Some(recovery);
             }
             NavigationPhase::Selecting {
@@ -92,7 +91,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 drop(_outputs);
                 drop(exact);
                 drop(_publication);
-                cleanup.head = Some(candidate.into_owned_head());
+                cleanup.head = Some(candidate.into_branch());
             }
             NavigationPhase::AwaitingOutputs {
                 candidate,
@@ -101,7 +100,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             } => {
                 drop(exact);
                 drop(_publication);
-                cleanup.head = Some(candidate.into_owned_head());
+                cleanup.head = Some(candidate.into_branch());
             }
             NavigationPhase::Discarding(pending) => cleanup = pending,
         }
@@ -112,24 +111,25 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         self.phase = NavigationPhase::Discarding(cleanup);
     }
 
-    pub(super) fn finish_disposal(
+    pub(super) fn finish_disposal<S: ApplicationSchema>(
         &mut self,
+        application: &crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         let NavigationPhase::Discarding(cleanup) = &mut self.phase else {
             return Ok(0);
         };
-        let closed = cleanup.retry(&self.application, phase)?;
+        let closed = cleanup.retry(application, phase)?;
         self.phase = NavigationPhase::Discarded;
         drop(self.pending_slot.take());
         Ok(closed)
     }
 }
 
-impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
-    fn retry(
+impl NavigationCleanup {
+    fn retry<S: ApplicationSchema>(
         &mut self,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
@@ -164,12 +164,13 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
                 }
             };
         }
-        if let Some(head) = self.head.take() {
+        if let Some(branch) = self.head.take() {
             self._head_denial = None;
+            let head = WorthQueryOwnedProductHead::from_created_branch(application.clone(), branch);
             return match head.close(phase) {
                 Ok(_) => Ok(1),
                 Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                    self.head = Some(head);
+                    self.head = Some(head.branch());
                     self._head_denial = Some(denial);
                     Err(Denial::Cleanup)
                 }
@@ -183,22 +184,17 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationDisposal<
-    'runtime,
-    S,
-> {
-    remaining: std::collections::btree_map::IntoValues<
-        [u8; 32],
-        registration::RegisteredAttempt<'runtime, S>,
-    >,
-    pending: Option<registration::RegisteredAttempt<'runtime, S>>,
+pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationDisposal
+{
+    remaining: std::collections::btree_map::IntoValues<[u8; 32], registration::RegisteredAttempt>,
+    pending: Option<registration::RegisteredAttempt>,
     closed_unreported: usize,
 }
 
-impl<'runtime, S: ApplicationSchema> NavigationJournal<'runtime, S> {
+impl NavigationJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn into_disposal(
         self,
-    ) -> NavigationDisposal<'runtime, S> {
+    ) -> NavigationDisposal {
         // A complete release pass precedes any retirement. Otherwise a later
         // pending attempt's H/C pin could block an earlier managed head forever.
         for entry in self.attempts.values() {
@@ -212,16 +208,19 @@ impl<'runtime, S: ApplicationSchema> NavigationJournal<'runtime, S> {
     }
 }
 
-impl<S: ApplicationSchema> NavigationDisposal<'_, S> {
-    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn retry(
+impl NavigationDisposal {
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn retry<
+        S: ApplicationSchema,
+    >(
         &mut self,
+        application: &crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         loop {
             let Some(entry) = self.pending.take().or_else(|| self.remaining.next()) else {
                 return Ok(std::mem::take(&mut self.closed_unreported));
             };
-            let outcome = entry.attempt.lock().finish_disposal(phase);
+            let outcome = entry.attempt.lock().finish_disposal(application, phase);
             match outcome {
                 Ok(count) => self.closed_unreported += count,
                 Err(cause) => {
@@ -251,9 +250,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
         let key = {
             let progress = self.attempt.progress.try_lock().map_err(|_| Denial::Busy)?;
             phase
-                .checked_execution_request_for(
-                    progress.application.inner.runtime.product_runtime_ref(),
-                )
+                .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
                 .map_err(Denial::Stopped)?;
             if matches!(progress.phase, NavigationPhase::Selected(_)) {
                 return Err(Denial::AlreadySelected);
@@ -279,13 +276,13 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
             Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
         };
         let _execution = phase
-            .checked_execution_request_for(progress.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(WorthQueryHistoryNavigationDenial::Stopped)?;
         if matches!(progress.phase, NavigationPhase::Selected(_)) {
             return Err(WorthQueryHistoryNavigationDenial::AlreadySelected);
         }
         progress.prepare_disposal();
-        progress.finish_disposal(phase)?;
+        progress.finish_disposal(&self.application, phase)?;
         if let Some(slot) = progress.head_slot.take()
             && let Some(cell) = self.cell.upgrade()
             && let Some(mut selected) = cell.live()

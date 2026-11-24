@@ -87,13 +87,13 @@ impl WorthQueryProductWorldPorts {
 
 impl super::WorthQueryProductRuntime {
     pub(crate) fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort> {
-        self.owner.interim_checkpoint_port()
+        self.fields().owner.interim_checkpoint_port()
     }
     pub(crate) fn with_execution_placement<R>(
         &self,
         body: impl for<'owner> FnOnce(RuntimeWorldExecutionPlacement<'owner>) -> R,
     ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
-        self.owner.publication_port().with_execution_placement(body).map_err(|_| {
+        self.fields().owner.publication_port().with_execution_placement(body).map_err(|_| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
                 crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::NoActiveExecutionScope,
             )

@@ -243,17 +243,13 @@ impl WorldRecoveredUnpublishedEffects {
                 | WorldDurablePublicationStop::BlockedByPriorBarrier {
                     evidence_required: false,
                 },
-            ) => {
-                WorldRecoveredReleaseOutcome::Indeterminate(self)
-            }
+            ) => WorldRecoveredReleaseOutcome::Indeterminate(self),
             Err(
                 WorldDurablePublicationStop::EvidenceRequired
                 | WorldDurablePublicationStop::BlockedByPriorBarrier {
                     evidence_required: true,
                 },
-            ) => {
-                WorldRecoveredReleaseOutcome::EvidenceRequired(self)
-            }
+            ) => WorldRecoveredReleaseOutcome::EvidenceRequired(self),
         }
     }
 }

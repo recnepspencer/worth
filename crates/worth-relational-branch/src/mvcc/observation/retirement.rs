@@ -1,5 +1,6 @@
 //! Cooperative retirement of this observation's share, never another reader's.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
 use crate::history::retention::RetentionBusy;
 
 #[derive(Debug)]
@@ -12,7 +13,7 @@ pub struct RelationalObservationRetirement {
 impl RelationalBranchObservation {
     pub(crate) fn into_retirement(self) -> RelationalObservationRetirement {
         RelationalObservationRetirement {
-            shared: Some(self.inner),
+            shared: Some(self.inner.into_arc()),
             exclusive: None,
             retention_released: false,
         }
@@ -22,7 +23,7 @@ impl RelationalBranchObservation {
 impl RelationalObservationRetirement {
     pub fn from_original_basis(basis: AdmittedRelationalBranchBasis) -> Self {
         Self {
-            shared: Some(basis.inner),
+            shared: Some(basis.inner.into_arc()),
             exclusive: None,
             retention_released: false,
         }

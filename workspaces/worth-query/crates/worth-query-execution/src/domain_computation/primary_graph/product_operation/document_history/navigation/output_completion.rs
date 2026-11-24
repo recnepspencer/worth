@@ -95,9 +95,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     }
 }
 
-impl<S: ApplicationSchema> NavigationProgress<'_, S> {
-    pub(super) fn accept_outputs(
+impl NavigationProgress {
+    pub(super) fn accept_outputs<S: ApplicationSchema>(
         &mut self,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
         outputs: WorthQueryCompletedHistoryOutputs,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
@@ -116,23 +117,18 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint
-                .belongs_to_selected_occurrence(self.application.inner(), exact.observation())
+            || !endpoint.belongs_to_selected_occurrence(application.inner(), exact.observation())
         {
             return Err(Denial::IntentDrift);
         }
-        let selected = self
-            .application
+        let selected = application
             .select_application_read_observation(phase, endpoint)
             .map_err(Denial::ProductAdmission)?;
-        let owner = self
-            .application
-            .selected_program_owner(&selected)
-            .map_err(|_| {
-                Denial::RequiresSemanticCorrection(
-                    WorthQueryHistoryNavigationEligibilityDenial::ProgramUnavailable,
-                )
-            })?;
+        let owner = application.selected_program_owner(&selected).map_err(|_| {
+            Denial::RequiresSemanticCorrection(
+                WorthQueryHistoryNavigationEligibilityDenial::ProgramUnavailable,
+            )
+        })?;
         if owner.owned_revision() != &profile.program
             || !owner.owns_output_root(crate::equality_type_id::EqualityTypeId::from(profile.root))
         {
@@ -143,7 +139,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let endpoint = endpoint.retained_product_lease();
         drop(selected);
         phase
-            .check_live_for(self.application.inner.runtime.product_runtime_ref())
+            .check_live_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let NavigationPhase::AwaitingOutputs {
             candidate,

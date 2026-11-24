@@ -18,7 +18,7 @@ impl WorthQueryOutputDemandRegistry {
         // Owner identity, the interest counters, Ready state and three Arc
         // retains precede the lookups. Denial subjects are borrowed statics.
 
-        if !Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "required output interest belongs to another registry",

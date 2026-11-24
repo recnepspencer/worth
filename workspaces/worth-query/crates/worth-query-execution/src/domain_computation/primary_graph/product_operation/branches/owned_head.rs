@@ -76,7 +76,7 @@ impl<'runtime, Schema> WorthQueryOwnedProductHead<'runtime, Schema> {
         (head, self.application)
     }
 
-    pub(super) fn from_created_branch(
+    pub(in crate::domain_computation::primary_graph) fn from_created_branch(
         application: WorthQueryRuntimeCustody<'runtime, Schema>,
         branch: WorthQueryProductBranch,
     ) -> Self {

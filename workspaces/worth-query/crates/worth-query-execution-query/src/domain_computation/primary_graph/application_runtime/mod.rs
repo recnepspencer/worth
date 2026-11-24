@@ -88,9 +88,8 @@ pub use storage_retention::{
     WorthQueryStorageRetentionStop,
 };
 
-/// Core state owned by `WorthQueryPrimaryGraphApplicationRuntime<Schema>` after
-/// its leading conditional-cleanup field.
-pub struct WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
+/// Concrete state fields owned by `WorthQueryPrimaryGraphApplicationRuntimeInner<Schema>`.
+pub struct WorthQueryPrimaryGraphApplicationRuntimeFields<Schema> {
     pub installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
     pub runtime: WorthQueryApplicationRuntimeCore,
     pub post_conditional_teardown: teardown::ApplicationPostConditionalTeardown,
@@ -119,6 +118,49 @@ pub struct WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
     #[doc(hidden)]
     pub conditional_admission_port:
         std::sync::Weak<dyn crate::ports::ConditionalDefinitionAdmissionPort>,
+}
+
+trait RuntimeInnerFieldsBacking<Schema>: Send + Sync {
+    fn as_fields(&self) -> &WorthQueryPrimaryGraphApplicationRuntimeFields<Schema>;
+    fn as_fields_mut(&mut self) -> &mut WorthQueryPrimaryGraphApplicationRuntimeFields<Schema>;
+}
+
+impl<Schema> RuntimeInnerFieldsBacking<Schema>
+    for WorthQueryPrimaryGraphApplicationRuntimeFields<Schema>
+{
+    fn as_fields(&self) -> &WorthQueryPrimaryGraphApplicationRuntimeFields<Schema> {
+        self
+    }
+
+    fn as_fields_mut(&mut self) -> &mut WorthQueryPrimaryGraphApplicationRuntimeFields<Schema> {
+        self
+    }
+}
+
+/// Core state owned by `WorthQueryPrimaryGraphApplicationRuntime<Schema>` after
+/// its leading conditional-cleanup field.
+pub struct WorthQueryPrimaryGraphApplicationRuntimeInner<Schema>(
+    Box<dyn RuntimeInnerFieldsBacking<Schema>>,
+);
+
+impl<Schema: 'static> WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
+    pub fn new(fields: WorthQueryPrimaryGraphApplicationRuntimeFields<Schema>) -> Self {
+        Self(Box::new(fields))
+    }
+}
+
+impl<Schema> std::ops::Deref for WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
+    type Target = WorthQueryPrimaryGraphApplicationRuntimeFields<Schema>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_fields()
+    }
+}
+
+impl<Schema> std::ops::DerefMut for WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_fields_mut()
+    }
 }
 
 /// Crate-internal alias so all moved `impl WorthQueryPrimaryGraphApplicationRuntime<Schema>`

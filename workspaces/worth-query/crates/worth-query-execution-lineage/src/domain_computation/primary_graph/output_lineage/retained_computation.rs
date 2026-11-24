@@ -34,7 +34,7 @@ pub enum RecordedComputation {
 /// The exact record a producer's run took its prior state from.
 #[derive(Clone)]
 pub struct PriorComputationRecord {
-    cell: Arc<OnceLock<RecordedOutput>>,
+    cell: super::recorded_cell::SharedRecordedOutputCell,
 }
 
 impl PriorComputationRecord {
@@ -43,7 +43,9 @@ impl PriorComputationRecord {
             cell.get().is_some(),
             "the test prior has a real published record"
         );
-        Self { cell }
+        Self {
+            cell: super::recorded_cell::SharedRecordedOutputCell::from_arc(cell),
+        }
     }
 }
 
@@ -100,7 +102,9 @@ impl WorthQueryApplicationOutputLineage {
         Ok(ComputationPrior::new(
             edition,
             retained,
-            Some(PriorComputationRecord { cell }),
+            Some(PriorComputationRecord {
+                cell: super::recorded_cell::SharedRecordedOutputCell::from_arc(cell),
+            }),
         ))
     }
 

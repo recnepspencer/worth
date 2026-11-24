@@ -62,7 +62,7 @@ impl RecoveredReleaseDestination {
 }
 
 pub(super) struct ReleaseDestinationLease {
-    owner: Arc<RecoveredWorldPublicationRecord>,
+    owner: super::SharedRecoveredWorldPublicationRecord,
     phase: Option<RecoveredReleaseDestination>,
 }
 impl ReleaseDestinationLease {

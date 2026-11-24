@@ -161,7 +161,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    owner: std::sync::Weak<SignalOwner<D, I, T>>,
+    owner: crate::branch::owner_services::owner_backing::WeakSignalOwner<D, I, T>,
     definition: SignalInstalledDefinitionBinding,
     incarnation: SignalBranchCellIncarnation,
     authority: Arc<SignalConditionalServiceAuthority>,

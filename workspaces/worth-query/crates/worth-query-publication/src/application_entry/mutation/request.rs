@@ -118,9 +118,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         ApplicationEncodedInput<<Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding>,
     >,
     pub(in crate::application_entry) workflow_authority: Option<
-        std::sync::Arc<
-            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
-        >,
+        worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
     >,
 }
 
@@ -228,9 +226,7 @@ where
         input: ApplicationEncodedInput<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
         >,
-        authority: std::sync::Arc<
-            worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
-        >,
+        authority: worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthoritySlot,
     ) -> Self {
         self.workflow_transition_identity = Some(identity);
         self.workflow_input = Some(input);

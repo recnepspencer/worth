@@ -15,10 +15,13 @@ impl ProductUnpublishedRecoveryCatalog {
             return Err(Denial::ForeignHandle);
         }
         let mut state = self.locked_state();
-        if !matches!(state.slots.get(&claim.record.identity), Some(RecoveryEntry::Recovered(record)) if Arc::ptr_eq(record, &claim.record))
-        {
+        let Some(RecoveryEntry::Recovered(record)) = state.slots.get(&claim.record.identity) else {
+            return Err(Denial::MissingRecord);
+        };
+        if !std::ptr::eq(Arc::as_ptr(record), &*claim.record) {
             return Err(Denial::MissingRecord);
         }
+        let recovered = Arc::clone(record);
         let reserved_slots = state
             .reserved_slots
             .checked_add(1)
@@ -39,7 +42,7 @@ impl ProductUnpublishedRecoveryCatalog {
             catalog: self.clone(),
             reserved_metadata_bytes: claim.record.metadata_bytes,
             armed: true,
-            recovered: Some(claim.record.clone()),
+            recovered: Some(recovered),
         })
     }
 }

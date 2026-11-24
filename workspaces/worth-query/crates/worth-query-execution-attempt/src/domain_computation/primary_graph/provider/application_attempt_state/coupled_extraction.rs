@@ -7,7 +7,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
     pub(super) fn take_commit_prepared(
         &mut self,
         session: WorthQueryProviderSessionView<'_>,
-        attempts: Arc<Mutex<Self>>,
+        attempts: SharedApplicationAttemptStore,
     ) -> Option<WorthQueryPreparedProviderApplicationAttempt> {
         let key = WorthQueryApplicationAttemptLookupKey::from_identity(session.affinity_identity());
         let members = self.attempt_state(session)?.coupled_members()?;
@@ -50,7 +50,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
                 work: contribution.work,
                 commit: None,
                 _completion: WorthQueryApplicationAttemptCompletion::new(
-                    Arc::clone(&attempts),
+                    attempts.clone(),
                     member_key,
                     identity,
                 ),

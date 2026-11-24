@@ -15,6 +15,8 @@ pub mod resident_head;
 #[path = "cell/resident_leases.rs"]
 pub mod resident_leases;
 pub mod selected_readmission;
+mod shared_region;
+pub(super) use shared_region::SharedResidentRegion;
 pub mod weak;
 pub(super) use weak::RegionCellWeak;
 
@@ -75,8 +77,8 @@ enum ResidencyDemand {
 #[derive(Debug)]
 enum ResidencyState {
     Cold,
-    Head { region: Arc<ResidentRegion> },
-    Full(Arc<ResidentRegion>),
+    Head { region: SharedResidentRegion },
+    Full(SharedResidentRegion),
     Damaged { slot_counts: (usize, usize) },
 }
 
@@ -202,7 +204,10 @@ impl RelationalRegionResidency {
             head_readmission: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
-            state: Mutex::new(RegionState::new(ResidencyState::Full(region.clone()), None)),
+            state: Mutex::new(RegionState::new(
+                ResidencyState::Full(SharedResidentRegion::from_arc(region.clone())),
+                None,
+            )),
             damage: OnceLock::new(),
             symbol_inheritance: OnceLock::new(),
             symbol_aliases: OnceLock::new(),

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use worth_proof::TransitionOutcome;
 
@@ -7,6 +7,7 @@ use crate::branch::{
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
 };
 
+use super::owner_backing::WeakSignalOwner;
 use super::{
     SignalOwner, SignalOwnerAdmissionDenial, SignalOwnerCancellationToken,
     SignalOwnerLifecycleObservation, SignalOwnerServiceCostSnapshot, SignalOwnerUnavailable,
@@ -22,7 +23,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    owner: Weak<SignalOwner<D, I, T>>,
+    owner: WeakSignalOwner<D, I, T>,
     diagnostic_owner_runtime_instance_id: u64,
 }
 
@@ -47,7 +48,7 @@ where
     T: Copy + Ord,
 {
     pub(crate) fn new(
-        owner: Weak<SignalOwner<D, I, T>>,
+        owner: WeakSignalOwner<D, I, T>,
         diagnostic_owner_runtime_instance_id: u64,
     ) -> Self {
         Self {

@@ -72,7 +72,7 @@ impl RelationalRegionResidency {
             raw_full: Mutex::new(None),
             state: Mutex::new(RegionState::new(
                 ResidencyState::Head {
-                    region: region.clone(),
+                    region: super::SharedResidentRegion::from_arc(region.clone()),
                 },
                 None,
             )),

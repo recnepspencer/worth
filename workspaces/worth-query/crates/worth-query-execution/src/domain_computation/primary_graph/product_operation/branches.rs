@@ -21,9 +21,6 @@ pub use inventory::{WorthQueryProductBranchInventory, WorthQueryProductBranchInv
 mod custody;
 mod expected_source;
 mod owned_head;
-pub(in crate::domain_computation::primary_graph) use custody::{
-    SharedPrimaryRuntime, WorthQueryRuntimeCustody,
-};
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial,
@@ -33,7 +30,11 @@ use crate::basis::{
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+pub(in crate::domain_computation::primary_graph) use custody::{
+    SharedPrimaryRuntime, WorthQueryRuntimeCustody,
+};
 pub use expected_basis::WorthQueryExpectedProductBasisSelectionDenial;
+pub(in crate::domain_computation::primary_graph) use expected_source::DetachedExpectedProductBranch;
 pub use expected_source::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
@@ -139,14 +140,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::new(
                 crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
-                    std::sync::Arc::clone(
-                        self.application
-                            .inner
-                            .runtime
-                            .primary_provider_ref()
-                            .graph_ref()
-                            .output_lineage_ref(),
-                    ),
+                    self.application
+                        .inner
+                        .runtime
+                        .primary_provider_ref()
+                        .graph_ref()
+                        .output_lineage_ref()
+                        .clone(),
                 ),
             ),
             self.application

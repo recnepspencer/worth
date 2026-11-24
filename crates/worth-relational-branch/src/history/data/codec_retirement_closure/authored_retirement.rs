@@ -112,7 +112,7 @@ fn select(
                 return Ok(Some(SelectedOutputPublication {
                     origin: Arc::clone(origin),
                     evidence:
-                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                        crate::publication::ownership::evidence::PublicationEvidence::canonical(
                             Arc::clone(&envelope),
                         ),
                     ordinal,

@@ -18,8 +18,8 @@ impl ReadmittedRelationalAssociatedEffect {
             execution,
             self.semantic_result(),
             match &self.origin {
-                super::ReadmittedEffectOrigin::Original(positioned) => {
-                    &positioned.envelope().patch.authoritative_record_patches
+                super::ReadmittedEffectOrigin::Original(envelope) => {
+                    &envelope.patch.authoritative_record_patches
                 }
                 super::ReadmittedEffectOrigin::Checkpoint { data, .. } => &data.creations,
             },

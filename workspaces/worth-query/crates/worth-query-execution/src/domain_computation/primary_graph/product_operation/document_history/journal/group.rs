@@ -1,7 +1,7 @@
 //! A group reserves one edge while allowing navigation to compete for selection.
 use super::*;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve_group(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

@@ -10,7 +10,7 @@ impl QueryRequestExecution<'_> {
         retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        let owner = Some(product.owner.owner_identity());
+        let owner = Some(product.fields().owner.owner_identity());
         let source = Some(
             product
                 .source()

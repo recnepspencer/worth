@@ -253,18 +253,18 @@ where
             .settled_adoption()
             .map(SignalAttemptProgress::retained_image)
             .unwrap_or_else(SignalAttemptProgress::untouched);
-        let relational = match self.execute_relational(execution, &mut attempt, cancellation, cutover)
-        {
-            Ok(progress) => progress,
-            Err(RelationalExecutionFailure {
-                cause,
-                no_effect,
-                partial,
-            }) => {
-                let progress = CompositeAttemptProgress::new(partial, retained_signal);
-                return self.retain_or_no_effect(attempt, progress, cause, no_effect);
-            }
-        };
+        let relational =
+            match self.execute_relational(execution, &mut attempt, cancellation, cutover) {
+                Ok(progress) => progress,
+                Err(RelationalExecutionFailure {
+                    cause,
+                    no_effect,
+                    partial,
+                }) => {
+                    let progress = CompositeAttemptProgress::new(partial, retained_signal);
+                    return self.retain_or_no_effect(attempt, progress, cause, no_effect);
+                }
+            };
         let relational_successor = relational.successor_basis().cloned();
         let mut progress = CompositeAttemptProgress::new(relational, retained_signal);
         attempt.record_progress(&progress);

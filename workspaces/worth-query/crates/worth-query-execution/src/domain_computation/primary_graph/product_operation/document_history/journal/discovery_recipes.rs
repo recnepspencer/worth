@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryOutputReadDenial as ReadDenial,
 };
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn enroll_discovery_recipe(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

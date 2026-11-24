@@ -227,7 +227,10 @@ fn retired_branch_second_frame_busy_returns_resume_commit_and_treats_fence_as_he
             resume_from: Some(next),
             indeterminate: false,
         } => {
-            assert_eq!(reclaimed, vec![chain[4].identity().clone(), chain[3].identity().clone()]);
+            assert_eq!(
+                reclaimed,
+                vec![chain[4].identity().clone(), chain[3].identity().clone()]
+            );
             assert_eq!(next, chain[2].identity().clone());
             next
         }
@@ -274,7 +277,10 @@ fn retired_branch_second_frame_busy_returns_resume_commit_and_treats_fence_as_he
             resume_from: Some(next),
             indeterminate: true,
         } => {
-            assert_eq!(reclaimed, vec![chain2[4].identity().clone(), chain2[3].identity().clone()]);
+            assert_eq!(
+                reclaimed,
+                vec![chain2[4].identity().clone(), chain2[3].identity().clone()]
+            );
             assert_eq!(next, chain2[2].identity().clone());
             next
         }

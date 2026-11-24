@@ -13,9 +13,7 @@ impl WorthQueryOutputDemandRegistry {
         history: Option<&crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial> {
-        if !Arc::ptr_eq(&self.state, &interest.owner.state)
-            || !Arc::ptr_eq(&self.state, &prepared.owner.state)
-        {
+        if !self.state.ptr_eq(&interest.owner.state) || !self.state.ptr_eq(&prepared.owner.state) {
             return Err(refusal(Kind::ForeignDemand));
         }
         // Terminal rows can still own queued prerequisite/settlement cleanup.

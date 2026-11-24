@@ -17,7 +17,7 @@ mod children;
 #[path = "paging/entries.rs"]
 mod entries;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph) fn page(
         &self,
         context: super::super::WorthQueryHistoryDescriptionContext,

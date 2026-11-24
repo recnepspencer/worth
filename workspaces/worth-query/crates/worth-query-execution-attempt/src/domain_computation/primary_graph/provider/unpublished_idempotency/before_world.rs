@@ -3,7 +3,7 @@ use super::*;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub struct BeforeWorldQueryReservation {
-    store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: SharedUnpublishedIdempotencyStore,
     key: Option<WorthQueryUnpublishedIdempotencyKey>,
     entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     slot: Arc<OnceLock<ProductUnpublishedRecoveryHandle>>,
@@ -21,7 +21,7 @@ impl BeforeWorldQueryReservation {
             .set(handle.clone())
             .expect("one actual World construction binds once");
         let reservation = WorthQueryUnpublishedIdempotencyReservation::new(
-            Arc::clone(&self.store),
+            self.store.clone(),
             self.key.take().expect("original staged key"),
             Arc::clone(&self.entry),
             handle,
@@ -75,7 +75,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .reserve_before_world(affinity, binding)?;
         Ok(BeforeWorldQueryReservation {
-            store: Arc::clone(&self.unpublished_idempotency),
+            store: self.unpublished_idempotency.clone(),
             key: Some(key),
             entry,
             slot,

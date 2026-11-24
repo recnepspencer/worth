@@ -28,6 +28,21 @@ pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
     fork: WorthQueryProductBranchFork<'runtime>,
 }
 
+pub(in crate::domain_computation::primary_graph) struct DetachedExpectedProductBranch {
+    pub(in crate::domain_computation::primary_graph) branch: WorthQueryProductBranch,
+    pub(in crate::domain_computation::primary_graph) source: WorthQueryProductBranchLease,
+}
+
+impl DetachedExpectedProductBranch {
+    pub(in crate::domain_computation::primary_graph) fn into_branch(
+        self,
+    ) -> WorthQueryProductBranch {
+        let Self { branch, source } = self;
+        drop(source);
+        branch
+    }
+}
+
 /// A candidate together with the actual source admission from which it was forked.
 /// The branch selector permits ordinary candidate requests; it does not certify
 /// adoption as an application model's head.
@@ -36,6 +51,28 @@ pub struct WorthQueryExpectedProductBranch<'runtime, Schema> {
     application: WorthQueryRuntimeCustody<'runtime, Schema>,
     branch: WorthQueryProductBranch,
     source: WorthQueryProductBranchLease,
+}
+
+impl<'runtime, Schema> WorthQueryExpectedProductBranch<'runtime, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn into_detached(
+        self,
+    ) -> DetachedExpectedProductBranch {
+        DetachedExpectedProductBranch {
+            branch: self.branch,
+            source: self.source,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_detached(
+        application: WorthQueryRuntimeCustody<'runtime, Schema>,
+        detached: DetachedExpectedProductBranch,
+    ) -> Self {
+        Self {
+            application,
+            branch: detached.branch,
+            source: detached.source,
+        }
+    }
 }
 
 /// A failed close retains both the candidate and its exact source continuation.
@@ -67,15 +104,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 .with_application_lifecycle(
                     std::sync::Arc::new(
                         crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
-                            std::sync::Arc::clone(
-                                &self
-                                    .application
-                                    .inner
-                                    .runtime
-                                    .primary_provider_ref()
-                                    .graph_ref()
-                                    .output_lineage_ref(),
-                            ),
+                            self.application
+                                .inner
+                                .runtime
+                                .primary_provider_ref()
+                                .graph_ref()
+                                .output_lineage_ref()
+                                .clone(),
                         ),
                     ),
                     self.application

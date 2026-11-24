@@ -2,7 +2,7 @@
 use super::super::StablePublicationStop;
 use super::super::{
     executed_adoption::PendingExecutedOutputAdoption, invalidation::SourceInvalidationOwner,
-    SealedNativeOutputWitness, WorthQueryApplicationOutputLineage,
+    SealedNativeOutputWitness, SharedOutputLineage,
 };
 use super::{stable_publication::prepare_address, RetainedInputCutoffCandidate};
 use crate::domain_computation::primary_graph::{
@@ -11,11 +11,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
 };
 use crate::ports::ApplicationAttemptPort;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub fn select(
-    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: &SharedOutputLineage,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     attempt: &dyn ApplicationAttemptPort,
 ) -> Result<Option<RetainedInputCutoffCandidate>, WorthQueryOutputDemandDenial> {
@@ -52,7 +52,7 @@ impl ExecutedAdoptionSelection {
     }
     pub fn select(
         &self,
-        owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+        owner: &SharedOutputLineage,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RetainedInputCutoffCandidate>, WorthQueryOutputDemandDenial> {
         self.select_native(owner, execution).map_err(|stop| {
@@ -64,7 +64,7 @@ impl ExecutedAdoptionSelection {
     }
     pub fn select_native(
         &self,
-        owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+        owner: &SharedOutputLineage,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Option<RetainedInputCutoffCandidate>,
@@ -84,7 +84,7 @@ impl ExecutedAdoptionSelection {
 }
 
 pub fn publish(
-    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: &SharedOutputLineage,
     source_owner: &SourceInvalidationOwner,
     world: &worth_runtime_world::facade::RuntimeWorldObservationPort,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

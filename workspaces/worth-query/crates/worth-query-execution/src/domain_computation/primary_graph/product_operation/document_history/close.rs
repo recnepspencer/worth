@@ -56,7 +56,11 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             ..
         } = self.selection.take();
         drop(physical_source);
-        match WorthQueryDocumentHistoryClosing::new(head, journal, navigation).retry(phase) {
+        let current = crate::domain_computation::primary_graph::WorthQueryOwnedProductHead::from_created_branch(
+            self.application,
+            head,
+        );
+        match WorthQueryDocumentHistoryClosing::new(current, journal, navigation).retry(phase) {
             Ok(receipt) => Ok(receipt),
             Err(closing) => match closing.into_terminal_cleanup() {
                 Ok((branch, failure)) => {

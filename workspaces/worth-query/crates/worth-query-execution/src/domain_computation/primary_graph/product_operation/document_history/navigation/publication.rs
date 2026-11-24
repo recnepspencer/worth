@@ -11,8 +11,9 @@ use crate::domain_computation::{
         WorthQueryPreparedProductPublication,
     },
     primary_graph::{
-        application_contribution::advancement_denial, WorthQueryAdvancementPhase,
-        WorthQueryExpectedProductBranch,
+        application_contribution::advancement_denial,
+        product_operation::DetachedExpectedProductBranch, WorthQueryAdvancementPhase,
+        WorthQueryPrimaryGraphApplicationRuntime,
     },
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
@@ -45,15 +46,16 @@ PublicationDenial::Stopped(cause) => {
     }
 }
 
-impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
-    pub(super) fn publish(
+impl NavigationProgress {
+    pub(super) fn publish<S: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        candidate: DetachedExpectedProductBranch,
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         let execution = match phase
-            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -66,11 +68,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
-                self.performed(candidate, performed);
+                self.performed(application, candidate, performed);
                 Ok(())
             }
             Ok(Outcome::ProductUnpublished(effects)) => {
-                let recovery = self.unpublished(effects);
+                let recovery = self.unpublished(application, effects);
                 self.phase = NavigationPhase::Unpublished {
                     candidate,
                     recovery,
@@ -84,16 +86,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         }
     }
 
-    fn performed(
+    fn performed<S: ApplicationSchema>(
         &mut self,
-        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        candidate: DetachedExpectedProductBranch,
         performed: worth_runtime_world::facade::PerformedCompositePublication,
     ) {
         let mut publication = performed.consume();
         let observation = publication.take_successor_observation().expect("initial and settled-adoption preparations both reserve the exact successor observation");
         debug_assert_eq!(
             observation.lifecycle_incarnation(),
-            candidate.branch().occurrence()
+            candidate.branch.occurrence()
         );
         debug_assert_eq!(
             observation.selected_commit(),
@@ -108,7 +111,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .publications
                 .finish(committed)
                 .expect("World performed the prepared selection envelope");
-            self.application
+            application
                 .inner
                 .runtime
                 .primary_provider_ref()
@@ -125,7 +128,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let exact = <crate::basis::WorthQueryProductObservationLease as ProductObservationLeaseInternalPort>::from_observation(observation);
         if self.output_profile.is_some() || self.ownership.is_some() {
             let original = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
-                self.application.inner(), exact.retained_clone(), self.output_source_memory.take(),
+                application.inner(), exact.retained_clone(), self.output_source_memory.take(),
             );
             let selected = self.ownership.map(|_| {
                 self.source
@@ -162,19 +165,20 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         };
     }
 
-    fn unpublished(
+    fn unpublished<S: ApplicationSchema>(
         &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
     ) -> WorthQueryProductUnpublishedRecovery {
         WorthQueryProductUnpublishedApplication::from_effects(
             effects,
-            self.application
+            application
                 .inner
                 .runtime
                 .product_runtime_ref()
                 .owner_ref()
                 .recovery_port(),
-            self.application
+            application
                 .inner
                 .runtime
                 .primary_provider_ref()
@@ -183,27 +187,26 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         .into_recovery()
     }
 
-    pub(super) fn recover(
+    pub(super) fn recover<S: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
-        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        candidate: DetachedExpectedProductBranch,
         recovery: WorthQueryProductUnpublishedRecovery,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+                .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
                 .map_err(Denial::Stopped)?;
-            let product = self
-                .application
+            let product = application
                 .inner
                 .runtime
                 .product_runtime_ref()
-                .admit_product_occurrence(candidate.branch().occurrence())
+                .admit_product_occurrence(candidate.branch.occurrence())
                 .map_err(Denial::ProductAdmission)?;
-            let selected = self
-                .application
+            let selected = application
                 .on_product_for_owner_recovery(&execution, product)
                 .map_err(Denial::ProductAdmission)?;
             let inspected = recovery.inspect().map_err(Denial::Recovery)?;
@@ -241,7 +244,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
             }
         };
         let execution = match phase
-            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -255,21 +258,19 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
         };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
-                self.performed(candidate, performed);
-                self.prior_cleanup = self
-                    .application
+                self.performed(application, candidate, performed);
+                self.prior_cleanup = application
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())
             }
             Ok(Outcome::ProductUnpublished(effects)) => {
-                let next = self.unpublished(effects);
+                let next = self.unpublished(application, effects);
                 self.phase = NavigationPhase::Unpublished {
                     candidate,
                     recovery: next,
                 };
-                self.prior_cleanup = self
-                    .application
+                self.prior_cleanup = application
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())

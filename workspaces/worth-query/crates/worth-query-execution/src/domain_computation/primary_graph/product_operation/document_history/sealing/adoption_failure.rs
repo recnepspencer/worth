@@ -11,7 +11,8 @@ pub struct WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
         WorthQueryDocumentHistoryReservation,
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) candidate:
         WorthQueryExpectedProductBranch<'runtime, S>,
-    pub(in crate::domain_computation::primary_graph::product_operation::document_history) denial: Denial,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) denial:
+        Denial,
 }
 
 impl<'runtime, S> WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {

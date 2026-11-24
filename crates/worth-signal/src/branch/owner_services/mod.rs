@@ -39,6 +39,7 @@ pub use durable_publication::{
 pub use durable_source_port::{SignalDurableBranchSourcePort, SignalDurableSourceDenial};
 mod operation_control;
 pub(super) mod owner;
+mod owner_backing;
 mod owner_metadata;
 mod service_ports;
 mod unavailable;

@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     native_read_stop: None,
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: if applied { Arc::new(std::sync::Mutex::new(Default::default())) } else { Arc::clone(&self.graph.aggregate_projections) },
-                    output_lineage: Arc::clone(&self.graph.output_lineage),
+                    output_lineage: self.graph.output_lineage.clone(),
                     invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
                     managed_views: self.graph.managed_derived_views(),
                     selected_product_occurrence: None,

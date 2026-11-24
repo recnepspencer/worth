@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::change_source::retained_observation::RelationalRetainedObservation;
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::SharedCanonicalCommitEnvelope;
 use crate::publication::patch::data::RecordStructuralChange;
 
 use super::{
@@ -15,7 +15,7 @@ use super::{
 
 #[derive(Debug)]
 pub struct RetainedCanonicalRecordHistory {
-    pub envelope: Arc<CanonicalCommitEnvelope>,
+    pub envelope: SharedCanonicalCommitEnvelope,
     pub retained: RelationalRetainedObservation,
     pub selection: RelationalRecordHistorySelection,
     pub _memory: Option<worth_execution::ExecutionMemoryReservation>,

@@ -61,32 +61,43 @@ pub struct RequiredWorkflowOperation {
     pub(crate) binding: Option<String>,
     pub(crate) input_identity: [u8; 32],
     pub(crate) workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
-    pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
+    pub(crate) authority: WorkflowOperationAuthoritySlot,
 }
 
+trait WorkflowOperationAuthoritySlotBacking: Send + Sync + std::fmt::Debug {
+    fn take(&self) -> Option<WorkflowOperationAuthority>;
+    fn was_issued(&self) -> bool;
+}
 #[derive(Debug)]
-pub struct WorkflowOperationAuthoritySlot {
+struct WorkflowOperationAuthoritySlotState {
     authority: Mutex<Option<WorkflowOperationAuthority>>,
     issued: bool,
 }
+impl WorkflowOperationAuthoritySlotBacking for WorkflowOperationAuthoritySlotState {
+    fn take(&self) -> Option<WorkflowOperationAuthority> {
+        self.authority
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
+    fn was_issued(&self) -> bool {
+        self.issued
+    }
+}
+#[derive(Clone, Debug)]
+pub struct WorkflowOperationAuthoritySlot(Arc<dyn WorkflowOperationAuthoritySlotBacking>);
 
 pub struct WorkflowOperationAuthority {
     pub(crate) captured_input:
         Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
-    pub(crate) operation:
-        String,
-    pub(crate) binding:
-        String,
-    pub(crate) transition_identity:
-        [u8; 32],
-    pub(crate) input_identity:
-        [u8; 32],
-    pub(crate) runtime_authority:
-        u64,
+    pub(crate) operation: String,
+    pub(crate) binding: String,
+    pub(crate) transition_identity: [u8; 32],
+    pub(crate) input_identity: [u8; 32],
+    pub(crate) runtime_authority: u64,
     pub(crate) session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    pub(crate) observation:
-        WorthQueryProductBranchReadIdentity,
+    pub(crate) observation: WorthQueryProductBranchReadIdentity,
     pub(crate) facts: Arc<[WorthQueryApplicationObservedFact]>,
     /// The instance's deadline; the operation commits only before it.
     pub(crate) deadline: Option<u64>,
@@ -116,15 +127,11 @@ impl std::fmt::Debug for WorkflowOperationAuthority {
 impl WorkflowOperationAuthoritySlot {
     #[doc(hidden)]
     pub fn take(&self) -> Option<WorkflowOperationAuthority> {
-        self.authority
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
+        self.0.take()
     }
-
     #[doc(hidden)]
-    pub const fn was_issued(&self) -> bool {
-        self.issued
+    pub fn was_issued(&self) -> bool {
+        self.0.was_issued()
     }
 }
 
@@ -171,10 +178,12 @@ impl RequiredWorkflowOperation {
             binding: selected.binding,
             workflow_execution_requirements: selected.workflow_execution_requirements,
             input_identity,
-            authority: Arc::new(WorkflowOperationAuthoritySlot {
-                issued: authority.is_some(),
-                authority: Mutex::new(authority),
-            }),
+            authority: WorkflowOperationAuthoritySlot(Arc::new(
+                WorkflowOperationAuthoritySlotState {
+                    issued: authority.is_some(),
+                    authority: Mutex::new(authority),
+                },
+            )),
         }
     }
 
@@ -229,8 +238,8 @@ impl RequiredWorkflowOperation {
     }
 
     #[doc(hidden)]
-    pub fn authority_slot(&self) -> Arc<WorkflowOperationAuthoritySlot> {
-        Arc::clone(&self.authority)
+    pub fn authority_slot(&self) -> WorkflowOperationAuthoritySlot {
+        self.authority.clone()
     }
 }
 
