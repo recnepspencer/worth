@@ -78,11 +78,11 @@ fn exact_root_where_equal_value_matches_only_the_authored_constant() {
     let filtered = world::exact_project(&host, 2).expect("project 2 is filtered out");
     assert!(filtered.is_empty());
 
-    // Chaining `.where_equal_value(Status, "open")` + `.where_equal(TaskKey, expected_key)`
+    // Chaining `.where_equal_value(Status, "open")` + `.where_equal(Rank, expected_rank)`
     // on an exact-root query intersects both structured guards.
-    assert_eq!(keys(world::exact_open_task(&host, 1, 1)), [1]);
-    assert!(keys(world::exact_open_task(&host, 1, 2)).is_empty());
-    assert!(keys(world::exact_open_task(&host, 3, 3)).is_empty());
+    assert_eq!(keys(world::exact_open_task(&host, 1, 5)), [1]);
+    assert!(keys(world::exact_open_task(&host, 1, 9)).is_empty());
+    assert!(keys(world::exact_open_task(&host, 3, 7)).is_empty());
 }
 
 fn edit_notes(host: &world::Host, project: u64, task: u64, notes: &str, key: u64) {
@@ -162,14 +162,17 @@ fn pinned_read_remains_consistent_across_edits_for_literal_and_optional_query() 
         [5]
     );
 
-    // Chained `.where_equal_value(Status, "open")` + `.where_equal(TaskKey, expected_key)`
+    // Chained `.where_equal_value(Status, "open")` + `.where_equal(Rank, expected_rank)`
     // on an exact-root query also admits and executes through retained/pinned commits
     // across subsequent writes.
-    let pinned_exact = |task, expected_key| {
+    let pinned_exact = |task, expected_rank| {
         host.runtime()
             .request(&principal, &scope)
             .at(&pinned_basis)
-            .query(queries::ExactOpenTask { task, expected_key })
+            .query(queries::ExactOpenTask {
+                task,
+                expected_rank,
+            })
             .execute()
             .expect("retained multi-predicate exact-root read succeeds")
             .rows()
@@ -177,12 +180,12 @@ fn pinned_read_remains_consistent_across_edits_for_literal_and_optional_query() 
             .map(|row| row.key)
             .collect::<Vec<_>>()
     };
-    assert_eq!(pinned_exact(1, 1), [1]);
-    assert!(pinned_exact(1, 2).is_empty());
-    assert!(pinned_exact(3, 3).is_empty());
+    assert_eq!(pinned_exact(1, 5), [1]);
+    assert!(pinned_exact(1, 9).is_empty());
+    assert!(pinned_exact(3, 7).is_empty());
     edit_notes(&host, 1, 1, "post-pin update", 2);
-    assert_eq!(pinned_exact(1, 1), [1]);
-    assert_eq!(keys(world::exact_open_task(&host, 1, 1)), [1]);
+    assert_eq!(pinned_exact(1, 5), [1]);
+    assert_eq!(keys(world::exact_open_task(&host, 1, 5)), [1]);
 }
 
 #[test]

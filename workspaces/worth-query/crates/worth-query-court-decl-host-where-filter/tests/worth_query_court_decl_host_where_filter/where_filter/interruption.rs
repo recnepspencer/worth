@@ -106,3 +106,89 @@ fn cancellation_between_residual_slices_refuses_typed_after_partial_evaluation()
         "evaluation stops at the first safe point after cancel"
     );
 }
+
+#[test]
+fn retained_two_predicate_exact_root_reconstructs_both_missing_index_generations() {
+    use super::queries::ExactOpenTask;
+    use super::schema::{Rank, Status};
+    use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+    use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
+        authenticate_operator, request_scope,
+    };
+
+    let host = install(&board());
+    let runtime = host.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let pinned_basis = runtime
+        .request(&principal, &scope)
+        .retain_current_read()
+        .expect("retaining current basis succeeds");
+    let world = runtime.current_world();
+
+    // Evict BOTH non-scope root predicate equality index generations (Status
+    // and Rank) so neither selected root predicate has a resident generation
+    // at `pinned_basis` (while TaskKey remains available for scope resolution).
+    host.with_host_advancement(|phase| {
+        assert!(
+            runtime
+                .release_equality_index_generations_for_test(&phase, Status::at("Status"))
+                .expect("Status equality index evicts")
+                > 0
+        );
+        assert!(
+            runtime
+                .release_equality_index_generations_for_test(&phase, Rank::at("Rank"))
+                .expect("Rank equality index evicts")
+                > 0
+        );
+        assert!(
+            !runtime
+                .has_equality_index_generation_for_test(&phase, world, Status::at("Status"))
+                .expect("Status generation residency check succeeds")
+        );
+        assert!(
+            !runtime
+                .has_equality_index_generation_for_test(&phase, world, Rank::at("Rank"))
+                .expect("Rank generation residency check succeeds")
+        );
+    })
+    .expect("host advancement opens for eviction");
+
+    // Retained read through `.at(&pinned_basis)` must reconstruct BOTH missing
+    // predicate generations and serve exact intersection results.
+    let run_pinned = |task, expected_rank| {
+        runtime
+            .request(&principal, &scope)
+            .at(&pinned_basis)
+            .query(ExactOpenTask {
+                task,
+                expected_rank,
+            })
+            .execute()
+            .expect("retained multi-predicate exact-root read reconstructs missing indexes")
+            .rows()
+            .iter()
+            .map(|row| row.key)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(run_pinned(1, 5), [1]);
+    assert!(run_pinned(1, 9).is_empty());
+    assert!(run_pinned(3, 7).is_empty());
+
+    host.with_host_advancement(|phase| {
+        assert!(
+            runtime
+                .has_equality_index_generation_for_test(&phase, world, Status::at("Status"))
+                .expect("Status generation residency check succeeds"),
+            "Status predicate generation must be reconstructed"
+        );
+        assert!(
+            runtime
+                .has_equality_index_generation_for_test(&phase, world, Rank::at("Rank"))
+                .expect("Rank generation residency check succeeds"),
+            "Rank predicate generation must be reconstructed"
+        );
+    })
+    .expect("host advancement opens for residency check");
+}

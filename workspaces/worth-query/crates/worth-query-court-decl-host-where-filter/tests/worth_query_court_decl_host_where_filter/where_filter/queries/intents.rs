@@ -7,7 +7,7 @@ pub struct MaxDue;
 pub struct MinRank;
 pub struct MaxLength;
 pub struct StatusValue;
-pub struct ExpectedTaskKey;
+pub struct ExpectedTaskRank;
 
 #[derive(Clone, Debug, WorthValue)]
 pub struct Search {
@@ -37,7 +37,7 @@ pub struct ExactProject {
 #[derive(Clone, Debug, WorthValue)]
 pub struct ExactOpenTask {
     pub task: u64,
-    pub expected_key: u64,
+    pub expected_rank: i64,
 }
 #[derive(Clone, Debug, WorthValue)]
 pub struct Fit {
@@ -120,12 +120,12 @@ fn exact_open_task_parameters(
 ) -> ApplicationQueryParameterSet<ExactOpenTaskQuery> {
     ApplicationQueryParameterSet::new()
         .bind(
-            parameter::<ExactOpenTaskQuery, ExpectedTaskKey, U64ApplicationValueBinding>(
-                "expected_key",
+            parameter::<ExactOpenTaskQuery, ExpectedTaskRank, I64ApplicationValueBinding>(
+                "expected_rank",
             ),
-            input.expected_key,
+            input.expected_rank,
         )
-        .expect("expected task key encodes")
+        .expect("expected task rank encodes")
 }
 fn fit_parameters(input: &Fit) -> ApplicationQueryParameterSet<FitQuery> {
     ApplicationQueryParameterSet::new()

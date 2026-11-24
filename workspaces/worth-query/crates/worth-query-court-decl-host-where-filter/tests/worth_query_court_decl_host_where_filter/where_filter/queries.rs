@@ -277,8 +277,10 @@ pub fn exact_open_task(
     let open =
         ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("open".to_owned())
             .expect("open encodes");
-    let expected_key =
-        parameter::<ExactOpenTaskQuery, ExpectedTaskKey, U64ApplicationValueBinding>("expected_key");
+    let expected_rank =
+        parameter::<ExactOpenTaskQuery, ExpectedTaskRank, I64ApplicationValueBinding>(
+            "expected_rank",
+        );
     ApplicationQueryDefinitionBuilder::declare(ExactOpenTaskQuery::reference())
         .root(Task::reference())
         .scope(Task::reference())
@@ -300,9 +302,9 @@ pub fn exact_open_task(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
         .public()
-        .parameter(expected_key)
+        .parameter(expected_rank)
         .where_equal_value(Status::at("Status"), open)
-        .where_equal(TaskKey::at("TaskKey"), expected_key)
+        .where_equal(Rank::at("Rank"), expected_rank)
 }
 
 pub fn fit() -> ApplicationQueryDefinitionBuilder<Schema, FitQuery, Parameters, TaskRow, Project> {

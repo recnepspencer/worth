@@ -29,6 +29,7 @@ impl Record<TaskFactsValue> for BoardBindings {
             .and("Status", |row: &TaskFactsValue| row.status.clone())
             .equality_queryable(true)
             .and("Rank", |row: &TaskFactsValue| row.rank)
+            .equality_queryable(true)
             .and("Length", |row: &TaskFactsValue| row.length)
             .and("Due", |row: &TaskFactsValue| row.due)
             .build(

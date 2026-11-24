@@ -234,12 +234,15 @@ pub fn exact_project(
         .map(|result| result.rows().to_vec())
 }
 
-pub fn exact_open_task(host: &Host, task: u64, expected_key: u64) -> Rows {
+pub fn exact_open_task(host: &Host, task: u64, expected_rank: i64) -> Rows {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     host.runtime()
         .request(&principal, &scope)
-        .query(ExactOpenTask { task, expected_key })
+        .query(ExactOpenTask {
+            task,
+            expected_rank,
+        })
         .execute()
         .map(|result| result.rows().to_vec())
 }
