@@ -28,7 +28,9 @@ pub struct SourceFactConversionQuote {
     /// both materialized `Vec<Fact>` buffers, `merge_facts` BTreeMap, and cloned
     /// `SourceFactLocator` path/string payloads).
     pub peak_scratch_bytes: u64,
-    /// Bounded O(N log N) validation, preparation, endpoint-copy, and merge work units.
+    /// Bounded O(N log N) conversion-owned validation, preparation, and merge
+    /// work units. Adjacency endpoint copy/sort/merge work is debited directly
+    /// once by `AdmittedAdjacencyEndpoints`.
     pub conversion_work: u64,
 }
 
@@ -186,8 +188,6 @@ impl<Query> WorthQueryObservedSource<Query> {
         let peak_scratch_bytes = validation_peak.max(merge_peak);
         let conversion_work = n_log2_n(field_count)?
             .checked_add(n_log2_n(adjacency_count)?)?
-            .checked_add(n_log2_n(adjacency_endpoint_count)?)?
-            .checked_add(u64::try_from(adjacency_endpoint_count).ok()?)?
             .checked_add(n_log2_n(fact_count)?)?
             .checked_add(u64::try_from(field_count).ok()?)?
             .checked_add(u64::try_from(fact_count).ok()?)?

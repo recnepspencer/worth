@@ -200,11 +200,7 @@ impl WorthQueryApplicationObservedFact {
                     locator: bl,
                     ..
                 },
-            ) => {
-                ae == be
-                    && al.aspect().aspect_key() == bl.aspect().aspect_key()
-                    && al.field_path().fields().first() == bl.field_path().fields().first()
-            }
+            ) => ae == be && same_field_locator_bytes(al, bl),
             (
                 Self::SourceAdjacencyRevision {
                     relation_kind: ar,
@@ -320,6 +316,27 @@ impl WorthQueryApplicationObservedFact {
     }
 }
 
+fn same_field_locator_bytes(
+    left: &worth_foundational::facade::AspectFieldLocator,
+    right: &worth_foundational::facade::AspectFieldLocator,
+) -> bool {
+    fn parts(loc: &worth_foundational::facade::AspectFieldLocator) -> Option<[&[u8]; 3]> {
+        let field = loc.field_path().fields().first()?;
+        Some([
+            loc.aspect().aspect_key().as_str().as_bytes(),
+            b"/",
+            field.as_str().as_bytes(),
+        ])
+    }
+    let (Some(left_parts), Some(right_parts)) = (parts(left), parts(right)) else {
+        return false;
+    };
+    left_parts
+        .into_iter()
+        .flatten()
+        .eq(right_parts.into_iter().flatten())
+}
+
 #[cfg(test)]
 mod tests {
     use super::WorthQueryApplicationObservedFact as Fact;
@@ -331,66 +348,45 @@ mod tests {
         runtime::RelationalAdjacencyDirection,
     };
 
+    fn field_fact(entity_id: EntityId, aspect: &str, field: &str) -> Fact {
+        Fact::SourceFieldRevision {
+            entity_id,
+            locator: AspectFieldLocator::new(
+                LocatorAuthority::Authoritative,
+                AspectKey::new(aspect).expect("valid aspect"),
+                CanonicalFieldPath::single(FieldKey::new(field).expect("valid field")),
+            ),
+            native_revision: None,
+        }
+    }
+
     #[test]
     fn structural_source_merge_key_matches_dependency_key_for_same_variant_facts() {
         let e1 = EntityId::new(PartitionId::main(), 1, 1);
         let e2 = EntityId::new(PartitionId::main(), 2, 1);
-        let loc_a = AspectFieldLocator::new(
-            LocatorAuthority::Authoritative,
-            AspectKey::new("task").expect("valid aspect key"),
-            CanonicalFieldPath::single(FieldKey::new("status").expect("valid field key")),
+        let (f1, f2, f3) = (
+            field_fact(e1, "task", "status"),
+            field_fact(e1, "task", "status"),
+            field_fact(e1, "task", "due"),
         );
-        let loc_b = AspectFieldLocator::new(
-            LocatorAuthority::Authoritative,
-            AspectKey::new("task").expect("valid aspect key"),
-            CanonicalFieldPath::single(FieldKey::new("due").expect("valid field key")),
-        );
-        let f1 = Fact::SourceFieldRevision {
-            entity_id: e1,
-            locator: loc_a.clone(),
-            native_revision: None,
-        };
-        let f2 = Fact::SourceFieldRevision {
-            entity_id: e1,
-            locator: loc_a,
-            native_revision: None,
-        };
-        let f3 = Fact::SourceFieldRevision {
-            entity_id: e1,
-            locator: loc_b,
-            native_revision: None,
-        };
-        assert!(f1.same_source_merge_key(&f2));
-        assert_eq!(f1.dependency_key(), f2.dependency_key());
-        assert!(!f1.same_source_merge_key(&f3));
-        assert_ne!(f1.dependency_key(), f3.dependency_key());
+        assert!(f1.same_source_merge_key(&f2) && f1.dependency_key() == f2.dependency_key());
+        assert!(!f1.same_source_merge_key(&f3) && f1.dependency_key() != f3.dependency_key());
+        let (sep_l, sep_r) = (field_fact(e1, "a/b", "c"), field_fact(e1, "a", "b/c"));
+        assert_eq!(sep_l.dependency_key(), sep_r.dependency_key());
+        assert!(sep_l.same_source_merge_key(&sep_r));
 
-        let adj1 = Fact::SourceAdjacencyRevision {
+        let adj = |anchor, rev, limit| {
+            Fact::SourceAdjacencyRevision {
             relation_kind: KindId::new(9),
-            anchor: e1,
+            anchor,
             direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(1)),
-            comparison_work_limit: 4,
+            native_revision: Some(VersionId(rev)),
+            comparison_work_limit: limit,
             endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+        }
         };
-        let adj2 = Fact::SourceAdjacencyRevision {
-            relation_kind: KindId::new(9),
-            anchor: e1,
-            direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(2)),
-            comparison_work_limit: 8,
-            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
-        };
-        let adj3 = Fact::SourceAdjacencyRevision {
-            relation_kind: KindId::new(9),
-            anchor: e2,
-            direction: RelationalAdjacencyDirection::Outgoing,
-            native_revision: Some(VersionId(1)),
-            comparison_work_limit: 4,
-            endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
-        };
-        assert!(adj1.same_source_merge_key(&adj2));
-        assert!(!adj1.same_source_merge_key(&adj3));
-        assert!(!adj1.same_source_merge_key(&f1));
+        assert!(adj(e1, 1, 4).same_source_merge_key(&adj(e1, 2, 8)));
+        assert!(!adj(e1, 1, 4).same_source_merge_key(&adj(e2, 1, 4)));
+        assert!(!adj(e1, 1, 4).same_source_merge_key(&f1));
     }
 }
