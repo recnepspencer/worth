@@ -30,9 +30,11 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
         _ => return Err(denial(query.name()).into()),
     }
     let mut result_rules = BTreeMap::new();
-    let (count, group_counts) = internal_rule_counts(query.disclosure().rules(), admit)?;
+    let (count, group_counts, relation_counts) =
+        internal_rule_counts(query.disclosure().rules(), admit)?;
     let mut internal_rules = Vec::with_capacity(count);
     let mut internal_field_rules = BTreeMap::new();
+    let mut internal_relation_rules = BTreeMap::new();
     for rule in query.disclosure().rules() {
         pay(admit, CompilationWork::Visit)?;
         admit_rule(
@@ -42,12 +44,20 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
             &mut result_rules,
             &mut internal_rules,
             &mut internal_field_rules,
+            &mut internal_relation_rules,
             &group_counts,
+            &relation_counts,
             admit,
         )?;
     }
     require_complete_result_shape(query, &result_rules)?;
-    validate_influence(query, &internal_field_rules, &result_rules, admit)?;
+    validate_influence(
+        query,
+        &internal_field_rules,
+        &internal_relation_rules,
+        &result_rules,
+        admit,
+    )?;
     let contract = query.disclosure();
     let capability_name = contract
         .capability_name()
@@ -58,6 +68,8 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
     for text in [contract.classification(), capability_name, capability_type] {
         pay(admit, CompilationWork::Copy(text.len()))?;
     }
+    let internal_field_rules = finalize_internal_groups(internal_field_rules, admit)?;
+    let internal_relation_rules = finalize_internal_groups(internal_relation_rules, admit)?;
     Ok(WorthQueryAdmittedApplicationDisclosureContract::Governed {
         classification: contract.classification().to_string(),
         capability_name: capability_name.to_string(),
@@ -65,7 +77,33 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
         result_rules,
         internal_rules,
         internal_field_rules,
+        internal_relation_rules,
     })
+}
+
+fn finalize_internal_groups<K, E>(
+    groups: BTreeMap<K, Vec<AdmittedDisclosureRule>>,
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<Vec<(K, GovernedInternalRuleGroup)>, CompilationStop<E>> {
+    let table_bytes = groups
+        .len()
+        .saturating_mul(std::mem::size_of::<(K, GovernedInternalRuleGroup)>());
+    pay(admit, CompilationWork::Copy(table_bytes))?;
+    let mut out = Vec::with_capacity(groups.len());
+    for (key, rules) in groups {
+        pay(admit, CompilationWork::Visit)?;
+        let mut mask = if rules.is_empty() { 0_u16 } else { !0_u16 };
+        for rule in &rules {
+            pay(admit, CompilationWork::Visit)?;
+            let mut rule_mask = 0_u16;
+            for surface in rule.influence().permitted() {
+                rule_mask |= influence_bit(surface);
+            }
+            mask &= rule_mask;
+        }
+        out.push((key, GovernedInternalRuleGroup::new(rules, mask)));
+    }
+    Ok(out)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -76,7 +114,9 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope, E>(
     result_rules: &mut BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     internal_rules: &mut Vec<AdmittedDisclosureRule>,
     internal_field_rules: &mut GovernedInternalFieldRules,
+    internal_relation_rules: &mut GovernedInternalRelationRules,
     group_counts: &InternalRuleCounts<'_>,
+    relation_counts: &InternalRelationCounts<'_>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<(), CompilationStop<E>> {
     let field = rule
@@ -150,6 +190,47 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope, E>(
             group.push(Arc::clone(&installed));
             internal_rules.push(installed);
         }
+        ApplicationQueryDisclosureSelector::InternalRelation {
+            relation,
+            from,
+            to,
+            direction,
+        } => {
+            if layout.relation(relation).is_none() {
+                return Err(denial(relation.as_str()).into());
+            }
+            let parts = [relation.as_str(), from.as_str(), to.as_str()];
+            pay(
+                admit,
+                CompilationWork::Lookup {
+                    entries: internal_relation_rules.len(),
+                    parts: &parts,
+                },
+            )?;
+            for text in parts {
+                pay(admit, CompilationWork::Copy(text.len()))?;
+            }
+            let key = (relation.clone(), from.clone(), to.clone(), *direction);
+            let group = match internal_relation_rules.entry(key) {
+                std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    pay(
+                        admit,
+                        CompilationWork::Lookup {
+                            entries: relation_counts.len(),
+                            parts: &parts,
+                        },
+                    )?;
+                    let count = relation_counts
+                        .get(&(parts[0], parts[1], parts[2], *direction))
+                        .copied()
+                        .ok_or_else(|| denial(relation.as_str()))?;
+                    entry.insert(Vec::with_capacity(count))
+                }
+            };
+            group.push(Arc::clone(&installed));
+            internal_rules.push(installed);
+        }
         ApplicationQueryDisclosureSelector::Field { .. } => {
             admit_result_rule(query, rule.selector(), installed, result_rules, true, admit)?
         }
@@ -189,34 +270,60 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope, E>(
 
 // Borrowed immutable names are capacity bookkeeping, never copied authority.
 type InternalRuleCounts<'a> = BTreeMap<(&'a str, &'a str, &'a str), usize>;
+type InternalRelationCounts<'a> = BTreeMap<
+    (
+        &'a str,
+        &'a str,
+        &'a str,
+        worth_query_declaration::facade::application_query::RelationDirection,
+    ),
+    usize,
+>;
 
 fn internal_rule_counts<'a, E>(
     rules: &'a [ApplicationQueryDisclosureRule],
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
-) -> Result<(usize, InternalRuleCounts<'a>), CompilationStop<E>> {
+) -> Result<(usize, InternalRuleCounts<'a>, InternalRelationCounts<'a>), CompilationStop<E>> {
     let mut count = 0;
     let mut groups = BTreeMap::new();
+    let mut relations = BTreeMap::new();
     for rule in rules {
         pay(admit, CompilationWork::Visit)?;
-        if !matches!(
-            rule.selector(),
-            ApplicationQueryDisclosureSelector::InternalField { .. }
-        ) {
-            continue;
+        match rule.selector() {
+            ApplicationQueryDisclosureSelector::InternalField { .. } => {
+                let field = rule
+                    .selector()
+                    .field_contract()
+                    .ok_or_else(|| denial(rule.selector().slot_type()))?;
+                pay(
+                    admit,
+                    CompilationWork::Lookup {
+                        entries: groups.len(),
+                        parts: &[field.0, field.1, field.2],
+                    },
+                )?;
+                *groups.entry(field).or_insert(0) += 1;
+                count += 1;
+            }
+            ApplicationQueryDisclosureSelector::InternalRelation {
+                relation,
+                from,
+                to,
+                direction,
+            } => {
+                let key = (relation.as_str(), from.as_str(), to.as_str(), *direction);
+                pay(
+                    admit,
+                    CompilationWork::Lookup {
+                        entries: relations.len(),
+                        parts: &[key.0, key.1, key.2],
+                    },
+                )?;
+                *relations.entry(key).or_insert(0) += 1;
+                count += 1;
+            }
+            _ => {}
         }
-        let field = rule
-            .selector()
-            .field_contract()
-            .ok_or_else(|| denial(rule.selector().slot_type()))?;
-        pay(
-            admit,
-            CompilationWork::Lookup {
-                entries: groups.len(),
-                parts: &[field.0, field.1, field.2],
-            },
-        )?;
-        *groups.entry(field).or_insert(0) += 1;
-        count += 1; // Both counters are subsets of this actual slice.
     }
-    Ok((count, groups))
+    Ok((count, groups, relations))
 }

@@ -39,6 +39,26 @@ pub(super) fn field_matches(
     })
 }
 
+pub(super) fn field_is_unitless(
+    members: &[ApplicationSchemaMember],
+    expected_entity: &str,
+    expected_aspect: &str,
+    expected_field: &str,
+) -> bool {
+    members.iter().any(|member| {
+        matches!(
+            member,
+            ApplicationSchemaMember::Field {
+                entity,
+                aspect,
+                field,
+                unit: None,
+                ..
+            } if entity == expected_entity && aspect == expected_aspect && field == expected_field
+        )
+    })
+}
+
 pub(super) fn relation_exists(
     members: &[ApplicationSchemaMember],
     expected_relation: &str,

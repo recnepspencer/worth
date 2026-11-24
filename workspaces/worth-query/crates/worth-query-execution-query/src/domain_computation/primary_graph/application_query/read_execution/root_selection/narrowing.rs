@@ -18,6 +18,7 @@ use worth_relational::facade::runtime::{RelationalPinnedRead, VisibilityProjecti
 
 mod equality;
 mod evidence;
+mod related;
 mod residual;
 
 /// The subject every residual-filter safe point and charge reports.
@@ -35,7 +36,9 @@ pub struct NarrowingRead<'read, 'plan, 'exec, 'env, ReadIdentity> {
 /// Whether an installed shape needs narrowing at all. Unfiltered exact-root
 /// and unguarded path selections return their selection untouched.
 fn narrows(plan: &ReadPlan<'_>) -> bool {
-    path_equality(plan) || plan.contract.where_filter().is_some()
+    path_equality(plan)
+        || plan.contract.where_filter().is_some()
+        || !plan.contract.related_predicates().is_empty()
 }
 
 fn path_equality(plan: &ReadPlan<'_>) -> bool {
@@ -63,8 +66,22 @@ pub fn narrow_selected_roots<ReadIdentity>(
     if let Some(filter) = read.plan.contract.where_filter() {
         candidates = residual::narrow(read, filter, candidates, &mut evidence, &mut work)?;
     }
-    selection.result_set_source =
-        evidence::merge(read.execution, selection.result_set_source.take(), evidence)?;
+    if !read.plan.contract.related_predicates().is_empty() {
+        candidates = related::narrow(read, candidates, &mut evidence, &mut work)?;
+    }
+    let merge_subject = if read.plan.contract.related_predicates().is_empty()
+        && read.plan.contract.where_filter().is_some()
+    {
+        WHERE_FILTER_SUBJECT
+    } else {
+        "narrowed selection evidence"
+    };
+    selection.result_set_source = evidence::merge(
+        read.execution,
+        selection.result_set_source.take(),
+        evidence,
+        merge_subject,
+    )?;
     retain_root_sources(&mut selection, &candidates);
     selection.candidates = candidates;
     selection.examined_candidates = selection

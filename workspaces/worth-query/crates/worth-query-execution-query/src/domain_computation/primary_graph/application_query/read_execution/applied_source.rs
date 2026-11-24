@@ -106,7 +106,7 @@ pub fn read_applied_tree(
         permission.governance,
         permission.parameters,
         &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
+        &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         interruption,
         None,

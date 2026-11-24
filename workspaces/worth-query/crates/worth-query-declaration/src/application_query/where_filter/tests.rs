@@ -8,12 +8,18 @@ use crate::application_query::{
     ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
     ApplicationQueryDefinitionDenial, ApplicationQueryDisclosureContract,
     ApplicationQueryLaneEligibility, ApplicationQueryParameterDefinition,
-    ApplicationQueryResultShapeBuilder, ErasedApplicationQueryDefinition,
+    ApplicationQueryPredicate, ApplicationQueryRelationPredicate, ApplicationQueryResultRelation,
+    ApplicationQueryResultShape, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryResultTraversalDirection, ErasedApplicationQueryDefinition,
+    WorthQueryPortableApplicationQueryResultRelationParts,
+    WorthQueryPortableApplicationQueryResultShapeParts,
 };
 use crate::application_schema::{ApplicationEntityRef, ApplicationFieldPresence};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::expression_api::{expressions, ExpressionDenialFamily};
-use worth_foundational::facade::ScalarAspectType;
+use worth_foundational::facade::{
+    AspectValue, CanonicalDate, InternedString, ScalarAspectType, Symbol,
+};
 
 struct Schema;
 struct Entity;
@@ -239,3 +245,5 @@ fn definition_admission_binds_operands_to_the_root_and_declared_parameters() {
         Err(ApplicationQueryDefinitionDenial::WhereFilterFieldOutsideRoot)
     );
 }
+
+mod optional_and_literal;

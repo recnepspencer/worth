@@ -23,9 +23,11 @@ impl<Schema, Query, Parameters, QueryResult, Scope> Clone
             cardinality: self.cardinality,
             predicates: self.predicates.clone(),
             where_filter: self.where_filter.clone(),
+            related_predicates: self.related_predicates.clone(),
             ordering: self.ordering.clone(),
             continuation: self.continuation.clone(),
             live_cause: self.live_cause.clone(),
+            live_whole_result: self.live_whole_result,
             disclosure: self.disclosure.clone(),
             authorization: self.authorization.clone(),
             basis_support: self.basis_support,
@@ -57,9 +59,11 @@ impl<Schema, Query, Parameters, QueryResult, Scope> std::fmt::Debug
             .field("cardinality", &self.cardinality)
             .field("predicates", &self.predicates)
             .field("where_filter", &self.where_filter)
+            .field("related_predicates", &self.related_predicates)
             .field("ordering", &self.ordering)
             .field("continuation", &self.continuation)
             .field("live_cause", &self.live_cause)
+            .field("live_whole_result", &self.live_whole_result)
             .field("disclosure", &self.disclosure)
             .field("authorization", &self.authorization)
             .field("basis_support", &self.basis_support)
@@ -89,9 +93,11 @@ impl<Schema, Query, Parameters, QueryResult, Scope> PartialEq
             && self.cardinality == other.cardinality
             && self.predicates == other.predicates
             && self.where_filter == other.where_filter
+            && self.related_predicates == other.related_predicates
             && self.ordering == other.ordering
             && self.continuation == other.continuation
             && self.live_cause == other.live_cause
+            && self.live_whole_result == other.live_whole_result
             && self.disclosure == other.disclosure
             && self.authorization == other.authorization
             && self.basis_support == other.basis_support

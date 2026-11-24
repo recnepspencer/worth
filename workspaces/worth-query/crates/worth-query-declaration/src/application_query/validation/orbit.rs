@@ -21,6 +21,7 @@ pub(super) fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> 
         || definition.cardinality() != ApplicationQueryCardinality::Many
         || definition.lanes().live_enabled()
         || definition.live_cause().is_some()
+        || definition.is_live_whole_result()
     {
         return Err(Denial::InvalidOrbitShape);
     }

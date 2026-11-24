@@ -26,6 +26,12 @@ pub enum ApplicationQueryDisclosureSelector {
         projection_mask: AspectMask<ProjectionMask>,
         diagnostic_mask: AspectMask<DiagnosticMask>,
     },
+    InternalRelation {
+        relation: String,
+        from: String,
+        to: String,
+        direction: super::super::RelationDirection,
+    },
     Field {
         query_type: WorthQueryPortableTypeIdentity,
         slot_type: WorthQueryPortableTypeIdentity,
@@ -61,7 +67,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Resource(meaning) => meaning.resource_identity().is_valid(),
 
             Self::HistoryMetadata(metadata) => metadata.history_identity().is_valid(),
-            Self::InternalField { .. } => true,
+            Self::InternalField { .. } | Self::InternalRelation { .. } => true,
             Self::Components(selection) => {
                 selection.query_identity().is_valid() && selection.slot_identity().is_valid()
             }
@@ -147,12 +153,15 @@ impl ApplicationQueryDisclosureSelector {
                     cardinality: *cardinality,
                 },
             )),
-            Self::InternalField { .. } => None,
+            Self::InternalField { .. } | Self::InternalRelation { .. } => None,
         }
     }
 
     pub const fn is_internal_computation(&self) -> bool {
-        matches!(self, Self::InternalField { .. })
+        matches!(
+            self,
+            Self::InternalField { .. } | Self::InternalRelation { .. }
+        )
     }
 
     pub const fn slot_type(&self) -> &str {
@@ -164,7 +173,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Orbit(orbit) => orbit.slot_type(),
             Self::Components(selection) => selection.slot_type(),
             Self::Field { slot_type, .. } | Self::Relation { slot_type, .. } => slot_type.as_str(),
-            Self::InternalField { .. } => "internal-computation",
+            Self::InternalField { .. } | Self::InternalRelation { .. } => "internal-computation",
         }
     }
 
@@ -179,7 +188,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Field { query_type, .. } | Self::Relation { query_type, .. } => {
                 query_type.as_str()
             }
-            Self::InternalField { .. } => "internal-computation",
+            Self::InternalField { .. } | Self::InternalRelation { .. } => "internal-computation",
         }
     }
 
@@ -192,7 +201,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Orbit(orbit) => orbit.output_name(),
             Self::Components(selection) => selection.output_name(),
             Self::Field { output_name, .. } | Self::Relation { output_name, .. } => output_name,
-            Self::InternalField { .. } => "internal-computation",
+            Self::InternalField { .. } | Self::InternalRelation { .. } => "internal-computation",
         }
     }
 
@@ -211,11 +220,26 @@ impl ApplicationQueryDisclosureSelector {
                 ..
             } => Some((entity, aspect, field)),
             Self::Relation { .. }
+            | Self::InternalRelation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
             | Self::InspectionMetadata(_)
             | Self::Components(_)
             | Self::Resource(_) => None,
+        }
+    }
+
+    pub fn internal_relation_contract(
+        &self,
+    ) -> Option<(&str, &str, &str, super::super::RelationDirection)> {
+        match self {
+            Self::InternalRelation {
+                relation,
+                from,
+                to,
+                direction,
+            } => Some((relation, from, to, *direction)),
+            _ => None,
         }
     }
 
@@ -239,6 +263,7 @@ impl ApplicationQueryDisclosureSelector {
             } => Some((relation, from, to, *direction, *cardinality)),
             Self::Field { .. }
             | Self::InternalField { .. }
+            | Self::InternalRelation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
             | Self::InspectionMetadata(_)
@@ -256,6 +281,7 @@ impl ApplicationQueryDisclosureSelector {
                 projection_mask, ..
             } => Some(projection_mask),
             Self::Relation { .. }
+            | Self::InternalRelation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
             | Self::InspectionMetadata(_)
@@ -273,6 +299,7 @@ impl ApplicationQueryDisclosureSelector {
                 diagnostic_mask, ..
             } => Some(diagnostic_mask),
             Self::Relation { .. }
+            | Self::InternalRelation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
             | Self::InspectionMetadata(_)

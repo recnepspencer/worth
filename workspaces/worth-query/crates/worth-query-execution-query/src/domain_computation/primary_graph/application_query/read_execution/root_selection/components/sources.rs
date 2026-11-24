@@ -137,7 +137,7 @@ pub fn complete(
     };
     Ok(BoundedRootSelection {
         candidates: roots,
-        selected_predicate_source: None,
+        selected_predicate_sources: Vec::new(),
         root_path_source: Some(row_sources),
         result_set_source,
         examined_candidates: work.predicate_records_examined,

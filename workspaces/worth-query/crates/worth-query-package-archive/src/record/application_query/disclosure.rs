@@ -131,6 +131,21 @@ fn write_selector(
             write_mask(output, projection_mask)?;
             write_mask(output, diagnostic_mask)
         }
+        ApplicationQueryDisclosureSelector::InternalRelation {
+            relation,
+            from,
+            to,
+            direction,
+        } => {
+            output.u16(9)?;
+            output.text(relation)?;
+            output.text(from)?;
+            output.text(to)?;
+            output.u8(match direction {
+                worth_query_declaration::facade::application_query::RelationDirection::Forward => 0,
+                worth_query_declaration::facade::application_query::RelationDirection::Reverse => 1,
+            })
+        }
         ApplicationQueryDisclosureSelector::Field {
             query_type,
             slot_type,
@@ -187,6 +202,16 @@ fn decode_selector(
     Ok(match input.u16()? {
         7 => ApplicationQueryDisclosureSelector::Resource(resource::decode(input)?),
         8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
+        9 => ApplicationQueryDisclosureSelector::InternalRelation {
+            relation: input.text()?.to_owned(),
+            from: input.text()?.to_owned(),
+            to: input.text()?.to_owned(),
+            direction: match input.u8()? {
+                0 => worth_query_declaration::facade::application_query::RelationDirection::Forward,
+                1 => worth_query_declaration::facade::application_query::RelationDirection::Reverse,
+                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+            },
+        },
 
         5 => {
             use worth_query_declaration::facade::application_query::{

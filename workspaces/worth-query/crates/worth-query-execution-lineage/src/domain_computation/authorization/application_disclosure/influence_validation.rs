@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryObservableInfluence, ApplicationQueryResultSlotKey,
+    ApplicationQueryObservableInfluence, ApplicationQueryResultSlotKey, RelationDirection,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
@@ -12,6 +12,8 @@ use super::contract::{
 
 pub type GovernedInternalFieldRules =
     BTreeMap<(String, String, String), Vec<AdmittedDisclosureRule>>;
+pub type GovernedInternalRelationRules =
+    BTreeMap<(String, String, String, RelationDirection), Vec<AdmittedDisclosureRule>>;
 
 #[derive(Clone, Copy)]
 struct ObservableLaneCone {
@@ -24,6 +26,7 @@ struct ObservableLaneCone {
 pub fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, E>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     fields: &GovernedInternalFieldRules,
+    internal_relations: &GovernedInternalRelationRules,
     results: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
 ) -> Result<(), CompilationStop<E>> {
@@ -58,6 +61,33 @@ pub fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, E>(
     {
         admit_cone(admit)?;
         require_field_influence(fields, field.field(), membership_surfaces(query), admit)?;
+    }
+    // Related-record absence/existence predicates decide row presence using
+    // both the traversed relation and every inspected target field.
+    for related in query.read_graph().related_predicates() {
+        admit_cone(admit)?;
+        require_relation_influence(
+            internal_relations,
+            (
+                related.relation(),
+                related.from(),
+                related.to(),
+                related.direction(),
+            ),
+            membership_surfaces(query),
+            admit,
+        )?;
+        for target in related.target_predicates() {
+            admit_cone(admit)?;
+            require_field_influence(fields, target.field(), membership_surfaces(query), admit)?;
+        }
+        for field in related
+            .target_where_filter()
+            .map_or(&[][..], |filter| filter.fields())
+        {
+            admit_cone(admit)?;
+            require_field_influence(fields, field.field(), membership_surfaces(query), admit)?;
+        }
     }
     for relation in query.read_graph().relations() {
         if relation
@@ -284,6 +314,52 @@ fn require_field_influence<E>(
             )?;
             if !rule.influence().permits(*surface) {
                 return Err(denial(field.2).into());
+            }
+        }
+    }
+    Ok(())
+}
+
+fn require_relation_influence<E>(
+    relations: &GovernedInternalRelationRules,
+    relation: (&str, &str, &str, RelationDirection),
+    surfaces: impl IntoIterator<Item = ApplicationQueryObservableInfluence>,
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<(), CompilationStop<E>> {
+    for text in [relation.0, relation.1, relation.2] {
+        pay(admit, CompilationWork::Copy(text.len()))?;
+    }
+    let key = (
+        relation.0.to_string(),
+        relation.1.to_string(),
+        relation.2.to_string(),
+        relation.3,
+    );
+    pay(
+        admit,
+        CompilationWork::Lookup {
+            entries: relations.len(),
+            parts: &[relation.0, relation.1, relation.2],
+        },
+    )?;
+    let rules = relations.get(&key).ok_or_else(|| denial(relation.0))?;
+    let mut required = Vec::with_capacity(ApplicationQueryObservableInfluence::ALL.len());
+    for surface in surfaces {
+        pay(admit, CompilationWork::Visit)?;
+        required.push(surface);
+    }
+    for rule in rules {
+        pay(admit, CompilationWork::Visit)?;
+        for surface in &required {
+            pay(
+                admit,
+                CompilationWork::Lookup {
+                    entries: rule.influence().permitted().len(),
+                    parts: &[],
+                },
+            )?;
+            if !rule.influence().permits(*surface) {
+                return Err(denial(relation.0).into());
             }
         }
     }

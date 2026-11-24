@@ -125,6 +125,7 @@ fn validate_source(
     if !source.parameters().is_empty()
         || source.continuation().is_some()
         || source.live_cause().is_some()
+        || source.is_live_whole_result()
         || source.orbit().is_some()
         || source.component_selection().is_some()
     {
@@ -157,6 +158,7 @@ fn validate_parent(
         || !parent.root_paths().is_empty()
         || parent.continuation().is_some()
         || parent.live_cause().is_some()
+        || parent.is_live_whole_result()
     {
         return Err(Cause::ConflictingRootSelection);
     }

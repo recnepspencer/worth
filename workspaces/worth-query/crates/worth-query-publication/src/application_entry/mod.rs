@@ -64,7 +64,6 @@ pub use history::{
     WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryIdentity,
     WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryFixedHistoryEditOutcome,
     WorthQueryGovernedHistoryPayload, WorthQueryGroupedHistoryDocument,
-    WorthQueryOwnedApplicationHistoryDocument,
     WorthQueryHistoryCheckoutDescription, WorthQueryHistoryCheckoutTarget,
     WorthQueryHistoryClosingOutputs, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryCommands, WorthQueryHistoryContextRefreshDenial,
@@ -93,9 +92,9 @@ pub use history::{
     WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
     WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQueryHistoryStepMetadata,
-    WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees,
-    WorthQueryHistoryWithOutputs, WorthQueryOriginalReadOutputDenial,
+    WorthQueryHistoryStepMetadata, WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange,
+    WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial, WorthQueryOwnedApplicationHistoryDocument,
     WorthQueryRecordingOutputQualificationDenial,
 };
 #[doc(hidden)]
@@ -103,6 +102,7 @@ pub use history::{
     WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
 };
 mod live;
+mod live_whole_result;
 mod mandatory_review;
 mod mutation;
 mod ordinary;
@@ -182,6 +182,7 @@ pub use live::{
     WorthQueryApplicationLiveLimits, WorthQueryApplicationLiveNextDenial,
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,
 };
+pub use live_whole_result::WorthQueryApplicationWholeResultLiveSubscription;
 pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };

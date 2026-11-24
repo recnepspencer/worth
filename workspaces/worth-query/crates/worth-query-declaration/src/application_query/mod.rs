@@ -45,6 +45,7 @@ pub use orbit::{
 mod optional_aspect_field;
 mod parameters;
 mod reference;
+mod related_predicate;
 mod result_field_presence;
 mod result_field_selector;
 pub use optional_aspect_field::ApplicationQueryOptionalAspectFieldRef;
@@ -76,8 +77,8 @@ pub use definition::{
     ApplicationQueryAuthorizationAuthoring, ApplicationQueryBasisAuthoring,
     ApplicationQueryCardinality, ApplicationQueryCardinalityAuthoring, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureAuthoring,
-    ApplicationQueryLaneAuthoring, ApplicationQueryPredicate, ApplicationQueryResultAuthoring,
-    ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
+    ApplicationQueryLaneAuthoring, ApplicationQueryPredicate, ApplicationQueryPredicateExpected,
+    ApplicationQueryResultAuthoring, ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
 };
 pub use dependency_equivalence::ApplicationQueryDependencyEquivalence;
 pub use derived_view::{ApplicationDerivedViewDefinition, ApplicationDerivedViewLimits};
@@ -108,7 +109,8 @@ pub use inspection::{
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveTargetMode, WorthQueryPortableApplicationQueryLiveCauseParts,
+    ApplicationQueryLiveInvalidationMode, ApplicationQueryLiveTargetMode,
+    WorthQueryPortableApplicationQueryLiveCauseParts,
 };
 pub use marker_identity::ApplicationQueryMarkerIdentity;
 pub use ordering::{
@@ -119,6 +121,11 @@ pub use parameters::{
     ApplicationQueryParameterDefinition, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
 };
 pub use reference::ApplicationQueryReference;
+pub use related_predicate::{
+    validate_related_predicates, ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicate,
+    ApplicationQueryRelatedPredicateMeaning, ApplicationQueryRelatedTargetPredicate,
+    WorthQueryPortableApplicationQueryRelatedPredicateParts,
+};
 pub use result_field_selector::{
     ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
 };
@@ -146,13 +153,17 @@ pub use root_selection::{
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };
-pub(crate) use validation::validate_portable_application_query_freshly;
 pub use validation::ApplicationQueryDefinitionDenial;
+pub(crate) use validation::{
+    predicate_literal_is_valid, validate_portable_application_query_freshly,
+};
 pub use where_filter::{
     ApplicationQueryWhereFilter, ApplicationQueryWhereFilterDenial,
     ApplicationQueryWhereFilterOperand, ApplicationQueryWhereFilterOperands,
     ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource,
 };
 
+#[cfg(test)]
+mod live_whole_result_tests;
 #[cfg(test)]
 mod parameter_dimensions_tests;

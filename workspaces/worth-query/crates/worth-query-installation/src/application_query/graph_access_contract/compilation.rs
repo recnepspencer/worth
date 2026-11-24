@@ -41,7 +41,7 @@ impl WorthQueryInstalledGraphReadContract {
                     entity: entity.to_string(),
                     aspect: admitted_aspect_key(aspect),
                     field: admitted_field_key(field),
-                    parameter: predicate.parameter().to_string(),
+                    expected: predicate.expected().clone(),
                     scalar_family: predicate.scalar_family(),
                 }
             })
@@ -60,6 +60,11 @@ impl WorthQueryInstalledGraphReadContract {
             ApplicationQueryCardinality::OptionalOne | ApplicationQueryCardinality::ExactlyOne => 1,
             ApplicationQueryCardinality::Many => usize::MAX,
         };
+        let related_predicates: Vec<_> = definition
+            .related_predicates()
+            .iter()
+            .map(super::WorthQueryInstalledRelatedPredicate::compile)
+            .collect();
         let maximum_traversal_depth = relations
             .iter()
             .map(|relation| relation.depth)
@@ -70,6 +75,7 @@ impl WorthQueryInstalledGraphReadContract {
                     .map(|path| path.steps().len()),
             )
             .chain(definition.orbit().map(|_| 1))
+            .chain((!related_predicates.is_empty()).then_some(1))
             .max()
             .unwrap_or(0);
         let meaning = WorthQueryInstalledGraphReadMeaning {
@@ -90,9 +96,11 @@ impl WorthQueryInstalledGraphReadContract {
             where_filter: definition
                 .where_filter()
                 .map(super::WorthQueryInstalledWhereFilter::compile),
+            related_predicates,
             ordering,
             maximum_traversal_depth,
             maximum_result_count,
+            live_whole_result: definition.is_live_whole_result(),
         };
         let canonical = prepare_graph_basis(&meaning, budget)?;
         let planning = prepare_planning_basis(

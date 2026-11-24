@@ -124,6 +124,12 @@ impl ErasedApplicationQueryDefinition {
         self.parts.where_filter.as_ref()
     }
 
+    pub fn related_predicates(
+        &self,
+    ) -> &[crate::application_query::ApplicationQueryRelatedPredicateMeaning] {
+        &self.parts.related_predicates
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.parts.ordering
     }
@@ -134,6 +140,16 @@ impl ErasedApplicationQueryDefinition {
 
     pub const fn live_cause(&self) -> Option<&ApplicationQueryLiveCauseContract> {
         self.parts.live_cause.as_ref()
+    }
+
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.parts.live_whole_result
+    }
+
+    pub const fn live_invalidation_mode(
+        &self,
+    ) -> Option<super::ApplicationQueryLiveInvalidationMode> {
+        self.parts.live_invalidation_mode()
     }
 
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {

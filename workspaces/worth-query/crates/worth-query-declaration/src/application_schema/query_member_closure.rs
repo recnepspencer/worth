@@ -13,11 +13,14 @@ mod history;
 mod inspection;
 mod invariant_source;
 mod managed_index;
+mod related_predicate;
 mod where_filter;
 
-use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
+use super::schema_read_closure::{
+    entity_exists, field_is_unitless, field_matches, relation_exists,
+};
 
-pub(super) fn validate_application_query_members(
+pub(crate) fn validate_application_query_members(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut names = BTreeSet::new();
@@ -57,6 +60,7 @@ fn validate_query(
     validate_result_shape(definition, members)?;
     validate_predicates(definition, members)?;
     where_filter::validate(definition, members)?;
+    related_predicate::validate(definition, members)?;
     validate_ordering(definition, members)
 }
 
@@ -123,10 +127,26 @@ fn validate_predicates(
             predicate.scalar_family(),
             None,
             true,
-        ) || !definition.parameters().iter().any(|parameter| {
-            parameter.name() == predicate.parameter()
-                && parameter.scalar_family() == predicate.scalar_family()
-        }) {
+        ) {
+            return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
+        }
+        let expected_ok = match predicate.expected() {
+            crate::application_query::ApplicationQueryPredicateExpected::Parameter(name) => {
+                definition.parameters().iter().any(|parameter| {
+                    parameter.name() == name
+                        && parameter.scalar_family() == predicate.scalar_family()
+                        && !parameter.is_optional()
+                })
+            }
+            crate::application_query::ApplicationQueryPredicateExpected::Value(value) => {
+                field_is_unitless(members, entity, aspect, field)
+                    && crate::application_query::predicate_literal_is_valid(
+                        value,
+                        predicate.scalar_family(),
+                    )
+            }
+        };
+        if !expected_ok {
             return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
         }
     }

@@ -7,18 +7,24 @@ use worth_foundational::facade::{
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureRule,
     ApplicationQueryDisclosureSelector, ApplicationQueryInfluenceContract,
-    ApplicationQueryResultSlotKey,
+    ApplicationQueryObservableInfluence, ApplicationQueryResultSlotKey, RelationDirection,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
-use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
+use super::influence_validation::{
+    validate_influence, GovernedInternalFieldRules, GovernedInternalRelationRules,
+};
 pub mod admission;
 pub mod compilation;
 pub mod field_masks;
+pub mod funded;
 pub mod result_rules;
 pub use compilation::compile_disclosure_contract;
+pub use funded::{
+    compile_funded_disclosure_contract, FundedDisclosureCompilationDenial, FundedDisclosureContract,
+};
 pub use result_rules::selector_parts;
 pub mod diagnostic;
 pub mod history;
@@ -103,6 +109,56 @@ impl WorthQueryAdmittedApplicationDisclosureRule {
 
 pub type AdmittedDisclosureRule = Arc<WorthQueryAdmittedApplicationDisclosureRule>;
 
+pub(crate) const fn influence_bit(surface: ApplicationQueryObservableInfluence) -> u16 {
+    match surface {
+        ApplicationQueryObservableInfluence::RowPresence => 1 << 0,
+        ApplicationQueryObservableInfluence::Ordering => 1 << 1,
+        ApplicationQueryObservableInfluence::Pagination => 1 << 2,
+        ApplicationQueryObservableInfluence::Count => 1 << 3,
+        ApplicationQueryObservableInfluence::Aggregate => 1 << 4,
+        ApplicationQueryObservableInfluence::Explanation => 1 << 5,
+        ApplicationQueryObservableInfluence::HistoricalMembership => 1 << 6,
+        ApplicationQueryObservableInfluence::Preview => 1 << 7,
+        ApplicationQueryObservableInfluence::LiveMembership => 1 << 8,
+    }
+}
+
+/// Pre-intersected rule group for one internal selector so runtime admission
+/// is strictly one O(log K) binary search plus one O(1) bitmask check.
+#[derive(Clone, Debug)]
+pub struct GovernedInternalRuleGroup {
+    rules: Vec<AdmittedDisclosureRule>,
+    permitted_mask: u16,
+}
+
+impl GovernedInternalRuleGroup {
+    pub(crate) fn new(rules: Vec<AdmittedDisclosureRule>, permitted_mask: u16) -> Self {
+        Self {
+            rules,
+            permitted_mask,
+        }
+    }
+
+    pub fn rules(&self) -> &[AdmittedDisclosureRule] {
+        &self.rules
+    }
+
+    pub const fn permits(&self, surface: ApplicationQueryObservableInfluence) -> bool {
+        (self.permitted_mask & influence_bit(surface)) != 0
+    }
+
+    pub fn field(&self) -> Option<&WorthQueryAdmittedApplicationDisclosureField> {
+        self.rules.first()?.field()
+    }
+}
+
+pub type SortedGovernedInternalFieldRules =
+    Vec<((String, String, String), GovernedInternalRuleGroup)>;
+pub type SortedGovernedInternalRelationRules = Vec<(
+    (String, String, String, RelationDirection),
+    GovernedInternalRuleGroup,
+)>;
+
 #[derive(Clone, Debug)]
 pub enum WorthQueryAdmittedApplicationDisclosureContract {
     Public,
@@ -112,7 +168,8 @@ pub enum WorthQueryAdmittedApplicationDisclosureContract {
         capability_type: String,
         result_rules: BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
         internal_rules: Vec<AdmittedDisclosureRule>,
-        internal_field_rules: GovernedInternalFieldRules,
+        internal_field_rules: SortedGovernedInternalFieldRules,
+        internal_relation_rules: SortedGovernedInternalRelationRules,
     },
 }
 

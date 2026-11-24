@@ -71,6 +71,10 @@ pub(in crate::application_query) fn prepare_definition_basis(
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);
     super::where_filter::append_where_filter(&mut entries, definition.where_filter());
+    super::related_predicate::append_related_predicates(
+        &mut entries,
+        definition.related_predicates(),
+    );
     append_ordering(&mut entries, definition);
     append_continuation(&mut entries, definition);
     append_authorization(&mut entries, definition);
@@ -174,6 +178,9 @@ fn append_parameters(
                 |frame| text(format!("{path}.frame"), frame),
             ),
         ]);
+        if parameter.is_optional() {
+            entries.push(text(format!("{path}.presence"), "optional"));
+        }
     }
 }
 
@@ -188,7 +195,18 @@ fn append_predicates(
             text(format!("{path}.entity"), entity),
             text(format!("{path}.aspect"), aspect),
             text(format!("{path}.field"), field),
-            text(format!("{path}.parameter"), predicate.parameter()),
+            match predicate.expected() {
+                crate::application_query::ApplicationQueryPredicateExpected::Parameter(
+                    parameter,
+                ) => text(format!("{path}.parameter"), parameter),
+                crate::application_query::ApplicationQueryPredicateExpected::Value(expected) => {
+                    text(
+                        format!("{path}.expected"),
+                        worth_foundational::facade::prepare_aspect_value_identity_basis(expected)
+                            .as_str(),
+                    )
+                }
+            },
             text(
                 format!("{path}.scalar"),
                 predicate.scalar_family().canonical_name(),
@@ -272,6 +290,9 @@ fn append_live_cause(
 ) {
     let Some(live) = definition.live_cause() else {
         entries.push(null("live-cause"));
+        if definition.is_live_whole_result() {
+            entries.push(text("live-invalidation.mode", "whole-result-v1"));
+        }
         return;
     };
     entries.extend([

@@ -44,7 +44,10 @@ pub(super) fn compile(
     let Some(selection) = definition.managed_index() else {
         return Err(Denial::UntrackedSelection);
     };
-    if definition.continuation().is_some() || definition.live_cause().is_some() {
+    if definition.continuation().is_some()
+        || definition.live_cause().is_some()
+        || definition.is_live_whole_result()
+    {
         return Err(Denial::UntrackedSelection);
     }
     let source_query = source.query();
@@ -67,28 +70,37 @@ fn tracked_profile(
     if !definition
         .parameters()
         .iter()
-        .any(|p| p.name() == probe_parameter)
+        .any(|p| p.name() == probe_parameter && !p.is_optional())
         || definition.parameters().iter().any(|p| {
             p.name() != probe_parameter
                 && !parent
                     .predicates()
                     .iter()
-                    .any(|predicate| predicate.parameter() == p.name())
+                    .any(|predicate| predicate.parameter() == Some(p.name()))
         })
     {
         return Err(Denial::UntrackedParameters);
     }
     for predicate in parent.predicates() {
-        let declared = definition.parameters().iter().any(|p| {
-            p.name() == predicate.parameter() && p.scalar_family() == predicate.scalar_family()
-        });
+        let expected_ok = match predicate.expected() {
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(name) => {
+                definition.parameters().iter().any(|p| {
+                    p.name() == name
+                        && p.scalar_family() == predicate.scalar_family()
+                        && !p.is_optional()
+                })
+            }
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(value) => {
+                value.value_family() == predicate.scalar_family()
+            }
+        };
         let projected = source.projections().iter().any(|p| {
             p.parent_path() == "root"
                 && p.entity() == source.root_entity()
                 && (p.entity(), p.aspect(), p.field()) == predicate.field()
                 && p.scalar_family() == predicate.scalar_family()
         });
-        if !declared || !projected {
+        if !expected_ok || !projected {
             return Err(Denial::UntrackedSelection);
         }
     }

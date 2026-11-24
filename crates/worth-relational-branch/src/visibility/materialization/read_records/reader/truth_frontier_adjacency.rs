@@ -13,6 +13,7 @@ pub struct BoundedFrontierAdjacencyTruthRead {
     pub(crate) records: Vec<RelationReadRecord>,
     pub(crate) adjacency_lists_read: usize,
     pub(crate) relation_records_examined: usize,
+    pub(crate) memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -23,6 +24,10 @@ pub struct FrontierAdjacencyTruthReadLimitExceeded {
 }
 
 impl BoundedFrontierAdjacencyTruthRead {
+    pub fn owned_bytes(&self) -> u64 {
+        super::super::read_footprint::relations(&self.records)
+    }
+
     pub const fn adjacency_lists_read(&self) -> usize {
         self.adjacency_lists_read
     }
@@ -43,6 +48,18 @@ impl BoundedFrontierAdjacencyTruthRead {
 
     pub fn into_records(self) -> Vec<RelationReadRecord> {
         self.records
+    }
+
+    /// Transfers the native collector's live memory reservation alongside the
+    /// materialized records so callers converting into compact representations
+    /// keep peak coexisting buffers continuously reserved without any gap.
+    pub fn into_records_with_reservation(
+        self,
+    ) -> (
+        Vec<RelationReadRecord>,
+        Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        (self.records, self.memory)
     }
 }
 
@@ -203,6 +220,7 @@ impl ProjectionRecordReader<'_> {
             records,
             adjacency_lists_read,
             relation_records_examined,
+            memory: None,
         })
     }
 }

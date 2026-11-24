@@ -27,6 +27,7 @@ use records::*;
 mod authority_validation_tests;
 mod canonical_basis_residue;
 mod installed_identity;
+mod related_predicate;
 mod selector_identity;
 mod shape_identity;
 mod where_filter;

@@ -26,9 +26,11 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub cardinality: ApplicationQueryCardinality,
     pub predicates: Vec<ApplicationQueryPredicate>,
     pub where_filter: Option<crate::application_query::ApplicationQueryWhereFilterProgram>,
+    pub related_predicates: Vec<crate::application_query::ApplicationQueryRelatedPredicateMeaning>,
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
     pub continuation: Option<ApplicationQueryContinuationTarget>,
     pub live_cause: Option<ApplicationQueryLiveCauseContract>,
+    pub live_whole_result: bool,
     pub disclosure: ApplicationQueryDisclosureContract,
     pub authorization: ApplicationQueryAuthorizationRequirement,
     pub basis_support: ApplicationQueryBasisSupport,
@@ -106,6 +108,12 @@ impl WorthQueryPortableApplicationQueryParts {
         self.where_filter.as_ref()
     }
 
+    pub fn related_predicates(
+        &self,
+    ) -> &[crate::application_query::ApplicationQueryRelatedPredicateMeaning] {
+        &self.related_predicates
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.ordering
     }
@@ -116,6 +124,22 @@ impl WorthQueryPortableApplicationQueryParts {
 
     pub const fn live_cause(&self) -> Option<&ApplicationQueryLiveCauseContract> {
         self.live_cause.as_ref()
+    }
+
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.live_whole_result
+    }
+
+    pub const fn live_invalidation_mode(
+        &self,
+    ) -> Option<super::super::ApplicationQueryLiveInvalidationMode> {
+        if self.live_whole_result {
+            Some(super::super::ApplicationQueryLiveInvalidationMode::WholeResult)
+        } else if self.live_cause.is_some() {
+            Some(super::super::ApplicationQueryLiveInvalidationMode::CauseRouted)
+        } else {
+            None
+        }
     }
 
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
@@ -158,9 +182,11 @@ impl WorthQueryPortableApplicationQueryParts {
             cardinality: definition.cardinality,
             predicates: definition.predicates,
             where_filter: definition.where_filter,
+            related_predicates: definition.related_predicates,
             ordering: definition.ordering,
             continuation: definition.continuation,
             live_cause: definition.live_cause,
+            live_whole_result: definition.live_whole_result,
             disclosure: definition.disclosure,
             authorization: definition.authorization,
             basis_support: definition.basis_support,
@@ -188,9 +214,11 @@ impl WorthQueryPortableApplicationQueryParts {
             cardinality: definition.cardinality,
             predicates: definition.predicates.clone(),
             where_filter: definition.where_filter.clone(),
+            related_predicates: definition.related_predicates.clone(),
             ordering: definition.ordering.clone(),
             continuation: definition.continuation.clone(),
             live_cause: definition.live_cause.clone(),
+            live_whole_result: definition.live_whole_result,
             disclosure: definition.disclosure.clone(),
             authorization: definition.authorization.clone(),
             basis_support: definition.basis_support,

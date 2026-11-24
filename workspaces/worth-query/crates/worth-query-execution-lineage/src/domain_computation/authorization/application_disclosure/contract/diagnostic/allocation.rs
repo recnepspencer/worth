@@ -56,6 +56,12 @@ pub fn backing_bytes<Schema, Query, Parameters, QueryResult, Scope>(
         .map_err(|_| overflow())?
         .size(),
     )?;
+    bytes = add(
+        bytes,
+        Layout::array::<((String, String, String), GovernedInternalRuleGroup)>(internal_count)
+            .map_err(|_| overflow())?
+            .size(),
+    )?;
     // The same compiler's single grouping pass borrows immutable declaration
     // names while its exact-capacity compiled groups are built.
     bytes = bytes

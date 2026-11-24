@@ -15,10 +15,13 @@ use crate::application_query::{
 use crate::portable_identity::WorthQueryPortableType;
 
 use super::authoring::{ApplicationQueryDefinitionParts, ApplicationQueryRootAuthoring};
-use super::{ApplicationQueryDefinition, ApplicationQueryPredicate};
+use super::{
+    ApplicationQueryDefinition, ApplicationQueryPredicate, ApplicationQueryPredicateExpected,
+};
 
 pub struct ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, QueryResult, Scope> {
     definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
+    unit_bearing_literal_predicate: bool,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope>
@@ -54,21 +57,24 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
                 where_filter: None,
+                related_predicates: Vec::new(),
                 ordering: Vec::new(),
                 continuation: None,
                 live_cause: None,
+                live_whole_result: false,
                 disclosure: parts.disclosure,
                 authorization,
                 basis_support: parts.basis_support,
                 lanes: parts.lanes,
                 _marker: PhantomData,
             },
+            unit_bearing_literal_predicate: false,
         }
     }
 
-    pub fn parameter<Parameter, Binding>(
+    pub fn parameter<Parameter, Binding, const OPTIONAL: bool>(
         mut self,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
     ) -> Self
     where
         Binding: crate::application_schema::ApplicationScalarValueBinding,
@@ -121,7 +127,34 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             entity: field.entity().to_owned(),
             aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
-            parameter: parameter.name().to_owned(),
+            expected: ApplicationQueryPredicateExpected::Parameter(parameter.name().to_owned()),
+            scalar_family: Binding::SCALAR_FAMILY,
+        });
+        self
+    }
+
+    /// Narrows the root entity by equality against one authored scalar constant,
+    /// without declaring a runtime query parameter.
+    pub fn where_equal_value<Field, Binding>(
+        mut self,
+        field: Field,
+        expected: crate::application_schema::ApplicationEncodedScalarValue<Binding>,
+    ) -> Self
+    where
+        Field: crate::application_schema::fragment::RecordSelection<Binding = Binding>,
+        Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
+    {
+        if Binding::UNIT.is_some() {
+            self.unit_bearing_literal_predicate = true;
+        }
+        self.definition
+            .field_expectations
+            .push(field.expected_recipe());
+        self.definition.predicates.push(ApplicationQueryPredicate {
+            entity: field.entity().to_owned(),
+            aspect: field.aspect().to_owned(),
+            field: field.field().to_owned(),
+            expected: ApplicationQueryPredicateExpected::Value(expected.into_foundational_value()),
             scalar_family: Binding::SCALAR_FAMILY,
         });
         self
@@ -137,6 +170,48 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         let (program, fields) = filter.into_parts();
         self.definition.field_expectations.extend(fields);
         self.definition.where_filter = Some(program);
+        self
+    }
+
+    /// Narrows candidate rows to those having ZERO related live target records
+    /// matching `predicate` (`NOT EXISTS`).
+    pub fn where_no_related<Root, Target>(
+        mut self,
+        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
+            Schema,
+            Query,
+            Root,
+            Target,
+        >,
+    ) -> Self {
+        let (meaning, fields, invalid) =
+            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Absent);
+        if invalid {
+            self.unit_bearing_literal_predicate = true;
+        }
+        self.definition.field_expectations.extend(fields);
+        self.definition.related_predicates.push(meaning);
+        self
+    }
+
+    /// Narrows candidate rows to those having AT LEAST ONE related live target
+    /// record matching `predicate` (`EXISTS`).
+    pub fn where_related_exists<Root, Target>(
+        mut self,
+        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
+            Schema,
+            Query,
+            Root,
+            Target,
+        >,
+    ) -> Self {
+        let (meaning, fields, invalid) =
+            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Exists);
+        if invalid {
+            self.unit_bearing_literal_predicate = true;
+        }
+        self.definition.field_expectations.extend(fields);
+        self.definition.related_predicates.push(meaning);
         self
     }
 
@@ -246,6 +321,13 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         self
     }
 
+    /// Admits whole-result live subscriptions whose invalidation preserves
+    /// exact result-set, negative-filter, related-record, and row evidence.
+    pub fn live_whole_result(mut self) -> Self {
+        self.definition.live_whole_result = true;
+        self
+    }
+
     /// Projects unvalidated descriptive meaning. Schema registration remains the admission boundary.
     pub fn into_erased(mut self) -> super::super::ErasedApplicationQueryDefinition {
         self.normalize();
@@ -255,6 +337,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     fn normalize(&mut self) {
         self.definition.parameters.sort();
         self.definition.predicates.sort();
+        self.definition.related_predicates.sort();
         self.definition.root_paths.sort();
         self.definition.root_paths.dedup();
     }
@@ -269,6 +352,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
         ApplicationQueryDefinitionDenial,
     > {
+        if self.unit_bearing_literal_predicate {
+            return Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue);
+        }
         self.normalize();
         let portable =
             super::super::WorthQueryPortableApplicationQueryParts::project_typed(&self.definition);

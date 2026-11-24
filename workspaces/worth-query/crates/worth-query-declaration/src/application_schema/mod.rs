@@ -95,6 +95,8 @@ pub use projected_member_domain::{
     ErasedApplicationProjectedMemberDomainDefinition, WorthQueryPortableProjectedMemberDomainParts,
 };
 mod query_member_closure;
+#[cfg(test)]
+pub(crate) use query_member_closure::validate_application_query_members;
 mod read_authoring;
 mod references;
 mod relation_aspect;

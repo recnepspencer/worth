@@ -29,7 +29,12 @@ pub(super) fn validate_parameter_layout<
                 declared.name(),
             ));
         };
-        if value.value_family() != declared.scalar_family() {
+        let matches_layout = if matches!(value, AspectValue::Null) {
+            declared.is_optional()
+        } else {
+            value.value_family() == declared.scalar_family()
+        };
+        if !matches_layout {
             return Err(WorthQueryApplicationQueryParameterDenial::new(
                 WorthQueryApplicationQueryParameterDenialKind::ParameterTypeMismatch,
                 declared.name(),

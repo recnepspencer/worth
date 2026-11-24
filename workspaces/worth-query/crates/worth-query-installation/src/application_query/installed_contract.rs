@@ -161,6 +161,18 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     pub fn live(&self) -> Option<&WorthQueryInstalledApplicationLiveContract> {
         self.compiled.live()
     }
+
+    pub fn is_live_whole_result(&self) -> bool {
+        self.compiled.is_live_whole_result()
+    }
+
+    pub fn live_invalidation_mode(
+        &self,
+    ) -> Option<
+        worth_query_declaration::facade::application_query::ApplicationQueryLiveInvalidationMode,
+    > {
+        self.compiled.live_invalidation_mode()
+    }
     pub fn disclosure(&self) -> &ApplicationQueryDisclosureContract {
         self.compiled.disclosure()
     }

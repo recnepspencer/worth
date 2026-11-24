@@ -50,8 +50,9 @@ pub use graph_access_contract::{
     WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
     WorthQueryInstalledGraphRelation, WorthQueryInstalledGraphRelationPredicate,
+    WorthQueryInstalledRelatedPredicate, WorthQueryInstalledRelatedTargetPredicate,
     WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
-    WorthQueryInstalledWhereFilterParameter,
+    WorthQueryInstalledWhereFilterLiteral, WorthQueryInstalledWhereFilterParameter,
 };
 pub use installed_binding::{
     WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledBoundPrincipal,
