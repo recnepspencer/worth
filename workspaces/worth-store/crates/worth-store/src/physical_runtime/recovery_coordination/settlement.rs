@@ -43,8 +43,12 @@ fn settle_with(
             .submission
             .record_derived_reconciliation_deferred(settled.intent().identity());
     }
+    let awaits_abandonment = settled.retry_is_physically_safe();
     drop(settled);
     drop(effect_activity);
+    if awaits_abandonment {
+        coordination.submission.await_abandonment_idle();
+    }
     signal
 }
 
