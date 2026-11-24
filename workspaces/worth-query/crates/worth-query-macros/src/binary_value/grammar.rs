@@ -1,13 +1,19 @@
 //! Attribute and struct-shape validation for `#[derive(WorthBinaryValue)]`.
 use super::DERIVE;
-use crate::grammar::{no_generics, peeled, unknown_key, value, visit_keys, Once};
+use crate::grammar::{no_generics, peeled, unknown_key, value, visit_keys_for, Once};
 use quote::format_ident;
 use syn::meta::ParseNestedMeta;
 use syn::spanned::Spanned;
 use syn::{Data, DeriveInput, Fields, Ident, LitInt, LitStr, Path, Type};
 
 const STRUCT_KEYS: &[&str] = &[
-    "identity", "version", "binding", "unit", "frame", "validate",
+    "identity",
+    "namespace",
+    "version",
+    "binding",
+    "unit",
+    "frame",
+    "validate",
 ];
 
 pub(super) struct BinaryValueDeclaration {
@@ -33,6 +39,7 @@ pub(super) struct BinaryField {
 
 struct StructKeys {
     identity: Once<LitStr>,
+    namespace: Once<LitStr>,
     version: Once<u8>,
     binding: Once<Ident>,
     unit: Once<LitStr>,
@@ -46,16 +53,44 @@ impl BinaryValueDeclaration {
         let shape = parse_shape(input)?;
         let mut keys = StructKeys {
             identity: Once::new("identity"),
+            namespace: Once::new("namespace"),
             version: Once::new("version"),
             binding: Once::new("binding"),
             unit: Once::new("unit"),
             frame: Once::new("frame"),
             validate: Once::new("validate"),
         };
-        visit_keys(&input.attrs, |key, meta| keys.read(key, meta))?;
+        visit_keys_for(
+            &input.attrs,
+            &["worth_binary", "worth_query"],
+            |key, meta| keys.read(key, meta),
+        )?;
         let missing = input.ident.span();
-        let identity = keys.identity.required(missing, DERIVE)?;
-        validate_non_empty_token(&identity, "identity")?;
+        let version = keys.version.optional().unwrap_or(1);
+        let identity = match (keys.identity.span(), keys.namespace.span()) {
+            (Some(_), Some(dup_span)) => {
+                return Err(syn::Error::new(
+                    dup_span,
+                    "specify either `identity = \"..\"` or `namespace = \"..\"`, not both",
+                ));
+            }
+            (Some(_), None) => {
+                let id = keys.identity.required(missing, DERIVE)?;
+                validate_non_empty_token(&id, "identity")?;
+                id
+            }
+            (None, Some(_)) => {
+                let ns = keys.namespace.required(missing, DERIVE)?;
+                validate_non_empty_token(&ns, "namespace")?;
+                LitStr::new(&format!("{}.v{version}", ns.value()), ns.span())
+            }
+            (None, None) => {
+                return Err(syn::Error::new(
+                    missing,
+                    "#[derive(WorthBinaryValue)] requires `#[worth_binary(namespace = \"..\", version = 1)]` or `#[worth_query(identity = \"..\")]`",
+                ));
+            }
+        };
         let unit = keys.unit.optional();
         if let Some(ref u) = unit {
             validate_non_empty_token(u, "unit")?;
@@ -64,7 +99,6 @@ impl BinaryValueDeclaration {
         if let Some(ref f) = frame {
             validate_non_empty_token(f, "frame")?;
         }
-        let version = keys.version.optional().unwrap_or(1);
         let binding = keys
             .binding
             .optional()
@@ -93,6 +127,7 @@ impl StructKeys {
     fn read(&mut self, key: &str, meta: &ParseNestedMeta<'_>) -> syn::Result<()> {
         match key {
             "identity" => self.identity.set(meta, value(meta)?),
+            "namespace" => self.namespace.set(meta, value(meta)?),
             "version" => {
                 let lit: LitInt = value(meta)?;
                 let parsed: u8 = lit.base10_parse().map_err(|_| {
@@ -165,11 +200,11 @@ fn reject_field_attrs(field: &syn::Field) -> syn::Result<()> {
     if let Some(attr) = field
         .attrs
         .iter()
-        .find(|attr| attr.path().is_ident("worth_query"))
+        .find(|attr| attr.path().is_ident("worth_query") || attr.path().is_ident("worth_binary"))
     {
         return Err(syn::Error::new(
             attr.span(),
-            "#[derive(WorthBinaryValue)] does not accept field-level `#[worth_query(..)]` attributes",
+            "#[derive(WorthBinaryValue)] does not accept field-level attributes",
         ));
     }
     Ok(())

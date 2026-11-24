@@ -15,7 +15,7 @@
 //! use worth_query_decl::facade::WorthBinaryValue;
 //!
 //! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-//! #[worth_query(identity = "doc.binary.point2d.v1", version = 1)]
+//! #[worth_binary(namespace = "doc.binary.point2d", version = 1)]
 //! pub struct Point2D {
 //!     pub x: i64,
 //!     pub y: i64,

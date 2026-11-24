@@ -1504,18 +1504,21 @@ also names `::worth_query_host`.
   `ApplicationCorrectionBinding<Schema>` (`source`, `inverse`, `disclosure`,
   optional `source_body`, `preimage_fields(..)` + `preimage_bytes` or `demand`,
   and `derive = fn`, using `decode_preimage_field` for typed pre-image reads).
-- `WorthBinaryValue` on a fixed-width struct declares a versioned, metered
-  `BinaryValueDelegate`, `ApplicationScalarValueBinding`,
+- `WorthBinaryValue` (`#[worth_binary(namespace = "...", version = 1)]` or
+  `#[worth_query(identity = "...")]`) on a fixed-width struct declares a
+  versioned, metered `BinaryValueDelegate`, `ApplicationScalarValueBinding`,
   `ApplicationReadableScalarValueBinding`, `WorthQueryDefaultValueBinding`, and
   `WorthBinaryWireField` (`worth.domain-binary.v1`), rejecting raw `f32`/`f64`,
   unbounded fields, non-canonical field bits, version mismatches, and sizes
   exceeding `InlineBytes::MAXIMUM_LENGTH` at compile time, with optional
   `validate = fn_path`.
-- `WorthManagedIndex` on a unit marker declares
+- `WorthManagedIndex` (`#[worth_index(schema = ..., record = ..., source = ..., probe = ..., kind = ..., namespace = "...", version = 1)]`
+  or `#[worth_query(...)]`) on a unit marker declares
   `ApplicationManagedIndexBinding<Schema>` with checked `BinarySourceTree`,
   `CheckedSummarySourceTree`, and `Native { cold: AdmitRebuild }` defaults and
-  `probe = ValueType` (resolved via `WorthQueryDefaultValueBinding`) or
-  `probe_binding = Binding`. `WorthQuery` accepts `managed_index = Index` and
+  optional stock/custom provider registration (`text_prefix`, `interval_1d`,
+  `box_2d`, `box_3d`, `custom`) consumed directly by `managed_indexes: [...]`
+  in `worth_query_application_program!`. `WorthQuery` accepts `managed_index = Index` and
   `#[worth_query(probe)]` (plus struct-level `scope = Selection` paired with
   field-level `#[worth_query(scope)]`) to wire the probe parameter, fallible
   `prepare_parameters`, and `.managed_index(..)` in one derive.
@@ -8695,15 +8698,19 @@ denials honestly):
 <!-- illustrative -->
 ```rust,ignore
 // Shop Floor 2D equipment bounding-box overlap (~15 lines total, zero JSON):
-#[derive(Copy, Clone, WorthBinaryValue)]
-#[worth_query(identity = "shopfloor.query_box.v1", version = 1, validate = check_box2d)]
+#[derive(Copy, Clone, Eq, PartialEq, WorthBinaryValue)]
+#[worth_binary(namespace = "shopfloor.query_box", version = 1, validate = check_box2d)]
 pub struct QueryBox2D { pub min_x: i64, pub min_y: i64, pub max_x: i64, pub max_y: i64 }
 impl WorthQueryBox2DProbe<i64> for QueryBox2D {
     fn box_2d_bounds(&self) -> ([i64; 2], [i64; 2]) { ([self.min_x, self.min_y], [self.max_x, self.max_y]) }
 }
 
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = Schema, entity = Equipment, source = EquipmentSourceBinding, probe = QueryBox2D)]
+#[worth_index(
+    schema = Schema, record = Equipment, source = EquipmentSourceBinding, probe = QueryBox2D,
+    kind = box_2d(EquipmentRow::min_x(), EquipmentRow::min_y(), EquipmentRow::max_x(), EquipmentRow::max_y()),
+    namespace = "shopfloor.equipment_box", version = 1,
+)]
 pub struct EquipmentBoxIndex;
 
 #[derive(Clone, WorthQuery)]
@@ -8714,17 +8721,12 @@ pub struct FindEquipmentInBox {
     #[worth_query(probe)] pub region: QueryBox2D,
 }
 
-// Install with one line in `WorthQueryApplicationContribution::configure`:
-setup.managed_index_provider::<EquipmentBoxIndex, _>(
-    WorthQueryBox2DIndex::half_open(
-        EquipmentRow::min_x(), EquipmentRow::min_y(),
-        EquipmentRow::max_x(), EquipmentRow::max_y(),
-    ),
-).with_predicate_routing().install()?;
-
-// Daymark title-prefix & calendar interval use the same one-line stock adapters:
-//   WorthQueryTextPrefixIndex::ascii_case_insensitive(TaskRow::title())
-//   WorthQueryInterval1DIndex::half_open(TaskRow::start_min(), TaskRow::end_min())
+// Wire into `worth_query_application_program!` with one line (registers schema + checked provider + watches):
+//   managed_indexes: [EquipmentBoxIndex],
+// Or wire a custom provider inside a feature block:
+//   managed_index(MyCustomIndex) { provider: my_provider; watches: true; };
+// Daymark title-prefix & calendar interval use `kind = text_prefix(TaskRow::title())`
+// and `kind = interval_1d(TaskRow::start_min(), TaskRow::end_min())`.
 // Cold reopen / startup:
 let index = request.query(q).ensure_index_ready::<EquipmentBoxIndex>()?;
 ```

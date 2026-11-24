@@ -13,7 +13,15 @@ fn malformed_binary_values_are_refused() {
     let cases = [
         (
             "struct MissingIdentity { x: i64 }",
-            "requires `#[worth_query(identity = ..)]`",
+            "requires `#[worth_binary(namespace = \"..\", version = 1)]`",
+        ),
+        (
+            "#[worth_binary(identity = \"a.v1\", namespace = \"a\")] struct BothIdNs { x: i64 }",
+            "specify either `identity = \"..\"` or `namespace = \"..\"`, not both",
+        ),
+        (
+            "#[worth_binary(namespace = \"a\")] struct BadFieldAttr { #[worth_binary(version = 1)] x: i64 }",
+            "does not accept field-level",
         ),
         (
             "#[worth_query(identity = \"\")] struct EmptyId { x: i64 }",
@@ -90,6 +98,17 @@ fn valid_binary_value_expands_with_version_hygiene_and_default_binding() {
         "{expanded}"
     );
     assert!(expanded.contains("check_box"), "{expanded}");
+
+    let target_dx = syn::parse_str(
+        "#[worth_binary(namespace = \"daymark.focus_window\", version = 3)] \
+         pub struct FocusWindow { pub start: i64, pub end: i64 }",
+    )
+    .unwrap();
+    let expanded_ns = expand(&target_dx).unwrap().to_string();
+    assert!(
+        expanded_ns.contains("\"daymark.focus_window.v3\""),
+        "{expanded_ns}"
+    );
 }
 
 #[test]

@@ -179,6 +179,16 @@ impl PrincipalBinding {
         )
     }
 }
+impl Registration<ShopFloorSchema> for PrincipalBinding {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<ShopFloorSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<ShopFloorSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.principal_binding(Self::reference()))
+    }
+}
 pub struct ShopContext;
 impl ApplicationBindingContext<ShopFloorSchema> for ShopContext {
     type PrincipalBinding = PrincipalBinding;
@@ -215,7 +225,15 @@ pub struct AssetSource {
 
 // 1. Daymark Title-Prefix Palette (native String probe)
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = ShopFloorSchema, entity = Asset, source = AssetSourceBinding, probe = String)]
+#[worth_index(
+    schema = ShopFloorSchema,
+    record = Asset,
+    source = AssetSourceBinding,
+    probe = String,
+    kind = text_prefix(AssetRow::title()),
+    namespace = "daymark.title_prefix",
+    version = 1,
+)]
 pub struct TitlePrefixIndex;
 
 #[derive(Clone, Debug, WorthQuery)]
@@ -233,7 +251,7 @@ fn check_window(w: &FocusWindow) -> Result<(), &'static str> {
     (w.start < w.end).then_some(()).ok_or("start must be < end")
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-#[worth_query(identity = "daymark.focus_window.v1", version = 1, validate = check_window)]
+#[worth_binary(namespace = "daymark.focus_window", version = 1, validate = check_window)]
 pub struct FocusWindow {
     pub start: i64,
     pub end: i64,
@@ -244,7 +262,15 @@ impl WorthQueryInterval1DProbe<i64> for FocusWindow {
     }
 }
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = ShopFloorSchema, entity = Asset, source = AssetSourceBinding, probe = FocusWindow)]
+#[worth_index(
+    schema = ShopFloorSchema,
+    record = Asset,
+    source = AssetSourceBinding,
+    probe = FocusWindow,
+    kind = interval_1d(AssetRow::start_min(), AssetRow::end_min()),
+    namespace = "daymark.focus_overlap",
+    version = 1,
+)]
 pub struct FocusIntervalIndex;
 
 #[derive(Clone, Debug, WorthQuery)]
@@ -264,7 +290,7 @@ fn check_box2d(b: &QueryBox2D) -> Result<(), &'static str> {
         .ok_or("2D box must be non-empty")
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-#[worth_query(identity = "shopfloor.query_box2d.v1", version = 1, validate = check_box2d)]
+#[worth_binary(namespace = "shopfloor.query_box2d", version = 1, validate = check_box2d)]
 pub struct QueryBox2D {
     pub min_x: i64,
     pub min_y: i64,
@@ -277,7 +303,15 @@ impl WorthQueryBox2DProbe<i64> for QueryBox2D {
     }
 }
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = ShopFloorSchema, entity = Asset, source = AssetSourceBinding, probe = QueryBox2D)]
+#[worth_index(
+    schema = ShopFloorSchema,
+    record = Asset,
+    source = AssetSourceBinding,
+    probe = QueryBox2D,
+    kind = box_2d(AssetRow::min_x(), AssetRow::min_y(), AssetRow::max_x(), AssetRow::max_y()),
+    namespace = "shopfloor.equipment_box2d",
+    version = 1,
+)]
 pub struct EquipmentBox2DIndex;
 
 #[derive(Clone, Debug, WorthQuery)]
@@ -297,7 +331,7 @@ fn check_box3d(b: &QueryBox3D) -> Result<(), &'static str> {
         .ok_or("3D box must have min <= max")
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-#[worth_query(identity = "shopfloor.query_box3d.v1", version = 1, validate = check_box3d)]
+#[worth_binary(namespace = "shopfloor.query_box3d", version = 1, validate = check_box3d)]
 pub struct QueryBox3D {
     pub min_x: i64,
     pub min_y: i64,
@@ -315,7 +349,18 @@ impl WorthQueryBox3DProbe<i64> for QueryBox3D {
     }
 }
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = ShopFloorSchema, entity = Asset, source = AssetSourceBinding, probe = QueryBox3D)]
+#[worth_index(
+    schema = ShopFloorSchema,
+    record = Asset,
+    source = AssetSourceBinding,
+    probe = QueryBox3D,
+    kind = box_3d_closed(
+        (AssetRow::min_x(), AssetRow::min_y(), AssetRow::min_z()),
+        (AssetRow::max_x(), AssetRow::max_y(), AssetRow::max_z()),
+    ),
+    namespace = "shopfloor.route_box3d",
+    version = 1,
+)]
 pub struct RouteBox3DIndex;
 
 #[derive(Clone, Debug, WorthQuery)]
@@ -330,7 +375,15 @@ pub struct FindRoutesInBox3D {
 
 // 5. Shop Floor CanonicalF64 Box2D (using stock WorthQueryBox2DF64 probe!)
 #[derive(WorthManagedIndex)]
-#[worth_query(schema = ShopFloorSchema, entity = Asset, source = AssetSourceBinding, probe = WorthQueryBox2DF64)]
+#[worth_index(
+    schema = ShopFloorSchema,
+    record = Asset,
+    source = AssetSourceBinding,
+    probe = WorthQueryBox2DF64,
+    kind = box_2d(AssetRow::fmin_x(), AssetRow::fmin_y(), AssetRow::fmax_x(), AssetRow::fmax_y()),
+    namespace = "shopfloor.float_box2d",
+    version = 1,
+)]
 pub struct FloatBox2DIndex;
 
 #[derive(Clone, Debug, WorthQuery)]

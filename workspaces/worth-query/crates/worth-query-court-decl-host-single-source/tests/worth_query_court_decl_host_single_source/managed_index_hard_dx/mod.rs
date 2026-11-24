@@ -1,4 +1,6 @@
 //! Managed-Index Hard DX acceptance courts and 64-seed 4-family differential DST.
+//! Wired end-to-end through Target DX #7 (`#[worth_binary]`, `#[worth_index(..., kind = ..)]`,
+//! and `worth_query_application_program!` `managed_indexes: [...]`).
 mod courts;
 mod courts_f64;
 mod dst;
@@ -11,179 +13,98 @@ mod schema;
 use harness::*;
 use operations::*;
 use schema::*;
-use worth_query_decl::facade::application_query::{
-    ApplicationManagedIndexDefinition, ApplicationQueryOrderingDirection, ApplicationQueryRootPath,
+use worth_query_decl::facade::application_program::{
+    ApplicationActionDelivery, ApplicationSourceCompletion,
 };
-use worth_query_decl::facade::application_schema::fragment::Registration;
-use worth_query_decl::facade::{application_program::*, application_schema::*};
-use worth_query_host::facade::ordered_index::{
-    WorthQueryBox2DIndex, WorthQueryBox3DIndex, WorthQueryInterval1DIndex,
-    WorthQueryTextPrefixIndex,
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryOrderingDirection, ApplicationQueryRootPath,
 };
 use worth_query_host::facade::{
-    application_contribution::*, application_installation::*, primary_graph::*,
-    WorthQueryApplicationHome,
+    application_installation::*, worth_query_application_program, WorthQueryApplicationHome,
 };
 
-pub struct ShopFeature;
-impl ApplicationFeature<ShopFloorSchema> for ShopFeature {
-    type Inputs = ApplicationFeatureInputLeaf;
-    const IDENTITY: &'static str = "hard_dx.shop.feature.v1";
+pub struct CreatedAsset;
+impl ApplicationActionDelivery<ShopFloorSchema, CreateAssetBinding> for CreatedAsset {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "hard_dx.create_asset.completion.v1";
+}
+pub struct UpdatedAsset;
+impl ApplicationActionDelivery<ShopFloorSchema, UpdateAssetBinding> for UpdatedAsset {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "hard_dx.update_asset.completion.v1";
+}
+pub struct DeletedAsset;
+impl ApplicationActionDelivery<ShopFloorSchema, DeleteAssetBinding> for DeletedAsset {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "hard_dx.delete_asset.completion.v1";
 }
 
-pub struct Contracts;
-impl Registration<ShopFloorSchema> for Contracts {
-    fn register(
-        schema: ApplicationSchemaDeclarationBuilder<ShopFloorSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<ShopFloorSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        let asc = ApplicationQueryOrderingDirection::Ascending;
-        Ok(schema
-            .principal_binding(PrincipalBinding::reference())
-            .application_query(
-                AssetSourceQuery::definition()
+worth_query_application_program! {
+    pub program Program for ShopFloorSchema {
+        identity: "hard_dx.shop.program.v1",
+        contribution: Contribution {
+            identity: "hard_dx.shop.contribution.v1",
+            members: [ShopFloor, PrincipalBinding],
+        },
+        managed_indexes: [
+            TitlePrefixIndex,
+            FocusIntervalIndex,
+            EquipmentBox2DIndex,
+            RouteBox3DIndex,
+            FloatBox2DIndex,
+        ],
+        feature: ShopFeature => ShopDefinition / ShopRuntime {
+            identity: "hard_dx.shop.feature.v1",
+            query(AssetSourceBinding) {
+                definition: AssetSourceQuery::definition()
                     .root_path(
                         ApplicationQueryRootPath::from(Floor::reference())
                             .forward(ContainsAsset::reference()),
                     )
-                    .order_by(AssetRow::key(), asc),
-            )
-            .application_query_binding::<AssetSourceBinding>()
-            .application_query(FindByTitlePrefixQuery::definition().order_by(AssetRow::key(), asc))
-            .application_query_binding::<FindByTitlePrefixBinding>()
-            .application_query(FindByFocusWindowQuery::definition().order_by(AssetRow::key(), asc))
-            .application_query_binding::<FindByFocusWindowBinding>()
-            .application_query(
-                FindEquipmentInBox2DQuery::definition().order_by(AssetRow::key(), asc),
-            )
-            .application_query_binding::<FindEquipmentInBox2DBinding>()
-            .application_query(FindRoutesInBox3DQuery::definition().order_by(AssetRow::key(), asc))
-            .application_query_binding::<FindRoutesInBox3DBinding>()
-            .application_query(FindInFloatBox2DQuery::definition().order_by(AssetRow::key(), asc))
-            .application_query_binding::<FindInFloatBox2DBinding>()
-            .managed_index(ApplicationManagedIndexDefinition::<
-                ShopFloorSchema,
-                TitlePrefixIndex,
-            >::new())
-            .managed_index(ApplicationManagedIndexDefinition::<
-                ShopFloorSchema,
-                FocusIntervalIndex,
-            >::new())
-            .managed_index(ApplicationManagedIndexDefinition::<
-                ShopFloorSchema,
-                EquipmentBox2DIndex,
-            >::new())
-            .managed_index(ApplicationManagedIndexDefinition::<
-                ShopFloorSchema,
-                RouteBox3DIndex,
-            >::new())
-            .managed_index(ApplicationManagedIndexDefinition::<
-                ShopFloorSchema,
-                FloatBox2DIndex,
-            >::new())
-            .declared_operation::<CreateAssetOp>(
-                CreateAssetOp::reference()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(FindByTitlePrefixBinding) {
+                definition: FindByTitlePrefixQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(FindByFocusWindowBinding) {
+                definition: FindByFocusWindowQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(FindEquipmentInBox2DBinding) {
+                definition: FindEquipmentInBox2DQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(FindRoutesInBox3DBinding) {
+                definition: FindRoutesInBox3DQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(FindInFloatBox2DBinding) {
+                definition: FindInFloatBox2DQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            action create(CreateAssetBinding, CreatedAsset, CreateAssetHandler) {
+                operation: CreateAssetOp::reference()
                     .definition()
                     .no_external_effect()
                     .no_aftermath()
-                    .finish(),
-            )
-            .application_mutation_binding::<CreateAssetBinding>()
-            .declared_operation::<UpdateAssetOp>(
-                UpdateAssetOp::reference()
+                    .finish();
+            };
+            action update(UpdateAssetBinding, UpdatedAsset, UpdateAssetHandler) {
+                operation: UpdateAssetOp::reference()
                     .definition()
                     .no_external_effect()
                     .no_aftermath()
-                    .finish(),
-            )
-            .application_mutation_binding::<UpdateAssetBinding>()
-            .declared_operation::<DeleteAssetOp>(
-                DeleteAssetOp::reference()
+                    .finish();
+            };
+            action delete(DeleteAssetBinding, DeletedAsset, DeleteAssetHandler) {
+                operation: DeleteAssetOp::reference()
                     .definition()
                     .no_external_effect()
                     .no_aftermath()
-                    .finish(),
-            )
-            .application_mutation_binding::<DeleteAssetBinding>())
-    }
-}
-
-pub struct Contribution;
-impl ApplicationSchemaContribution<ShopFloorSchema> for Contribution {
-    const IDENTITY: ApplicationSchemaContributionIdentity =
-        ApplicationSchemaContributionIdentity::new("hard_dx.shop.contribution.v1");
-    type Members = (ShopFloor, Contracts);
-}
-impl WorthQueryApplicationContribution<ShopFloorSchema> for Contribution {
-    type Configuration = ();
-    fn configure(
-        _: (),
-        setup: &mut WorthQueryApplicationContributionSetup<'_, ShopFloorSchema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup
-            .managed_index_provider::<TitlePrefixIndex, _>(
-                WorthQueryTextPrefixIndex::ascii_case_insensitive(AssetRow::title()),
-            )
-            .with_predicate_routing()
-            .install()?;
-        setup
-            .managed_index_provider::<FocusIntervalIndex, _>(WorthQueryInterval1DIndex::half_open(
-                AssetRow::start_min(),
-                AssetRow::end_min(),
-            ))
-            .with_predicate_routing()
-            .install()?;
-        setup
-            .managed_index_provider::<EquipmentBox2DIndex, _>(WorthQueryBox2DIndex::half_open(
-                AssetRow::min_x(),
-                AssetRow::min_y(),
-                AssetRow::max_x(),
-                AssetRow::max_y(),
-            ))
-            .with_predicate_routing()
-            .install()?;
-        setup
-            .managed_index_provider::<RouteBox3DIndex, _>(WorthQueryBox3DIndex::closed(
-                (AssetRow::min_x(), AssetRow::min_y(), AssetRow::min_z()),
-                (AssetRow::max_x(), AssetRow::max_y(), AssetRow::max_z()),
-            ))
-            .with_predicate_routing()
-            .install()?;
-        setup
-            .managed_index_provider::<FloatBox2DIndex, _>(WorthQueryBox2DIndex::half_open(
-                AssetRow::fmin_x(),
-                AssetRow::fmin_y(),
-                AssetRow::fmax_x(),
-                AssetRow::fmax_y(),
-            ))
-            .with_predicate_routing()
-            .install()?;
-        setup.handler::<CreateAssetBinding, _>(CreateAssetHandler)?;
-        setup.handler::<UpdateAssetBinding, _>(UpdateAssetHandler)?;
-        setup.handler::<DeleteAssetBinding, _>(DeleteAssetHandler)
-    }
-}
-
-pub struct Program;
-impl ApplicationProgramDefinition<ShopFloorSchema> for Program {
-    type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("hard_dx.shop.program.v1");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<ShopFloorSchema, ShopFeature>()
-                .native_action::<CreateAssetBinding>()
-                .finish_action()
-                .native_action::<UpdateAssetBinding>()
-                .finish_action()
-                .native_action::<DeleteAssetBinding>()
-                .finish_action()
-                .finish(),
-        ]
+                    .finish();
+            };
+        }
     }
 }
 

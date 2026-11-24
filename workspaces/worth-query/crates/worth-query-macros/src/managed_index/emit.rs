@@ -1,8 +1,9 @@
 //! Lowers `#[derive(WorthManagedIndex)]` into `ApplicationManagedIndexBinding<Schema>`
-//! with two-layer `const _: ()` hygiene and checked binary-source-tree defaults.
-use super::grammar::{bare_ident, ManagedIndexDeclaration, ProbeSpec};
+//! (and optional `WorthQueryApplicationManagedIndexRegistration<Schema>` when `kind = ..`
+//! is declared) with two-layer `const _: ()` hygiene.
+use super::grammar::{bare_ident, IndexProviderKind, ManagedIndexDeclaration, ProbeSpec};
 use super::hygiene::HygienicNames;
-use crate::facade_paths::declaration;
+use crate::facade_paths::{declaration, host};
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
@@ -24,6 +25,8 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
         membership_const,
         maintenance_const,
         refinement_const,
+        install_fn: _,
+        setup_param: _,
     } = &names;
 
     let (schema, entity, source) = (&spec.schema, &spec.entity, &spec.source);
@@ -42,6 +45,10 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
         || quote!(::core::option::Option::None),
         |expr| quote!(#expr),
     );
+    let (outer_install_helper, inner_registration_impl) = spec.kind.as_ref().map_or_else(
+        || (TokenStream::new(), TokenStream::new()),
+        |kind| emit_provider_registration(kind, &names),
+    );
 
     quote! {
         const _: () = {
@@ -56,6 +63,7 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
             const #maintenance_const: #aq::ApplicationManagedIndexMaintenance = #maintenance_val;
             const #refinement_const: ::core::option::Option<#aq::ApplicationManagedIndexRefinement> =
                 #refinement_val;
+            #outer_install_helper
 
             const _: () = {
                 impl #aq::ApplicationManagedIndexBinding<#schema_alias> for #index_alias {
@@ -74,9 +82,105 @@ pub(super) fn managed_index(input: &DeriveInput, spec: &ManagedIndexDeclaration)
                         #aq::ApplicationManagedIndexRefinement,
                     > = #refinement_const;
                 }
+
+                #inner_registration_impl
             };
         };
     }
+}
+
+fn emit_provider_registration(
+    kind: &IndexProviderKind,
+    names: &HygienicNames,
+) -> (TokenStream, TokenStream) {
+    let host_facade = host();
+    let contrib = quote!(#host_facade::application_contribution);
+    let pg = quote!(#host_facade::primary_graph);
+    let oi = quote!(#host_facade::ordered_index);
+    let (index_alias, schema_alias, install_fn, setup_param) = (
+        &names.index_alias,
+        &names.schema_alias,
+        &names.install_fn,
+        &names.setup_param,
+    );
+    let (provider_expr, with_watches) = match kind {
+        IndexProviderKind::TextPrefix { field, exact } => {
+            let ctor = if *exact {
+                quote!(exact_utf8)
+            } else {
+                quote!(ascii_case_insensitive)
+            };
+            (quote!(#oi::WorthQueryTextPrefixIndex::#ctor(#field)), true)
+        }
+        IndexProviderKind::Interval1D { start, end, closed } => {
+            let ctor = if *closed {
+                quote!(closed)
+            } else {
+                quote!(half_open)
+            };
+            (
+                quote!(#oi::WorthQueryInterval1DIndex::#ctor(#start, #end)),
+                true,
+            )
+        }
+        IndexProviderKind::Box2D {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
+            closed,
+        } => {
+            let ctor = if *closed {
+                quote!(closed)
+            } else {
+                quote!(half_open)
+            };
+            (
+                quote!(#oi::WorthQueryBox2DIndex::#ctor(#min_x, #min_y, #max_x, #max_y)),
+                true,
+            )
+        }
+        IndexProviderKind::Box3D { min, max, closed } => {
+            let ctor = if *closed {
+                quote!(closed)
+            } else {
+                quote!(half_open)
+            };
+            (quote!(#oi::WorthQueryBox3DIndex::#ctor(#min, #max)), true)
+        }
+        IndexProviderKind::Custom { provider, watches } => (quote!(#provider), *watches),
+    };
+    let install_call = if with_watches {
+        quote! {
+            #setup_param
+                .managed_index_provider::<#index_alias, _>(#provider_expr)
+                .with_predicate_routing()
+                .install()
+        }
+    } else {
+        quote! {
+            #setup_param
+                .managed_index_provider::<#index_alias, _>(#provider_expr)
+                .install()
+        }
+    };
+    let outer_helper = quote! {
+        fn #install_fn(
+            #setup_param: &mut #contrib::WorthQueryApplicationContributionSetup<'_, #schema_alias>,
+        ) -> ::core::result::Result<(), #pg::WorthQueryPrimaryGraphInstallationDenial> {
+            #install_call
+        }
+    };
+    let inner_impl = quote! {
+        impl #contrib::WorthQueryApplicationManagedIndexRegistration<#schema_alias> for #index_alias {
+            fn install_managed_index(
+                #setup_param: &mut #contrib::WorthQueryApplicationContributionSetup<'_, #schema_alias>,
+            ) -> ::core::result::Result<(), #pg::WorthQueryPrimaryGraphInstallationDenial> {
+                #install_fn(#setup_param)
+            }
+        }
+    };
+    (outer_helper, inner_impl)
 }
 
 fn source_scope_expr(aq: &TokenStream, expr: Option<&Expr>) -> TokenStream {

@@ -11,4 +11,4 @@ pub use configuration::{
 };
 pub use contract::{required_producers, validate_pair};
 pub use contract::{WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair};
-pub use definition::WorthQueryFeatureDefinition;
+pub use definition::{WorthQueryApplicationManagedIndexRegistration, WorthQueryFeatureDefinition};

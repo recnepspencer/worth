@@ -16,6 +16,8 @@ pub(super) struct HygienicNames {
     pub(super) membership_const: Ident,
     pub(super) maintenance_const: Ident,
     pub(super) refinement_const: Ident,
+    pub(super) install_fn: Ident,
+    pub(super) setup_param: Ident,
 }
 
 impl HygienicNames {
@@ -33,6 +35,8 @@ impl HygienicNames {
             membership_const: fresh_ident("__WORTH_MANAGED_INDEX_MEMBERSHIP", mixed, &mut used),
             maintenance_const: fresh_ident("__WORTH_MANAGED_INDEX_MAINTENANCE", mixed, &mut used),
             refinement_const: fresh_ident("__WORTH_MANAGED_INDEX_REFINEMENT", mixed, &mut used),
+            install_fn: fresh_ident("__worth_managed_index_install", mixed, &mut used),
+            setup_param: fresh_ident("__worth_managed_index_setup", mixed, &mut used),
         }
     }
 }
@@ -59,6 +63,11 @@ fn collect_used_idents(input: &DeriveInput, spec: &ManagedIndexDeclaration) -> B
     .flatten()
     {
         collect_stream_idents(expr.to_token_stream(), &mut used);
+    }
+    if let Some(kind) = &spec.kind {
+        for expr in kind.exprs() {
+            collect_stream_idents(expr.to_token_stream(), &mut used);
+        }
     }
     used
 }

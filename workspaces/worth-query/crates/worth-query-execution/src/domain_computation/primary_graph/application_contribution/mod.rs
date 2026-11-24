@@ -85,9 +85,9 @@ pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub use feature::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
-    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
-    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+    WorthQueryApplicationManagedIndexRegistration, WorthQueryFeatureConfiguration,
+    WorthQueryFeatureDefinition, WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime,
+    WorthQueryFeatureRuntime, WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,

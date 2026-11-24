@@ -45,6 +45,26 @@ fn malformed_managed_indexes_are_refused() {
              struct UnknownKey;",
             "unknown key for #[derive(WorthManagedIndex)]",
         ),
+        (
+            "#[worth_index(schema = S, entity = E, record = E, source = Src, probe = P)] \
+             struct BothEntityRecord;",
+            "specify either `entity = Entity` or `record = Entity`, not both",
+        ),
+        (
+            "#[worth_index(schema = S, record = E, source = Src, probe = P, provider = \"a\", namespace = \"b\")] \
+             struct BothProvNs;",
+            "specify either `provider = \"..\"` or `namespace = \"..\"`, not both",
+        ),
+        (
+            "#[worth_index(schema = S, record = E, source = Src, probe = P, version = 1, provider_version = 1)] \
+             struct BothVer;",
+            "specify either `version = N` or `provider_version = N`, not both",
+        ),
+        (
+            "#[worth_index(schema = S, record = E, source = Src, probe = P, kind = text_prefix(a, b))] \
+             struct BadKindArity;",
+            "unsupported `kind = text_prefix(..)` or wrong argument count",
+        ),
     ];
     for (source, expected) in cases {
         let message = refusal(source);
@@ -95,4 +115,29 @@ fn valid_managed_index_expands_with_checked_tree_defaults_and_overrides() {
     assert!(expanded.contains("Opaque"), "{expanded}");
     assert!(expanded.contains("Candidates"), "{expanded}");
     assert!(expanded.contains("WhenRequired"), "{expanded}");
+
+    let target_dx = syn::parse_str(
+        "#[worth_index(schema = Schema, record = Task, source = Source, probe = FocusWindow, \
+         kind = interval_1d(TaskRow::start(), TaskRow::end()), \
+         namespace = \"daymark.focus_overlap\", version = 2)] \
+         pub struct FocusOverlapIndex;",
+    )
+    .unwrap();
+    let expanded_dx = expand(&target_dx).unwrap().to_string();
+    assert!(
+        expanded_dx.contains("\"daymark.focus_overlap.v2\""),
+        "{expanded_dx}"
+    );
+    assert!(
+        expanded_dx.contains("WorthQueryApplicationManagedIndexRegistration"),
+        "{expanded_dx}"
+    );
+    assert!(
+        expanded_dx.contains("WorthQueryInterval1DIndex"),
+        "{expanded_dx}"
+    );
+    assert!(
+        expanded_dx.contains("with_predicate_routing"),
+        "{expanded_dx}"
+    );
 }

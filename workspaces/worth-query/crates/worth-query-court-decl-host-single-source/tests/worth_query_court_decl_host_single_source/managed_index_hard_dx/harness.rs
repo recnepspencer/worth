@@ -1,7 +1,10 @@
 //! Host, Directory Home, and mutation launchers for Hard DX managed-index courts.
-use super::operations::{AssetSpec, CreateAsset, DeleteAsset, UpdateAsset};
+use super::operations::{
+    AssetSpec, CreateAsset, CreateAssetHandler, DeleteAsset, DeleteAssetHandler, UpdateAsset,
+    UpdateAssetHandler,
+};
 use super::schema::*;
-use super::{Home, Host, Program};
+use super::{Home, Host, Program, ShopRuntime};
 use std::num::NonZeroUsize;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::facade::{
@@ -158,7 +161,11 @@ pub(super) fn install(
             .validated_program()
             .unwrap(),
         declaration,
-        ((),),
+        (ShopRuntime::new(
+            CreateAssetHandler,
+            UpdateAssetHandler,
+            DeleteAssetHandler,
+        ),),
         ApplicationBuildIdentity::parse("8c8c8c8c-8c8c-8c8c-8c8c-8c8c8c8c8c8c").unwrap(),
         limits(memory_bytes, work_ceiling),
         move |_, graph, installed| seed_floor(graph, installed, &specs),
@@ -184,7 +191,11 @@ pub(super) fn open_directory_home_with_limits(
         program,
         WorthQueryApplicationProgramRoster::new(),
         declaration,
-        ((),),
+        (ShopRuntime::new(
+            CreateAssetHandler,
+            UpdateAssetHandler,
+            DeleteAssetHandler,
+        ),),
         ApplicationBuildIdentity::parse("8c8c8c8c-8c8c-8c8c-8c8c-8c8c8c8c8c8c").unwrap(),
         app_limits,
         move |_, graph, installed| {
