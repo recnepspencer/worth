@@ -36,6 +36,62 @@ impl ExpressionInputs {
     pub fn value(&self, name: &str) -> Option<&ExpressionValue> {
         self.values.get(name)
     }
+
+    /// Heap bytes owned by `ExpressionInputs::builder(schema)` (cloning
+    /// `schema`'s operand table) plus the peak transient `conform` worklist
+    /// for scalar and optional-scalar schemas.
+    ///
+    /// Returns `None` if any operand has a composite type (`List`, `Map`,
+    /// `MapEntry`, `Record`, or nested `Option`) whose `conform` worklist
+    /// depends on runtime value shape, or on arithmetic overflow.
+    pub fn scalar_builder_schema_and_conform_bytes(schema: &ExpressionSchema) -> Option<usize> {
+        let mut schema_bytes = schema
+            .operands()
+            .len()
+            .checked_mul(size_of::<(Box<str>, ExpressionType)>())?;
+        let mut peak_conform = 0_usize;
+        for (name, ty) in schema.operands() {
+            let conform_bytes = scalar_conform_peak_bytes(ty)?;
+            let ty_bytes = ty.clone_allocation_bytes()?;
+            schema_bytes = schema_bytes
+                .checked_add(name.len())?
+                .checked_add(ty_bytes)?;
+            peak_conform = peak_conform.max(conform_bytes);
+        }
+        schema_bytes.checked_add(peak_conform)
+    }
+}
+
+fn is_scalar_type(ty: &ExpressionType) -> bool {
+    matches!(
+        ty,
+        ExpressionType::Bool
+            | ExpressionType::Integer(_)
+            | ExpressionType::Float32
+            | ExpressionType::Float64
+            | ExpressionType::Decimal
+            | ExpressionType::String
+            | ExpressionType::Bytes
+            | ExpressionType::Id(_)
+            | ExpressionType::Enum(_)
+            | ExpressionType::Quantity(_)
+            | ExpressionType::Bits(_)
+            | ExpressionType::Logic4(_)
+            | ExpressionType::Date
+    )
+}
+
+fn scalar_conform_peak_bytes(ty: &ExpressionType) -> Option<usize> {
+    let slot = size_of::<(&ExpressionValue, ExpressionType)>();
+    if is_scalar_type(ty) {
+        return slot.checked_add(ty.clone_allocation_bytes()?);
+    }
+    match ty {
+        ExpressionType::Option(inner) if is_scalar_type(inner) => slot
+            .checked_add(ty.clone_allocation_bytes()?)?
+            .checked_add(inner.clone_allocation_bytes()?),
+        _ => None,
+    }
 }
 
 /// Binds operand values one at a time, checking each against its declared
@@ -175,4 +231,96 @@ fn conform(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::expressions::types::ExpressionTypeName;
+
+    #[test]
+    fn scalar_quote_bounds_scalar_and_optional_scalar_schemas_and_rejects_composites() {
+        let id_name = ExpressionTypeName::new("work::Task", 1).unwrap();
+        let scalar_schema = ExpressionSchema::builder()
+            .identifier("work::Task", 1)
+            .unwrap()
+            .operand("flag", ExpressionType::Bool)
+            .unwrap()
+            .operand("note", ExpressionType::option(ExpressionType::String))
+            .unwrap()
+            .operand("task", ExpressionType::option(ExpressionType::Id(id_name)))
+            .unwrap()
+            .build();
+        let expected_schema = 3 * size_of::<(Box<str>, ExpressionType)>()
+            + "flag".len()
+            + "note".len()
+            + size_of::<ExpressionType>()
+            + "task".len()
+            + size_of::<ExpressionType>()
+            + "work::Task".len();
+        let expected_peak_conform = size_of::<(&ExpressionValue, ExpressionType)>()
+            + size_of::<ExpressionType>()
+            + 2 * "work::Task".len();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&scalar_schema),
+            Some(expected_schema + expected_peak_conform)
+        );
+
+        let list_schema = ExpressionSchema::builder()
+            .operand("items", ExpressionType::list(ExpressionType::Bool))
+            .unwrap()
+            .build();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&list_schema),
+            None
+        );
+
+        let map_schema = ExpressionSchema::builder()
+            .operand(
+                "attrs",
+                ExpressionType::map(ExpressionType::String, ExpressionType::Bool),
+            )
+            .unwrap()
+            .build();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&map_schema),
+            None
+        );
+
+        let rec_name = ExpressionTypeName::new("work::Meta", 1).unwrap();
+        let record_schema = ExpressionSchema::builder()
+            .record("work::Meta", 1, [("ok", ExpressionType::Bool)])
+            .unwrap()
+            .operand("meta", ExpressionType::Record(rec_name))
+            .unwrap()
+            .build();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&record_schema),
+            None
+        );
+
+        let nested_opt_schema = ExpressionSchema::builder()
+            .operand(
+                "nested",
+                ExpressionType::option(ExpressionType::option(ExpressionType::Bool)),
+            )
+            .unwrap()
+            .build();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&nested_opt_schema),
+            None
+        );
+
+        let opt_list_schema = ExpressionSchema::builder()
+            .operand(
+                "maybe_items",
+                ExpressionType::option(ExpressionType::list(ExpressionType::Bool)),
+            )
+            .unwrap()
+            .build();
+        assert_eq!(
+            ExpressionInputs::scalar_builder_schema_and_conform_bytes(&opt_list_schema),
+            None
+        );
+    }
 }

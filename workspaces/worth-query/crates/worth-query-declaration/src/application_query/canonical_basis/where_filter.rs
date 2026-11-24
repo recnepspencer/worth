@@ -17,7 +17,10 @@ pub(super) fn append_where_filter(
     ));
     for (index, operand) in filter.operands().iter().enumerate() {
         for (key, value) in operand.canonical_parts() {
-            entries.push(text(format!("where-filter.operand[{index}].{key}"), value));
+            entries.push(text(
+                format!("where-filter.operand[{index}].{key}"),
+                value.as_ref(),
+            ));
         }
     }
     entries.push(text("where-filter.program", filter.semantic_material()));

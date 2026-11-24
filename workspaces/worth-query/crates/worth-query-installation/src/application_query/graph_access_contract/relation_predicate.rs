@@ -25,7 +25,7 @@ impl WorthQueryInstalledGraphRelationPredicate {
                     entity: entity.to_owned(),
                     aspect: super::compilation::admitted_aspect_key(aspect),
                     field: super::compilation::admitted_field_key(field),
-                    parameter: equal.parameter().to_owned(),
+                    expected: equal.expected().clone(),
                     scalar_family: equal.scalar_family(),
                 })
             }
@@ -79,7 +79,7 @@ impl WorthQueryInstalledGraphRelationPredicate {
 
     pub fn parameter(&self) -> Option<&str> {
         match self {
-            Self::EqualParameter(equal) => Some(equal.parameter()),
+            Self::EqualParameter(equal) => equal.parameter(),
             Self::FieldAbsent { .. } => None,
             Self::EntityEqualParameter { parameter, .. } => Some(parameter),
         }

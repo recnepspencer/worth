@@ -6,12 +6,14 @@ mod canonical_ordering;
 mod components;
 mod disclosure;
 mod orbit;
+mod predicates;
 mod result_shape;
+pub(crate) use predicates::predicate_literal_is_valid;
 use result_shape::{
-    contains_entity as shape_contains_entity, continuation_parent_path_is_exact,
-    field_by_slot as shape_field_by_slot, many_relation_count as count_many_relations,
-    query_is_consistent as shape_query_is_valid, relation_by_slot as shape_relation_by_slot,
-    relation_parent_entity, slots_are_unique as shape_slots_are_unique,
+    continuation_parent_path_is_exact, field_by_slot as shape_field_by_slot,
+    many_relation_count as count_many_relations, query_is_consistent as shape_query_is_valid,
+    relation_by_slot as shape_relation_by_slot, relation_parent_entity,
+    slots_are_unique as shape_slots_are_unique,
 };
 
 mod portable_identity;
@@ -25,11 +27,13 @@ pub enum ApplicationQueryDefinitionDenial {
     ResultQueryMismatch,
     DuplicateResultSlot,
     DuplicateParameter,
+    InvalidOptionalParameter,
     InvalidCanonicalOrdering,
     InvalidDisclosureContract,
     DisclosureSelectorMismatch,
     UnknownPredicateParameter,
     PredicateParameterMismatch,
+    InvalidPredicateValue,
     RelationPredicateTargetMismatch,
     UnknownOrderingResultSlot,
     OrderingResultFieldMismatch,
@@ -75,10 +79,9 @@ pub(crate) fn validate_portable_application_query_freshly(
             || !definition.root_paths().is_empty()
             || definition.continuation().is_some()
             || definition.live_cause().is_some()
-            || !definition
-                .parameters()
-                .iter()
-                .any(|parameter| parameter.name() == index.parts().probe_parameter))
+            || !definition.parameters().iter().any(|parameter| {
+                parameter.name() == index.parts().probe_parameter && !parameter.is_optional()
+            }))
     {
         return Err(ApplicationQueryDefinitionDenial::InvalidManagedIndexShape);
     }
@@ -87,7 +90,7 @@ pub(crate) fn validate_portable_application_query_freshly(
         return Err(ApplicationQueryDefinitionDenial::InvalidCanonicalOrdering);
     }
     disclosure::validate(definition)?;
-    validate_predicates(definition)?;
+    predicates::validate(definition)?;
     super::where_filter::validation::validate(definition)?;
     validate_ordering(definition)?;
     validate_continuation(definition)?;
@@ -192,46 +195,11 @@ fn validate_parameter_names(
     {
         return Err(ApplicationQueryDefinitionDenial::DuplicateParameter);
     }
-    Ok(())
-}
-
-fn validate_predicates(
-    definition: &WorthQueryPortableApplicationQueryParts,
-) -> Result<(), ApplicationQueryDefinitionDenial> {
-    let relation_predicates = result_shape::relation_predicates(definition.result_shape());
-    let predicates = definition
-        .predicates()
-        .iter()
-        .map(|predicate| (Some(predicate.parameter()), predicate.scalar_family()))
-        .chain(
-            relation_predicates
-                .iter()
-                .map(|predicate| (predicate.parameter(), predicate.scalar_family())),
-        );
-    for (parameter_name, scalar_family) in predicates {
-        let Some(parameter_name) = parameter_name else {
-            continue;
-        };
-        let Some(parameter) = definition
-            .parameters()
-            .iter()
-            .find(|parameter| parameter.name() == parameter_name)
-        else {
-            return Err(ApplicationQueryDefinitionDenial::UnknownPredicateParameter);
-        };
-        if parameter.scalar_family() != scalar_family {
-            return Err(ApplicationQueryDefinitionDenial::PredicateParameterMismatch);
-        }
-    }
-    if definition
-        .predicates()
-        .iter()
-        .any(|predicate| !shape_contains_entity(definition.result_shape(), predicate.field().0))
-    {
-        return Err(ApplicationQueryDefinitionDenial::ResultRootMismatch);
-    }
-    if !result_shape::relation_predicate_targets_are_valid(definition.result_shape()) {
-        return Err(ApplicationQueryDefinitionDenial::RelationPredicateTargetMismatch);
+    if definition.parameters().iter().any(|parameter| {
+        parameter.is_optional()
+            && parameter.scalar_family() == worth_foundational::facade::ScalarAspectType::Null
+    }) {
+        return Err(ApplicationQueryDefinitionDenial::InvalidOptionalParameter);
     }
     Ok(())
 }

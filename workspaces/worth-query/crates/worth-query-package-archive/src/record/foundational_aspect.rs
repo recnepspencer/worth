@@ -104,7 +104,11 @@ pub(super) fn write_scalar_type(
 }
 
 pub(super) fn decode_scalar_type(input: &mut BinaryInput<'_>) -> Result<ScalarAspectType, Denial> {
-    Ok(match input.u16()? {
+    decode_scalar_type_tag(input.u16()?)
+}
+
+pub(super) fn decode_scalar_type_tag(tag: u16) -> Result<ScalarAspectType, Denial> {
+    Ok(match tag {
         25 => ScalarAspectType::InlineBytes,
         1 => ScalarAspectType::Null,
         2 => ScalarAspectType::Bool,

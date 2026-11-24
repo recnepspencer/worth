@@ -6,8 +6,10 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[path = "index_currency/selected_field.rs"]
 pub mod selected_field;
-pub use selected_field::ensure_selected_field_indexes_admitted;
-pub use selected_field::SelectedFieldIndexAdmissionStop;
+pub use selected_field::{
+    ensure_selected_field_index_slice_admitted, ensure_selected_field_indexes_admitted,
+    SelectedFieldIndexAdmissionStop,
+};
 
 #[derive(Debug)]
 pub enum WorthQueryPrimaryIndexCurrencyDenial {

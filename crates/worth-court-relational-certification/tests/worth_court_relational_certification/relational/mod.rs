@@ -35,6 +35,7 @@ mod transaction_staging;
 
 mod request_owned_retention;
 mod required_output_continuity;
+mod runtime_builder;
 
 mod snapshot_retention;
 

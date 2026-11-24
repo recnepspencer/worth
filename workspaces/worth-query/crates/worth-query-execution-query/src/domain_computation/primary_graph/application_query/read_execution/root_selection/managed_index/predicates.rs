@@ -58,21 +58,30 @@ pub fn filter<ReadIdentity>(
         if !admitted.admits_locator(&layout.locator) {
             return Err(plan.predicate_unavailable_denial());
         }
-        let mut expected = None;
-        for (name, value) in plan.parameters.bindings() {
-            let units = name
-                .len()
-                .checked_add(predicate.parameter().len())
-                .and_then(|n| n.checked_add(1))
-                .and_then(|n| u64::try_from(n).ok())
-                .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
-            storage.work(units).map_err(stop)?;
-            if name.as_ref() == predicate.parameter() {
-                expected = Some(value);
-                break;
+        let expected = match predicate.expected() {
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(
+                parameter,
+            ) => {
+                let mut found = None;
+                for (name, value) in plan.parameters.bindings() {
+                    let units = name
+                        .len()
+                        .checked_add(parameter.len())
+                        .and_then(|n| n.checked_add(1))
+                        .and_then(|n| u64::try_from(n).ok())
+                        .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
+                    storage.work(units).map_err(stop)?;
+                    if name.as_ref() == parameter {
+                        found = Some(value);
+                        break;
+                    }
+                }
+                found.ok_or_else(|| plan.predicate_unavailable_denial())?
             }
-        }
-        let expected = expected.ok_or_else(|| plan.predicate_unavailable_denial())?;
+            worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(
+                value,
+            ) => value,
+        };
         for root in &frontier {
             source.observe_guard_field(
                 execution,
