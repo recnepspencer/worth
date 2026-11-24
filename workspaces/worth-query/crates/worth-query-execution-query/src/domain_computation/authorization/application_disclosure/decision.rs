@@ -7,7 +7,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentit
 use worth_relational::facade::{history::BranchId, identity::EntityId};
 
 use super::contract::{AdmittedDisclosureRule, WorthQueryAdmittedApplicationDisclosureContract};
-use super::influence_validation::GovernedInternalFieldRules;
+use super::influence_validation::{GovernedInternalFieldRules, GovernedInternalRelationRules};
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
@@ -73,6 +73,7 @@ impl WorthQueryPendingApplicationQueryGovernance {
 pub struct WorthQueryApplicationInternalComputationAuthority {
     binding: WorthQueryApplicationGovernanceBinding,
     internal_field_rules: GovernedInternalFieldRules,
+    internal_relation_rules: GovernedInternalRelationRules,
     disclosure_value: AspectValue,
 }
 

@@ -135,6 +135,7 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) predicates: Vec<ApplicationQueryPredicate>,
     pub(super) where_filter: Option<super::ApplicationQueryWhereFilterProgram>,
+    pub(super) related_predicates: Vec<super::ApplicationQueryRelatedPredicateMeaning>,
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
     pub(super) continuation: Option<ApplicationQueryContinuationTarget>,
     pub(super) live_cause: Option<ApplicationQueryLiveCauseContract>,
@@ -224,6 +225,10 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub fn where_filter(&self) -> Option<&super::ApplicationQueryWhereFilterProgram> {
         self.where_filter.as_ref()
+    }
+
+    pub fn related_predicates(&self) -> &[super::ApplicationQueryRelatedPredicateMeaning] {
+        &self.related_predicates
     }
 
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {

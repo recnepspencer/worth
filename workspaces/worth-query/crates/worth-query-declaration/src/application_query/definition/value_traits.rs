@@ -23,6 +23,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> Clone
             cardinality: self.cardinality,
             predicates: self.predicates.clone(),
             where_filter: self.where_filter.clone(),
+            related_predicates: self.related_predicates.clone(),
             ordering: self.ordering.clone(),
             continuation: self.continuation.clone(),
             live_cause: self.live_cause.clone(),
@@ -57,6 +58,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> std::fmt::Debug
             .field("cardinality", &self.cardinality)
             .field("predicates", &self.predicates)
             .field("where_filter", &self.where_filter)
+            .field("related_predicates", &self.related_predicates)
             .field("ordering", &self.ordering)
             .field("continuation", &self.continuation)
             .field("live_cause", &self.live_cause)
@@ -89,6 +91,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> PartialEq
             && self.cardinality == other.cardinality
             && self.predicates == other.predicates
             && self.where_filter == other.where_filter
+            && self.related_predicates == other.related_predicates
             && self.ordering == other.ordering
             && self.continuation == other.continuation
             && self.live_cause == other.live_cause

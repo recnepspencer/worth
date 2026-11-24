@@ -1,8 +1,8 @@
 //! Everything a managed Parent reads beside its Source program, by installed
 //! kind, aspect and field: the alignment proof must cover all of it.
 use super::Denial;
-use worth_query_declaration::facade::application_query::ApplicationQueryBindingReference;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use worth_query_declaration::facade::application_query::ApplicationQueryBindingReference;
 use worth_query_installation::facade::{
     WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelationPredicate as Predicate,
 };
@@ -16,9 +16,9 @@ pub(super) fn parent_footprint(
     reads: &WorthQueryInstalledGraphReadContract,
     parent: &ApplicationQueryBindingReference,
 ) -> Result<ManagedIndexParentReadFootprint, Denial> {
-    // Managed Parents cannot declare a where-filter today; one that could
-    // would read fields this footprint does not name.
-    if reads.where_filter().is_some() {
+    // Managed Parents cannot declare a where-filter or related predicate today;
+    // one that could would read fields or relations this footprint does not name.
+    if reads.where_filter().is_some() || !reads.related_predicates().is_empty() {
         return Err(Denial::ForeignAssociation);
     }
     let mut footprint = ManagedIndexParentReadFootprint::default();
@@ -67,12 +67,19 @@ pub(super) fn parent_footprint(
         match relation.predicate() {
             None | Some(Predicate::EntityEqualParameter { .. }) => {}
             Some(Predicate::EqualParameter(equal)) => field(&mut footprint, equal.field(), true)?,
-            Some(Predicate::FieldAbsent { entity, aspect, field, .. }) => {
+            Some(Predicate::FieldAbsent {
+                entity,
+                aspect,
+                field,
+                ..
+            }) => {
                 if entity != relation.child_entity() {
                     return Err(Denial::ForeignAssociation);
                 }
                 let child = child_kind(relation.from(), relation.child_entity(), installed);
-                footprint.fields.push((child, aspect.clone(), field.clone()));
+                footprint
+                    .fields
+                    .push((child, aspect.clone(), field.clone()));
                 footprint.entities.push(child);
             }
         }

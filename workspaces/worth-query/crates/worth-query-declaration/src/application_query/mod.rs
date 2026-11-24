@@ -45,6 +45,7 @@ pub use orbit::{
 mod optional_aspect_field;
 mod parameters;
 mod reference;
+mod related_predicate;
 mod result_field_presence;
 mod result_field_selector;
 pub use optional_aspect_field::ApplicationQueryOptionalAspectFieldRef;
@@ -118,6 +119,11 @@ pub use parameters::{
     ApplicationQueryParameterDefinition, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
 };
 pub use reference::ApplicationQueryReference;
+pub use related_predicate::{
+    ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicate,
+    ApplicationQueryRelatedPredicateMeaning, ApplicationQueryRelatedTargetPredicate,
+    WorthQueryPortableApplicationQueryRelatedPredicateParts,
+};
 pub use result_field_selector::{
     ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
 };
@@ -145,10 +151,10 @@ pub use root_selection::{
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };
+pub use validation::ApplicationQueryDefinitionDenial;
 pub(crate) use validation::{
     predicate_literal_is_valid, validate_portable_application_query_freshly,
 };
-pub use validation::ApplicationQueryDefinitionDenial;
 pub use where_filter::{
     ApplicationQueryWhereFilter, ApplicationQueryWhereFilterDenial,
     ApplicationQueryWhereFilterOperand, ApplicationQueryWhereFilterOperands,

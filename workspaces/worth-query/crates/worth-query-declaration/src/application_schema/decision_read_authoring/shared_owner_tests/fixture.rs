@@ -260,6 +260,7 @@ fn query_parts(
         cardinality: ApplicationQueryCardinality::Many,
         predicates: Vec::new(),
         where_filter: None,
+        related_predicates: Vec::new(),
         ordering: Vec::new(),
         continuation: None,
         live_cause: None,

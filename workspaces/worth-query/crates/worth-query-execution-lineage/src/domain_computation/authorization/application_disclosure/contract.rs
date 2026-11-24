@@ -13,7 +13,9 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
-use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
+use super::influence_validation::{
+    validate_influence, GovernedInternalFieldRules, GovernedInternalRelationRules,
+};
 pub mod admission;
 pub mod compilation;
 pub mod field_masks;
@@ -113,6 +115,7 @@ pub enum WorthQueryAdmittedApplicationDisclosureContract {
         result_rules: BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
         internal_rules: Vec<AdmittedDisclosureRule>,
         internal_field_rules: GovernedInternalFieldRules,
+        internal_relation_rules: GovernedInternalRelationRules,
     },
 }
 

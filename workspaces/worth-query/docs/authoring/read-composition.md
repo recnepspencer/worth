@@ -31,6 +31,11 @@ an invariant callback or construct an admitted plan.
   related child must be selected by a typed child field and query parameter
 - `ApplicationQueryWhereFilterOperands` and `.where_filter(...)` to narrow
   selected root rows by a parameterized Foundation expression
+- `ApplicationQueryRelatedPredicate`, `.where_no_related(...)`, and
+  `.where_related_exists(...)` for bounded, metered related-record absence
+  (`NOT EXISTS`) and existence (`EXISTS`) narrowing over declared relations
+- `ApplicationQueryDisclosureContract::use_relation_by(...)` to govern internal
+  relation reads in governed queries
 - `ApplicationQueryResultFieldRef` for required fields
 - `ApplicationQueryOptionalResultFieldRef` for optional fields
 - `row.field(...)` and `row.optional_field(...)` during domain projection
@@ -252,6 +257,47 @@ Quantity operands wait for a schema-unit to expression-dimension contract;
 until then unit-bearing operands refuse with `UnitBearingOperand`. Unfiltered definitions keep their exact canonical identity and
 archive bytes. The public journeys are in the
 [where-filter court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/where_filter/mod.rs).
+
+### Related-record absence and existence predicates
+
+Use `.where_no_related(...)` (`NOT EXISTS`) or `.where_related_exists(...)`
+(`EXISTS`) on `ApplicationQueryDefinitionBuilder` to narrow selected root
+rows by the absence or presence of matching related records across a declared
+forward or reverse relation (for example, Daymark's `Ready` view selecting open
+tasks with zero open `BlockedBy` blockers):
+
+```rust
+let open = ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("open".into())?;
+
+ApplicationQueryDefinitionBuilder::declare(ReadyTasksQuery::reference())
+    // .root(..).scope(..).result_shape(..) and controls as above
+    .root_path(ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()))
+    .where_equal_value(Status::at("Status"), open.clone())
+    .where_no_related(
+        ApplicationQueryRelatedPredicate::forward(BlockedBy::reference())
+            .where_equal_value(Status::at("Status"), open),
+    )
+    .order_by(key(), ApplicationQueryOrderingDirection::Ascending);
+```
+
+A related predicate can be unfiltered (any live neighbor across the relation)
+or combine typed `.where_equal(field, param)`, `.where_equal_value(field, val)`,
+and `.where_filter(filter)` predicates evaluated against the target entity's
+fields. Admission derives the required forward or reverse adjacency index from
+the installed graph automatically. Execution checks governance for both the
+relation (`use_relation_by`) and every referenced target field (`use_field_by`)
+before touching any rows or edges, meters every frontier/adjacency scan, sort,
+dedup, memo lookup, and target evaluation against the caller's work and memory
+budgets, and records each examined candidate's adjacency structural revision
+and each examined target's guarded fields in the observed source footprint so
+mutations to a root, relation edge, or blocker's guarded field invalidate prior
+sources with zero stale reads. Definitions without related predicates keep
+their exact canonical identity and archive bytes. Current bounds: exact-root
+and root-path selections only (orbit, component, managed-index, and
+continuation shapes refuse). The formal model is in
+`specs/tla/related_absence/RelatedAbsence.tla`, and the public journeys and
+64-seed differential graph DST live in the
+[related-absence court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/related_absence/mod.rs).
 
 When the definition is governed, give the optional slot its own disclosure
 rule and keep policy omission typed in the result:

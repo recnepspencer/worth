@@ -60,6 +60,9 @@ pub enum ApplicationQueryDefinitionDenial {
     WhereFilterParameterMismatch,
     WhereFilterFieldOutsideRoot,
     WhereFilterUnsupportedShape,
+    RelatedPredicateEndpointMismatch,
+    RelatedPredicateTargetFieldMismatch,
+    RelatedPredicateUnsupportedShape,
 }
 
 pub(crate) fn validate_portable_application_query_freshly(
@@ -92,6 +95,7 @@ pub(crate) fn validate_portable_application_query_freshly(
     disclosure::validate(definition)?;
     predicates::validate(definition)?;
     super::where_filter::validation::validate(definition)?;
+    super::related_predicate::validation::validate(definition)?;
     validate_ordering(definition)?;
     validate_continuation(definition)?;
     validate_live_cause(definition)?;

@@ -102,6 +102,16 @@ impl WorthQueryApplicationQueryGovernance {
                 }
             }
         }
+        for rules in computation.internal_relation_rules.values() {
+            for rule in rules {
+                if !rule
+                    .influence()
+                    .permits(ApplicationQueryObservableInfluence::Explanation)
+                {
+                    return Err(MapKernelFailure::Domain(Denial::InternalInfluenceDenied));
+                }
+            }
+        }
         Ok(DiagnosticComparisonAdmission {
             _governance: self,
             graph: query.read_graph(),

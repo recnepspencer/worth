@@ -123,6 +123,29 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
+    pub fn admit_internal_relation(
+        &self,
+        relation: (&str, &str, &str),
+        direction: worth_query_declaration::facade::application_query::RelationDirection,
+        surface: ApplicationQueryObservableInfluence,
+    ) -> bool {
+        match self {
+            Self::Public => true,
+            Self::Governed { computation, .. } => computation
+                .internal_relation_rules
+                .iter()
+                .find(|((r, f, t, d), _)| {
+                    r.as_str() == relation.0
+                        && f.as_str() == relation.1
+                        && t.as_str() == relation.2
+                        && *d == direction
+                })
+                .is_some_and(|(_, rules)| {
+                    !rules.is_empty() && rules.iter().all(|rule| rule.influence().permits(surface))
+                }),
+        }
+    }
+
     pub fn authorization_mut(&mut self) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
         match self {
             Self::Public => None,

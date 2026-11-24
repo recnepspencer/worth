@@ -7,7 +7,7 @@ use crate::application_query::{
 
 /// Verifies every parameter operand against the query's declared parameter list:
 /// existence, exact scalar family, unitless discipline, and exact optionality.
-pub(super) fn validate_parameter_operands(
+pub(in crate::application_query) fn validate_parameter_operands(
     parameters: &[ApplicationQueryParameterDefinition],
     filter: &ApplicationQueryWhereFilterProgram,
 ) -> Result<(), Denial> {

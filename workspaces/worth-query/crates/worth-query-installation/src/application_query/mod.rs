@@ -50,6 +50,7 @@ pub use graph_access_contract::{
     WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
     WorthQueryInstalledGraphRelation, WorthQueryInstalledGraphRelationPredicate,
+    WorthQueryInstalledRelatedPredicate, WorthQueryInstalledRelatedTargetPredicate,
     WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
     WorthQueryInstalledWhereFilterLiteral, WorthQueryInstalledWhereFilterParameter,
 };

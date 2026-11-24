@@ -29,6 +29,7 @@ pub(in crate::record) mod disclosure;
 mod field_presence;
 mod managed_index;
 mod orbit;
+mod related_predicate;
 pub(in crate::record) mod result_shape;
 mod root_selection;
 mod where_filter;
@@ -74,7 +75,8 @@ pub(super) fn write(
     controls::write_authorization(output, parts.authorization())?;
     controls::write_basis_support(output, parts.basis_support())?;
     controls::write_lanes(output, parts.lanes())?;
-    where_filter::write(output, parts.where_filter())
+    where_filter::write(output, parts.where_filter())?;
+    related_predicate::write(output, parts.related_predicates())
 }
 
 pub(super) fn decode(
@@ -122,6 +124,7 @@ fn decode_with_shape_depth(
             .validate_against_parameters(&parameters)
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     }
+    let related_predicates = related_predicate::decode(input, budget, &root_entity, &parameters)?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
         WorthQueryPortableApplicationQueryParts {
             name,
@@ -140,6 +143,7 @@ fn decode_with_shape_depth(
             cardinality,
             predicates,
             where_filter,
+            related_predicates,
             ordering,
             continuation,
             live_cause,

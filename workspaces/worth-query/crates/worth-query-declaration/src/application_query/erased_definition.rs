@@ -124,6 +124,12 @@ impl ErasedApplicationQueryDefinition {
         self.parts.where_filter.as_ref()
     }
 
+    pub fn related_predicates(
+        &self,
+    ) -> &[crate::application_query::ApplicationQueryRelatedPredicateMeaning] {
+        &self.parts.related_predicates
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.parts.ordering
     }

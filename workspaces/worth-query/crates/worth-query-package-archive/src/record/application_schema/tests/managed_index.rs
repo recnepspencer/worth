@@ -260,6 +260,7 @@ fn source_query() -> ErasedApplicationQueryDefinition {
             cardinality: ApplicationQueryCardinality::Many,
             predicates: vec![],
             where_filter: None,
+            related_predicates: vec![],
             ordering: vec![],
             continuation: None,
             live_cause: None,

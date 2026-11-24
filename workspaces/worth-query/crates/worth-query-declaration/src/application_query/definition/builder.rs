@@ -57,6 +57,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
                 where_filter: None,
+                related_predicates: Vec::new(),
                 ordering: Vec::new(),
                 continuation: None,
                 live_cause: None,
@@ -168,6 +169,48 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         let (program, fields) = filter.into_parts();
         self.definition.field_expectations.extend(fields);
         self.definition.where_filter = Some(program);
+        self
+    }
+
+    /// Narrows candidate rows to those having ZERO related live target records
+    /// matching `predicate` (`NOT EXISTS`).
+    pub fn where_no_related<Root, Target>(
+        mut self,
+        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
+            Schema,
+            Query,
+            Root,
+            Target,
+        >,
+    ) -> Self {
+        let (meaning, fields, invalid) =
+            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Absent);
+        if invalid {
+            self.unit_bearing_literal_predicate = true;
+        }
+        self.definition.field_expectations.extend(fields);
+        self.definition.related_predicates.push(meaning);
+        self
+    }
+
+    /// Narrows candidate rows to those having AT LEAST ONE related live target
+    /// record matching `predicate` (`EXISTS`).
+    pub fn where_related_exists<Root, Target>(
+        mut self,
+        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
+            Schema,
+            Query,
+            Root,
+            Target,
+        >,
+    ) -> Self {
+        let (meaning, fields, invalid) =
+            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Exists);
+        if invalid {
+            self.unit_bearing_literal_predicate = true;
+        }
+        self.definition.field_expectations.extend(fields);
+        self.definition.related_predicates.push(meaning);
         self
     }
 
@@ -286,6 +329,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     fn normalize(&mut self) {
         self.definition.parameters.sort();
         self.definition.predicates.sort();
+        self.definition.related_predicates.sort();
         self.definition.root_paths.sort();
         self.definition.root_paths.dedup();
     }

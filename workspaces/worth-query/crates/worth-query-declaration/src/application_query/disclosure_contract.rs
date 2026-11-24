@@ -175,6 +175,33 @@ impl ApplicationQueryDisclosureContract {
         Ok(self)
     }
 
+    /// Governs internal traversal of one declared relation (for example in a
+    /// related-record absence/existence predicate) without projecting it in the
+    /// result shape.
+    pub fn use_relation_by<Schema, Relation, From, To, DisclosureBinding>(
+        mut self,
+        relation: crate::application_schema::ApplicationRelationRef<Schema, Relation, From, To>,
+        direction: super::RelationDirection,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
+        influence: ApplicationQueryInfluenceContract,
+    ) -> Self
+    where
+        DisclosureBinding: ApplicationScalarValueBinding,
+    {
+        self.rules.push(ApplicationQueryDisclosureRule {
+            selector: ApplicationQueryDisclosureSelector::InternalRelation {
+                relation: relation.name().to_owned(),
+                from: relation.from().to_owned(),
+                to: relation.to().to_owned(),
+                direction,
+            },
+            disclosure_value: disclosure_value.into_foundational_value(),
+            influence,
+        });
+        self.rules.sort();
+        self
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn disclose_field_by<Query, Slot, Schema, Entity, Aspect, Field, Value, DisclosureBinding>(
         mut self,
