@@ -1,4 +1,5 @@
 //! Actual validated proposal bindings retain their allocation and occurrence owners.
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use crate::identity::data::EntityId;
 use crate::mvcc::ValidatedRelationalProposal;

@@ -4,6 +4,7 @@
 
 use std::collections::BTreeSet;
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -75,7 +76,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
     );
     let next = CommitId(head.0 + 1);
     let foreign = PersistentNameCommittedBatch::new(next).with_lineage_events(
-        log[1].lineage_events.clone(),
+        log[1].lineage_events_for_test().clone(),
         [],
         [],
     );
@@ -128,7 +129,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
     world.create(Subject::Entity, "orphan");
     let batch = world.commit();
     let unbound = PersistentNameCommittedBatch::new(batch.commit()).with_lineage_events(
-        batch.lineage_events.clone(),
+        batch.lineage_events_for_test().clone(),
         [],
         [],
     );
@@ -292,27 +293,27 @@ fn corrupt_lineage_creates_and_subjects_refuse_atomically() {
     let merge = world.commit(); // 3
     let mut index = rebuild(&world.log()[..2]);
     let kept_create = merge
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|event| event.kept_name().is_some())
         .expect("a recreated keeper emits a kept Create")
         .clone();
-
     let mut duplicated = merge.clone();
-    duplicated.lineage_events.push(kept_create.clone());
+    duplicated
+        .lineage_events_mut_for_test()
+        .push(kept_create.clone());
     assert!(refuses(&mut index, &duplicated).contains("second name"));
-
     let mut dual = merge.clone();
-    let birth = world.log()[1].lineage_events[0].name_birth().cloned();
-    for event in &mut dual.lineage_events {
+    let birth_event = &world.log()[1].lineage_events_for_test()[0];
+    let birth = birth_event.name_birth().cloned();
+    for event in dual.lineage_events_mut_for_test() {
         if event.kept_name().is_some() {
             (*event.owner_name_birth_mut()) = birth.clone();
         }
     }
     assert!(refuses(&mut index, &dual).contains("both birth"));
-
     let mut foreign_subject = merge.clone();
-    for event in &mut foreign_subject.lineage_events {
+    for event in foreign_subject.lineage_events_mut_for_test() {
         if event.kind() == LineageEventKind::Merge {
             (*event.owner_subject_mut()) = LineageSubject::Relation;
         }
@@ -334,16 +335,17 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
     world.restore(a_name, false);
     let restore_batch = world.commit(); // 4
     let mut index = rebuild(&world.log()[..3]);
-    let birth = world.log()[1].lineage_events[0].name_birth().cloned();
+    let birth_event = &world.log()[1].lineage_events_for_test()[0];
+    let birth = birth_event.name_birth().cloned();
     let b_lin = world.log()[1]
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|e| e.name_birth().is_some_and(|n| n.identity() == b_name))
         .unwrap()
         .targets()[0];
     let mut check = |expected: &str, f: fn(&mut crate::facade::lineage::LineageEventRecord)| {
         let mut bad = restore_batch.clone();
-        f(&mut bad.lineage_events[0]);
+        f(&mut bad.lineage_events_mut_for_test()[0]);
         let detail = refuses(&mut index, &bad);
         assert!(
             detail.contains(expected),
@@ -366,7 +368,7 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
         ("second name", restore_batch.clone()),
         ("source lineage", restore_batch.clone()),
     ] {
-        let ev = &mut bad.lineage_events[0];
+        let ev = &mut bad.lineage_events_mut_for_test()[0];
         match expected {
             "live name" => {
                 (*ev.owner_kept_name_mut()) = Some(b_name);
@@ -391,8 +393,8 @@ fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
     world.restore(a_name, false);
     let restore2 = world.commit(); // 6
     let mut stale = restore2.clone();
-    (*stale.lineage_events[0].owner_sources_mut()) =
-        (*restore_batch.lineage_events[0].owner_sources()).clone();
+    (*stale.lineage_events_mut_for_test()[0].owner_sources_mut()) =
+        (*restore_batch.lineage_events_for_test()[0].owner_sources()).clone();
     assert!(refuses(&mut index, &stale).contains("most recent retired"));
     index.apply(&restore2).expect("second canonical restore");
 }

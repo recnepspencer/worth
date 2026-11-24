@@ -86,7 +86,8 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
     if installed.runtime_instance_id != runtime.runtime_instance_id
         || installed.custom_invariant_generation != runtime.custom_invariant_generation
         || installed.schema_digest
-            != (*basis.owner_inner())
+            != basis
+                .owner_inner()
                 .root
                 .schema_authority()
                 .authority_digest()

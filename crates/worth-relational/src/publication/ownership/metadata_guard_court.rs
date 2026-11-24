@@ -23,7 +23,8 @@ pub(crate) fn inspect_metadata_writes(
     ) -> Result<Result<(), TransactionCommitError>, TransactionCommitError>,
 ) -> Result<Vec<(KindId, u8, Result<(), TransactionCommitError>)>, TransactionCommitError> {
     let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
-    let storage = (*(*basis.owner_inner())
+    let storage = (*basis
+        .owner_inner()
         .root
         .schema_authority()
         .registry()
@@ -131,8 +132,8 @@ pub(crate) fn inspect_metadata_writes(
                     })),
                 },
                 RecordRef::Relation(id) => {
-                    let endpoints = (*basis
-                        .owner_inner())
+                    let endpoints = basis
+                        .owner_inner()
                         .root
                         .get_current_partition(id.partition_id)
                         .and_then(|p| p.relation_arena().get(id))

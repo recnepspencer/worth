@@ -271,7 +271,7 @@ fn graph_cold_lineage_doors_preserve_every_failure_class() {
                 };
                 source.failures.lock().unwrap().insert(member, cause);
                 let expected = Execution::StorageUnavailable(Unavailable { subject, cause });
-                assert_eq!(access.graph(execution, req()), Err(expected.clone()));
+                assert_eq!(access.graph(execution, req()), Err(expected));
                 source.failures.lock().unwrap().clear();
                 let reads = source.reads.load(Ordering::Relaxed);
                 if sticky {
@@ -358,7 +358,7 @@ fn divergence_cold_lineage_doors_preserve_every_failure_class() {
                 let expected = Execution::StorageUnavailable(Unavailable { subject, cause });
                 assert_eq!(
                     access.divergence_between_branches(execution, req()),
-                    Err(expected.clone())
+                    Err(expected)
                 );
                 source.failures.lock().unwrap().clear();
                 let reads = source.reads.load(Ordering::Relaxed);

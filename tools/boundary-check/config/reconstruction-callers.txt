@@ -21,10 +21,10 @@ crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_en
 crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs
 crates/worth-testkit-relational/src/maintenance.rs
 # Verified schema transition, explicit recovery, and transported index checks.
-crates/worth-relational/src/indexes/authority/maintenance/schema_transition.rs
+crates/worth-relational-indexes/src/indexes/authority/maintenance/schema_transition.rs
 crates/worth-relational/src/indexes/authority/maintenance/recovery.rs
 crates/worth-relational/src/indexes/authority/recovery_build.rs
-crates/worth-relational/src/indexes/authority/checkpoint_admission.rs
+crates/worth-relational-indexes/src/indexes/authority/checkpoint_admission.rs
 
 # Admit the canonical typed membership carried by untrusted checkpoint leaves.
 crates/worth-relational/src/durability/checkpoints/region_directory.rs

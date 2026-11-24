@@ -179,7 +179,8 @@ fn original_custody(empty: bool, retire: bool) {
             &basis.descriptor().in_canonical_frame().unwrap(),
             recorded.descriptor()
         );
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();

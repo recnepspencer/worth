@@ -19,23 +19,22 @@ mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;
 mod checkpoint_member_list;
-use crate::storage::data::checkpoint_page;
+use crate::storage::data::{checkpoint_page, checkpoint_pages, checkpoint_symbol_buckets};
 pub(crate) use checkpoint_member_list::CapturedCheckpointMembers;
 pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
-pub(crate) mod lineage_event_pages;
 pub(crate) use crate::storage::data::history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
 pub(crate) use lineage_event_pages::*;
+pub(crate) use worth_relational_lineage::internal_port::durability::data::lineage_event_pages;
 mod native_checkpoint;
-pub(crate) use worth_relational_contracts::internal_port::durability::data::native_checkpoint_capture_denial;
+pub(crate) use worth_relational_contracts::internal_port::durability::data::{
+    native_checkpoint_capture_denial, recovery_errors, recovery_stop, recovery_verification,
+};
 mod recovery_branch_transitions;
-pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
-pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_stop;
-pub(crate) use worth_relational_contracts::internal_port::durability::data::recovery_verification;
 
 pub use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 pub use crate::storage::data::partition_checkpoint_image::{
@@ -90,10 +89,8 @@ pub(crate) use checkpoint_index_definitions::CheckpointIndexDefinitions;
 mod checkpoint_lineage_basis;
 pub(crate) use checkpoint_lineage_basis::CheckpointLineageBasis;
 
-use crate::storage::data::checkpoint_pages;
 pub(crate) use checkpoint_pages::CheckpointPages;
 
-use crate::storage::data::checkpoint_symbol_buckets;
 pub(crate) use checkpoint_symbol_buckets::CheckpointSymbolBuckets;
 
 mod checkpoint_lineage_event_pages;

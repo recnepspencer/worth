@@ -25,7 +25,7 @@ impl<'a> CandidateWrites<'a> {
     pub(super) fn new(
         execution: &ExecutionRequest<'_, '_>,
         candidate: &'a CanonicalCommitEnvelopeBody,
-        adjacency: &[crate::authority::mutation::AdjacencyDelta],
+        adjacency: &[worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta],
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Self, TransactionCommitError> {
         let patch = &candidate.patch.authoritative_record_patches;
@@ -104,7 +104,7 @@ impl<'a> CandidateWrites<'a> {
                 absence.publication,
             ));
         }
-        for retirement in &(*candidate.owner_required_output_codec_retirements()) {
+        for retirement in candidate.owner_required_output_codec_retirements() {
             crate::publication::ownership::checkpoint(
                 context,
                 retirement.meaning.family.len() as u64 + 1,

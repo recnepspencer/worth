@@ -35,7 +35,7 @@ impl BranchBoundRelationalTransaction {
         self.overlay.copied_input_memory = memory;
         self.overlay.batches = Vec::with_capacity(1);
         let mut name =
-            String::with_capacity(label_bytes.ok_or_else(normalized_plan::copy_overflow)?);
+            String::with_capacity(label_bytes.ok_or_else(worth_relational_contracts::internal_port::transactions::data::copy_denial::copy_overflow)?);
         write!(&mut name, "recovery-commit-{}", commit.0)
             .expect("String formatting of a native integer is infallible");
         let mut copied = Vec::with_capacity(intents.len());

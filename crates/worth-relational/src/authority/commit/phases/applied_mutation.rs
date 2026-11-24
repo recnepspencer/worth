@@ -7,6 +7,7 @@ use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
@@ -213,7 +214,7 @@ pub(crate) fn apply_retained_entity_selection_draft<'a>(
         &state,
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
-        Some((*retained._source.owner_inner()).root.retained_content()),
+        Some(retained._source.owner_inner().root.retained_content()),
     )?;
     source_interpretation
         .bind_content(

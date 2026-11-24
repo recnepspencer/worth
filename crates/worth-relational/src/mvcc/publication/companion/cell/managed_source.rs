@@ -50,7 +50,7 @@ impl ManagedSourceReadConditions {
             )
             .map_err(|_| CompanionPreflightStop::ForeignCell)?
             .is_some_and(|actual| {
-                Arc::ptr_eq(&(*actual.owner_association()), observation.association())
+                Arc::ptr_eq(actual.owner_association(), observation.association())
             })
         {
             return Err(CompanionPreflightStop::ManagedSourceChanged);

@@ -15,20 +15,21 @@ use crate::validation::{
             InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect,
             InvariantReportedRule, InvariantVerdict,
         },
-        non_applicability::CustomInvariantNonApplicability,
         rule_id::CustomInvariantRuleId,
         rules::InvariantRule,
     },
 };
-use std::num::NonZeroUsize;
-use worth_relational_contracts::internal_port::validation::data::catalog::InvariantRegistrationOwnerPort as _;
-#[path = "native_report_fixture.rs"]
-mod fixture;
 use fixture::UNRELATED;
+use std::num::NonZeroUsize;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_relational_contracts::internal_port::validation::data::{
+    catalog::InvariantRegistrationOwnerPort as _,
+    non_applicability::CustomInvariantNonApplicability,
+};
+pub(crate) use worth_relational_mutation::internal_port::mvcc::validation::proposal_validation::native_report_fixture as fixture;
 
 fn runtime_with_native_rules(registrations: Vec<InvariantRegistration>) -> RelationalRuntime {
     RelationalRuntimeApi::builder()

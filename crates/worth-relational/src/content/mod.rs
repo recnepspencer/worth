@@ -1,5 +1,4 @@
 pub use denial::{RelationalContentDenial, RelationalContentRejection};
-pub use worth_relational_contracts::internal_port::content::codec_control;
 pub use worth_relational_contracts::internal_port::content::denial;
 pub use worth_relational_storage::internal_port::content::*;
 pub(crate) mod transaction;

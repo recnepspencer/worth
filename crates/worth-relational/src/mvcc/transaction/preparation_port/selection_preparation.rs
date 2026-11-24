@@ -47,7 +47,7 @@ impl RelationalPreparationPort {
             .map_err(|denial| Error::Preparation(denial.into()))?;
         crate::mvcc::validation::require_not_interrupted(
             &input.transaction.control,
-            &(*input.transaction.basis.owner_inner()).retention_binding,
+            &input.transaction.basis.owner_inner().retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )
         .map_err(Error::Preparation)?;

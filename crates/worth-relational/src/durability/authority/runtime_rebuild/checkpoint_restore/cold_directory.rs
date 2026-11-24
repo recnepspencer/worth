@@ -184,7 +184,7 @@ pub(super) fn readmit_lineage(
     directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
     has_naming_schemes: bool,
 ) -> Result<(), RelationalRecoveryStop> {
-    lineage.install_cold_pages(directory)?;
+    lineage.install_cold_pages(directory.prepare_lineage_cold_pages()?);
     for cell in &checkpoint.branch_cells {
         if let (Some(source_branch), Some(provenance)) =
             (&cell.fork_source_branch_id, &cell.fork_provenance)

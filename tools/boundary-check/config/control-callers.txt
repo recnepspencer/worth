@@ -176,8 +176,8 @@ crates/worth-relational-contracts/ crates/worth-relational/src/durability/canoni
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/history/data/publication_relations/creation/tests/committed_images.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/indexes/access/execution.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/lineage/access/divergence.rs
-crates/worth-relational-contracts/ crates/worth-relational/src/lineage/authority/name_minting_tests.rs
-crates/worth-relational-contracts/ crates/worth-relational/src/lineage/index/batch.rs
+crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/authority/name_minting_tests.rs
+crates/worth-relational-contracts/ crates/worth-relational-lineage/src/lineage/index/batch.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/mvcc/publication/port_cutover.rs
 crates/worth-relational-contracts/ crates/worth-relational-branch/src/query/data/mod.rs
 crates/worth-relational-contracts/ crates/worth-relational/src/tests/domains/fintech/probes/case_truth.rs
@@ -213,11 +213,11 @@ crates/worth-relational-contracts/ crates/worth-relational/src/tests/transaction
 crates/worth-relational-contracts/ crates/worth-relational/src/tests/transactions/core/pending_settlement_reservation.rs
 crates/worth-relational-contracts/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-relational-storage/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/symbol_publication.rs
-crates/worth-relational-storage/ crates/worth-relational/src/aggregate_identity/derived_source/tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/aggregate_identity/derived_source/tests.rs
 crates/worth-relational-storage/ crates/worth-relational/src/authority/commit/touched_scope.rs
-crates/worth-relational-storage/ crates/worth-relational/src/authority/intent_merge/relation_validation/relation_identity_scan.rs
-crates/worth-relational-storage/ crates/worth-relational/src/authority/mutation/aspect_versions.rs
-crates/worth-relational-storage/ crates/worth-relational/src/authority/mutation/canonical_deltas/engine_tests/support.rs
+crates/worth-relational-storage/ crates/worth-relational-merge/src/authority/intent_merge/relation_validation/relation_identity_scan.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/aspect_versions.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/authority/mutation/canonical_deltas/engine_tests/support.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/pinned_walk_request_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/root/branch_court_doors_for_test.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/branch/root_allocation/union_tests.rs
@@ -233,7 +233,7 @@ crates/worth-relational-storage/ crates/worth-relational/src/durability/data/nat
 crates/worth-relational-storage/ crates/worth-relational/src/durability/native_region_fixture.rs
 crates/worth-relational-storage/ crates/worth-relational/src/facade.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/history/data/publication_relations/creation/tests/committed_images.rs
-crates/worth-relational-storage/ crates/worth-relational/src/lineage/authority/selection_continuity_tests.rs
+crates/worth-relational-storage/ crates/worth-relational-lineage/src/lineage/authority/selection_continuity_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/publication/ownership/read/selector/tests.rs
 crates/worth-relational-storage/ crates/worth-relational/src/runtime/cold_symbol_placement.rs
 crates/worth-relational-storage/ crates/worth-relational/src/runtime/mod.rs
@@ -270,22 +270,22 @@ crates/worth-relational-storage/ crates/worth-relational/src/tests/transactions/
 crates/worth-relational-storage/ crates/worth-relational/src/tests/transactions/core/aggregate_identity/components.rs
 crates/worth-relational-storage/ crates/worth-relational/src/tests/transactions/core/aggregate_identity/read_handoff.rs
 crates/worth-relational-storage/ crates/worth-relational/src/tests/transactions/core/canonical_proposal_custody.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/candidate_source/image/eviction/tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/custom_rule/tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/custom_rule/tests/touched_scope_tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/custom_rule/tests/touched_scope_tests/entity_deletes.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/custom_rule/traversal/tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/custom_rule/work_budget_tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/request/test_support.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/state_view/tests.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources/packet_capacity.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/custom_checked_execution/cancellation.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/custom_checked_execution/preparation.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/custom_invariant_budget.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/custom_invariants/structural_world.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/relation_integrity.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/engine/tests/shared_aspect_inputs/summary_image.rs
-crates/worth-relational-storage/ crates/worth-relational/src/validation/execution/planning/custom_applicability_tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/candidate_source/image/eviction/tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/custom_rule/tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/custom_rule/tests/touched_scope_tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/custom_rule/tests/touched_scope_tests/entity_deletes.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/custom_rule/traversal/tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/custom_rule/work_budget_tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/request/test_support.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/state_view/tests.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/acyclicity_resources/packet_capacity.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/custom_checked_execution/cancellation.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/custom_checked_execution/preparation.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/custom_invariant_budget.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/custom_invariants/structural_world.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/relation_integrity.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/engine/tests/shared_aspect_inputs/summary_image.rs
+crates/worth-relational-storage/ crates/worth-relational-mutation/src/validation/execution/planning/custom_applicability_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/visibility/materialization/read_records/reader/paid_record_walk.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/visibility/materialization/read_records/reader/paid_record_walk/preclaim_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-branch/src/visibility/materialization/read_records/visibility/tests.rs
@@ -335,8 +335,8 @@ crates/worth-relational-branch/ crates/worth-relational/src/tests/transactions/c
 crates/worth-relational-branch/ crates/worth-relational/src/durability/authority/checkpoint_components/complete/tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/nonmerge_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/runtime/state/subsystems/history_canonical_routes/fork_snapshot.rs
-crates/worth-relational-branch/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources/packet_capacity.rs
-crates/worth-relational-branch/ crates/worth-relational/src/validation/engine/tests/custom_checked_execution/cancellation.rs
+crates/worth-relational-branch/ crates/worth-relational-mutation/src/validation/engine/tests/acyclicity_resources/packet_capacity.rs
+crates/worth-relational-branch/ crates/worth-relational-mutation/src/validation/engine/tests/custom_checked_execution/cancellation.rs
 crates/worth-relational-branch/ crates/worth-relational/src/branch/basis_registry_scale_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/branch/owner_services/materialization_port_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/change_source/runtime_handle/memory_close/tests.rs
@@ -420,7 +420,7 @@ crates/worth-relational-branch/ crates/worth-relational/src/tests/transactions/c
 crates/worth-relational-branch/ crates/worth-relational/src/tests/transactions/core/exact_commit_snapshots.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/transactions/core/prepared_candidates.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/transactions/core/retention_backpressure.rs
-crates/worth-relational-branch/ crates/worth-relational/src/validation/candidate_source/image/eviction/tests.rs
+crates/worth-relational-branch/ crates/worth-relational-mutation/src/validation/candidate_source/image/eviction/tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs
 crates/worth-relational-branch/ crates/worth-relational/src/visibility/materialization/read_records/reader/request_paid_truth.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs
@@ -4514,3 +4514,61 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/child.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/recovery_runtime/production_entry/anchored_records/owned_publication/fixture.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
+
+# Existing Runtime merge verification courts use Merge-owned controls.
+crates/worth-relational-merge/ crates/worth-relational/src/merge/execution/mod.rs
+crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs
+crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs
+crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7c_phase_d.rs
+crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7d_phase_b/executable_admission.rs
+crates/worth-relational-merge/ crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs
+
+# Existing Runtime index courts observe their selected Indexes operations.
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/execution/read_law_matrix/refusals.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/cold_memory_boundary.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/patch_allocation.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/request_paid_maintenance.rs
+
+# Existing Runtime courts call Indexes through its sealed fixture port.
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/performance_profiles/index_parity_matrix.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/bounded_entity_field_lookup.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/bounded_relation_join_lookup.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/entity_field_lookup.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/related_entity_ordered_lookup.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/related_entity_prefix.rs
+crates/worth-relational-indexes/ crates/worth-relational/src/tests/query/indexes/relation_field_lookup/corruption.rs
+
+# Existing Runtime courts call Lineage through its sealed fixture port.
+crates/worth-relational-lineage/ crates/worth-relational/src/lineage/access/records.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_admission.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_corruption.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_event_shape.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_references.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_reopen.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_durable_world.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_epoch_restore.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_history_continuity.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_history_proptest_harness.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_history_traversal.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_index_rebuild.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_merge_birth_restore.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_resolution_entities.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_resolution_oracle.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_split_birth_restore.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_world.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/name_world_history.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_conservation_proptest.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_corruption.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_corruption_fixtures.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_lineage.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/posture_replay.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/resolution.rs
+crates/worth-relational-lineage/ crates/worth-relational/src/tests/lineage/self_derived_basis.rs
+
+# Existing Runtime courts call Mutation through its sealed fixture port.
+crates/worth-relational-mutation/ crates/worth-relational/src/tests/transactions/core/aggregate_identity/maintenance.rs
+crates/worth-relational-mutation/ crates/worth-relational/src/tests/transactions/core/aggregate_identity/read_handoff_rule.rs
+crates/worth-relational-mutation/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs
+crates/worth-relational-mutation/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources/native_prerequisites.rs
+crates/worth-relational-mutation/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources/native_prerequisites/effects/publication.rs
+crates/worth-relational-mutation/ crates/worth-relational/src/validation/engine/tests/acyclicity_resources/native_prerequisites/work_account.rs

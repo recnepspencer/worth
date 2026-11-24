@@ -1,4 +1,5 @@
 //! Bind exact installed inputs to artifact assembly for the selected candidate.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedIndexCatalogOwnerPort as _;
 use super::RelationalPreparationRuntime;
 use crate::authority::commit::phases::publication::CanonicalEnvelopeInputs;
 use crate::authority::commit::pipeline::artifact_execution::{
@@ -27,7 +28,7 @@ impl RelationalPreparationRuntime {
                     .home_target
                     .as_ref()
                     .and_then(|target| target.index_definitions.as_ref())
-                    .map(|prepared| &prepared.captured),
+                    .map(|prepared| prepared.captured_catalog()),
                 original_catalog: original.map(|evidence| &evidence.0),
                 work,
             },

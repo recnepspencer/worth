@@ -249,9 +249,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 }
 
 fn read_view_bytes(view: &RelationalReadView) -> u64 {
-    super::super::read_footprint::entities(&(*view.owner_entities()))
+    super::super::read_footprint::entities(view.owner_entities())
         .saturating_add(super::super::read_footprint::relations(
-            &(*view.owner_relations()),
+            view.owner_relations(),
         ))
-        .saturating_add((*(*view.owner_snapshot()).owner_branch_id()).0.capacity() as u64)
+        .saturating_add((*view.owner_snapshot()).owner_branch_id().0.capacity() as u64)
 }

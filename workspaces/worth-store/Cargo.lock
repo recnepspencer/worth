@@ -1703,6 +1703,10 @@ dependencies = [
  "worth-proof",
  "worth-relational-branch",
  "worth-relational-contracts",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
  "worth-relational-storage",
 ]
 
@@ -1738,6 +1742,66 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+]
+
+[[package]]
+name = "worth-relational-indexes"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "sized-chunks",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-lineage"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-merge"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-mutation"
+version = "0.1.0"
+dependencies = [
+ "dashmap",
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
 ]
 
 [[package]]

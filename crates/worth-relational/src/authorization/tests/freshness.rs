@@ -5,6 +5,8 @@ use crate::transactions::data::{
     AspectFieldPatch, CreateIntent, EntityReference, MutationIntent, RelationSpec,
     WorkerIntentBatch,
 };
+use worth_relational_mutation::internal_port::authorization::evidence::RelationalAuthorizationPathObservationOwnerPort as _;
+use worth_relational_mutation::internal_port::authorization::evidence::RelationalAuthorizationPathWitnessOwnerPort as _;
 
 use super::{allow_plan, authorization_fixture, role_and_direct_path_plan};
 use crate::authorization::RelationalAuthorizationObservationFreshness;
@@ -14,10 +16,10 @@ fn dependency_collection_mechanism_does_not_change_authorization_meaning() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    use crate::authorization::evidence::RelationalAuthorizationPathDependencies;
     use crate::authorization::{
         RelationalAuthorizationPathObservation, RelationalAuthorizationPathWitness,
     };
+    use worth_relational_mutation::internal_port::authorization::evidence::RelationalAuthorizationPathDependencies;
 
     let fixture = authorization_fixture(execution);
     let witness = RelationalAuthorizationPathWitness::new(vec![fixture.principal, fixture.scope]);

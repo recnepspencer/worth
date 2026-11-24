@@ -31,13 +31,13 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
         let execution = &worth_execution::ExecutionRequest::serial(&request);
         let lane = fixture_lane;
         let fixture = readmitted_mirror_fixture(
-            &lane,
+            lane,
             execution,
             &[partition_with_entity(PartitionId::main())],
         );
         assert_eq!(fixture.roots.len(), 1);
         assert_eq!(fixture.roots[0].1, fixture.mirror_images);
-        let mirror = fixture.restore_mirror(&lane, execution).unwrap();
+        let mirror = fixture.restore_mirror(lane, execution).unwrap();
         let root = fixture
             .restored
             .partitions
@@ -68,10 +68,10 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
                 extra: Default::default(),
             });
         }
-        let mut fixture = readmitted_mirror_fixture(&lane, execution, &[main]);
-        fixture.readmit_root(&lane, execution, sibling_id, &[sibling]);
+        let mut fixture = readmitted_mirror_fixture(lane, execution, &[main]);
+        fixture.readmit_root(lane, execution, sibling_id, &[sibling]);
         assert_eq!(fixture.roots.len(), 2);
-        let mirror = fixture.restore_mirror(&lane, execution).unwrap();
+        let mirror = fixture.restore_mirror(lane, execution).unwrap();
         let main_root = fixture.restored.partitions.get(&main_id).unwrap();
         let sibling_root = fixture.restored.partitions.get(&sibling_id).unwrap();
         assert!(shares_first_generation(&mirror, main_root));
@@ -112,7 +112,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
             .reverse_adjacency
             .ensure(0, &secondary.adjacency_policy)
             .insert_adjacent_id_for_test(kind_id, relation_id);
-        let mut fixture = readmitted_mirror_fixture(&lane, execution, &[main, secondary, relation]);
+        let mut fixture = readmitted_mirror_fixture(lane, execution, &[main, secondary, relation]);
         let main_image = fixture
             .mirror_images
             .iter_mut()
@@ -120,7 +120,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
             .unwrap();
         main_image.entity_arena.snapshot_pins[0] += 1;
 
-        let mirror = fixture.restore_mirror(&lane, execution).unwrap();
+        let mirror = fixture.restore_mirror(lane, execution).unwrap();
         let root_commit = fixture.roots[0].0;
         let root = fixture.restored.partitions.get(&root_commit).unwrap();
         assert!(!shares_partition_generation(
@@ -147,14 +147,14 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
         let lane = fixture_lane;
         let partition = crate::durability::native_region_fixture::populated_partition();
         let fixture = partition_fixture::readmitted_mirror_fixture_with_schema(
-            &lane,
+            lane,
             execution,
             &[partition.partition],
             partition.schema,
         );
         assert_eq!(fixture.roots[0].1, fixture.mirror_images);
         let empty = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(&[]).unwrap();
-        let mirror = fixture.restore_mirror_with_contracts(&lane, execution, &empty);
+        let mirror = fixture.restore_mirror_with_contracts(lane, execution, &empty);
         let error = mirror.unwrap_err();
         let crate::durability::data::RelationalRecoveryStop::Durability(error) = error else {
             panic!("contract corruption must remain a durability refusal: {error:?}");

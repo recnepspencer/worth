@@ -167,11 +167,11 @@ pub(super) fn prepare_publication_phase<
                 execution,
                 ownership_completion::OwnershipCompletionInputs {
                     current: current_ownership.as_deref(),
-                    storage: storage,
-                    symbols: symbols,
-                    diagnostics: diagnostics,
-                    work: work,
-                    max_patch_records: max_patch_records,
+                    storage,
+                    symbols,
+                    diagnostics,
+                    work,
+                    max_patch_records,
                 },
                 &branch_basis,
                 &selected_branch_state,
@@ -345,7 +345,7 @@ pub(super) fn prepare_publication_phase<
         let symbol_meanings = mutation_identities
             .symbols
             .seal_for_publication(
-                &(*canonical_commit_envelope.owner_symbol_texts()),
+                canonical_commit_envelope.owner_symbol_texts(),
                 symbols,
                 symbol_publication.required(),
             )

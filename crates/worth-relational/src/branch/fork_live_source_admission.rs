@@ -45,7 +45,7 @@ impl RelationalForkPort {
                     source_head: target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID),
                     source_observation,
                     source_truth_version: basis.truth_version(),
-                    source_root: Arc::clone(&(*basis.owner_inner()).root),
+                    source_root: Arc::clone(&basis.owner_inner().root),
                     retained: Some(basis),
                 })
             }

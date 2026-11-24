@@ -120,7 +120,10 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     );
     let accepted = commit_one(execution, &runtime, "catalog-after-refusal").unwrap();
     assert_eq!(
-        (*accepted.envelope().owner_index_definition_delta()).base_next_index_id,
+        accepted
+            .envelope()
+            .owner_index_definition_delta()
+            .base_next_index_id,
         1
     );
     assert_eq!(

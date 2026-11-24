@@ -8,6 +8,7 @@ use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
 };
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 struct ReturnOwner {
     binding: Arc<BoundAuthoredCoupling>,

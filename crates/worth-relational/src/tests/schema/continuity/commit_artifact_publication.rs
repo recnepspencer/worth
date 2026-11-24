@@ -122,7 +122,7 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
         .envelope()
         .allocation_inventory()
         .authoritative_nested_bytes;
-    let mut omitted_schema_authority = copy_original_for_test(&outcome.envelope(), execution);
+    let mut omitted_schema_authority = copy_original_for_test(outcome.envelope(), execution);
     omitted_schema_authority
         .body_mut_for_test()
         .schema_transition = None;

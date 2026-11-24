@@ -7,7 +7,7 @@ use crate::facade::lineage::{
     LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameHolder,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
@@ -25,7 +25,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
     let f1 = push_entity(&mut staged, VersionId(1));
     let f2 = push_entity(&mut staged, VersionId(1));
     let s1 = push_relation(&mut staged, VersionId(1), f1, f2);
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -82,7 +82,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
     let s1_a = push_relation(&mut staged, VersionId(2), f_replacement, f_replacement);
     let s1_b = push_relation(&mut staged, VersionId(2), f_replacement, f_replacement);
 
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -183,7 +183,7 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
     let e0 = push_entity(&mut staged, VersionId(1));
     let e1 = push_entity(&mut staged, VersionId(1));
     let r0 = push_relation(&mut staged, VersionId(1), e0, e1);
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -234,7 +234,7 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
             relation_id: r0,
         })),
     ];
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -290,7 +290,7 @@ fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_en
 
     // Commit 1: seed basis entity e0 under the default unpostured path.
     let e0 = push_entity(&mut staged, VersionId(1));
-    finalize_postures_in_working_state(
+    finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -317,7 +317,7 @@ fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_en
             },
         },
     ))];
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),

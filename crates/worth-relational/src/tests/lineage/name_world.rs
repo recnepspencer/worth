@@ -4,6 +4,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::{EntityId, KindId, LineageId, PartitionId, VersionId};
@@ -17,7 +18,7 @@ use crate::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
     ReplaceEntityIntent,
 };
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 use crate::storage::overlay::WorkingState;
@@ -283,7 +284,7 @@ impl LineageWorld {
             retired_lineages: self.retired_lineages.clone(),
             postures: std::mem::take(&mut self.postures),
         };
-        let prepared = finalize_postures_in_working_state(
+        let prepared = finalize_postures_in_working_state_for_test(
             &self.allocator,
             &mut self.staged,
             &receipt_at(self.commit, self.commit),
@@ -345,8 +346,8 @@ impl LineageWorld {
                 }
             }
         }
-        let mut batch =
-            PersistentNameCommittedBatch::new(self.head()).with_prepared_lineage(&prepared);
+        let mut batch = PersistentNameCommittedBatch::new(self.head())
+            .with_prepared_lineage_for_test(&prepared);
         for (holder, carriers) in std::mem::take(&mut self.carriers) {
             batch = batch.with_carriers(self.key_of(&holder), carriers);
         }

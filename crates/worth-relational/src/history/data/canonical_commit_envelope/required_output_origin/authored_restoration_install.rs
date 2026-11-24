@@ -124,8 +124,9 @@ pub(super) fn install(
             )
         };
 
-        let after = OverlayStateView::new((*basis.owner_inner()).root.as_ref(), state);
-        let source = (*basis.owner_inner())
+        let after = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
+        let source = basis
+            .owner_inner()
             .root
             .get_current_partition(original_anchor.partition_id)
             .and_then(|part| part.entity_arena().get(&original_anchor))
@@ -156,7 +157,8 @@ pub(super) fn install(
         }
     }
     let mut publications = Vec::with_capacity(restoration.publications.len());
-    let mut positions = (*basis.owner_inner())
+    let mut positions = basis
+        .owner_inner()
         .root
         .output_publication_positions
         .clone();

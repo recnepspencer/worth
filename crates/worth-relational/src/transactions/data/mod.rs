@@ -1,7 +1,6 @@
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_field_patch;
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_reports;
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::aspect_traces;
-pub(crate) use worth_relational_contracts::internal_port::transactions::data::bulk_plan_digest;
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::canonical_intent_key;
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::commit_log;
 pub(crate) use worth_relational_contracts::internal_port::transactions::data::intents;
@@ -35,11 +34,9 @@ pub use commit_log::{
 pub use intents::{
     ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, BulkEntityCreateIntent,
     BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, DeleteRelationIntent,
-    EntityAspectCreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
-    RelationAspectCreateIntent, RelationMutationIntent, RematerializeEntityIntent,
-    RematerializeRelationIntent, ReplaceEntityIntent, RevalidateEntityIntent,
-    RevalidateRelationIntent, SuspendEntityMaterializationIntent,
-    SuspendRelationMaterializationIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
+    EntityAspectCreateIntent, EntityMutationIntent, MutationIntent, RelationAspectCreateIntent,
+    RelationMutationIntent, ReplaceEntityIntent, RevalidateEntityIntent, RevalidateRelationIntent,
+    UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
 };
 pub use mutation_planning::CommitTopology;
 pub use outcomes::{
@@ -63,8 +60,6 @@ pub use primitives::{
     PlannedLineageTransition, ProvenanceCompleteBulkMutationBatch, RecordRef, RelationScope,
     RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
 };
-
-pub(crate) use worth_relational_contracts::internal_port::transactions::data::copy_denial;
 
 #[cfg(test)]
 pub(crate) use outcomes::conflict_class::{

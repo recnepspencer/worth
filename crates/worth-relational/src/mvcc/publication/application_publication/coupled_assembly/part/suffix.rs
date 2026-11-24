@@ -3,6 +3,7 @@
 use super::super::suffix_scope::{self, AppliedSuffix, SuffixWriter};
 use super::*;
 use crate::storage::overlay::WorkingState;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn apply_suffix(
@@ -78,7 +79,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
             &runtime,
-            root.as_ref(),
+            root,
             plan.plan(),
             0,
             None,
@@ -88,7 +89,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             runtime.commit_work_budget.as_ref(),
             self.prepared.schema_authority.registry(),
             &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
+                root,
                 self.identity.proposed_version_id(),
             ),
             &plan.plan().merged_intents,
@@ -132,7 +133,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let content = crate::authority::commit::phases::applied_mutation::content::prepare(
             execution,
             &runtime,
-            root.as_ref(),
+            root,
             &self.prepared.schema_authority,
             content,
             &state,

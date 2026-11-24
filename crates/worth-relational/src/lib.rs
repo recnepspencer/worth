@@ -29,26 +29,25 @@
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/retained_fork_source.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/pinned_entity_metadata.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/caller_association.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/authorization_durable_dependencies.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/custom_invariant_managed_source.md"))]
 
-mod aggregate_identity;
-pub(crate) use worth_relational_contracts::internal_port::aspect_wire;
+pub(crate) use worth_relational_branch::internal_port::{query, schema, snapshots, symbols};
+pub(crate) use worth_relational_contracts::internal_port::{
+    aspect_wire, canonical_basis_ready_sequence, config, diagnostics, errors, graph_member,
+    identity,
+};
+pub(crate) use worth_relational_mutation::internal_port::{aggregate_identity, derived_relation};
 mod authority;
 mod authorization;
 mod branch;
-pub(crate) use worth_relational_contracts::internal_port::canonical_basis_ready_sequence;
 mod capabilities;
 mod change_source;
 mod commit_strategies;
-pub(crate) use worth_relational_contracts::internal_port::config;
 mod content;
-mod derived_relation;
-pub(crate) use worth_relational_contracts::internal_port::diagnostics;
 mod durability;
-pub(crate) use worth_relational_contracts::internal_port::errors;
 mod execution;
-pub(crate) use worth_relational_contracts::internal_port::graph_member;
 mod history;
-pub(crate) use worth_relational_contracts::internal_port::identity;
 mod identity_authority {
     pub(crate) use worth_relational_contracts::internal_port::identity_authority::authority::relational_source_truth_authority;
     pub use worth_relational_contracts::internal_port::identity_authority::{
@@ -69,15 +68,10 @@ mod performance;
 mod presentation;
 mod projected_member_domain;
 mod publication;
-pub(crate) use worth_relational_branch::internal_port::query;
 mod replay;
 mod runtime;
-pub(crate) use worth_relational_branch::internal_port::schema;
 mod simulation;
-pub(crate) use worth_relational_branch::internal_port::snapshots;
 mod storage;
-pub(crate) use worth_relational_branch::internal_port::symbols;
-pub(crate) use worth_relational_contracts::internal_port::structural_traversal;
 mod transactions;
 mod validation;
 mod visibility;

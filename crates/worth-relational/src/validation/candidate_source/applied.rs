@@ -1,5 +1,8 @@
 //! Prepare managed Sources after Native prerequisites and before custom invariants.
-use super::preparation::{ManagedIndexSourcePreparation, PreparedSourceProgram, SourceViews};
+use super::preparation::invariant_views::invariant_source_views;
+use super::preparation::{
+    prepare_source_loan, ManagedIndexSourcePreparationInputs, PreparedSourceProgram,
+};
 use super::staged::PreparedManagedIndexSources;
 use super::SourcePreparationGroup;
 use super::{
@@ -14,19 +17,18 @@ use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTabl
 use crate::storage::overlay::OverlayStateView;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
-use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
-use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::custom_rule::CustomInvariantWorkMeter;
 use crate::validation::engine::state_view::InvariantStateView;
-use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
+use crate::validation::engine::InvariantObservation;
+use context::SourcePreparationContext;
+use discovery::{source_record_is_relevant, DiscoveredSource};
 use std::sync::Arc;
 use worth_relational_contracts::internal_port::validation::candidate_source::denial::ManagedIndexSourcePreparationDenialOwnerPort as _;
 use worth_relational_contracts::internal_port::validation::candidate_source::program::ManagedIndexSourceProgramOwnerPort as _;
-pub(super) mod context;
-pub(super) mod discovery;
-pub(super) mod stage;
-use context::SourcePreparationContext;
-use discovery::{source_record_is_relevant, DiscoveredSource};
+pub(crate) use worth_relational_mutation::internal_port::validation::candidate_source::applied::{
+    context, discovery, stage,
+};
+use worth_relational_mutation::internal_port::validation::candidate_source::preparation::ManagedIndexSourcePreparationOwnerPort as _;
 
 /// The selected invariant and publication owners for the real Source preparation.
 pub(crate) struct SourcePreparationInputs<'a> {
@@ -244,7 +246,7 @@ fn prepare(
                     None => {
                         let work = CustomInvariantWorkMeter::new(group.maximum_work_units())
                             .with_lease(budget);
-                        let physical = views(
+                        let physical = invariant_source_views(
                             &runtime_view,
                             &observation,
                             before.clone(),
@@ -311,7 +313,7 @@ fn prepare(
             observation.custom_enforcement_partition_access(),
             observation.custom_enforcement_version_id(proposal.proposed_version_id()),
         );
-        let logical = views(
+        let logical = invariant_source_views(
             &runtime_view,
             &observation,
             before.clone(),
@@ -320,19 +322,15 @@ fn prepare(
             group,
             &work,
         );
-        let source = ManagedIndexSourcePreparation {
+        let source = prepare_source_loan(ManagedIndexSourcePreparationInputs {
             interpretation,
             correspondence: correspondence.as_ref(),
             program,
             closure: &closure,
             views: logical,
             availability,
-            basis: interpretation.physical_basis(),
-            committed_available: !home_target
-                && interpretation
-                    .physical_basis()
-                    .materialization_is_complete(),
-        };
+            home_target,
+        });
         let roots = participant.prepare_managed_source(&execution, &source)?;
         source.check_complete(&roots)?;
         programs.push(PreparedSourceProgram {
@@ -373,28 +371,4 @@ fn changed_source_records(
         .filter(|record| source_record_is_relevant(program, record, before, after))
         .cloned()
         .collect()
-}
-fn views<'a>(
-    runtime: &InvariantRuntimeView<'a>,
-    observation: &InvariantObservation<'a>,
-    before: InvariantStateView<'a>,
-    after: InvariantStateView<'a>,
-    execution: worth_execution::ExecutionRequest<'a, 'a>,
-    group: &SourcePreparationGroup,
-    work: &CustomInvariantWorkMeter,
-) -> SourceViews<'a> {
-    let access = Arc::new(group.access_contract().clone());
-    SourceViews {
-        before: StructuralRelationView::new(
-            before.clone(),
-            execution,
-            work.clone(),
-            access.clone(),
-        )
-        .with_structural_source(runtime, observation, true),
-        after: StructuralRelationView::new(after.clone(), execution, work.clone(), access.clone())
-            .with_structural_source(runtime, observation, false),
-        before_fields: StructuralAspectStateView::new(before, work.clone(), access.clone()),
-        after_fields: StructuralAspectStateView::new(after, work.clone(), access),
-    }
 }

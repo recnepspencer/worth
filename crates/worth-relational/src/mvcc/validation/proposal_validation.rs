@@ -143,7 +143,7 @@ impl RelationalPreparationRuntime {
         })?;
         require_not_interrupted(
             &transaction.control,
-            &(*transaction.basis.owner_inner()).retention_binding,
+            &transaction.basis.owner_inner().retention_binding,
             crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         let complexity_before = self.performance_access().complexity_counters_snapshot();

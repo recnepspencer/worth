@@ -6,6 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::lineage::{
     admit_persisted_name, encode_durable_persistent_name_log, rebuild_name_index_from_durable_log,
@@ -44,7 +45,7 @@ fn entity_of(holder: &PersistentNameHolder) -> EntityId {
 
 /// The identity minting will give `request`, which never depends on holders.
 fn minted_identity(request: &PersistentNameBirthRequest) -> Name {
-    PersistentNameMintingAuthority::mint_commit_births(
+    PersistentNameMintingAuthority::mint_commit_births_for_test(
         &cad_scheme_registry(),
         &BTreeMap::new(),
         &BTreeSet::new(),
@@ -89,7 +90,7 @@ fn births_embedding_earlier_and_later_same_commit_names_reopen_identically() {
     }
     let batch = world.commit();
     let births: Vec<Name> = batch
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .filter(|event| event.kind() == LineageEventKind::Create)
         .filter_map(|event| event.name_birth().map(|birth| birth.identity()))
@@ -128,7 +129,7 @@ fn a_digest_consistent_birth_embedding_an_unborn_name_refuses_typed() {
     let unborn = PersistentNameIdentity::from_minted_digest([0xcd; 32]);
     let holder = history.commits[1]
         .0
-        .entity_holders
+        .entity_holders_for_test()
         .values()
         .next()
         .copied()
@@ -139,7 +140,7 @@ fn a_digest_consistent_birth_embedding_an_unborn_name_refuses_typed() {
         identity: unborn,
         basis: PersistentNameReferenceBasis::Basis,
     }];
-    let minted = PersistentNameMintingAuthority::mint_commit_births(
+    let minted = PersistentNameMintingAuthority::mint_commit_births_for_test(
         &cad_scheme_registry(),
         &BTreeMap::from([(unborn, PersistentNameHolder::Entity(holder))]),
         &BTreeSet::new(),
@@ -150,7 +151,7 @@ fn a_digest_consistent_birth_embedding_an_unborn_name_refuses_typed() {
     let refused = history.rebuild_mutated(|commits| {
         let event = commits[1]
             .0
-            .lineage_events
+            .lineage_events_mut_for_test()
             .iter_mut()
             .find(|event| event.name_birth().is_some())
             .unwrap();

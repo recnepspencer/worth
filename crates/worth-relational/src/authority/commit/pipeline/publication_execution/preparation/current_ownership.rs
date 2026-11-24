@@ -16,13 +16,14 @@ pub(super) fn select(
     basis: &AdmittedRelationalBranchBasis,
     candidate: &crate::history::data::CanonicalCommitEnvelopeBody,
     created: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
-    adjacency: &[crate::authority::mutation::AdjacencyDelta],
+    adjacency: &[worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta],
     working: &crate::storage::overlay::WorkingState,
     admission: Option<
         &crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     >,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
-    if (*(*basis.owner_inner())
+    if (*basis
+        .owner_inner()
         .root
         .schema_authority()
         .registry()
@@ -78,15 +79,13 @@ pub(super) fn select(
     if let Some(admission) = admission {
         admission.publication.ownership_seeds(&mut scopes);
     }
-    for event in &(*candidate.owner_required_output_codec_retirements()) {
+    for event in candidate.owner_required_output_codec_retirements() {
         scopes.push(crate::transactions::data::primitives::RecordRef::Entity(
             event.meaning.source_scope,
         ));
     }
-    let after_image = crate::storage::overlay::OverlayStateView::new(
-        (*basis.owner_inner()).root.as_ref(),
-        working,
-    );
+    let after_image =
+        crate::storage::overlay::OverlayStateView::new(basis.owner_inner().root.as_ref(), working);
     let after = crate::branch::structural_state::StructuralStateView::new(
         &after_image,
         candidate.commit.version_id,

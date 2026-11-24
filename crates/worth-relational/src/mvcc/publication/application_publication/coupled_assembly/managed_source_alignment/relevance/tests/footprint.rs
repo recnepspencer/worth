@@ -9,7 +9,7 @@ use worth_foundational::facade::{AspectValue, FieldKey, InternedString, StructAs
 fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
     let (_, template) = managed_cache_schema();
-    let mut source = (*template.owner_field_0()).path.parts().clone();
+    let mut source = template.owner_field_0().path.parts().clone();
     source.identity.name = "rooted-source".into();
     source.to = ROW.into();
     source.nodes = vec![Node::Stored {

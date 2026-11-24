@@ -24,7 +24,7 @@ fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([7_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        copy_original_for_test(&outcome.envelope(), execution),
+        copy_original_for_test(outcome.envelope(), execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,
@@ -64,7 +64,7 @@ fn unsupported_continuation_failure_deduplicates_boundary_already_present_in_pri
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([9_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        copy_original_for_test(&outcome.envelope(), execution),
+        copy_original_for_test(outcome.envelope(), execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,

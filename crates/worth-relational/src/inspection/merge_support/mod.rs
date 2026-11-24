@@ -1,3 +1,7 @@
+use crate::inspection::data::merge_support_witness::{
+    retain_merge_support_surface, retain_merge_support_witness,
+};
+use worth_relational_merge::internal_port::inspection::data::merge_support_rows::RelationalMergeSupportInspectionRowOwnerPort as _;
 use worth_relational_contracts::internal_port::merge::data::artifacts::correspondence_witness_rows::RelationalMergeCorrespondenceWitnessRowOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::MergeExecutionSummaryOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
@@ -16,7 +20,7 @@ use crate::inspection::data::{
     RelationalMergeSupportInspectionAbsenceKind,
     RelationalMergeSupportInspectionCompatibilityPosture, RelationalMergeSupportInspectionDenial,
     RelationalMergeSupportInspectionInput, RelationalMergeSupportInspectionRow,
-    RelationalMergeSupportInspectionSurface, RelationalMergeSupportInspectionWitness,
+    RelationalMergeSupportInspectionWitness,
 };
 use crate::transactions::data::{MergeExecutionSummary, PublishedMergeExecutionAuthority};
 
@@ -102,7 +106,7 @@ pub(crate) fn support_inspection_witness(
     };
 
     let rows = rows_for_input(&input);
-    let surface = RelationalMergeSupportInspectionSurface::retained(
+    let surface = retain_merge_support_surface(
         input.request.request_digest().to_string(),
         input.branch_basis.basis_digest(),
         std::sync::Arc::from(rows),
@@ -134,9 +138,7 @@ pub(crate) fn support_inspection_witness(
         }
     };
 
-    Ok(RelationalMergeSupportInspectionWitness::retained(
-        support_artifact,
-    ))
+    Ok(retain_merge_support_witness(support_artifact))
 }
 
 fn support_profile(

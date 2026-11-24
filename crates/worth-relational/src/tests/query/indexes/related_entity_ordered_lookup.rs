@@ -30,7 +30,7 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
     );
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::RelatedEntityOrdering(entries) = &mut generation.entries
             else {
                 panic!("related-ordering generation expected");

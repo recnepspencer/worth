@@ -87,7 +87,7 @@ impl ReadmittedSourceSchemaCatalog {
             return Ok(());
         };
         (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
-            .bind_recorded(&(*configured.owner_content_formats()))?;
+            .bind_recorded(configured.owner_content_formats())?;
         Self::retain_image(catalog, image, registry, contracts, &expected, request)
     }
 

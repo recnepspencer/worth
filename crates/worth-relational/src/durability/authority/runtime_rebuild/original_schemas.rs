@@ -23,7 +23,7 @@ impl OriginalSchemaGraph {
         let mut graph = Self::admit_unbound(plan, request)?;
         if let Some(graph) = &mut graph {
             graph.bind_home_executables(
-                &(*plan.config.schema.registry.owner_content_formats()),
+                plan.config.schema.registry.owner_content_formats(),
                 request,
             )?;
             graph.bind_directories(plan, request)?;

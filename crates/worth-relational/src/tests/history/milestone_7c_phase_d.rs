@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;

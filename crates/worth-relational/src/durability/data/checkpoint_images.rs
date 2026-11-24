@@ -179,7 +179,7 @@ mod tests {
                 });
             let roots = [fixture.partition, sibling].map(|partition| {
                 vec![partition_to_image_with_contracts(
-                    &lane,
+                    lane,
                     partition,
                     fixture.schema.aspect_plans(),
                     &contracts,
@@ -190,19 +190,19 @@ mod tests {
             assert_ne!(roots[0], roots[1]);
             for root in &roots {
                 assert_eq!(
-                    branch_root_partition_image_digest(&lane, root).unwrap(),
+                    branch_root_partition_image_digest(lane, root).unwrap(),
                     buffered_digest(root)
                 );
             }
             let mut altered = roots[0].clone();
-            let original = branch_root_partition_image_digest(&lane, &altered).unwrap();
+            let original = branch_root_partition_image_digest(lane, &altered).unwrap();
             altered[0].entity_arena.generations[0] ^= 1;
             assert_eq!(
-                branch_root_partition_image_digest(&lane, &altered).unwrap(),
+                branch_root_partition_image_digest(lane, &altered).unwrap(),
                 buffered_digest(&altered)
             );
             assert_ne!(
-                branch_root_partition_image_digest(&lane, &altered).unwrap(),
+                branch_root_partition_image_digest(lane, &altered).unwrap(),
                 original
             );
         })

@@ -105,13 +105,13 @@ pub(crate) fn select_authored_source_retirement<'r>(
                         .source_scope_ownership
                         .scope_kind(&origin.producer)
                         .ok_or_else(|| reject(Cause::CorruptPublication, source))?;
-                    (*basis
-                        .owner_inner())
+                    basis
+                        .owner_inner()
                         .root
                         .demand_full_partition(execution, source.partition_id)
                         .map_err(|cause| stopped(request(cause)))?;
-                    let partition = (*basis
-                        .owner_inner())
+                    let partition = basis
+                        .owner_inner()
                         .root
                         .partition_state(source.partition_id)
                         .map_err(|cause| stopped(cause.into()))?
@@ -147,8 +147,8 @@ pub(crate) fn select_authored_source_retirement<'r>(
                     .filter(|role| matches!(role.target, EntityReference::Existing(id) if anchors.contains(&id)))
                 {
                     let EntityReference::Existing(id) = role.target else { unreachable!() };
-                    let partition = (*basis
-                        .owner_inner())
+                    let partition = basis
+                        .owner_inner()
                         .root
                         .partition_state(id.partition_id)
                         .map_err(|cause| stopped(cause.into()))?

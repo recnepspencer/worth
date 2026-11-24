@@ -1,4 +1,5 @@
 //! Actual native normalization and validation-dependency replacement use selected custody.
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use crate::transactions::data::{CreateIntent, MutationIntent};
 use crate::{facade::mvcc::RelationalTransactionIntent, tests::support::*};
 use std::num::NonZeroUsize;

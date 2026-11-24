@@ -1,17 +1,13 @@
 pub(crate) use worth_relational_contracts::internal_port::validation::data::catalog;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::compilation_denial;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::contracts;
 pub(crate) mod custom_rule;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::descriptor;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::execution;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::groups;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::observation_kind;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::registration_conflict;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::results;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::rule_id;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::rules;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::structural_read;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::structural_walk_denial;
 
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
@@ -54,7 +50,6 @@ pub use custom_rule::{
 
 pub use crate::validation::engine::result::InvariantCheckResult;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::execution_posture;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::non_applicability;
 
 #[cfg(test)]
 pub(crate) use custom_rule::{

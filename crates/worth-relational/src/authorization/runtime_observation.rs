@@ -1,6 +1,7 @@
 //! Admit the selected snapshot and bind its authorization evaluation operands.
 use crate::runtime::RelationalRuntime;
 use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
+use worth_relational_mutation::internal_port::authorization::evidence::RelationalAuthorizationObservationEvidenceOwnerPort as _;
 
 use super::admission::{self, ObservationResult, UnrestrictedObservation};
 use super::observation_identity::mint_observation_identity;

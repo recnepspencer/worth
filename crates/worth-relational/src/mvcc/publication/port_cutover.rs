@@ -91,7 +91,8 @@ impl PreparedBranchPublicationPreflight {
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::AfterLinearization);
         if let Some(interruption) = late_interruption {
-            (*self.next_basis.owner_inner())
+            self.next_basis
+                .owner_inner()
                 .retention_binding
                 .record_interruption(interruption);
         }
@@ -121,7 +122,8 @@ impl PreparedBranchPublicationPreflight {
         let event = self
             .control
             .observe(crate::runtime::RelationalInterruptionBoundary::BeforeCriticalSection)?;
-        (*self.next_basis.owner_inner())
+        self.next_basis
+            .owner_inner()
             .retention_binding
             .record_interruption(event);
         Some(RelationalPublicationOutcome::interrupted(event))

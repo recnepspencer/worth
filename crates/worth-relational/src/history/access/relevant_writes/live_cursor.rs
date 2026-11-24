@@ -55,7 +55,7 @@ impl RelationalAuthoredWriteCursor {
         &self,
         prepared: RelationalPreparedAuthoredWritePage<'_, '_>,
     ) -> Result<(RelationalAuthoredWritePage, Self), Denial> {
-        if !Arc::ptr_eq(&self.source, &(*prepared.owner_source()))
+        if !Arc::ptr_eq(&self.source, prepared.owner_source())
             || self.next != (*prepared.owner_expected())
         {
             return Err(Denial::InvalidContinuation);

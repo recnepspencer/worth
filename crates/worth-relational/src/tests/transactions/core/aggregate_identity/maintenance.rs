@@ -4,6 +4,9 @@ use crate::branch::{RelationalEntityMaterialization, RelationalRelationMateriali
 use crate::tests::support::*;
 use std::sync::Arc;
 use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
+use worth_relational_mutation::internal_port::validation::engine::observation::affinity::InvariantSourceAffinityFixturePort as _;
 
 #[test]
 fn native_storage_owner_suspends_and_restores_private_records_without_renaming() {
@@ -63,7 +66,7 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
                     .source
                     .as_ref()
                     .unwrap()
-                    .proposal
+                    .proposal_for_test()
                     .as_ref()
                     .unwrap()
                     .source_interpretation()

@@ -24,7 +24,7 @@ impl<'a> OriginalSymbolDictionary<'a> {
             dictionary.insert(*symbol, text, execution)?;
         }
         for commit in commits {
-            for (symbol, text) in &(*commit.envelope.owner_symbol_texts()).entries {
+            for (symbol, text) in &commit.envelope.owner_symbol_texts().entries {
                 dictionary.insert(*symbol, text, execution)?;
             }
         }

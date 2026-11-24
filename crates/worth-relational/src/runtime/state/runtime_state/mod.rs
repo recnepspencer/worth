@@ -6,7 +6,7 @@ mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
 mod configuration_epoch_control;
-pub(crate) mod configuration_snapshot;
+pub(crate) use worth_relational_mutation::internal_port::runtime::state::runtime_state::configuration_snapshot;
 mod core_access;
 mod memory_close;
 mod snapshot_visibility;

@@ -2,6 +2,7 @@
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
 use crate::validation::engine::{InvariantRuntimeInputs, InvariantRuntimeView};
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn invariant_validation_view(&self) -> InvariantRuntimeView<'_> {
@@ -23,8 +24,7 @@ impl RelationalRuntime {
             config: configuration.config,
             schema_contract_runtime: configuration.schema_contract_runtime,
             instrumentation: &self.services.instrumentation,
-            #[cfg(test)]
-            current_version_id: self.current_version_id(),
+
             entity_count,
             relation_count,
             version_depth: self.history().commit_count(),
@@ -47,7 +47,7 @@ impl<'a> From<&'a crate::mvcc::RelationalTransactionValidationInput>
     fn from(input: &'a crate::mvcc::RelationalTransactionValidationInput) -> Self {
         Self {
             operation: input.control(),
-            retention: &(*input.basis().owner_inner()).retention_binding,
+            retention: &input.basis().owner_inner().retention_binding,
         }
     }
 }
@@ -61,7 +61,7 @@ impl From<&crate::mvcc::RelationalTransactionValidationInput>
             .map(|target| target.meaning.catalog_receipt())
             .or_else(|| {
                 crate::runtime::home_program_transition::retain_root_execution_contracts(
-                    &(*input.basis().owner_inner()).root,
+                    &input.basis().owner_inner().root,
                 )
                 .map(|meaning| meaning.catalog_receipt())
             });

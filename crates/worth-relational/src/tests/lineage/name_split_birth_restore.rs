@@ -4,6 +4,7 @@
 //! width, index rebuild equivalence, and oracle-verified historical resolution.
 
 use std::collections::BTreeMap;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::{EntityId, LineageId, VersionId};
@@ -14,7 +15,7 @@ use crate::facade::lineage::{
     PersistentNameSelection, PersistentNameTarget,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
@@ -78,7 +79,7 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
 
     // Commit 1: Create parent P.
     let p1 = push_entity(&mut staged, VersionId(1));
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -99,13 +100,13 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
         .name_birth()
         .unwrap()
         .identity();
-    record(PersistentNameCommittedBatch::new(CommitId(1)).with_prepared_lineage(&c1));
+    record(PersistentNameCommittedBatch::new(CommitId(1)).with_prepared_lineage_for_test(&c1));
 
     // Commit 2: Split P into L and R.
     retire_entity(&mut staged, p1, VersionId(2));
     let l1 = push_entity(&mut staged, VersionId(2));
     let r1 = push_entity(&mut staged, VersionId(2));
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -156,14 +157,14 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
     let (c_old, c_new) = (synthetic_name(0xd1, 1), synthetic_name(0xd1, 2));
     record(
         PersistentNameCommittedBatch::new(CommitId(2))
-            .with_prepared_lineage(&c2)
+            .with_prepared_lineage_for_test(&c2)
             .with_carriers(PersistentNameKey::Entity(l_name), [c_old]),
     );
 
     // Commit 3: Retire L and R.
     retire_entity(&mut staged, l1, VersionId(3));
     retire_entity(&mut staged, r1, VersionId(3));
-    let c3 = finalize_postures_in_working_state(
+    let c3 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(3, 3),
@@ -193,11 +194,11 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
         },
     )
     .expect("commit 3 retire succeeds");
-    record(PersistentNameCommittedBatch::new(CommitId(3)).with_prepared_lineage(&c3));
+    record(PersistentNameCommittedBatch::new(CommitId(3)).with_prepared_lineage_for_test(&c3));
 
     // Commit 4: Restore P (undo split + delete).
     let p2 = push_entity(&mut staged, VersionId(4));
-    let c4 = finalize_postures_in_working_state(
+    let c4 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),
@@ -219,14 +220,14 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
     )
     .expect("commit 4 restore parent succeeds");
     let p2_lin = staged_entity_lineage(&staged, p2).unwrap();
-    record(PersistentNameCommittedBatch::new(CommitId(4)).with_prepared_lineage(&c4));
+    record(PersistentNameCommittedBatch::new(CommitId(4)).with_prepared_lineage_for_test(&c4));
 
     // Commit 5: Re-split restored P with replayed original L and R births.
     retire_entity(&mut staged, p2, VersionId(5));
     let l2 = push_entity(&mut staged, VersionId(5));
     let r2 = push_entity(&mut staged, VersionId(5));
     let (lin_before, _) = allocator.frontiers();
-    let c5 = finalize_postures_in_working_state(
+    let c5 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(5, 5),
@@ -317,7 +318,7 @@ fn resplit_restored_parent_replays_retired_children_as_birth_restores() {
 
     record(
         PersistentNameCommittedBatch::new(CommitId(5))
-            .with_prepared_lineage(&c5)
+            .with_prepared_lineage_for_test(&c5)
             .with_carriers(PersistentNameKey::Entity(l_name), [c_new]),
     );
     let (pk, lk, rk) = (

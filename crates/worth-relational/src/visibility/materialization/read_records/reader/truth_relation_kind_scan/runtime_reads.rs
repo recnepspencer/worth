@@ -40,7 +40,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     memory,
                 )
             },
-            |result| super::super::super::read_footprint::relations(&(*result.owner_records())),
+            |result| super::super::super::read_footprint::relations(result.owner_records()),
         )
     }
 }

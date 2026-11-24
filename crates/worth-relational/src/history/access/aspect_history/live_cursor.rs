@@ -82,7 +82,7 @@ impl RelationalCanonicalRecordHistoryCursor {
         &self,
         prepared: RelationalPreparedRecordHistoryPage<'_, '_>,
     ) -> Result<(RelationalRecordHistoryPage, Self), Denial> {
-        if !Arc::ptr_eq(&self.source, &(*prepared.owner_source()))
+        if !Arc::ptr_eq(&self.source, prepared.owner_source())
             || self.next_record != (*prepared.owner_expected_record())
         {
             return Err(Denial::InvalidContinuation);

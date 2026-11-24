@@ -61,7 +61,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let readmitted =
         RelationalCanonicalCommitArtifact::readmit(source_artifact.as_bytes(), execution).unwrap();
     let position = readmitted.position();
-    let mut merge_entry = copy_original_for_test(&readmitted.envelope(), execution);
+    let mut merge_entry = copy_original_for_test(readmitted.envelope(), execution);
     {
         let body = merge_entry.body_mut_for_test();
         assert!(body.merge_execution_authority.is_some());

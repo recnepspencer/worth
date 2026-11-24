@@ -102,19 +102,14 @@ pub(super) fn fold_records(
     for (slot, entity, intent) in folds {
         let (position, base) = &chain.fragments[slot];
         let root = base.resident_basis().root();
-        let (delta, fragment) = crate::authority::mutation::succession_record(
-            execution,
-            schema,
-            root.as_ref(),
-            entity,
-            intent,
-        )?;
+        let (delta, fragment) =
+            crate::authority::mutation::succession_record(execution, schema, root, entity, intent)?;
         crate::authority::mutation::restamp_succession_entity(
             execution,
             state,
             delta_state,
             symbols,
-            root.as_ref(),
+            root,
             &delta,
             entity,
             version,

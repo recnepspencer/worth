@@ -1,7 +1,5 @@
-mod custom_invariant_provenance_diagnostic_projection;
 mod diagnostic_projection;
 pub(crate) mod failure_diagnostics;
-mod invariant_violation_diagnostic_projection;
 pub(crate) mod preparation_diagnostics;
 
 use crate::publication::bundle::PublicationStage;

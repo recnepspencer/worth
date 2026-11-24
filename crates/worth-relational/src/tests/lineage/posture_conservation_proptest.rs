@@ -9,7 +9,7 @@ use crate::facade::lineage::{
     PersistentNameHolder, PersistentNameIdentity,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
@@ -35,7 +35,7 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
     let mut retired_lineages: BTreeSet<LineageId> = BTreeSet::new();
 
     // Commit 1 seeds two anchor faces so relations always have live endpoints.
-    let seed = finalize_postures_in_working_state(
+    let seed = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -96,7 +96,7 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
             continue;
         }
 
-        let prepared = finalize_postures_in_working_state(
+        let prepared = finalize_postures_in_working_state_for_test(
             &allocator,
             &mut staged,
             &receipt_at(commit_no, commit_no),

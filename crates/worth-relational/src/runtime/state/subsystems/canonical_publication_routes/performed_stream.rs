@@ -163,7 +163,12 @@ impl PerformedPublicationStream {
                 index_definition_frontier: current
                     .as_ref()
                     .map_or(1, |node| node.index_definition_frontier)
-                    .max((*positioned.envelope().owner_index_definition_delta()).next_index_id),
+                    .max(
+                        positioned
+                            .envelope()
+                            .owner_index_definition_delta()
+                            .next_index_id,
+                    ),
                 position: positioned.position(),
                 route: Arc::clone(&route),
                 previous: current,
@@ -204,7 +209,12 @@ impl PerformedPublicationStream {
             index_definition_frontier: current
                 .as_ref()
                 .map_or(1, |node| node.index_definition_frontier)
-                .max((*positioned.envelope().owner_index_definition_delta()).next_index_id),
+                .max(
+                    positioned
+                        .envelope()
+                        .owner_index_definition_delta()
+                        .next_index_id,
+                ),
             position: positioned.position(),
             route,
             previous: current,

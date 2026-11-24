@@ -15,7 +15,7 @@ use crate::facade::lineage::{
     LineageNameDenial, LineageRecordTarget, PersistentNameHolder, PersistentNameSubjectKind,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::runtime::LineageIdentityAllocator;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::{runtime_with_test_schema, test_schema_registry};
@@ -33,7 +33,7 @@ fn lineage_basis_is_exact_across_rebuild_derived_indexes_and_fork_ancestry_cutof
     let fork_branch = BranchId("fork-at-c1".to_owned());
 
     let (mut staged, f1, f2, s1, s2, c1_changed, c1_input) = seed_two_faces_and_parallel_seams();
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -84,7 +84,7 @@ fn lineage_basis_is_exact_across_rebuild_derived_indexes_and_fork_ancestry_cutof
         target: LineageRecordTarget::Entity(f1),
         name: f1_name,
     }];
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -212,7 +212,7 @@ fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
     let (mut staged, f1, f2, _, _, _, _) = seed_two_faces_and_parallel_seams();
     let before = allocator.frontiers();
     let fresh_e = push_entity(&mut staged, VersionId(2));
-    let err = crate::lineage::authority::test_finalize_with_schema(
+    let err = crate::lineage::authority::finalize_with_schema_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -257,7 +257,7 @@ fn installed_schema_registry_validates_bindings_and_enforces_missing_birth() {
             gen_id,
         )
     };
-    let err_r = crate::lineage::authority::test_finalize_with_schema(
+    let err_r = crate::lineage::authority::finalize_with_schema_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),

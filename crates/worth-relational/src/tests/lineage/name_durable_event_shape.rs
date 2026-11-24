@@ -8,6 +8,7 @@ use crate::facade::lineage::{
     PersistentNameDurabilityError,
 };
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use super::name_durable_world::{durable_naming_history, DurableNamingHistory};
 
@@ -26,7 +27,7 @@ fn refuses_shape(
         let snapshot = commits.clone();
         let event = commits
             .iter_mut()
-            .flat_map(|(batch, _)| batch.lineage_events.iter_mut())
+            .flat_map(|(batch, _)| batch.lineage_events_mut_for_test().iter_mut())
             .find(|event| select(event))
             .expect("the history carries the selected event");
         mutate(event, &snapshot);
@@ -49,7 +50,7 @@ fn kind(kind: LineageEventKind) -> impl Fn(&LineageEventRecord) -> bool {
 fn any_created_lineage(commits: &Commits) -> crate::facade::identity::LineageId {
     commits[1]
         .0
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|event| event.kind() == LineageEventKind::Create)
         .unwrap()
@@ -109,7 +110,7 @@ fn receipt_branch_mismatch_refuses_typed() {
     refuses_shape(
         &history,
         kind(LineageEventKind::Split),
-        |event, _| (*event.owner_commit_mut()).branch_id = BranchId("forged".to_owned()),
+        |event, _| event.owner_commit_mut().branch_id = BranchId("forged".to_owned()),
         "the receipt names a different branch than the event",
     );
 }
@@ -119,14 +120,14 @@ fn births_and_kept_names_on_kinds_that_cannot_carry_them_refuse_typed() {
     let history = durable_naming_history();
     let birth = history.commits[1]
         .0
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find_map(|event| event.name_birth().cloned())
         .unwrap();
     let kept = history
         .commits
         .iter()
-        .flat_map(|(batch, _)| batch.lineage_events.iter())
+        .flat_map(|(batch, _)| batch.lineage_events_for_test().iter())
         .find_map(LineageEventRecord::kept_name)
         .unwrap();
     refuses_shape(

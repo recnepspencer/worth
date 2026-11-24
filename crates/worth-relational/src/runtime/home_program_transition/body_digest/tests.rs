@@ -4,6 +4,7 @@ use crate::aspect_wire::{write_aspect_field_locator, write_aspect_value, Collect
 use crate::transactions::data::planned_single_field_locator;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InlineBytes};
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 #[test]
 fn body_framing_refuses_unrepresentable_length() {

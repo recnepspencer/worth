@@ -1,15 +1,17 @@
 mod commit_strategies;
 pub(crate) mod durability;
 pub(crate) mod history;
-pub(crate) mod indexing;
-pub(crate) mod lineage;
-pub(crate) mod lineage_identity;
+pub(crate) use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing;
+pub(crate) use worth_relational_lineage::internal_port::runtime::state::subsystems::{
+    lineage, lineage_identity,
+};
 pub(crate) mod publication;
-pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::{
+    record_identity, storage,
+};
 mod schema_contract_construction;
-pub(crate) mod schema_contract_runtime;
+pub(crate) use worth_relational_mutation::internal_port::runtime::state::subsystems::schema_contract_runtime;
 pub(crate) mod services;
-pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::storage;
 mod storage_lifecycle;
 pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::visibility;
 

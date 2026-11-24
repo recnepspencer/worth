@@ -1,4 +1,5 @@
 //! Immutable successor execution meaning, prepared on the actual Native owner.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedIndexCatalogOwnerPort as _;
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -81,7 +82,7 @@ impl PreparedRelationalHomeProgramContracts {
         mut self,
         definitions: crate::runtime::PreparedRelationalIndexDefinitions,
     ) -> Result<Self, RelationalHomeProgramContractDenial> {
-        if definitions.runtime != self.meaning.runtime {
+        if definitions.runtime_identity() != self.meaning.runtime {
             return Err(RelationalHomeProgramContractDenial::ForeignRuntime);
         }
         self.index_definitions = Some(Arc::new(definitions));
@@ -173,7 +174,7 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let snapshot = self.configuration_binding().snapshot();
-        let source_generation = retain_root_execution_contracts(&(*predecessor.owner_inner()).root)
+        let source_generation = retain_root_execution_contracts(&predecessor.owner_inner().root)
             .map_or(
                 snapshot.schema_contract_runtime.custom_invariant_generation,
                 |source| source.contracts.custom_invariant_generation,
@@ -190,7 +191,7 @@ impl RelationalRuntime {
                 .schema
                 .descriptor_semantics_policy
                 .current_write_version(),
-            (*predecessor.owner_inner()).root.schema_authority(),
+            predecessor.owner_inner().root.schema_authority(),
         )
         .map_err(schema_compilation_denial::translate)?;
         let digest =

@@ -5,6 +5,7 @@ use super::{
 use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;
 use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
+use worth_relational_mutation::internal_port::validation::candidate_source::publication::ManagedIndexSourcePublicationRootOwnerPort as _;
 
 impl PublicationCompanionPreflight<'_> {
     /// Initial managed directory backing is paid before its owning Arc exists.

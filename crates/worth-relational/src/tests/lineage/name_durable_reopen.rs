@@ -5,6 +5,7 @@
 //! frame refuses typed and yields no index at all.
 
 use worth_foundational::facade::AggregateIdentity;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::CommitId;
@@ -60,11 +61,11 @@ fn reopen_after_every_commit_boundary_rebuilds_the_exact_index_and_answers() {
         .iter()
         .map(|(batch, _)| {
             let births = batch
-                .lineage_events
+                .lineage_events_for_test()
                 .iter()
                 .filter(|e| e.name_birth().is_some());
             let groups = batch
-                .group_events
+                .group_events_for_test()
                 .iter()
                 .filter(|e| matches!(e, AggregateGroupLineageEvent::Born { .. }));
             births.count() + groups.count()

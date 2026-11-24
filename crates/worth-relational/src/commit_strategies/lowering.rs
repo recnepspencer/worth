@@ -1,3 +1,4 @@
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
 use crate::commit_strategies::data::{
     CanonicalStrategyCommitRequest, StrategyExecutionDraft, StrategyLoweringError,

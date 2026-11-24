@@ -11,6 +11,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 impl BoundAuthoredCoupling {
     pub(crate) fn adopt_applied(

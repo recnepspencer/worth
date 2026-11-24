@@ -1,4 +1,5 @@
 //! View input admission pins before lending the prepared field lookup.
+use worth_relational_indexes::internal_port::indexes::access::prepared_entity_field_lookup::PreparedEntityFieldLookupOwnerPort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::super::prepared_entity_field_lookup::denied;
 use super::{IndexAccess, PreparedEntityFieldLookup};

@@ -5,6 +5,7 @@
 use std::collections::BTreeMap;
 use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::LineageId;
@@ -20,7 +21,7 @@ use super::posture_fixtures::receipt_at;
 /// The lineage the `Create` in `batch` bound.
 fn created_lineage(batch: &PersistentNameCommittedBatch) -> LineageId {
     batch
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|event| event.kind() == LineageEventKind::Create)
         .map(|event| event.targets()[0])
@@ -57,13 +58,13 @@ fn restore_batch(
         entity_id,
     });
     let mut batch = PersistentNameCommittedBatch::new(CommitId(commit));
-    batch.lineage_events = vec![event];
+    *batch.lineage_events_mut_for_test() = vec![event];
     match holder {
         PersistentNameHolder::Entity(entity) => {
-            batch.entity_holders = BTreeMap::from([(l2, *entity)]);
+            *batch.entity_holders_mut_for_test() = BTreeMap::from([(l2, *entity)]);
         }
         PersistentNameHolder::Relation(relation) => {
-            batch.relation_holders = BTreeMap::from([(l2, *relation)]);
+            *batch.relation_holders_mut_for_test() = BTreeMap::from([(l2, *relation)]);
         }
         _ => unreachable!("worlds hold only entity and relation records"),
     }

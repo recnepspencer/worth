@@ -40,7 +40,7 @@ pub(super) fn readmit(
             1 << 30,
         )?;
         symbols
-            .import_canonical_snapshot(&(*commit.owner_symbol_texts()))
+            .import_canonical_snapshot(commit.owner_symbol_texts())
             .map_err(corrupt)?;
         envelopes.push(commit);
     }

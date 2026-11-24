@@ -89,7 +89,7 @@ fn relation_join_certification_rejects_a_missing_candidate() {
     let key = RelationJoinKey::new(left, right);
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::RelationJoin(entries) = &mut generation.entries else {
                 panic!("relation join generation expected");
             };
@@ -194,7 +194,7 @@ fn relation_join_rejects_a_candidate_with_substituted_relation_evidence() {
     let key = RelationJoinKey::new(left, right);
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::RelationJoin(entries) = &mut generation.entries else {
                 panic!("relation join generation expected");
             };

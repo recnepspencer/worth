@@ -10,6 +10,7 @@ use crate::facade::transactions::{
 };
 use crate::tests::support::*;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 // CONTRACT: historical_lineage_resolution
 // LANES: success, adversarial, recovery
@@ -153,7 +154,6 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
         .unwrap();
     let artifact = traced.trace.diagnostic_artifact();
     let digest = traced.lineage_aspect_resolution_digest();
-
     assert_eq!(history.start_lineage_id, start_lineage);
     assert_eq!(
         traced.trace.requested_target,
@@ -268,7 +268,7 @@ fn historical_lineage_resolution_traverses_restore() {
         for batch in &case.log {
             runtime
                 .lineage
-                .install_recovered_event_batch(&batch.lineage_events, batch.commit())
+                .install_recovered_event_batch(batch.lineage_events_for_test(), batch.commit())
                 .expect("install finalized lineage batch");
         }
         let resolution = runtime
@@ -370,7 +370,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     // 3. Valid staged birth attaches the exact pure-minted birth record to the Create event.
     let (mut staged_ok, ok0, _) = stage_two_entities();
     let ok_req = face_birth_request("occ.face.1", "authored", "", ok0);
-    let expected = PersistentNameMintingAuthority::mint_commit_births(
+    let expected = PersistentNameMintingAuthority::mint_commit_births_for_test(
         &registry,
         &empty_holders,
         &empty_retired,

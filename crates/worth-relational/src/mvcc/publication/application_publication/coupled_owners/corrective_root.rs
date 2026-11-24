@@ -74,11 +74,15 @@ impl AuthoredPublicationReads<'_> {
                 })
                 .map_err(custody::execution_stop)?
                 .0?;
-            (*owners.before.owner_inner())
+            owners
+                .before
+                .owner_inner()
                 .root
                 .demand_full_partition(execution, old.partition_id)
                 .map_err(custody::execution_stop)?;
-            if !(*owners.before.owner_inner())
+            if !owners
+                .before
+                .owner_inner()
                 .root
                 .get_current_partition(old.partition_id)
                 .and_then(|partition| partition.entity_arena().get(&old))

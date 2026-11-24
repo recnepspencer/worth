@@ -1,4 +1,5 @@
 //! Original preflight lends a single cutover; all owning cleanup stays outside it.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedRelationalIndexDefinitionsOwnerPort as _;
 use super::*;
 use worth_execution::ExecutionRequest;
 

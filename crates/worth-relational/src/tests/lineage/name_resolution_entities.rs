@@ -5,6 +5,7 @@ use crate::facade::lineage::{
     PersistentNameBranchIndex, PersistentNameKey, PersistentNameResolution,
     PersistentNameResolutionDenial, PersistentNameTarget,
 };
+use worth_relational_lineage::internal_port::lineage::index::PersistentNameBranchIndexFixturePort as _;
 
 use super::name_group_world::member;
 use super::name_index_fixtures::{
@@ -246,9 +247,9 @@ fn empty_filters_refuse_and_sideless_births_never_match_a_side() {
     let index = rebuild(world.log());
     let (plain_key, sided_key) = (world.key_of(&plain), world.key_of(&sided));
     // A birth without a discriminator has no side, exactly like a group.
-    assert_eq!(index.names[&plain_key].side(), None);
+    assert_eq!(index.names_for_test()[&plain_key].side(), None);
     assert_eq!(
-        index.names[&sided_key].side(),
+        index.names_for_test()[&sided_key].side(),
         Some(side_of("s").as_slice())
     );
     for held in [plain_key, sided_key] {

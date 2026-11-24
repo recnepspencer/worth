@@ -76,7 +76,8 @@ pub(super) fn prepare(
     for (original, anchor) in std::iter::once((original, anchor))
         .chain(co_anchors.iter().map(|(id, target)| (*id, target)))
     {
-        (*basis.owner_inner())
+        basis
+            .owner_inner()
             .root
             .demand_full_partition(execution, original.partition_id)
             .map_err(|cause| {
@@ -84,7 +85,8 @@ pub(super) fn prepare(
                     cause,
                 ))
             })?;
-        let partition = (*basis.owner_inner())
+        let partition = basis
+            .owner_inner()
             .root
             .partition_state(original.partition_id)
             .map_err(|cause| failure(cause.into()))?
@@ -149,7 +151,8 @@ pub(super) fn prepare(
             .map_err(failure)?
             .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
         for member in &prior.origin.members {
-            let plan = (*basis.owner_inner())
+            let plan = basis
+                .owner_inner()
                 .root
                 .schema_authority()
                 .entity_aspect_plan(member.kind)
@@ -162,7 +165,7 @@ pub(super) fn prepare(
                 validated_history,
                 context,
                 lease,
-                (*basis.owner_inner()).root.schema_authority(),
+                basis.owner_inner().root.schema_authority(),
             )
             .map_err(failure)?;
             (*live.owner_content())
@@ -198,7 +201,8 @@ pub(super) fn prepare(
             .output_origin_for_route(&prior.origin.meaning, context)
             .map_err(failure)?;
         for edge in &live_origin.relations {
-            let plan = (*basis.owner_inner())
+            let plan = basis
+                .owner_inner()
                 .root
                 .schema_authority()
                 .relation_aspect_plan(edge.kind)
@@ -211,7 +215,7 @@ pub(super) fn prepare(
                 validated_history,
                 context,
                 lease,
-                (*basis.owner_inner()).root.schema_authority(),
+                basis.owner_inner().root.schema_authority(),
             )
             .map_err(failure)?;
             (*live.owner_content())
@@ -221,7 +225,8 @@ pub(super) fn prepare(
                     &mut content,
                 )
                 .map_err(crate::content::publication::commit_denial)?;
-            if (*(*basis.owner_inner())
+            if (*basis
+                .owner_inner()
                 .root
                 .schema_authority()
                 .registry()

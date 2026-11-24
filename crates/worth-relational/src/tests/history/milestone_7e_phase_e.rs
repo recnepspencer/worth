@@ -12,6 +12,7 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
 use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthorityOwnerPort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 #[test]
 fn retained_merge_proof_packet_preserves_exact_authority_truth() {

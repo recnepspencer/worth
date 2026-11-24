@@ -8,9 +8,10 @@ import sys
 import tomllib
 
 from relational_dag_rust import (
-    ProductionView, Surface, alias_target, bare_pub_module, contacts, identifiers, resolved_origin,
+    Surface, alias_target, bare_pub_module, contacts, identifiers, resolved_origin,
     section, self_types, test_spans,
 )
+from relational_dag_sizes import check_owner_sizes
 from relational_dag_workspace import WorkspaceModel, physical_owners
 
 SOURCE = Path('crates/worth-relational/src')
@@ -330,37 +331,6 @@ def compare(directions, ceilings, rows):
     return failures
 
 
-def check_owner_sizes(audit):
-    """Count each Relational owner using the split's source and production measures."""
-    total, production = Counter(), Counter()
-    for source, owner in audit.file_owners.items():
-        if source.suffix == '.rs' and owner in audit.map.owners:
-            total[owner] += len(source.read_bytes().splitlines())
-    examples = audit.root / SOURCE.parent / 'examples'
-    example_lines = sum(len(path.read_bytes().splitlines()) for path in examples.rglob('*.rs'))
-    total['runtime'] += example_lines
-    for module in audit.model.views:
-        owner, _ = audit.locations[module]
-        if owner in audit.map.owners:
-            production[owner] += ProductionView(audit.model.index[module]).own_text().count('\n')
-    all_total, all_production = total.total(), production.total()
-    print('Owner          Total LOC    Prod LOC  Prod floor   Total cap')
-    failures = []
-    for owner, budget in audit.map.owners.items():
-        actual, prod = total[owner], production[owner]
-        floor, cap = budget['floor'], budget['cap']
-        print(f'{owner:<12} {actual:>11,} {prod:>11,} {floor:>11,} {cap:>11,}')
-        if prod < floor or actual > cap:
-            failures.append(f'{owner} must meet its production floor and total cap')
-        if 100 * actual > 23 * all_total or 100 * prod > 23 * all_production:
-            failures.append(f'{owner} exceeds the 23.0% Total or Prod share')
-    print(f'{"combined":<12} {all_total:>11,} {all_production:>11,}')
-    print(f'Runtime Total includes {example_lines:,} example lines')
-    if all_total > 510_000:
-        failures.append(f'combined Total LOC exceeds 510,000: {all_total:,}')
-    return failures
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
@@ -371,7 +341,7 @@ def main():
         audit = Audit(args.root, config)
         failures = facade_failures(audit, baseline)
         audit.scan()
-        failures.extend(check_owner_sizes(audit))
+        failures.extend(check_owner_sizes(audit, args.root / SOURCE.parent / 'examples'))
     except (OSError, ValueError, KeyError) as error:
         print(f'relational DAG: {error}', file=sys.stderr)
         return 1

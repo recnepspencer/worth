@@ -1,0 +1,88 @@
+use super::*;
+use worth_relational_branch::internal_port::branch::basis_fixture::installed_history_for_test as installed_history;
+use crate::contracts::config::data::runtime_config::RelationalRuntimeConfig;
+use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
+use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use worth_relational_storage::internal_port::runtime::state::subsystems::storage::edition_copy_lane::PartitionEditionCopyLane;
+use worth_relational_storage::internal_port::runtime::state::subsystems::storage::StorageSubsystem;
+use worth_relational_storage::internal_port::storage::overlay::small_relation_partition::relation_partition_for_test;
+use crate::validation::engine::test_view::invariant_view_with_custom_rules;
+
+#[test]
+fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
+    for leased in [false, true] {
+        let cancellation = CancellationSource::new();
+        let target = Arc::new(OnceLock::new());
+        let visits = Arc::new(AtomicUsize::new(0));
+        let partition = PartitionId::main();
+        let (state, entities, _) = relation_partition_for_test(partition, 1, &[]);
+        let storage = StorageSubsystem::default();
+        let copy_counters = std::sync::Mutex::default();
+        storage.install_owned(
+            &copy_counters,
+            PartitionEditionCopyLane::Ordinary,
+            [(partition, state)],
+        );
+        let edition = storage.acquire();
+        target.set(entities[0]).unwrap();
+        let history: HistorySubsystem = installed_history(1);
+        history.install_recovered_sequence_floor(2, 2);
+        let head = history.current_version_id();
+        let instrumentation = RuntimeInstrumentation::default();
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = super::preparation::checked_structural_registry();
+        let view = invariant_view_with_custom_rules(
+            &instrumentation,
+            config,
+            head,
+            vec![CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units: None,
+                steps: 1_000,
+                visits: Arc::clone(&visits),
+                preparation_visits: Arc::new(AtomicUsize::new(0)),
+                cancellation: Some(cancellation.clone()),
+                preparation_steps: 0,
+                preparation_scratch_bytes: 0,
+                target: Some(Arc::clone(&target)),
+            })
+            .unwrap()],
+        );
+        let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
+        let request = InvariantExecutionRequest::from_profile_with_contract(
+            InvariantRequestProfile::CommitBoundary,
+            &view,
+            InvariantObservation::committed(edition),
+            head,
+            None,
+            None,
+        );
+        let serial = worth_harness::facade::execution_fixture::serial_request()
+            .with_cancellation(cancellation.token());
+        let original = if leased {
+            worth_execution::ExecutionRequest::leased(&lease)
+        } else {
+            worth_execution::ExecutionRequest::serial(&serial)
+        };
+        let result = InvariantEngine::from_view(&view).execute(&original, request);
+        assert_eq!(history.current_version_id(), head);
+        let visited = visits.load(Ordering::SeqCst);
+        assert!(
+            visited > 0 && visited < 1_000,
+            "the real evaluator must run before interruption"
+        );
+        assert!(matches!(
+            result,
+            Err(
+                crate::contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                    denial: crate::contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                        kind: crate::contracts::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
+                            crate::contracts::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
+                        ),
+                        ..
+                    },
+                    ..
+                }
+            )
+        ));
+    }
+}

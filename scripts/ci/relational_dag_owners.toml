@@ -28,6 +28,7 @@ floor = 56400
 depends = ["contracts", "storage"]
 
 [owners.lineage]
+physical = true
 crate = "worth-relational-lineage"
 layer = 3
 cap = 17000
@@ -35,6 +36,7 @@ floor = 7100
 depends = ["contracts", "storage", "branch"]
 
 [owners.mutation]
+physical = true
 crate = "worth-relational-mutation"
 layer = 3
 cap = 98000
@@ -42,6 +44,7 @@ floor = 51000
 depends = ["contracts", "storage", "branch"]
 
 [owners.merge]
+physical = true
 crate = "worth-relational-merge"
 layer = 3
 cap = 24000
@@ -49,6 +52,7 @@ floor = 9900
 depends = ["contracts", "storage", "branch"]
 
 [owners.indexes]
+physical = true
 crate = "worth-relational-indexes"
 layer = 3
 cap = 27000
@@ -77,6 +81,28 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"authority/mod.rs" = "runtime"
+"authorization/mod.rs" = "runtime"
+"branch/model_ownership/mod.rs" = "runtime"
+"commit_strategies/data/mod.rs" = "runtime"
+"commit_strategies/execution/mod.rs" = "runtime"
+"commit_strategies/mod.rs" = "runtime"
+"indexes/authority/maintenance/mod.rs" = "runtime"
+"indexes/authority/mod.rs" = "runtime"
+"merge/planning_artifact/mod.rs" = "runtime"
+"merge/policy/mod.rs" = "runtime"
+"mvcc/transaction/overlay_normalization.rs" = "runtime"
+"mvcc/validation/proposal_footprint/mod.rs" = "runtime"
+"mvcc/validation/proposal_identity.rs" = "runtime"
+"mvcc/validation/proposal_touches.rs" = "runtime"
+"runtime/initial_schema_installation/inventory_digest.rs" = "runtime"
+"transactions/mod.rs" = "runtime"
+"validation/candidate_source/mod.rs" = "runtime"
+"validation/engine/mod.rs" = "runtime"
+"validation/engine/tests/acyclicity_resources/native_prerequisites.rs" = "runtime"
+"validation/engine/tests/acyclicity_resources/native_prerequisites/effects.rs" = "runtime"
+"validation/engine/tests/mod.rs" = "runtime"
+"validation/invariant_authority/diagnostic_projection.rs" = "runtime"
 "branch/fork.rs" = "runtime"
 "branch/historical_selection.rs" = "runtime"
 "branch/lifecycle.rs" = "runtime"
@@ -104,7 +130,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/codec_retirement_closure/authored_restoration.rs" = "runtime"
 "history/data/codec_retirement_closure.rs" = "runtime"
 "history/data/mod.rs" = "runtime"
-"history/data/required_output_positions/presence.rs" = "mutation"
 "history/data/required_output_positions.rs" = "runtime"
 "history/retention/mod.rs" = "runtime"
 "projected_member_domain/mod.rs" = "runtime"
@@ -213,21 +238,13 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
 "validation/candidate_source/applied.rs" = "publication"
-"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
 
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
-"validation/engine/metrics/counters.rs" = "mutation"
 "runtime/settlement_port.rs" = "runtime"
 "durability/initial_schema_installation_denial.rs" = "durability"
-"validation/engine/request/relation_law_sources.rs" = "mutation"
-"validation/engine/input_preparation/counts.rs" = "mutation"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
-"authority/mutation/canonical_deltas" = "mutation"
-"authority/mutation/deletion_publication.rs" = "mutation"
-"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "mutation"
-"authority/mutation/outcomes/mutation_aspect_patch.rs" = "mutation"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
 "durability/canonical_commit_artifact/checkpoint_body.rs" = "durability"
@@ -247,16 +264,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/medium_transition_tail.rs" = "durability"
 "durability/recovery_transition_history.rs" = "durability"
 "durability/source_initial_inputs/producer_roster.rs" = "durability"
-"indexes/authority/maintenance/applied_field.rs" = "indexes"
-"indexes/authority/maintenance/charge_rendezvous.rs" = "indexes"
-"indexes/authority/maintenance/entry_edits.rs" = "indexes"
-"indexes/authority/maintenance/field_delta.rs" = "indexes"
-"indexes/authority/maintenance/field_keys.rs" = "indexes"
-"indexes/authority/maintenance/persistent_allocation.rs" = "indexes"
-"indexes/authority/maintenance/preparation.rs" = "indexes"
-"indexes/authority/maintenance/request_payment.rs" = "indexes"
-"indexes/authority/maintenance/root_view.rs" = "indexes"
-"indexes/authority/maintenance/work.rs" = "indexes"
 # Branch authenticates immutable row custody from the exact selected root.
 "replay/authority/commit_closure.rs" = "runtime"
 "replay/authority/diagnostics.rs" = "runtime"
@@ -317,9 +324,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/commit/envelope_residency_tests.rs" = "durability"
 "history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "runtime"
-"indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
-"indexes/authority/maintenance/retained_projection.rs" = "indexes"
-"lineage/access/event_demand.rs" = "lineage"
 "publication/ownership/authored_retirement" = "publication"
 "publication/ownership/route_selection.rs" = "publication"
 "publication/ownership/source_scope.rs" = "publication"
@@ -331,46 +335,22 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/ownership_certification.rs" = "runtime"
 "runtime/publication_capture.rs" = "runtime"
 "runtime/publication_settlement.rs" = "runtime"
-"runtime/state/subsystems/indexing/definition_catalog_schema_tests.rs" = "indexes"
-"runtime/state/subsystems/lineage/published_batch.rs" = "lineage"
 "visibility/materialization/read_records/projection/field_revisions/restore_tests.rs" = "runtime"
 "visibility/materialization/read_records/reader/request_paid_truth.rs" = "runtime"
-"indexes/access" = "indexes"
-"indexes/projected_field_values" = "indexes"
-"validation/candidate_source/image/eviction/tests.rs" = "mutation"
 "runtime/state/runtime_state/preparation_runtime/mirror_publication.rs" = "publication"
 
 
 "runtime/merge_ownership_probe.rs" = "runtime"
-"runtime/state/subsystems/schema_contract_runtime" = "mutation"
-"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
 
 
 # Longest physical path wins. Mixed roots stay with the live owner, and
 # declaration, refusal and wire leaves follow their defining responsibility.
-"aggregate_identity" = "mutation"
 "aspect_truth_flow.md" = "runtime"
-"authority" = "mutation"
 "authority/commit" = "publication"
-"authority/commit/plan_reservation_summary.rs" = "mutation"
-"authority/commit/semantic_plan/meaning.rs" = "mutation"
-"authority/commit/semantic_plan/retained_entity_payload.rs" = "mutation"
 # Validation packets carry Mutation's admitted observation and decision inputs.
-"authority/commit/preparation/facade.rs" = "mutation"
-"authority/commit/preparation/packets/invariant.rs" = "mutation"
-"authority/commit/preparation/packets/import.rs" = "mutation"
-"authority/commit/preparation/planning/context.rs" = "mutation"
-"authority/commit/preparation/proofs/validity.rs" = "mutation"
-"authority/commit/preparation/reduction/identity.rs" = "mutation"
-"authority/commit/preparation/reduction/keys.rs" = "mutation"
-"authority/commit/preparation/diagnostics/counters.rs" = "mutation"
-"authority/commit/preparation/diagnostics/observations.rs" = "mutation"
 # Index packet descriptors carry index keys. Read-only proof vocabulary and
 # packet placement are shared contracts; the paid ordered reducer is substrate.
-"authority/commit/preparation/packets/index" = "indexes"
 "authority/commit/preparation/reduction/merge/checked.rs" = "runtime"
-"authority/intent_merge" = "merge"
-"authorization" = "mutation"
 "authorization/runtime_dependencies.rs" = "runtime"
 "authorization/runtime_freshness.rs" = "runtime"
 "authorization/runtime_observation.rs" = "runtime"
@@ -394,7 +374,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/mod.rs" = "runtime"
 # Native custody stays below the live candidate and its completion receipt.
 "branch/materialization/completion.rs" = "runtime"
-"branch/model_ownership" = "mutation"
 "branch/model_ownership/current_publications.rs" = "publication"
 "branch/model_ownership/runtime_publications.rs" = "runtime"
 "branch/model_ownership/runtime_selection.rs" = "runtime"
@@ -411,16 +390,13 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "change_source" = "runtime"
 # Only the runtime admits a new observation or commit selection. Their retained
 # witnesses and retirement stay with the immutable Branch basis.
-"commit_strategies" = "merge"
 "commit_strategies/execution/bound_execution" = "runtime"
-"commit_strategies/data/execution/executor_registration" = "merge"
 "commit_strategies/data/lowering" = "runtime"
 "commit_strategies/facade" = "runtime"
 "commit_strategies/facade_tests" = "runtime"
 "commit_strategies/lowering" = "runtime"
 "commit_strategies/lowering_boundary_tests" = "runtime"
 "content/transaction" = "runtime"
-"derived_relation" = "mutation"
 "durability" = "durability"
 # Portable schema registration rows own meaning separate from their enclosing image.
 "durability/authority/recovery" = "durability"
@@ -431,9 +407,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/capture_custody_census" = "runtime"
 # Canonical wire image meaning is owned with the branch root; native frame
 # selection and authentication remain with Durability.
-"durability/data/lineage_event_pages" = "lineage"
 "durability/mod.rs" = "runtime"
-"durability/naming" = "lineage"
 "durability/recovery" = "durability"
 "execution/request_work/observation" = "runtime"
 "facade" = "runtime"
@@ -460,7 +434,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/codec_retirement_closure/authored_restoration/inverse.rs" = "publication"
 "history/data/codec_retirement_closure/authored_restoration/live.rs" = "runtime"
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
-"history/data/required_output_positions/presence/completion.rs" = "mutation"
 "history/mod.rs" = "runtime"
 "history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/history_request.rs" = "publication"
@@ -494,7 +467,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "indexes/access/routing" = "courts"
 "indexes/access/scratch" = "courts"
 "indexes/access/selected_entity_field_lookup" = "runtime"
-"indexes/authority" = "indexes"
 # Installed receivers bind the runtime and delegate row work to Indexes.
 "indexes/authority/basis_build.rs" = "runtime"
 "indexes/authority/build_diagnostics.rs" = "runtime"
@@ -516,7 +488,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "lib.rs" = "runtime"
 "lib_inline_type_budget.rs" = "runtime"
 "lineage" = "publication"
-"lineage/access" = "lineage"
 "lineage/access/aspect_history" = "runtime"
 "lineage/access/discovery" = "runtime"
 "lineage/access/divergence" = "runtime"
@@ -526,19 +497,10 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "lineage/access/records" = "runtime"
 "lineage/access/resolution" = "runtime"
 "lineage/access/selected_root_resolution" = "runtime"
-"lineage/authority" = "lineage"
-"lineage/index" = "lineage"
-"merge" = "merge"
 "merge/access" = "runtime"
 "merge/causal_scope" = "runtime"
 "merge/conflict_scope" = "runtime"
 "merge/correspondence_witness_access" = "runtime"
-"merge/data/execution/test_support" = "merge"
-"merge/data/mod.rs" = "merge"
-"merge/data/plans" = "merge"
-"merge/data/prepared_execution" = "merge"
-"merge/data/requests.rs" = "merge"
-"merge/data/requests/owner_bound" = "merge"
 "merge/execution/authority_verification" = "runtime"
 "merge/execution/mod.rs" = "runtime"
 "merge/facade" = "runtime"
@@ -561,25 +523,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/publication/port_service_retirement.rs" = "runtime"
 # Canonical output vocabulary contains only role and producing coordinates.
 "mvcc/publication/companion/cell/managed_source/rebuild" = "publication"
-"mvcc/owned_graph_selection/prepared.rs" = "mutation"
-"mvcc/transaction/footprint" = "mutation"
-"mvcc/transaction/footprint_client_keys.rs" = "mutation"
-"mvcc/transaction/footprint_staging.rs" = "mutation"
-"mvcc/transaction/index_row.rs" = "mutation"
-"mvcc/transaction/intent_locus.rs" = "mutation"
 "mvcc/transaction/staged_plan.rs" = "publication"
-"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
-"mvcc/transaction/staged_mutations.rs" = "mutation"
-"mvcc/transaction/normalized_key_cache" = "mutation"
-"mvcc/transaction/effective_records.rs" = "mutation"
-"mvcc/transaction/relation_value.rs" = "mutation"
-"mvcc/transaction/overlay_normalization.rs" = "mutation"
-"mvcc/transaction/overlay" = "mutation"
-"mvcc/transaction/overlay_indexing.rs" = "mutation"
-"mvcc/transaction/staging_storage" = "mutation"
-"mvcc/transaction/normalized_plan" = "mutation"
-"mvcc/transaction/reconstructed_merge_plan" = "mutation"
-"mvcc/validation" = "mutation"
 "mvcc/validation.rs" = "runtime"
 "mvcc/validation/invariant_plan.rs" = "runtime"
 "mvcc/validation/proposal_candidate.rs" = "runtime"
@@ -593,7 +537,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "performance" = "runtime"
 "presentation" = "runtime"
 "presentation/harness" = "courts"
-"projected_member_domain/projection" = "mutation"
 "publication/access" = "runtime"
 "publication/authority" = "publication"
 "publication/bundle" = "publication"
@@ -635,11 +578,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
 # Closing the source binds both Branch ledger and Publication route custody.
 "runtime/state/subsystems/history_source_retirement" = "publication"
-"runtime/state/subsystems/indexing" = "indexes"
 # Original index member admission and source retirement stay in Durability.
 "runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
-"runtime/state/subsystems/lineage" = "lineage"
-"runtime/state/subsystems/lineage_identity" = "lineage"
 "runtime/state/subsystems/publication" = "publication"
 "simulation" = "runtime"
 "storage/access" = "runtime"
@@ -647,29 +587,17 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "storage/residency/cross_region_forgery_tests" = "runtime"
 "tests" = "courts"
 # This existing source-court path now contains only the shared SDK request fixture.
-"transactions" = "mutation"
 "transactions/data/mod.rs" = "publication"
 "transactions/data/outcomes/commit_result" = "publication"
-"transactions/data/outcomes/commit_semantic_result/validation/production" = "mutation"
-"transactions/data/outcomes/commit_semantic_result/validation/tests" = "mutation"
-"transactions/data/outcomes/live_commit_validation" = "mutation"
 "transactions/data/outcomes/merge_execution_outcome" = "publication"
 "transactions/data/outcomes/mod.rs" = "publication"
-"validation" = "mutation"
 # Retained history keeps original descriptive material. Evaluation over an
 # applied mutation and its work budget is owned by Mutation.
-"validation/candidate_source/authored_history/admission.rs" = "mutation"
-"validation/candidate_source/authored_history/collection" = "mutation"
-"validation/candidate_source/authored_history/preparation.rs" = "mutation"
-"validation/candidate_source/authored_history/material_capture.rs" = "mutation"
 "validation/data/custom_rule.rs" = "runtime"
 "validation/data/mod.rs" = "runtime"
 "validation/invariant_access" = "runtime"
 "validation/invariant_authority" = "runtime"
 "validation/invariant_authority/preparation_diagnostics.rs" = "publication"
-"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
-"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
-"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
 
 "validation/mod.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
@@ -748,7 +676,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 
 
 
-"indexes/access/definition_lookup.rs" = "indexes"
 
 
 
@@ -765,17 +692,14 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 
 
 
-"inspection/data/merge_support/rows.rs" = "merge"
 
 "mvcc/transaction/prepared_change_summary.rs" = "publication"
 
-"mvcc/transaction/intent.rs" = "mutation"
 
 "publication/cdc/planning/continuity_assessment/disposition.rs" = "publication"
 
 "publication/cdc/data/subscriber_recovery_plan/continuation_assessment.rs" = "publication"
 
-"runtime/initial_schema_installation/inventory_digest.rs" = "mutation"
 
 
 
@@ -787,7 +711,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 
 "mvcc/publication/application_publication/continuity_tests/materialization/incident_owner.rs" = "runtime"
 
-"mvcc/transaction/read_projection" = "mutation"
 
 
 
@@ -967,24 +890,16 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
 "runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
 "validation/candidate_source/applied.rs" = "publication"
-"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
 
 "derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
 "derived_relation/read.rs" = "contracts"
 "performance/complexity_counter_sink.rs" = "contracts"
-"validation/engine/metrics/counters.rs" = "mutation"
 "runtime/settlement_port.rs" = "runtime"
 "durability/initial_schema_installation_denial.rs" = "durability"
-"validation/engine/request/relation_law_sources.rs" = "mutation"
-"validation/engine/input_preparation/counts.rs" = "mutation"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
-"authority/mutation/canonical_deltas" = "mutation"
-"authority/mutation/deletion_publication.rs" = "mutation"
-"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "mutation"
-"authority/mutation/outcomes/mutation_aspect_patch.rs" = "mutation"
 "branch/model_ownership/read_denial.rs" = "contracts"
 "schema/home_program_catalog_receipt.rs" = "contracts"
 "durability/artifact_payload_emission.rs" = "durability"
@@ -996,16 +911,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/canonical_commit_artifact/payload_wire" = "durability"
 "durability/canonical_commit_artifact/verified_frame.rs" = "durability"
 "durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
-"indexes/authority/maintenance/applied_field.rs" = "indexes"
-"indexes/authority/maintenance/charge_rendezvous.rs" = "indexes"
-"indexes/authority/maintenance/entry_edits.rs" = "indexes"
-"indexes/authority/maintenance/field_delta.rs" = "indexes"
-"indexes/authority/maintenance/field_keys.rs" = "indexes"
-"indexes/authority/maintenance/persistent_allocation.rs" = "indexes"
-"indexes/authority/maintenance/preparation.rs" = "indexes"
-"indexes/authority/maintenance/request_payment.rs" = "indexes"
-"indexes/authority/maintenance/root_view.rs" = "indexes"
-"indexes/authority/maintenance/work.rs" = "indexes"
 # Branch authenticates immutable row custody from the exact selected root.
 "durability/authority/checkpoint_complete/capture/freeze.rs" = "runtime"
 "durability/authority_continuity/issue_mapping.rs" = "durability"
@@ -1069,10 +974,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/durability_authority.rs" = "runtime"
 "runtime/recovered_retirement_trials.rs" = "runtime"
 "lineage/access/graph" = "runtime"
-"indexes/access" = "indexes"
-"indexes/projected_field_values" = "indexes"
-"validation/candidate_source/image/eviction/tests.rs" = "mutation"
-"authority/commit/plan_reservation_summary.rs" = "mutation"
 "history/retention/cost_counters/snapshot.rs" = "contracts"
 "runtime/close_denial.rs" = "contracts"
 "change_source/memory_close_observation.rs" = "contracts"
@@ -1094,7 +995,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "aggregate_identity/transition/group/transition_result" = "contracts"
 
 # Lineage owns the event payload and its page routing descriptor.
-"durability/data/lineage_event_pages" = "lineage"
 
 # Runtime binds selected history and observation access. The event walk and name index retain the lineage owner.
 "lineage/access/aspect_history" = "runtime"
@@ -1107,8 +1007,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "lineage/access/selected_root_resolution" = "runtime"
 
 # Strategy registries and execution planning join merge. Live executor binding belongs to runtime.
-"commit_strategies" = "merge"
-"commit_strategies/data/execution/executor_registration" = "merge"
 "commit_strategies/execution/bound_execution" = "runtime"
 
 # Merge owns its plan value exports. Runtime selects operands, binds authority and records work.
@@ -1116,7 +1014,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "merge/causal_scope" = "runtime"
 "merge/conflict_scope" = "runtime"
 "merge/correspondence_witness_access" = "runtime"
-"merge/data/mod.rs" = "merge"
 "merge/execution/authority_verification" = "runtime"
 "merge/execution/mod.rs" = "runtime"
 "merge/identity_scope" = "runtime"
@@ -1190,7 +1087,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 # Publication reports exact custody held by its candidate, settlement and companion owners.
 "publication/close_custody" = "contracts"
 # Stage 2.3B ownership changes relative to certified Stage 2.2+2.3A.
-"authority/commit/preparation/packets/index" = "indexes"
 "authority/commit/preparation/planning/strategy" = "contracts"
 "authority/commit/preparation/proofs/kinds" = "contracts"
 "authority/commit/preparation/proofs/locality" = "contracts"
@@ -1276,10 +1172,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/history_branch_transition.rs" = "publication"
 "runtime/state/subsystems/history_source_retirement" = "publication"
 "runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
-"validation/candidate_source/authored_history/admission.rs" = "mutation"
-"validation/candidate_source/authored_history/collection" = "mutation"
-"validation/candidate_source/authored_history/material_capture.rs" = "mutation"
-"validation/candidate_source/authored_history/preparation.rs" = "mutation"
 "visibility/materialization/read_records/reader/query_plan_execution" = "publication"
 "visibility/pins/pin_authority/branch_head_residency.rs" = "runtime"
 "visibility/pins/pin_authority/mod.rs" = "runtime"
@@ -1288,19 +1180,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "visibility/snapshot_release/runtime.rs" = "runtime"
 
 # Stage 2.4A keeps the semantic plan and admitted validation packets with Mutation.
-"authority/commit/semantic_plan/meaning.rs" = "mutation"
-"authority/commit/semantic_plan/retained_entity_payload.rs" = "mutation"
-"authority/commit/preparation/diagnostics/counters.rs" = "mutation"
-"authority/commit/preparation/diagnostics/observations.rs" = "mutation"
-"authority/commit/preparation/facade.rs" = "mutation"
-"authority/commit/preparation/packets/import.rs" = "mutation"
-"authority/commit/preparation/packets/invariant.rs" = "mutation"
-"authority/commit/preparation/planning/context.rs" = "mutation"
-"authority/commit/preparation/proofs/validity.rs" = "mutation"
-"authority/commit/preparation/reduction/identity.rs" = "mutation"
-"authority/commit/preparation/reduction/keys.rs" = "mutation"
-"history/data/required_output_positions/presence/completion.rs" = "mutation"
-"mvcc/owned_graph_selection/prepared.rs" = "mutation"
 
 # Runtime binds live authorization and invariant authority. Publication reads current ownership.
 "authorization/runtime_dependencies.rs" = "runtime"
@@ -1312,21 +1191,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "validation/preparation_invariant_authority.rs" = "runtime"
 
 # Transaction packet vocabulary is shared. Branch owns denials for selected reads.
-"mvcc/transaction/footprint" = "mutation"
-"mvcc/transaction/footprint_client_keys.rs" = "mutation"
-"mvcc/transaction/footprint_staging.rs" = "mutation"
-"mvcc/transaction/index_row.rs" = "mutation"
-"mvcc/transaction/intent_locus.rs" = "mutation"
 "mvcc/transaction/staged_plan.rs" = "publication"
-"mvcc/transaction/staged_plan_normalization.rs" = "mutation"
-"mvcc/transaction/staged_mutations.rs" = "mutation"
-"mvcc/transaction/normalized_key_cache" = "mutation"
-"mvcc/transaction/effective_records.rs" = "mutation"
-"mvcc/transaction/relation_value.rs" = "mutation"
-"mvcc/transaction/overlay_normalization.rs" = "mutation"
-"mvcc/transaction/overlay" = "mutation"
-"mvcc/transaction/overlay_indexing.rs" = "mutation"
-"mvcc/transaction/staging_storage" = "mutation"
 "mvcc/transaction/intent/materialization_mode.rs" = "contracts"
 "mvcc/transaction/staging.rs" = "contracts"
 
@@ -1340,10 +1205,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/commit/envelope_residency_tests.rs" = "durability"
 "history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "runtime"
-"indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
-"indexes/authority/maintenance/retained_projection.rs" = "indexes"
-"lineage/access/event_demand.rs" = "lineage"
-"runtime/state/subsystems/indexing/definition_catalog_schema_tests.rs" = "indexes"
 "visibility/materialization/read_records/projection/field_revisions/restore_tests.rs" = "runtime"
 "visibility/materialization/read_records/reader/request_paid_truth.rs" = "runtime"
 
@@ -1354,7 +1215,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/publication_capture.rs" = "runtime"
 
 # The published lineage batch is installed by its state owner.
-"runtime/state/subsystems/lineage/published_batch.rs" = "lineage"
 
 # Runtime binds the original certification controls to their Publication owners.
 "runtime/ownership_certification.rs" = "runtime"
@@ -1385,7 +1245,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/history_committed_receipts.rs" = "publication"
 
 # Paid merge mutation plan reconstruction uses the normalized-intent owner.
-"mvcc/transaction/reconstructed_merge_plan" = "mutation"
 
 # Weak allocation identity does not require checkpoint custody or recovery.
 "storage/substrate/allocation_witness.rs" = "storage"
@@ -1426,13 +1285,8 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Invariant diagnostic projection belongs to its analysis and emission owners.
 "validation/invariant_authority/preparation_diagnostics.rs" = "publication"
-"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
-"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
-"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
 
 # Frozen schema executors and exact captured receiver pairs precede live installation.
-"runtime/state/subsystems/schema_contract_runtime" = "mutation"
-"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
 
 # The installed receiver binds the original fork, merge and preparation services.
 "runtime/merge_ownership_probe.rs" = "runtime"
@@ -1498,7 +1352,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 
 
-"indexes/access/definition_lookup.rs" = "indexes"
 
 
 
@@ -1515,17 +1368,14 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 
 
-"inspection/data/merge_support/rows.rs" = "merge"
 
 "mvcc/transaction/prepared_change_summary.rs" = "publication"
 
-"mvcc/transaction/intent.rs" = "mutation"
 
 "publication/cdc/planning/continuity_assessment/disposition.rs" = "publication"
 
 "publication/cdc/data/subscriber_recovery_plan/continuation_assessment.rs" = "publication"
 
-"runtime/initial_schema_installation/inventory_digest.rs" = "mutation"
 
 
 "performance/data/complexity_contract_inventory" = "contracts"
@@ -1538,7 +1388,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 "mvcc/publication/application_publication/continuity_tests/materialization/incident_owner.rs" = "runtime"
 
-"mvcc/transaction/read_projection" = "mutation"
 
 
 "transactions/data/mod.rs" = "publication"

@@ -10,7 +10,7 @@ pub(super) fn compare_registries(
     target: &RelationalSchemaRegistry,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    for (kind, previous) in &(*source.owner_relation_kinds()) {
+    for (kind, previous) in source.owner_relation_kinds() {
         charge(context, lookup_work((*target.owner_relation_kinds()).len()))?;
         let previous = &previous.relation_integrity;
         charge_meaning(context, previous)?;

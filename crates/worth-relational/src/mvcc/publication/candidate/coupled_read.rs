@@ -29,7 +29,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let payload = payload.as_mut().expect("newly registered candidate");
         assert!(std::sync::Arc::ptr_eq(
-            &(*before.owner_inner()).root,
+            &before.owner_inner().root,
             &payload.expected_root
         ));
         assert_eq!(proposal.runtime_instance_id(), self.runtime_instance_id);

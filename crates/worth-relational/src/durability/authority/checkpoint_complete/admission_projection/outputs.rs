@@ -21,11 +21,11 @@ impl Serialize for Projection<'_> {
         )?;
         record.serialize_field(
             "materialization",
-            &(*self.0.owner_required_output_materialization()),
+            self.0.owner_required_output_materialization(),
         )?;
         record.serialize_field(
             "retirements",
-            &Retirements(&(*self.0.owner_required_output_codec_retirements())),
+            &Retirements(self.0.owner_required_output_codec_retirements()),
         )?;
         record.end()
     }

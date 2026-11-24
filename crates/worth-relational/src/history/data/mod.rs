@@ -1,7 +1,5 @@
-pub use worth_relational_contracts::internal_port::history::data::canonical_record_allocation;
 pub use worth_relational_contracts::internal_port::history::data::commit_receipt;
 pub use worth_relational_contracts::internal_port::history::data::coordinates;
-pub use worth_relational_contracts::internal_port::history::data::merge_branch_basis;
 pub use worth_relational_contracts::internal_port::history::data::replay_version;
 pub mod canonical_commit_envelope;
 pub mod codec_retirement_closure;

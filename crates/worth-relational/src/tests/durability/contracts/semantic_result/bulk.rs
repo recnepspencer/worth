@@ -100,7 +100,9 @@ fn semantic_result_bulk_entities_and_relations_seal_and_readmit_original_binding
     let admitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
     assert_eq!(admitted.envelope().semantic_result(), semantic);
     assert!(
-        (*admitted.envelope().owner_symbol_texts())
+        admitted
+            .envelope()
+            .owner_symbol_texts()
             .entries
             .iter()
             .any(|(_, text)| text.as_str() == "bulk-input-00"),

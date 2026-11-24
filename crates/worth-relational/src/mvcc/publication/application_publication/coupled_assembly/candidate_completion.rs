@@ -1,4 +1,5 @@
 //! Exact participant completion is sealed before the one final invariant judgment.
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use super::*;
 use crate::authority::mutation::MutationApplyDenial;
 use crate::branch::selected_read::SelectedRelationalBranchRead;

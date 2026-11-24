@@ -140,7 +140,7 @@ pub(crate) fn predecessor_publication_input(
         .publication_bases()
         .unwrap_or_else(|| {
             PublicationBasisImage::at_for_owner(
-                &(*selected.owner_inner()).root,
+                &selected.owner_inner().root,
                 &history.retention_binding(),
             )
         });
@@ -148,7 +148,7 @@ pub(crate) fn predecessor_publication_input(
         .saturating_add(1)
         .saturating_mul(prior.origin.meaning.family.len() as u64 + 1)
         .saturating_mul(2);
-    let positions = &(*selected.owner_inner()).root.output_publication_positions;
+    let positions = &selected.owner_inner().root.output_publication_positions;
     let position = execution
         .run_native_with_checkpoint(|context| {
             crate::execution::request_stage::checkpoint(context, work)?;

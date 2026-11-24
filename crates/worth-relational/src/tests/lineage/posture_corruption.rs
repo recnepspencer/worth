@@ -4,7 +4,7 @@ use crate::facade::lineage::{
     LineageRecordTarget, LineageSplitChild, LineageSubject,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
@@ -21,7 +21,7 @@ fn run_refused(
     input: &LineageCommitPostureInput,
 ) -> LineageNameDenial {
     let before = allocator.frontiers();
-    let err = finalize_postures_in_working_state(
+    let err = finalize_postures_in_working_state_for_test(
         allocator,
         staged,
         &receipt_at(2, 2),
@@ -318,7 +318,7 @@ fn corruption_court_6_unpostured_replace_blocked_by_posture_claimed_target_refus
     }]);
 
     let before = allocator.frontiers();
-    let err = finalize_postures_in_working_state(
+    let err = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut base.staged,
         &receipt_at(2, 2),

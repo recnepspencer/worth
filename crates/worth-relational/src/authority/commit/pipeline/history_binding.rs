@@ -7,6 +7,7 @@ use crate::authority::commit::phases::schema_continuity::{
 };
 use crate::transactions::data::commit_log::CommitPhase;
 use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 pub(super) struct HistoryBoundCommitExecution {
     mutated: MutatedCommitExecution,

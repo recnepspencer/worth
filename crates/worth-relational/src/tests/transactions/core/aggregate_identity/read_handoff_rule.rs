@@ -1,4 +1,6 @@
 //! Installed Native rules retain real aggregate reads across preparation and seal.
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
+use worth_relational_mutation::internal_port::validation::custom_rule::structural_views::StructuralRelationViewFixturePort as _;
 pub(super) mod parallel;
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -109,7 +111,7 @@ impl ReaderRule {
         committed: &StructuralRelationView<'_>,
     ) {
         let source = proposed
-            .structural_source
+            .structural_source_for_test()
             .as_ref()
             .map(|(_, source)| source)
             .expect("genuine Native observation");
@@ -122,7 +124,7 @@ impl ReaderRule {
         assert_eq!(owner.suspension_source_version(), Some(source.version));
         assert_ne!(owner.proposed_version(), source.version);
         assert!(!logical.records().is_empty());
-        let (_, before) = committed.structural_source.as_ref().unwrap();
+        let (_, before) = committed.structural_source_for_test().as_ref().unwrap();
         assert_eq!(before.observation, source.observation);
         assert_eq!(before.version, source.version);
         assert!(before.committed && !source.committed);
@@ -146,7 +148,7 @@ impl ReaderRule {
         };
         let mut capture = Capture {
             source: proposed
-                .structural_source
+                .structural_source_for_test()
                 .as_ref()
                 .map(|(_, source)| source.clone()),
             rule: self.id,

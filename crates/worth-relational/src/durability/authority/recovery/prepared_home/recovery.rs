@@ -37,12 +37,11 @@ impl DurabilityRecoveryAuthority<'_> {
                 .state
                 .graph
                 .bind_home_executables(
-                    &(*self
-                        .runtime
+                    self.runtime
                         .config()
                         .schema
                         .registry
-                        .owner_content_formats()),
+                        .owner_content_formats(),
                     request,
                 )
                 .map_err(Denial::Recovery)?;

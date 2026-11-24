@@ -34,11 +34,12 @@ pub(crate) fn complete(
     roster: &CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CompletedOwnership, TransactionCommitError> {
-    let Some(storage) = &(*(*basis.owner_inner())
+    let Some(storage) = basis
+        .owner_inner()
         .root
         .schema_authority()
         .registry()
-        .owner_current_publication_storage())
+        .owner_current_publication_storage()
     else {
         return Err(
             crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -122,7 +123,7 @@ pub(crate) fn complete(
             scopes.push(scope);
         }
     }
-    for retired in &(*candidate.owner_required_output_codec_retirements()) {
+    for retired in candidate.owner_required_output_codec_retirements() {
         writer.checkpoint(
             scopes.len() + roster.publications.len() + roster.codec_retired.len() + 1,
         )?;

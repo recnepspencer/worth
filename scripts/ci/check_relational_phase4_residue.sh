@@ -6,7 +6,14 @@ RELATIONAL_ROOT="$ROOT_DIR/crates/worth-relational/src"
 CONTRACTS_ROOT="$ROOT_DIR/crates/worth-relational-contracts/src"
 STORAGE_ROOT="$ROOT_DIR/crates/worth-relational-storage/src"
 BRANCH_ROOT="$ROOT_DIR/crates/worth-relational-branch/src"
-RELATIONAL_SOURCES=("$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT" "$BRANCH_ROOT")
+MUTATION_ROOT="$ROOT_DIR/crates/worth-relational-mutation/src"
+RELATIONAL_SOURCES=(
+  "$RELATIONAL_ROOT" "$CONTRACTS_ROOT" "$STORAGE_ROOT" "$BRANCH_ROOT"
+  "$ROOT_DIR/crates/worth-relational-indexes/src"
+  "$ROOT_DIR/crates/worth-relational-lineage/src"
+  "$ROOT_DIR/crates/worth-relational-merge/src"
+  "$MUTATION_ROOT"
+)
 RAW_REQUESTS="$CONTRACTS_ROOT/merge/data/requests/raw.rs"
 
 failures=0
@@ -48,9 +55,9 @@ fi
 
 if rg -n "test_for_(main_branch|branch)|with_test_|with_owner_binding|legacy_branch_binding\(" \
   "$CONTRACTS_ROOT/transactions/data/options.rs" \
-  "$RELATIONAL_ROOT/transactions/runtime_entry.rs" \
+  "$MUTATION_ROOT/transactions/admission" \
   "$RELATIONAL_ROOT/runtime/state/runtime_state/core_access.rs" \
-  "$RELATIONAL_ROOT/branch/authority.rs" >/tmp/worth-relational-phase4-residue.txt 2>&1; then
+  "$BRANCH_ROOT/branch/authority.rs" >/tmp/worth-relational-phase4-residue.txt 2>&1; then
   echo "[relational-phase4-residue] FAIL: transaction authority still has a test-only synthetic lane" >&2
   cat /tmp/worth-relational-phase4-residue.txt >&2
   failures=1

@@ -38,11 +38,8 @@ impl CapturedCheckpointBasis {
                     .is_none()
             });
             self.lineage_nodes.retain(|node| {
-                RelationalCheckpointPage::find(
-                    &prior.manifest.lineage,
-                    (*node.owner_lineage_id()).0,
-                )
-                .is_none()
+                RelationalCheckpointPage::find(&prior.manifest.lineage, node.owner_lineage_id().0)
+                    .is_none()
             });
         }
         let resident_event_rows = if placement.is_embedded() {

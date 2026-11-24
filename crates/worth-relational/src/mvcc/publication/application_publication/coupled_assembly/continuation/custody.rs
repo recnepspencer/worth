@@ -5,6 +5,7 @@ use crate::identity::data::EntityId;
 use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 /// Exact candidate/round custody. A new execution still needs its own current
 /// operation admission, and Native still judges its entire body before adoption.
 pub struct RelationalCoupledProducerContinuation {

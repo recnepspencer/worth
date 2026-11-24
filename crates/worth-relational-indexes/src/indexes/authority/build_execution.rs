@@ -1,0 +1,243 @@
+use crate::contracts::indexes::data::definition::{
+    DerivedIndexDefinitionOwnerPort as _, DerivedIndexId, DerivedIndexKind,
+};
+use worth_execution::ExecutionResourceLease;
+use worth_foundational::PartitionIdentity;
+use worth_relational_branch::internal_port::indexes::data::allocation_accounting::DerivedIndexEntriesOwnerPort as _;
+
+use crate::authority::commit::preparation::packets::index::IndexPreparationPacket;
+use crate::authority::commit::preparation::packets::index::IndexReductionKey;
+use worth_relational_storage::internal_port::authority::commit::preparation::reduction::merge::{OrderedReductionStream, canonical_merge_streams};
+use worth_relational_storage::internal_port::authority::commit::preparation::reduction::merge::checked_engine::canonical_merge_streams_checked;
+use crate::contracts::execution::packet_memory::PacketKernelContext;
+use crate::contracts::execution::read_only_packets::{PacketBudgetDenial, PacketExecutionStop, ReadOnlyPacket, execute_read_only_packets_with_budget};
+use crate::contracts::execution::request_work::RequestWorkBudget;
+use worth_relational_branch::internal_port::indexes::data::DerivedIndexEntries;
+use crate::contracts::indexes::data::execution_denial::DerivedIndexExecutionDenial;
+
+use super::super::projected_field_values::{
+    build_entity_aspect_field_index, build_entity_aspect_field_index_checked,
+    build_related_entity_ordering_index, build_related_entity_ordering_index_checked,
+    build_relation_aspect_field_index, build_relation_aspect_field_index_checked,
+    build_relation_join_index, build_relation_join_index_checked, checked_finish,
+    IndexProjectionSource, RelatedEntityOrderingProjection,
+};
+
+#[derive(Debug, Clone)]
+pub struct IndexPreparationResult {
+    pub(super) index_id: DerivedIndexId,
+    pub(super) entries: Option<DerivedIndexEntries>,
+}
+
+type IndexResultStream = OrderedReductionStream<IndexReductionKey, IndexPreparationResult>;
+
+pub fn execute_index_packets(
+    lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<
+        '_,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
+    packets: Vec<IndexPreparationPacket>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    work_budget: Option<&RequestWorkBudget>,
+) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
+    // The definition key is the stable partition identity. Sorting here also
+    // prevents caller request order from affecting worker assignment or merge.
+    let mut ordered = packets;
+    ordered.sort_by_key(|packet| (packet.definition.index_id.0, packet.header.packet_index));
+    // Each packet charges the lease what it actually holds; the lease's own
+    // memory policy is the bound, not a per-packet share of it.
+    let memory = crate::contracts::execution::packet_memory::PacketMemory::Tracked;
+    let inputs = ordered
+        .into_iter()
+        .enumerate()
+        .map(|(ordinal, packet)| ReadOnlyPacket {
+            identity: PartitionIdentity::new(ordinal as u64),
+            input_bytes: packet.definition.owned_allocation_capacity_bytes(),
+            memory,
+            value: packet,
+        })
+        .collect();
+    execute_index_inputs(lane, execution, projection, inputs, lease, work_budget)
+}
+
+pub fn execute_index_inputs(
+    lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<
+        '_,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
+    inputs: Vec<ReadOnlyPacket<IndexPreparationPacket>>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    work_budget: Option<&RequestWorkBudget>,
+) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
+    let reconstruction = projection.reconstructing(lane);
+    let projection = &reconstruction;
+    crate::contracts::execution::read_only_packets::admit_read_only_packet_order(&inputs)
+        .map_err(PacketExecutionStop::Admission)
+        .map_err(index_execution_denial)?;
+    let streams = if let Some(lease) = lease {
+        execute_read_only_packets_with_budget(
+            inputs,
+            lease,
+            work_budget,
+            |packet, context| {
+                index_packet_result_checked(lane, execution, projection, packet, context)
+            },
+            |stream: &IndexResultStream| {
+                stream.owned_allocation_capacity_bytes(|_, result| {
+                    result
+                        .entries
+                        .as_ref()
+                        .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
+                })
+            },
+        )
+        .map_err(index_execution_denial)?
+    } else {
+        crate::contracts::execution::unleased_read_only_packets::execute_unleased_read_only_packets(
+            &inputs,
+            |packet| index_packet_result(lane, execution, projection, packet),
+        )
+        .map_err(|stop| index_execution_denial(stop.into()))?
+    };
+    let merged = if let Some(lease) = lease {
+        canonical_merge_streams_checked(
+            streams,
+            lease,
+            work_budget,
+            |_, result: &IndexPreparationResult| {
+                result
+                    .entries
+                    .as_ref()
+                    .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
+            },
+            |_| 0,
+        )
+        .map_err(index_execution_denial)?
+    } else {
+        canonical_merge_streams(streams)
+    };
+    Ok(merged)
+}
+
+fn index_packet_result_checked(
+    lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<
+        '_,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
+    packet: &IndexPreparationPacket,
+    context: &mut PacketKernelContext<'_, '_, '_>,
+) -> Result<IndexResultStream, worth_execution::MapKernelFailure<PacketBudgetDenial>> {
+    let entries = match &packet.definition.kind {
+        DerivedIndexKind::EntityField { field_locator } => {
+            DerivedIndexEntries::EntityField(checked_finish(
+                build_entity_aspect_field_index_checked(
+                    lane,
+                    execution,
+                    projection,
+                    field_locator,
+                    context,
+                )?,
+                context,
+            )?)
+        }
+        DerivedIndexKind::RelationField { field_locator } => {
+            DerivedIndexEntries::RelationField(checked_finish(
+                build_relation_aspect_field_index_checked(
+                    lane,
+                    execution,
+                    projection,
+                    field_locator,
+                    context,
+                )?,
+                context,
+            )?)
+        }
+        DerivedIndexKind::RelatedEntityOrdering {
+            relation_kind,
+            parent_endpoint,
+            child_kind,
+            ordering,
+        } => {
+            let contract = RelatedEntityOrderingProjection::new(
+                *relation_kind,
+                *parent_endpoint,
+                *child_kind,
+                ordering,
+            );
+            DerivedIndexEntries::RelatedEntityOrdering(checked_finish(
+                build_related_entity_ordering_index_checked(
+                    lane, execution, projection, &contract, context,
+                )?,
+                context,
+            )?)
+        }
+        DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
+            build_relation_join_index_checked(lane, execution, projection, *definition, context)?,
+        ),
+    };
+    context.checkpoint(1)?;
+    Ok(OrderedReductionStream::singleton(
+        packet.header.reduction_key,
+        IndexPreparationResult {
+            index_id: packet.definition.index_id,
+            entries: Some(entries),
+        },
+    ))
+}
+
+fn index_packet_result(
+    lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<
+        '_,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    projection: &IndexProjectionSource<'_>,
+    packet: &IndexPreparationPacket,
+) -> Result<
+    IndexResultStream,
+    crate::contracts::execution::denial_cause::RelationalExecutionDenialCause,
+> {
+    let entries = match &packet.definition.kind {
+        DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
+            build_entity_aspect_field_index(lane, execution, projection, field_locator)?.into(),
+        ),
+        DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
+            build_relation_aspect_field_index(lane, execution, projection, field_locator)?.into(),
+        ),
+        DerivedIndexKind::RelatedEntityOrdering {
+            relation_kind,
+            parent_endpoint,
+            child_kind,
+            ordering,
+        } => DerivedIndexEntries::RelatedEntityOrdering(
+            build_related_entity_ordering_index(
+                lane,
+                execution,
+                projection,
+                &RelatedEntityOrderingProjection::new(
+                    *relation_kind,
+                    *parent_endpoint,
+                    *child_kind,
+                    ordering,
+                ),
+            )?
+            .into(),
+        ),
+        DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
+            build_relation_join_index(lane, execution, projection, *definition)?,
+        ),
+    };
+    Ok(OrderedReductionStream::singleton(
+        packet.header.reduction_key,
+        IndexPreparationResult {
+            index_id: packet.definition.index_id,
+            entries: Some(entries),
+        },
+    ))
+}
+
+pub fn index_execution_denial(stop: PacketExecutionStop) -> DerivedIndexExecutionDenial {
+    stop.into()
+}

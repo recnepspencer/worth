@@ -127,7 +127,8 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
     release_test_commit_snapshot(&runtime, &replacement);
     let before = test_owner_main_basis(&runtime).unwrap();
     for id in ids {
-        assert!(!(*before.owner_inner())
+        assert!(!before
+            .owner_inner()
             .root
             .partition_state(id.partition_id)
             .unwrap()

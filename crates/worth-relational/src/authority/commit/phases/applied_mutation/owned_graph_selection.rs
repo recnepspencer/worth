@@ -49,7 +49,11 @@ pub(crate) fn apply<'a>(
         &outcome.effect.publication.changed_records,
         identity.proposed_version_id(),
         Some(
-            (*retained.graph.entities().selected_basis().owner_inner())
+            retained
+                .graph
+                .entities()
+                .selected_basis()
+                .owner_inner()
                 .root
                 .retained_content(),
         ),

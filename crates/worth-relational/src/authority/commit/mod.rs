@@ -1,7 +1,7 @@
 pub(crate) mod lineage_preparation;
 pub(crate) mod phases;
 pub(crate) mod pipeline;
-mod plan_reservation_summary;
+pub(crate) use worth_relational_mutation::internal_port::authority::commit::plan_reservation_summary;
 pub(crate) mod preparation;
 mod publication;
 pub(crate) mod semantic_plan;

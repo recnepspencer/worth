@@ -38,7 +38,7 @@ pub(crate) use worth_relational_storage::internal_port::durability::medium;
 pub(crate) mod medium_recovery_readmission;
 pub(crate) mod medium_transition_tail;
 pub(crate) mod migration;
-pub(crate) mod naming;
+pub(crate) use worth_relational_lineage::internal_port::durability::naming;
 pub(crate) mod published_medium;
 pub(crate) mod recovery;
 pub(crate) mod recovery_transition_history;

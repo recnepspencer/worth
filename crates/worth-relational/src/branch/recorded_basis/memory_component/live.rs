@@ -23,7 +23,7 @@ impl RelationalRuntime {
         )
         .map_err(Refusal::Basis)?;
         let descriptor = basis.descriptor();
-        if (*basis.owner_inner()).root.canonical_envelope().is_none()
+        if basis.owner_inner().root.canonical_envelope().is_none()
             && let Some(target) = descriptor.reference().target().as_basis()
         {
             let commit_id = crate::history::data::CommitId(target.selected_commit_id());
@@ -77,7 +77,7 @@ impl RelationalRuntime {
         funding: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<ObservedRelationalMemoryComponent, Refusal> {
         let descriptor = basis.descriptor();
-        let canonical = (*basis.owner_inner()).root.canonical_envelope();
+        let canonical = basis.owner_inner().root.canonical_envelope();
         if descriptor.reference().target().as_basis().is_some() && canonical.is_none() {
             return Err(Refusal::CanonicalMismatch {
                 commit_id: crate::history::data::CommitId(

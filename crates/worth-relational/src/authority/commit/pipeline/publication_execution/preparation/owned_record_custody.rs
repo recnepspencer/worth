@@ -15,7 +15,7 @@ pub(super) fn require(
     execution: &ExecutionRequest<'_, '_>,
     current: Option<&crate::publication::ownership::read::roster::CurrentPublicationRoster>,
     candidate: &CanonicalCommitEnvelopeBody,
-    adjacency: &[crate::authority::mutation::AdjacencyDelta],
+    adjacency: &[worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta],
 ) -> Result<(), TransactionCommitError> {
     let Some(current) = current else {
         return Ok(());

@@ -47,7 +47,9 @@ impl LineageAccess<'_> {
 
     #[cfg(test)]
     pub(crate) fn branch_events_snapshot(&self, branch_id: &BranchId) -> Vec<LineageEventRecord> {
-        self.runtime.lineage.branch_events_snapshot(branch_id)
+        self.runtime
+            .lineage
+            .branch_events_snapshot_for_test(branch_id)
     }
 
     #[cfg(test)]

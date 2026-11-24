@@ -9,7 +9,7 @@ pub(super) fn schema_registry_mismatch(
     expected_primary_schema_version: crate::schema::data::SchemaVersionId,
     found_primary_schema_version: crate::schema::data::SchemaVersionId,
 ) -> RecoveryAuthorityContinuityMismatch {
-    for (kind_id, expected_registration) in &(*expected.owner_entity_kinds()) {
+    for (kind_id, expected_registration) in expected.owner_entity_kinds() {
         let Some(found_registration) = (*found.owner_entity_kinds()).get(kind_id) else {
             break;
         };
@@ -37,7 +37,7 @@ pub(super) fn schema_registry_mismatch(
             };
         }
     }
-    for (kind_id, expected_registration) in &(*expected.owner_relation_kinds()) {
+    for (kind_id, expected_registration) in expected.owner_relation_kinds() {
         let Some(found_registration) = (*found.owner_relation_kinds()).get(kind_id) else {
             break;
         };

@@ -38,7 +38,8 @@ impl RelationalRuntime {
         if let Some((transition, policy)) = transition {
             require_bases(basis, &target, &transition)?;
             intent = intent.with_schema_transition(transition, policy);
-        } else if (*basis.owner_inner())
+        } else if basis
+            .owner_inner()
             .root
             .schema_authority()
             .authority_digest()
@@ -94,7 +95,7 @@ fn require_bases(
         RelationalSchemaTransitionAdmissionDenial as Cause,
         RelationalSchemaTransitionAdmissionDenialKind as Kind,
     };
-    let actual_source = registry_basis((*source.owner_inner()).root.schema_authority().registry())
+    let actual_source = registry_basis(source.owner_inner().root.schema_authority().registry())
         .map_err(|detail| {
             RelationalHomeProgramContractDenial::SchemaTransition(Cause::new(
                 Kind::SourceBasisMismatch,

@@ -1,8 +1,8 @@
-mod aspect_plan_compilation;
+#[cfg(test)]
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
+pub(crate) use worth_relational_merge::internal_port::merge::execution::plan_compilation;
 mod authority_verification;
-mod lineage_continuity;
-mod plan_compilation;
-mod record_plan_compilation;
 
 #[cfg(test)]
 use crate::merge::data::MergeExecutionRequest;
@@ -146,12 +146,8 @@ impl<'runtime> MergeAccess<'runtime> {
         compile_bound_executable_plan(
             self.runtime,
             &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
-                (*execution_ready.basis.owner_target_head())
-                    .branch_id
-                    .clone(),
-                (*execution_ready.basis.owner_source_head())
-                    .branch_id
-                    .clone(),
+                execution_ready.basis.owner_target_head().branch_id.clone(),
+                execution_ready.basis.owner_source_head().branch_id.clone(),
                 crate::merge::data::MergeIntent::ReconcileIntoTarget,
                 crate::merge::data::RelationalMergeCorrespondencePosture::Advisory,
                 crate::merge::data::RelationalMergeSchemaReconciliationPosture::Participate,

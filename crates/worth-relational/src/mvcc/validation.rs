@@ -2,11 +2,13 @@
 //! schema, invariant, footprint, and publication validation.
 
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::TransactionSchemaChangeOwnerPort as _;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::validation::{
+    custom_invariant_execution_receipt, invariant_evidence, proposal_invariants, proposal_source,
+};
 use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachmentsOwnerPort as _;
-#[path = "validation/custom_invariant_execution_receipt.rs"]
-pub(crate) mod custom_invariant_execution_receipt;
-#[path = "validation/invariant_evidence.rs"]
-mod invariant_evidence;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
 mod proposal_candidate;
@@ -15,14 +17,11 @@ mod proposal_completion;
 mod proposal_footprint;
 #[path = "validation/proposal_identity.rs"]
 pub(crate) mod proposal_identity;
-#[path = "validation/proposal_invariants.rs"]
-mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
 #[path = "validation/proposal_identity/sequence.rs"]
 mod proposal_sequence;
-mod proposal_source;
 #[path = "validation/proposal_touches.rs"]
 pub(crate) mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
@@ -155,7 +154,7 @@ impl RelationalTransactionValidationInput {
             home_target_coverage: None,
             schema_origin: crate::mvcc::TransactionSchemaOrigin::BasisRoot,
             recovered_codec_publication_custody: None,
-            schema_authority: (*basis.owner_inner()).root.retained_schema_authority(),
+            schema_authority: basis.owner_inner().root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
@@ -375,13 +374,14 @@ impl crate::authority::commit::pipeline::publication_validation::DraftValidation
     ) -> crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput
     {
         use crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput;
+        let (transition, reconciliation) = self.intent.into_schema_change();
         CommitPublicationValidationInput {
             basis: self.basis,
             merge_parent_bases: self.merge_parent_bases,
             schema_authority: self.schema_authority,
             schema_authority_input: self.schema_authority_input,
-            transition: self.intent.proposed_schema_transition,
-            reconciliation: self.intent.schema_reconciliation_policy,
+            transition,
+            reconciliation,
             appendix_adoption: self.appendix_adoption,
             recovered_codec_publication_custody: self.recovered_codec_publication_custody,
             prepared_home_indexes: self

@@ -1,0 +1,136 @@
+//! One request pattern owns a complete maintenance pass and its typed preparation.
+use super::charge_rendezvous::ChargeRendezvous;
+use super::work::MaintenanceWork;
+use crate::contracts::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::contracts::indexes::data::maintenance::{
+    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
+    DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
+};
+use worth_execution::{
+    ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure, MapStop, ScanOutcome,
+    WorkCeilingDenial,
+};
+use worth_foundational::PartitionIdentity;
+
+// Carries the pass's own additions, already reserved before allocation.
+// Reading its charge is constant time, including for persistent index patches.
+#[derive(Debug)]
+pub struct MaintenancePreparation<T> {
+    pub value: T,
+    _memory: ExecutionMemoryReservation,
+}
+
+impl<T> MaintenancePreparation<T> {
+    pub fn into_funded_parts(self) -> (T, ExecutionMemoryReservation) {
+        (self.value, self._memory)
+    }
+}
+
+pub fn run<T>(
+    execution: &ExecutionRequest<'_, '_>,
+    budget: DerivedIndexMaintenanceBudget,
+    prepare: impl FnMut(&mut MaintenanceWork<'_, '_, '_>) -> Result<T, Denial>,
+) -> Result<(MaintenancePreparation<T>, DerivedIndexMaintenanceWork), DerivedIndexMaintenanceDenial>
+{
+    run_with_charge_rendezvous(execution, budget, None, prepare)
+}
+
+pub(super) fn run_with_charge_rendezvous<T>(
+    execution: &ExecutionRequest<'_, '_>,
+    budget: DerivedIndexMaintenanceBudget,
+    charge_rendezvous: Option<ChargeRendezvous<'_>>,
+    mut prepare: impl FnMut(&mut MaintenanceWork<'_, '_, '_>) -> Result<T, Denial>,
+) -> Result<(MaintenancePreparation<T>, DerivedIndexMaintenanceWork), DerivedIndexMaintenanceDenial>
+{
+    let mut counts = DerivedIndexMaintenanceWork::default();
+    execution
+        .consult()
+        .map_err(|denial| DerivedIndexMaintenanceDenial {
+            kind: request_denial(denial),
+            work: counts,
+        })?;
+    let result = execution
+        .in_scope(|lease| {
+            let mut memory = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
+                .map_err(|denial| Denial::Execution(crate::contracts::execution::denial::lease_denial(denial)))?;
+            let mut prepared = None;
+            let scan = crate::contracts::execution::ordered_scan::admit_ordered_scan(vec![(PartitionIdentity::new(0), ())])
+                .map_err(|stop| {
+                    let crate::contracts::indexes::data::execution_denial::DerivedIndexExecutionDenialKind::Cause(cause) =
+                        crate::contracts::indexes::data::execution_denial::DerivedIndexExecutionDenial::from(stop).kind;
+                    Denial::Execution(cause)
+                })?;
+            // The scan owns only its unit receipt. The pass's additions are
+            // reserved incrementally on the same request before allocation.
+            let outcome = scan.run(lease, (), 0, 0, 0, 0, |_, _, context| {
+                let mut work = MaintenanceWork::request_paid(budget, context, &mut memory, charge_rendezvous);
+                let result = prepare(&mut work);
+                counts = work.counts();
+                match result {
+                    Ok(value) => {
+                        prepared = Some(Ok(value));
+                        Ok(((), ()))
+                    }
+                    Err(denial) => {
+                        prepared = Some(Err(denial));
+                        Err(MapKernelFailure::Domain(()))
+                    }
+                }
+            });
+            allocation_observation::record(memory.bytes());
+            match outcome {
+                ScanOutcome::Complete { .. } => prepared
+                    .expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "singleton scan prepared one maintenance pass")
+                    .map(|value| MaintenancePreparation {
+                        value,
+                        _memory: memory,
+                    }),
+                ScanOutcome::Stopped {
+                    reason:
+                        MapStop::Failure {
+                            cause: MapKernelFailure::Domain(()),
+                            ..
+                        },
+                    ..
+                } => match prepared.expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the failed pass retained its denial") {
+                    Err(denial) => Err(denial),
+                    Ok(_) => unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "a domain failure carries the preparation refusal"),
+                },
+                ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
+                    MapStop::Admission(denial) => crate::contracts::execution::denial::lease_denial(denial),
+                    MapStop::Allocation(_) => Cause::AllocationFailed,
+                    MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
+                    MapStop::Failure { cause, .. } => match cause {
+                        MapKernelFailure::Stop(stop) => {
+                            crate::contracts::execution::denial::kernel_failure(MapKernelFailure::Stop(stop))
+                        }
+                        MapKernelFailure::Panic => Cause::WorkerFailed,
+                        MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
+                        MapKernelFailure::Domain(()) => {
+                            unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the preparation denial is returned above")
+                        }
+                    },
+                })),
+            }
+        })
+        .map_err(request_denial)
+        .and_then(|result| result);
+    result
+        .map(|value| (value, counts))
+        .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
+}
+
+fn request_denial(denial: WorkCeilingDenial) -> Denial {
+    Denial::Execution(match denial {
+        WorkCeilingDenial::Admission(denial) => {
+            crate::contracts::execution::denial::lease_denial(denial)
+        }
+        WorkCeilingDenial::Stopped(stop) => {
+            crate::contracts::execution::denial::kernel_failure(MapKernelFailure::Stop(stop))
+        }
+        WorkCeilingDenial::Panicked => Cause::WorkerFailed,
+    })
+}
+
+#[doc(hidden)]
+pub mod allocation_observation;

@@ -14,6 +14,7 @@ use crate::visibility::materialization::read_records::reader::pinned_read::candi
 use crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 mod adoption;
 pub(crate) mod assembly_failure;
 mod input_issuance;

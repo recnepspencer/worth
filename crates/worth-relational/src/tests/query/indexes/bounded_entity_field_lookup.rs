@@ -29,7 +29,7 @@ fn entity_field_certification_rejects_a_missing_candidate() {
     build_entity_field_generation(execution, &runtime, index.index_id);
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::EntityField(entries) = &mut generation.entries else {
                 panic!("entity-field generation expected");
             };
@@ -179,7 +179,7 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
     );
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::EntityField(entries) = &mut generation.entries else {
                 panic!("entity-field generation expected");
             };

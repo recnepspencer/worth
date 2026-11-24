@@ -94,7 +94,9 @@ impl ReadmittedCanonicalCommit {
     }
     /// Whether this readmitted commit's symbol dictionary carries `text`.
     pub fn contains_symbol_text(&self, text: &str) -> bool {
-        (*self.positioned.envelope().owner_symbol_texts())
+        self.positioned
+            .envelope()
+            .owner_symbol_texts()
             .entries
             .iter()
             .any(|(_, entry)| entry.as_str() == text)

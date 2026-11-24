@@ -5,6 +5,7 @@ use crate::transactions::data::WorkerIntentBatch;
 use sha2::{Digest, Sha256};
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::HomeProgramTransitionBodyDigest;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 mod mutations;
 mod patches;

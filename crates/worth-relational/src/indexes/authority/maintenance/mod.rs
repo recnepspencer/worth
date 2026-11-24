@@ -1,65 +1,20 @@
-mod admission;
-mod affected_indexes;
-mod basis;
-mod basis_currency;
-mod branch_seed;
-mod currency_selection;
-mod field_refresh;
-mod field_request;
-mod fork_selection;
-pub(crate) use candidate_publication::PreparedCandidateIndexPublication;
-pub(crate) use fork_selection::PreparedForkIndexSelection;
-mod change_routing;
-mod changes;
-mod entry_edits;
-mod entry_refresh;
-use entry_refresh::{empty_entries, update_entries};
-pub(crate) mod applied_field;
-mod field;
-mod field_delta;
-pub(crate) use applied_field::AppliedFieldImage;
-mod field_changes;
-mod field_keys;
-mod field_routing;
-mod generation_reuse;
-mod join;
-mod ordering;
-mod persistent_allocation;
-pub(crate) use persistent_allocation::{persistent_map_path_bytes, row_copy_bounds};
-mod preparation;
-mod publication;
-mod refresh_inputs;
-mod refresh_preparation;
-mod retained_projection;
-mod selected_field_request;
-use publication::PreparedRefresh;
-mod candidate_publication;
-#[cfg(test)]
-pub(crate) mod charge_rendezvous;
-mod cold_projection;
-mod live_binding;
-mod live_refresh;
-mod maintained_selection;
-mod owner;
-mod pipeline_preparation;
-mod reads;
-mod reconstruction_projection;
-mod record_metadata;
-mod recovery;
-mod recovery_catalog;
-mod recovery_preparation;
-mod request_payment;
-mod root_view;
-mod schema_transition;
-#[cfg(test)]
-pub(crate) use request_payment::last_allocation_bytes;
-mod work;
-
-use super::IndexGenerationPublicationBasis;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::indexes::data::*;
 use crate::snapshots::data::SnapshotHandle;
+pub(crate) use applied_field::AppliedFieldImage;
+pub(crate) use candidate_publication::PreparedCandidateIndexPublication;
+pub(crate) use fork_selection::PreparedForkIndexSelection;
+pub(crate) use persistent_allocation::{persistent_map_path_bytes, row_copy_bounds};
+use publication::PreparedRefresh;
 use work::MaintenanceWork;
-
-#[cfg(test)]
-mod persistent_allocation_tests;
+mod admission;
+pub(crate) use worth_relational_indexes::internal_port::indexes::authority::maintenance::{
+    applied_field, basis, candidate_publication, currency_selection, field_refresh, field_request,
+    fork_selection, owner, persistent_allocation, publication, reconstruction_projection,
+    recovery_catalog, request_payment, root_view, work,
+};
+mod basis_currency;
+mod live_binding;
+mod live_refresh;
+mod recovery;
+mod selected_field_request;

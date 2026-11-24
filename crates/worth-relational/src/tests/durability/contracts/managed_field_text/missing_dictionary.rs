@@ -25,7 +25,8 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
         );
         let required =
             crate::symbols::data::required_commit_symbols(&tail.merged_plan, &tail.patch);
-        let managed = (*tail.owner_symbol_texts())
+        let managed = tail
+            .owner_symbol_texts()
             .entries
             .iter()
             .find(|(_, text)| text.as_str() == JSON)

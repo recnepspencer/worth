@@ -4,9 +4,9 @@ use std::mem::size_of;
 
 use worth_execution::MapKernelFailure;
 
-use crate::authority::mutation::AdjacencyDelta;
 use crate::history::data::RelationalDescriptiveTouch as Touch;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionCloneMode};
+use worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta;
 
 use super::{Failure, TouchBudget};
 

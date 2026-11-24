@@ -11,6 +11,7 @@ use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::retained_selection::RelationalTransactionFootprintOwnerPort as _;
 
 pub(crate) struct SelectionInputs<'a>(
     pub(crate) super::working_state_inputs::SelectionTransaction<'a>,

@@ -25,6 +25,10 @@ done < <(find \
   crates/worth-relational-contracts/src \
   crates/worth-relational-storage/src \
   crates/worth-relational-branch/src \
+  crates/worth-relational-indexes/src \
+  crates/worth-relational-lineage/src \
+  crates/worth-relational-merge/src \
+  crates/worth-relational-mutation/src \
   -type f -name '*.rs' | sort)
 
 if (( violations != 0 )); then

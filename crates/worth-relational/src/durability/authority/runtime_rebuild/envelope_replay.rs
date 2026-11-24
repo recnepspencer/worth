@@ -46,7 +46,7 @@ pub(super) fn replay_readmitted_envelope(
                     .recover_installed_index_routing(execution)
             },
         )?;
-        for (_, text) in &(*envelope.owner_symbol_texts()).entries {
+        for (_, text) in &envelope.owner_symbol_texts().entries {
             restored
                 .services
                 .symbols
@@ -55,7 +55,7 @@ pub(super) fn replay_readmitted_envelope(
         restored
             .services
             .symbols
-            .import_canonical_snapshot(&(*envelope.owner_symbol_texts()))
+            .import_canonical_snapshot(envelope.owner_symbol_texts())
             .map_err(|detail| {
                 DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
             })?;

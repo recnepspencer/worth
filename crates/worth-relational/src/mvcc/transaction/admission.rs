@@ -1,5 +1,7 @@
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchTransactionAdmissionDenial {
     HomeProgramTransition(
@@ -77,7 +79,7 @@ impl crate::runtime::RelationalRuntime {
         }
         if basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
             || basis.descriptor().branch_id() != basis.identity().branch_id()
-            || basis.descriptor().root_identity() != (*basis.owner_inner()).root.id()
+            || basis.descriptor().root_identity() != basis.owner_inner().root.id()
         {
             return Err(RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch);
         }
@@ -103,9 +105,7 @@ impl crate::runtime::RelationalRuntime {
         if !basis.is_current() {
             return Err(RelationalBranchTransactionAdmissionDenial::StaleBasis);
         }
-        let unavailable = (*basis.owner_inner())
-            .root
-            .has_materialization_unavailable();
+        let unavailable = basis.owner_inner().root.has_materialization_unavailable();
         match intent.materialization_mode() {
             None if unavailable => {
                 return Err(RelationalBranchTransactionAdmissionDenial::MaterializationUnavailable)
@@ -127,13 +127,15 @@ impl crate::runtime::RelationalRuntime {
                 if event.interruption()
                     == crate::mvcc::RelationalOperationInterruption::Cancelled =>
             {
-                (*basis.owner_inner())
+                basis
+                    .owner_inner()
                     .retention_binding
                     .record_interruption(event);
                 return Err(RelationalBranchTransactionAdmissionDenial::Cancelled);
             }
             Some(event) => {
-                (*basis.owner_inner())
+                basis
+                    .owner_inner()
                     .retention_binding
                     .record_interruption(event);
                 return Err(RelationalBranchTransactionAdmissionDenial::TimedOut);
@@ -142,9 +144,9 @@ impl crate::runtime::RelationalRuntime {
         }
         let retention =
             crate::history::retention::RelationalTransactionRetentionObligation::acquire(
-                &(*basis.owner_inner()).retention_binding,
+                &basis.owner_inner().retention_binding,
                 basis.identity().clone(),
-                std::sync::Arc::clone(&(*basis.owner_inner()).root),
+                std::sync::Arc::clone(&basis.owner_inner().root),
             )
             .map_err(|denial| {
                 match denial {
@@ -168,14 +170,16 @@ impl crate::runtime::RelationalRuntime {
                 if event.interruption()
                     == crate::mvcc::RelationalOperationInterruption::Cancelled =>
             {
-                (*basis.owner_inner())
+                basis
+                    .owner_inner()
                     .retention_binding
                     .record_interruption(event);
                 drop(retention);
                 return Err(RelationalBranchTransactionAdmissionDenial::Cancelled);
             }
             Some(event) => {
-                (*basis.owner_inner())
+                basis
+                    .owner_inner()
                     .retention_binding
                     .record_interruption(event);
                 drop(retention);
@@ -208,7 +212,7 @@ impl crate::runtime::RelationalRuntime {
             home_target_coverage: None,
             recovered_codec_publication_custody: codec,
             schema_origin: super::TransactionSchemaOrigin::BasisRoot,
-            schema_authority: (*basis.owner_inner()).root.retained_schema_authority(),
+            schema_authority: basis.owner_inner().root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
             maximum_savepoints,
             footprint,

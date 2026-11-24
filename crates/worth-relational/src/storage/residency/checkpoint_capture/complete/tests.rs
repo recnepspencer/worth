@@ -73,7 +73,7 @@ fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() 
         let request = ExecutionRequest::serial(&host);
         let lane = fixture_lane;
         let old = crate::storage::residency::region_capture::capture_region_members(
-            &lane,
+            lane,
             &request,
             &region.partition,
             region.commitment.as_ref().unwrap(),
@@ -88,7 +88,7 @@ fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() 
         assert_eq!(emitted.leaf.history, old.history.0);
         assert_eq!(emitted.leaf.kind_authority, old.kind_authority);
         let frame = RelationalRegionImage::decode(
-            &lane,
+            lane,
             &mut |_, _| Ok(()),
             bytes(&emitted.members[0]),
             emitted.leaf.head,
@@ -105,7 +105,7 @@ fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() 
             .iter()
             .any(|(_, frontier)| frontier.last.is_some() && !frontier.siblings.is_empty()));
         let frame = RelationalRegionImage::decode(
-            &lane,
+            lane,
             &mut |_, _| Ok(()),
             bytes(&emitted.members[1]),
             emitted.leaf.history,

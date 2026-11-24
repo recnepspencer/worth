@@ -7,7 +7,7 @@ use crate::facade::lineage::{
     PersistentNameIdentity,
 };
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 use crate::storage::overlay::WorkingState;
@@ -89,7 +89,7 @@ pub(super) fn setup_corruption_base(allocator: &LineageIdentityAllocator) -> Cor
             },
         ],
     };
-    let prepared = finalize_postures_in_working_state(
+    let prepared = finalize_postures_in_working_state_for_test(
         allocator,
         &mut staged,
         &receipt_at(1, 1),

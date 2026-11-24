@@ -1,21 +1,15 @@
-pub(crate) mod applied_entity_field_lookup;
-pub(crate) mod bounded_entity_field_lookup;
-mod field_candidate_comparison;
 pub use applied_entity_field_lookup::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
 };
-pub(crate) mod pinned_entity_field_lookup;
 pub use pinning::BoundedEntityFieldLookupRead;
+pub(crate) use worth_relational_indexes::internal_port::indexes::access::{
+    applied_entity_field_lookup, bounded_entity_field_lookup,
+    bounded_related_entity_ordered_lookup, bounded_relation_join_lookup, definition_lookup,
+    pinned_entity_field_lookup, prepared_entity_field_lookup, related_entity_prefix,
+    selected_index,
+};
 mod selected_entity_field_lookup;
 pub use selected_entity_field_lookup::BoundedEntityFieldSelectedLookup;
-pub(crate) mod bounded_related_entity_ordered_lookup;
-pub(crate) mod bounded_relation_join_lookup;
-mod definition_lookup;
-mod entity_field_collection;
-pub(crate) mod prepared_entity_field_lookup;
-mod prepared_field_certification;
-mod prepared_lookup_admission;
-pub(crate) mod related_entity_prefix;
 
 mod pinning;
 use crate::runtime::RelationalRuntime;
@@ -27,4 +21,3 @@ impl RelationalRuntime {
         IndexAccess::new(self)
     }
 }
-pub(crate) mod selected_index;

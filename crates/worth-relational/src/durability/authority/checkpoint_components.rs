@@ -64,7 +64,7 @@ pub(super) fn capture(history: &HistorySubsystem) -> Result<CapturedComponents, 
         insert(
             &mut observations,
             basis.descriptor().clone(),
-            (*basis.owner_inner()).root.clone(),
+            basis.owner_inner().root.clone(),
         )?;
     }
     let mut roots = BTreeMap::new();

@@ -6,6 +6,8 @@ use crate::transactions::data::{
 };
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint_staging::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::staged_mutations::RelationalTransactionStagedMutationsOwnerPort as _;
 
 use super::read_projection::{
     project_entity, project_relation, RelationalTransactionRelationValue,
@@ -84,7 +86,7 @@ impl super::BranchBoundRelationalTransaction {
                 crate::transactions::data::RecordRef::Entity(entity_id),
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
-        let root = (*self.basis.owner_inner()).root.as_ref();
+        let root = self.basis.owner_inner().root.as_ref();
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::TransactionRead,
@@ -152,7 +154,7 @@ impl super::BranchBoundRelationalTransaction {
                 crate::transactions::data::RecordRef::Relation(relation_id),
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
-        let root = (*self.basis.owner_inner()).root.as_ref();
+        let root = self.basis.owner_inner().root.as_ref();
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::TransactionRead,

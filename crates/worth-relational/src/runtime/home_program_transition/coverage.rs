@@ -10,7 +10,7 @@ use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 
-pub(crate) mod captured_records;
+pub(crate) use worth_relational_mutation::internal_port::runtime::home_program_transition::coverage::captured_records;
 pub(crate) use captured_records::RelationalHomeTargetCoverage;
 use captured_records::{array, ordered, overflow, staging};
 

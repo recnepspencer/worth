@@ -37,8 +37,6 @@ pub use reader::{
     SnapshotPositionDenial,
 };
 
-pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::read_stop;
-
 pub use reader::BoundedFrontierReadStop;
 
 #[cfg(test)]

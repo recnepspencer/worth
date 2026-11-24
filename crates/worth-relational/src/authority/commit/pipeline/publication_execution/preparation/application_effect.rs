@@ -1,6 +1,5 @@
 //! Judge the actual applied body before current-publication bookkeeping.
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{CanonicalCommitEnvelopeBodyFieldsPort as _, CanonicalCommitEnvelopeBodyOwnerPort as _};
 use worth_relational_contracts::internal_port::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatchOwnerPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -9,7 +8,7 @@ use crate::transactions::data::primitives::RecordRef;
 pub(super) fn unchanged(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changed: &[RecordRef],
-    adjacency: &[crate::authority::mutation::AdjacencyDelta],
+    adjacency: &[worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta],
     envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
     symbols: &crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings,
     merge_base: &[crate::history::data::CommitId],

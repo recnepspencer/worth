@@ -10,6 +10,7 @@ use crate::tests::support::{
     durable_runtime_for_medium, entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy,
     OwnedTestDurableMedium,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
 
 #[test]
 fn verify_prepared_merge_execution_rejects_schema_semantic_drift() {

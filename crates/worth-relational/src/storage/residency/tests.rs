@@ -288,7 +288,7 @@ fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
         let source = checkpoint.source;
         let active = checkpoint.active;
         let lane = fixture_lane;
-        let first = cell.reconstruct_head(&lane, &execution, None).unwrap();
+        let first = cell.reconstruct_head(lane, &execution, None).unwrap();
         assert!(first.view().entity(fixture.entity).is_some());
         let original = cell.source_retirement_resident(RawHead).unwrap().unwrap();
         assert!(first
@@ -297,7 +297,7 @@ fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
         let retained = Arc::downgrade(&original);
         drop(original);
         drop(first);
-        let second = cell.reconstruct_head(&lane, &execution, None).unwrap();
+        let second = cell.reconstruct_head(lane, &execution, None).unwrap();
         let original = retained
             .upgrade()
             .expect("original cell retains authenticated rows");
@@ -318,7 +318,7 @@ fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
             {}
         }
         assert_eq!(active.load(Ordering::SeqCst), 0);
-        assert!(matches!(cell.reconstruct_head(&lane, &execution, None),
+        assert!(matches!(cell.reconstruct_head(lane, &execution, None),
         Err(RelationalResidencyDemandFailure::StorageUnavailable(error))
             if error.cause == Cause::SourceUnavailable));
         drop(cell);
@@ -336,11 +336,11 @@ fn reconstructed_heads_do_not_alias_distinct_cells_with_equal_partition_ids() {
         let lane = fixture_lane;
         let first = fixtures[0]
             .cell
-            .reconstruct_head(&lane, &execution, None)
+            .reconstruct_head(lane, &execution, None)
             .unwrap();
         let second = fixtures[1]
             .cell
-            .reconstruct_head(&lane, &execution, None)
+            .reconstruct_head(lane, &execution, None)
             .unwrap();
         assert!(!first.view().same_region_view(second.view()));
         for fixture in &fixtures {
@@ -366,18 +366,18 @@ fn reconstructed_heads_check_stopped_requests_and_retain_only_proven_damage() {
         let lane = fixture_lane;
         for expected_reads in [0, 1] {
             assert!(matches!(
-                cell.reconstruct_head(&lane, &stopped, None),
+                cell.reconstruct_head(lane, &stopped, None),
                 Err(RelationalResidencyDemandFailure::Request(_))
             ));
             assert_eq!(fixture.source.reads.load(Ordering::SeqCst), expected_reads);
-            drop(cell.reconstruct_head(&lane, &execution, None).unwrap());
+            drop(cell.reconstruct_head(lane, &execution, None).unwrap());
             assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 1);
         }
         let damaged = region_with_history();
         damaged.source.corrupt.store(true, Ordering::SeqCst);
         let first = damaged
             .cell
-            .reconstruct_head(&lane, &execution, None)
+            .reconstruct_head(lane, &execution, None)
             .err()
             .unwrap();
         assert!(
@@ -389,7 +389,7 @@ fn reconstructed_heads_check_stopped_requests_and_retain_only_proven_damage() {
         assert_eq!(
             damaged
                 .cell
-                .reconstruct_head(&lane, &execution, None)
+                .reconstruct_head(lane, &execution, None)
                 .err()
                 .unwrap(),
             first

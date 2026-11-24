@@ -71,7 +71,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     assert_eq!(origin.producer, "installed-producer");
     assert_eq!(*origin.dependency_identity.bytes(), [3; 32]);
     let entity = origin.outputs[0];
-    let mut copied = copy_original_for_test(&performed.canonical_commit(), execution);
+    let mut copied = copy_original_for_test(performed.canonical_commit(), execution);
     copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = execution
         .run_native_with_checkpoint(|context| {
@@ -128,7 +128,8 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         vec![entity]
     );
     let original_basis = basis;
-    let original_partition = (*original_basis.owner_inner())
+    let original_partition = original_basis
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -170,7 +171,8 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let changed = update_entity(execution, &runtime, entity, "different");
     release_test_commit_snapshot(&runtime, &changed);
     let current_basis = test_owner_main_basis(&runtime).unwrap();
-    let current_partition = (*current_basis.owner_inner())
+    let current_partition = current_basis
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()

@@ -9,7 +9,7 @@ use crate::facade::lineage::{
 use crate::facade::transactions::{
     DeleteRelationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
 use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
@@ -55,7 +55,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
             },
         ],
     };
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -184,7 +184,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
             },
         ],
     };
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -295,7 +295,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
             },
         ],
     };
-    let c3 = finalize_postures_in_working_state(
+    let c3 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(3, 3),
@@ -367,7 +367,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
         retired_lineages: BTreeMap::new(),
         postures: Vec::new(),
     };
-    let c4 = finalize_postures_in_working_state(
+    let c4 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),

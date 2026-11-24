@@ -39,7 +39,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
     artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     changed_records: Vec<RecordRef>,
     canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
-    adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
+    adjacency_deltas: Vec<worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta>,
     lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     relation_lineages: Vec<(
         crate::identity::data::RelationId,
@@ -233,7 +233,7 @@ struct PublicationCompletionInput<'a> {
     commit_reference: &'a RelationalCommitReceipt,
     changed_records: Vec<RecordRef>,
     canonical_deltas: Vec<crate::authority::mutation::CanonicalRecordAspectDelta>,
-    adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
+    adjacency_deltas: Vec<worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta>,
     traces: PublicationTraceCapture,
     authority: CommitPhaseBacking<PreparedPublicationAuthority>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
@@ -334,7 +334,7 @@ impl PublicationFinalizeArtifacts {
         crate::publication::authority::artifacts::PublicationArtifacts,
         Vec<RecordRef>,
         crate::history::data::CanonicalCommitEnvelopeDraft,
-        Vec<crate::authority::mutation::AdjacencyDelta>,
+        Vec<worth_relational_contracts::internal_port::authority::mutation::adjacency_delta::AdjacencyDelta>,
         Vec<crate::lineage::data::LineageNode>,
         Vec<(
             crate::identity::data::RelationId,
@@ -342,7 +342,7 @@ impl PublicationFinalizeArtifacts {
         )>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
         Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
-    ) {
+    ){
         (
             self.artifacts,
             self.changed_records,

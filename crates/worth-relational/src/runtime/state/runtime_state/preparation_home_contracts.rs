@@ -21,7 +21,7 @@ impl RelationalPreparationRuntime {
             (None, Some(_)) => None,
             (None, None) => {
                 crate::runtime::home_program_transition::retain_root_execution_contracts(
-                    &(*basis.owner_inner()).root,
+                    &basis.owner_inner().root,
                 )
             }
         };
@@ -36,10 +36,7 @@ impl RelationalPreparationRuntime {
         runtime.execution_registry = Some(match (selected.as_ref(), recorded) {
             (Some(selected), _) => selected.schema.registry_arc(),
             (None, Some(recorded)) => recorded.registry_arc(),
-            (None, None) => (*basis.owner_inner())
-                .root
-                .schema_authority()
-                .registry_arc(),
+            (None, None) => basis.owner_inner().root.schema_authority().registry_arc(),
         });
         runtime.home_target = target.cloned();
         match selected {
@@ -49,7 +46,7 @@ impl RelationalPreparationRuntime {
                 }
                 if target.is_none()
                     && !selected.schema.has_same_executable_meaning_except_basis(
-                        (*basis.owner_inner()).root.schema_authority().registry(),
+                        basis.owner_inner().root.schema_authority().registry(),
                     )
                 {
                     return Err(required_contracts());
@@ -69,7 +66,8 @@ impl RelationalPreparationRuntime {
                         )
                     })?;
                 if home
-                    && !(*basis.owner_inner())
+                    && !basis
+                        .owner_inner()
                         .root
                         .schema_authority()
                         .has_same_executable_meaning_except_basis(&self.config.schema.registry)

@@ -6,6 +6,7 @@ use super::{
 use crate::authority::mutation::MutationApplyDenial;
 use crate::runtime::PendingSymbolMeanings;
 use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::client_keys::RelationalTransactionFootprintOwnerPort as _;
 
 enum CoupledRoundCustody {
     /// Preview/assembly may create provisional coupling owned by this round.

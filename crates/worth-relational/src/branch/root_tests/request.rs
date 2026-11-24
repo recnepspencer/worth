@@ -154,7 +154,8 @@ fn interim_predecessor_memory_exhaustion_preserves_typed_request_refusal() {
         .observe_branch(&receiver.main_branch_identity())
         .unwrap();
     assert!(
-        (*interim_basis.owner_inner())
+        interim_basis
+            .owner_inner()
             .root
             .canonical_envelope()
             .is_none(),

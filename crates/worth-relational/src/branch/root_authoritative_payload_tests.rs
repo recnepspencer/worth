@@ -316,7 +316,7 @@ fn committed_root_and_envelope(
     assert_eq!(envelope.commit.commit_id, commit_id);
     (
         Arc::clone(&root),
-        copy_original_for_test(&envelope, execution),
+        copy_original_for_test(envelope, execution),
     )
 }
 

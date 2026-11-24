@@ -63,7 +63,8 @@ fn generated_payload_suspends_and_restores_while_native_orbit_custody_stays_mate
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     for relation in native {
-        let slot = (*basis.owner_inner())
+        let slot = basis
+            .owner_inner()
             .root
             .partition_state(relation.partition_id)
             .unwrap()

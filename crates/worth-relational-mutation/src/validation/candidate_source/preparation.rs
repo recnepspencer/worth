@@ -1,0 +1,383 @@
+//! Borrow the applied Native Source; seal each root under that same custody.
+use super::scope_closure::PreparedManagedIndexScopeClosure;
+use super::{
+    ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
+    ManagedIndexSourceProjection,
+};
+use crate::contracts::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::contracts::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
+use crate::contracts::identity::data::record_ids::EntityId;
+use crate::contracts::validation::candidate_source::availability::ManagedIndexSourceAvailability;
+use crate::contracts::validation::candidate_source::program::ManagedIndexSourceProgramFieldsPort as _;
+use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
+use std::{any::Any, sync::Arc};
+
+pub mod home_catalog;
+pub mod ordered_predecessor;
+pub mod projection_rows;
+pub mod row_read;
+pub mod rows;
+pub use projection_rows::{
+    ManagedIndexSourceProjectionOccurrence, PreparedManagedIndexProjectionRead,
+};
+pub use row_read::{PreparedManagedIndexSourceOccurrence, PreparedManagedIndexSourceRowRead};
+pub use rows::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
+
+pub(crate) type RootPayload = Arc<dyn Any + Send + Sync>;
+
+/// Native's physical posture, never selected by a provider or Query boolean.
+pub struct SourceViews<'a> {
+    pub before: StructuralRelationView<'a>,
+    pub after: StructuralRelationView<'a>,
+    pub(crate) before_fields: StructuralAspectStateView<'a>,
+    pub(crate) after_fields: StructuralAspectStateView<'a>,
+}
+
+/// Native-created invocation scope. No constructor or caller root argument.
+pub struct ManagedIndexSourceScope<'a> {
+    interpretation: &'a Arc<super::NativeManagedSourceInterpretation>,
+    correspondence: Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
+    pub(crate) program: &'a ManagedIndexSourceProgram,
+    pub(crate) scope: EntityId,
+    pub(crate) changed: &'a std::collections::BTreeSet<EntityId>,
+    closure: &'a PreparedManagedIndexScopeClosure,
+    pub(crate) views: &'a SourceViews<'a>,
+    pub(crate) availability: ManagedIndexSourceAvailability,
+    pub(crate) committed_available: bool,
+}
+
+impl<'a> ManagedIndexSourceScope<'a> {
+    pub fn preparation_metadata(&self) -> Option<super::ManagedIndexSourcePreparationMetadata<'_>> {
+        self.interpretation.preparation_metadata()
+    }
+    /// Native proved complete logical equality at this actual reconstruction.
+    /// This returns proposed backing only; the committed physical view stays
+    /// unavailable. Query still validates its typed provider installation.
+    pub fn corresponding_root(&self) -> Result<Option<RootPayload>, Denial> {
+        self.views
+            .after
+            .read_budget()
+            .checkpoint(1)
+            .map_err(ReadDenial::Structural)?;
+        self.correspondence
+            .map_or(Ok(None), |proof| proof.root(self.program, self.scope))
+    }
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
+    }
+    pub fn program(&self) -> &ManagedIndexSourceProgram {
+        self.program
+    }
+    pub const fn scope(&self) -> EntityId {
+        self.scope
+    }
+    pub const fn physical_availability(&self) -> ManagedIndexSourceAvailability {
+        self.availability
+    }
+    /// Retirement is an actual logical-view disposition, never missing-as-empty.
+    pub fn scope_exists(&self) -> Result<bool, Denial> {
+        self.scope_exists_in(&self.views.after)
+    }
+    pub fn committed_scope_exists(&self) -> Result<bool, Denial> {
+        if !self.committed_available {
+            return Err(Denial::RootUnavailable);
+        }
+        self.scope_exists_in(&self.views.before)
+    }
+    fn scope_exists_in(&self, view: &StructuralRelationView<'_>) -> Result<bool, Denial> {
+        self.entity_scope_exists_in(view, self.scope)
+    }
+    fn entity_scope_exists_in(
+        &self,
+        view: &StructuralRelationView<'_>,
+        scope: EntityId,
+    ) -> Result<bool, Denial> {
+        view.read_budget()
+            .checkpoint(1)
+            .map_err(ReadDenial::Structural)?;
+        match view.entity_kind(scope) {
+            Ok(kind) if kind == self.program.scope_kind() => Ok(true),
+            Err(
+                crate::contracts::validation::data::structural_read::StructuralReadError::RecordUnavailable,
+            ) => Ok(false),
+            Ok(_) => Err(Denial::ForeignSource),
+            Err(cause) => Err(ReadDenial::Structural(view.read_budget().refusal(cause)).into()),
+        }
+    }
+    pub fn changed_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.changed.iter().copied()
+    }
+    /// Row-kind and projection-endpoint entities whose own entity record
+    /// (fields or lifecycle) changed on either side of this commit, distinct
+    /// from rows routed only by an incident relation delta.
+    ///
+    /// Returns `None` on a target-only rebuild (such as home-target recovery)
+    /// where no committed before-image record delta was discovered.
+    pub fn changed_occurrence_record_entities(&self) -> Option<&[EntityId]> {
+        self.closure.changed_occurrence_records.as_deref()
+    }
+
+    pub fn changed_occurrences(
+        &self,
+    ) -> Result<
+        Vec<(
+            Option<ManagedIndexSourceOccurrence>,
+            Option<ManagedIndexSourceOccurrence>,
+        )>,
+        Denial,
+    > {
+        let changed = self.prepare_changed_occurrences()?;
+        self.read_budget()
+            .claim_retained(
+                changed
+                    .len()
+                    .checked_mul(size_of::<(
+                        Option<ManagedIndexSourceOccurrence>,
+                        Option<ManagedIndexSourceOccurrence>,
+                    )>())
+                    .ok_or(ReadDenial::Definition(Definition::WorkBudgetExceeded))?
+                    as u64,
+            )
+            .map_err(ReadDenial::Structural)?;
+        Ok(changed
+            .into_iter()
+            .map(|(before, after)| (before, after.map(|prepared| prepared.occurrence)))
+            .collect())
+    }
+    /// Changed coordinates retain their actual proposed inverse membership.
+    pub fn prepare_changed_occurrences(
+        &self,
+    ) -> Result<
+        Vec<(
+            Option<ManagedIndexSourceOccurrence>,
+            Option<PreparedManagedIndexSourceOccurrence>,
+        )>,
+        Denial,
+    > {
+        self.views
+            .after
+            .read_budget()
+            .claim_retained(
+                self.changed
+                    .len()
+                    .checked_mul(size_of::<(
+                        Option<ManagedIndexSourceOccurrence>,
+                        Option<PreparedManagedIndexSourceOccurrence>,
+                    )>())
+                    .ok_or(ReadDenial::Definition(Definition::WorkBudgetExceeded))?
+                    as u64,
+            )
+            .map_err(ReadDenial::Structural)?;
+        let before = self.committed()?;
+        let after = self.proposed();
+        self.changed
+            .iter()
+            .map(|row| Ok((before.occurrence(*row)?, after.prepare_occurrence(*row)?)))
+            .collect()
+    }
+
+    pub fn committed(&self) -> Result<ManagedIndexSourceRows<'_>, Denial> {
+        if !self.committed_available {
+            return Err(Denial::RootUnavailable);
+        }
+        Ok(self.rows(true))
+    }
+    pub fn proposed(&self) -> ManagedIndexSourceRows<'_> {
+        self.rows(false)
+    }
+
+    fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
+        self.rows_at(before, self.scope)
+    }
+    fn rows_at(&self, before: bool, scope: EntityId) -> ManagedIndexSourceRows<'_> {
+        ManagedIndexSourceRows {
+            scope,
+            projection: ManagedIndexSourceProjection {
+                program: self.program,
+                backing: super::projection::SourceProjectionBacking::Invariant {
+                    relations: if before {
+                        &self.views.before
+                    } else {
+                        &self.views.after
+                    },
+                    aspects: if before {
+                        &self.views.before_fields
+                    } else {
+                        &self.views.after_fields
+                    },
+                    audience: self.program.owner_field_0().issuer.admit(),
+                    interpretation: self.interpretation,
+                    before,
+                },
+            },
+        }
+    }
+
+    /// Sealing is candidate-local and does not install a root. `changes` is
+    /// the owner's exact delta for this scope; every seal states it. The Native
+    /// owner verifies the complete set before any dependent invariant runs.
+    pub fn seal(
+        self,
+        committed: Option<RootPayload>,
+        proposed: Option<RootPayload>,
+        changes: super::ManagedIndexSourceChanges,
+    ) -> PreparedManagedIndexSourceRoot {
+        PreparedManagedIndexSourceRoot {
+            program: self.program.clone(),
+            scope: self.scope,
+            committed,
+            proposed,
+            availability: self.availability,
+            source_changed: !self.changed.is_empty(),
+            changes,
+        }
+    }
+}
+
+pub struct PreparedManagedIndexSourceRoot {
+    pub(crate) program: ManagedIndexSourceProgram,
+    pub(crate) scope: EntityId,
+    pub(crate) committed: Option<RootPayload>,
+    pub(crate) proposed: Option<RootPayload>,
+    pub(crate) availability: ManagedIndexSourceAvailability,
+    pub(crate) source_changed: bool,
+    pub(crate) changes: super::ManagedIndexSourceChanges,
+}
+
+pub struct PreparedSourceProgram {
+    pub program: ManagedIndexSourceProgram,
+    pub affected_scopes: std::collections::BTreeSet<EntityId>,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
+    pub closure: PreparedManagedIndexScopeClosure,
+    pub roots: Vec<PreparedManagedIndexSourceRoot>,
+    pub _work: crate::validation::custom_rule::CustomInvariantWorkMeter,
+}
+
+/// The existing participant receives this only from Native's applied draft.
+/// The original managed source, its installed program, and the exact before/after loan.
+pub struct ManagedIndexSourcePreparationInputs<'a> {
+    pub interpretation: &'a Arc<super::NativeManagedSourceInterpretation>,
+    pub correspondence: Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
+    pub program: &'a ManagedIndexSourceProgram,
+    pub closure: &'a PreparedManagedIndexScopeClosure,
+    pub views: SourceViews<'a>,
+    pub availability: ManagedIndexSourceAvailability,
+    pub home_target: bool,
+}
+
+pub fn prepare_source_loan<'a>(
+    inputs: ManagedIndexSourcePreparationInputs<'a>,
+) -> ManagedIndexSourcePreparation<'a> {
+    let basis = inputs.interpretation.physical_basis();
+    ManagedIndexSourcePreparation {
+        interpretation: inputs.interpretation,
+        correspondence: inputs.correspondence,
+        program: inputs.program,
+        closure: inputs.closure,
+        views: inputs.views,
+        availability: inputs.availability,
+        basis,
+        committed_available: !inputs.home_target && basis.materialization_is_complete(),
+    }
+}
+
+pub struct ManagedIndexSourcePreparation<'a> {
+    pub(crate) interpretation: &'a Arc<super::NativeManagedSourceInterpretation>,
+    pub(super) correspondence:
+        Option<&'a super::correspondence::NativeManagedSourceCorrespondence<'a>>,
+    pub(crate) program: &'a ManagedIndexSourceProgram,
+    pub(crate) closure: &'a PreparedManagedIndexScopeClosure,
+    pub(crate) views: SourceViews<'a>,
+    pub(crate) availability: ManagedIndexSourceAvailability,
+    pub(crate) basis:
+        &'a worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis,
+    pub(crate) committed_available: bool,
+}
+
+impl ManagedIndexSourcePreparation<'_> {
+    pub fn program(&self) -> &ManagedIndexSourceProgram {
+        self.program
+    }
+    /// This is genuine selected Native custody. It cannot mint Query World
+    /// incarnation/READ admission, which the Query resource must bind itself.
+    pub fn selected_basis(
+        &self,
+    ) -> &worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis {
+        self.basis
+    }
+    /// The Source's own payer, shared by every scope it prepares: staging
+    /// storage for the prepared roots is claimed here before it is reserved.
+    pub fn read_budget(&self) -> crate::validation::custom_rule::CustomInvariantReadBudget<'_> {
+        self.views.after.read_budget()
+    }
+    pub fn scopes(&self) -> impl ExactSizeIterator<Item = ManagedIndexSourceScope<'_>> {
+        self.closure
+            .scopes
+            .iter()
+            .map(|(&scope, changed)| ManagedIndexSourceScope {
+                interpretation: self.interpretation,
+                correspondence: self.correspondence,
+                program: self.program,
+                scope,
+                changed,
+                closure: self.closure,
+                views: &self.views,
+                availability: self.availability,
+                committed_available: self.committed_available,
+            })
+    }
+
+    pub(crate) fn check_complete(
+        &self,
+        roots: &[PreparedManagedIndexSourceRoot],
+    ) -> Result<(), Denial> {
+        if roots.len() != self.closure.scopes.len() {
+            return Err(Denial::IncompletePreparation);
+        }
+        for ((scope, _), root) in self.closure.scopes.iter().zip(roots) {
+            if root.scope != *scope
+                || root.program != *self.program
+                || root.availability != self.availability
+            {
+                return Err(Denial::ForeignSource);
+            }
+            let present = match self.views.after.entity_kind(*scope) {
+                Ok(kind) if kind == self.program.scope_kind() => true,
+                Err(crate::contracts::validation::data::structural_read::StructuralReadError::RecordUnavailable) => false,
+                Ok(_) => return Err(Denial::ForeignSource),
+                Err(cause) => {
+                    return Err(ReadDenial::Structural(
+                        self.views.after.read_budget().refusal(cause),
+                    )
+                    .into())
+                }
+            };
+            if root.proposed.is_some() != present {
+                return Err(Denial::IncompletePreparation);
+            }
+        }
+        self.views
+            .after
+            .read_budget()
+            .check_live()
+            .map_err(ReadDenial::Structural)?;
+        Ok(())
+    }
+}
+
+#[doc(hidden)]
+pub trait ManagedIndexSourcePreparationOwnerPort: Sized {
+    fn check_complete(&self, roots: &[PreparedManagedIndexSourceRoot]) -> Result<(), Denial>;
+}
+
+impl ManagedIndexSourcePreparationOwnerPort for ManagedIndexSourcePreparation<'_> {
+    fn check_complete(&self, roots: &[PreparedManagedIndexSourceRoot]) -> Result<(), Denial> {
+        self.check_complete(roots)
+    }
+}
+
+pub mod invariant_views;

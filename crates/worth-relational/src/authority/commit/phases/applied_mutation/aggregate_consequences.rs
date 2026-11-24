@@ -8,6 +8,7 @@ use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 
 impl AppliedMutationDraft {
     pub(crate) fn complete_aggregate_draft<'a>(

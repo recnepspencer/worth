@@ -3,6 +3,7 @@ use crate::merge::data::{
     PreparedMergeExecution, RelationalMergeCorrespondenceWitness, RelationalMergeProofPacket,
     RelationalMergeStrategyWitness, RelationalSchemaReconciliationWitness,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 impl<'runtime> MergeAccess<'runtime> {
     pub fn retain_merge_proof_packet_from_prepared_execution(

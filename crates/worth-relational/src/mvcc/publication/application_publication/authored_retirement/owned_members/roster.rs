@@ -63,9 +63,13 @@ mod tests;
 
 pub(super) fn owner_metadata(
     id: crate::identity::data::RelationId,
-    metadata: Option<crate::validation::engine::state_view::VisibleRelationMetadata>,
-) -> Result<crate::validation::engine::state_view::VisibleRelationMetadata, TransactionCommitError>
-{
+    metadata: Option<
+        worth_relational_branch::internal_port::branch::structural_state::VisibleRelationMetadata,
+    >,
+) -> Result<
+    worth_relational_branch::internal_port::branch::structural_state::VisibleRelationMetadata,
+    TransactionCommitError,
+> {
     metadata.ok_or_else(|| {
         TransactionCommitError::publication(PublicationError::authored_retirement(
             Cause::DanglingOwnedMember,

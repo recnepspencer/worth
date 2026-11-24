@@ -38,8 +38,7 @@ impl<'a> CandidateInvariantInputs<'a> {
             config: Arc::clone(self.config),
             schema_contract_runtime: Arc::clone(self.schema_contract_runtime),
             instrumentation: self.instrumentation,
-            #[cfg(test)]
-            current_version_id: self.history.current_version_id(),
+
             entity_count: state.entity_slot_count(),
             relation_count: state.relation_slot_count(),
             version_depth: self.history.current_version_id().0 as usize,

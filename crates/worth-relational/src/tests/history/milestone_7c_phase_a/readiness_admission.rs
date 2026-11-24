@@ -3,6 +3,7 @@ use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 #[test]
 fn prepare_merge_execution_admits_fully_ready_source_only_addition() {

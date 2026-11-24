@@ -14,7 +14,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     ) -> Result<(), Denial> {
         let admitted = super::frame_admission::ContentFrameAdmission::admit(
             execution,
-            &(*self.schema_authority.registry().owner_content_formats()),
+            self.schema_authority.registry().owner_content_formats(),
             attachments,
         )?;
         let mut next = self.content.clone();

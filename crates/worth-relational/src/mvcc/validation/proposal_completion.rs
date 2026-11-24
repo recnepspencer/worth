@@ -1,5 +1,4 @@
 //! Seal the validated successor only after candidate preparation has retired.
-use super::invariant_evidence::RelationalMutationInvariantEvidence;
 use super::proposal_source::RelationalProposalSource;
 use super::proposal_validation::require_not_interrupted;
 use super::validated_proposal::{ValidatedProposalState, ValidatedRelationalProposal};
@@ -7,6 +6,9 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::CommitValidation;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::invariant_evidence::{
+    assemble_mutation_invariant_evidence, MutationInvariantEvidenceParts,
+};
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
@@ -32,7 +34,7 @@ pub(super) fn complete(
     let branch = basis.identity().branch_id().clone();
     require_not_interrupted(
         &transaction.control,
-        &(*transaction.basis.owner_inner()).retention_binding,
+        &transaction.basis.owner_inner().retention_binding,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     let transaction_id = transaction.transaction_id;
@@ -70,7 +72,7 @@ pub(super) fn complete(
         );
     require_not_interrupted(
         &transaction.control,
-        &(*transaction.basis.owner_inner()).retention_binding,
+        &transaction.basis.owner_inner().retention_binding,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     // All inner and outer abandoning probes have completed. Transfer the exact
@@ -96,13 +98,13 @@ pub(super) fn complete(
             prepared,
             proposed_mutation,
             invariants,
-            evidence: RelationalMutationInvariantEvidence {
+            evidence: assemble_mutation_invariant_evidence(MutationInvariantEvidenceParts {
                 branch,
                 proposed_version,
                 proposal_identity: proposal_identity.clone(),
                 summary,
                 custom_invariant_execution_receipts,
-            },
+            }),
             proposal_identity,
             validated_against_commit,
             validated_against_version,

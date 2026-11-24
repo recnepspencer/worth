@@ -1,5 +1,7 @@
 //! A compiled Source loan over one real, unpublished coupled assembly prefix.
 use super::applied_affinity::AppliedSourceAffinity;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
+use worth_relational_mutation::internal_port::validation::candidate_source::preparation::rows::ManagedIndexSourceRowsOwnerPort as _;
 mod publication;
 use super::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
@@ -66,7 +68,7 @@ impl<'candidate> ManagedIndexAppliedSourceRead<'candidate> {
             pin,
         };
         // Missing/foreign scope is a refusal, never an empty Source.
-        if source.rows(*execution)?.projection.entity_kind(scope)? != program.scope_kind() {
+        if source.rows(*execution)?.entity_kind(scope)? != program.scope_kind() {
             return Err(Definition::InvalidMemberDomain.into());
         }
         Ok(source)

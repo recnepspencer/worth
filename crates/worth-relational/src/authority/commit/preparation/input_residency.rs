@@ -24,7 +24,8 @@ pub(crate) fn demand_mutation_inputs<'intent>(
     for intent in intents {
         intent.seed_touched_partitions(&mut partitions);
     }
-    (*basis.owner_inner())
+    basis
+        .owner_inner()
         .root
         .demand_regions_head(execution, symbols, partitions)
         .map_err(|failure| super::storage_read_denial(basis, failure))

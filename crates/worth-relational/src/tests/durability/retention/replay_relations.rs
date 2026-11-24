@@ -316,7 +316,7 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
             .visibility_pins()
             .demand_replay_pins(execution, source_state.clone())
             .map(|_| ()),
-        Err(expected.clone())
+        Err(expected)
     );
     let reads = source.reads.load(Ordering::Relaxed);
     assert!(reads > before);

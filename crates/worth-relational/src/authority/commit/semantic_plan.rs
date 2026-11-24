@@ -1,8 +1,9 @@
 //! Own the normalized inputs carried through commit preparation.
-pub(crate) mod meaning;
-pub(crate) mod retained_entity_payload;
 pub(crate) use meaning::RelationalSemanticPlan;
 pub(crate) use retained_entity_payload::PreparedRetainedEntityPayload;
+pub(crate) use worth_relational_mutation::internal_port::authority::commit::semantic_plan::{
+    meaning, retained_entity_payload,
+};
 
 #[derive(Debug)]
 pub(crate) enum PreparedRelationalCommitPlan {
