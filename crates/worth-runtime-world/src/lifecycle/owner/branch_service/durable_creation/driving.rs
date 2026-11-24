@@ -187,10 +187,13 @@ where
                         .acknowledge_disposition(actual);
                     body.phase = CreationPhase::Selected;
                 }
-                Err(Stop::Pending | Stop::Busy | Stop::Refused(_)) => {
-                    return Err(Denial::OwnerUnavailable)
-                }
-                Err(Stop::Unresolved | Stop::EvidenceRequired | Stop::BlockedByPriorBarrier { .. }) => {
+                Err(Stop::Pending | Stop::Busy) => return Err(Denial::OwnerUnavailable),
+                Err(
+                    Stop::Refused(_)
+                    | Stop::Unresolved
+                    | Stop::EvidenceRequired
+                    | Stop::BlockedByPriorBarrier { .. },
+                ) => {
                     body.phase = CreationPhase::ReopenRequired;
                     return Err(Denial::OwnerUnavailable);
                 }

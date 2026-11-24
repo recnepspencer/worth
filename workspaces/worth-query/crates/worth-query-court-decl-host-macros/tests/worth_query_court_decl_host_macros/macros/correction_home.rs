@@ -184,27 +184,28 @@ fn recorded_authored_body_inverse_refuses_after_conflicting_edit_and_preserves_s
         assert!(task_done(&request));
         let coordinate = receipt.correction_source().coordinates();
 
-        // Conflicting edit supersedes the recorded completion on the same field.
-        let Outcome::Committed { result: (), .. } = request
-            .advanced()
-            .mutate(Complete {
-                task: 3,
-                done: false,
-            })
-            .without_source()
-            .idempotency(&2)
-            .execute_in_program(host, SystemAllocation)
-            .unwrap()
-        else {
-            panic!("the conflicting edit commits");
-        };
-        assert!(!task_done(&request));
+        // Conflicting edits supersede key 1 and leave `done == true`, distinct
+        // from key 1's inverse write (`done == false`) so post-reopen state
+        // independently proves the inverse did not apply.
+        for (key, done) in [(2_u64, false), (3_u64, true)] {
+            let Outcome::Committed { result: (), .. } = request
+                .advanced()
+                .mutate(Complete { task: 3, done })
+                .without_source()
+                .idempotency(&key)
+                .execute_in_program(host, SystemAllocation)
+                .unwrap()
+            else {
+                panic!("the conflicting edit commits");
+            };
+        }
+        assert!(task_done(&request));
 
         let corrections = request.corrections();
         let source = corrections.select_coordinates(&coordinate, limits).unwrap();
         let refusal = corrections
             .reverse(&source)
-            .idempotency("3")
+            .idempotency("4")
             .limits(limits)
             .prepare_operation::<CorrectCompletion, Program, RestoreAction>(host)
             .err()
@@ -218,7 +219,7 @@ fn recorded_authored_body_inverse_refuses_after_conflicting_edit_and_preserves_s
             ),
             "conflicting edit must refuse with SourceDiverged: {refusal:?}"
         );
-        assert!(!task_done(&request));
+        assert!(task_done(&request));
     }
     close(home);
 
@@ -229,8 +230,8 @@ fn recorded_authored_body_inverse_refuses_after_conflicting_edit_and_preserves_s
         let principal = owner(host, &clock, &scope);
         let request = host.request(&principal, &scope);
         assert!(
-            !task_done(&request),
-            "refused conflicting inverse leaves no partial effect across reopen"
+            task_done(&request),
+            "refused conflicting inverse leaves conflicting state intact across reopen"
         );
     }
     close(home);
