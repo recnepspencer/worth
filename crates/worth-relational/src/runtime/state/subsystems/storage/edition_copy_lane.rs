@@ -1,4 +1,5 @@
-use crate::runtime::state::subsystems::RuntimeInstrumentation;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
+use std::sync::Mutex;
 
 /// The lane an observed partition payload copy is charged to.
 ///
@@ -48,13 +49,16 @@ impl PartitionEditionCopyLane {
     /// thousand partitions must still settle once rather than a thousand times.
     pub(super) fn settle(
         self,
-        instrumentation: &RuntimeInstrumentation,
+        copy_counters: &Mutex<RuntimeComplexityCounters>,
         tally: PartitionCopyTally,
     ) {
         if tally.is_empty() {
             return;
         }
-        instrumentation.count(|counters| match self {
+        let mut counters = copy_counters
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        match self {
             Self::Ordinary => {
                 counters.ordinary_partitions_copied_on_write += tally.partitions;
                 counters.ordinary_partition_slots_copied_on_write +=
@@ -63,6 +67,6 @@ impl PartitionEditionCopyLane {
             Self::Reconstructive => {
                 counters.reconstructive_partitions_materialized += tally.partitions;
             }
-        });
+        }
     }
 }

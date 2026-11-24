@@ -1,6 +1,7 @@
 //! Original-funded capacity growth and reallocation overlap for Source buffers.
 use super::evaluation::SourceRead;
-use super::{DerivedRelationDenial as Definition, DerivedRelationReadDenial as Denial};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 
 pub(crate) fn reserve<T>(
     read: &mut impl SourceRead,

@@ -1,4 +1,6 @@
+pub(crate) mod checkpoint_image;
 mod checkpoint_inputs;
+mod checkpoint_publication;
 mod construction;
 pub(crate) use checkpoint_inputs::{FrozenCheckpointIndexes, OriginalCheckpointIndexes};
 use std::collections::BTreeMap;
@@ -11,18 +13,19 @@ pub(crate) use selection_state::IndexSelectionState;
 mod basis_selection;
 pub(crate) use basis_selection::PreparedIndexBasisSelection;
 mod admitted_definition;
+pub(crate) mod catalog_coverage;
 mod catalog_publication;
 mod definition_catalog;
 mod definition_preparation;
 mod definition_publication;
+pub(crate) use catalog_coverage::IndexCatalogCoverage;
 pub(crate) use catalog_publication::CapturedIndexDefinitionCatalog;
-pub(crate) use definition_catalog::{IndexCatalogCoverage, IndexDefinitionCatalog};
+pub(crate) use definition_catalog::IndexDefinitionCatalog;
 pub use definition_preparation::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,
 };
 mod admitted_selection;
-mod cold_checkpoint;
 mod generation_publication_gate;
 #[cfg(test)]
 mod identity_exhaustion_tests;
@@ -42,8 +45,8 @@ use crate::indexes::data::{
     DerivedIndexArtifacts, DerivedIndexDefinition, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId,
 };
-use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::schema::data::SchemaVersionId;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 
 /// Definitions and retained derived generations owned by the native index runtime.
 ///
@@ -52,7 +55,6 @@ use crate::schema::data::SchemaVersionId;
 /// the guard.
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
-    cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
     catalog: Arc<IndexDefinitionCatalog>,
     generations: GenerationCatalog,
     bases: basis_selection::BasisSelections,
@@ -93,7 +95,6 @@ impl IndexingState {
 
     fn empty() -> Self {
         Self {
-            cold_checkpoint: None,
             catalog: Arc::new(IndexDefinitionCatalog::default()),
             generations: GenerationCatalog::default(),
             bases: basis_selection::BasisSelections::default(),
@@ -112,7 +113,7 @@ impl IndexingState {
     pub(crate) fn definition(
         &self,
         index: DerivedIndexId,
-    ) -> Option<&crate::indexes::RetainedDerivedIndexDefinition> {
+    ) -> Option<&crate::indexes::retained_definition::RetainedDerivedIndexDefinition> {
         self.catalog.definitions.get(&index)
     }
 
@@ -222,14 +223,6 @@ impl IndexingSubsystem {
             .reclaim_except_versions(retained, &global_indexes, &carried)
     }
 
-    /// Replace the whole subsystem, for checkpoint restore.
-    pub(crate) fn install(&self, mut state: IndexingState) {
-        let _definitions = self.definition_publication.write();
-        let _generations = self.generation_publication.enter_uncontrolled();
-        Arc::make_mut(&mut state.catalog).renew_incarnation();
-        *self.state.write() = state;
-    }
-
     pub(crate) fn snapshot(&self) -> IndexingState {
         self.state.read().clone()
     }
@@ -237,7 +230,7 @@ impl IndexingSubsystem {
     pub(crate) fn definition(
         &self,
         index_id: DerivedIndexId,
-    ) -> Option<crate::indexes::RetainedDerivedIndexDefinition> {
+    ) -> Option<crate::indexes::retained_definition::RetainedDerivedIndexDefinition> {
         self.state
             .read()
             .catalog
@@ -249,13 +242,18 @@ impl IndexingSubsystem {
     pub(crate) fn with_definitions<R>(
         &self,
         read: impl FnOnce(
-            &BTreeMap<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>,
+            &BTreeMap<
+                DerivedIndexId,
+                crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+            >,
         ) -> R,
     ) -> R {
         read(&self.state.read().catalog.definitions)
     }
 
-    pub(crate) fn definitions(&self) -> Vec<crate::indexes::RetainedDerivedIndexDefinition> {
+    pub(crate) fn definitions(
+        &self,
+    ) -> Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition> {
         self.state
             .read()
             .catalog

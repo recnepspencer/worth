@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequest;
 
 #[test]
 fn native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "abandoned-component");

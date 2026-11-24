@@ -1,12 +1,13 @@
 //! Full image meaning and admission survive shared DATA aliases.
 use super::*;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-fn original_schema() -> Arc<crate::branch::RelationalBranchRootSchemaAuthority> {
+fn original_schema() -> RelationalSchemaRegistry {
     use crate::schema::data::*;
-    let registry = RelationalSchemaRegistry::new()
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "unused_entity".into(),
@@ -37,26 +38,30 @@ fn original_schema() -> Arc<crate::branch::RelationalBranchRootSchemaAuthority> 
                 Vec::new(),
             ),
         })
-        .unwrap();
-    let expected = registry.authority_snapshot();
-    crate::branch::RelationalBranchRootSchemaAuthority::capture(
-        0,
-        &registry,
-        &expected,
-        crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
-        None,
-    )
-    .unwrap()
+        .unwrap()
+}
+
+fn source(registry: &RelationalSchemaRegistry) -> SchemaImageSource<'_> {
+    use crate::schema::data::{
+        runtime_descriptor_semantics_policy, schema_authority_snapshot_digest_bytes,
+    };
+    SchemaImageSource {
+        registry,
+        retained_aspect_contracts: &[],
+        schema_root: schema_authority_snapshot_digest_bytes(&registry.authority_snapshot()),
+        descriptor_semantics_version: runtime_descriptor_semantics_policy().current_write_version(),
+    }
 }
 
 #[test]
 fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() {
     let original = original_schema();
-    let ordinary = DurableBranchRootSchemaImage::capture(&original).unwrap();
+    let ordinary = RecordedBranchSchemaImage::capture(source(&original)).unwrap();
     let budget = SerialMemoryBudget::new(Some(1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
-    let image = DurableBranchRootSchemaImage::capture_for_request(&original, &request).unwrap();
+    let image =
+        RecordedBranchSchemaImage::capture_for_request(source(&original), &request).unwrap();
     let charged = budget.charged_memory_bytes();
     assert!(charged > 0);
     assert_eq!(image, ordinary);
@@ -65,10 +70,10 @@ fn full_schema_capture_keeps_unused_constraints_wire_and_last_alias_admission() 
         rmp_serde::to_vec(&ordinary).unwrap()
     );
     let encoded = rmp_serde::to_vec(&image).unwrap();
-    let decoded: DurableBranchRootSchemaImage = rmp_serde::from_slice(&encoded).unwrap();
+    let decoded: RecordedBranchSchemaImage = rmp_serde::from_slice(&encoded).unwrap();
     assert_eq!(image, decoded);
     let (registry, _) = decoded.readmit_registry().unwrap();
-    assert_eq!(&registry, original.registry());
+    assert_eq!(&registry, &original);
     assert_eq!(
         registry.relation_kinds[&KindId(2)]
             .relation_integrity
@@ -125,9 +130,9 @@ fn schema_capture_refuses_original_request_memory_and_cancellation_before_copy()
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
     assert!(matches!(
-        DurableBranchRootSchemaImage::capture_for_request(&original, &request),
-        Err(crate::durability::data::RelationalRecoveryStop::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+        RecordedBranchSchemaImage::capture_for_request(source(&original), &request),
+        Err(crate::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                 requested, admitted, ancestor: 0,
             }
         )) if requested >= minimum && admitted < minimum
@@ -138,10 +143,12 @@ fn schema_capture_refuses_original_request_memory_and_cancellation_before_copy()
     cancellation.cancel();
     let request = ExecutionRequest::serial(&host);
     assert!(matches!(
-        DurableBranchRootSchemaImage::capture_for_request(&original, &request),
-        Err(crate::durability::data::RelationalRecoveryStop::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
-        ))
+        RecordedBranchSchemaImage::capture_for_request(source(&original), &request),
+        Err(
+            crate::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
+            )
+        )
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
 }

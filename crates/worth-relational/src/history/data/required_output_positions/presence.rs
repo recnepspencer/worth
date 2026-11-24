@@ -1,16 +1,14 @@
 //! Durable current route presence, written only by the required-output position owner.
-use crate::{
-    history::data::{CanonicalRequiredOutputOrigin, CommitId},
-    identity::data::{EntityId, VersionId},
-    mvcc::RequiredOutputPublicationMeaning,
-};
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::identity::data::VersionId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod admission;
 pub(crate) mod completion;
-mod current_selection;
 mod history_fallback;
-pub(crate) use current_selection::read_current;
 pub(crate) use history_fallback::require_current_owned_route;
 mod current_index;
 pub(crate) use current_index::CurrentPositions;

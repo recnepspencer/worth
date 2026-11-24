@@ -1,5 +1,11 @@
 //! Read records and visibility slots using carried version metadata.
-use super::super::*;
+use super::ProjectionRecordReader;
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
+use crate::storage::partition::DenseSlotBitSet;
+use crate::visibility::materialization::read_records::visibility::{
+    visible_relation_slots_in_partition_from_state, visible_slots_in_partition_from_state,
+};
 
 impl ProjectionRecordReader<'_> {
     pub(crate) fn authoritative_entity_record_for_id_from_exact_state(
@@ -50,7 +56,7 @@ impl ProjectionRecordReader<'_> {
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let mut partitions = Vec::new();
         let (partition_ids, partition_bytes) =
@@ -82,7 +88,10 @@ impl ProjectionRecordReader<'_> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<DenseSlotBitSet>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         visible_slots_in_partition_from_state::<crate::storage::substrate::EntityRecordKind>(
             self.current_version,
             state,
@@ -106,7 +115,7 @@ impl ProjectionRecordReader<'_> {
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
     ) -> Result<
         Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let mut partitions = Vec::new();
         let (partition_ids, partition_bytes) =
@@ -138,7 +147,10 @@ impl ProjectionRecordReader<'_> {
         version_id: crate::identity::data::VersionId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<DenseSlotBitSet>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         visible_relation_slots_in_partition_from_state(
             self.current_version,
             state,

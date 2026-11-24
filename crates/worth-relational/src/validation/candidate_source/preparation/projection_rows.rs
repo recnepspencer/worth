@@ -1,7 +1,7 @@
 //! Current-loan direct occurrences retain exact nested parent issuance.
 use super::*;
-use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape};
-use crate::validation::data::StructuralRelationRecord;
+use crate::derived_relation::{read::DerivedRelationData, read_shape::DerivedRelationReadShape};
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 /// Flat actual ancestor records avoid recursive destruction. Backing drops
 /// before its original payer, which survives every shared read/occurrence.
@@ -13,7 +13,7 @@ struct ProjectionLineage {
 /// Actual endpoint preparation tied to its Source row, route and parent path.
 pub struct PreparedManagedIndexProjectionRead {
     root: ManagedIndexSourceOccurrence,
-    source_identity: Option<crate::derived_relation::DerivedRelationReadIdentity>,
+    source_identity: Option<crate::derived_relation::proof::DerivedRelationReadIdentity>,
     route: usize,
     anchor: EntityId,
     lineage: Option<Arc<ProjectionLineage>>,
@@ -248,7 +248,7 @@ impl ManagedIndexSourceRows<'_> {
         occurrence: &ManagedIndexSourceProjectionOccurrence,
         column: usize,
         project: impl FnOnce(
-            crate::runtime::RelationalProjectedFieldObservation<'_>,
+            crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation<'_>,
             Option<crate::content::RelationalContentFrame>,
         ) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
@@ -270,7 +270,7 @@ impl ManagedIndexSourceRows<'_> {
         read: &PreparedManagedIndexProjectionRead,
         occurrence: &ManagedIndexSourceProjectionOccurrence,
         column: usize,
-        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
+        project: impl FnOnce(crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.admit_projection_occurrence(read, occurrence)?;
         let route = &self.projection.program.projection_routes()[read.route];

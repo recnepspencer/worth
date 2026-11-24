@@ -5,7 +5,7 @@ use super::payload_wire::{TransitionPayloadRef, TransitionPayloadWire};
 use super::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactRefusal as Refusal,
 };
-use crate::branch::{PositionedBranchTransition, RelationalBranchTransition};
+use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransition};
 use crate::durability::artifact_canonical_payload::is_canonical_payload;
 
 impl RelationalBranchTransitionArtifact {
@@ -105,7 +105,9 @@ fn check_canonical_frame(transition: &RelationalBranchTransition) -> Result<(), 
     match transition {
         RelationalBranchTransition::Fork { source_head, .. }
         | RelationalBranchTransition::RetainedFork { source_head, .. } => {
-            if source_head.runtime_instance_id() != crate::branch::CANONICAL_RUNTIME_INSTANCE_ID {
+            if source_head.runtime_instance_id()
+                != crate::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID
+            {
                 Err(Refusal::SourceHeadOutsideCanonicalFrame {
                     runtime_instance_id: source_head.runtime_instance_id(),
                 })

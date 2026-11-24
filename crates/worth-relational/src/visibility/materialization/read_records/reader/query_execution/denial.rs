@@ -1,8 +1,9 @@
 //! Exhaustive native causes for request-bearing query reads.
 use super::{QueryReadExecutionStop, QueryReadPacketDenial};
 use crate::execution::denial::{kernel_stop, map_stop};
-use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::{CommitExecutionDenial, CommitExecutionDenialKind};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
 use worth_execution::{MapDenial, ScanDenial, WorkCeilingDenial};
 
 impl QueryReadExecutionStop {

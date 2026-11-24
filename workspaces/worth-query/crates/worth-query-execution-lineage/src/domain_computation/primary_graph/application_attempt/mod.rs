@@ -86,8 +86,8 @@ pub use effect_program::{
 pub use fact::{
     candidate_support_source_stop, consult_observation, observe_adjacency,
     observe_indexed_candidates, observe_indexed_entity_selection,
-    reobserve_indexed_entity_selection, FactMovement, IndexedSelectionReobserveDenial,
-    ManagedSourceRead, ManagedSourceReadKey, Movement, ObservedRetained, SourcePublicationRead,
+    reobserve_indexed_entity_selection, AppliedSourceAlignment, FactMovement,
+    IndexedSelectionReobserveDenial, ManagedSourceRead, ManagedSourceReadKey, Movement, ObservedRetained, SourcePublicationRead,
     SourceReadAuthorization, SourceReadAuthorizationKey, WorthQueryApplicationAdjacencyDirection,
     WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact,
     WorthQueryApplicationObservedRelation, WorthQueryIndexedSelectionRefusal,

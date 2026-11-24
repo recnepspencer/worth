@@ -7,7 +7,7 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalBorrowedRecordReadDenial {
     ExactBasisRequired,
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -35,7 +35,7 @@ impl VisibilityProjectionView {
         Some(
             38_u64.saturating_add(kind_lookup_work(
                 basis
-                    .root()
+                    .projection_root()
                     .schema_authority()
                     .registry()
                     .entity_kinds
@@ -52,7 +52,7 @@ impl VisibilityProjectionView {
         };
         Some(kind_lookup_work(
             basis
-                .root()
+                .projection_root()
                 .schema_authority()
                 .registry()
                 .entity_kinds
@@ -68,7 +68,7 @@ impl VisibilityProjectionView {
         Some(
             39_u64.saturating_add(kind_lookup_work(
                 basis
-                    .root()
+                    .projection_root()
                     .schema_authority()
                     .registry()
                     .relation_kinds
@@ -96,7 +96,7 @@ impl VisibilityProjectionView {
         };
         self.demand_regions_head(execution, [entity.partition_id])
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
-        let root = basis.root();
+        let root = basis.projection_root();
         let Some(partition) = self.admitted_head_region(entity.partition_id) else {
             return Ok(None);
         };
@@ -156,7 +156,7 @@ impl VisibilityProjectionView {
         };
         self.demand_regions_head(execution, [relation.partition_id])
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
-        let root = basis.root();
+        let root = basis.projection_root();
         let Some(partition) = self.admitted_head_region(relation.partition_id) else {
             return Ok(None);
         };

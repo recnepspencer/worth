@@ -29,7 +29,7 @@ mod compilation_quote;
 #[path = "root_schema/compiled_plans.rs"]
 mod compiled_plans;
 #[path = "root_schema/compiled_retention.rs"]
-mod compiled_retention;
+pub(crate) mod compiled_retention;
 #[path = "root_schema/continuity.rs"]
 mod continuity;
 #[path = "root_schema/home_executables.rs"]
@@ -37,7 +37,7 @@ mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
 #[path = "root_schema/quote_denial.rs"]
-mod quote_denial;
+pub(crate) mod quote_denial;
 #[path = "root_schema/readmission.rs"]
 mod readmission;
 #[path = "root_schema/recorded_image.rs"]
@@ -47,7 +47,7 @@ mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
 #[path = "root_schema/standard_tree_quote.rs"]
-mod standard_tree_quote;
+pub(crate) mod standard_tree_quote;
 pub(crate) use compiled_retention::{
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
 };
@@ -72,7 +72,9 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
     // snapshot admission. Sharing this fixed DATA avoids recomputing integrity
     // plans and allocating a second snapshot during exact root checks.
     relation_integrity_revisions: Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
-    recorded_image: std::sync::OnceLock<crate::durability::data::DurableBranchRootSchemaImage>,
+    recorded_image: std::sync::OnceLock<
+        crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,
+    >,
     _funding: Option<Arc<compiled_retention::SchemaCompilationFunding>>,
 }
 
@@ -92,7 +94,7 @@ impl RelationalBranchRootSchemaAuthority {
     pub(crate) fn registry_digest_for_request(
         registry: &crate::schema::data::RelationalSchemaRegistry,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<[u8; 32], crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let control = crate::schema::SchemaCompilationControl::Request(*request);
         let snapshot = registry.snapshot_for_compilation(control)?;
         crate::schema::data::schema_authority_snapshot_digest_for_compilation(&snapshot, control)
@@ -236,7 +238,7 @@ fn retain_aspect_contracts(
     previous: Option<&RelationalBranchRootSchemaAuthority>,
     plans: &AspectContractPlanCatalog,
     control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<Vec<AspectContract>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Vec<AspectContract>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let mut retained = std::collections::BTreeMap::new();
     if let Some(previous) = previous {
         for contract in previous.retained_aspect_contracts() {
@@ -286,7 +288,7 @@ fn plans_match_snapshot_for_compilation(
     plans: &AspectContractPlanCatalog,
     expected: &SchemaAuthoritySnapshot,
     control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<bool, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     for kind in &expected.entity_kinds {
         control.checkpoint()?;
         if !plans

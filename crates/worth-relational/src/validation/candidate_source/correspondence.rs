@@ -1,9 +1,12 @@
 //! Exact applied-record comparison admits reuse, never committed Source READ.
 use super::{ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram};
-use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
-use crate::derived_relation::DerivedRelationReadDenial as ReadDenial;
-use crate::runtime::{PositionedRelationalSnapshot, RelationalPreparationRuntime};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
+use crate::history::data::coordinates::CommitId;
+use crate::publication::patch::data::PatchStreamPosition;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_proof::{
     AdmittedManagedIndexSourceCorrespondence, ManagedIndexSourceCorrespondenceAuthority,
@@ -22,14 +25,21 @@ pub(super) struct NativeManagedSourceCorrespondence<'a> {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
+/// Only the already-applied record scope and selected symbol owner are compared.
+pub(super) struct AppliedCorrespondenceInputs<'a> {
+    pub(super) owner: &'a super::NativeManagedSourceInterpretation,
+    pub(super) changed_records: &'a [RecordRef],
+    pub(super) symbols: &'a RuntimeSymbolTable,
+}
+
 pub(super) fn prepare<'a>(
-    draft: &'a AppliedMutationDraft,
+    inputs: AppliedCorrespondenceInputs<'a>,
     execution: ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
     after: &InvariantStateView<'_>,
     generation: u64,
+    canonical_position: impl FnOnce(CommitId) -> Option<PatchStreamPosition>,
 ) -> Result<Option<NativeManagedSourceCorrespondence<'a>>, Denial> {
-    let owner = &draft.source_interpretation;
+    let owner = inputs.owner;
     if !owner.has_restoration_origin() {
         return Ok(None);
     }
@@ -45,7 +55,14 @@ pub(super) fn prepare<'a>(
     }
     let (equal, _) = execution
         .run_native_with_checkpoint(|context| {
-            records::matches(draft, execution, runtime, source, after, context)
+            records::matches(
+                inputs.changed_records,
+                execution,
+                inputs.symbols,
+                source,
+                after,
+                context,
+            )
         })
         .map_err(|cause| ReadDenial::Request(cause.into()))?;
     if !equal? {
@@ -63,12 +80,7 @@ pub(super) fn prepare<'a>(
     let (position, _) = execution
         .run_native_with_checkpoint(|context| {
             charge(context, bytes.checked_add(7).ok_or_else(overflow)?)?;
-            Ok::<_, Denial>(
-                basis
-                    .observation()
-                    .commit_id()
-                    .and_then(|commit| runtime.history.canonical_stream_position(commit)),
-            )
+            Ok::<_, Denial>(basis.observation().commit_id().and_then(canonical_position))
         })
         .map_err(|cause| ReadDenial::Request(cause.into()))?;
     let Some(position) = position? else {
@@ -117,8 +129,10 @@ impl NativeManagedSourceCorrespondence<'_> {
 }
 
 fn overflow() -> Denial {
-    ReadDenial::Definition(crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded)
-        .into()
+    ReadDenial::Definition(
+        crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
+    )
+    .into()
 }
 fn charge(context: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), Denial> {
     context

@@ -1,14 +1,15 @@
 //! Borrow the applied Native Source; seal each root under that same custody.
+use super::availability::ManagedIndexSourceAvailability;
 use super::scope_closure::PreparedManagedIndexScopeClosure;
 use super::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
     ManagedIndexSourceProjection,
 };
-use crate::derived_relation::{
-    DerivedRelationDenial as Definition, DerivedRelationReadDenial as ReadDenial,
-};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as ReadDenial;
 use crate::identity::data::EntityId;
-use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
+use crate::validation::custom_rule::structural_views::StructuralAspectStateView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use std::{any::Any, sync::Arc};
 
 mod home_catalog;
@@ -25,11 +26,6 @@ pub use rows::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 pub(crate) type RootPayload = Arc<dyn Any + Send + Sync>;
 
 /// Native's physical posture, never selected by a provider or Query boolean.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ManagedIndexSourceAvailability {
-    Available,
-    Unavailable,
-}
 
 pub(crate) struct SourceViews<'a> {
     pub(crate) before: StructuralRelationView<'a>,
@@ -102,7 +98,9 @@ impl<'a> ManagedIndexSourceScope<'a> {
             .map_err(ReadDenial::Structural)?;
         match view.entity_kind(scope) {
             Ok(kind) if kind == self.program.scope_kind() => Ok(true),
-            Err(crate::validation::data::StructuralReadError::RecordUnavailable) => Ok(false),
+            Err(
+                crate::validation::data::structural_read::StructuralReadError::RecordUnavailable,
+            ) => Ok(false),
             Ok(_) => Err(Denial::ForeignSource),
             Err(cause) => Err(ReadDenial::Structural(view.read_budget().refusal(cause)).into()),
         }
@@ -256,7 +254,7 @@ pub(crate) struct PreparedSourceProgram {
     )]
     pub(crate) closure: PreparedManagedIndexScopeClosure,
     pub(crate) roots: Vec<PreparedManagedIndexSourceRoot>,
-    pub(crate) _work: crate::validation::CustomInvariantWorkMeter,
+    pub(crate) _work: crate::validation::custom_rule::CustomInvariantWorkMeter,
 }
 
 /// The existing participant receives this only from Native's applied draft.
@@ -268,7 +266,7 @@ pub struct ManagedIndexSourcePreparation<'a> {
     pub(crate) closure: &'a PreparedManagedIndexScopeClosure,
     pub(crate) views: SourceViews<'a>,
     pub(crate) availability: ManagedIndexSourceAvailability,
-    pub(crate) basis: &'a crate::branch::AdmittedRelationalBranchBasis,
+    pub(crate) basis: &'a crate::branch::basis::AdmittedRelationalBranchBasis,
     pub(crate) committed_available: bool,
 }
 
@@ -278,7 +276,7 @@ impl ManagedIndexSourcePreparation<'_> {
     }
     /// This is genuine selected Native custody. It cannot mint Query World
     /// incarnation/READ admission, which the Query resource must bind itself.
-    pub fn selected_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
+    pub fn selected_basis(&self) -> &crate::branch::basis::AdmittedRelationalBranchBasis {
         self.basis
     }
     /// The Source's own payer, shared by every scope it prepares: staging
@@ -319,7 +317,7 @@ impl ManagedIndexSourcePreparation<'_> {
             }
             let present = match self.views.after.entity_kind(*scope) {
                 Ok(kind) if kind == self.program.scope_kind() => true,
-                Err(crate::validation::data::StructuralReadError::RecordUnavailable) => false,
+                Err(crate::validation::data::structural_read::StructuralReadError::RecordUnavailable) => false,
                 Ok(_) => return Err(Denial::ForeignSource),
                 Err(cause) => {
                     return Err(ReadDenial::Structural(

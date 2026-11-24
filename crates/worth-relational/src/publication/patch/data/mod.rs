@@ -5,9 +5,11 @@ mod patch_detail;
 mod patch_errors;
 mod patch_ordering;
 mod patch_position;
+pub(crate) mod position_denial;
 mod published_authoritative_patch;
-mod record_structural_change;
+pub(crate) mod record_structural_change;
 mod semantic_change;
+pub(crate) mod stream_commit_ref;
 
 pub(crate) use authoritative_patch_envelope::preserves_application;
 pub use authoritative_patch_envelope::{

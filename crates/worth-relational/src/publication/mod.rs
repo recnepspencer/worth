@@ -1,9 +1,12 @@
 mod access;
-mod authority;
+pub(crate) mod authority;
 pub mod bundle;
-mod canonical_history;
+pub(crate) mod canonical_history;
 pub mod cdc;
+pub(crate) mod close_custody;
 pub mod data;
+pub(crate) mod diagnostic_store;
+pub(crate) mod live_publication_inputs;
 pub(crate) mod ownership;
 pub mod patch;
 
@@ -15,7 +18,6 @@ pub use access::{
 pub(crate) use authority::production_post_commit_consumer;
 pub use authority::PublicationAuthority;
 pub(crate) use authority::PublicationPreparationAuthority;
-pub use authority::RelationalSettlementPort;
 pub use authority::{
     PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
 };

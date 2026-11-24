@@ -3,13 +3,12 @@ use super::{
     charge, require_linear_history, CodecRetirementClosureStop as Stop,
     PublicationHistoryFailure as Failure,
 };
-use crate::{
-    history::data::{CanonicalCommitEnvelope, CommitId, SelectedOutputPublication},
-    identity::data::EntityId,
-    mvcc::{
-        RelationalInstalledApplicationPublicationAuthority, RequiredOutputRolePosture as Posture,
-    },
-};
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CommitId;
+use crate::history::data::SelectedOutputPublication;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 mod coupled;
@@ -20,7 +19,6 @@ pub(crate) use coupled::tests::assert_exact_owner_refusals;
 pub(crate) fn historical_positions(
     mut next: Option<CommitId>,
     bound: usize,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
     load: &mut dyn FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validate: &mut dyn FnMut(
         &CanonicalCommitEnvelope,
@@ -61,29 +59,11 @@ pub(crate) fn historical_positions(
                 if latest.len() >= bound {
                     return Err("source-scope catalog bound exceeded".into());
                 }
-                if let Some(installed) = installed {
-                    charge(
-                        context,
-                        installed
-                            .source_scope_ownership
-                            .lookup_work(&origin.producer),
-                    )?;
-                    if installed
-                        .source_scope_ownership
-                        .scope_kind(&origin.producer)
-                        .is_some()
-                        != origin.source_scope_owned
-                    {
-                        return Err(Failure::at_source(
-                            origin.meaning.source_scope,
-                            "source-scope publication differs from installed ownership".into(),
-                        ));
-                    }
-                }
                 latest.push(SelectedOutputPublication {
-                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
-                        Arc::clone(&envelope),
-                    ),
+                    evidence:
+                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                            Arc::clone(&envelope),
+                        ),
                     origin: Arc::clone(origin),
                     ordinal,
                 });
@@ -103,99 +83,32 @@ pub(crate) fn historical_positions(
     Ok(latest)
 }
 
-/// Current ownership is selected solely from authenticated current region facts.
-pub(crate) fn current(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
-    records: &[crate::transactions::data::RecordRef],
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
-    use crate::transactions::data::RecordRef;
-    use std::collections::BTreeSet;
-    let roots = records
-        .iter()
-        .filter_map(|r| {
-            if let RecordRef::Entity(id) = r {
-                Some(*id)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-    let mut frontier = records.to_vec();
-    let mut visited = BTreeSet::new();
-    let mut latest: Vec<SelectedOutputPublication> = Vec::new();
-    while !frontier.is_empty() {
-        let mut selectors =
-            crate::publication::ownership::linked_selectors(execution, basis, &frontier, context)?;
-        selectors.append(&mut frontier);
-        let roster = Arc::new(crate::publication::ownership::read(
-            execution, basis, &selectors, context,
-        )?);
-        for publication in from_current(roster, installed, context)? {
-            charge(context, latest.len() + 1).map_err(super::authored_cascade::stopped)?;
-            if !latest
-                .iter()
-                .any(|p| p.origin.same_publication(&publication.origin))
-            {
-                latest.push(publication);
-            }
-        }
-        // This is the existing closure owner. Only publications selected under
-        // the actual cascade roots, or their authenticated required consumers, may
-        // contribute another ownership frontier. No unrelated member expands it.
-        let retiring =
-            select(&roots, &latest, context).map_err(super::authored_cascade::stopped)?;
-        let consuming = super::scope_dependents::linked_owners(&roots, &retiring, &latest, context)
-            .map_err(super::authored_cascade::stopped)?;
-        for publication in &consuming {
-            let source = publication.origin.meaning.source_scope;
-            charge(context, 1).map_err(super::authored_cascade::stopped)?;
-            if visited.insert(source) {
-                frontier.push(RecordRef::Entity(source));
-            }
-        }
-        for publication in retiring {
-            for member in &publication.origin.members {
-                charge(context, 1).map_err(super::authored_cascade::stopped)?;
-                if member.posture != Posture::Retire && visited.insert(member.id) {
-                    frontier.push(RecordRef::Entity(member.id));
-                }
-            }
-        }
-    }
-    Ok(latest)
-}
-
 pub(crate) fn from_current(
-    roster: Arc<crate::publication::ownership::CurrentPublicationRoster>,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    roster: Arc<crate::publication::ownership::read::roster::CurrentPublicationRoster>,
+    ownership: Option<&InstalledSourceScopeOwnership>,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    Vec<SelectedOutputPublication>,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let mut selected = Vec::with_capacity(roster.origins().len());
     for (origin, ordinal) in roster.coordinates() {
         crate::execution::request_stage::checkpoint(context, origin.producer.len() as u64 + 1)
-            .map_err(crate::publication::ownership::request)?;
-        if installed.is_some_and(|installed| {
-            installed
-                .source_scope_ownership
-                .scope_kind(&origin.producer)
-                .is_none()
-        }) {
+            .map_err(crate::publication::ownership::read_request::request)?;
+        if ownership.is_some_and(|ownership| ownership.scope_kind(&origin.producer).is_none()) {
             return Err(
-                crate::transactions::data::TransactionCommitError::publication(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::authored_retirement(
                         crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                        crate::transactions::data::RecordRef::Entity(origin.meaning.source_scope),
+                        crate::transactions::data::primitives::RecordRef::Entity(origin.meaning.source_scope),
                     ),
                 ),
             );
         }
         selected.push(SelectedOutputPublication {
-            evidence: crate::publication::ownership::PublicationEvidence::Current(Arc::clone(
-                &roster,
-            )),
+            evidence: crate::publication::ownership::evidence::PublicationEvidence::Current(
+                Arc::clone(&roster),
+            ),
             origin: Arc::clone(origin),
             ordinal,
         });
@@ -278,20 +191,20 @@ pub(crate) fn later_source_owners(
 pub(super) fn validate_historical_prefix(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     envelope: &CanonicalCommitEnvelope,
     source: EntityId,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     execution
         .consult()
-        .map_err(crate::publication::ownership::request)?;
+        .map_err(crate::publication::ownership::read_request::request)?;
     execution
         .in_scope(|lease| {
             historical_positions(
                 Some(envelope.commit.commit_id),
-                runtime.runtime.history.catalog_len(),
-                None,
+                runtime.input.projection.history.catalog_len(),
                 &mut |commit| runtime.commit(commit),
                 &mut |envelope, context| {
                     if envelope.required_output_materialization.is_some() {
@@ -309,17 +222,17 @@ pub(super) fn validate_historical_prefix(
             )
             .map(|_| ())
         })
-        .map_err(crate::publication::ownership::request)?
+        .map_err(crate::publication::ownership::read_request::request)?
         .map_err(|failure| match failure.stop {
-            Stop::Request(cause) => crate::publication::ownership::request(cause),
+            Stop::Request(cause) => crate::publication::ownership::read_request::request(cause),
             Stop::Payload(detail) => {
                 let mut error = crate::publication::data::PublicationError::authored_retirement(
                     crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                    crate::transactions::data::RecordRef::Entity(failure.source.unwrap_or(source)),
+                    crate::transactions::data::primitives::RecordRef::Entity(failure.source.unwrap_or(source)),
                 );
                 error.detail.push_str(": ");
                 error.detail.push_str(&detail);
-                crate::transactions::data::TransactionCommitError::publication(error)
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(error)
             }
         })
 }

@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use super::CanonicalCommitEnvelope;
 use crate::publication::patch::data::{PatchStreamPosition, PublishedAuthoritativePatchEnvelope};
+use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::CanonicalPositionAdmission;
 
 /// One performed canonical commit together with its globally unique runtime
 /// stream position. Both axes are sealed after construction: recovery and
@@ -15,7 +16,7 @@ pub(crate) struct PositionedCanonicalCommit {
 }
 
 impl PositionedCanonicalCommit {
-    pub(crate) fn admit(admission: crate::runtime::CanonicalPositionAdmission) -> Self {
+    pub(crate) fn admit(admission: CanonicalPositionAdmission) -> Self {
         let (position, canonical) = admission.into_parts();
         Self {
             position,
@@ -62,7 +63,7 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(
+    pub(crate) fn positioned_envelope_mut_for_test(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> &mut super::CanonicalCommitEnvelopeBody {

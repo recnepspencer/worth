@@ -1,6 +1,6 @@
 //! The shared allocation shape of compiled aspect plans, independent of roots.
 use super::standard_tree_quote::retained_tree_bytes;
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::identity::data::KindId;
 use crate::schema::{data::*, SchemaCompilationControl};
 use std::alloc::Layout;

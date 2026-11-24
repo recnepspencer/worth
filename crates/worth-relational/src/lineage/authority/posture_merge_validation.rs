@@ -8,7 +8,7 @@ use crate::lineage::data::{
     InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageMergeKeeper, LineageNameDenial,
     LineagePostureKind, LineageRecordTarget, PersistentNameBirthRequest, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
+use crate::storage::overlay::WorkingState;
 
 use super::posture_validation::{
     mismatch, require_live_holder_and_lineage, validate_birth_holder_and_subject,

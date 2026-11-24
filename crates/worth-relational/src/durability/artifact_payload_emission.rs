@@ -141,3 +141,33 @@ fn settle(
 fn stopped() -> io::Error {
     io::Error::other("artifact payload writer stopped")
 }
+
+impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial>
+    for crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial
+{
+    fn from(
+        denial: crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial,
+    ) -> Self {
+        use crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial as Emission;
+        match denial {
+            Emission::Allocation(denial) => Self::Allocation(denial),
+            Emission::PayloadEncoding { detail } => Self::PayloadEncoding { detail },
+            Emission::FrameSizeOverflow => Self::FrameSizeOverflow,
+        }
+    }
+}
+
+impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial>
+    for crate::durability::branch_transition_artifact::encode_denial::RelationalBranchTransitionArtifactEncodeDenial
+{
+    fn from(
+        denial: crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial,
+    ) -> Self {
+        use crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial as Emission;
+        match denial {
+            Emission::Allocation(denial) => Self::Allocation(denial),
+            Emission::PayloadEncoding { detail } => Self::PayloadEncoding { detail },
+            Emission::FrameSizeOverflow => Self::FrameSizeOverflow,
+        }
+    }
+}

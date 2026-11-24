@@ -7,5 +7,6 @@ pub(crate) struct MutationContext<'a> {
         Option<&'a std::collections::BTreeSet<crate::identity::data::RelationId>>,
     pub(crate) state: &'a mut WorkingState,
     pub(crate) schema: &'a RelationalSchemaRegistry,
-    pub(crate) record_allocations: &'a mut dyn crate::runtime::MutationRecordAllocations,
+    pub(crate) record_allocations:
+        &'a mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
 }

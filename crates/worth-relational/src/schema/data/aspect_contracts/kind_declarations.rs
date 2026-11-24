@@ -1,4 +1,5 @@
-use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
+use crate::merge::data::identity::IdentityBasisDeclaration;
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 
 use super::{AspectContractPlanRevision, DeclaredAspectContractBinding};
 

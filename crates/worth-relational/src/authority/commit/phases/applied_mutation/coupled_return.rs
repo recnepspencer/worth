@@ -1,7 +1,9 @@
 //! Return a pre-publication coupled draft to its existing owner on abandonment.
 //! D1708: probes alone choose retry; terminal failures still discard normally.
 use super::{AppliedMutationCore, AppliedMutationDraft};
-use crate::mvcc::{BoundAuthoredCoupling, OwnedNormalizedPlan, RelationalMutationProposalIdentity};
+use crate::mvcc::publication::application_publication::BoundAuthoredCoupling;
+use crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
@@ -11,7 +13,9 @@ struct ReturnOwner {
     binding: Arc<BoundAuthoredCoupling>,
     identity: RelationalMutationProposalIdentity,
     commands: OwnedNormalizedPlan,
-    publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
     retrying: bool,
 }
 impl ReturnOwner {
@@ -67,12 +71,14 @@ impl AppliedCoreCustody {
     pub(crate) fn matches(
         &self,
         identity: &RelationalMutationProposalIdentity,
-        commands: &crate::transactions::data::MergedCommitPlan,
+        commands: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
     ) -> bool {
         let owner = self.return_to.as_ref().expect("actual coupled core");
         owner.identity.same_proposal_sequence(identity) && owner.commands.plan() == commands
     }
-    pub(crate) fn commands(&self) -> &crate::transactions::data::MergedCommitPlan {
+    pub(crate) fn commands(
+        &self,
+    ) -> &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan {
         self.return_to
             .as_ref()
             .expect("actual coupled core")
@@ -87,6 +93,7 @@ impl AppliedCoreCustody {
     ) -> AppliedDraftCustody {
         let AppliedMutationCore {
             state,
+            content,
             outcome,
             identities,
             aggregate,
@@ -98,6 +105,7 @@ impl AppliedCoreCustody {
         AppliedDraftCustody {
             draft: Some(AppliedMutationDraft {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,
@@ -173,6 +181,7 @@ impl Drop for AppliedDraftCustody {
             }
             let AppliedMutationDraft {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,
@@ -180,6 +189,7 @@ impl Drop for AppliedDraftCustody {
             } = draft;
             owner.return_core(AppliedMutationCore {
                 state,
+                content,
                 outcome,
                 identities,
                 aggregate,

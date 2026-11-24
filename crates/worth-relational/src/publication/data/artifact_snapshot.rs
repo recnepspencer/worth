@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
+use crate::history::data::RelationalReplayRecord;
 use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
-use crate::runtime::RelationalReplayRecord;
 
 use super::PublicationObservationSnapshot;
 

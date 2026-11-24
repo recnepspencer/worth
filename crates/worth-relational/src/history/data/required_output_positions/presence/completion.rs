@@ -1,23 +1,23 @@
 //! Position transitions independently maintain presence; no roster row is consulted.
 use super::*;
+use crate::authority::mutation::current_records::CompletedCurrentRecords;
+use crate::authority::mutation::current_records::Writer;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::config::data::StorageConfig;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::schema::current_publication_ownership::POSITION;
-use crate::{
-    authority::mutation::current_records::{CompletedCurrentRecords, Writer},
-    branch::AdmittedRelationalBranchBasis,
-    history::data::CanonicalCommitEnvelopeBody,
-    runtime::RelationalPreparationRuntime,
-    storage::overlay::WorkingState,
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn complete(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    storage_config: &StorageConfig,
     basis: &AdmittedRelationalBranchBasis,
     working: &mut WorkingState,
-    identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+    identities: &mut crate::authority::mutation::pending_identities::PendingMutationIdentities,
     candidate: &CanonicalCommitEnvelopeBody,
     current: &[PresenceRow],
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
@@ -31,9 +31,11 @@ pub(crate) fn complete(
         .current_publication_storage
         .as_ref()
         .ok_or_else(|| {
-            crate::mvcc::origin_denial("position presence requires its installed storage")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "position presence requires its installed storage",
+            )
         })?;
-    crate::publication::ownership::checkpoint(
+    crate::publication::ownership::read_request::checkpoint(
         context,
         current
             .len()
@@ -58,7 +60,7 @@ pub(crate) fn complete(
     let mut positions = positions.as_mut();
     let mut writer = Writer::in_stage(
         execution,
-        &runtime.config.storage,
+        storage_config,
         basis,
         working,
         identities,
@@ -77,7 +79,7 @@ pub(crate) fn complete(
         let live = origin
             .members
             .iter()
-            .any(|m| m.posture != crate::mvcc::RequiredOutputRolePosture::Retire);
+            .any(|m| m.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire);
         let next = if live {
             // Digest the canonical candidate, independently of the roster writer's effect.
             let bytes = writer.encode(&crate::publication::ownership::record::Publication {

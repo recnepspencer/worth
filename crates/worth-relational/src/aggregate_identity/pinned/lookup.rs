@@ -1,7 +1,8 @@
 //! One paid occupied-slot catalog scan; no record vector or per-hop ID lookup.
 use super::super::{cohorts::StoredAggregate, funding::AggregateWork};
 use super::*;
-use crate::branch::{RelationalBranchRoot, RelationalPartitionVisit};
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root_regions::RelationalPartitionVisit;
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::substrate::RecordSlotVisit;
 use worth_foundational::facade::AggregateIdentity;

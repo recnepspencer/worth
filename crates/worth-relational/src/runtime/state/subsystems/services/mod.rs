@@ -1,8 +1,7 @@
 mod compiled_artifacts;
-mod instrumentation;
-mod sequence;
-mod symbol_residency;
-mod symbol_table;
+pub(crate) mod instrumentation;
+pub(crate) mod sequence;
+pub(crate) mod symbol_table;
 #[cfg(test)]
 mod tests;
 
@@ -12,8 +11,8 @@ pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
 pub(crate) use symbol_table::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
-    PreparedSymbolPublication, RuntimeSymbolTable, SymbolReservationDenial,
+    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication, RuntimeSymbolTable,
+    SymbolReservationDenial,
 };
 
 #[derive(Debug, Clone)]
@@ -43,6 +42,10 @@ impl RuntimeServices {
 
     pub(crate) fn next_proposal_ordinal(&self) -> Option<u64> {
         self.sequence.next_proposal_ordinal()
+    }
+
+    pub(crate) fn origin_identity(&self) -> sequence::origin::RelationalRuntimeOrigin {
+        self.sequence.origin()
     }
 
     pub(crate) fn runtime_instance_id(&self) -> u64 {

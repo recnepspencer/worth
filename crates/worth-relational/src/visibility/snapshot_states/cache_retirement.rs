@@ -4,20 +4,14 @@ use super::{SnapshotState, SnapshotStateBasis};
 #[derive(Debug)]
 pub(crate) struct SnapshotStateRetirement {
     _state: SnapshotState,
-    exact: Option<crate::mvcc::RelationalObservationRetirement>,
+    exact: Option<crate::mvcc::observation::RelationalObservationRetirement>,
     historical: Option<crate::history::retention::RelationalHistoricalObservationRetirement>,
 }
 
 impl SnapshotStateRetirement {
     pub(crate) fn new(mut state: SnapshotState) -> Self {
         let (exact, historical) = match &mut state.basis {
-            SnapshotStateBasis::Exact(basis) => (
-                basis
-                    ._retained_observation
-                    .take()
-                    .map(|value| value.into_retirement()),
-                None,
-            ),
+            SnapshotStateBasis::Exact(basis) => (basis.take_observation_retirement(), None),
             SnapshotStateBasis::Historical(basis) => (None, basis.take_retirement()),
         };
         Self {

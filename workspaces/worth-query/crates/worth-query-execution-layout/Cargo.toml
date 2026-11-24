@@ -14,6 +14,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }
+worth-query-execution-naming = { path = "../worth-query-execution-naming" }
 
 [lints]
 workspace = true

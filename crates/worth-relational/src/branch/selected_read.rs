@@ -1,5 +1,5 @@
 //! Borrowed record view for one selected branch preparation round.
-use super::SelectedRelationalBranchState;
+use crate::branch::root_selection::SelectedRelationalBranchState;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionIdMemory, PartitionIdsDenial};
 

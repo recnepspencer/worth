@@ -1,6 +1,6 @@
 //! Retire the original admitted basis/lease pairs without destroying payloads.
 use super::{ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationCustody};
-use crate::change_source::{
+use crate::change_source::retained_observation::retirement::{
     RelationalRetainedObservationRetirement as Task,
     RelationalRetainedObservationRetirementProgress as Progress,
     RetiredRelationalRetainedObservation,
@@ -96,7 +96,7 @@ fn advance_lease(
             Progress::Refused(cause) => (LeaseRetirement::Active(task), Err(Progress::Refused(cause))),
             Progress::Complete => match task.into_retired() {
                 Ok(retired) => (LeaseRetirement::Retired(retired), Ok(true)),
-                Err(task) => (LeaseRetirement::Active(task), Err(Progress::Refused(crate::change_source::RelationalRetainedObservationRetirementDenial::AccountingMismatch))),
+                Err(task) => (LeaseRetirement::Active(task), Err(Progress::Refused(crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirementDenial::AccountingMismatch))),
             },
         },
     };

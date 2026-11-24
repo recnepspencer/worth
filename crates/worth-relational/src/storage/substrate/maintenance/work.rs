@@ -1,12 +1,6 @@
 //! Original-request work and memory admission for a change-scoped maintainer.
-use crate::execution::{request_stage, RelationalExecutionDenialCause};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MaintenanceRefusal {
-    MissingPredecessor,
-    UnavailableChange,
-    Execution(RelationalExecutionDenialCause),
-}
+use super::refusal::MaintenanceRefusal;
+use crate::execution::{denial_cause::RelationalExecutionDenialCause, request_stage};
 
 /// Only the driver can construct a work scope, using the original request.
 pub struct ChangeWork<'scope> {
@@ -34,6 +28,11 @@ impl ChangeWork<'_> {
             |cause| MaintenanceRefusal::Execution(cause).into(),
         )
     }
+    pub(crate) fn prepare_route_lookup(&mut self, routes: usize) -> Result<(), MaintenanceRefusal> {
+        let levels = routes.checked_ilog2().map_or(1, |bits| u64::from(bits) + 1);
+        self.prepare(11 * levels + 1, 0)
+    }
+
     pub fn prepare(&mut self, units: u64, bytes: u64) -> Result<(), MaintenanceRefusal> {
         (self.prepare)(units, bytes)
     }

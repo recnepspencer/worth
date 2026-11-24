@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::events::LineageSubject;
 #[cfg(test)]
@@ -109,8 +109,8 @@ pub enum LineagePostureClaim {
 /// execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PendingBirthTarget {
-    CreatedEntity(crate::transactions::data::CreatedEntityRef),
-    CreatedRelation(crate::transactions::data::CreatedRelationRef),
+    CreatedEntity(crate::transactions::data::primitives::CreatedEntityRef),
+    CreatedRelation(crate::transactions::data::primitives::CreatedRelationRef),
 }
 
 /// One pending persistent-name birth attached to a transaction before
@@ -196,6 +196,8 @@ pub(crate) trait LineageBasisView {
     fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder>;
     fn live_lineage(&self, holder: &PersistentNameHolder) -> Option<LineageId>;
     fn retired_lineage(&self, id: &PersistentNameIdentity) -> Option<(LineageSubject, LineageId)>;
+    /// The persistent name `holder` last held on this branch, live or retired.
+    fn holder_name(&self, holder: &PersistentNameHolder) -> Option<PersistentNameIdentity>;
 
     fn contains_live_holder(&self, id: &PersistentNameIdentity) -> bool {
         self.live_holder(id).is_some()
@@ -231,5 +233,11 @@ impl LineageBasisView for LineageCommitPostureInput {
 
     fn retired_lineage(&self, id: &PersistentNameIdentity) -> Option<(LineageSubject, LineageId)> {
         self.retired_lineages.get(id).copied()
+    }
+
+    fn holder_name(&self, holder: &PersistentNameHolder) -> Option<PersistentNameIdentity> {
+        self.live_holders
+            .iter()
+            .find_map(|(name, live)| (live == holder).then_some(*name))
     }
 }

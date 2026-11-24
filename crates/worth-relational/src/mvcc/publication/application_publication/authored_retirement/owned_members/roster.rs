@@ -1,6 +1,6 @@
 //! Native's exact set comparison, independent of the storage traversal.
 use super::*;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeSet;
 
 pub(super) struct OwnedMemberRoster {

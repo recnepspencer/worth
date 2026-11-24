@@ -1,6 +1,8 @@
 use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::{CreatedEntityRef, EntityReference};
-use crate::validation::data::{InvariantClass, InvariantViolation};
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::{storage_inconsistency_violation, StorageInconsistencyContext};
@@ -34,7 +36,7 @@ pub(crate) fn entity_kind_in_state(
                 .with_entity_id(entity_id)
                 .with_partition_id(entity_id.partition_id)
                 .with_lookup(
-                    crate::validation::data::StorageInconsistencyLookup::EntityKindInState,
+                    crate::validation::data::results::StorageInconsistencyLookup::EntityKindInState,
                 ),
         ));
     };
@@ -48,8 +50,12 @@ pub(crate) fn entity_kind_in_state(
             StorageInconsistencyContext::default()
                 .with_entity_id(entity_id)
                 .with_partition_id(entity_id.partition_id)
-                .with_lookup(crate::validation::data::StorageInconsistencyLookup::EntityKindInState)
-                .with_failure(crate::validation::data::StorageInconsistencyFailure::MissingSlot),
+                .with_lookup(
+                    crate::validation::data::results::StorageInconsistencyLookup::EntityKindInState,
+                )
+                .with_failure(
+                    crate::validation::data::results::StorageInconsistencyFailure::MissingSlot,
+                ),
         ));
     };
     if slot.lifecycle() != RecordLifecycleState::Live {
@@ -67,10 +73,10 @@ pub(crate) fn entity_kind_in_state(
                     .with_entity_id(entity_id)
                     .with_partition_id(entity_id.partition_id)
                     .with_lookup(
-                        crate::validation::data::StorageInconsistencyLookup::EntityKindInState,
+                        crate::validation::data::results::StorageInconsistencyLookup::EntityKindInState,
                     )
                     .with_failure(
-                        crate::validation::data::StorageInconsistencyFailure::MissingKindId,
+                        crate::validation::data::results::StorageInconsistencyFailure::MissingKindId,
                     ),
             )
         })
@@ -101,16 +107,16 @@ fn created_entity_kind_in_plan(
             return None;
         }
         match intent {
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Entity(spec),
+            crate::transactions::data::intents::MutationIntent::Create(
+                crate::transactions::data::intents::CreateIntent::Entity(spec),
             ) if spec.partition_id == created.partition_id
                 && spec.kind_id == created.kind_id
                 && spec.client_key == created.client_key =>
             {
                 return Some(spec.kind_id);
             }
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::BulkEntities(spec),
+            crate::transactions::data::intents::MutationIntent::Create(
+                crate::transactions::data::intents::CreateIntent::BulkEntities(spec),
             ) if spec.partition_id == created.partition_id && spec.kind_id == created.kind_id => {
                 for key in &spec.client_keys {
                     if !context.checkpoint(1) {

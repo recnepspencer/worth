@@ -1,27 +1,33 @@
 //! The materialization owner captures complete native facts before payload disappears.
 use super::*;
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationRecord};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::materialization::RelationalMaterializationRecord;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::CanonicalRequiredOutputMaterializationRecord as Member;
-use crate::runtime::RelationalRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 
 mod selection;
 
-pub(crate) fn capture_materialization_producers(
+pub(crate) fn capture_materialization_producers<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     manifest: &[RelationalMaterializationRecord],
 ) -> Result<(Vec<CommitId>, Vec<Member>, ExecutionMemoryReservation), TransactionCommitError> {
     let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
-    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+    if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
         || !basis.is_current()
     {
-        return Err(crate::mvcc::origin_denial(
-            "materialization capture requires exact current native source basis",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "materialization capture requires exact current native source basis",
+            ),
+        );
     }
     let regions = manifest
         .iter()
@@ -35,7 +41,7 @@ pub(crate) fn capture_materialization_producers(
     basis
         .inner
         .root
-        .demand_regions_full(execution, &runtime.runtime.services.symbols, regions)
+        .demand_regions_full(execution, runtime.input.projection.symbols, regions)
         .map_err(|failure| stop(Stop::Request(failure.into())))?;
     execution
         .in_scope(|lease| {
@@ -189,7 +195,7 @@ pub(crate) fn capture_materialization_producers(
                                 .map(|entry| entry.effective_at),
                         }
                         .ok_or_else(|| {
-                            crate::mvcc::origin_denial(
+                            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                                 "materialization producer native write absent",
                             )
                         })?;
@@ -210,10 +216,10 @@ pub(crate) fn capture_materialization_producers(
 
 pub(super) fn stop(cause: Stop) -> TransactionCommitError {
     match cause {
-        Stop::Payload(detail) => crate::mvcc::origin_denial(detail),
+        Stop::Payload(detail) => crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail),
         Stop::Request(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
                 partition_identity: None,
             })
         }

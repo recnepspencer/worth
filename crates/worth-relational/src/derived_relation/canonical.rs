@@ -1,21 +1,23 @@
 //! Canonical full recipe meaning, shared by the actual schema snapshot digest.
-use super::DerivedRelationNode as Node;
-use super::{DerivedRelationDefinitionParts as Parts, DerivedRelationIdentity as Identity};
+use crate::derived_relation::definition::DerivedRelationNode as Node;
+use crate::derived_relation::definition::{
+    DerivedRelationDefinitionParts as Parts, DerivedRelationIdentity as Identity,
+};
 use sha2::{Digest, Sha256};
 
 pub(crate) fn update_digest(hasher: &mut Sha256, definitions: &[Parts]) {
     update_digest_for_compilation(
         hasher,
         definitions,
-        crate::schema::SchemaCompilationControl::Configuration,
+        crate::schema::compilation_control::SchemaCompilationControl::Configuration,
     )
     .expect("configuration recipe digest has no request refusal")
 }
 pub(crate) fn update_digest_for_compilation(
     hasher: &mut Sha256,
     definitions: &[Parts],
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
     if definitions.is_empty() {
         return Ok(());
     }
@@ -125,8 +127,13 @@ pub(crate) fn write_identity(identity: &Identity, mut write: impl FnMut(&[u8])) 
 
 pub(crate) fn try_write_identity(
     identity: &Identity,
-    write: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    write: &mut dyn FnMut(
+        &[u8],
+    ) -> Result<
+        (),
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    >,
+) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
     for text in [&identity.schema.0, &identity.name] {
         write(&(text.len() as u64).to_le_bytes())?;
         write(text.as_bytes())?;

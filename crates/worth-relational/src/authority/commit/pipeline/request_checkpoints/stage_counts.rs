@@ -1,7 +1,7 @@
 //! A test-local counting observer runs immediately before each request consult.
 use super::{observation, CommitStage};
 use crate::tests::support::runtime_with_test_schema;
-use crate::transactions::data::WorkerIntentBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::{Arc, Mutex};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -45,7 +45,9 @@ fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool
                 let outcome = runtime
                     .publication_port()
                     .compare_and_publish(&execution, candidate);
-                let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = outcome
+                let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(
+                    performed,
+                ) = outcome
                 else {
                     panic!("live split publication must perform: {outcome:?}");
                 };

@@ -17,6 +17,8 @@ pub enum ProducerProbe {
     Own,
     /// Another Directory, by identity.
     Peer(&'static str),
+    OrderedOwn,
+    Undeclared,
 }
 
 /// One probe's observed outcome: the selected identities, or its refusal.
@@ -27,7 +29,10 @@ pub enum ProbeRefusal {
     Refused(WorthQueryManagedIndexRefusal),
     /// The original request's cancellation, inside the read.
     Cancelled,
+    /// The probed scope key names no live record at the read's basis.
+    UnknownScope,
     /// Any other refusal.
+    Undeclared,
     Other,
 }
 
@@ -35,12 +40,21 @@ std::thread_local! {
     /// Seeds the `peer` Directory under the watch grant beside `catalog`.
     pub static SEED_PEERS: Cell<bool> = const { Cell::new(false) };
     pub static PRODUCER_PROBE: Cell<Option<ProducerProbe>> = const { Cell::new(None) };
+    /// The generated producer's decision also reads this Directory's note:
+    /// a later member that rewrites it changes what the producer read.
+    pub static PRODUCER_TRIGGER: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// An authoring stage's own decision probes this Directory.
+    pub static STAGE_PROBE: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// The stage probe reads the Parent whose Source READ the watch grant
+    /// governs, instead of the public one.
+    pub static STAGE_PROBE_PROTECTED: Cell<bool> = const { Cell::new(false) };
     pub static OBSERVED: RefCell<Vec<Observed>> = const { RefCell::new(Vec::new()) };
     /// The generated source action also creates this Item in its Directory:
     /// an unpublished change the Parent's Source sees.
     pub static SOURCE_CREATES: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// The generated source action also creates this sibling Directory: a new
     /// scope entity in the same coupled envelope.
+    pub static ORDERED_SUCCESSOR: Cell<Option<(&'static str, &'static str)>> = const { Cell::new(None) };
     pub static SOURCE_SIBLING: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// The producer probes through its partitioned computation's reader.
     pub static THROUGH_COMPUTATION: Cell<bool> = const { Cell::new(false) };
@@ -111,10 +125,52 @@ where
     observe(rows).map(|_| ())
 }
 
+/// The armed trigger read: an ordinary field read of another Directory.
+pub fn trigger<B>(
+    reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
+) -> Result<(), HandlerExecutionDenial>
+where
+    B: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>,
+{
+    let Some(directory) = PRODUCER_TRIGGER.get() else {
+        return Ok(());
+    };
+    let directory =
+        reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), directory.to_owned())?;
+    reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
+    Ok(())
+}
+
+/// The armed authoring-stage probe through that stage's own `index_query`.
+pub fn stage_probe<B>(
+    reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
+) -> Result<(), HandlerExecutionDenial>
+where
+    B: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>,
+{
+    let Some(directory) = STAGE_PROBE.get() else {
+        return Ok(());
+    };
+    let rows = if STAGE_PROBE_PROTECTED.get() {
+        reader.index_query::<super::source_authorization::NativeBinding>(
+            super::source_authorization::FindNative {
+                directory: directory.to_owned(),
+                prefix: String::new(),
+            },
+        )
+    } else {
+        reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+            directory: directory.to_owned(),
+            prefix: String::new(),
+        })
+    };
+    observe(rows).map(|_| ())
+}
+
 /// The Directory a probe names, from the operation's own.
 pub fn probed(probe: ProducerProbe, own: &str) -> String {
     match probe {
-        ProducerProbe::Own => own.to_owned(),
+        ProducerProbe::Own | ProducerProbe::OrderedOwn | ProducerProbe::Undeclared => own.to_owned(),
         ProducerProbe::Peer(peer) => peer.to_owned(),
     }
 }
@@ -168,6 +224,14 @@ pub fn refusal(cause: WorthQueryManagedIndexDenialCause<'_>) -> ProbeRefusal {
             ) =>
         {
             ProbeRefusal::Cancelled
+        }
+        WorthQueryManagedIndexDenialCause::Scope(scope)
+            if scope.kind()
+                == WorthQueryEntityResolutionDenialKind::Refused(
+                    WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+                ) =>
+        {
+            ProbeRefusal::UnknownScope
         }
         _ => ProbeRefusal::Other,
     }

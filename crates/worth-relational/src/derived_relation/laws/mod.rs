@@ -2,8 +2,8 @@
 pub(crate) mod canonical;
 pub(crate) mod evaluate;
 mod evidence;
-mod meaning;
-mod violation;
+pub(crate) mod meaning;
+pub(crate) mod violation;
 pub use meaning::{
     DerivedRelationCardinality, DerivedRelationGraphLaws, DerivedRelationMinimumReachability,
 };

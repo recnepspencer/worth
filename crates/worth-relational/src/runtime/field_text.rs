@@ -1,6 +1,7 @@
 //! Native receiving door for framework-allocated field text.
 use crate::branch::AdmittedRelationalBranchBasis;
-use crate::symbols::data::{RelationalFieldText, RelationalFieldTextAdmissionDenial as Denial};
+use crate::symbols::data::selected_field_text::RelationalFieldText;
+use crate::symbols::data::RelationalFieldTextAdmissionDenial as Denial;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 impl super::RelationalRuntime {
     /// Adopts admitted backing or imports through the ORIGINAL selected policy.

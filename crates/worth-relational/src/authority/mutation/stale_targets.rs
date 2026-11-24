@@ -3,7 +3,9 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{
     generation_of, partition_of, slot_of, EntityRecordKind, RecordKind, RelationRecordKind,
 };
-use crate::transactions::data::{CommitConflict, ConflictClass, ExistingRecordTarget};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::ExistingRecordTarget;
 
 pub(super) fn ensure_entity_target_is_current(
     staged: &impl CurrentPartitionAccess,

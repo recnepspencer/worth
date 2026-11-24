@@ -2,9 +2,9 @@
 use super::*;
 
 pub(super) fn memory_bound(
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     deltas: &[CanonicalRecordAspectDelta],
     maximum: usize,
     mode: &TouchPreparationMode,
@@ -42,7 +42,7 @@ pub(super) fn memory_bound(
                         let old = index::authoritative_state(selected, &delta.target);
                         let new = index::authoritative_state(working, &delta.target);
                         for state in [old, new] {
-                            if let Some(value) = crate::visibility::materialization::read_records::authoritative_state_query_locus_value(state, locator) {
+                            if let Some(value) = crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(state, locator) {
                                 bytes = bytes.saturating_add(crate::storage::data::AuthoritativeFieldComparisonKey::required_encoded_capacity_bytes(value).unwrap_or(u64::MAX));
                             }
                         }
@@ -51,7 +51,7 @@ pub(super) fn memory_bound(
                     }
                 });
                 Ok::<(), Failure>(())
-            }).map_err(|failure| TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial { kind: crate::transactions::data::CommitExecutionDenialKind::Cause(crate::execution::kernel_failure(failure)), partition_identity: None }))?;
+            }).map_err(|failure| TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial { kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(crate::execution::kernel_failure(failure)), partition_identity: None }))?;
         }
     }
     Ok(Some(bytes))

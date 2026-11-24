@@ -1,13 +1,11 @@
 //! Bounded copies of portable recipe rosters, without creating registered owners.
-use crate::{
-    derived_relation::{
-        DerivedRelationDefinitionParts, DerivedRelationGraphLaws,
-        DerivedRelationMinimumReachability,
-    },
-    execution::RelationalExecutionDenialCause as Denial,
-    projected_member_domain::ProjectedMemberDomainParts,
-    schema::SchemaCompilationControl,
+use crate::derived_relation::definition::DerivedRelationDefinitionParts;
+use crate::derived_relation::laws::meaning::{
+    DerivedRelationGraphLaws, DerivedRelationMinimumReachability,
 };
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
+use crate::projected_member_domain::ProjectedMemberDomainParts;
+use crate::schema::compilation_control::SchemaCompilationControl;
 
 pub(super) fn definition(
     source: &DerivedRelationDefinitionParts,

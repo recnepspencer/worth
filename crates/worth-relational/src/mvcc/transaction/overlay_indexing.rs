@@ -5,11 +5,11 @@ use super::{
     intent_locus::{
         entity_intent_locus, relation_intent_locus, EntityIntentLocus, RelationIntentLocus,
     },
-    RelationalTransactionStagingDenial as Denial,
+    staging::RelationalTransactionStagingDenial as Denial,
 };
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, CreatedRelationRef, MutationIntent, RecordRef,
-    WorkerIntentBatch,
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, CreatedRelationRef, RecordRef, WorkerIntentBatch,
 };
 
 pub(super) fn index_batch(

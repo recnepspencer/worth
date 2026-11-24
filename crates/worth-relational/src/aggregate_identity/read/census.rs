@@ -18,7 +18,7 @@ pub use proof::{AggregateCensusRead, AggregateCensusReadIdentity, PreparedAggreg
 /// inventory, including unrelated kinds/retired slots, and can grow with it.
 pub struct AggregateReadCollection<Projection = EntityId> {
     groups: BTreeMap<worth_foundational::facade::AggregateIdentity, AggregateRead<Projection>>,
-    _retention: crate::validation::CustomInvariantWorkMeter,
+    _retention: crate::validation::custom_rule::CustomInvariantWorkMeter,
 }
 impl<Projection> AggregateReadCollection<Projection> {
     pub fn len(&self) -> usize {

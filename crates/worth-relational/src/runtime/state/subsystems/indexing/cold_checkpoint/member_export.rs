@@ -3,9 +3,9 @@ use super::*;
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
 };
-impl IndexingSubsystem {
+impl DeferredIndexImage {
     pub(crate) fn checkpoint_export_sources(
-        &self,
+        self: Arc<Self>,
     ) -> std::collections::BTreeMap<
         RelationalDurableMemberLocator,
         (
@@ -13,10 +13,7 @@ impl IndexingSubsystem {
             Arc<dyn RelationalDurableColdSource>,
         ),
     > {
-        let Some(image) = self.state.read().cold_checkpoint.clone() else {
-            return Default::default();
-        };
-        let directory = image.directory();
+        let directory = self.directory();
         let member = directory.manifest.derived_indexes;
         let subject = RelationalStorageSubject::Index(
             directory
@@ -27,7 +24,7 @@ impl IndexingSubsystem {
                     definition.index_id
                 }),
         );
-        let source = image as Arc<dyn RelationalDurableColdSource>;
+        let source = self as Arc<dyn RelationalDurableColdSource>;
         [(member, (subject, source))].into_iter().collect()
     }
 }

@@ -1,7 +1,7 @@
 //! Opaque source preparation keeps one admitted schema graph for one replay.
 use super::super::runtime_rebuild::OriginalSchemaGraph;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
-use crate::runtime::{RelationalInitialSchemaInstallationDenial, RelationalRuntime};
+use crate::durability::initial_schema_installation_denial::RelationalInitialSchemaInstallationDenial;
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
@@ -10,6 +10,7 @@ use worth_foundational::facade::{
 
 mod identity_space;
 mod recovery;
+pub(crate) mod refusal;
 
 #[derive(Debug)]
 pub enum RelationalHomeRecoveryPreparationDenial {
@@ -42,8 +43,8 @@ struct HomeRecoveryPreparation {
 }
 
 impl PreparedRelationalHomeRecovery {
-    pub(in crate::durability) fn prepare(
-        runtime: &RelationalRuntime,
+    pub(crate) fn prepare(
+        receiver: u64,
         plan: RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
@@ -56,7 +57,7 @@ impl PreparedRelationalHomeRecovery {
             .ok_or(Denial::MissingOriginalSource)?;
         Ok(Self {
             state: Box::new(HomeRecoveryPreparation {
-                receiver: runtime.runtime_instance_id(),
+                receiver,
                 plan,
                 graph,
                 _memory: memory,
@@ -132,17 +133,4 @@ impl PreparedRelationalHomeRecovery {
         }
         Ok(schema.registry())
     }
-}
-
-/// Failures before reconstruction return this exact opaque preparation.
-/// Reconstruction failures consume that attempt, just like ordinary recovery;
-/// the Store source owner retains its independent original source for retry.
-#[derive(Debug)]
-pub enum RefusedPreparedRelationalHomeRecovery {
-    Preparation {
-        prepared: PreparedRelationalHomeRecovery,
-        cause: RelationalHomeRecoveryPreparationDenial,
-    },
-    Recovery(RelationalRecoveryStop),
-    Transition(super::RelationalHomeProgramTransitionSourceRefusal),
 }

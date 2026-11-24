@@ -9,7 +9,7 @@ use worth_foundational::{
 #[test]
 fn planning_visits_claim_only_the_allocation_they_declare() {
     for posture in [ExecutionPosture::Serial, ExecutionPosture::Automatic] {
-        let lease = crate::tests::support::test_execution_authority()
+        let lease = crate::execution::test_authority::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     posture,
@@ -40,8 +40,8 @@ fn planning_visits_claim_only_the_allocation_they_declare() {
 
 #[test]
 fn authored_checkpoints_do_not_allocate_structural_nodes() {
-    use crate::validation::data::CustomInvariantLeaseBudget;
-    let lease = crate::tests::support::test_execution_authority()
+    use crate::validation::custom_rule::registration::CustomInvariantLeaseBudget;
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -67,7 +67,7 @@ fn authored_checkpoints_do_not_allocate_structural_nodes() {
 
 #[test]
 fn tracked_preparation_clone_keeps_original_payer_and_typed_refusal() {
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -107,7 +107,7 @@ fn structural_and_direct_claims_share_the_original_live_packet_payer() {
     use crate::execution::{execute_read_only_packets, PacketMemory, ReadOnlyPacket};
     use worth_foundational::PartitionIdentity;
 
-    let lease = crate::tests::support::test_execution_lease();
+    let lease = crate::execution::test_authority::test_execution_lease();
     let retained = std::sync::Mutex::new(None);
     execute_read_only_packets(
         vec![ReadOnlyPacket {

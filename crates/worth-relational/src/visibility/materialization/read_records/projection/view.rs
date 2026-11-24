@@ -1,20 +1,29 @@
 use crate::identity::data::{KindId, VersionId};
-use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
-use super::super::reader::VisibilityReadContext;
 use super::contracts::{
     admit_declared_projection_aspects, ProjectionAspectScope, ProjectionRecordDomain,
 };
 use super::projection_records::{EntityRecordProjection, RelationRecordProjection};
 
+pub(crate) struct SelectedProjectionSchema<'a> {
+    pub(crate) registry: &'a crate::schema::data::RelationalSchemaRegistry,
+    pub(crate) plans: &'a crate::schema::data::AspectContractPlanCatalog,
+    pub(crate) version: crate::schema::data::SchemaVersionId,
+    pub(crate) authority_digest: [u8; 32],
+}
+
 #[derive(Debug, Clone)]
 pub struct VisibilityProjectionView {
     pub(super) runtime_identity: u64,
     pub(super) current_version: VersionId,
-    pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
-    pub(super) symbols: crate::runtime::RuntimeSymbolTable,
-    pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
+    pub(super) instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+    pub(super) symbols:
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    // Selected roots already retain their exact schema. Only empty history needs a fallback.
+    pub(super) empty_history_schema:
+        Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
     pub(super) resident:
         Option<crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis>,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
@@ -25,10 +34,8 @@ impl VisibilityProjectionView {
         self.basis.version_id()
     }
 
-    pub(crate) fn selected_root(
-        &self,
-    ) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.basis.root()
+    pub(crate) fn snapshot_basis(&self) -> &crate::visibility::snapshot_states::SnapshotStateBasis {
+        &self.basis
     }
 
     pub fn is_exact_basis(&self) -> bool {
@@ -38,18 +45,30 @@ impl VisibilityProjectionView {
         )
     }
 
-    pub(crate) fn is_from_runtime(&self, runtime: &RelationalRuntime) -> bool {
-        self.runtime_identity == runtime.runtime_instance_id()
+    pub(crate) fn selected_branch_id(&self) -> &crate::history::data::BranchId {
+        self.basis.branch_id()
     }
 
-    pub(crate) fn selected_schema_authority(
-        &self,
-    ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {
-        self.basis.root().map(|root| root.schema_authority())
+    pub(crate) fn shares_runtime_with(&self, other: &Self) -> bool {
+        self.is_from_runtime(other.runtime_identity)
     }
 
-    pub(super) fn reader(&self) -> super::super::reader::ProjectionRecordReader<'_> {
-        super::super::reader::ProjectionRecordReader::new(
+    pub(crate) fn is_from_runtime(&self, runtime_instance_id: u64) -> bool {
+        self.runtime_identity == runtime_instance_id
+    }
+
+    pub(crate) fn selected_schema(&self) -> Option<SelectedProjectionSchema<'_>> {
+        let authority = self.basis.root()?.schema_authority();
+        Some(SelectedProjectionSchema {
+            registry: authority.registry(),
+            plans: authority.aspect_plans(),
+            version: authority.schema_version(),
+            authority_digest: authority.authority_digest(),
+        })
+    }
+
+    pub(super) fn reader(&self) -> crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader<'_>{
+        crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader::new(
             self.current_version,
             &self.instrumentation,
         )
@@ -57,7 +76,8 @@ impl VisibilityProjectionView {
 
     pub(super) fn admit_entity_projection_contract<T: EntityRecordProjection>(
         &self,
-    ) -> Result<ProjectionAspectScope, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<ProjectionAspectScope, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let projection_scope = T::projection_scope();
         admit_declared_projection_aspects(
             &projection_scope,
@@ -65,13 +85,16 @@ impl VisibilityProjectionView {
             ProjectionRecordDomain::Entity,
             T::KIND,
         )
-        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)?;
+        .map_err(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract,
+        )?;
         Ok(projection_scope)
     }
 
     pub(super) fn admit_relation_projection_contract<T: RelationRecordProjection>(
         &self,
-    ) -> Result<ProjectionAspectScope, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<ProjectionAspectScope, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let projection_scope = T::projection_scope();
         admit_declared_projection_aspects(
             &projection_scope,
@@ -79,7 +102,9 @@ impl VisibilityProjectionView {
             ProjectionRecordDomain::Relation,
             T::KIND,
         )
-        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)?;
+        .map_err(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract,
+        )?;
         Ok(projection_scope)
     }
 
@@ -87,28 +112,28 @@ impl VisibilityProjectionView {
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         admit_declared_projection_aspects(
             projection_scope,
             self.entity_aspect_plan(kind_id),
             ProjectionRecordDomain::Entity,
             kind_id,
         )
-        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)
+        .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract)
     }
 
     pub(super) fn admit_relation_projection_scope(
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         admit_declared_projection_aspects(
             projection_scope,
             self.relation_aspect_plan(kind_id),
             ProjectionRecordDomain::Relation,
             kind_id,
         )
-        .map_err(crate::execution::RelationalExecutionDenialCause::ProjectionContract)
+        .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract)
     }
 
     pub(super) fn entity_aspect_plan(
@@ -116,9 +141,10 @@ impl VisibilityProjectionView {
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {
         match &self.basis {
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                basis.root().schema_authority().entity_aspect_plan(kind_id)
-            }
+            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => basis
+                .projection_root()
+                .schema_authority()
+                .entity_aspect_plan(kind_id),
             crate::visibility::snapshot_states::SnapshotStateBasis::Historical(_) => self
                 .basis
                 .root()
@@ -143,75 +169,8 @@ impl VisibilityProjectionView {
     }
 }
 
-impl<'runtime> VisibilityReadContext<'runtime> {
-    pub(crate) fn project_branch_head(
-        &self,
-        branch_id: &crate::history::data::BranchId,
-        version_id: VersionId,
-    ) -> Result<Option<VisibilityProjectionView>, crate::branch::RelationalBranchBasisDenial> {
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::capture_current(
-            self.runtime(),
-            branch_id,
-            version_id,
-        )?;
-        Ok(basis.map(|basis| {
-            VisibilityProjectionView::new(
-                self.runtime(),
-                crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),
-            )
-        }))
-    }
-
-    /// Projects the exact state at `version_id` on the branch that committed
-    /// it, so a fork's commit is read from the fork's own root.
-    pub fn try_project_historical_version(
-        &self,
-        version_id: VersionId,
-    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
-        let basis = crate::visibility::cache_state::historical_basis_for_retained_version(
-            self.runtime(),
-            version_id,
-        )
-        .map_err(historical_projection_denial)?;
-        Ok(VisibilityProjectionView::new(
-            self.runtime(),
-            crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis),
-        ))
-    }
-
-    pub(crate) fn try_project_retained_commit(
-        &self,
-        commit_id: crate::history::data::CommitId,
-        branch_id: crate::history::data::BranchId,
-        version_id: VersionId,
-    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
-        let basis =
-            crate::visibility::snapshot_states::HistoricalVisibilityBasis::resolve_retained_commit(
-                self.runtime(),
-                commit_id,
-                branch_id,
-                version_id,
-            )
-            .map_err(historical_projection_denial)?;
-        Ok(VisibilityProjectionView::new(
-            self.runtime(),
-            crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis),
-        ))
-    }
-
-    /// Retain immutable basis metadata; record reads consult their request.
-    pub fn project_snapshot(&self, handle: &SnapshotHandle) -> Option<VisibilityProjectionView> {
-        let basis =
-            crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
-        if basis.root().has_materialization_unavailable() {
-            return None;
-        }
-        Some(VisibilityProjectionView::new(
-            self.runtime(),
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),
-        ))
-    }
-}
+#[path = "view/runtime_reads.rs"]
+mod runtime_reads;
 
 #[path = "historical_denial.rs"]
 mod historical_denial;

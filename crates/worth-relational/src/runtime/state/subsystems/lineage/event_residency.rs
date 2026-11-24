@@ -1,7 +1,7 @@
 //! One counted, damage-isolated event cell is shared by all its node-range routes.
 mod member_export;
 use super::event_page::{self, ReadmittedLineageEventPage};
-use crate::durability::data::*;
+use crate::durability::data::lineage_event_pages::*;
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
 };
@@ -38,42 +38,39 @@ pub(super) struct RuntimeLineageEventResidency {
 }
 impl RuntimeLineageEventResidency {
     pub(super) fn new(
-        directory: &RelationalCheckpointDirectory,
+        page_descriptors: &[RelationalCheckpointLineageEventPage],
+        source: &Arc<dyn RelationalDurableColdSource>,
+        commits: impl Iterator<Item = RelationalCommitReceipt>,
     ) -> Result<Self, RelationalStorageUnavailable> {
-        let members = directory
-            .manifest
-            .lineage_events
+        let members = page_descriptors
             .iter()
             .map(|page| page.member)
             .collect::<Vec<_>>();
-        let placement = directory.source.retain_members(&members).map_err(|cause| {
-            RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Lineage {
-                    first: LineageId(
-                        directory
-                            .manifest
-                            .lineage_events
-                            .iter()
-                            .map(|page| page.first_node)
-                            .min()
-                            .unwrap_or(0),
-                    ),
-                    last: LineageId(
-                        directory
-                            .manifest
-                            .lineage_events
-                            .iter()
-                            .map(|page| page.last_node)
-                            .max()
-                            .unwrap_or(0),
-                    ),
-                },
-                cause,
-            }
-        })?;
+        let placement =
+            source
+                .retain_members(&members)
+                .map_err(|cause| RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Lineage {
+                        first: LineageId(
+                            page_descriptors
+                                .iter()
+                                .map(|page| page.first_node)
+                                .min()
+                                .unwrap_or(0),
+                        ),
+                        last: LineageId(
+                            page_descriptors
+                                .iter()
+                                .map(|page| page.last_node)
+                                .max()
+                                .unwrap_or(0),
+                        ),
+                    },
+                    cause,
+                })?;
         let mut pages = BTreeMap::new();
         let mut routes = BTreeMap::<_, Vec<_>>::new();
-        for descriptor in &directory.manifest.lineage_events {
+        for descriptor in page_descriptors {
             let cell = Arc::new(EventPageCell {
                 descriptor: descriptor.clone(),
                 state: Mutex::new(EventPageState::Cold),
@@ -86,17 +83,12 @@ impl RuntimeLineageEventResidency {
         }
         Ok(Self {
             custody: Mutex::new(crate::durability::medium::NativeSourceMemberState::new(
-                directory.source.clone(),
+                source.clone(),
                 placement,
             )),
             pages,
             routes,
-            commit_bindings: directory
-                .manifest
-                .commits
-                .iter()
-                .map(|entry| (entry.commit.commit_id, entry.commit.clone()))
-                .collect(),
+            commit_bindings: commits.map(|commit| (commit.commit_id, commit)).collect(),
         })
     }
     pub(super) fn member_subjects(
@@ -123,7 +115,7 @@ impl RuntimeLineageEventResidency {
         nodes: Option<&BTreeSet<LineageId>>,
         branches: Option<&BTreeSet<BranchId>>,
     ) -> Result<Vec<ResidentLineageEventPage>, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let ranges = nodes.map(|nodes| {
             nodes
                 .iter()
@@ -166,7 +158,7 @@ impl EventPageCell {
         source: &dyn RelationalDurableColdSource,
         bindings: &BTreeMap<CommitId, RelationalCommitReceipt>,
     ) -> Result<ResidentLineageEventPage, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if matches!(*state, EventPageState::Cold) {
             let loaded = if self.descriptor.member.length > LINEAGE_EVENT_PAGE_BYTES {

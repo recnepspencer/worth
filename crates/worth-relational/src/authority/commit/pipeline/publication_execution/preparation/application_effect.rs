@@ -1,12 +1,13 @@
 //! Judge the actual applied body before current-publication bookkeeping.
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn unchanged(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changed: &[RecordRef],
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
     envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
-    symbols: &crate::runtime::PendingSymbolMeanings,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings,
     merge_base: &[crate::history::data::CommitId],
     merge_parents: &[crate::history::data::BranchId],
 ) -> Result<bool, TransactionCommitError> {
@@ -46,8 +47,8 @@ pub(super) fn unchanged(
 fn stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

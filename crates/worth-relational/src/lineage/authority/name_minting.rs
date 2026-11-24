@@ -9,8 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use sha2::{Digest, Sha256};
-
+use crate::lineage::data::birth_digest::canonical_birth_digest;
 use crate::lineage::data::{
     DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageBasisView,
     LineageNameDenial, PersistentNameBirthParts, PersistentNameBirthRecord,
@@ -19,9 +18,6 @@ use crate::lineage::data::{
 };
 
 use super::discriminator_scan::extract_embedded_name_refs;
-
-/// Domain separator prefix for persistent name identity derivation.
-pub const PERSISTENT_NAME_DOMAIN_TAG: &[u8] = b"worth.relational.persistent-name.v1\0";
 
 /// Relational authority that validates birth provenance, resolves referenced
 /// discriminator and parent names, mints fixed-size persistent name identities,
@@ -52,10 +48,31 @@ impl PersistentNameMintingAuthority {
             fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
                 self.0.get(id)
             }
-            fn live_lineage(&self, _: &PersistentNameHolder) -> Option<crate::identity::data::LineageId> { None }
-            fn retired_lineage(&self, _: &PersistentNameIdentity) -> Option<(crate::lineage::data::LineageSubject, crate::identity::data::LineageId)> { None }
+            fn live_lineage(
+                &self,
+                _: &PersistentNameHolder,
+            ) -> Option<crate::identity::data::LineageId> {
+                None
+            }
+            fn retired_lineage(
+                &self,
+                _: &PersistentNameIdentity,
+            ) -> Option<(
+                crate::lineage::data::LineageSubject,
+                crate::identity::data::LineageId,
+            )> {
+                None
+            }
+            fn holder_name(&self, _: &PersistentNameHolder) -> Option<PersistentNameIdentity> {
+                None
+            }
         }
-        Self::mint_commit_births_with_basis(registry, &MapBasis(live_holders), retired_in_commit, requests)
+        Self::mint_commit_births_with_basis(
+            registry,
+            &MapBasis(live_holders),
+            retired_in_commit,
+            requests,
+        )
     }
 
     pub(super) fn mint_commit_births_with_basis(
@@ -286,39 +303,6 @@ fn mint_identity_digest(
     ))
 }
 
-/// The one canonical persistent-name hash: minting and persisted-birth
-/// readmission both derive identity bytes only here.
-///
-/// Complexity: O(parts bytes + parents).
-pub(super) fn canonical_birth_digest<'parent>(
-    scheme_id: &str,
-    occurrence_key: &str,
-    role_path: &str,
-    sorted_parent_digests: impl ExactSizeIterator<
-        Item = &'parent [u8; PersistentNameIdentity::BYTE_LEN],
-    >,
-    canonical_discriminator: &[u8],
-) -> [u8; PersistentNameIdentity::BYTE_LEN] {
-    let mut hasher = Sha256::new();
-    hasher.update(PERSISTENT_NAME_DOMAIN_TAG);
-    write_len_prefixed(&mut hasher, scheme_id.as_bytes());
-    write_len_prefixed(&mut hasher, occurrence_key.as_bytes());
-    write_len_prefixed(&mut hasher, role_path.as_bytes());
-    let parent_count = u64::try_from(sorted_parent_digests.len()).expect("parent count fits u64");
-    hasher.update(parent_count.to_be_bytes());
-    for parent in sorted_parent_digests {
-        hasher.update(parent);
-    }
-    write_len_prefixed(&mut hasher, canonical_discriminator);
-    hasher.finalize().into()
-}
-
-fn write_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
-    let len = u64::try_from(bytes.len()).expect("part length fits u64");
-    hasher.update(len.to_be_bytes());
-    hasher.update(bytes);
-}
-
 pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
     basis: &dyn LineageBasisView,
@@ -342,40 +326,7 @@ pub(super) fn mint_target_births(
             });
         }
     }
-    // Order by canonical meaning parts (scheme, occurrence, role topological
-    // rank, role path, canonical discriminator) rather than native record
-    // allocation order so same-occurrence dependencies mint in rank order and
-    // `DuplicateBirth` `first`/`second` reporting is allocation-independent.
-    let mut ordered: Vec<(
-        crate::lineage::data::LineageRecordTarget,
-        &PersistentNameBirthRequest,
-    )> = named_births.iter().map(|(&id, req)| (id, req)).collect();
-    ordered.sort_by(|(_, a), (_, b)| {
-        let rank_a = scheme_registry
-            .get(&a.scheme_id)
-            .and_then(|scheme| scheme.role_rank(&a.role_path))
-            .unwrap_or(u32::MAX);
-        let rank_b = scheme_registry
-            .get(&b.scheme_id)
-            .and_then(|scheme| scheme.role_rank(&b.role_path))
-            .unwrap_or(u32::MAX);
-        (
-            &a.scheme_id,
-            &a.occurrence_key,
-            rank_a,
-            &a.role_path,
-            &a.canonical_discriminator,
-            &a.holder,
-        )
-            .cmp(&(
-                &b.scheme_id,
-                &b.occurrence_key,
-                rank_b,
-                &b.role_path,
-                &b.canonical_discriminator,
-                &b.holder,
-            ))
-    });
+    let ordered = super::mint_order::dependency_order(scheme_registry, named_births);
     let targets: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
     let requests: Vec<_> = ordered.into_iter().map(|(_, req)| req.clone()).collect();
     let records = PersistentNameMintingAuthority::mint_commit_births_with_basis(

@@ -8,10 +8,10 @@ pub(super) fn read(
     execution: &ExecutionRequest<'_, '_>,
     source: OwnershipReadSource<'_>,
     storage: &CurrentPublicationStorage,
-    view: &InvariantStateView<'_>,
+    view: &StructuralStateView<'_>,
     records: &[RecordRef],
     scopes: &[RecordRef],
-    after: Option<&InvariantStateView<'_>>,
+    after: Option<&StructuralStateView<'_>>,
     roster: &mut CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
@@ -63,8 +63,8 @@ struct Reach<'a, 'request, 'scope, 'kernel, 'authority> {
     execution: &'a ExecutionRequest<'request, 'scope>,
     source: OwnershipReadSource<'a>,
     storage: &'a CurrentPublicationStorage,
-    view: &'a InvariantStateView<'a>,
-    after: Option<&'a InvariantStateView<'a>>,
+    view: &'a StructuralStateView<'a>,
+    after: Option<&'a StructuralStateView<'a>>,
     roster: &'a mut CurrentPublicationRoster,
     context: &'a mut MapKernelContext<'kernel, 'authority>,
     entities: BTreeSet<EntityId>,
@@ -82,10 +82,8 @@ impl Reach<'_, '_, '_, '_, '_> {
     fn relation(
         &mut self,
         id: RelationId,
-    ) -> Result<
-        crate::validation::engine::state_view::VisibleRelationMetadata,
-        TransactionCommitError,
-    > {
+    ) -> Result<crate::branch::structural_state::VisibleRelationMetadata, TransactionCommitError>
+    {
         self.demand(id.partition_id)?;
         self.view
             .relation_metadata(id)
@@ -265,8 +263,12 @@ pub(in crate::publication::ownership) fn claims(
         .registry()
         .current_publication_storage
         .as_ref()
-        .ok_or_else(|| crate::mvcc::origin_denial("publication claims require current storage"))?;
-    let view = InvariantStateView::new(
+        .ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "publication claims require current storage",
+            )
+        })?;
+    let view = StructuralStateView::new(
         basis.inner.root.as_ref(),
         crate::identity::data::VersionId(basis.inner.root.axes().map_or(0, |a| a.storage_version)),
     );

@@ -1,6 +1,16 @@
 //! Actual source readmission retains data funding through shared and weak owners.
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
+use crate::durability::canonical_commit_artifact::{
+    checkpoint_body::readmit_checkpoint_body, frame_encoding::encode_canonical_frame_for_request,
+    verified_frame::VerifiedCanonicalCommitFrame as Frame,
+};
+use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{CanonicalEnvelopeControlAllocation, SharedCanonicalCommitEnvelope};
+use crate::identity::data::{EntityId, PartitionId};
+use crate::publication::patch::data::PatchStreamPosition;
+use crate::runtime::state::subsystems::history::canonical_publication_routes::position_admission::readmit_positioned_canonical_commit;
+use crate::transactions::data::primitives::RecordRef;
+use std::sync::Arc;
 use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionRequestArrayBuilder, SerialMemoryBudget,
     SerialRequest,
@@ -14,9 +24,9 @@ fn shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_unti
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
-    let admitted = artifact.readmit_framed(&request).unwrap();
-    let shared =
-        SharedCanonicalCommitEnvelope::from_arc(admitted.into_positioned().canonical_arc().clone());
+    let admitted = artifact.readmitted_body(&request).unwrap();
+    let shared = SharedCanonicalCommitEnvelope::from_arc(admitted.canonical_arc().clone());
+    drop(admitted);
     drop(artifact);
     let clone = shared.clone();
     assert!(std::ptr::eq(shared.as_ref(), clone.as_ref()));
@@ -37,8 +47,8 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
-    let positioned = artifact.readmit_framed(&request).unwrap().into_positioned();
-    let retained = crate::runtime::RetainedCanonicalPosition::from_positioned(&positioned);
+    let positioned = artifact.readmitted_body(&request).unwrap();
+    let retained = crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition::from_positioned(&positioned);
     let same = retained.clone();
     let fixed = fixed_allocation_bill();
     drop(artifact);
@@ -60,39 +70,26 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 
-fn owned_artifact(source: &Artifact, request: &ExecutionRequest<'_, '_>) -> Artifact {
+fn owned_artifact(source: &Frame, request: &ExecutionRequest<'_, '_>) -> Frame {
     let mut bytes =
         ExecutionRequestArrayBuilder::<u8>::allocate(*request, source.as_bytes().len()).unwrap();
     bytes.extend_from_slice(source.as_bytes()).unwrap();
-    Artifact::from_owned_bytes(bytes.seal().unwrap().into_immutable_bytes()).unwrap()
+    Frame::from_owned_bytes(bytes.seal().unwrap().into_immutable_bytes()).unwrap()
 }
 
-fn source_artifact() -> Artifact {
-    // Ordinary source production precedes the bounded readmission operation.
-    let host = crate::test_execution_policy::serial_request();
+fn canonical_source() -> CanonicalCommitEnvelope {
+    let id = EntityId::new(PartitionId::main(), 1, 1);
+    envelope_with_patch_and_update(RecordRef::Entity(id), id)
+}
+
+fn source_artifact() -> Frame {
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let result = crate::tests::support::create_entity_outcome(
-        &request,
-        &runtime,
-        "original-shared-readmission-heap",
-    );
-    let positioned = runtime
-        .history
-        .positioned_canonical_commits_snapshot()
-        .pop()
-        .unwrap();
-    assert!(
-        positioned.envelope().control_allocation.is_none(),
-        "ordinary live publication adds no control Arc"
-    );
-    let artifact = Artifact::from_positioned(
-        &positioned,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
-    crate::tests::support::release_test_commit_snapshot(&runtime, &result);
-    artifact
+    let envelope = canonical_source();
+    assert!(envelope.control_allocation.is_none());
+    let positioned =
+        readmit_positioned_canonical_commit(PatchStreamPosition(1), Arc::new(envelope)).unwrap();
+    encode_canonical_frame_for_request(&positioned, &request).unwrap()
 }
 
 fn fixed_allocation_bill() -> u64 {
@@ -123,14 +120,10 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
         #[serde(rename = "future \" \\ λ")]
         future: &'a T,
     }
-    let producer = crate::test_execution_policy::serial_request();
-    let produce = ExecutionRequest::serial(&producer);
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let result =
-        crate::tests::support::create_entity_outcome(&produce, &runtime, "known-original-cp-body");
-    let original = result.publication().envelope.as_ref();
+    let original = canonical_source();
+    let original = &original;
     assert!(original.derived_index_artifacts.is_empty());
-    // Ordinary input preparation uses the real producer projection; no copied
+    // Fixture input uses the canonical owner's wire projection; no copied
     // canonical projector or JSON conversion of its u128 values participates.
     let known = rmp_serde::to_vec_named(&EmbeddedCheckpointEnvelopeRef::new(original)).unwrap();
     let future = serde_json::json!({"escaped \" \\ λ": ["line\n\u{0000}雪".repeat(1024), {"inner": [true, null, 7]}]});
@@ -143,14 +136,14 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
     let stop = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
-    let baseline = Artifact::readmit_checkpoint_body(&known, None, &request).unwrap();
+    let baseline = readmit_checkpoint_body(&known, None, &request).unwrap();
     assert_eq!(&baseline, original);
     let held = budget.charged_memory_bytes();
     assert!(held > 0);
     drop(baseline);
     assert_eq!(budget.charged_memory_bytes(), 0);
     let check = |bytes: &[u8]| {
-        let accepted = Artifact::readmit_checkpoint_body(bytes, None, &request).unwrap();
+        let accepted = readmit_checkpoint_body(bytes, None, &request).unwrap();
         assert_eq!(&accepted, original);
         assert_eq!(
             budget.charged_memory_bytes(),
@@ -224,5 +217,4 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
             check(&omitted);
         }
     }
-    crate::tests::support::release_test_commit_snapshot(&runtime, &result);
 }

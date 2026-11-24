@@ -1,5 +1,5 @@
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::{AspectKey, AspectValue};
 
 pub(super) fn scalar_from_base_commit_patch(

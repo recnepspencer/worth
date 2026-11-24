@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, CommitId};
-use crate::transactions::data::RecordRef;
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BranchCausalDot {

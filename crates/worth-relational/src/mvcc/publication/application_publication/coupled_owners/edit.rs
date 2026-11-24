@@ -2,11 +2,11 @@
 use super::*;
 use crate::storage::overlay::CurrentPartitionAccess;
 
-impl RelationalRuntime {
+impl AuthoredPublicationReads<'_> {
     /// Admit synchronous writers for an ordinary authored source. Unlike a
     /// retirement, an edit does not require every current owner to republish:
     /// Query may prove an output current without appending any commands.
-    pub fn readmit_edit_coupled_owners(
+    pub(crate) fn readmit_edit_coupled_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
@@ -46,10 +46,10 @@ impl RelationalRuntime {
         }
         let current = execution
             .run_native_with_checkpoint(|context| {
-                crate::history::data::source_scope_closure::current(
+                crate::publication::ownership::source_scope::current(
                     execution,
                     basis,
-                    Some(installed),
+                    Some(&installed.source_scope_ownership),
                     &[RecordRef::Entity(source)],
                     context,
                 )

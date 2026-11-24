@@ -1,17 +1,19 @@
 //! Complete conservative scope candidates from actual authored and physical inputs.
-use super::super::applied::{DiscoveredSource, SourcePreparationContext};
+use super::super::applied::context::SourcePreparationContext;
+use super::super::applied::discovery::DiscoveredSource;
 use super::{
     admission, collection::AuthoredSourceInputs, ManagedSourceImpactKey, ManagedSourceImpactRows,
     PreparedSourceImpactHistory,
 };
-use crate::derived_relation::DerivedRelationReadDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::identity::data::KindId;
 use crate::storage::overlay::OverlayStateView;
-use crate::transactions::data::{MergedCommitPlan, RecordRef};
-use crate::validation::candidate_source::{
-    ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
-};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
+use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
-use crate::validation::data::StructuralRelationView;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
@@ -21,6 +23,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
     context: &'a SourcePreparationContext<'a>,
     budget: &CustomPreparationBudget,
     authored: Option<&MergedCommitPlan>,
+    validation_view: impl FnOnce() -> InvariantRuntimeView<'a>,
 ) -> Result<
     (
         Option<Arc<PreparedSourceImpactHistory>>,
@@ -29,37 +32,44 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
     Denial,
 > {
     let SourcePreparationContext {
-        draft,
+        state,
+        outcome,
+        allocations,
+        interpretation,
+        registry,
+        home_target,
         execution,
-        runtime,
         selected,
         proposal,
         records: _,
     } = *context;
-    let catalog = &runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .source_history;
+    let catalog = &registry.source_history;
     let Some(plan) = authored else {
         return Ok((None, Vec::new()));
     };
-    if !catalog.has_programs() || draft.source_interpretation.materialization_mode().is_some() {
+    if !catalog.has_programs() || interpretation.materialization_mode().is_some() {
         return Ok((None, Vec::new()));
     }
     let before = InvariantStateView::new(&selected, selected.version_id());
-    let overlay = OverlayStateView::new(&selected, draft.state());
+    let overlay = OverlayStateView::new(&selected, state);
     let after = InvariantStateView::new(&overlay, proposal.proposed_version_id());
-    let runtime_view =
-        InvariantRuntimeView::from_preparation_for_state(runtime, selected.selected().state());
+    let runtime_view = validation_view();
     let observation = InvariantObservation::applied_with_proposal(
-        OverlayStateView::new(&selected, draft.state()),
+        OverlayStateView::new(&selected, state),
         selected.version_id(),
         Some(proposal.clone()),
-        &draft.outcome.created_entities,
+        &outcome.created_entities,
     );
     let mut discoveries = Vec::new();
-    let Some(input) =
-        AuthoredSourceInputs::collect(execution, budget, draft, plan, &before, &after)?
+    let Some(input) = AuthoredSourceInputs::collect(
+        execution,
+        budget,
+        allocations,
+        &outcome.effect,
+        plan,
+        &before,
+        &after,
+    )?
     else {
         return Ok((None, discoveries));
     };
@@ -67,22 +77,14 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
         budget,
         input.records.len().checked_mul(2).ok_or_else(|| {
             admission::storage(
-                crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
         })?,
     )?;
-    let groups = if runtime.home_target.is_some() {
-        runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .all_source_groups()
-            .iter()
-            .collect()
+    let groups = if home_target {
+        registry.all_source_groups().iter().collect()
     } else {
-        runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .source_groups(input.entity_kinds(&before, &after), input.relation_kinds())
+        registry.source_groups(input.entity_kinds(&before, &after), input.relation_kinds())
     };
     let adjacency = input.deltas(budget)?;
     let mut seen = ExecutionOrderedMap::<usize, ()>::default();
@@ -113,7 +115,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             let new = StructuralRelationView::new(after.clone(), execution, work.clone(), access)
                 .with_structural_source(&runtime_view, &observation, false);
             let records = source_records(execution, budget, program, &input, &before, &after)?;
-            let closure = if runtime.home_target.is_some() {
+            let closure = if home_target {
                 super::super::scope_closure::discover_home_target(
                     runtime_view.selected_registry.registry(),
                     program,
@@ -157,14 +159,14 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             )? {
                 discoveries.try_reserve_exact(1).map_err(|_| {
                     admission::storage(
-                        crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
                     )
                 })?;
                 discoveries.push(discovery);
             }
         }
     }
-    let basis = draft.source_interpretation.physical_basis();
+    let basis = interpretation.physical_basis();
     let branch = basis.identity().branch_id();
     let memory = admission::header::<PreparedSourceImpactHistory>(execution, branch.0.len())?;
     admission::work(budget, branch.0.len())?;
@@ -192,17 +194,21 @@ fn source_records(
 ) -> Result<Vec<RecordRef>, Denial> {
     let count = input.records.len();
     let bytes = count.checked_mul(size_of::<RecordRef>()).ok_or_else(|| {
-        admission::storage(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+        admission::storage(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        )
     })?;
     if !budget.try_plan_item(bytes as u64) {
         return Err(DerivedRelationReadDenial::Definition(
-            crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded,
+            crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
         )
         .into());
     }
     let mut records = Vec::new();
     records.try_reserve_exact(count).map_err(|_| {
-        admission::storage(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+        admission::storage(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+        )
     })?;
     for (record, usage) in input.records.iter() {
         let RecordRef::Entity(id) = record else {
@@ -213,7 +219,7 @@ fn source_records(
             .into_iter()
             .flatten()
         {
-            if usage.includes(program, metadata.kind_id, budget)? {
+            if record_use_includes(*usage, program, metadata.kind_id, budget)? {
                 records.push(record.clone());
                 break;
             }
@@ -223,4 +229,36 @@ fn source_records(
         .consult()
         .map_err(|cause| admission::storage(cause.into()))?;
     Ok(records)
+}
+
+fn record_use_includes(
+    usage: super::AuthoredSourceRecordUse,
+    program: &ManagedIndexSourceProgram,
+    kind: KindId,
+    budget: &CustomPreparationBudget,
+) -> Result<bool, Denial> {
+    admission::work(budget, 1)?;
+    if usage.lifecycle {
+        if kind == program.scope_kind() || kind == program.row_kind() {
+            return Ok(true);
+        }
+        for &(_, from, to) in program.physical_sources() {
+            admission::work(budget, 1)?;
+            if kind == from || kind == to {
+                return Ok(true);
+            }
+        }
+    }
+    if usage.fields {
+        if kind == program.row_kind() && !program.fields().is_empty() {
+            return Ok(true);
+        }
+        for route in program.projection_routes() {
+            admission::work(budget, 1)?;
+            if kind == route.endpoint_kind() && !route.fields().is_empty() {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }

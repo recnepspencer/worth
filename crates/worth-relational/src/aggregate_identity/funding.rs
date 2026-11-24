@@ -1,6 +1,6 @@
 //! Original Native accounting posture and retained consequence preparation custody.
 use super::observations::{Acquisition, AggregateReadObservations};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation, MapKernelFailure, ScopeStop};
 mod failure;
 mod navigation;

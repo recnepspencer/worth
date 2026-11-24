@@ -1,13 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-/// Separates entity and relation allocation domains within each partition.
-pub enum RecordAllocationClass {
-    Entity,
-    Relation,
-}
+pub use super::record_allocation_class::RecordAllocationClass;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RecordAllocationOrigin {

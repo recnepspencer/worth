@@ -9,8 +9,6 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
-use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
-use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -184,7 +182,7 @@ where
     let attempt = Arc::new(NavigationAttempt {
         progress: Mutex::new(NavigationProgress {
             pending_slot: Some(pending_slot),
-            application,
+            application: document.custody(),
             meaning,
             output_profile,
             output_source: None,
@@ -194,8 +192,7 @@ where
             model: document.model.clone(),
             ownership: (installed.definition().parts().model_domain
                 == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-                .then(|| application.inner.runtime.primary_provider_ref().graph_ref().layout_ref().history_ownership(
-                    &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
+                .then_some(H::IDENTITY),
             source: Some(source),
             requested,
             intent,

@@ -4,7 +4,7 @@ use super::{
     RelationIntegrityScopeAccumulator, TransactionCommitError,
 };
 use crate::identity::data::{KindId, RelationId};
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
     pub(super) fn collect_planned_edge(

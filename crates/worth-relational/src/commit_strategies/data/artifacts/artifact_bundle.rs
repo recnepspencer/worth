@@ -1,3 +1,4 @@
+use crate::commit_strategies::data::artifact_basis::StrategyArtifactBasis;
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize};
 
 use super::merge_descriptor::StrategyMergeDescriptor;
@@ -5,15 +6,19 @@ use super::replay_descriptor::StrategyReplayDescriptor;
 use crate::commit_strategies::data::canonical_digest::{
     commit_validation_summary_digest, lowering_summary_digest, preview_validation_cost_digest,
 };
-use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, CommitStrategyDescriptor,
-    LoweredStrategyCommitPlan, StrategyCallerProvenance, StrategyLoweringProvenance,
-    StrategyLoweringSummary, StrategyPreviewValidationCostSummary, StrategyRequestOrigin,
+use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptor;
+use crate::commit_strategies::data::lowering_meaning::{
+    StrategyLoweringProvenance, StrategyLoweringSummary,
 };
+use crate::commit_strategies::data::request::{
+    CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, StrategyCallerProvenance,
+    StrategyRequestOrigin,
+};
+use crate::commit_strategies::data::validation::StrategyPreviewValidationCostSummary;
 use crate::config::data::RelationalRuntimeConfig;
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::identity::data::VersionId;
-use crate::transactions::data::CommitValidationSummary;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StrategyCommitArtifactBundle {
@@ -54,7 +59,7 @@ impl StrategyCommitArtifactBundle {
     }
 
     pub fn from_lowered(
-        lowered: &LoweredStrategyCommitPlan,
+        lowered: &StrategyArtifactBasis,
         descriptor: &CommitStrategyDescriptor,
         runtime_config: &RelationalRuntimeConfig,
     ) -> Self {

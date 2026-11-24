@@ -21,14 +21,17 @@ impl SchemaAuthoritySnapshot {
     }
 
     pub(crate) fn projection_allocation_bytes(
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let layout = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Projection>())
-            .map_err(|_| crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?
+            .map_err(|_| {
+                crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow
+            })?
             .0
             .pad_to_align();
-        u64::try_from(layout.size())
-            .map_err(|_| crate::execution::RelationalExecutionDenialCause::MemoryOverflow)
+        u64::try_from(layout.size()).map_err(|_| {
+            crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow
+        })
     }
 
     pub(crate) fn from_compiled_parts(
@@ -45,8 +48,8 @@ impl SchemaAuthoritySnapshot {
 
     pub(super) fn digest_for_compilation(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<[u8; 32], crate::execution::denial_cause::RelationalExecutionDenialCause> {
         control.checkpoint()?;
         if let Some(digest) = self.0.digest.get() {
             return Ok(*digest);

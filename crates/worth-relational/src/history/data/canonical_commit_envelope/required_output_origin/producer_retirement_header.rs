@@ -1,9 +1,9 @@
 //! Cold grouped retirement retains distinct routes rooted in actual generator deletions.
 use super::*;
-use crate::{
-    history::data::CodecRetirementClosureStop as Stop, mvcc::RequiredOutputRolePosture as Posture,
-    publication::patch::data::RecordStructuralChange as Change, transactions::data::RecordRef,
-};
+use crate::history::data::CodecRetirementClosureStop as Stop;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 impl CanonicalCommitEnvelopeBody {
     pub(super) fn validate_producer_retirement_header(

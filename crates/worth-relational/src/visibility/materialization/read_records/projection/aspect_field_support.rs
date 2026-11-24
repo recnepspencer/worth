@@ -1,7 +1,7 @@
 //! Complete field-set support at two immutable roots, not revision equality.
 use super::{RelationalFieldSupportComparisonDenial as Denial, VisibilityProjectionView};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::execution::request_stage::{checkpoint, optional_stage};
-use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::EntityId;
 use crate::schema::data::LoweredAspectContractBinding;
 use worth_foundational::facade::{AspectBinding, AspectKey, AspectShape, FieldKey};

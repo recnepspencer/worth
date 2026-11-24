@@ -10,7 +10,8 @@ use crate::validation::candidate_source::{
     authored_history::catalog::SourceHistoryCatalog, routing::SourceProgramPostings,
     ManagedIndexSourceProgram,
 };
-use crate::validation::data::{CustomInvariantAccessContract, CustomInvariantRuleId};
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
+use crate::validation::data::rule_id::CustomInvariantRuleId;
 use std::{
     alloc::Layout,
     collections::{BTreeMap, BTreeSet},
@@ -235,7 +236,7 @@ fn arc_layout(data: Layout) -> Result<usize, Denial> {
 }
 fn tree<K, V>(count: usize) -> Result<usize, Denial> {
     usize::try_from(
-        crate::branch::retained_compilation_tree_bytes::<K, V>(count)
+        crate::branch::root::schema::standard_tree_quote::retained_tree_bytes::<K, V>(count)
             .map_err(|_| Denial::CapacityOverflow)?,
     )
     .map_err(|_| Denial::CapacityOverflow)

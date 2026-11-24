@@ -3,34 +3,37 @@ mod funding;
 mod projection;
 mod values;
 use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::branch::SelectedRelationalBranchState;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::history::access::relevant_writes::RelationalAuthoredEntityIndexDefinition as Definition;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use crate::history::data::{
     CanonicalAuthoredIndexWrite as Entry, CanonicalAuthoredIndexWrites as Evidence,
 };
-use crate::history::{
-    RelationalAuthoredEntityIndexDefinition as Definition, RelationalAuthoredWriteDenial as Denial,
-};
-use crate::runtime::{RelationalPreparationRuntime, WorkingState};
-use crate::transactions::data::RecordRef;
+#[derive(Clone, Copy)]
+pub(crate) struct AuthoredIndexWriteInputs<'a> {
+    pub(crate) schema_authority_digest: [u8; 32],
+    pub(crate) original: Option<&'a Evidence>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
+}
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::{AspectKey, FieldKey};
 
 pub(super) fn prepare(
-    runtime: &RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
+    inputs: AuthoredIndexWriteInputs<'_>,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
     plan: RelationalSemanticPlan<'_>,
     allocations: &[crate::history::data::CanonicalRecordAllocation],
     supported: bool,
     execution: ExecutionRequest<'_, '_>,
-) -> Result<Evidence, crate::transactions::data::TransactionCommitError> {
-    if !supported
-        || runtime
-            .recovered_authored_index_writes
-            .as_ref()
-            .is_some_and(Evidence::is_unavailable)
-    {
+) -> Result<
+    Evidence,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
+    if !supported || inputs.original.is_some_and(Evidence::is_unavailable) {
         return Ok(Evidence::default());
     }
     crate::execution::phase_observation::run(
@@ -39,7 +42,7 @@ pub(super) fn prepare(
         || {
             let prepare = |execution: ExecutionRequest<'_, '_>| {
                 prepare_evidence(
-                    runtime,
+                    inputs,
                     catalog,
                     selected,
                     working,
@@ -48,24 +51,20 @@ pub(super) fn prepare(
                     execution,
                 )
             };
-            let evidence = match (
-                super::super::request_lease(&execution),
-                runtime.commit_work_budget.as_ref(),
-            ) {
+            let evidence = match (super::super::request_lease(&execution), inputs.work) {
                 (Some(_), Some(budget)) => budget
                     .run_stage(execution, || prepare(execution))
                     .map_err(Denial::Request)
                     .and_then(std::convert::identity),
                 _ => prepare(execution),
             };
-            let evidence = evidence.map_err(crate::runtime::authored_write_commit_denial)?;
-            if runtime
-                .recovered_authored_index_writes
-                .as_ref()
+            let evidence = evidence.map_err(crate::runtime::state::subsystems::history::canonical_publication_routes::authored_write_commit_denial)?;
+            if inputs
+                .original
                 .is_some_and(|original| original != &evidence)
             {
                 return Err(
-                    crate::transactions::data::TransactionCommitError::publication(
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                         crate::publication::data::PublicationError::new(
                             crate::publication::bundle::PublicationStage::BundleAssembly,
                             "recovered authored index writes disagree with original source",
@@ -75,20 +74,22 @@ pub(super) fn prepare(
             }
             Ok(evidence)
         },
-        |cause| crate::runtime::authored_write_commit_denial(Denial::Execution(cause)),
+        |cause| {
+            crate::runtime::state::subsystems::history::canonical_publication_routes::authored_write_commit_denial(Denial::Execution(cause))
+        },
     )
 }
 
 fn prepare_evidence(
-    runtime: &RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
+    inputs: AuthoredIndexWriteInputs<'_>,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
     plan: RelationalSemanticPlan<'_>,
     allocations: &[crate::history::data::CanonicalRecordAllocation],
     execution: ExecutionRequest<'_, '_>,
 ) -> Result<Evidence, Denial> {
-    crate::history::run_authored_write_stage(execution, |context| {
+    crate::history::access::relevant_writes::run(execution, |context| {
         let output = funding::Output::new(execution, context)?;
         if !catalog.catalog.has_entity_field_indexes() {
             // The actual installed catalog proves complete-empty membership
@@ -97,7 +98,7 @@ fn prepare_evidence(
         }
         let mut builder = projection::Projection {
             execution,
-            runtime,
+            schema_authority_digest: inputs.schema_authority_digest,
             catalog,
             unavailable: false,
             selected,

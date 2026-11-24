@@ -13,7 +13,7 @@ mod tests;
 
 mod maintained;
 use super::kind_incremental::RegionKindIndexes;
-use crate::storage::substrate::maintenance::{ChangeWork, CommitChange, MaintenanceRefusal};
+use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal, PartitionChange};
 use std::sync::Arc;
 
 /// Reconstruct only at a cold trust boundary, under the original request.
@@ -66,17 +66,15 @@ pub(super) fn update(
     previous: &PartitionState,
     prior: &Arc<RegionKindIndexes>,
     journal: &crate::storage::overlay::PartitionMutationJournal,
-    change: Option<&CommitChange>,
+    change: Option<&PartitionChange>,
 ) -> Result<Arc<RegionKindIndexes>, RegionContentFailure> {
     let id = partition.partition_id;
     let mut owner = maintained::KindMaintainer::new(execution, partition, previous);
     let result = ChangeWork::run_phase(execution, "kind_commitment", |work| match change {
-        Some(change) => crate::storage::substrate::maintenance::apply_change(
-            &mut owner,
-            Some(prior),
-            change,
-            work,
-        ),
+        Some(change) => {
+            work.prepare_route_lookup(1)?;
+            owner.apply_journal(prior, &change.journal, work)
+        }
         // Unpublished candidate images have storage-owner journals but no
         // canonical commit artifact. They use the same private delta engine.
         None => owner.apply_journal(prior, journal, work),

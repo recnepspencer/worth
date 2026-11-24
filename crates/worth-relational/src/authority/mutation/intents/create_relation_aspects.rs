@@ -3,17 +3,21 @@ use worth_foundational::facade::PortablePatchReadmissionPurpose;
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
-    RelationAspectCreateIntent,
-};
+use crate::transactions::data::intents::mutation_intent::RelationAspectCreateIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::primitives::EntityReference;
 
 use super::{record_aspect_patch, relation_endpoint_candidate};
 
 pub(super) fn apply<'a>(
     intent: &'a RelationAspectCreateIntent,
     workspace: &mut MutationWorkspace<'a>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let source = resolve_endpoint(workspace, &intent.source, "source")?;
     let target_entity = resolve_endpoint(workspace, &intent.target, "target")?;
     let target = RecordAspectPatchTarget::RelationCreation {
@@ -27,7 +31,7 @@ pub(super) fn apply<'a>(
             &intent.aspect_patch,
         )
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?,
         plan,
         source,
@@ -63,9 +67,9 @@ pub(super) fn apply<'a>(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(relation_id)
     })?;
     workspace.register_created_relation(
         intent.partition_id,

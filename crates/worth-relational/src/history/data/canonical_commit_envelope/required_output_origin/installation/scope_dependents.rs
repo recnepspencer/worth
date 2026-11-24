@@ -1,9 +1,8 @@
 //! Publication retirement and succession cannot sever a live owned source.
 use super::*;
-use crate::{
-    identity::data::EntityId, publication::patch::data::RecordStructuralChange as Change,
-    transactions::data::RecordRef,
-};
+use crate::identity::data::EntityId;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 
 pub(super) struct RemovedOwningScopes {
@@ -13,10 +12,10 @@ pub(super) struct RemovedOwningScopes {
 
 pub(super) fn require_retained_sources(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
-    installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
-    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+    roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
     if let Some(removal) =
@@ -30,10 +29,10 @@ pub(super) fn require_retained_sources(
 /// Preserve the existing charged eligibility path for every non-cascading candidate.
 pub(super) fn select_removed_owning_scopes(
     candidate: &CanonicalCommitEnvelopeBody,
-    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
-    installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationRequest<'_, '_, '_>,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
-    roles: &[crate::mvcc::RequiredOutputRoleTarget],
+    roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<RemovedOwningScopes>, TransactionCommitError> {
     if candidate.authored_cascade_retirement.is_some()
@@ -55,14 +54,14 @@ pub(super) fn select_removed_owning_scopes(
         .map_err(origin_request)?;
     if roles
         .iter()
-        .all(|role| role.posture == crate::mvcc::RequiredOutputRolePosture::Retire)
+        .all(|role| role.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
     {
         super::super::source_scope_ownership::require_cascade(prior, None)?;
     }
     let anchors = prior
         .members
         .iter()
-        .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+        .filter(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
         .filter(|member| {
             candidate
                 .patch
@@ -81,14 +80,14 @@ pub(super) fn select_removed_owning_scopes(
     let dependent = crate::history::data::select_owned_scope_dependent(
         crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
         runtime
-            .runtime
             .current_ownership
             .as_deref()
             .ok_or_else(|| {
-                crate::mvcc::origin_denial(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                     "owning-source removal requires Native current ownership storage",
                 )
-            })?,
+            })?
+            .origins(),
         context,
     )
     .map_err(|failure| super::relation_stop(failure.stop))?;

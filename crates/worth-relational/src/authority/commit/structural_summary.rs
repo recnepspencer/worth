@@ -1,13 +1,14 @@
 use std::collections::BTreeSet;
 
+use super::plan_reservation_summary::bulk_reservations_for_plan;
 use crate::authority::commit::touched_scope::{
     touched_partitions_for_flat_plan_set, touched_partitions_for_plan_set,
 };
 use crate::identity::data::PartitionId;
-use crate::mvcc::bulk_reservations_for_plan;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitTopology, MergedCommitPlan};
-use crate::validation::data::InvariantPlanContract;
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::validation::data::contracts::InvariantPlanContract;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommitStructuralSummary {
@@ -21,7 +22,6 @@ pub(crate) struct CommitStructuralSummary {
 impl CommitStructuralSummary {
     pub(crate) fn derive(
         current_state: &impl CurrentPartitionAccess,
-        planning_state: &impl CurrentPartitionAccess,
         merged_plan: &MergedCommitPlan,
         merge_parent_count: usize,
     ) -> Self {
@@ -39,7 +39,7 @@ impl CommitStructuralSummary {
             }
         };
         let (bulk_entity_slots_reserved, bulk_relation_slots_reserved) =
-            bulk_reservations_for_plan(planning_state, merged_plan);
+            bulk_reservations_for_plan(merged_plan);
 
         Self {
             invariant_contract,
@@ -53,8 +53,8 @@ impl CommitStructuralSummary {
     pub(crate) fn public_summary(
         &self,
         descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    ) -> crate::transactions::data::CommitStructuralSummary {
-        crate::transactions::data::CommitStructuralSummary {
+    ) -> crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary {
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary {
             invariant_groups: self.invariant_contract.may_invalidate_groups(),
             commit_topology: self.commit_topology,
             touched_partitions: self.touched_partitions.iter().copied().collect(),

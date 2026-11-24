@@ -2,7 +2,7 @@ use smallvec::SmallVec;
 
 use crate::publication::patch::data::{ordered_aspect_keys, RecordStructuralChange};
 use crate::schema::data::{AspectBinding, LoweredAspectContractPlan};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,

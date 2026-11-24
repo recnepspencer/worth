@@ -1,5 +1,5 @@
 //! World-selected source descriptions grant nothing without the actual Home seal.
-use crate::branch::RecordedRelationalComponentReference;
+use crate::branch::recorded_basis::RecordedRelationalComponentReference;
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 use std::sync::Arc;

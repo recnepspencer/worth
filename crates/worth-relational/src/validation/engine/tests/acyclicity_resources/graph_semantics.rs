@@ -1,7 +1,8 @@
 //! Independent indegree elimination checks native reachability's cycle verdict.
 use super::fixture::*;
-use crate::transactions::data::{ConflictClass, TransactionCommitError};
-use crate::validation::data::InvariantViolationFields;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::validation::data::results::InvariantViolationFields;
 use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]

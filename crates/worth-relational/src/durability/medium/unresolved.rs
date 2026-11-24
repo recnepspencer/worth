@@ -1,7 +1,7 @@
-use crate::branch::RelationalBranchTransitionSequence;
-use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactDigest;
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactDigest;
-use crate::history::data::CommitId;
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
+use crate::durability::branch_transition_artifact::payload_digest::RelationalBranchTransitionArtifactDigest;
+use crate::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigest;
+use crate::history::data::coordinates::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// A durable publication that neither completed nor was proven to have had

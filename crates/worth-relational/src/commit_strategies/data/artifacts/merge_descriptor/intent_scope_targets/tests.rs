@@ -20,7 +20,7 @@ struct LegacyDescriptor {
 #[test]
 fn strategy_scope_targets_preserve_prior_named_compact_wire_and_ordinary_clone() {
     let locator = |aspect, field| {
-        crate::transactions::data::planned_single_field_locator(
+        crate::transactions::data::aspect_field_patch::planned_single_field_locator(
             AspectKey::new(aspect).unwrap(),
             FieldKey::new(field).unwrap(),
         )

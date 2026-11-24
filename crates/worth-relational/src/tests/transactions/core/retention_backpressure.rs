@@ -8,6 +8,7 @@ use crate::facade::mvcc::{
     RelationalTransactionIntent,
 };
 use crate::facade::transactions::TransactionCommitError;
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::tests::support::*;
 
 #[test]
@@ -205,9 +206,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         reference_before,
     );
     assert_eq!(
-        publication_runtime
-            .history
-            .pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&publication_runtime.history),
         0
     );
     drop(basis);
@@ -359,7 +358,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         Some("observed-root-cost".to_owned())
     );
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         0
     );
     release_test_commit_snapshot(&runtime, &committed);

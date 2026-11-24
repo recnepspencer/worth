@@ -1,6 +1,6 @@
 //! Index deltas compare their actual before root to authenticated original axes.
 use super::{require_encoded, CheckpointAdmittedCommit, Refusal};
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
 use crate::identity::data::VersionId;
 use worth_execution::ExecutionRequest;
@@ -21,7 +21,7 @@ impl CheckpointAdmittedCommit {
         for field in ["predecessor", "reference", "observation", "target"] {
             target = target
                 .field(field, request)
-                .map_err(super::super::root_positions::projected_stop)?;
+                .map_err(super::projected_stop)?;
         }
         match prior.commit_id() {
             None => {
@@ -37,12 +37,12 @@ impl CheckpointAdmittedCommit {
             Some(commit) => {
                 let target = target
                     .field("Canonical", request)
-                    .map_err(super::super::root_positions::projected_stop)?;
+                    .map_err(super::projected_stop)?;
                 let descriptor = prior.descriptor().ok_or(Refusal::InvalidProjectedMeaning)?;
                 for (field, expected) in [("commit", commit.0), ("version", version.as_u64())] {
                     let raw = target
                         .field(field, request)
-                        .map_err(super::super::root_positions::projected_stop)?;
+                        .map_err(super::projected_stop)?;
                     require_encoded(&expected, raw.0, request)?;
                 }
                 for (field, expected) in [
@@ -51,7 +51,7 @@ impl CheckpointAdmittedCommit {
                 ] {
                     let raw = target
                         .field(field, request)
-                        .map_err(super::super::root_positions::projected_stop)?;
+                        .map_err(super::projected_stop)?;
                     require_encoded(expected, raw.0, request)?;
                 }
                 Ok(())

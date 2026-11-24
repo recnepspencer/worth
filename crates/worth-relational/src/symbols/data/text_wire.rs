@@ -67,7 +67,7 @@ impl SymbolSnapshotWire<'_> {
             .checked_mul(size_of::<(Symbol, &str)>())
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(RelationalFieldTextAdmissionDenial::Request(
-                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
             ))?;
         let _validation_memory = execution
             .reserve_retained_memory(bytes)

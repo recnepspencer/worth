@@ -1,14 +1,15 @@
 //! Original-request construction of field-authored portable candidates.
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::schema::data::LoweredAspectContractPlan;
-use crate::transactions::data::{AspectFieldPatch, RecordAspectPatchDenial};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchDenial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{PortableAspectPatchOperation, PortablePatchReadmissionPurpose};
 mod allocation;
 mod selection;
 #[cfg(test)]
 mod tests;
-pub(super) use allocation::{admit_readmission, readmission_bytes, resize, retained_patch_bytes};
+pub(super) use allocation::{admit_readmission, resize, retained_patch_bytes};
 
 #[derive(Clone, Copy)]
 pub(crate) enum FieldAuthoringDomain {
@@ -115,13 +116,17 @@ pub(crate) fn lower(
 /// candidate. This does not read or reconstruct the entity's aspect state.
 pub(crate) fn lower_entity(
     execution: &ExecutionRequest<'_, '_>,
-    intent: &crate::transactions::data::UpdateEntityFieldsIntent,
+    intent: &crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent,
     state: &impl crate::storage::overlay::CurrentPartitionAccess,
     plans: &crate::schema::data::AspectContractPlanCatalog,
-) -> Result<FieldCandidate, crate::transactions::data::TransactionCommitError> {
-    use crate::transactions::data::{
-        CommitConflict, ConflictClass, EntityFieldUpdateMissingState, RecordAspectPatchTarget,
-    };
+) -> Result<
+    FieldCandidate,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
+    use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+    use crate::transactions::data::outcomes::conflict_class::EntityFieldUpdateMissingState;
+    use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
     let entity = intent.entity_id;
     super::super::stale_targets::ensure_entity_target_is_current(state, entity)?;
     let missing = |missing| {

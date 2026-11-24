@@ -11,7 +11,8 @@ pub struct BoundedEntityFieldBoundary {
     pub(crate) basis: crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis,
     pub(crate) generation: Arc<DerivedIndexGeneration>,
     pub(crate) kind: KindId,
-    pub(crate) key: crate::storage::data::AuthoritativeFieldComparisonKey,
+    pub(crate) key:
+        crate::storage::data::authoritative_field_comparison_key::AuthoritativeFieldComparisonKey,
     pub(crate) next: usize,
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }

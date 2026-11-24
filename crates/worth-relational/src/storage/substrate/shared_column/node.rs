@@ -1,6 +1,6 @@
 //! Actual column node/page backing; element carriers have independent ownership.
 use super::PAGE_LEN;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::storage::substrate::{StorageAllocation as Arc, StoredValue};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 

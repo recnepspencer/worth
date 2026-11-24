@@ -1,4 +1,4 @@
-mod cost_counters;
+pub(crate) mod cost_counters;
 mod head_cell;
 mod head_obligation;
 mod head_retirement;
@@ -6,19 +6,20 @@ mod historical_retirement;
 pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
-#[doc(hidden)]
-pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 #[cfg(test)]
 pub(crate) use lane::{assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy};
+#[doc(hidden)]
+pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 mod lease;
 mod obligation;
 mod owner;
-mod publication_basis;
+pub(crate) mod publication_basis;
 mod publication_basis_tree;
 mod publication_reclamation;
 pub(crate) use publication_basis::{
     PublicationBasisAccess, PublicationBasisImage, PublicationBasisRoute,
 };
+mod live_reclamation;
 mod reclamation;
 mod root_locators;
 mod storage_inventory;
@@ -29,6 +30,7 @@ pub(crate) use head_cell::RelationalBranchHeadRetentionCell;
 pub(crate) use head_obligation::RelationalHeadRetentionObligation;
 pub(crate) use head_retirement::{
     RelationalHeadRetirementCapacity, RelationalHeadRetirementReservation,
+    TransferredHeadRetirement,
 };
 pub(crate) use lane::{
     RelationalBranchRetentionBinding, RelationalRetentionGuard,
@@ -62,3 +64,8 @@ mod component_cut_tests;
 
 #[cfg(test)]
 pub(crate) use component_cut_tests::assert_controlled_component_capture_winner;
+
+mod selected_snapshot;
+mod snapshot_basis_retirement;
+pub(crate) use selected_snapshot::{SnapshotHeadSelection, VisibilitySnapshotBasis};
+pub(crate) use snapshot_basis_retirement::VisibilitySnapshotBasisRetirement;

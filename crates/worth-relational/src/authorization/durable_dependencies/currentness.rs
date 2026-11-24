@@ -4,9 +4,11 @@ use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
 
-use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
-use crate::visibility::materialization::read_records::RelationalAdjacencyDirection;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::ProjectionInputs;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection;
+use crate::visibility::snapshot_states::resolution::SnapshotReadDirectory;
 
 use super::{
     capture, FieldDependency, RelationalAuthorizationDependencyDenial as Denial,
@@ -14,14 +16,33 @@ use super::{
     DURABLE_DEPENDENCY_VERSION, MAXIMUM_AUTHORIZATION_DEPENDENCIES,
 };
 
+/// The native directory and projection share the same installed snapshot owner.
+pub struct RelationalAuthorizationDependencySnapshots<'a> {
+    pub(crate) projection: ProjectionInputs<'a>,
+    pub(crate) directory: SnapshotReadDirectory<'a>,
+}
+
+impl RelationalAuthorizationDependencySnapshots<'_> {
+    pub(crate) fn project(
+        self,
+        snapshot: &SnapshotHandle,
+    ) -> Result<VisibilityProjectionView, Denial> {
+        if snapshot.runtime_instance_id != self.projection.runtime_identity {
+            return Err(Denial::ForeignRuntime);
+        }
+        VisibilityProjectionView::from_snapshot(self.projection, self.directory, snapshot)
+            .ok_or(Denial::SnapshotUnavailable)
+    }
+}
+
 impl RelationalAuthorizationDurableDependencies {
     /// Checks retained source revisions without reconstructing the original policy.
     /// The caller must separately establish that the stamp was issued by its owner
     /// and that the current authorization still admits the requested action.
     /// Cost is O(retained dependencies), bounded by the native wire contract.
-    pub fn source_revisions_match(
+    pub fn source_revisions_match<'a>(
         &self,
-        runtime: &RelationalRuntime,
+        snapshots: impl Into<RelationalAuthorizationDependencySnapshots<'a>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
     ) -> Result<bool, Denial> {
@@ -32,13 +53,15 @@ impl RelationalAuthorizationDurableDependencies {
             return Err(Denial::UnsupportedVersion);
         }
         self.check_wire_limits(execution)?;
-        if snapshot.runtime_instance_id != runtime.runtime_instance_id() {
-            return Err(Denial::ForeignRuntime);
-        }
-        let view = runtime
-            .read_truth()
-            .project_snapshot(snapshot)
-            .ok_or(Denial::SnapshotUnavailable)?;
+        let view = snapshots.into().project(snapshot)?;
+        self.revisions_match_in_projection(execution, &view)
+    }
+
+    fn revisions_match_in_projection(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        view: &VisibilityProjectionView,
+    ) -> Result<bool, Denial> {
         if !view.is_exact_basis() {
             return Err(Denial::InexactSnapshot);
         }
@@ -48,13 +71,13 @@ impl RelationalAuthorizationDurableDependencies {
             .map_err(|stop| Denial::Execution(stop.into()))?;
         if capture::capture_entity(
             execution,
-            &view,
+            view,
             self.owned.data.principal.entity,
             &mut remaining,
         )? != self.owned.data.principal
             || capture::capture_entity(
                 execution,
-                &view,
+                view,
                 self.owned.data.scope.entity,
                 &mut remaining,
             )? != self.owned.data.scope
@@ -73,7 +96,7 @@ impl RelationalAuthorizationDurableDependencies {
                 execution
                     .consult()
                     .map_err(|stop| Denial::Execution(stop.into()))?;
-                if capture::capture_entity(execution, &view, entity.entity, &mut remaining)?
+                if capture::capture_entity(execution, view, entity.entity, &mut remaining)?
                     != *entity
                 {
                     return Ok(false);
@@ -83,7 +106,7 @@ impl RelationalAuthorizationDurableDependencies {
                 execution
                     .consult()
                     .map_err(|stop| Denial::Execution(stop.into()))?;
-                if capture::capture_relation(execution, &view, relation.relation, &mut remaining)?
+                if capture::capture_relation(execution, view, relation.relation, &mut remaining)?
                     != *relation
                 {
                     return Ok(false);
@@ -118,7 +141,7 @@ impl RelationalAuthorizationDurableDependencies {
             }
             for field in &path.fields {
                 capture::consume(&mut remaining)?;
-                if !field_revision_matches(execution, &view, field)? {
+                if !field_revision_matches(execution, view, field)? {
                     return Ok(false);
                 }
             }
@@ -129,7 +152,7 @@ impl RelationalAuthorizationDurableDependencies {
 
 fn field_revision_matches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &crate::visibility::materialization::read_records::VisibilityProjectionView,
+    view: &VisibilityProjectionView,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
     let _locator_storage = super::storage::locator_storage(execution, &field.aspect, &field.field)?;

@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::identity::data::VersionId;
 use crate::schema::data::SchemaVersionId;
 

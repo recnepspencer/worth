@@ -5,17 +5,18 @@ use super::changes::AggregateChanges;
 use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
 use super::projection::AggregateProjection;
 use crate::authority::mutation::AdjacencyDelta;
-use crate::branch::{
-    RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead,
-    SelectedRelationalBranchState,
-};
-use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalMutationProposalIdentity};
+use crate::branch::root::RelationalBranchRootSchemaAuthority;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
+use crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::RecordRef;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, MergedCommitPlan, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::{Arc, Mutex};
 
 pub(crate) struct AggregateProposal {
@@ -331,8 +332,8 @@ impl AggregateInvocation<'_> {
         let promoted = matches!(
             &result,
             Err(TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::NestedStopped
                     ),
                     ..

@@ -1,5 +1,7 @@
-use crate::transactions::data::{CommitStructuralSummary, TransactionId};
-use crate::validation::data::{InvariantExecutionPoint, InvariantPlanContract};
+use crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
+use crate::transactions::data::primitives::TransactionId;
+use crate::validation::data::contracts::InvariantPlanContract;
+use crate::validation::data::execution::InvariantExecutionPoint;
 use crate::validation::engine::InvariantObservationKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

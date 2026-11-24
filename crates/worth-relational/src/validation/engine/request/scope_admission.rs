@@ -1,7 +1,7 @@
 //! Original-request work and retained custody for relation witness preparation.
 use super::PreparedRelationIntegrityScopes;
 use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::cell::{Cell, RefCell};
 
 type Scopes = Option<PreparedRelationIntegrityScopes>;
@@ -22,8 +22,8 @@ pub(super) fn prepare(
                 let mut memory = memory.borrow_mut();
                 if let Some(ticket) = memory.as_mut() {
                     ticket.grow_for_allocation(total).map_err(|denial| {
-                        TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-                            crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
+                        TransactionCommitError::conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                            crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied { denial },
                         ))
                     })?;
                 } else {
@@ -50,8 +50,8 @@ pub(super) fn prepare(
 fn refusal(error: MaintenanceRefusal) -> TransactionCommitError {
     match error {
         MaintenanceRefusal::Execution(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
                 partition_identity: None,
             })
         }

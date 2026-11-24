@@ -1,8 +1,9 @@
 //! One bounded lowering owner for configuration and request-funded targets.
 use crate::config::data::CascadeDeletePolicy;
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::identity::data::KindId;
-use crate::schema::{data::*, SchemaCompilationControl};
+use crate::schema::compilation_control::SchemaCompilationControl;
+use crate::schema::data::*;
 
 pub(super) fn lower_relation_integrity_plan(
     kind_id: KindId,

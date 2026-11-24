@@ -1,8 +1,8 @@
 //! Canonical provenance of a payload selected from an actual retained root.
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchTarget, RelationalBranchVersion,
-    CANONICAL_RUNTIME_INSTANCE_ID,
-};
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
+use crate::branch::target::RelationalBranchTarget;
+use crate::branch::version::RelationalBranchVersion;
 use crate::history::data::BranchId;
 use crate::identity::data::{EntityId, KindId};
 use serde::{Deserialize, Serialize};
@@ -23,26 +23,28 @@ pub struct CanonicalRetainedEntitySelection {
 }
 
 impl CanonicalRetainedEntitySelection {
-    pub(crate) fn from_admitted(
+    pub(crate) fn from_selected_descriptor(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &AdmittedRelationalBranchBasis,
+        source: &RelationalBranchBasisDescriptor,
         entity: EntityId,
         kind: KindId,
-    ) -> Result<Option<std::sync::Arc<Self>>, crate::execution::RelationalExecutionDenialCause>
-    {
+    ) -> Result<
+        Option<std::sync::Arc<Self>>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let worth_foundational::FoundationalBranchTarget::Basis(target) =
             source.reference().target()
         else {
             return Ok(None);
         };
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         let bytes = std::mem::size_of::<(usize, usize, Self)>()
             .checked_add(std::mem::size_of::<(
                 usize,
                 usize,
                 worth_execution::ExecutionMemoryReservation,
             )>())
-            .and_then(|n| n.checked_add(source.identity().branch_id().0.len()))
+            .and_then(|n| n.checked_add(source.branch_id().0.len()))
             .and_then(|n| {
                 target
                     .parent_commit_ids()
@@ -57,7 +59,7 @@ impl CanonicalRetainedEntitySelection {
             .map_err(Cause::from)?;
         Ok(Some(std::sync::Arc::new(Self {
             _decoded_memory: memory.map(std::sync::Arc::new),
-            source_branch: source.identity().branch_id().clone(),
+            source_branch: source.branch_id().clone(),
             source_generation: source.reference().generation(),
             source_truth_version: source.truth_version(),
             source_head: target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID),

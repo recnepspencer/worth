@@ -8,6 +8,8 @@ use crate::identity::data::EntityId;
 pub(crate) use extra::{current_extra_birth_watermark, EntityExtra, RelationExtra};
 pub(crate) use funding::ExtraPayloadDenial;
 pub(crate) use metadata::{VersionedEntityMetadata, VersionedRelationMetadata};
+#[cfg(test)]
+pub(crate) use tests::assert_unique_extra_move_funding;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct LifecycleCounts {
     pub(crate) live: usize,

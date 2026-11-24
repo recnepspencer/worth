@@ -4,21 +4,22 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::RelationalCommitReceipt;
-use crate::identity::data::{EntityId, LineageId};
+use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{
     LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget, LineageSubject,
     PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::RecordRef;
 
 use super::posture_allocation_drafts::ordered_allocation_drafts;
 use super::posture_validation::{ValidatedMergeTarget, ValidatedPosture, ValidatedPostureBatch};
 use super::staged_effects::{
     created_entity_lineage_slot, entity_lineage, find_claimed_replace_target_entity,
-    find_replace_target_entity,
+    find_replace_target_entity, is_retired_in_commit,
 };
 
 pub(super) enum PostureEventDraft {
@@ -207,6 +208,7 @@ pub(super) fn build_posture_drafts(
         })
         .collect();
     let mut consumed_replace_targets = claimed_created_entities.clone();
+    let mut default_retired_relations = BTreeSet::<RelationId>::new();
     for intent in merged_plan {
         match intent {
             MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
@@ -273,7 +275,9 @@ pub(super) fn build_posture_drafts(
             }
             MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
                 let target = LineageRecordTarget::Relation(spec.relation_id);
-                if validated.claimed_basis_targets.contains(&target) {
+                if validated.claimed_basis_targets.contains(&target)
+                    || !default_retired_relations.insert(spec.relation_id)
+                {
                     continue;
                 }
                 if let Some(lineage_id) =
@@ -297,6 +301,29 @@ pub(super) fn build_posture_drafts(
                 | EntityMutationIntent::Revalidate(_),
             )
             | MutationIntent::Materialization(_) => {}
+        }
+    }
+
+    // 4. A relation retired without a `Delete` intent of its own (an endpoint
+    //    entity's deletion or replacement cascades to it, under either cascade
+    //    policy) ends its live name too: a retired record never holds one.
+    for record in changed_records {
+        let RecordRef::Relation(relation_id) = record else {
+            continue;
+        };
+        let target = LineageRecordTarget::Relation(*relation_id);
+        if validated.claimed_basis_targets.contains(&target)
+            || !is_retired_in_commit(staged, target, commit.version_id)
+            || !default_retired_relations.insert(*relation_id)
+        {
+            continue;
+        }
+        if let Some(lineage_id) = basis.live_lineage(&PersistentNameHolder::Relation(*relation_id))
+        {
+            drafts.push(PostureEventDraft::Retire {
+                subject: LineageSubject::Relation,
+                lineage_id,
+            });
         }
     }
 

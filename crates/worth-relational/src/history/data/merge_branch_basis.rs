@@ -5,8 +5,9 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use super::{BranchId, CommitId, RelationalCommitReceipt};
-mod ancestors;
+use crate::history::data::commit_receipt::RelationalCommitReceipt;
+use crate::history::data::coordinates::{BranchId, CommitId};
+pub(crate) mod ancestors;
 pub use ancestors::MergeBasisAncestors;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,8 +32,8 @@ pub struct RelationalMergeBranchBasis {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalMergeBranchBasisDenial {
-    SourceObservationDenied(crate::branch::RelationalBranchBasisDenial),
-    TargetObservationDenied(crate::branch::RelationalBranchBasisDenial),
+    SourceObservationDenied(crate::branch::basis_denial::RelationalBranchBasisDenial),
+    TargetObservationDenied(crate::branch::basis_denial::RelationalBranchBasisDenial),
     MissingSourceHead {
         branch_id: BranchId,
     },

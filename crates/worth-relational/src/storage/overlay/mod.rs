@@ -6,7 +6,6 @@ mod partition_allocation_delta;
 mod partition_allocation_walk;
 mod partition_content;
 mod partition_symbols;
-mod publication;
 mod result_partition_ids;
 pub(crate) use result_partition_ids::partition_ids_in_result_memory;
 mod slot_resolution;
@@ -28,5 +27,8 @@ pub(crate) use partition_allocation_walk::ReclaimableAllocations;
 pub(crate) use partition_content::{
     PartitionContentCommitment, PartitionContentDigestError, PartitionHistoryFrontiers,
 };
-pub(crate) use publication::PublicationArtifacts;
 pub(crate) use working_state::WorkingState;
+
+pub(crate) mod mirror_merge;
+pub(crate) mod published_delta;
+pub(crate) mod record_observation;

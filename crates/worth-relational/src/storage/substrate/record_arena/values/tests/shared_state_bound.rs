@@ -176,7 +176,7 @@ const ALLOCATOR_UNION_PROBE_GATE: &str = "WORTH_RELATIONAL_SHARED_STATE_ALLOCATO
 
 #[test]
 fn shared_aspect_map_union_matches_independent_os_allocator_measurement() {
-    let output = crate::process_deadline::output(
+    let output = worth_harness::facade::process_deadline::output(
         std::process::Command::new(
             std::env::current_exe().expect("the test binary knows its own path"),
         )
@@ -285,11 +285,7 @@ fn isolated_shared_aspect_map_os_allocator_union_probe() {
             None,
             Some(state.clone()),
         ));
-        let b = StorageAllocation::new(EntityExtra::from_unbudgeted_parts(
-            None,
-            None,
-            Some(state),
-        ));
+        let b = StorageAllocation::new(EntityExtra::from_unbudgeted_parts(None, None, Some(state)));
         (a, b)
     };
     // Measure exact live OS-allocated bytes for the two distinct Extra carriers
@@ -339,8 +335,7 @@ fn isolated_shared_aspect_map_os_allocator_union_probe() {
     drop((single_a, union, carrier_a, carrier_b));
     let after_drop = region.change();
     assert_eq!(
-        after_drop.bytes_allocated,
-        after_drop.bytes_deallocated,
+        after_drop.bytes_allocated, after_drop.bytes_deallocated,
         "dropping both Extra carriers and scratch maps releases 100% of measured OS bytes"
     );
 }

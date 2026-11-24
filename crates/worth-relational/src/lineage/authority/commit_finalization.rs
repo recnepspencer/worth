@@ -1,44 +1,11 @@
-use crate::history::data::RelationalCommitReceipt;
-use crate::lineage::authority::LineagePreparationAuthority;
 use crate::lineage::data::{
     CommitNamingPlan, LineageMergeKeeper, LineageNameDenial, LineagePostureClaim,
     LineageRecordTarget, LineageSplitChild, PendingBirthTarget, PendingMergeKeeper,
     PendingMergeTarget, PersistentNameBirthRequest, PersistentNameHolder,
-    PreparedLineageFinalization,
 };
-use crate::runtime::WorkingState;
-use crate::transactions::data::{
-    CommitCreatedEntityBindings, CommitCreatedRelationBindings, MutationIntent, RecordRef,
-    TransactionCommitError,
-};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 
-impl<'runtime> LineagePreparationAuthority<'runtime> {
-    pub(crate) fn ensure_lineage_for_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        staged: &mut WorkingState,
-        commit: &RelationalCommitReceipt,
-        merged_plan: &[MutationIntent],
-        changed_records: &[RecordRef],
-        created_entities: &CommitCreatedEntityBindings,
-        created_relations: &CommitCreatedRelationBindings,
-        naming_plan: Option<&CommitNamingPlan>,
-    ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-        let postures = match naming_plan {
-            Some(plan) => resolve_commit_naming_plan(plan, created_entities, created_relations)
-                .map_err(TransactionCommitError::lineage_name_denial)?,
-            None => Vec::new(),
-        };
-        self.finalize_commit_with_installed_schema(
-            execution,
-            staged,
-            commit,
-            merged_plan,
-            changed_records,
-            &postures,
-        )
-    }
-}
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
 
 fn resolve_pending_target(
     pending: &PendingBirthTarget,
@@ -79,7 +46,7 @@ fn resolve_pending_target(
     }
 }
 
-fn resolve_commit_naming_plan(
+pub(crate) fn resolve_commit_naming_plan(
     plan: &CommitNamingPlan,
     created_entities: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
@@ -155,7 +122,11 @@ fn resolve_commit_naming_plan(
                         occurrence_key,
                         role_path,
                         ..
-                    } => (scheme_id.as_str(), occurrence_key.as_str(), role_path.as_str()),
+                    } => (
+                        scheme_id.as_str(),
+                        occurrence_key.as_str(),
+                        role_path.as_str(),
+                    ),
                 };
                 resolve_pending_target(
                     pending,
@@ -200,93 +171,4 @@ fn resolve_commit_naming_plan(
     }
     postures.extend(plan.postures.iter().cloned());
     Ok(postures)
-}
-
-#[cfg(test)]
-impl<'runtime> LineagePreparationAuthority<'runtime> {
-    /// Test-only production-authority entry verifying Relational ignores
-    /// caller-supplied live/retired maps and derives them from its own
-    /// `LineageSubsystem`.
-    pub(crate) fn ensure_lineage_for_commit_with_postures(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        staged: &mut WorkingState,
-        commit: &RelationalCommitReceipt,
-        merged_plan: &[MutationIntent],
-        changed_records: &[RecordRef],
-        input: &crate::lineage::data::LineageCommitPostureInput,
-    ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-        let basis = self
-            .runtime
-            .lineage_naming_basis
-            .read_guard(commit.branch_id.clone());
-        let prepared = super::posture_finalization::finalize_postures_with_installer(
-            &self.runtime.lineage_identity,
-            staged,
-            commit,
-            merged_plan,
-            changed_records,
-            &input.scheme_registry,
-            None,
-            &basis,
-            &input.postures,
-            |staged, entity_id, lineage_id| {
-                super::staged_effects::install_lineage_id(execution, staged, entity_id, lineage_id)
-            },
-        )?;
-        drop(basis);
-        self.runtime
-            .performance_access()
-            .count_lineage_finalization(
-                prepared.artifact().event_batch().events().len(),
-                prepared.artifact().decision_log().decisions().len(),
-            );
-        Ok(prepared)
-    }
-}
-
-#[cfg(test)]
-pub(crate) fn finalize_postures_in_working_state(
-    allocator: &crate::runtime::LineageIdentityAllocator,
-    staged: &mut WorkingState,
-    commit: &RelationalCommitReceipt,
-    merged_plan: &[MutationIntent],
-    changed_records: &[RecordRef],
-    input: &crate::lineage::data::LineageCommitPostureInput,
-) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-    super::posture_finalization::finalize_postures_with_installer(
-        allocator,
-        staged,
-        commit,
-        merged_plan,
-        changed_records,
-        &input.scheme_registry,
-        None,
-        input,
-        &input.postures,
-        super::staged_effects::install_lineage_id_in_working_state,
-    )
-}
-
-#[cfg(test)]
-pub(crate) fn test_finalize_with_schema(
-    allocator: &crate::runtime::LineageIdentityAllocator,
-    staged: &mut WorkingState,
-    commit: &RelationalCommitReceipt,
-    changed_records: &[RecordRef],
-    schema: &crate::schema::data::RelationalSchemaRegistry,
-) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-    let empty = crate::lineage::data::LineageCommitPostureInput::default();
-    super::posture_finalization::finalize_postures_with_installer(
-        allocator,
-        staged,
-        commit,
-        &[],
-        changed_records,
-        schema.persistent_name_schemes(),
-        Some(schema),
-        &empty,
-        &[],
-        super::staged_effects::install_lineage_id_in_working_state,
-    )
 }

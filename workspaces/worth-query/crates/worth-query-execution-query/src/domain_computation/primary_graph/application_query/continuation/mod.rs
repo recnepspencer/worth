@@ -25,7 +25,10 @@ use super::{
         validate_execution_lifetimes, validate_execution_plan, validate_live_basis,
         WorthQueryApplicationQueryExecutionValidationDenial,
     },
-    read_execution::{read_continuation_page, WorthQueryApplicationReadExecutionDenialKind},
+    read_execution::{
+        persistent_names::observe_persistent_names, read_continuation_page,
+        WorthQueryApplicationReadExecutionDenialKind,
+    },
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,
     WorthQueryApplicationQueryAccessReceipt,
 };
@@ -120,7 +123,11 @@ where
 
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_continuation_page(runtime, execution, graph, plan, after)
+                let mut raw = read_continuation_page(runtime, execution, graph, plan, after)?;
+                if QueryResult::PROJECTS_PERSISTENT_NAMES {
+                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                }
+                Ok(raw)
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         if expected_generation.is_some() && raw.raw.ordered_index_generation != expected_generation

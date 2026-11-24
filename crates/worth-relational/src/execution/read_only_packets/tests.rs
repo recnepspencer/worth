@@ -13,9 +13,9 @@ use worth_foundational::{
 fn unleased_read_failure_returns_its_canonical_partition_and_stops_the_suffix() {
     let visited = AtomicUsize::new(0);
     for cause in [
-        crate::execution::RelationalExecutionDenialCause::Cancelled,
-        crate::execution::RelationalExecutionDenialCause::DeadlineElapsed,
-        crate::execution::RelationalExecutionDenialCause::WorkExhausted,
+        crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled,
+        crate::execution::denial_cause::RelationalExecutionDenialCause::DeadlineElapsed,
+        crate::execution::denial_cause::RelationalExecutionDenialCause::WorkExhausted,
     ] {
         visited.store(0, Ordering::Relaxed);
         let packets = (0..3)
@@ -23,26 +23,30 @@ fn unleased_read_failure_returns_its_canonical_partition_and_stops_the_suffix() 
                 identity: PartitionIdentity::new(ordinal),
                 value: ordinal,
                 input_bytes: 0,
-                memory: crate::execution::PacketMemory::Declared {
+                memory: crate::execution::packet_memory::PacketMemory::Declared {
                     scratch: 0,
                     result: 0,
                 },
             })
             .collect::<Vec<_>>();
-        let result = crate::execution::execute_unleased_read_only_packets(&packets, |ordinal| {
-            visited.fetch_add(1, Ordering::Relaxed);
-            if *ordinal == 1 {
-                Err(cause)
-            } else {
-                Ok(*ordinal)
-            }
-        });
-        let denial: crate::indexes::data::DerivedIndexExecutionDenial =
+        let result =
+            crate::execution::unleased_read_only_packets::execute_unleased_read_only_packets(
+                &packets,
+                |ordinal| {
+                    visited.fetch_add(1, Ordering::Relaxed);
+                    if *ordinal == 1 {
+                        Err(cause)
+                    } else {
+                        Ok(*ordinal)
+                    }
+                },
+            );
+        let denial: crate::indexes::data::execution_denial::DerivedIndexExecutionDenial =
             PacketExecutionStop::from(result.unwrap_err()).into();
         assert_eq!(denial.partition_identity, Some(1));
         assert_eq!(
             denial.kind,
-            crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause)
+            crate::indexes::data::execution_denial::DerivedIndexExecutionDenialKind::Cause(cause)
         );
         assert_eq!(visited.load(Ordering::Relaxed), 2);
     }
@@ -51,7 +55,7 @@ fn unleased_read_failure_returns_its_canonical_partition_and_stops_the_suffix() 
 #[test]
 fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
     let cancellation = CancellationSource::new();
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -68,7 +72,7 @@ fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
             identity: PartitionIdentity::new(0),
             value: 10_000_usize,
             input_bytes: 0,
-            memory: crate::execution::PacketMemory::Declared {
+            memory: crate::execution::packet_memory::PacketMemory::Declared {
                 scratch: 1024,
                 result: 1024,
             },
@@ -103,14 +107,14 @@ fn one_large_packet_observes_cancellation_mid_kernel_without_result() {
 fn sequential_packet_maps_share_a_commit_work_ceiling() {
     fn packet_map(
         lease: &ExecutionResourceLease<'_>,
-        budget: Option<&super::super::RequestWorkBudget>,
+        budget: Option<&crate::execution::request_work::RequestWorkBudget>,
     ) -> Result<Vec<u64>, PacketExecutionStop> {
         execute_read_only_packets_with_budget(
             vec![ReadOnlyPacket {
                 identity: PartitionIdentity::new(0),
                 value: 7_u64,
                 input_bytes: 0,
-                memory: crate::execution::PacketMemory::Declared {
+                memory: crate::execution::packet_memory::PacketMemory::Declared {
                     scratch: 0,
                     result: 0,
                 },
@@ -126,7 +130,7 @@ fn sequential_packet_maps_share_a_commit_work_ceiling() {
     }
 
     for posture in [ExecutionPosture::Serial, ExecutionPosture::Automatic] {
-        let lease = crate::tests::support::test_execution_authority()
+        let lease = crate::execution::test_authority::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     posture,
@@ -140,7 +144,7 @@ fn sequential_packet_maps_share_a_commit_work_ceiling() {
         assert_eq!(packet_map(&lease, None).unwrap(), vec![7]);
         assert_eq!(packet_map(&lease, None).unwrap(), vec![7]);
 
-        let budget = super::super::RequestWorkBudget::new();
+        let budget = crate::execution::request_work::RequestWorkBudget::new();
         assert_eq!(packet_map(&lease, Some(&budget)).unwrap(), vec![7]);
         assert!(matches!(
             packet_map(&lease, Some(&budget)),
@@ -154,8 +158,8 @@ fn sequential_packet_maps_share_a_commit_work_ceiling() {
 
 #[test]
 fn tracked_packet_claim_refuses_before_growth_and_releases_its_payer() {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
-    let authority = crate::tests::support::test_execution_authority();
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+    let authority = crate::execution::test_authority::test_execution_authority();
     let lease = authority
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -173,7 +177,7 @@ fn tracked_packet_claim_refuses_before_growth_and_releases_its_payer() {
             identity: PartitionIdentity::new(7),
             value: (),
             input_bytes: 0,
-            memory: crate::execution::PacketMemory::Tracked,
+            memory: crate::execution::packet_memory::PacketMemory::Tracked,
         }],
         &lease,
         |_, context| {
@@ -184,10 +188,10 @@ fn tracked_packet_claim_refuses_before_growth_and_releases_its_payer() {
         |bytes| bytes.capacity() as u64,
     )
     .unwrap_err();
-    let denial: crate::transactions::data::CommitExecutionDenial = refused.into();
+    let denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial = refused.into();
     assert!(matches!(
         denial.kind,
-        crate::transactions::data::CommitExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
             ancestor: 0,
             ..
         })
@@ -199,15 +203,15 @@ fn tracked_packet_claim_refuses_before_growth_and_releases_its_payer() {
 
 #[test]
 fn tracked_packet_without_request_ceiling_keeps_actual_claims_and_counter_overflow_typed() {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
-    let lease = crate::tests::support::test_execution_lease();
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+    let lease = crate::execution::test_authority::test_execution_lease();
     assert_eq!(lease.policy().charged_memory_bytes(), None);
     let packet = || {
         vec![ReadOnlyPacket {
             identity: PartitionIdentity::new(9),
             value: (),
             input_bytes: 0,
-            memory: crate::execution::PacketMemory::Tracked,
+            memory: crate::execution::packet_memory::PacketMemory::Tracked,
         }]
     };
     let values = execute_read_only_packets(
@@ -233,10 +237,10 @@ fn tracked_packet_without_request_ceiling_keeps_actual_claims_and_counter_overfl
         |bytes| bytes.capacity() as u64,
     )
     .unwrap_err();
-    let denial: crate::transactions::data::CommitExecutionDenial = refused.into();
+    let denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial = refused.into();
     assert_eq!(
         denial.kind,
-        crate::transactions::data::CommitExecutionDenialKind::Cause(Cause::ChargedBytesOverflow)
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(Cause::ChargedBytesOverflow)
     );
     assert_eq!(lease.charged_memory_bytes(), 0);
 }

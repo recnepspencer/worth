@@ -1,7 +1,7 @@
 //! Controlled exact component DATA/custody; never mints operational basis.
 mod data;
 use super::*;
-use crate::branch::{CheckpointBranchMetadata, CheckpointComponentDescriptorView};
+use crate::branch::{basis::CheckpointComponentDescriptorView, registry::CheckpointBranchMetadata};
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Stop;
 use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalObservationRetentionObligation,
@@ -67,7 +67,7 @@ fn poll(request: &ExecutionRequest<'_, '_>) -> Result<(), Stop> {
 /// Caller holds the original configuration read and settled publication epoch.
 /// The passed branch DATA is the SAME snapshot captured inside those epochs.
 pub(in crate::durability) fn capture_complete(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     request: &ExecutionRequest<'_, '_>,
     branch_data: &CheckpointBranchMetadata,
 ) -> Result<CapturedCompleteComponents, Stop> {
@@ -86,14 +86,13 @@ pub(in crate::durability) fn capture_complete(
         if cell.branch_id != life.branch_id {
             return Err(corrupt("component lifecycle identity mismatch").into());
         }
-        let source = runtime
-            .history
+        let source = history
             .checkpoint_component_source(&cell.branch_id)
             .ok_or_else(|| corrupt("current component disappeared"))?;
         let (root, binding) = source
             .snapshot(cell, life.posture)
             .map_err(|cause| match cause {
-                crate::branch::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
+                crate::branch::registry::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
                     Stop::Request(cause)
                 }
                 _ => corrupt("current component observation changed").into(),
@@ -101,8 +100,7 @@ pub(in crate::durability) fn capture_complete(
             .ok_or(Stop::OriginalAuthorityUnavailable)?;
         current.push(Current { root, binding });
     }
-    let external = runtime
-        .history
+    let external = history
         .capture_external_checkpoint_components_for_request(
             request,
             current.iter().map(|source| &source.binding),

@@ -2,7 +2,7 @@
 use super::*;
 use crate::derived_relation::affected::DerivedAffectedRoots;
 use crate::graph_member::NativeMemberKey;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::collections::BTreeSet;
 
@@ -34,7 +34,7 @@ impl DerivedRelationChangeData {
     }
     /// Retains every before/after inverse-prefix acquisition, including empty
     /// adjacency. A consumer must not interpret only positive endpoints as scope.
-    pub fn support(&self) -> &[crate::derived_relation::DerivedRelationData] {
+    pub fn support(&self) -> &[crate::derived_relation::read::DerivedRelationData] {
         &self.affected.support
     }
 }
@@ -48,7 +48,7 @@ pub struct PreparedDerivedRelationChanges {
 }
 pub(super) struct ChangeBody {
     pub(super) data: DerivedRelationChangeData,
-    pub(super) _retention: [crate::validation::CustomInvariantWorkMeter; 2],
+    pub(super) _retention: [crate::validation::custom_rule::CustomInvariantWorkMeter; 2],
 }
 
 pub(super) fn identity(

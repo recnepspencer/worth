@@ -1,10 +1,16 @@
 use super::{commit_strategy_digest, commit_strategy_hex_digest, StrategyDigestBytes};
-use crate::commit_strategies::data::{
-    CommitStrategyDescriptor, CommitStrategyDescriptorDigest, CommitStrategyFamilyName,
-    CommitStrategyId, CommitStrategySemanticName, CommitStrategyVersion, PersistentArtifactName,
-    StrategyInputSchemaName, StrategyInputSchemaVersion, StrategyIntentName,
-    StrategyOutputSchemaName, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
+use crate::commit_strategies::data::descriptor::descriptor_record::{
+    CommitStrategyDescriptor, CommitStrategyDescriptorDigest,
+};
+use crate::commit_strategies::data::descriptor::read_contract::{
+    CommitStrategyVersion, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
     StrategyReadLocalityClass, StrategyReadScopeClass, StrategyTraversalBasis,
+};
+use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
+use crate::commit_strategies::data::strategy_id::CommitStrategyId;
+use crate::commit_strategies::data::{
+    CommitStrategyFamilyName, CommitStrategySemanticName, PersistentArtifactName,
+    StrategyInputSchemaName, StrategyIntentName, StrategyOutputSchemaName,
 };
 
 pub(crate) fn commit_strategy_descriptor_digest(

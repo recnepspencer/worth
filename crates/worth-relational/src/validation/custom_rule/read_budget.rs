@@ -1,14 +1,12 @@
 //! Borrowed consumption of the structural reader's original request and payer.
+use crate::content::codec_control::RelationalContentControl;
+use crate::content::denial::RelationalContentDenial as Denial;
+
 use super::{
     CustomInvariantWorkMeter, CustomPreparationStop, StructuralReadError, StructuralWalkDenialKind,
 };
 
-/// The rule's own allowance and the SDK's original request remain distinct.
-#[derive(Debug)]
-pub enum CustomInvariantNativeCheckpointDenial {
-    Source(StructuralWalkDenialKind),
-    Request(worth_execution::MapKernelStop),
-}
+pub use crate::validation::custom_rule::work_meter::native_rule_debit::CustomInvariantNativeCheckpointDenial;
 
 /// Read work and retention admission on the original custom-invariant meter.
 /// This handle creates no allowance and grants no graph or mutation authority.
@@ -29,23 +27,16 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         units: u64,
     ) -> Result<(), CustomInvariantNativeCheckpointDenial> {
-        if !self.work.admits_native_context(context) {
-            return Err(CustomInvariantNativeCheckpointDenial::Source(
-                StructuralWalkDenialKind::Read(StructuralReadError::OutsideDeclaredAccess),
-            ));
-        }
-        self.check_live()
-            .map_err(CustomInvariantNativeCheckpointDenial::Source)?;
-        if !self.work.try_debit_native_work(units) {
-            return Err(CustomInvariantNativeCheckpointDenial::Source(
-                self.refusal(StructuralReadError::WorkBudgetExceeded),
-            ));
-        }
-        crate::execution::request_stage::checkpoint(context, units).map_err(|stop| {
-            self.work.record_native_stop(stop);
-            CustomInvariantNativeCheckpointDenial::Request(stop)
-        })
+        self.native_debit()
+            .checkpoint(self.execution, context, units)
     }
+
+    pub(crate) fn native_debit(
+        &self,
+    ) -> crate::validation::custom_rule::work_meter::native_rule_debit::NativeRuleDebit<'_> {
+        self.work.native_debit()
+    }
+
     pub(crate) fn debit_native_rule_work(
         &self,
         units: u64,
@@ -109,35 +100,67 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
 
     pub(crate) fn check_scratch_peak(&self, bytes: u64) -> Result<(), StructuralWalkDenialKind> {
         self.checkpoint(0)?;
-        crate::validation::data::CustomInvariantLeaseBudget::check_scratch_peak(self.work, bytes)
+        crate::validation::custom_rule::registration::CustomInvariantLeaseBudget::check_scratch_peak(self.work, bytes)
             .then_some(())
             .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
     }
 
     pub(crate) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
-        use super::CustomInvariantInterruption;
-        match self.work.leased_stop() {
-            Some(CustomPreparationStop::Cancelled) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::Cancelled)
-            }
-            Some(CustomPreparationStop::DeadlineElapsed) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::DeadlineElapsed)
-            }
-            Some(CustomPreparationStop::MemoryExhausted) => {
-                StructuralWalkDenialKind::MemoryBudgetExceeded
-            }
-            Some(CustomPreparationStop::MemoryAdmission(cause)) => {
-                StructuralWalkDenialKind::MemoryAdmission(cause)
-            }
-            Some(CustomPreparationStop::Request(worth_execution::MapKernelStop::Cancelled)) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::Cancelled)
-            }
-            Some(CustomPreparationStop::Request(
-                worth_execution::MapKernelStop::DeadlineElapsed,
-            )) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::DeadlineElapsed)
-            }
-            _ => StructuralWalkDenialKind::Read(error),
-        }
+        self.native_debit().refusal(error)
+    }
+}
+
+impl CustomInvariantReadBudget<'_> {
+    /// Certify the exact installed contract under this actual Source allowance.
+    pub fn require_content_contract(
+        &self,
+        frame: &crate::content::RelationalContentFrame,
+        name: &str,
+        version: u32,
+        maximum_frame_bytes: usize,
+    ) -> Result<(), crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial>
+    {
+        run_source(self, |control| {
+            frame.require_contract_controlled(control, name, version, maximum_frame_bytes)
+        })
+    }
+}
+
+/// Keep the exact Source refusal outside codec vocabulary.
+fn run_source<T>(
+    budget: &CustomInvariantReadBudget<'_>,
+    operation: impl FnOnce(&mut RelationalContentControl<'_, '_, '_>) -> Result<T, Denial>,
+) -> Result<T, crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial> {
+    use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+    use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Read;
+    let (result, source_stop) = crate::content::control::run_codec(
+        &budget.execution(),
+        Some(budget.native_debit()),
+        operation,
+    );
+    if let Some(cause) = source_stop {
+        return Err(DerivedRelationReadDenial::Structural(cause).into());
+    }
+    result.map_err(|cause| match cause {
+        Denial::Execution(cause) => Read::Source(DerivedRelationReadDenial::Request(cause)),
+        cause => Read::Content(cause),
+    })
+}
+
+impl CustomInvariantReadBudget<'_> {
+    pub(crate) fn read_field_content(
+        &self,
+        view: &crate::content::source::NativeContentSourceView,
+        row: crate::identity::data::EntityId,
+        kind: crate::identity::data::KindId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+        value: Option<&worth_foundational::facade::AspectValue>,
+    ) -> Result<
+        Option<crate::content::RelationalContentFrame>,
+        crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial,
+    > {
+        run_source(self, |control| {
+            view.read(control, row, kind, locator, value)
+        })
     }
 }

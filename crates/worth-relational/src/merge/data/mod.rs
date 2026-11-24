@@ -1,17 +1,17 @@
-mod ancestry;
-mod artifacts;
-mod causal;
-mod conflicts;
-mod decisions;
-mod execution;
-mod execution_artifacts;
-mod identity;
-mod inspection_digest;
-mod plans;
-mod policy;
-mod readmission_memory;
-mod requests;
-mod resolved_value_strategy;
+pub(crate) mod ancestry;
+pub(crate) mod artifacts;
+pub(crate) mod causal;
+pub(crate) mod conflicts;
+pub(crate) mod decisions;
+pub(crate) mod execution;
+pub(crate) mod execution_artifacts;
+pub(crate) mod identity;
+pub(crate) mod inspection_digest;
+pub(crate) mod plans;
+pub(crate) mod policy;
+pub(crate) mod readmission_memory;
+pub(crate) mod requests;
+pub(crate) mod resolved_value_strategy;
 pub(crate) use readmission_memory::{
     attach_policy_name, MergeBasisMemory, MergeIdentityMemory, MergeLeafMemory,
     MergePolicyRowMemory, MergeReadmissionMemory, MergeStrategyMemory,
@@ -61,9 +61,7 @@ pub use decisions::{
 };
 pub(crate) use execution::{
     aspect_reference, bound_parent_order, compiled_executable_plan_digest, equality_witness_digest,
-    materialized_value_aspect_key, merge_execution_diagnostics_digest, schema_snapshot_digest,
-    visible_record_snapshot, CompiledMergeExecution, ExecutionReadyLoweredMergePlan,
-    PreparedMergeMutationPlan,
+    materialized_value_aspect_key, schema_snapshot_digest, visible_record_snapshot,
 };
 pub use execution::{
     AdoptSourceRecordPlan, BoundExecutableMergePlan, BoundExecutableMergeRecordPlan,
@@ -72,9 +70,8 @@ pub use execution::{
     MergeExecutionAuthorityBinding, MergeExecutionCompilationError, MergeExecutionDeniedRecord,
     MergeExecutionError, MergeExecutionFreshnessPolicy, MergeExecutionMutationPlanError,
     MergeExecutionPreparationError, MergeExecutionReadinessReport, MergeLineageContinuityVerdict,
-    MergeValueMaterialization, MergeValueSourceSide, PreparedMergeExecution,
-    PreserveSharedRecordPlan, ReconcileRecordPlan, ReconciledIdentityBasis, RuntimeInstanceId,
-    SharedTruthWitness, VisibleMergeRecordSnapshot,
+    MergeValueMaterialization, MergeValueSourceSide, PreserveSharedRecordPlan, ReconcileRecordPlan,
+    ReconciledIdentityBasis, RuntimeInstanceId, SharedTruthWitness, VisibleMergeRecordSnapshot,
 };
 pub(crate) use execution_artifacts::diagnostics_plan_from_record_plans;
 pub use execution_artifacts::{
@@ -87,16 +84,12 @@ pub use identity::{
     IdentityMatchClass, IdentityResolutionReason, MergeRecordIdentity,
     SchemaDeclaredCorrespondenceValidationSummary,
 };
-pub(crate) use inspection_digest::{
-    merge_inspection_artifact_digest, merge_inspection_lowered_plan_digest,
-    merge_inspection_row_digest,
-};
-pub use plans::MergePlanningError;
+pub(crate) mod planning_denial;
+pub use planning_denial::MergePlanningError;
 pub(crate) use plans::{
     BranchCommitDelta, BranchTouchedRecordDelta, CausallyAnnotatedMergePlan,
     ConflictClassifiedMergePlan, HistoryScopedMergePlan, IdentityScopedMergePlan, LoweredMergePlan,
-    PolicyResolvedMergePlan, ValidatedSchemaDeclaredCorrespondence, VisibleMergeRecord,
-    VisibleMergeRecordKind,
+    PolicyResolvedMergePlan, ValidatedSchemaDeclaredCorrespondence,
 };
 pub use policy::{
     AspectComparisonState, AspectMergePolicyDeclaration, AspectMergePolicyKind,
@@ -123,3 +116,15 @@ pub use requests::{
     RelationalMergeScope, RelationalMergeTopologyIntent,
 };
 pub use resolved_value_strategy::MergeResolvedAspectValueStrategy;
+
+pub(crate) mod blocked_posture;
+pub(crate) mod execution_authority_contract;
+pub(crate) mod policy_meaning;
+
+pub(crate) mod prepared_execution;
+pub use prepared_execution::PreparedMergeExecution;
+pub(crate) use prepared_execution::{
+    CompiledMergeExecution, ExecutionReadyLoweredMergePlan, PreparedMergeMutationPlan,
+};
+pub(crate) mod visible_record;
+pub(crate) use visible_record::{VisibleMergeRecord, VisibleMergeRecordKind};

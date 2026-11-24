@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::transactions::data::AspectEmissionTrace;
-use crate::transactions::data::AspectEvaluationTrace;
+use crate::transactions::data::aspect_traces::AspectEmissionTrace;
+use crate::transactions::data::aspect_traces::AspectEvaluationTrace;
 
 #[derive(Debug, Clone)]
 pub(in crate::authority::commit::pipeline) struct PreparedAspectEmissionTrace {
-    target: crate::transactions::data::RecordRef,
+    target: crate::transactions::data::primitives::RecordRef,
     patch_record_index: u64,
     structural_change: crate::publication::patch::data::RecordStructuralChange,
     changed_aspects: Vec<worth_foundational::facade::AspectKey>,
@@ -65,11 +65,10 @@ pub(super) struct PublicationTraceCapture {
 }
 
 pub(super) fn capture_publication_traces(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    diagnostics_profile: &crate::diagnostics::data::RelationalDiagnosticsProfile,
     patch: &CanonicalAuthoritativePatch,
     canonical_deltas: &[crate::authority::mutation::CanonicalRecordAspectDelta],
 ) -> PublicationTraceCapture {
-    let diagnostics_profile = &runtime.config.diagnostics.profile;
     let capture_transaction_traces = diagnostics_profile.should_capture_artifact(
         DiagnosticsScope::Transaction,
         DiagnosticsArtifactKind::DetailedTrace,
@@ -107,7 +106,7 @@ mod tests {
         RecordStructuralChange,
     };
     use crate::schema::data::AspectContractPlanRevision;
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
     use worth_foundational::facade::AspectKey;
 
     #[test]

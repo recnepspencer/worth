@@ -1,16 +1,15 @@
 //! Exact selected-basis producer custody; a caller supplies no ownership roster.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 mod coverage;
-mod graph;
+pub(crate) mod graph;
 pub(crate) use coverage::require_graph_coverage;
 
 /// Prepared from the Native current-fact writers at both retained roots.
@@ -35,66 +34,64 @@ impl RelationalHistoricalOutputSelection {
     }
 }
 
-impl RelationalRuntime {
-    pub fn prepare_historical_output_selection(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        installed: &RelationalInstalledApplicationPublicationAuthority,
-        current: &AdmittedRelationalBranchBasis,
-        selected: &AdmittedRelationalBranchBasis,
-        route: &RequiredOutputPublicationMeaning,
-    ) -> Result<RelationalHistoricalOutputSelection, TransactionCommitError> {
-        let subject = RecordRef::Entity(route.source_scope);
-        require_bases(self, installed, current, selected, &subject)?;
-        installed.require_current_ownership_storage(current, route.source_scope)?;
-        installed.require_current_ownership_storage(selected, route.source_scope)?;
-        execution
-            .run_native_with_checkpoint(|context| {
-                let selected_roster = Arc::new(crate::publication::ownership::read(
-                    execution,
-                    selected,
-                    std::slice::from_ref(&subject),
-                    context,
-                )?);
-                let current_roster = Arc::new(crate::publication::ownership::read(
-                    execution,
-                    current,
-                    std::slice::from_ref(&subject),
-                    context,
-                )?);
-                let publication = on_route(installed, selected, selected_roster, route, context)?
-                    .ok_or_else(|| {
+pub(crate) fn prepare_historical_output_selection(
+    runtime_instance_id: u64,
+    execution: &ExecutionRequest<'_, '_>,
+    installed: &RelationalInstalledApplicationPublicationAuthority,
+    current: &AdmittedRelationalBranchBasis,
+    selected: &AdmittedRelationalBranchBasis,
+    route: &RequiredOutputPublicationMeaning,
+) -> Result<RelationalHistoricalOutputSelection, TransactionCommitError> {
+    let subject = RecordRef::Entity(route.source_scope);
+    require_bases(runtime_instance_id, installed, current, selected, &subject)?;
+    installed.require_current_ownership_storage(current, route.source_scope)?;
+    installed.require_current_ownership_storage(selected, route.source_scope)?;
+    execution
+        .run_native_with_checkpoint(|context| {
+            let selected_roster = Arc::new(crate::publication::ownership::read(
+                execution,
+                selected,
+                std::slice::from_ref(&subject),
+                context,
+            )?);
+            let current_roster = Arc::new(crate::publication::ownership::read(
+                execution,
+                current,
+                std::slice::from_ref(&subject),
+                context,
+            )?);
+            let publication = on_route(installed, selected, selected_roster, route, context)?
+                .ok_or_else(|| {
                     TransactionCommitError::publication(PublicationError::authored_retirement(
                         Cause::HistoricalSelectionRouteMissing,
                         subject.clone(),
                     ))
                 })?;
-                let predecessor = on_route(installed, current, current_roster, route, context)?;
-                let funding = funding(execution, 1, context)?;
-                Ok(RelationalHistoricalOutputSelection {
-                    current: current.clone(),
-                    selected: selected.clone(),
-                    publication,
-                    predecessor,
-                    select_version: true,
-                    _funding: funding,
-                })
+            let predecessor = on_route(installed, current, current_roster, route, context)?;
+            let funding = funding(execution, 1, context)?;
+            Ok(RelationalHistoricalOutputSelection {
+                current: current.clone(),
+                selected: selected.clone(),
+                publication,
+                predecessor,
+                select_version: true,
+                _funding: funding,
             })
-            .map_err(custody::execution_stop)?
-            .0
-    }
+        })
+        .map_err(custody::execution_stop)?
+        .0
 }
 
 fn require_bases(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
     installed: &RelationalInstalledApplicationPublicationAuthority,
     current: &AdmittedRelationalBranchBasis,
     selected: &AdmittedRelationalBranchBasis,
     subject: &RecordRef,
 ) -> Result<(), TransactionCommitError> {
-    if current.identity().runtime_instance_id() != runtime.runtime_instance_id()
-        || selected.identity().runtime_instance_id() != runtime.runtime_instance_id()
-        || installed.runtime_instance_id != runtime.runtime_instance_id()
+    if current.identity().runtime_instance_id() != runtime_instance_id
+        || selected.identity().runtime_instance_id() != runtime_instance_id
+        || installed.runtime_instance_id != runtime_instance_id
         || installed.schema_digest != current.inner.root.schema_authority().authority_digest()
         || current.inner.root.schema_authority().authority_digest()
             != selected.inner.root.schema_authority().authority_digest()

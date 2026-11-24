@@ -1,32 +1,17 @@
 //! Project original reference meaning, never a runtime-qualified representation.
 use super::Denial;
 use crate::branch::{
-    RelationalBranchBasisDescriptor, RelationalBranchCellCheckpoint,
-    RelationalBranchReferenceObservation,
+    basis_descriptor::RelationalBranchBasisDescriptor,
+    reference_checkpoint_data::RelationalBranchCellCheckpoint,
+};
+use crate::durability::checkpoint_admission::recorded_reference::{
+    observation, recorded_reference,
 };
 use serde::Serialize;
 use worth_foundational::facade::{
     NativeCheckpointBranchObservation as Observation, NativeCheckpointBranchReference as Reference,
-    NativeCheckpointBranchTarget as Target,
 };
 use worth_foundational::CanonicalDigestId;
-
-fn observation<'a>(
-    branch: &'a str,
-    source: &'a RelationalBranchReferenceObservation,
-) -> Observation<'a> {
-    let target = match source.target() {
-        worth_foundational::FoundationalBranchTarget::Empty => Target::Empty,
-        worth_foundational::FoundationalBranchTarget::Basis(target) => Target::Canonical {
-            commit: target.selected_commit_id(),
-            version: target.version_id(),
-            parents: std::borrow::Cow::Borrowed(target.parent_commit_ids()),
-            truth_root: *target.roots().truth_root(),
-            schema_root: *target.roots().schema_root(),
-        },
-    };
-    Observation::from_recorded(branch, source.generation().get(), target)
-}
 
 #[derive(Serialize)]
 pub(super) struct Predecessor<'a> {
@@ -57,7 +42,7 @@ pub(super) struct Component<'a> {
     reference: Reference<'a>,
     schema_commitment: CanonicalDigestId,
     visibility_commitment: CanonicalDigestId,
-    posture: crate::branch::RelationalBranchBasisPosture,
+    posture: crate::branch::basis_descriptor::RelationalBranchBasisPosture,
 }
 pub(super) fn component(descriptor: &RelationalBranchBasisDescriptor) -> Component<'_> {
     Component {
@@ -67,13 +52,4 @@ pub(super) fn component(descriptor: &RelationalBranchBasisDescriptor) -> Compone
         visibility_commitment: CanonicalDigestId::new(descriptor.visibility_commitment()),
         posture: descriptor.posture(),
     }
-}
-
-pub(in crate::durability) fn recorded_reference(
-    descriptor: &RelationalBranchBasisDescriptor,
-) -> Reference<'_> {
-    Reference::from_recorded(
-        observation(&descriptor.branch_id().0, descriptor.reference()),
-        descriptor.truth_version().as_u64(),
-    )
 }

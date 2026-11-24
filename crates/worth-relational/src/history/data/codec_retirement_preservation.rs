@@ -6,9 +6,9 @@ use worth_foundational::facade::{
 use super::codec_retirement_closure::{
     charge, request, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
 };
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::identity::data::{EntityId, RelationId};
-use crate::runtime::RecoveredCheckpointProgramActivationUpdate;
+use crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate;
 
 pub(crate) fn validate_retired_codec_closure(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

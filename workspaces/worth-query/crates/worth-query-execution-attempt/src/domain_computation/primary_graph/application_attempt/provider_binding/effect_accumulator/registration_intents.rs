@@ -61,6 +61,7 @@ impl WorthQueryRegisteredProviderEffects {
                 emissions: self.emissions,
                 output_correspondence: self.output_correspondence,
                 mutation_partition,
+                persistent_names: self.persistent_names,
             },
             dispatch_outbox,
         ))

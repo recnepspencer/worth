@@ -2,7 +2,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::{Arc, OnceLock};
 use worth_execution::ExecutionMemoryReservation;
-type Element = crate::history::data::CommitId;
+type Element = crate::history::data::coordinates::CommitId;
 
 /// Shared ancestor identities with borrowed access. Ordinary `From` construction
 /// moves its input and allocates an unbudgeted private control cell.

@@ -1,14 +1,15 @@
 use crate::merge::aspect_components::{binding_component_from_visible_record, VisibleRecordSide};
 use crate::merge::aspect_plan_lookup::lowered_plan_for_record;
 use crate::merge::data::{AspectComparisonState, AspectConflictEvidence, VisibleMergeRecord};
+use crate::schema::data::AspectContractPlanCatalog;
 use crate::schema::data::LoweredAspectContractBinding;
 
 pub(super) fn aspect_conflict_evidence(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source_record: &VisibleMergeRecord,
     target_record: Option<&VisibleMergeRecord>,
 ) -> Vec<AspectConflictEvidence> {
-    let Some(plan) = lowered_plan_for_record(runtime, source_record) else {
+    let Some(plan) = lowered_plan_for_record(aspect_plans, source_record) else {
         return Vec::new();
     };
     plan.executable_bindings

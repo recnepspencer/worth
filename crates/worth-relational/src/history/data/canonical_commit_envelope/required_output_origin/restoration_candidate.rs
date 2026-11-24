@@ -1,21 +1,49 @@
 //! Compare the actual inverse candidate against Native's complete recorded payload plan.
-use super::*;
+use super::{origin_request, CanonicalCommitEnvelope};
 use crate::execution::request_stage::checkpoint;
-use crate::{storage::overlay::*, transactions::data::*};
+use crate::identity::data::{EntityId, RelationId};
+use crate::schema::data::AspectContractPlanCatalog;
+use crate::storage::overlay::{
+    current_entity_partition_source_for_slot, current_relation_partition_source_for_slot,
+    CurrentPartitionAccess, OverlayStateView, WorkingState,
+};
+use crate::transactions::data::{
+    intents::mutation_intent::{CreateIntent, MutationIntent},
+    outcomes::{
+        created_entity_bindings::CommitCreatedEntityBindings,
+        created_relation_bindings::CommitCreatedRelationBindings,
+        transaction_commit_error::TransactionCommitError,
+    },
+    primitives::{CreatedEntityRef, CreatedRelationRef, EntityReference, RecordRef},
+};
 use worth_execution::MapKernelContext;
 use worth_foundational::facade::*;
 
-pub(crate) fn validate(
-    basis: &AdmittedRelationalBranchBasis,
+pub(crate) struct RestorationPrestate<'a> {
+    pub(crate) partitions: &'a dyn CurrentPartitionAccess,
+    pub(crate) aspect_plans: &'a AspectContractPlanCatalog,
+}
+
+pub(crate) struct AuthoredRestorationFacts<'a> {
+    pub(crate) retirement: &'a CanonicalCommitEnvelope,
+    pub(crate) inverse: &'a [MutationIntent],
+    pub(crate) entities: &'a [(EntityId, CreatedEntityRef)],
+    pub(crate) relations: &'a [(RelationId, CreatedRelationRef)],
+}
+
+pub(crate) fn validate<'basis, 'restoration>(
+    basis: impl Into<RestorationPrestate<'basis>>,
     state: &WorkingState,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
-    restoration: &crate::mvcc::RelationalAuthoredRestoration,
+    restoration: impl Into<AuthoredRestorationFacts<'restoration>>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
-    let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
-    for intent in &restoration.inverse {
+    let basis = basis.into();
+    let restoration = restoration.into();
+    let after = OverlayStateView::new(basis.partitions, state);
+    for intent in restoration.inverse {
         checkpoint(
             context,
             (restoration.entities.len() + restoration.relations.len()) as u64
@@ -82,10 +110,9 @@ pub(crate) fn validate(
                     .ok_or_else(refused)?;
                 validate_payload(
                     basis
-                        .inner
-                        .root
-                        .schema_authority()
-                        .entity_aspect_plan(spec.kind_id)
+                        .aspect_plans
+                        .entity_plans
+                        .get(&spec.kind_id)
                         .ok_or_else(refused)?,
                     &spec.aspect_patch,
                     row.extra().authoritative_aspect_state(),
@@ -140,14 +167,19 @@ pub(crate) fn validate(
                     return Err(refused());
                 }
                 let plan = basis
-                    .inner
-                    .root
-                    .schema_authority()
-                    .relation_aspect_plan(spec.kind_id)
+                    .aspect_plans
+                    .relation_plans
+                    .get(&spec.kind_id)
                     .ok_or_else(refused)?;
-                let candidate = crate::authority::mutation::intents::relation_endpoint_candidate::append_portable_in_scope(
-                    &spec.aspect_patch, plan, source, target, lease, context,
-                ).map_err(origin_request)?;
+                let candidate = crate::schema::portable_patch::append_portable_in_scope(
+                    &spec.aspect_patch,
+                    plan,
+                    source,
+                    target,
+                    lease,
+                    context,
+                )
+                .map_err(origin_request)?;
                 candidate.compare(|patch| {
                     validate_payload(
                         plan,

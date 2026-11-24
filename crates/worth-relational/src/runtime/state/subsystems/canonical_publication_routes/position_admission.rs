@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::history::RelationalCommitArtifactDenial;
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// Owner-issued admission for binding one canonical envelope to one runtime
@@ -12,27 +11,18 @@ pub(crate) struct CanonicalPositionAdmission {
     canonical: Arc<CanonicalCommitEnvelope>,
 }
 
-/// Why a decoded canonical envelope could not be readmitted at a stream
-/// position. Each variant names the violated admission contract.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum RelationalCanonicalPositionAdmissionDenial {
-    /// Position zero precedes every published commit and is never assigned.
-    PositionZero,
-    /// The envelope's branch context differs from its commit provenance.
-    BranchContextMismatch,
-    /// The envelope fails its own commit-artifact invariants.
-    CommitArtifact(RelationalCommitArtifactDenial),
-    SemanticResult(crate::transactions::data::RelationalCommitSemanticResultRefusal),
-}
+pub use crate::publication::patch::data::position_denial::RelationalCanonicalPositionAdmissionDenial;
 
 impl CanonicalPositionAdmission {
     pub(super) fn equivalent(
         original: &PositionedCanonicalCommit,
         canonical: Arc<CanonicalCommitEnvelope>,
     ) -> Result<Self, &'static str> {
-        if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(original, &canonical)
-            .map_err(|_| "recovered position payload encoding failed")? {
+        if !crate::history::commit::payload_commitment::matches_positioned_payload(
+            original, &canonical,
+        )
+        .map_err(|_| "recovered position payload encoding failed")?
+        {
             return Err("recovered position body differs from its admitted canonical payload");
         }
         Ok(Self {
@@ -40,7 +30,9 @@ impl CanonicalPositionAdmission {
             canonical,
         })
     }
-    pub(super) fn retained(retention: &super::RetainedCanonicalPosition) -> Option<Self> {
+    pub(super) fn retained(
+        retention: &crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition,
+    ) -> Option<Self> {
         let (position, canonical) = retention.upgrade_parts()?;
         Some(Self {
             position,
@@ -72,11 +64,12 @@ pub(crate) fn readmit_positioned_canonical_commit(
     if canonical.branch_context != canonical.commit.branch_id {
         return Err(RelationalCanonicalPositionAdmissionDenial::BranchContextMismatch);
     }
-    canonical
-        .semantic_result()
-        .validate_envelope(&canonical)
-        .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
-    crate::history::RelationalCommitCatalog::validate_detached_envelope(&canonical)
+    crate::transactions::data::outcomes::commit_semantic_result::readmission::validate_envelope(
+        canonical.semantic_result(),
+        &canonical,
+    )
+    .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
+    crate::history::commit::RelationalCommitCatalog::validate_detached_envelope(&canonical)
         .map_err(RelationalCanonicalPositionAdmissionDenial::CommitArtifact)?;
     Ok(PositionedCanonicalCommit::admit(
         CanonicalPositionAdmission {
@@ -85,24 +78,3 @@ pub(crate) fn readmit_positioned_canonical_commit(
         },
     ))
 }
-
-impl std::fmt::Display for RelationalCanonicalPositionAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::PositionZero => {
-                formatter.write_str("canonical patch-stream position zero is not admissible")
-            }
-            Self::BranchContextMismatch => formatter
-                .write_str("canonical envelope branch context does not match commit provenance"),
-            Self::CommitArtifact(denial) => {
-                write!(formatter, "canonical envelope admission failed: {denial:?}")
-            }
-            Self::SemanticResult(denial) => write!(
-                formatter,
-                "canonical semantic result admission failed: {denial:?}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for RelationalCanonicalPositionAdmissionDenial {}

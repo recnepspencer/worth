@@ -1,31 +1,45 @@
 //! Exact projection is immutable native custody, with no owner borrow.
-use super::{schema_custody::ProjectionSchemaCustody, VisibilityProjectionView};
-use crate::runtime::RelationalPinnedRead;
+use super::VisibilityProjectionView;
+use crate::identity::data::VersionId;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::visibility::snapshot_states::{ResidentVisibilitySnapshotBasis, SnapshotStateBasis};
+pub(in crate::visibility::materialization::read_records) struct PinnedProjectionSource<'a> {
+    pub(in crate::visibility::materialization::read_records) resident:
+        &'a ResidentVisibilitySnapshotBasis,
+    pub(in crate::visibility::materialization::read_records) runtime_identity: u64,
+    pub(in crate::visibility::materialization::read_records) current_version: VersionId,
+    pub(in crate::visibility::materialization::read_records) instrumentation:
+        &'a RuntimeInstrumentation,
+}
+
 impl VisibilityProjectionView {
-    pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
-        let symbols = read.resident_basis().symbols().clone();
+    pub(crate) fn from_resident_basis(
+        resident: &ResidentVisibilitySnapshotBasis,
+        runtime_identity: u64,
+        current_version: VersionId,
+        instrumentation: &RuntimeInstrumentation,
+    ) -> Self {
         Self {
-            runtime_identity: read.runtime_instance_id(),
-            current_version: read.pinned_current_version(),
-            instrumentation: read.pinned_instrumentation().clone(),
-            symbols,
-            schema: ProjectionSchemaCustody::Published(
-                read.pinned_basis().root().retained_schema_authority(),
-            ),
-            resident: Some(read.resident_basis().clone()),
-            basis: crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
-                read.pinned_basis().clone(),
-            ),
+            runtime_identity,
+            current_version,
+            instrumentation: instrumentation.clone(),
+            symbols: resident.symbols().clone(),
+            empty_history_schema: None,
+            resident: Some(resident.clone()),
+            basis: SnapshotStateBasis::Exact(resident.basis().clone()),
         }
     }
-}
-impl RelationalPinnedRead {
-    /// Project this exact snapshot. No installed owner is borrowed or consulted.
-    pub fn project_snapshot(
-        &self,
-        handle: &crate::snapshots::data::SnapshotHandle,
-    ) -> Option<VisibilityProjectionView> {
-        (handle == self.snapshot()).then(|| VisibilityProjectionView::from_pinned(self))
+
+    pub(in crate::visibility::materialization::read_records) fn from_pinned<'a>(
+        read: impl Into<PinnedProjectionSource<'a>>,
+    ) -> Self {
+        let source = read.into();
+        Self::from_resident_basis(
+            source.resident,
+            source.runtime_identity,
+            source.current_version,
+            source.instrumentation,
+        )
     }
 }
 
@@ -34,7 +48,7 @@ impl VisibilityProjectionView {
         &self,
     ) -> (
         crate::identity::data::VersionId,
-        crate::runtime::RuntimeInstrumentation,
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
         crate::symbols::data::StringInterner,
     ) {
         (

@@ -1,15 +1,14 @@
-use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::runtime::VisibilityProjectionView;
 use crate::schema::data::{AspectContractPlanCatalog, LoweredAspectContractPlan, SchemaVersionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 /// Schema-qualified storage projection used to derive or certify an index.
 ///
 /// Construction is private to this module so a caller cannot pair records
 /// with an ambient or unrelated schema authority.
-pub(in crate::indexes) struct IndexProjectionSource<'view> {
+pub(crate) struct IndexProjectionSource<'view> {
     projection: &'view VisibilityProjectionView,
     reconstruction:
         Option<&'view crate::storage::substrate::maintenance::ReconstructionLane<'view>>,
@@ -32,7 +31,7 @@ impl<'view> IndexProjectionSource<'view> {
             reconstruction: None,
         }
     }
-    pub(in crate::indexes) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
+    pub(crate) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
         projection.is_exact_basis().then_some(Self {
             projection,
             reconstruction: None,
@@ -48,30 +47,27 @@ impl<'view> IndexProjectionSource<'view> {
         })
     }
 
-    fn schema_authority(&self) -> Option<&RelationalBranchRootSchemaAuthority> {
-        self.projection.selected_schema_authority()
-    }
-
     pub(in crate::indexes) fn schema_version(&self) -> Option<SchemaVersionId> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::schema_version)
+        self.projection
+            .selected_schema()
+            .map(|schema| schema.version)
     }
 
     pub(in crate::indexes) fn schema_authority_digest(&self) -> Option<[u8; 32]> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::authority_digest)
+        self.projection
+            .selected_schema()
+            .map(|schema| schema.authority_digest)
     }
 
     pub(in crate::indexes) fn aspect_plans(&self) -> Option<&AspectContractPlanCatalog> {
-        self.schema_authority()
-            .map(RelationalBranchRootSchemaAuthority::aspect_plans)
+        self.projection.selected_schema().map(|schema| schema.plans)
     }
 
     pub(in crate::indexes) fn entity_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&LoweredAspectContractPlan> {
-        self.schema_authority()?.entity_aspect_plan(kind_id)
+        self.aspect_plans()?.entity_plans.get(&kind_id)
     }
 
     /// Cost: the selected endpoint's adjacency, never the complete relation kind.
@@ -81,7 +77,10 @@ impl<'view> IndexProjectionSource<'view> {
         entity: EntityId,
         kind: KindId,
         outgoing: bool,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.projection
             .bounded_index_relations_for_frontier(
                 execution,
@@ -91,7 +90,7 @@ impl<'view> IndexProjectionSource<'view> {
                 None,
             )?
             .map(|read| read.into_records())
-            .map_err(|_| crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+            .map_err(|_| crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
     }
 
     pub(in crate::indexes) fn for_each_relation(
@@ -100,8 +99,11 @@ impl<'view> IndexProjectionSource<'view> {
         kind_id: KindId,
         mut visit: impl FnMut(
             &RelationReadRecord,
-        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for record in self
             .projection
             .authoritative_relation_records(execution, kind_id)?
@@ -141,12 +143,12 @@ impl<'view> IndexProjectionSource<'view> {
         )
     }
 
-    pub(in crate::indexes) fn with_entity<T>(
+    pub(crate) fn with_entity<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok(self
             .projection
             .authoritative_entity_record(execution, entity_id)?
@@ -166,12 +168,12 @@ impl<'view> IndexProjectionSource<'view> {
             .with_entity_record(execution, entity_id, before, inspect)
     }
 
-    pub(in crate::indexes) fn with_relation<T>(
+    pub(crate) fn with_relation<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
         inspect: impl FnOnce(&RelationReadRecord) -> T,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok(self
             .projection
             .authoritative_relation_record(execution, relation_id)?
@@ -181,3 +183,5 @@ impl<'view> IndexProjectionSource<'view> {
 }
 
 mod native_fields;
+#[cfg(test)]
+pub(crate) use native_fields::verify_native_field_navigation;

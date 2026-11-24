@@ -3,7 +3,7 @@ use super::{
     CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody, CanonicalRequiredOutputOrigin,
     CodecRetirementClosureStop as Stop,
 };
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::CommitId;
 use crate::identity::data::{RelationId, VersionId};
 use crate::storage::overlay::{
@@ -93,7 +93,7 @@ pub(super) fn validate(
             || !write
                 .map(|write| {
                     super::output_materialization_write_matches(
-                        &crate::transactions::data::RecordRef::Relation(entry.id),
+                        &crate::transactions::data::primitives::RecordRef::Relation(entry.id),
                         origin.commit.commit_id,
                         entry.after_write,
                         write,
@@ -148,7 +148,9 @@ pub(super) fn validate(
 
 pub(super) fn charge(context: &mut MapKernelContext<'_, '_>, work: usize) -> Result<(), Stop> {
     let work = u64::try_from(work).map_err(|_| {
-        Stop::Request(crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow)
+        Stop::Request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+        )
     })?;
     if context.has_accounting() {
         context.checkpoint(work)
@@ -172,15 +174,15 @@ pub(super) fn writes(
         .patch
         .authoritative_record_patches
         .iter()
-        .any(|p| p.target == crate::transactions::data::RecordRef::Relation(id))
+        .any(|p| p.target == crate::transactions::data::primitives::RecordRef::Relation(id))
         || envelope.merged_plan.merged_intents.iter().any(|intent| {
             !matches!(
                 intent,
-                crate::transactions::data::MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::Revalidate(_)
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Relation(
+                    crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Revalidate(_)
                 )
             ) && intent.existing_record_target()
-                == Some(crate::transactions::data::ExistingRecordTarget::Relation(
+                == Some(crate::transactions::data::primitives::ExistingRecordTarget::Relation(
                     id,
                 ))
         }))

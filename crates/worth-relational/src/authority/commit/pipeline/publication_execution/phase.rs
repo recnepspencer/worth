@@ -1,8 +1,11 @@
 use super::super::rejection::elapsed_micros;
 use super::preparation::PreparedPublicationCompletion;
+use super::PublicationSettlementInputs;
 use crate::history::data::CommitId;
-use crate::runtime::RelationalRuntime;
-use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming};
+use crate::runtime::state::subsystems::durability::commit_log::DurabilityCommitLog;
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use std::sync::Arc;
 
 mod finalization;
@@ -11,7 +14,7 @@ use finalization::{finalize_published_commit, FinalizationInput};
 
 pub(super) struct FinalizedPublicationPhase {
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
-    changed_records: Vec<crate::transactions::data::RecordRef>,
+    changed_records: Vec<crate::transactions::data::primitives::RecordRef>,
 }
 
 impl FinalizedPublicationPhase {
@@ -19,7 +22,7 @@ impl FinalizedPublicationPhase {
         self,
     ) -> (
         Arc<crate::history::data::PositionedCanonicalCommit>,
-        Vec<crate::transactions::data::RecordRef>,
+        Vec<crate::transactions::data::primitives::RecordRef>,
     ) {
         (self.positioned_commit, self.changed_records)
     }
@@ -30,13 +33,13 @@ pub(super) struct CanonicalLogPhaseInput<'a> {
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) positioned_commit: &'a crate::history::data::PositionedCanonicalCommit,
     pub(super) commit_id: CommitId,
-    pub(super) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(super) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
 /// Record the settled commit in the runtime's own canonical log. A durable
 /// medium already holds the commit, so this step has no failure to report.
-pub(super) fn record_canonical_log_phase(
-    runtime: &RelationalRuntime,
+fn record_canonical_log_phase(
+    durability: &DurabilityCommitLog<'_>,
     input: CanonicalLogPhaseInput<'_>,
 ) {
     let CanonicalLogPhaseInput {
@@ -54,22 +57,20 @@ pub(super) fn record_canonical_log_phase(
         &branch_id.0,
         positioned_commit.position(),
     );
-    runtime
-        .durability_authority()
-        .append_commit(positioned_commit, envelope_cell);
+    durability.append(positioned_commit, envelope_cell);
     commit_log.complete_phase(CommitPhase::DurableAppend);
     phase_timing.durable_append_micros = elapsed_micros(phase_started);
 }
 
 pub(super) fn finalize_publication_phase(
-    runtime: &RelationalRuntime,
+    inputs: &PublicationSettlementInputs<'_>,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     prepared: PreparedPublicationCompletion,
-    published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    published_snapshot_basis: crate::history::retention::VisibilitySnapshotBasis,
+    published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
-    envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 ) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
         mirror_publication,
@@ -90,7 +91,7 @@ pub(super) fn finalize_publication_phase(
     } = prepared;
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
-        runtime,
+        &inputs.log,
         CanonicalLogPhaseInput {
             commit_log,
             phase_timing,
@@ -99,7 +100,7 @@ pub(super) fn finalize_publication_phase(
             envelope_cell,
         },
     );
-    runtime.lineage_authority().install_published_lineage(
+    inputs.lineage.install_published_lineage(
         validated_lineage_events,
         commit_id,
         lineage_nodes,
@@ -110,7 +111,7 @@ pub(super) fn finalize_publication_phase(
     let mut publication_phase_timing =
         crate::authority::commit::phases::finalize::PublicationPhaseTiming::default();
     finalize_published_commit(
-        runtime,
+        inputs,
         FinalizationInput {
             mirror_publication,
             prepared_history,
@@ -130,9 +131,7 @@ pub(super) fn finalize_publication_phase(
         },
     );
     for artifact in deferred_diagnostic_artifacts {
-        runtime
-            .publication_authority()
-            .push_diagnostic_artifact(artifact);
+        inputs.publication.push_diagnostic_artifact(artifact);
     }
     commit_log.record_commit_published(commit_id, &commit_reference.branch_id.0);
     commit_log.complete_phase(CommitPhase::Publication);

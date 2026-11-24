@@ -6,21 +6,16 @@ mod historical_basis;
 mod historical_state_building;
 mod pin_assembly;
 mod read_views;
-mod resolution;
-mod retirement;
+mod record_read_inputs;
+pub(crate) use record_read_inputs::SnapshotRecordReadInputs;
+pub(crate) mod resolution;
 pub(crate) use cache_retirement::SnapshotStateRetirement;
 mod state;
-pub(crate) use retirement::VisibilitySnapshotBasisRetirement;
 
-pub(crate) use exact_state_building::build_visibility_state;
+mod retained_state_building;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;
-pub use historical_basis::HistoricalVisibilityDenial;
+pub(crate) mod historical_denial;
+pub use historical_denial::HistoricalVisibilityDenial;
 pub(crate) use historical_state_building::build_historical_visibility_state;
 pub(crate) use read_views::read_view_from_snapshot_state;
-pub(crate) use resolution::{
-    resolve_snapshot_basis, resolve_snapshot_handle, resolve_snapshot_inspection,
-    resolve_snapshot_state,
-};
-pub(crate) use state::{
-    SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis, VisibilitySnapshotStateKey,
-};
+pub(crate) use state::{SnapshotState, SnapshotStateBasis, VisibilitySnapshotStateKey};

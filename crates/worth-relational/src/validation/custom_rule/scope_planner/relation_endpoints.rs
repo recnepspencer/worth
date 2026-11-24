@@ -1,12 +1,9 @@
 //! Keep this registration's captured relation endpoints through scope restriction.
 use super::super::CustomInvariantWorkMeter;
-use crate::{
-    identity::data::EntityId,
-    validation::{
-        data::{CustomInvariantAccessContract, TouchedStructuralSet},
-        engine::state_view::InvariantStateView,
-    },
-};
+use crate::identity::data::EntityId;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
+use crate::validation::engine::state_view::InvariantStateView;
 pub(super) fn retains_entity(
     id: EntityId,
     touched: &TouchedStructuralSet,

@@ -1,10 +1,14 @@
 //! An unpublished recovered successor carries one shared terminal capture phase.
+use super::receiver::AdmittedNativeInterimReceiver;
 use super::*;
 use crate::branch::{
-    AdmittedRelationalBranchBasis, ObservedRelationalMemoryComponent,
-    RecordedRelationalComponentReference,
+    basis::AdmittedRelationalBranchBasis, recorded_basis::ObservedRelationalMemoryComponent,
+    recorded_basis::RecordedRelationalComponentReference,
 };
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use std::sync::Mutex;
+use std::sync::Weak;
 
 #[derive(Debug)]
 enum State {
@@ -57,13 +61,13 @@ struct Continuation {
     description: RecordedRelationalComponentReference,
     _memory: Option<ExecutionMemoryReservation>,
 }
-impl crate::durability::authority::DurabilityRecoveryAuthority<'_> {
+impl DurabilityRecoveryAuthority<'_> {
     /// Exclusive recovery and its linear exact image witness the pre-World cut.
     pub fn prepare_interim_bootstrap_continuation(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         origin: &CapturedNativeInterimOrigin,
-        recovered: &mut crate::durability::authority::RecoveredRelationalRuntimeAuthority,
+        recovered: &mut RecoveredRelationalRuntimeAuthority,
     ) -> Result<NativeInterimBootstrapContinuation, Refusal> {
         request_scope::run(request, || {
             let receiver = self
@@ -135,7 +139,12 @@ impl NativeInterimBootstrapContinuation {
         require_capture(&self.0.phase)?;
         self.require_owner(runtime)?;
         let captured = capture
-            .capture_current_component(runtime, &self.0.current, request)
+            .capture_current_component(
+                &runtime.services.origin_identity(),
+                &runtime.history,
+                &self.0.current,
+                request,
+            )
             .map_err(component_stop)?;
         comparison_work(&self.0.description, request)?;
         if captured.description() != &self.0.description {
@@ -218,8 +227,10 @@ fn comparison_work(
         })
         .and_then(|n| {
             n.checked_add(match description.target() {
-                crate::branch::RecordedRelationalComponentTarget::Empty => 0,
-                crate::branch::RecordedRelationalComponentTarget::Canonical(target) => target
+                crate::branch::recorded_basis::RecordedRelationalComponentTarget::Empty => 0,
+                crate::branch::recorded_basis::RecordedRelationalComponentTarget::Canonical(
+                    target,
+                ) => target
                     .receipt()
                     .branch_id
                     .0
@@ -235,8 +246,10 @@ fn comparison_work(
     )
     .map_err(crate::durability::checkpoint_admission::native_stop)
 }
-fn component_stop(cause: crate::branch::RelationalRecordedComponentRefusal) -> Refusal {
-    use crate::branch::RelationalRecordedComponentRefusal as R;
+fn component_stop(
+    cause: crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal,
+) -> Refusal {
+    use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as R;
     match cause {
         R::Request(cause) => Refusal::Request(cause),
         R::Source(cause) => crate::durability::checkpoint_admission::native_stop(cause),

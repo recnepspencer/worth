@@ -1,5 +1,7 @@
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
-use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
+use crate::storage::data::read_records::{
+    EntityReadRecord, RecordLifecycleState, RelationReadRecord,
+};
 use worth_foundational::facade::{
     AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValueView, FieldKey,
     StructAspectValue,
@@ -59,12 +61,10 @@ impl<'a> EntityProjectionRecord<'a> {
         }
     }
 
-    pub(super) fn from_slot(
+    pub(super) fn from_selected_record(
         entity_id: EntityId,
-        slot: &'a crate::storage::substrate::SlotView<
-            '_,
-            crate::storage::substrate::EntityRecordKind,
-        >,
+        lifecycle: RecordLifecycleState,
+        authoritative_aspect_state: Option<&'a AuthoritativeRecordAspectState>,
         kind: &'a crate::schema::data::KindResolution,
         created_at_version: VersionId,
         projection_scope: &'a ProjectionAspectScope,
@@ -74,9 +74,9 @@ impl<'a> EntityProjectionRecord<'a> {
             entity_id,
             kind_id: kind.kind_id,
             kind_name: &kind.kind_name,
-            lifecycle: slot.lifecycle(),
+            lifecycle,
             created_at_version,
-            authoritative_aspect_state: slot.extra().authoritative_aspect_state(),
+            authoritative_aspect_state,
             projection_scope,
             aspect_plan,
         }

@@ -2,7 +2,7 @@
 use super::*;
 
 pub(crate) enum RelationalSourceRootSlot {
-    Root(Arc<super::super::RelationalBranchRoot>),
+    Root(Arc<crate::branch::root::RelationalBranchRoot>),
     Empty,
     Complete,
 }

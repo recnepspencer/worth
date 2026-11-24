@@ -1,8 +1,8 @@
 //! Reuse the identity/policy leaf owners on the actual durable declarations.
 use super::*;
-use crate::durability::data::DurableSchemaDeclarationMemory;
+use crate::history::data::canonical_commit_envelope::schema_carrier::DurableSchemaDeclarationMemory;
 use crate::history::data::CodecDeclarationsReadmissionMemory;
-use crate::merge::data::{MergeIdentityMemory, MergeLeafMemory};
+use crate::merge::data::readmission_memory::{MergeIdentityMemory, MergeLeafMemory};
 
 pub(in super::super::super) fn prepare_canonical_readmission(
     canonical: BorrowedPayload<'_>,

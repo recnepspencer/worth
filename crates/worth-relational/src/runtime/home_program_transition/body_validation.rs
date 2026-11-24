@@ -1,6 +1,6 @@
 //! Check sealed original inputs before any Native or Source preparation.
 use super::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
-use crate::durability::medium::RelationalHomeProgramWriteDenial as Denial;
+use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial as Denial;
 use crate::mvcc::{BranchBoundRelationalTransaction, RelationalPublicationDenial};
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::ExecutionRequest;

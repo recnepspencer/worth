@@ -1,6 +1,6 @@
 //! Immutable branch checkpoint DATA, shared without retaining live branch cells.
-use crate::branch::RelationalBranchCellCheckpoint;
-use crate::durability::data::DurableBranchLifecycleImage;
+use crate::branch::reference::RelationalBranchCellCheckpoint;
+use crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage;
 use crate::history::data::BranchId;
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;

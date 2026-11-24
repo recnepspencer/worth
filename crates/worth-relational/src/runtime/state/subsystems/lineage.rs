@@ -1,22 +1,26 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::lineage_identity::LineageIdentityAllocator;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{
     LineageEventRecord, LineageNode, PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 
 mod event_page;
 mod event_residency;
 mod name_indexes;
 mod naming_basis;
+mod naming_basis_binding;
 mod node_page;
 mod page_admission;
+pub(crate) use page_admission::PreparedLineageColdPages;
+mod published_batch;
 mod source_close;
 mod source_retirement;
 pub(crate) use event_residency::ResidentLineageEventPage;
-pub(crate) use naming_basis::LineageNamingBasisBinding;
+pub(crate) use naming_basis_binding::LineageNamingBasisBinding;
 mod node_residency;
 mod resolution_indexes;
 mod state;
@@ -65,7 +69,7 @@ impl LineageSubsystem {
         Option<ResidentLineageNode>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         let residency = self.node_residency.read().clone();
         if let Some(residency) = residency
@@ -76,14 +80,12 @@ impl LineageSubsystem {
             };
             let mut state = self.state.write();
             for admitted in node.page_nodes() {
+                // A lineage binds one entity forever; an entity may hold
+                // several lineages across retire/restore epochs.
                 if state
                     .nodes
                     .get(&admitted.lineage_id())
                     .is_some_and(|prior| prior != admitted)
-                    || state
-                        .indexed_lineage_for_entity(admitted.entity_id())
-                        .0
-                        .is_some_and(|prior| prior != admitted.lineage_id())
                 {
                     return Err(node.reject_binding());
                 }
@@ -110,7 +112,7 @@ impl LineageSubsystem {
         self.state.read().clone()
     }
 
-    pub(crate) fn identity_allocator(&self) -> super::LineageIdentityAllocator {
+    pub(crate) fn identity_allocator(&self) -> LineageIdentityAllocator {
         self.state.read().identity_allocator.clone()
     }
 
@@ -259,11 +261,11 @@ impl LineageSubsystem {
             .branch_event_positions_for_lineages(branch_ids, lineage_ids, sources_only)
     }
 
-    pub(crate) fn indexed_lineage_for_entity(
+    pub(crate) fn indexed_lineages_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> (Option<LineageId>, usize) {
-        self.state.read().indexed_lineage_for_entity(entity_id)
+    ) -> (Vec<LineageId>, usize) {
+        self.state.read().indexed_lineages_for_entity(entity_id)
     }
 
     pub(crate) fn indexed_lineages_are_exclusive_to_branch(
@@ -328,10 +330,8 @@ impl LineageSubsystem {
     }
 }
 
-impl RuntimeSubsystem for LineageSubsystem {
-    type Config = ();
-
-    fn new(_: &Self::Config) -> Self {
+impl LineageSubsystem {
+    pub(crate) fn new() -> Self {
         Self {
             discovery_metadata: Default::default(),
             state: RuntimeOwnedState::new(LineageState::empty()),
@@ -341,7 +341,7 @@ impl RuntimeSubsystem for LineageSubsystem {
         }
     }
 
-    fn fork(&self) -> Self {
+    pub(crate) fn fork(&self) -> Self {
         // Admission membership and the copied resolution index form one basis.
         let admissions = self.event_admissions.read();
         Self {

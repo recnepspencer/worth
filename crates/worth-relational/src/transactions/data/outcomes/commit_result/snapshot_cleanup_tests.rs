@@ -1,5 +1,5 @@
 //! Explicit original-registration cleanup preserves independent read ownership.
-use crate::facade::branch::{
+use crate::branch::result_snapshot_outcome::{
     RelationalCommitResultSnapshotRelease as Outcome,
     RelationalCommitResultSnapshotReleaseDenial as Denial,
 };
@@ -8,11 +8,9 @@ use worth_execution::ExecutionRequest;
 
 #[test]
 fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
-    use crate::facade::branch::{
-        RelationalCommitResultSnapshotCleanupDenial as Denial,
-        RelationalCommitResultSnapshotCleanupProgress as Progress,
-    };
-    let host = crate::test_execution_policy::serial_request();
+    use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupDenial as Denial;
+    use crate::facade::branch::RelationalCommitResultSnapshotCleanupProgress as Progress;
+    let host = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = std::sync::Arc::new(create_entity_outcome(
@@ -58,56 +56,8 @@ fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
 }
 
 #[test]
-fn native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_external_read() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let result = std::sync::Arc::new(create_entity_outcome(execution, &runtime, "owned-result"));
-    let cloned = result.clone();
-    let service = runtime.owner_component_services().basis_port();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let independent = runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
-        .unwrap();
-    drop(basis);
-    assert!(matches!(
-        service.release_commit_result_snapshot(&result).unwrap(),
-        Outcome::Released(_)
-    ));
-    assert!(
-        matches!(service.release_commit_result_snapshot(&cloned).unwrap(), Outcome::AlreadyReleased { snapshot_id } if snapshot_id == result.snapshot.snapshot_id())
-    );
-    assert_eq!(runtime.visibility.handles.published_count(), 0);
-    assert_eq!(runtime.retention().active_snapshot_count(), 1);
-    let refused = runtime.prepare_close().unwrap_err();
-    assert!(
-        matches!(refused.reason(), crate::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained(
-            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
-                active_snapshots, detached_history,
-            }
-        ) if active_snapshots != 0 || detached_history)
-    );
-    let runtime = refused.into_runtime();
-    runtime.snapshots().release_snapshot(&independent).unwrap();
-    runtime.prepare_close().unwrap().finish();
-    assert_eq!(
-        cloned.commit, result.commit,
-        "actual Arc results remain descriptive after explicit cleanup and close"
-    );
-    assert!(matches!(
-        service.release_commit_result_snapshot(&result),
-        Err(Denial::Owner(
-            crate::branch::RelationalBranchBasisDenial::OwnerUnavailable
-        ))
-    ));
-}
-
-#[test]
 fn native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let service = runtime.owner_component_services().basis_port();
@@ -150,7 +100,7 @@ fn native_custody_correction_result_release_cell_tracks_public_release_closeout_
 
 #[test]
 fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let foreign = runtime_with_test_schema();

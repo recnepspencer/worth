@@ -5,8 +5,11 @@
 //! reclamation authority.
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
-use super::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisInner};
-use crate::branch::{RelationalBranchRoot, RelationalBranchRootSchemaAuthority};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::RelationalBranchRoot;
+use crate::visibility::snapshot_observation::SnapshotObservationInputs;
 use std::sync::{Arc, Weak};
 
 /// Weak identity of one admitted basis observation and its root.
@@ -62,30 +65,29 @@ impl RelationalBasisCustodyWitness {
     /// authority digest, or `None` when no owner retains the observation. The
     /// transient strong reference ends before this returns; residency loads
     /// are charged to `execution` like any other demand.
-    pub fn read_retained_full(
+    pub fn read_retained_full<'a>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::runtime::RelationalRuntime,
+        owner: impl Into<SnapshotObservationInputs<'a>>,
     ) -> Result<Option<[u8; 32]>, RelationalBasisCustodyReadDenial> {
         let Some(inner) = self.basis.upgrade() else {
             return Ok(None);
         };
+        let owner = owner.into();
         let held = AdmittedRelationalBranchBasis { inner };
         // Ownership precedes every effect: a foreign runtime's symbols and
         // residency are never touched for another runtime's observation.
-        if held.observation().identity().runtime_instance_id() != runtime.runtime_instance_id() {
+        if held.observation().identity().runtime_instance_id() != owner.runtime_identity {
             return Err(RelationalBasisCustodyReadDenial::ForeignRuntime);
         }
         held.inner
             .root
-            .demand_all_full(execution, &runtime.services.symbols)
+            .demand_all_full(execution, owner.symbols)
             .map_err(|failure| RelationalBasisCustodyReadDenial::Demand(failure.into()))?;
-        let read = runtime
-            .snapshots()
+        let read = owner
             .snapshot_for_observation(&held.observation())
             .map_err(|_| RelationalBasisCustodyReadDenial::Snapshot)?;
-        runtime
-            .snapshots()
+        owner
             .release_snapshot(&read)
             .map_err(|_| RelationalBasisCustodyReadDenial::Snapshot)?;
         Ok(Some(held.inner.root.schema_authority().authority_digest()))
@@ -96,6 +98,6 @@ impl RelationalBasisCustodyWitness {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBasisCustodyReadDenial {
     ForeignRuntime,
-    Demand(crate::execution::RelationalExecutionDenialCause),
+    Demand(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Snapshot,
 }

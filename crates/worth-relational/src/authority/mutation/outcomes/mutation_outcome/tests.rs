@@ -1,7 +1,8 @@
 //! Concrete outcome buffers stay admitted through growth and final data drop.
 use super::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 fn controller() -> u64 {
     let budget = SerialMemoryBudget::new(Some(1024 * 1024));

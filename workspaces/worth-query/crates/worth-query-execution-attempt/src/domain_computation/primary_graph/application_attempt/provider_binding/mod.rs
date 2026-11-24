@@ -52,6 +52,16 @@ impl WorthQueryPreparedApplicationProviderAttempt {
         self
     }
 
+    /// Binds the program's declared output names to the created references
+    /// its batch lowered. Unnamed programs bind nothing.
+    pub fn with_persistent_names(
+        mut self,
+        naming: worth_query_execution_lineage::facade::persistent_naming::AuthoredOperationNaming,
+    ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
+        self.effects.bind_persistent_names(naming)?;
+        Ok(self)
+    }
+
     pub fn with_workflow_origin(
         mut self,
         origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,

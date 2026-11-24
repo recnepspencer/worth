@@ -12,7 +12,7 @@ use crate::publication::patch::data::{
 };
 use crate::schema::data::AspectContractPlanRevision;
 
-use super::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use diagnostic_fields::{emission_trace_diagnostic_fields, evaluation_trace_diagnostic_fields};
 use worth_foundational::facade::{AspectKey, AspectValue, AspectValueLocator, StructAspectValue};
 
@@ -124,7 +124,9 @@ impl AspectEmissionTrace {
 
 #[cfg(test)]
 mod tests {
-    use super::{AspectLifecycleTransitionClass, AspectTraceEvidence};
+    use crate::transactions::data::aspect_traces::{
+        AspectLifecycleTransitionClass, AspectTraceEvidence,
+    };
 
     #[test]
     fn lifecycle_no_transition_is_typed_trace_evidence() {

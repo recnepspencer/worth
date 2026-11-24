@@ -1,14 +1,15 @@
 //! Compare the complete authoritative records, including absence and contracts.
 use super::*;
-use crate::branch::RelationalMaterializationRecord;
+use crate::branch::materialization::RelationalMaterializationRecord;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(super) fn matches(
-    draft: &AppliedMutationDraft,
+    changed_records: &[RecordRef],
     execution: ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    symbols: &RuntimeSymbolTable,
     source: &super::super::NativeMaterializationSource,
     after: &InvariantStateView<'_>,
     context: &mut MapKernelContext<'_, '_>,
@@ -22,7 +23,7 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    for changed in &draft.outcome.effect.publication.changed_records {
+    for changed in changed_records {
         charge(
             context,
             u64::from(usize::BITS - manifest.len().leading_zeros()) + 1,
@@ -34,10 +35,11 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = crate::branch::SymbolAdmittedRootRead::new(
-        &source.basis().inner.root,
-        &runtime.services.symbols,
-    );
+    let backing = source
+        .basis()
+        .inner
+        .root
+        .symbol_admitted_projection(symbols);
     let before = InvariantStateView::new(&backing, source.basis().observation().version_id());
     for entry in manifest {
         charge(context, 8)?;

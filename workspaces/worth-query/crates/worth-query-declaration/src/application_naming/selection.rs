@@ -1,6 +1,9 @@
 use std::fmt;
 
-use super::{validate_discriminator_identity, ApplicationNameDiscriminator, ErasedWorthQueryName};
+use super::{
+    validate_discriminator_identity, ApplicationNameDiscriminator,
+    ApplicationNameDiscriminatorEncoder, ErasedWorthQueryName,
+};
 
 /// How a held persistent name chooses among its live descendants.
 ///
@@ -73,7 +76,7 @@ use super::{validate_discriminator_identity, ApplicationNameDiscriminator, Erase
 /// assert_eq!(discriminator.as_bytes(), Side(1).canonical_bytes().as_slice());
 /// let _check: fn(WorthQueryName<Face>, WorthQueryName<Face>) = select;
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NameSelection {
     Exact,
     AllDescendants,
@@ -105,7 +108,8 @@ impl NameSelection {
 
     /// Selects the live descendant born on `side`, encoded by the canonical
     /// [`super::ApplicationNameDiscriminatorEncoder`]. Refuses a discriminator
-    /// type whose declared identity is malformed.
+    /// type whose declared identity is malformed or whose value carries an
+    /// unresolved [`super::WorthQuerySameCommitName`].
     pub fn keep_side<D: ApplicationNameDiscriminator>(
         side: &D,
     ) -> Result<Self, NameSelectionDenial> {
@@ -114,22 +118,33 @@ impl NameSelection {
                 discriminator_identity: D::DISCRIMINATOR_IDENTITY.to_owned(),
             }
         })?;
+        let mut encoder = ApplicationNameDiscriminatorEncoder::new(D::DISCRIMINATOR_IDENTITY);
+        side.encode_canonical(&mut encoder);
+        let (canonical, _, same_commit_names) = encoder.finish_with_same_commit_names();
+        if !same_commit_names.is_empty() {
+            return Err(NameSelectionDenial::UnresolvedSameCommitReference);
+        }
         Ok(Self::KeepSide {
-            discriminator: NameSideDiscriminator {
-                canonical: side.canonical_bytes(),
-            },
+            discriminator: NameSideDiscriminator { canonical },
         })
     }
 }
 
 /// Sorted, deduplicated, nonempty carriers of a
 /// [`NameSelection::BoundedByCarriers`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NameCarrierSet {
     carriers: Vec<ErasedWorthQueryName>,
 }
 
 impl NameCarrierSet {
+    /// A carrier set read back from stored text: only a nonempty, strictly
+    /// ascending list is the canonical form the constructor writes.
+    pub(super) fn from_canonical(carriers: Vec<ErasedWorthQueryName>) -> Option<Self> {
+        let canonical = !carriers.is_empty() && carriers.windows(2).all(|pair| pair[0] < pair[1]);
+        canonical.then_some(Self { carriers })
+    }
+
     /// Carriers in canonical (ascending digest) order without duplicates.
     pub fn as_slice(&self) -> &[ErasedWorthQueryName] {
         &self.carriers
@@ -138,12 +153,17 @@ impl NameCarrierSet {
 
 /// Canonical discriminator bytes of a [`NameSelection::KeepSide`], produced
 /// only by [`NameSelection::keep_side`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NameSideDiscriminator {
     canonical: Vec<u8>,
 }
 
 impl NameSideDiscriminator {
+    /// Side bytes read back from stored text; an empty side selects nothing.
+    pub(super) fn from_canonical(canonical: Vec<u8>) -> Option<Self> {
+        (!canonical.is_empty()).then_some(Self { canonical })
+    }
+
     /// The domain-tagged canonical discriminator bytes.
     pub fn as_bytes(&self) -> &[u8] {
         &self.canonical
@@ -157,6 +177,9 @@ pub enum NameSelectionDenial {
     InvalidDiscriminatorIdentity { discriminator_identity: String },
     /// A carrier filter names no carrier.
     EmptyCarrierSet,
+    /// The side discriminator carries a [`super::WorthQuerySameCommitName`]
+    /// whose digest is only minted at commit and cannot select a live side.
+    UnresolvedSameCommitReference,
 }
 
 impl fmt::Display for NameSelectionDenial {
@@ -169,6 +192,8 @@ impl fmt::Display for NameSelectionDenial {
                 "side discriminator declares malformed identity `{discriminator_identity}`"
             ),
             Self::EmptyCarrierSet => formatter.write_str("carrier filter names no carrier"),
+            Self::UnresolvedSameCommitReference => formatter
+                .write_str("side discriminator contains an unresolved same-commit name reference"),
         }
     }
 }

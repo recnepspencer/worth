@@ -4,7 +4,7 @@ use super::{
     resolution::ContentResolution, RelationalContentAttachments, RelationalContentDenial as Denial,
     RelationalContentFrame,
 };
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
 

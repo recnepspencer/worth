@@ -4,7 +4,7 @@ use worth_foundational::facade::{AspectKey, CanonicalFieldPath};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::DerivedIndexId;
 use crate::storage::data::{AuthoritativeFieldComparisonKey, RelationalFieldPresence};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 /// Relational's sealed description of what one canonical commit changed.
 /// An old encoding with no touch graph cannot assert an exact empty change.
@@ -103,7 +103,7 @@ impl super::CanonicalCommitEnvelopeDraft {
     /// from dense patch detail or invented authored endpoint intents.
     pub(crate) fn complete_native_adjacency(
         &mut self,
-        deltas: &[crate::authority::mutation::AdjacencyDelta],
+        deltas: &[crate::authority::mutation::adjacency_delta::AdjacencyDelta],
     ) {
         if deltas.is_empty() {
             return;
@@ -113,10 +113,14 @@ impl super::CanonicalCommitEnvelopeDraft {
         };
         for delta in deltas {
             let (source, target) = match delta.kind {
-                crate::authority::mutation::AdjacencyDeltaKind::Created { source, target }
-                | crate::authority::mutation::AdjacencyDeltaKind::Deleted { source, target } => {
-                    (source, target)
+                crate::authority::mutation::adjacency_delta::AdjacencyDeltaKind::Created {
+                    source,
+                    target,
                 }
+                | crate::authority::mutation::adjacency_delta::AdjacencyDeltaKind::Deleted {
+                    source,
+                    target,
+                } => (source, target),
             };
             touches.push(RelationalDescriptiveTouch::RelationLifecycle {
                 relation: delta.relation_id,

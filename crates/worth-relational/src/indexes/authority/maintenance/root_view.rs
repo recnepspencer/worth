@@ -1,9 +1,9 @@
 //! Index maintenance reads sealed root-local truth without runtime or snapshot custody.
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::identity::data::PartitionId;
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::runtime::VisibilityProjectionView;
 use crate::storage::residency::RelationalRegionHeadView;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -58,7 +58,7 @@ impl IndexRootView {
                 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
                 Denial::Execution(match failure {
                     Failure::StorageUnavailable(cause) => {
-                        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(cause)
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(cause)
                     }
                     Failure::Request(cause) => cause,
                     Failure::Content(cause) => cause.into_execution_cause(),

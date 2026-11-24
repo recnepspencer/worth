@@ -1,6 +1,6 @@
 //! Typed funding outcomes remain intact until their audience adapter consumes them.
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ChargedBytes, MapKernelFailure};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -9,7 +9,7 @@ pub(in crate::aggregate_identity) enum PlanDenial {
     OrdinaryMetadataWrite,
     CurrentMetadataWrite {
         kind: crate::identity::data::KindId,
-        record: Option<crate::transactions::data::RecordRef>,
+        record: Option<crate::transactions::data::primitives::RecordRef>,
     },
     InvalidPermutation,
     InvalidComponentGraph,
@@ -80,10 +80,10 @@ impl FundingFailure {
                 definition,
                 violation,
             }) => {
-                use crate::validation::data::InvariantViolationFields;
+                use crate::validation::data::results::InvariantViolationFields;
                 return TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::InvariantViolation {
+                    crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                        crate::transactions::data::outcomes::conflict_class::ConflictClass::InvariantViolation {
                             code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
                             detail: format!(
                                 "derived relation '{}' violated {}",
@@ -110,14 +110,14 @@ impl FundingFailure {
                     other => format!("Native aggregate identity preparation denied: {other:?}"),
                 };
                 return TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::KindSchemaMismatch { detail },
+                    crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                        crate::transactions::data::outcomes::conflict_class::ConflictClass::KindSchemaMismatch { detail },
                     ),
                 );
             }
         };
-        TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+        TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
             partition_identity: None,
         })
     }

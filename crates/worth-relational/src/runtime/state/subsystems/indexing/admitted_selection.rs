@@ -1,6 +1,6 @@
 use crate::indexes::data::SelectedIndexReadWork;
 use crate::indexes::data::{DerivedIndexId, SelectedIndexGenerationAdmissionStop};
-use crate::mvcc::RelationalBranchObservation;
+use crate::mvcc::observation::RelationalBranchObservation;
 
 use super::{generation_catalog::navigation_work, IndexingSubsystem};
 
@@ -20,7 +20,7 @@ impl IndexingSubsystem {
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<
         Option<(
-            crate::indexes::RetainedDerivedIndexDefinition,
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
             Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
             Option<std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>>,
         )>,

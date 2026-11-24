@@ -1,6 +1,6 @@
 //! Heap bounds for Native's descriptive receipt JSON, never receipt authority.
-use super::RelationalCommitReceipt;
-use crate::branch::RelationalRecordedComponentRefusal as Denial;
+use super::commit_receipt::RelationalCommitReceipt;
+use crate::branch::recorded_basis::refusal::RelationalRecordedComponentRefusal as Denial;
 use serde::de::{SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::value::RawValue;
@@ -73,7 +73,11 @@ pub(crate) fn parent_heap_bound(value: &RawValue) -> Result<usize, Denial> {
     count
         .checked_next_power_of_two()
         .map(|count| count.max(4))
-        .and_then(|count| count.checked_mul(std::mem::size_of::<super::CommitId>()))
+        .and_then(|count| {
+            count.checked_mul(std::mem::size_of::<
+                crate::history::data::coordinates::CommitId,
+            >())
+        })
         .ok_or_else(malformed)
 }
 impl RelationalCommitReceipt {

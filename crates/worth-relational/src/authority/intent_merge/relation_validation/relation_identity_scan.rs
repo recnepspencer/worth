@@ -1,12 +1,11 @@
 use std::collections::BTreeSet;
 
-use crate::runtime::RuntimeInstrumentation;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 pub(super) fn existing_relation_targets_for_source(
     state: &impl CurrentPartitionAccess,
-    instrumentation: &RuntimeInstrumentation,
+    candidates_scanned: &mut usize,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     source: &EntityReference,
@@ -34,7 +33,7 @@ pub(super) fn existing_relation_targets_for_source(
         return false;
     }
     let mut matches = |relation_id| {
-        instrumentation.count(|counters| counters.relation_identity_candidates_scanned += 1);
+        *candidates_scanned += 1;
         relation_candidate_matches_target_identity(
             state,
             partition_id,
@@ -90,13 +89,12 @@ mod tests {
 
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
     use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
-    use crate::runtime::RuntimeInstrumentation;
     use crate::storage::overlay::{PartitionState, WorkingState};
     use crate::storage::partition::AdjacencySet;
     use crate::storage::substrate::{EntityArena, RelationArena, RelationEndpoints, RelationExtra};
     use crate::storage::substrate::{EntityRecordKind, RecordKind, SlotInit};
     use crate::symbols::data::ClientKey;
-    use crate::transactions::data::{CreatedEntityRef, EntityReference};
+    use crate::transactions::data::primitives::{CreatedEntityRef, EntityReference};
 
     use super::existing_relation_targets_for_source;
 
@@ -224,24 +222,19 @@ mod tests {
                 small_degree_inline_capacity: 4,
             },
         );
-        let instrumentation = RuntimeInstrumentation::new();
+        let mut candidates_scanned = 0;
         let found = existing_relation_targets_for_source(
             &state,
-            &instrumentation,
+            &mut candidates_scanned,
             partition_id,
             KindId(9),
             &EntityReference::Existing(source),
             &BTreeSet::from([EntityReference::Existing(right)]),
             &BTreeSet::new(),
         );
-        let counters = instrumentation
-            .complexity_counters
-            .lock()
-            .expect("complexity counter lock poisoned")
-            .clone();
 
         assert!(found);
-        assert_eq!(counters.relation_identity_candidates_scanned, 1);
+        assert_eq!(candidates_scanned, 1);
 
         let created = EntityReference::Created(CreatedEntityRef {
             partition_id,
@@ -250,37 +243,23 @@ mod tests {
         });
         assert!(!existing_relation_targets_for_source(
             &state,
-            &instrumentation,
+            &mut candidates_scanned,
             partition_id,
             KindId(9),
             &EntityReference::Existing(source),
             &BTreeSet::from([created]),
             &BTreeSet::new(),
         ));
-        assert_eq!(
-            instrumentation
-                .complexity_counters
-                .lock()
-                .expect("complexity counter lock poisoned")
-                .relation_identity_candidates_scanned,
-            1
-        );
+        assert_eq!(candidates_scanned, 1);
         assert!(!existing_relation_targets_for_source(
             &state,
-            &instrumentation,
+            &mut candidates_scanned,
             partition_id,
             KindId(9),
             &EntityReference::Existing(source),
             &BTreeSet::from([EntityReference::Existing(left)]),
             &BTreeSet::from([relation_id]),
         ));
-        assert_eq!(
-            instrumentation
-                .complexity_counters
-                .lock()
-                .expect("complexity counter lock poisoned")
-                .relation_identity_candidates_scanned,
-            3
-        );
+        assert_eq!(candidates_scanned, 3);
     }
 }

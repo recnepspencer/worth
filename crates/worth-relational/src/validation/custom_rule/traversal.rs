@@ -4,7 +4,8 @@ use std::sync::Mutex;
 use crate::identity::data::EntityId;
 
 use super::structural_views::StructuralRelationView;
-use crate::validation::data::{CustomInvariantTraversalError, TouchedStructuralSet};
+use crate::validation::data::custom_rule::errors::CustomInvariantTraversalError;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 
 use crate::structural_traversal as breadth_first;
 mod complete;
@@ -121,7 +122,7 @@ impl StructuralTraversalResult {
 
 pub struct BoundedStructuralTraversal<'runtime> {
     relations: StructuralRelationView<'runtime>,
-    performance: crate::performance::PerformanceAccess<'runtime>,
+    performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
     budget: Mutex<TraversalBudgetSession>,
     work: super::CustomInvariantWorkMeter,
 }
@@ -131,7 +132,7 @@ pub struct BoundedStructuralTraversal<'runtime> {
 // numeric bounds; retaining that prefix is the conservative accounting result.
 impl<'runtime> BoundedStructuralTraversal<'runtime> {
     pub(crate) fn new(
-        performance: crate::performance::PerformanceAccess<'runtime>,
+        performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
         relations: StructuralRelationView<'runtime>,
         touched: &TouchedStructuralSet,
         work: super::CustomInvariantWorkMeter,

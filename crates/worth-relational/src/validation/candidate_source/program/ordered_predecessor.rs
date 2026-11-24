@@ -1,6 +1,6 @@
 //! Admission derives reuse solely from the registered ordered membership.
 use super::*;
-use crate::derived_relation::DerivedRelationNode as Node;
+use crate::derived_relation::definition::DerivedRelationNode as Node;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct OrderedSourceRecipe {

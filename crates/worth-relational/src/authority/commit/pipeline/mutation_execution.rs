@@ -12,6 +12,7 @@ mod telemetry;
 pub(super) struct MutatedCommitExecution {
     pub(super) prepared: PreparedCommitState,
     pub(super) working_state: WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
     pub(super) invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     pub(super) outcome: MutationApplyOutcome,
     pub(super) mutation_identities: PendingMutationIdentities,
@@ -29,31 +30,31 @@ impl MutatedCommitExecution {
 
 pub(super) fn mutate_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     validated: CommitPhaseBacking<BoundaryValidatedCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<MutatedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     let result = {
         let validated = validated.into_inner();
-        use crate::transactions::data::CommitPhase;
+        use crate::transactions::data::commit_log::CommitPhase;
         super::consult_stage(execution, super::CommitStage::Mutation)?;
         let (prepared, invariant_executions) = validated.into_parts();
         let (
             mut prepared,
             AppliedMutationDraft {
                 state: working_state,
+                content,
                 outcome,
                 identities: mutation_identities,
                 aggregate,
                 source_interpretation,
             },
         ) = prepared.into_parts();
-        telemetry::record_preparation_telemetry(runtime, outcome.preparation_telemetry);
-        crate::authority::commit::phases::prepare::record_mutation_counters(
-            runtime,
+        telemetry::record_preparation_telemetry(instrumentation, outcome.preparation_telemetry);
+        crate::authority::commit::phases::prepare::working_state_metrics::record_mutation_counters(
+            instrumentation,
             &working_state,
         );
         let (_, _, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();
@@ -64,6 +65,7 @@ pub(super) fn mutate_commit_execution(
         MutatedCommitExecution {
             prepared,
             working_state,
+            content,
             invariant_executions,
             outcome,
             mutation_identities,

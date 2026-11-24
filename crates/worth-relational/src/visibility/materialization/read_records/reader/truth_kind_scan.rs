@@ -11,8 +11,13 @@
 //! the answer, so an over-large scope costs the declared budget and stops.
 
 mod directory;
+use super::super::materialization::materialize_authoritative_entity_record_at_version;
 use super::super::native_scan_stop::NativeScanStop;
-use super::*;
+use super::super::visibility::entity_slot_matches_kind_at_version;
+use super::{
+    kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
+};
+use crate::{storage::data::EntityReadRecord, storage::overlay::PartitionAccess};
 
 /// The live entities of one kind, read under a declared work bound.
 #[derive(Debug)]
@@ -30,50 +35,8 @@ pub struct EntityKindTruthReadLimitExceeded {
     entity_records_reserved: usize,
 }
 
-impl<'runtime> VisibilityReadContext<'runtime> {
-    /// Reads the live entities of one kind across every partition, spending at
-    /// most `maximum_work_units` units of work.
-    ///
-    /// One unit is charged for each occupied entity slot examined — including a
-    /// slot skipped for belonging to another kind, which the scan still had to
-    /// look at — and one further unit for each record materialized into the
-    /// answer. The bound is tested before each unit is spent, so a maximum of
-    /// zero refuses without examining anything.
-    pub fn bounded_visible_entities_of_kind(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-        maximum_work_units: usize,
-    ) -> Result<
-        Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
-    > {
-        let edition = self.runtime.storage_access().current_edition();
-        let state = edition
-            .demand_all(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        crate::visibility::materialization::read_records::read_work::scan_with_memory(
-            execution,
-            |context, memory| {
-                ProjectionRecordReader::new(
-                    self.runtime.current_version_id(),
-                    &self.runtime.services.instrumentation,
-                )
-                .bounded_entities_of_kind_in_state(
-                    &state,
-                    &self.runtime.config.schema.registry,
-                    kind_id,
-                    KindScanVisibility::for_version(self.runtime, version_id),
-                    maximum_work_units,
-                    &mut |units| context.checkpoint(units),
-                    memory,
-                )
-            },
-            |result| super::super::read_footprint::entities(&result.records),
-        )
-    }
-}
+#[path = "truth_kind_scan/runtime_reads.rs"]
+mod runtime_reads;
 
 /// The running cost of one kind scan and the records it has reserved so far.
 pub(super) struct EntityKindScan<'charge, 'memory> {

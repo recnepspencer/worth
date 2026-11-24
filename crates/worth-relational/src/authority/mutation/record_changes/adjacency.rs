@@ -5,7 +5,8 @@ pub(crate) fn apply_adjacency_deltas_for_request(
     state: &mut WorkingState,
     deltas: &[AdjacencyDelta],
     version_id: crate::identity::data::VersionId,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     for delta in deltas {
         let (source, target) = match delta.kind {
             AdjacencyDeltaKind::Created { source, target }

@@ -3,6 +3,7 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 use crate::facade::mvcc::{
     RelationalCallerAssociation as Association, RelationalPublicationOutcome,
 };
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
@@ -144,7 +145,7 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
-    let routes = runtime.history.pending_canonical_publication_route_count();
+    let routes = pending_canonical_publication_route_count(&runtime.history);
     let association = Association::from_bytes(b"opaque\0caller\xff").unwrap();
     let proposal = propose(execution, &runtime, "rebound")
         .bind_caller_association(association.clone())
@@ -161,12 +162,12 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
         .unwrap();
     assert_eq!(candidate.caller_association().as_ref(), Some(&association));
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         routes + 1
     );
     drop(candidate);
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         routes
     );
     assert!(runtime.record_identity.pending_snapshot().is_empty());

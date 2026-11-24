@@ -4,7 +4,7 @@ use super::{
     RelationalTransactionWriteLocus as Write,
 };
 use crate::identity::data::{EntityId, KindId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 impl RelationalTransactionFootprint {
     pub(crate) fn record_owned_graph_selection(

@@ -1,9 +1,12 @@
+use super::super::record_identity_materialization::{
+    authoritative_entity_record_for_id_at_version_with_registry,
+    authoritative_relation_record_for_id_at_version_with_registry,
+};
 use std::collections::BTreeSet;
 
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::RelationalPinnedRead;
 use super::breadth_first_frontier::BreadthFirstFrontier;
 use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
@@ -14,7 +17,7 @@ use crate::query::data::{
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::{adjacency_queries, AdjacencyDirection};
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 type FrontierEntry = (EntityId, u32, EntityId, Option<RelationId>);
@@ -27,7 +30,8 @@ enum Direction {
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_traversal_fragment(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    reader: &RelationalPinnedRead,
+    projection: &impl ProjectionRecordSource,
+    current_version: crate::identity::data::VersionId,
     state: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
     version_id: VersionId,
@@ -63,7 +67,6 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         }
     };
     let mut budget = QueryPacketBudget::new(context, ceiling)?;
-    let projection = reader;
     let mut emitted_relations = BTreeSet::new();
     let mut frontier = BreadthFirstFrontier::<FrontierEntry>::new();
     let mut entities = Vec::new();
@@ -87,11 +90,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 MapKernelFailure::Domain(QueryReadPacketDenial::ReadRequest(cause.into()))
             })?;
         budget.check_temporary_record(projection.candidate_entity_bytes_for_id(entity_id))?;
-        let Some(entity_record) = reader
-            .authoritative_entity_record_for_id_at_version_with_registry(
-                state, registry, entity_id, version_id,
-            )
-        else {
+        let Some(entity_record) = authoritative_entity_record_for_id_at_version_with_registry(
+            state,
+            registry,
+            entity_id,
+            version_id,
+            current_version,
+        ) else {
             continue;
         };
         budget.push_result(
@@ -130,12 +135,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 })?;
             budget
                 .check_temporary_record(projection.candidate_relation_bytes_for_id(relation_id))?;
-            let Some(relation_record) = reader
-                .authoritative_relation_record_for_id_at_version_with_registry(
+            let Some(relation_record) =
+                authoritative_relation_record_for_id_at_version_with_registry(
                     state,
                     registry,
                     relation_id,
                     version_id,
+                    current_version,
                 )
             else {
                 continue;

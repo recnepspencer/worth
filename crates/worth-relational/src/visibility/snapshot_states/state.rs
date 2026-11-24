@@ -1,7 +1,7 @@
+use crate::history::retention::VisibilitySnapshotBasis;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::projection::SnapshotProjectionRoot;
 use crate::history::data::BranchId;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
@@ -40,23 +40,20 @@ enum VisibilitySnapshotStateKeyKind {
 }
 
 impl VisibilitySnapshotStateKey {
-    fn exact(branch_id: BranchId, version_id: VersionId, root: &RelationalBranchRoot) -> Self {
+    pub(crate) fn for_selection(
+        branch_id: BranchId,
+        version_id: VersionId,
+        root_id: u64,
+        schema_commitment: [u8; 32],
+    ) -> Self {
         Self(VisibilitySnapshotStateKeyKind::Exact(
             ExactVisibilitySnapshotStateKey {
                 branch_id,
                 version_id,
-                root_id: root.id(),
-                schema_commitment: root.schema_authority().authority_digest(),
+                root_id,
+                schema_commitment,
             },
         ))
-    }
-
-    pub(crate) fn for_root(
-        branch_id: BranchId,
-        version_id: VersionId,
-        root: &RelationalBranchRoot,
-    ) -> Self {
-        Self::exact(branch_id, version_id, root)
     }
 
     pub(crate) fn historical(basis: &HistoricalVisibilityBasis) -> Self {
@@ -81,113 +78,6 @@ impl VisibilitySnapshotStateKey {
         match &self.0 {
             VisibilitySnapshotStateKeyKind::Exact(key) => key.version_id,
             VisibilitySnapshotStateKeyKind::Historical(key) => key.version_id,
-        }
-    }
-}
-
-/// Owner-selected immutable root retained by a snapshot handle binding.
-#[derive(Clone, Debug)]
-pub(crate) struct VisibilitySnapshotBasis {
-    key: VisibilitySnapshotStateKey,
-    pub(super) root: Arc<RelationalBranchRoot>,
-    pub(super) _retained_observation: Option<crate::mvcc::RelationalBranchObservation>,
-}
-
-impl VisibilitySnapshotBasis {
-    pub(crate) fn from_applied_root(
-        branch_id: BranchId,
-        version_id: VersionId,
-        root: Arc<RelationalBranchRoot>,
-    ) -> Self {
-        Self {
-            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, &root),
-            root,
-            _retained_observation: None,
-        }
-    }
-
-    pub(crate) fn from_observation(observation: &crate::mvcc::RelationalBranchObservation) -> Self {
-        let version_id = observation.version_id();
-        let root = Arc::clone(observation.selected_root());
-        Self {
-            key: VisibilitySnapshotStateKey::exact(
-                observation.identity().branch_id().clone(),
-                version_id,
-                root.as_ref(),
-            ),
-            root,
-            _retained_observation: Some(observation.clone()),
-        }
-    }
-
-    pub(crate) fn capture_current(
-        runtime: &crate::runtime::RelationalRuntime,
-        branch_id: &BranchId,
-        version_id: VersionId,
-    ) -> Result<Option<Self>, crate::branch::RelationalBranchBasisDenial> {
-        let identity = runtime
-            .branch_identity(branch_id)
-            .map_err(branch_identity_denial)?;
-        let (_, basis) = runtime.observe_branch(&identity)?;
-        let observation = basis.observation();
-        if observation.version_id() != version_id {
-            return Ok(None);
-        }
-        Ok(Some(Self::from_observation(&observation)))
-    }
-
-    /// Best-effort selection for optional derived-state maintenance. The
-    /// retention owner records any admission denial; authoritative truth and
-    /// branch-head movement never depend on this cache-only promotion.
-    pub(crate) fn capture_current_for_optional_maintenance(
-        runtime: &crate::runtime::RelationalRuntime,
-        branch_id: &BranchId,
-        version_id: VersionId,
-    ) -> Option<Self> {
-        Self::capture_current(runtime, branch_id, version_id)
-            .ok()
-            .flatten()
-    }
-
-    pub(crate) fn key(&self) -> &VisibilitySnapshotStateKey {
-        &self.key
-    }
-
-    pub(crate) fn branch_id(&self) -> &BranchId {
-        self.key.branch_id()
-    }
-
-    pub(crate) const fn version_id(&self) -> VersionId {
-        self.key.version_id()
-    }
-
-    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
-        &self.root
-    }
-
-    pub(crate) fn root_id(&self) -> u64 {
-        self.root.id()
-    }
-}
-
-fn branch_identity_denial(
-    denial: crate::branch::RelationalBranchIdentityDenial,
-) -> crate::branch::RelationalBranchBasisDenial {
-    match denial {
-        crate::branch::RelationalBranchIdentityDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        } => crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        },
-        crate::branch::RelationalBranchIdentityDenial::UnknownBranch(branch_id) => {
-            crate::branch::RelationalBranchBasisDenial::UnknownBranch(branch_id)
-        }
-        crate::branch::RelationalBranchIdentityDenial::IdentityMismatch => {
-            crate::branch::RelationalBranchBasisDenial::MixedAxis(
-                crate::branch::RelationalBranchBasisMismatchAxis::Branch,
-            )
         }
     }
 }
@@ -220,17 +110,15 @@ impl SnapshotStateBasis {
         }
     }
 
-    pub(crate) fn root(&self) -> Option<&Arc<RelationalBranchRoot>> {
+    pub(crate) fn root(&self) -> Option<SnapshotProjectionRoot<'_>> {
         match self {
-            Self::Exact(basis) => Some(basis.root()),
+            Self::Exact(basis) => Some(basis.projection_root()),
             Self::Historical(basis) => basis.root(),
         }
     }
 
     pub(crate) fn root_version(&self) -> Option<VersionId> {
-        self.root()
-            .and_then(|root| root.axes())
-            .map(|axes| VersionId(axes.storage_version))
+        self.root().and_then(|root| root.storage_version())
     }
 }
 

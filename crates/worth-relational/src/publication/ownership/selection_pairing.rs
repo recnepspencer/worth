@@ -1,6 +1,7 @@
 //! Check the independent writers through the one current-custody reader on the complete candidate root.
 use super::*;
-use crate::{branch::RelationalBranchRoot, history::data::CanonicalCommitEnvelope};
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::data::CanonicalCommitEnvelope;
 use worth_execution::ExecutionRequest;
 
 pub(crate) fn validate(

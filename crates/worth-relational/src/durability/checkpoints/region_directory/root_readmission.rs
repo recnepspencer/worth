@@ -1,9 +1,9 @@
 //! One selected directory-root binder, reused by heads, components and lazy index verification.
 use super::*;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::durability::checkpoint_admission::CheckpointAdmissionOwner;
 use crate::durability::data::RelationalCheckpointRoot;
-use crate::runtime::HistorySubsystem;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 impl ReadmittedRegionDirectory {
     pub(crate) fn readmit_root(
@@ -63,8 +63,10 @@ impl ReadmittedRegionDirectory {
         root.map_err(root_stop)
     }
 }
-fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> RelationalRecoveryStop {
-    use crate::branch::RelationalBranchRootCaptureDenial as Cause;
+fn root_stop(
+    cause: crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial,
+) -> RelationalRecoveryStop {
+    use crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial as Cause;
     match cause {
         Cause::Request(cause) | Cause::Execution(cause) => RelationalRecoveryStop::Request(cause),
         Cause::Content(cause) => cause.into(),

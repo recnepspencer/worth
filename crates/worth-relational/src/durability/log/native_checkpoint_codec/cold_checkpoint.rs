@@ -31,7 +31,7 @@ pub(super) fn readmit(
     for entry in manifest.commits.iter().filter(|entry| {
         directory.admission_image.is_none() && heads.contains(&entry.commit.commit_id)
     }) {
-        let commit = crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
+        let commit = crate::history::commit::RelationalCommitEnvelopeResidency::readmit_selected(
             entry,
             &directory,
             execution,

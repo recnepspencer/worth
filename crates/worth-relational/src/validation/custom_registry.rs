@@ -2,20 +2,16 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::validation::candidate_source::SourcePreparationGroup;
-use crate::validation::data::{
-    CustomInvariantRegistration, CustomInvariantSemanticIdentity, InvariantExecutionPoint,
-};
+use crate::validation::custom_rule::CustomInvariantRegistration;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 mod compilation;
 mod compilation_quote;
 mod source_inventory;
-pub(crate) use compilation::CustomInvariantCompilationDenial;
+pub(crate) use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial;
 pub(crate) use source_inventory::{CustomInvariantCompilationFunding, SourcePreparationInventory};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DuplicateCustomInvariantRegistration {
-    pub identity: CustomInvariantSemanticIdentity,
-    pub execution_point: InvariantExecutionPoint,
-}
+pub use crate::validation::data::registration_conflict::DuplicateCustomInvariantRegistration;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
@@ -29,7 +25,7 @@ pub(crate) struct FrozenCustomInvariantRegistry {
     index_by_identity_and_execution_point: Arc<
         BTreeMap<
             (
-                crate::validation::data::CustomInvariantRuleId,
+                crate::validation::data::rule_id::CustomInvariantRuleId,
                 InvariantExecutionPoint,
             ),
             usize,
@@ -48,7 +44,7 @@ impl FrozenCustomInvariantRegistry {
         &self,
     ) -> Option<(
         &CustomInvariantRegistration,
-        &crate::branch::RelationalModelOwnership,
+        &crate::branch::model_ownership::RelationalModelOwnership,
     )> {
         let registration = self.registrations.get(self.model_ownership_index?)?;
         Some((registration, registration.model_ownership.as_deref()?))
@@ -117,14 +113,23 @@ mod tests {
     use std::sync::Arc;
 
     use super::FrozenCustomInvariantRegistry;
-    use crate::validation::data::{
-        CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
-        CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
-        CustomInvariantRegistration, CustomInvariantRule, CustomInvariantRuleId,
-        CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
-        CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCostClass,
-        InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
-    };
+    use crate::validation::custom_rule::CustomInvariantExecutionContext;
+    use crate::validation::custom_rule::CustomInvariantRegistration;
+    use crate::validation::custom_rule::CustomInvariantRule;
+    use crate::validation::custom_rule::CustomInvariantScopePlanner;
+    use crate::validation::data::custom_rule::errors::CustomInvariantExecutionError;
+    use crate::validation::data::custom_rule::errors::CustomInvariantPreparationError;
+    use crate::validation::data::custom_rule::errors::CustomInvariantVerdict;
+    use crate::validation::data::descriptor::CustomInvariantDescriptor;
+    use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
+    use crate::validation::data::execution::InvariantExecutionPoint;
+    use crate::validation::data::execution::InvariantFailureEffect;
+    use crate::validation::data::groups::InvariantCostClass;
+    use crate::validation::data::groups::InvariantGroup;
+    use crate::validation::data::groups::InvariantGroupSet;
+    use crate::validation::data::rule_id::CustomInvariantRuleId;
+    use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
+    use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
 
     #[derive(Clone, Copy)]
     struct RegistryRule {
@@ -144,7 +149,9 @@ mod tests {
                 display_name: Arc::from(self.rule_id),
                 operational: CustomInvariantOperationalMetadata {
                     maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
-                    access: crate::validation::data::CustomInvariantAccessContract::default(),
+                    access:
+                        crate::validation::data::descriptor::CustomInvariantAccessContract::default(
+                        ),
                     execution_point: self.execution_point,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                     cost_class: InvariantCostClass::Touched,

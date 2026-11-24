@@ -2,6 +2,7 @@ mod digest_index;
 pub mod maintenance;
 pub(crate) use digest_index::{DigestIndex, DigestIndexError};
 mod allocation_visitor;
+pub(crate) mod allocation_witness;
 mod node_memory;
 mod record_arena;
 mod shared_column;
@@ -21,3 +22,5 @@ pub use shared_column::observe_history_prefix_traversal;
 pub(crate) use shared_column::SharedColumn;
 pub(crate) use shared_map::{SharedMap, SharedMapIter};
 pub(crate) use storage_allocation::StorageAllocation;
+
+pub(crate) mod owned_state;

@@ -1,12 +1,11 @@
 //! Bind application-owner activation admission to one exact native update.
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::durability::authority::{
-    DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority,
-};
-use crate::runtime::{
-    RecoveredCheckpointProgramActivationUpdate,
-    RelationalSchemaTransitionAdmissionDenial as Denial,
-    RelationalSchemaTransitionAdmissionDenialKind as Kind,
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+use crate::{
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
 };
 use sha2::{Digest, Sha256};
 

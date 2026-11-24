@@ -9,47 +9,13 @@ mod managed_source;
 mod projection;
 #[path = "authored_writes/rebuild.rs"]
 mod rebuild;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
-use crate::history::{AuthoredWritePostingKey as Key, RelationalAuthoredWriteDenial as Denial};
 use std::sync::Arc;
-use worth_execution::{ChargedBytes, ExecutionOrderedMap, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 
-#[derive(Clone, Debug, Default)]
-pub(crate) struct AuthoredWriteGeneration {
-    pub(crate) writes: ExecutionOrderedMap<Key, Postings>,
-    pub(crate) prefix: ExecutionOrderedMap<CommitId, u64>,
-    pub(crate) managed_last_gap: Option<u64>,
-    pub(crate) managed_run_start: u64,
-    pub(crate) managed_run_catalog: Option<
-        Arc<crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog>,
-    >,
-    pub(crate) incomplete_indexes: ExecutionOrderedMap<u64, ()>,
-    pub(crate) incomplete_adjacency: ExecutionOrderedMap<u64, AdjacencyHistoryGap>,
-    pub(crate) index_coverage: ExecutionOrderedMap<u64, crate::runtime::IndexCatalogCoverage>,
-    pub(crate) index_run_start: u64,
-    pub(crate) index_run_last: Option<crate::runtime::IndexCatalogCoverage>,
-    pub(crate) ordinal: u64,
-    pub(crate) unsupported_merge: bool,
-    _funding: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
-}
-
-/// Context belongs to the same discardable generation as the incomplete ordinal.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct AdjacencyHistoryGap {
-    pub(crate) commit: CommitId,
-    pub(crate) relation: Option<crate::identity::data::RelationId>,
-    pub(crate) kind: Option<crate::identity::data::KindId>,
-    pub(crate) reason: &'static str,
-}
-
-#[derive(Clone, Debug, Default)]
-pub(crate) struct Postings(pub(crate) ExecutionOrderedMap<u64, CommitId>);
-impl ChargedBytes for Postings {
-    // The shared cells retain their actual original allocation grants.
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
+use crate::history::access::relevant_writes::generation::AdjacencyHistoryGap;
+pub(crate) use crate::history::access::relevant_writes::generation::AuthoredWriteGeneration;
 
 impl super::RelationalCanonicalPublicationRoutes {
     pub(crate) fn authored_generation(&self, commit: CommitId) -> Option<AuthoredWriteGeneration> {
@@ -60,7 +26,7 @@ impl super::RelationalCanonicalPublicationRoutes {
     pub(super) fn authored_generation_owner(
         &self,
         commit: CommitId,
-    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+    ) -> Option<Arc<crate::history::commit::RelationalCommitEnvelopeResidency>> {
         self.performed_envelope_residency(commit).or_else(|| {
             self.checkpoint_catalog
                 .read()
@@ -75,31 +41,29 @@ impl super::RelationalCanonicalPublicationRoutes {
         execution: ExecutionRequest<'_, '_>,
         envelope: &Arc<CanonicalCommitEnvelope>,
     ) -> Result<Option<AuthoredWriteGeneration>, Denial> {
-        crate::history::run_authored_write_stage(execution, |context| {
+        crate::history::access::relevant_writes::run(execution, |context| {
             let mut generation = match envelope.commit.parents.as_slice() {
                 [] => AuthoredWriteGeneration::default(),
                 [parent] => match self.authored_generation(*parent) {
                     Some(generation) => generation,
                     None => return Ok(None),
                 },
-                _ => {
-                    return Ok(Some(AuthoredWriteGeneration {
-                        unsupported_merge: true,
-                        ..Default::default()
-                    }))
-                }
+                _ => return Ok(Some(AuthoredWriteGeneration::unsupported_merge())),
             };
-            generation.extend(execution, context, envelope)?;
+            extend_generation(&mut generation, execution, context, envelope)?;
             Ok(Some(generation))
         })
     }
 }
 
-pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{
-        CommitConflict, CommitExecutionDenial, CommitExecutionDenialKind, ConflictClass,
-        TransactionCommitError as Error,
-    };
+pub(crate) fn commit_denial(
+    cause: Denial,
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+    use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError as Error;
     let request = |cause| {
         Error::execution(CommitExecutionDenial {
             kind: CommitExecutionDenialKind::Cause(cause),
@@ -152,51 +116,18 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
     }
 }
 
-impl AuthoredWriteGeneration {
-    fn extend(
-        &mut self,
-        execution: ExecutionRequest<'_, '_>,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-        envelope: &Arc<CanonicalCommitEnvelope>,
-    ) -> Result<(), Denial> {
-        if self.unsupported_merge {
-            return Ok(());
-        }
-        self._funding = execution
-            .reserve_retained_memory(
-                (std::mem::size_of::<AuthoredWriteGeneration>()
-                    + std::mem::size_of::<worth_execution::ExecutionMemoryReservation>()
-                    + 2 * std::mem::size_of::<usize>()) as u64,
-            )?
-            .map(Arc::new);
-        self.ordinal = self.ordinal.checked_add(1).ok_or(Denial::SizeOverflow)?;
-        crate::history::visit_authored_write_lookup(context, self.prefix.len())?;
-        self.prefix.insert_cloned_native_for_request(
-            &envelope.commit.commit_id,
-            &self.ordinal,
-            execution,
-        )?;
-        managed_source::append(self, execution, context, envelope)?;
-        indexed::append(self, execution, context, envelope)?;
-        adjacency::append(self, execution, context, envelope)?;
-        projection::append(execution, context, self, envelope)
+fn extend_generation(
+    generation: &mut AuthoredWriteGeneration,
+    execution: ExecutionRequest<'_, '_>,
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    envelope: &Arc<CanonicalCommitEnvelope>,
+) -> Result<(), Denial> {
+    if generation.unsupported_merge {
+        return Ok(());
     }
-    pub(super) fn append(
-        &mut self,
-        execution: ExecutionRequest<'_, '_>,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-        key: &Key,
-        commit: CommitId,
-    ) -> Result<(), Denial> {
-        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
-        let mut postings = self.writes.get(key).cloned().unwrap_or_default();
-        crate::history::visit_authored_write_lookup(context, postings.0.len())?;
-        postings
-            .0
-            .insert_cloned_native_for_request(&self.ordinal, &commit, execution)?;
-        crate::history::visit_authored_write_lookup(context, self.writes.len())?;
-        self.writes
-            .insert_cloned_for_request(key, &postings, execution)?;
-        Ok(())
-    }
+    generation.advance(execution, context, envelope.commit.commit_id)?;
+    managed_source::append(generation, execution, context, envelope)?;
+    indexed::append(generation, execution, context, envelope)?;
+    adjacency::append(generation, execution, context, envelope)?;
+    projection::append(execution, context, generation, envelope)
 }

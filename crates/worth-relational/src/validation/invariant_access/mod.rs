@@ -27,7 +27,7 @@ impl<'runtime> InvariantAccess<'runtime> {
     pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {
         Self {
             runtime,
-            view: crate::validation::engine::InvariantRuntimeView::from_runtime(runtime),
+            view: runtime.invariant_validation_view(),
         }
     }
 

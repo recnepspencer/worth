@@ -3,17 +3,18 @@ mod association_discovery;
 pub use association_discovery::RelationalAssociationDiscovery;
 pub(crate) mod recorded_json_allocation;
 mod replay_retention_denial;
+pub(crate) mod replay_version;
 pub use recorded_json_allocation::RecordedRelationalJsonHeapQuote;
 pub use replay_retention_denial::RelationalReplayRetentionDenial;
-mod branch_creation;
+pub(crate) mod branch_creation;
 mod caller_association;
 mod canonical_commit_allocation;
-mod canonical_commit_envelope;
+pub(crate) mod canonical_commit_envelope;
 pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,
 };
-mod codec_retirement_closure;
+pub(crate) mod codec_retirement_closure;
 pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
 pub(crate) use canonical_commit_envelope::{
@@ -25,18 +26,19 @@ pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
-    readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
-    validate_codec_output_correspondence, AuthoredRetirementSelection, CodecRetirementClosureStop,
-    OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
+    readmit_required_output_route, select_authored_retirement,
+    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
-mod canonical_record_allocation;
+pub(crate) mod canonical_record_allocation;
 mod committed_version;
-mod merge_branch_basis;
+pub(crate) mod merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
 mod publication_relations;
+pub(crate) mod record_allocation_class;
 mod required_output_positions;
 pub(crate) use required_output_positions::presence as current_route_presence;
 pub(crate) use required_output_positions::{
@@ -45,7 +47,6 @@ pub(crate) use required_output_positions::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::identity::data::VersionId;
 use crate::identity::data::{EntityId, RelationId};
 
 pub use aspect_history::{
@@ -59,7 +60,7 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub(crate) use canonical_commit_envelope::EmbeddedCheckpointEnvelopeRef;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CanonicalIndexDefinitionDelta, CommittedRecordChange,
+    CanonicalIndexDefinitionDelta,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCodecRetirementKind,
@@ -92,114 +93,13 @@ pub use merge_branch_basis_foundational::{
 };
 pub(crate) use positioned_canonical_commit::PositionedCanonicalCommit;
 
-/// Identifies a committed occurrence within its Native history. This value is
-/// descriptive and grants no read, mutation or history-disclosure authority.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct CommitId(pub u64);
+pub(crate) mod coordinates;
+pub use coordinates::{BranchId, CommitId, HistoryRetentionClass, VersionGraphPolicy};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct BranchId(pub String);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VersionGraphPolicy {
-    CanonicalSerializedPublication,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum HistoryRetentionClass {
-    Ephemeral,
-    Durable,
-    AuditGrade,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-/// Immutable commit receipt. The branch id is authoring provenance only; it
-/// never represents or selects a mutable branch head.
-pub struct RelationalCommitReceipt {
-    pub commit_id: CommitId,
-    pub version_id: VersionId,
-    pub branch_id: BranchId,
-    pub parents: Vec<CommitId>,
-}
-
-/// Consumer-side semantic wrapper for authoritative parent order.
-///
-/// `RelationalCommitReceipt.parents` remains the sole authoritative storage and
-/// publication surface. This wrapper exists only to make order-sensitive
-/// consumption explicit in parity, certification, and diagnostics paths.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct OrderedParentList {
-    parents: Vec<CommitId>,
-}
-
-/// Intentionally coarse history-shape classification for 7A assumption
-/// removal, diagnostics wording, and certification branching.
-///
-/// This is not a merge semantic policy model. Future merge execution work may
-/// need finer distinctions than this enum provides.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum HistoryShapeClassification {
-    Root,
-    Linear,
-    MergeReady,
-}
-
-/// Typed 7A history drift taxonomy for authoritative ordered-parent parity.
-///
-/// These variants classify how canonical history truth diverged; they do not
-/// replace replay or durability failure classes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum HistoryDriftClass {
-    CanonicalHistoryDrift,
-    ReplayAuthorityDrift,
-    DurabilityParityDrift,
-}
-
-impl RelationalCommitReceipt {
-    pub fn ordered_parents(&self) -> OrderedParentList {
-        OrderedParentList::from_authoritative(self.parents.clone())
-    }
-
-    pub fn history_shape_classification(&self) -> HistoryShapeClassification {
-        HistoryShapeClassification::from_parent_count(self.parents.len())
-    }
-}
-
-impl OrderedParentList {
-    pub fn from_authoritative(parents: Vec<CommitId>) -> Self {
-        Self { parents }
-    }
-
-    pub fn as_slice(&self) -> &[CommitId] {
-        &self.parents
-    }
-
-    pub fn len(&self) -> usize {
-        self.parents.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.parents.is_empty()
-    }
-
-    pub fn clone_inner(&self) -> Vec<CommitId> {
-        self.parents.clone()
-    }
-
-    pub fn history_shape_classification(&self) -> HistoryShapeClassification {
-        HistoryShapeClassification::from_parent_count(self.parents.len())
-    }
-}
-
-impl HistoryShapeClassification {
-    pub fn from_parent_count(parent_count: usize) -> Self {
-        match parent_count {
-            0 => Self::Root,
-            1 => Self::Linear,
-            _ => Self::MergeReady,
-        }
-    }
-}
+pub(crate) mod commit_receipt;
+pub(crate) mod history_policy;
+pub use commit_receipt::{OrderedParentList, RelationalCommitReceipt};
+pub use history_policy::{HistoryDriftClass, HistoryShapeClassification};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct VersionNode {
@@ -241,7 +141,6 @@ pub(crate) use canonical_commit_envelope::EnvelopeProjection;
 
 pub(crate) use canonical_commit_envelope::CanonicalEnvelopeControlAllocation;
 pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;
-pub(crate) use canonical_commit_envelope::{AppliedPublicationInputAccess, LivePublicationInputs};
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

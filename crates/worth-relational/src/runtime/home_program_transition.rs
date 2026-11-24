@@ -18,19 +18,19 @@ mod predecessor_catalog;
 mod retention;
 pub(crate) use predecessor_catalog::RelationalHomeProgramPredecessorCatalog;
 mod catalog_receipt;
-pub use catalog_receipt::RelationalHomeProgramCatalogReceipt;
+pub use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
 pub(in crate::runtime) mod configuration;
-mod coverage;
+pub(crate) mod coverage;
 mod installation_readmission;
 mod promotion;
 pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
 mod target_step;
+pub(crate) use crate::branch::home_program_step::AdmittedRelationalHomeProgramStep;
 pub(crate) use coverage::RelationalHomeTargetCoverage;
-pub(crate) use step_admission::AdmittedRelationalHomeProgramStep;
 pub use step_admission::RelationalHomeProgramStepContracts;
 pub(crate) use target_step::AdmittedRelationalHomeProgramTarget;
 
@@ -48,7 +48,7 @@ pub enum RelationalHomeProgramContractDenial {
     CapacityOverflow,
     CatalogEncoding,
     UnboundHome,
-    TransitionPhase(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    TransitionPhase(crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial),
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,
@@ -127,7 +127,7 @@ impl PreparedRelationalHomeProgramContracts {
 /// construction configuration or borrows a disposable author's request.
 #[derive(Debug)]
 pub(crate) struct RelationalRootExecutionContracts {
-    identity: Arc<catalog_receipt::RelationalHomeProgramCatalogIdentity>,
+    identity: RelationalHomeProgramCatalogReceipt,
     pub(crate) runtime: u64,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) contracts: Arc<SchemaContractRuntimeSubsystem>,

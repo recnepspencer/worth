@@ -33,6 +33,7 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::UnsupportedReadMode | History::ForeignModel | History::ForeignHistoryNode | History::HistoryNodeUnavailable | History::OperationNotDeclared
                 | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
                 | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
+                | History::WorkflowProducer { .. } | History::ExternalEffectProducer { .. }
                 | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
                 | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_)
                 | History::UnsupportedContextRefresh | History::ContextRefresh(_)
@@ -40,7 +41,8 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::RetentionReleaseCapacityExhausted | History::BookmarkCapacityExhausted
                 | History::RetentionPolicyNotDeclared | History::RetentionOperationInstallation(_) | History::Allocation(_)
                 | History::EmptyGroup | History::GroupMemberLimitExceeded
-                | History::GroupResultLimitExceeded | History::GroupMemberMismatch | History::GroupNotComplete => None,
+                | History::GroupResultLimitExceeded | History::GroupMemberMismatch | History::GroupNotComplete
+                | History::StepMetadataTooLarge { .. } => None,
             }
         },
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),

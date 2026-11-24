@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::commit_strategies::data::StrategyMergeDescriptor;
-use crate::history::data::CommitId;
+use crate::commit_strategies::data::artifacts::merge_descriptor::StrategyMergeDescriptor;
+use crate::history::data::coordinates::CommitId;
 use crate::identity::data::VersionId;
-use crate::merge::data::AspectComparisonState;
-use crate::merge::data::IdentityResolutionReason;
-use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::RecordRef;
+use crate::merge::data::identity::IdentityResolutionReason;
+use crate::merge::data::policy::AspectComparisonState;
+use crate::storage::data::read_records::RecordLifecycleState;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AspectKey;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -1,21 +1,22 @@
 //! Authenticated complete codec-disposition claims; cold readers re-admit them.
+use super::schema_carrier::registrations::DurableEntitySchemaRegistration;
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCodecRetirementKind {
-    pub(crate) source: crate::durability::data::DurableEntitySchemaRegistration,
-    pub(crate) target: crate::durability::data::DurableEntitySchemaRegistration,
+    pub(crate) source: DurableEntitySchemaRegistration,
+    pub(crate) target: DurableEntitySchemaRegistration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CanonicalRequiredOutputCodecRetirement {
     pub(crate) publication: CommitId,
-    pub(crate) meaning: crate::mvcc::RequiredOutputPublicationMeaning,
-    pub(crate) source: crate::branch::RelationalBranchBasisDescriptor,
+    pub(crate) meaning: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+    pub(crate) source: crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
     pub(crate) retiring: RelationalCommitReceipt,
     pub(crate) kinds: std::sync::Arc<Vec<CanonicalCodecRetirementKind>>,
     pub(crate) activation:
-        std::sync::Arc<crate::runtime::RecoveredCheckpointProgramActivationUpdate>,
+        std::sync::Arc<crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate>,
     #[serde(skip)]
     pub(crate) _funding: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }

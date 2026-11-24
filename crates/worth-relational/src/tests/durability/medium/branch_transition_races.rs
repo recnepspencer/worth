@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use super::slow_publication::{PublicationGate, SlowFirstPublication};
-use crate::branch::LiveBranchTransitionStep;
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 use crate::facade::history::BranchId;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::runtime::RelationalRuntime;

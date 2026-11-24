@@ -1,7 +1,7 @@
 //! Immutable complete derivation facts, separate from source authority.
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
-use crate::validation::data::{StructuralRelationRecord, StructuralWalkDenialKind};
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 /// Every explored physical adjacency, including an empty one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -50,15 +50,4 @@ impl DerivedRelationData {
 }
 
 /// A refused evaluation never returns partial successful data.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DerivedRelationReadDenial {
-    Definition(super::DerivedRelationDenial),
-    Structural(StructuralWalkDenialKind),
-    Request(crate::execution::RelationalExecutionDenialCause),
-}
-
-impl From<super::DerivedRelationDenial> for DerivedRelationReadDenial {
-    fn from(denial: super::DerivedRelationDenial) -> Self {
-        Self::Definition(denial)
-    }
-}
+pub use super::read_denial::DerivedRelationReadDenial;

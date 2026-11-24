@@ -4,12 +4,12 @@ use super::root_view::IndexRootView;
 use super::work::MaintenanceWork;
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-use crate::indexes::projected_field_values::{
+use crate::indexes::projected_field_values::field_projection_scope::{
     entity_index_projection_scope, relation_index_projection_scope,
 };
 use crate::schema::data::LoweredAspectContractPlan;
 use crate::storage::data::{AuthoritativeFieldComparisonKey as Key, RecordLifecycleState};
-use crate::visibility::materialization::read_records::authoritative_state_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value;
 use worth_foundational::facade::{
     AspectFieldLocator, AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
 };
@@ -170,4 +170,21 @@ fn value(
         bytes,
     )?;
     Ok(Some(Key::from_aspect_value(value)))
+}
+
+pub(super) fn prepare_key_comparison(
+    old: Option<&Key>,
+    new: Option<&Key>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    let width = match (old, new) {
+        (Some(old), Some(new)) => {
+            old.canonical_value_bytes()
+                .len()
+                .min(new.canonical_value_bytes().len())
+                + 1
+        }
+        _ => 1,
+    };
+    work.prepare(width as u64, 0)
 }

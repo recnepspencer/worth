@@ -64,8 +64,8 @@ impl StructuralRelationView<'_> {
             None => None,
             _ => return Err(Denial::ForeignSource),
         };
-        let frame = owner.content_view(source.committed)?.read_source(
-            &self.read_budget(),
+        let frame = self.read_budget().read_field_content(
+            owner.content_view(source.committed)?,
             entity,
             kind,
             locator,

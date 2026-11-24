@@ -1,9 +1,8 @@
 use super::*;
 
 pub(super) fn append_index(
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     delta: &CanonicalRecordAspectDelta,
     binding: &EvaluatedAspectBinding,
     field: &worth_foundational::facade::FieldKey,
@@ -40,8 +39,8 @@ pub(super) fn append_index(
 }
 
 pub(super) struct IndexTouchInput<'a> {
-    pub(super) selected: &'a crate::branch::SelectedRelationalBranchState,
-    pub(super) working: &'a crate::runtime::WorkingState,
+    pub(super) selected: &'a crate::branch::root_selection::SelectedRelationalBranchState,
+    pub(super) working: &'a crate::storage::overlay::WorkingState,
     pub(super) old_record: &'a RecordRef,
     pub(super) new_record: &'a RecordRef,
     pub(super) old_kind: Option<crate::identity::data::KindId>,
@@ -75,11 +74,11 @@ pub(super) fn append_index_for_field(
     let old = authoritative_state(selected, old_record);
     let new = authoritative_state(working, new_record);
     let old_value =
-        crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
+        crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(
             old, locator,
         );
     let new_value =
-        crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
+        crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(
             new, locator,
         );
     let key_bytes = old_value
@@ -110,8 +109,8 @@ pub(super) fn append_index_for_field(
             )
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?,
     )?;
-    let old_key = crate::visibility::materialization::read_records::authoritative_state_query_locus_comparison_key(old, locator);
-    let new_key = crate::visibility::materialization::read_records::authoritative_state_query_locus_comparison_key(new, locator);
+    let old_key = crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_comparison_key(old, locator);
+    let new_key = crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_comparison_key(new, locator);
     if old_key != new_key || old_kind != new_kind || old_record != new_record {
         if old_kind == new_kind {
             if let Some(kind) = new_kind {

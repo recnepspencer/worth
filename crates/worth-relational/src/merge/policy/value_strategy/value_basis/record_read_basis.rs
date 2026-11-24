@@ -246,7 +246,7 @@ trait RecordRefValueBasisExt {
     fn relation_id(&self) -> Option<crate::identity::data::RelationId>;
 }
 
-impl RecordRefValueBasisExt for crate::transactions::data::RecordRef {
+impl RecordRefValueBasisExt for crate::transactions::data::primitives::RecordRef {
     fn entity_id(&self) -> Option<crate::identity::data::EntityId> {
         match self {
             Self::Entity(entity_id) => Some(*entity_id),

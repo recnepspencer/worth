@@ -1,5 +1,5 @@
 use super::ordered::{OrderedStore, Run};
-use crate::mvcc::RelationalTransactionStagingDenial as Denial;
+use crate::mvcc::transaction::staging::RelationalTransactionStagingDenial as Denial;
 use std::{cell::RefCell, sync::Arc};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder};
 

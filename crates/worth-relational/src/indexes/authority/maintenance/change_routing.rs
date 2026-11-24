@@ -67,11 +67,11 @@ impl ChangeRouting {
     }
 
     fn from_change(
-        change: &crate::storage::substrate::maintenance::CommitChange,
+        change: &crate::branch::maintenance::CommitChange,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
         use crate::storage::data::RecordLifecycleState;
-        use crate::transactions::data::RecordRef;
+        use crate::transactions::data::primitives::RecordRef;
         let mut routed = Self {
             entities: BTreeMap::new(),
             relations: BTreeMap::new(),

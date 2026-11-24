@@ -1,5 +1,5 @@
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::TransactionId;
+use crate::transactions::data::primitives::TransactionId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

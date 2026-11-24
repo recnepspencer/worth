@@ -1,7 +1,7 @@
 use crate::merge::data::VisibleMergeRecord;
 use crate::merge::policy::contexts::PolicyReadViewContext;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn entity_basis_for_visible_record<'a>(
     record: &VisibleMergeRecord,

@@ -34,7 +34,8 @@ pub(in super::super) fn visible_relation_slots_in_partition_from_state(
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     count_scans: impl Fn(usize),
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Option<DenseSlotBitSet>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+{
     let Some(partition) = state.get_partition(partition_id) else {
         return Ok(None);
     };
@@ -65,9 +66,9 @@ pub(in super::super) fn visible_relation_slots_in_partition_from_state(
         record_memory::release(memory, held)?;
     }
     if visible_slots.count_ones() == 0 {
-        let bytes = visible_slots
-            .owned_allocation_bytes()
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+        let bytes = visible_slots.owned_allocation_bytes().ok_or(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        )?;
         drop(visible_slots);
         record_memory::release(memory, bytes)?;
         Ok(None)
@@ -98,7 +99,7 @@ pub(in super::super) fn visible_slots_in_partition_from_state<K: RecordKind>(
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     count_scans: impl Fn(usize),
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Option<DenseSlotBitSet>, crate::execution::RelationalExecutionDenialCause>
+) -> Result<Option<DenseSlotBitSet>, crate::execution::denial_cause::RelationalExecutionDenialCause>
 where
     K::Meta: HistoricalMetadata,
 {
@@ -132,9 +133,9 @@ where
         record_memory::release(memory, held)?;
     }
     if visible_slots.count_ones() == 0 {
-        let bytes = visible_slots
-            .owned_allocation_bytes()
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+        let bytes = visible_slots.owned_allocation_bytes().ok_or(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        )?;
         drop(visible_slots);
         record_memory::release(memory, bytes)?;
         Ok(None)

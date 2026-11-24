@@ -42,7 +42,10 @@ pub struct PersistentNameBranchIndex {
     pub(crate) names: HashMap<PersistentNameKey, NameEntry>,
     lineage_names: HashMap<LineageId, PersistentNameKey>,
     lineage_holders: HashMap<LineageId, LineageHolder>,
-    holder_lineages: HashMap<LineageHolder, LineageId>,
+    /// Every lineage a record was bound to, in binding-commit order: a
+    /// history restore rebinds the exact original record to a fresh lineage,
+    /// and a pinned read must still see the lineage bound at its basis.
+    holder_lineages: HashMap<LineageHolder, Vec<(CommitId, LineageId)>>,
 }
 
 impl PersistentNameBranchIndex {
@@ -118,11 +121,21 @@ impl PersistentNameBranchIndex {
         self
     }
 
-    /// The lineage a named record was created with.
+    /// The lineage `holder` was bound to at `basis`: the latest binding at or
+    /// before it, so later restores never change a pinned answer.
     ///
-    /// Complexity: O(1) expected.
-    pub(crate) fn lineage_of_holder(&self, holder: LineageHolder) -> Option<LineageId> {
-        self.holder_lineages.get(&holder).copied()
+    /// Complexity: O(1) expected probe plus O(log e) in that record's own
+    /// binding epochs.
+    pub(crate) fn lineage_of_holder(
+        &self,
+        holder: LineageHolder,
+        basis: CommitId,
+    ) -> Option<LineageId> {
+        let epochs = self.holder_lineages.get(&holder)?;
+        let after = epochs.partition_point(|(commit, _)| *commit <= basis);
+        epochs
+            .get(after.checked_sub(1)?)
+            .map(|(_, lineage)| *lineage)
     }
 
     /// The name a lineage was bound to when its named record was created.

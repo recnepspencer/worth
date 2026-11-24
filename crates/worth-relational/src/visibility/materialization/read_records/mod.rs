@@ -1,16 +1,18 @@
 pub(crate) mod materialization;
 mod native_scan_stop;
-mod projection;
-pub(crate) use projection::CheckpointProjectionContext;
+pub(crate) mod projection;
 pub(crate) mod read_footprint;
 pub(crate) mod read_prices;
 pub(crate) mod read_request;
 pub(crate) mod read_work;
-mod reader;
+pub(crate) mod reader;
 mod visibility;
 
 pub(crate) use projection::{
     authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
+};
+#[cfg(test)]
+pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
     relation_query_locus_comparison_key, relation_query_locus_value,
 };
@@ -22,8 +24,6 @@ pub use projection::{
     RelationalAdjacencyDirection, RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
     RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
-    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
-    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
     RelationalProjectedFieldObservation, RelationalProjectionContractDenial,
     RelationalRelationMetadata, VisibilityProjectionView,
 };
@@ -39,20 +39,9 @@ pub use reader::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
-    SnapshotPositionDenial, VisibilityReadContext,
+    SnapshotPositionDenial,
 };
 
-use crate::runtime::RelationalRuntime;
-
-impl RelationalRuntime {
-    pub(crate) fn visibility_reads(&self) -> VisibilityReadContext<'_> {
-        VisibilityReadContext::new(self)
-    }
-}
-
 pub(crate) mod read_stop;
-pub(crate) use projection::ProjectionRecordSource;
 
 pub use reader::BoundedFrontierReadStop;
-
-pub(crate) use reader::KindScanVisibility;

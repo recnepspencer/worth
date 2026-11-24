@@ -1,5 +1,6 @@
 //! Keep an exact prepared prefix current until its original effect returns.
 use super::*;
+use crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial;
 
 pub(crate) struct IndexDefinitionPublication<'owner> {
     _guard: std::sync::RwLockWriteGuard<'owner, ()>,
@@ -11,13 +12,13 @@ impl IndexDefinitionReadBinding {
     pub(crate) fn prepare_definition_publication(
         &self,
         prepared: Arc<PreparedRelationalIndexDefinitions>,
-    ) -> Result<IndexDefinitionPublication<'_>, crate::mvcc::RelationalPublicationDenial> {
+    ) -> Result<IndexDefinitionPublication<'_>, RelationalPublicationDenial> {
         let guard = self
             .definition_publication
             .try_write()
-            .ok_or(crate::mvcc::RelationalPublicationDenial::IndexDefinitionPublicationContended)?;
+            .ok_or(RelationalPublicationDenial::IndexDefinitionPublicationContended)?;
         if !prepared.admits(&self.capture_catalog()) {
-            return Err(crate::mvcc::RelationalPublicationDenial::StaleIndexDefinitions);
+            return Err(RelationalPublicationDenial::StaleIndexDefinitions);
         }
         Ok(IndexDefinitionPublication {
             _guard: guard,

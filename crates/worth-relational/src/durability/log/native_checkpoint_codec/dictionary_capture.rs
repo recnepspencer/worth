@@ -1,12 +1,12 @@
 //! Bounded dictionary member encoding for identity reads and spelling lookup.
 use super::manifest_capture::{add, corrupt};
 use super::member_frame::{self, MemberKind};
-use crate::durability::checkpoints::symbol_pages::SYMBOL_PAGE_CAPACITY;
 use crate::durability::data::{
     RelationalCheckpointMember, RelationalCheckpointPage, RelationalCheckpointSymbolBucket,
     RelationalNativeCheckpointCaptureDenial,
 };
 use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::SYMBOL_PAGE_CAPACITY;
 use crate::symbols::data::SymbolTableSnapshot;
 use std::collections::BTreeMap;
 

@@ -14,8 +14,14 @@ impl OperationHandler<Catalog, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::InvalidBatch);
         }
         let result = (|| {
+            super::super::peer_scope::stage_probe(reader)?;
             let scope = match edit {
-                Edit::Directory { .. } => "catalog",
+                Edit::Directory { .. } | Edit::GrantedDirectory { .. } => "catalog",
+                Edit::RetireDirectory { directory }
+                | Edit::UngrantDirectory { directory }
+                | Edit::Note { directory, .. } => {
+                    directory
+                }
                 Edit::Item { directory, .. }
                 | Edit::Items { directory, .. }
                 | Edit::Share { directory, .. }
@@ -28,6 +34,14 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
+            if matches!(edit, Edit::Note { .. }) {
+                reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
+            }
+            if matches!(edit, Edit::UngrantDirectory { .. }) {
+                reader
+                    .relations_to(GrantResource::reference(), &directory)
+                    .map_err(HandlerExecutionDenial::new)?;
+            }
             let directory = reader.mutation_target(&directory)?;
             let item = if let Edit::Share { item, .. }
             | Edit::RetireItem { item, .. }
@@ -45,7 +59,25 @@ impl OperationHandler<Catalog, Binding> for Handler {
             } else {
                 None
             };
-            Ok(Decision { directory, item })
+            let grant = if matches!(
+                edit,
+                Edit::GrantedDirectory { .. } | Edit::UngrantDirectory { .. }
+            ) {
+                let grant = reader
+                    .resolve_entity(GrantIdentity::at("GrantIdentity"), "watch-access".to_owned())?;
+                reader
+                    .reader()
+                    .require_decision_entity(&grant, BoxGrant::reference())
+                    .map_err(HandlerExecutionDenial::new)?;
+                Some(reader.mutation_target(&grant)?)
+            } else {
+                None
+            };
+            Ok(Decision {
+                directory,
+                item,
+                grant,
+            })
         })();
         match result {
             Ok(value) => HandlerResult::Completed(value),
@@ -76,7 +108,25 @@ impl OperationHandler<Catalog, Binding> for Handler {
                         .write_field(&item, ItemEnabled::at("ItemEnabled"), *enabled)
                         .map_err(HandlerExecutionDenial::new)?;
                 }
-                Edit::Directory { identity } => {
+                Edit::Note { note, .. } => {
+                    writer
+                        .write_field(&directory, DirectoryNote::at("DirectoryNote"), note.clone())
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::UngrantDirectory { .. } => {
+                    let grant = writer
+                        .projected_entity(decision.grant.as_ref().expect("resolved grant"))
+                        .map_err(HandlerExecutionDenial::new)?;
+                    writer
+                        .unlink(GrantResource::reference(), &grant, &directory)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::RetireDirectory { .. } => {
+                    writer
+                        .delete_entity(Directory::reference(), &directory)
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                Edit::Directory { identity } | Edit::GrantedDirectory { identity } => {
                     let created = writer
                         .create_entity_in_context(
                             &directory,
@@ -99,6 +149,19 @@ impl OperationHandler<Catalog, Binding> for Handler {
                             String::new(),
                         )
                         .map_err(HandlerExecutionDenial::new)?;
+                    if let Some(grant) = &decision.grant {
+                        let grant = writer
+                            .projected_entity(grant)
+                            .map_err(HandlerExecutionDenial::new)?;
+                        writer
+                            .link(
+                                GrantResource::reference(),
+                                format!("watch-grant-{identity}"),
+                                &grant,
+                                &created,
+                            )
+                            .map_err(HandlerExecutionDenial::new)?;
+                    }
                 }
                 Edit::Item { directory: key, .. } | Edit::Items { directory: key, .. } => {
                     let one = if let Edit::Item { identity, name, .. } = edit {
@@ -155,6 +218,10 @@ impl OperationHandler<Catalog, Binding> for Handler {
                                 &created,
                             )
                             .map_err(HandlerExecutionDenial::new)?;
+                        if super::super::ordered_decision::SEED_ENTRY.get() {
+                            writer.link(Entries::reference(), format!("ordered-{identity}"), &directory, &created)
+                                .map_err(HandlerExecutionDenial::new)?;
+                        }
                     }
                 }
                 Edit::RetireItem { .. } => {

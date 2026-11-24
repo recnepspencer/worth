@@ -2,8 +2,9 @@
 use crate::durability::canonical_commit_artifact::borrowed_payload::{
     omit_nil_record_field, replace_record,
 };
-use crate::merge::data::{AspectPolicyResolutionRecord, RelationalSchemaReconciliationWitnessRow};
-use crate::transactions::data::PublishedMergeExecutionAuthority;
+use crate::merge::data::artifacts::RelationalSchemaReconciliationWitnessRow;
+use crate::merge::data::policy::AspectPolicyResolutionRecord;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 pub(super) fn omit(source: &PublishedMergeExecutionAuthority) -> Vec<u8> {
     let row = &source

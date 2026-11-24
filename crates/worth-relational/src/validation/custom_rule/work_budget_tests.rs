@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use super::{structural_views::StructuralRelationView, CustomInvariantWorkMeter};
 use crate::tests::support::{create_entity, create_relation, runtime_with_test_schema};
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
 
 #[test]
 fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -41,7 +41,7 @@ fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation()
 
 #[test]
 fn rejected_adjacency_budget_never_consumes_the_denied_scan() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -82,7 +82,7 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let runtime = runtime_with_test_schema();
     let source = create_entity(
         &ExecutionRequest::serial(&host),
@@ -92,7 +92,7 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
     let observation = crate::validation::engine::InvariantObservation::committed(
         runtime.storage_access().current_edition(),
     );
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     for leased in [false, true] {
         for expected in [Ok(()), Err(Stop::Cancelled), Err(Stop::DeadlineElapsed)] {
             let cancellation = CancellationSource::new();
@@ -100,10 +100,10 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
                 let clock = worth_execution::MonotonicClock::system();
                 clock.deadline_at(clock.now())
             });
-            let serial = crate::test_execution_policy::serial_request()
+            let serial = crate::execution::test_policy::serial_request()
                 .with_cancellation(cancellation.token())
                 .with_deadline(deadline.clone());
-            let lease = crate::tests::support::test_execution_authority()
+            let lease = crate::execution::test_authority::test_execution_authority()
                 .request_lease(LeaseRequest {
                     policy: ExecutionRequestPolicy::new(
                         ExecutionPosture::Serial,

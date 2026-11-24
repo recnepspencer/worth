@@ -1,14 +1,15 @@
 //! Judge executed application effects before any new publication can be adopted.
 use super::PreparedRelationalCommitCandidate;
-use crate::mvcc::{RelationalRequiredOutputPublication, RequiredOutputRolePosture};
-use crate::transactions::data::TransactionCommitError;
+use crate::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublication;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 /// The exact prepared candidate preserves this current Native publication.
 /// It carries the original publication; it is never a newly performed origin.
 #[derive(Debug)]
 pub struct RelationalCurrentOutputAdoption {
     publication: RelationalRequiredOutputPublication,
-    basis: crate::branch::RelationalBranchBasisDescriptor,
+    basis: crate::branch::basis::RelationalBranchBasisDescriptor,
     selected: std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
 }
 
@@ -21,7 +22,7 @@ impl RelationalCurrentOutputAdoption {
         self.selected.dependency_identity.bytes()
     }
 
-    pub fn meaning(&self) -> &crate::mvcc::RequiredOutputPublicationMeaning {
+    pub fn meaning(&self) -> &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning{
         &self.selected.meaning
     }
 
@@ -43,7 +44,7 @@ impl RelationalCurrentOutputAdoption {
             .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
     }
 
-    pub fn basis(&self) -> &crate::branch::RelationalBranchBasisDescriptor {
+    pub fn basis(&self) -> &crate::branch::basis::RelationalBranchBasisDescriptor {
         &self.basis
     }
 }
@@ -51,14 +52,14 @@ impl RelationalCurrentOutputAdoption {
 impl PreparedRelationalCommitCandidate {
     pub(in crate::mvcc::publication) fn omitted_appendix_publication_refusal(
         &self,
-    ) -> Option<crate::mvcc::RelationalPublicationFailureKind> {
+    ) -> Option<crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind> {
         let payload = self
             ._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let prior = payload.as_ref()?.execution.appendix_adoption()?;
         Some(
-            crate::mvcc::RelationalPublicationFailureKind::OutputAdoptionRequired {
+            crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::OutputAdoptionRequired {
                 source: prior.meaning.source_scope,
                 producer: prior.producer.clone(),
                 family: prior.meaning.family.clone(),
@@ -72,7 +73,7 @@ impl PreparedRelationalCommitCandidate {
     pub fn prepare_current_output_adoption(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         previous: &RelationalRequiredOutputPublication,
     ) -> Result<Option<RelationalCurrentOutputAdoption>, TransactionCommitError> {
         execution
@@ -83,7 +84,9 @@ impl PreparedRelationalCommitCandidate {
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 let payload = payload.as_ref().ok_or_else(|| {
-                    crate::mvcc::origin_denial("executed adoption candidate is unavailable")
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "executed adoption candidate is unavailable",
+                    )
                 })?;
                 if !basis.is_current()
                     || basis.descriptor() != &payload.expected_basis
@@ -170,8 +173,8 @@ impl PreparedRelationalCommitCandidate {
 fn request_stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

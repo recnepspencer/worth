@@ -1,6 +1,6 @@
 mod canonical_registration_identity;
 mod canonical_registration_tags;
-mod relation_integrity_registration_plan;
+pub(crate) mod relation_integrity_registration_plan;
 
 #[cfg(test)]
 mod registration_examples;
@@ -17,7 +17,7 @@ use super::execution::{InvariantExecutionPoint, InvariantFailureEffect};
 use super::groups::InvariantCostClass;
 use super::results::{InvariantAdvisory, InvariantViolation};
 use super::rules::{InvariantRule, RecordKindTag};
-use super::InvariantVerdict;
+use crate::validation::data::execution::InvariantVerdict;
 pub(crate) use relation_integrity_registration_plan::append_relation_integrity_registrations;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

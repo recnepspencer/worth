@@ -1,20 +1,20 @@
 use crate::identity::data::EntityId;
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
+use super::super::field_changes::field_changes_for_evidence;
 use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
 };
 use crate::authority::mutation::canonical_deltas::materialized_state::evaluate_authoritative_binding_delta;
 use crate::authority::mutation::canonical_deltas::patch_authority::evaluate_authoritative_patch_delta;
-use crate::authority::mutation::field_versions::field_changes_for_evidence;
-use crate::capabilities::AspectPlanSource;
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use worth_foundational::facade::{AspectBinding, AspectShape};
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
 use super::state_views::RelationState;
 
-pub(super) fn evaluate_relation_lifecycle_delta(
+pub(in crate::authority::mutation) fn evaluate_relation_lifecycle_delta(
     plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,
@@ -55,7 +55,7 @@ pub(super) fn evaluate_relation_lifecycle_delta(
     }
 }
 
-pub(super) fn evaluate_relation_delta(
+pub(in crate::authority::mutation) fn evaluate_relation_delta(
     plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,
@@ -87,7 +87,7 @@ pub(super) fn evaluate_relation_delta(
     ))
 }
 
-pub(super) fn evaluate_relation_update_delta(
+pub(in crate::authority::mutation) fn evaluate_relation_update_delta(
     plans: &impl AspectPlanSource,
     relation_id: crate::identity::data::RelationId,
     kind_id: crate::identity::data::KindId,

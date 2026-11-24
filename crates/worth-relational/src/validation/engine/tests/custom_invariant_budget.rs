@@ -28,7 +28,7 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
     assert_eq!(results.results().len(), 1);
     assert_eq!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::NotApplicable
+        crate::validation::data::execution::InvariantVerdict::NotApplicable
     );
     assert_eq!(
         runtime
@@ -64,7 +64,8 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw(key),
-                    fields: crate::transactions::data::AspectFieldPatch::default(),
+                    fields:
+                        crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
                 }))
             })
             .collect(),
@@ -83,7 +84,7 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
     assert_eq!(results.results().len(), 1);
     assert_eq!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::NotApplicable
+        crate::validation::data::execution::InvariantVerdict::NotApplicable
     );
 }
 
@@ -111,7 +112,8 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
                     client_key: crate::symbols::data::ClientKey::raw(format!("entity-{index}")),
-                    fields: crate::transactions::data::AspectFieldPatch::default(),
+                    fields:
+                        crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
                 }))
             })
             .collect(),
@@ -130,7 +132,7 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
     assert_eq!(results.results().len(), 1);
     assert_eq!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::NotApplicable
+        crate::validation::data::execution::InvariantVerdict::NotApplicable
     );
     assert_eq!(
         runtime
@@ -143,7 +145,7 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
 
 #[test]
 fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let schema = RelationalSchemaRegistry::new()
@@ -165,22 +167,22 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
     let endpoints = (0..40)
         .map(|_| {
             (
-                crate::transactions::data::EntityReference::Existing(source),
-                crate::transactions::data::EntityReference::Existing(target),
+                crate::transactions::data::primitives::EntityReference::Existing(source),
+                crate::transactions::data::primitives::EntityReference::Existing(target),
             )
         })
         .collect::<Vec<_>>();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(903),
         merged_intents: vec![MutationIntent::Create(CreateIntent::BulkRelations(
-            crate::transactions::data::BulkRelationCreateIntent {
+            crate::transactions::data::intents::mutation_intent::BulkRelationCreateIntent {
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_keys: (0..endpoints.len())
                     .map(|index| ClientKey::raw(format!("relation-{index}")))
                     .collect(),
                 field_patches: vec![
-                    crate::transactions::data::AspectFieldPatch::default();
+                    crate::transactions::data::aspect_field_patch::AspectFieldPatch::default();
                     endpoints.len()
                 ],
                 endpoints,
@@ -201,7 +203,7 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
     assert_eq!(results.results().len(), 1);
     assert!(matches!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
+        crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
     assert_eq!(
         runtime
@@ -245,7 +247,7 @@ impl CustomInvariantRule for SwallowsWorkExhaustionRule {
             .is_ok()
         {}
         Ok(CustomInvariantVerdict::Violation(
-            crate::validation::data::CustomInvariantRefusal::Empty,
+            crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty,
         ))
     }
 }
@@ -269,12 +271,12 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
     );
 
     assert_eq!(results.results().len(), 1);
-    let crate::validation::data::InvariantVerdict::Violation(violation) =
+    let crate::validation::data::execution::InvariantVerdict::Violation(violation) =
         &results.results()[0].verdict
     else {
         panic!("an overrun rule must fail closed");
     };
-    let crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
+    let crate::validation::data::results::InvariantViolationFields::CustomInvariantFailure {
         identity,
         phase,
         failure,
@@ -290,11 +292,11 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
     );
     assert_eq!(
         phase,
-        &crate::validation::data::CustomInvariantFailurePhase::Execution
+        &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase::Execution
     );
     assert_eq!(
         failure,
-        &crate::validation::data::ResultCustomInvariantFailureKind::ExecutionError
+        &crate::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::ExecutionError
     );
     assert_eq!(
         detail,

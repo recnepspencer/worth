@@ -18,8 +18,10 @@ use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent as Even
 use crate::lineage::data::PersistentNameIdentity as Name;
 mod denial;
 mod keeper;
-mod model;
+pub(crate) mod model;
 mod outcome;
+pub(crate) mod transition_result;
+pub use transition_result::AggregateGroupTransition;
 #[cfg(test)]
 mod tests;
 
@@ -74,15 +76,6 @@ impl AggregateGroupNaming for AggregateIdentity {
             .collect();
         super::mint::mint_group_transition(scheme, anchor, rule, &sources)
     }
-}
-
-/// The complete naming outcome of one group transition.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AggregateGroupTransition {
-    /// Next-state groups in identity order.
-    pub assignments: Vec<AggregateGroupAssignment>,
-    pub retired: BTreeSet<AggregateIdentity>,
-    pub lineage: BTreeSet<Event>,
 }
 
 /// The name one next-state group will carry.

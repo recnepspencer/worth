@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use worth_foundational::FoundationalBranchReferenceGeneration;
 
-use crate::branch::{RelationalBranchTarget, RelationalBranchVersion};
+use crate::branch::target::RelationalBranchTarget;
+use crate::branch::version::RelationalBranchVersion;
 use crate::history::data::{BranchId, CommitId};
 
 /// One canonical branch lifecycle transition.

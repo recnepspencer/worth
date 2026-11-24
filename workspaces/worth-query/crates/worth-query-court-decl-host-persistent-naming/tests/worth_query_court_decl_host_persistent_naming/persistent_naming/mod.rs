@@ -1,0 +1,75 @@
+//! Persistent names through an installed Query world: scheme installation,
+//! named seeds, tracked operation reads and `HistoryDocument` continuity.
+use worth_query_decl::facade::{
+    application_history::*, application_operation::*, application_program::*, application_query::*,
+    application_schema::*, authentication::*, *,
+};
+use worth_query_host::facade::{
+    application_contribution::*, application_entry::*, application_installation::*,
+    primary_graph::*,
+};
+use worth_query_testkit_document_retention::facade::document_retention_model::{
+    host::host_limits, operator_identity::*,
+};
+#[macro_use]
+mod navigation_grant;
+mod schema;
+use schema::*;
+mod delete;
+mod edit;
+mod ergonomics;
+mod history;
+mod interleaving;
+mod named_read;
+mod navigation;
+mod outputs;
+mod probe;
+mod query;
+mod refusals;
+mod scoped;
+mod stored;
+mod unowned;
+mod world;
+
+pub struct History;
+worth_query_portable_type!(History => "worth.persistent-naming.history.v1");
+impl ApplicationHistoryBinding<Schema> for History {
+    type Access = query::model::Read;
+    const IDENTITY: &'static str = "OwnedModelHistory";
+}
+pub struct Entry;
+impl ApplicationFeature<Schema> for Entry {
+    type Inputs = ApplicationFeatureInputLeaf;
+    const IDENTITY: &'static str = "owned-model.entry.v1";
+}
+pub struct Completion;
+impl<B: ApplicationMutationBinding<Schema>> ApplicationActionDelivery<Schema, B> for Completion {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "owned-model.completion.v1";
+}
+pub struct Program;
+impl ApplicationProgramDefinition<Schema> for Program {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-model.program.v1");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![ApplicationFeatureSpec::root::<Schema, Entry>()
+            .action::<edit::model::Binding, Completion>()
+            .finish_action()
+            .action::<edit::member::Binding, Completion>()
+            .finish_action()
+            .action::<delete::Binding, Completion>()
+            .finish_action()
+            .action::<probe::Binding, Completion>()
+            .finish_action()
+            .action::<refusals::Binding, Completion>()
+            .finish_action()
+            .action::<outputs::sculpt::Binding, Completion>()
+            .finish_action()
+            .action::<stored::Binding, Completion>()
+            .finish_action()
+            .finish()]
+    }
+}

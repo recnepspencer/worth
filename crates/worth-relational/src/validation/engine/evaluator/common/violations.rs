@@ -1,8 +1,10 @@
 use crate::diagnostics::data::DiagnosticCode;
-use crate::validation::data::{
-    InvariantClass, InvariantViolation, InvariantViolationFields, StorageInconsistencyFailure,
-    StorageInconsistencyLookup, StorageInconsistencyScan,
-};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::results::StorageInconsistencyFailure;
+use crate::validation::data::results::StorageInconsistencyLookup;
+use crate::validation::data::results::StorageInconsistencyScan;
 use worth_foundational::facade::FieldKey;
 
 #[derive(Debug, Clone, Default)]

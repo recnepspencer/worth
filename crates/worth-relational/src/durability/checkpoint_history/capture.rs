@@ -1,9 +1,8 @@
 //! Freeze complete original canonical bytes into singleton members.
 use super::inventory::{CanonicalCheckpointMember, CanonicalCheckpointMembers};
 use crate::durability::{
-    data::*,
-    log::native_checkpoint_codec::CapturedManifest,
-    medium::{RelationalDurableOwnedReadRefusal as Refusal, RelationalDurableReadProtection},
+    data::*, log::native_checkpoint_codec::CapturedManifest,
+    medium::RelationalDurableReadProtection,
 };
 use worth_execution::ExecutionRequest;
 pub(crate) fn capture(
@@ -44,8 +43,7 @@ pub(crate) fn capture(
             .envelope_cells
             .get(&entry.position)
             .ok_or_else(|| corrupt("original canonical cell unavailable"))?;
-        let artifact = cell
-            .require_original_artifact(request, source.as_ref().zip(protection.as_ref()))
+        let artifact = crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(cell, request, source.as_ref().zip(protection.as_ref()))
             .map_err(capture_stop)?;
         if artifact.position() != entry.position
             || artifact.commit_id() != entry.commit.commit_id
@@ -90,92 +88,9 @@ pub(crate) fn capture(
 fn corrupt(detail: &str) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
 }
-pub(crate) fn owned_stop(
-    cause: Refusal,
-    subject: crate::storage::data::RelationalStorageSubject,
-) -> RelationalRecoveryStop {
-    match cause {
-        Refusal::Request(cause) => RelationalRecoveryStop::Request(cause),
-        Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Request(cause)) => {
-            RelationalRecoveryStop::Request(cause.into())
-        }
-        Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Allocation(cause)) => {
-            RelationalRecoveryStop::Allocation(cause)
-        }
-        Refusal::Storage(cause) => {
-            crate::storage::data::RelationalStorageUnavailable { subject, cause }.into()
-        }
-        Refusal::UnsupportedProvider => DurabilityError::new(
-            RecoveryFailureClass::UnsupportedLegacySemantics,
-            "original protected canonical source unsupported",
-        )
-        .into(),
-        Refusal::ForeignSource | Refusal::ForeignProtection | Refusal::Busy | Refusal::Bounds => {
-            crate::storage::data::RelationalStorageUnavailable {
-                subject,
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            }
-            .into()
-        }
-        Refusal::CanonicalFrame(_) => DurabilityError::new(
-            RecoveryFailureClass::CorruptCanonicalArtifact,
-            "original canonical frame refused",
-        )
-        .into(),
-        Refusal::TransitionFrame(_) => DurabilityError::new(
-            RecoveryFailureClass::CorruptBranchTransitionArtifact,
-            "original transition frame refused",
-        )
-        .into(),
-    }
-}
+pub(crate) use crate::durability::medium::owned_read_stop::owned_stop;
 
-pub(crate) fn capture_stop(
-    stop: RelationalRecoveryStop,
-) -> RelationalNativeCheckpointCaptureDenial {
-    match stop {
-        RelationalRecoveryStop::Content(cause) => cause.into(),
-        RelationalRecoveryStop::AdmissionImage(cause) => {
-            RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause)
-        }
-        RelationalRecoveryStop::Request(cause) => {
-            RelationalNativeCheckpointCaptureDenial::Request(cause)
-        }
-        RelationalRecoveryStop::Allocation(cause) => {
-            RelationalNativeCheckpointCaptureDenial::Allocation(cause)
-        }
-        RelationalRecoveryStop::Durability(cause) => {
-            RelationalNativeCheckpointCaptureDenial::Durability(cause)
-        }
-    }
-}
-pub(crate) fn array_capture_stop(
-    cause: worth_execution::ExecutionRequestArrayDenial,
-) -> RelationalNativeCheckpointCaptureDenial {
-    match cause {
-        worth_execution::ExecutionRequestArrayDenial::Request(cause) => {
-            RelationalNativeCheckpointCaptureDenial::Request(cause.into())
-        }
-        worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
-            RelationalNativeCheckpointCaptureDenial::Allocation(cause)
-        }
-    }
-}
-
-pub(crate) fn map_stop(
-    cause: worth_execution::ExecutionOrderedMapDenial,
-) -> RelationalRecoveryStop {
-    match cause {
-        worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
-            RelationalRecoveryStop::Request(cause.into())
-        }
-        worth_execution::ExecutionOrderedMapDenial::Allocation(cause) => {
-            RelationalRecoveryStop::Allocation(cause)
-        }
-        worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
-            RelationalRecoveryStop::Request(
-                crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
-            )
-        }
-    }
-}
+pub(crate) use crate::durability::data::native_checkpoint_capture_denial::{
+    array_capture_stop, capture_stop,
+};
+pub(crate) use crate::durability::data::recovery_stop::map_stop;

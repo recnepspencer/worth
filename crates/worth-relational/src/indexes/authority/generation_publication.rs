@@ -1,4 +1,11 @@
-use super::*;
+use super::IndexPreparationResult;
+use crate::history::data::CommitId;
+use crate::indexes::data::{
+    DerivedIndexApplicability, DerivedIndexBuildRequest, DerivedIndexEntries,
+    DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
+    DerivedIndexPublicationStatus,
+};
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
 
 pub(super) struct IndexGenerationPublicationBasis {
     pub(super) source_commit_id: CommitId,
@@ -24,10 +31,10 @@ impl IndexGenerationPublicationBasis {
 }
 
 pub(super) fn publish_index_generations(
-    runtime: &RelationalRuntime,
+    indexes: &IndexingSubsystem,
     basis: &IndexGenerationPublicationBasis,
     results: Vec<(
-        crate::authority::commit::preparation::reduction::keys::IndexReductionKey,
+        crate::authority::commit::preparation::packets::index::IndexReductionKey,
         IndexPreparationResult,
     )>,
     failed_indexes: &mut Vec<DerivedIndexId>,
@@ -38,7 +45,7 @@ pub(super) fn publish_index_generations(
             failed_indexes.push(result.index_id);
             continue;
         };
-        match publish_prepared_generation(runtime, basis, result.index_id, entries) {
+        match publish_prepared_generation(indexes, basis, result.index_id, entries) {
             Some(generation) => generations.push(generation),
             None => failed_indexes.push(result.index_id),
         }
@@ -47,18 +54,18 @@ pub(super) fn publish_index_generations(
 }
 
 pub(super) fn publish_prepared_generation(
-    runtime: &RelationalRuntime,
+    indexes: &IndexingSubsystem,
     basis: &IndexGenerationPublicationBasis,
     index_id: DerivedIndexId,
     entries: DerivedIndexEntries,
 ) -> Option<DerivedIndexGeneration> {
     let generation = prepared_generation(
         basis,
-        DerivedIndexGenerationId(runtime.indexes.next_generation_id()?),
+        DerivedIndexGenerationId(indexes.next_generation_id()?),
         index_id,
         entries,
     );
-    runtime.indexes.publish_generation(generation.clone());
+    indexes.publish_generation(generation.clone());
     Some(generation)
 }
 

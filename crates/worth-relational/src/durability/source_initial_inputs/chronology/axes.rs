@@ -1,7 +1,7 @@
 //! Small descriptive branch axes; no root materialization or live authority.
 use super::*;
-use crate::branch::{RelationalBranchTarget, RelationalBranchVersion};
-use crate::history::RelationalCommitIndexEntry;
+use crate::branch::{target::RelationalBranchTarget, version::RelationalBranchVersion};
+use crate::history::commit::RelationalCommitIndexEntry;
 use worth_foundational::{
     FoundationalBranchReferenceGeneration as Generation, FoundationalBranchTarget,
 };
@@ -140,9 +140,9 @@ impl<'a> ObservationKey<'a> {
         }
     }
     pub(super) fn of_descriptor(
-        descriptor: &'a crate::branch::RelationalBranchBasisDescriptor,
+        descriptor: &'a crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
     ) -> Self {
-        use crate::branch::RelationalBranchBasisPosture;
+        use crate::branch::basis_descriptor::RelationalBranchBasisPosture;
         Self {
             branch: descriptor.branch_id(),
             generation: descriptor.reference().generation().get(),

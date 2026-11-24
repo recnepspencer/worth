@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::{LineageId, RelationId};
 
 use super::digest_basis::{decision_log_digest_basis, event_batch_digest_basis};
@@ -14,6 +14,7 @@ use super::{
 pub(crate) struct PreparedLineageFinalization {
     artifact: LineageFinalizationArtifact,
     new_nodes: Vec<crate::lineage::data::LineageNode>,
+    entity_bindings: Vec<(crate::identity::data::EntityId, LineageId)>,
     new_relation_lineages: BTreeMap<RelationId, LineageId>,
 }
 
@@ -105,6 +106,7 @@ impl PreparedLineageFinalization {
         Self {
             artifact,
             new_nodes,
+            entity_bindings: Vec::new(),
             new_relation_lineages: BTreeMap::new(),
         }
     }
@@ -117,8 +119,23 @@ impl PreparedLineageFinalization {
         Self {
             artifact,
             new_nodes,
+            entity_bindings: Vec::new(),
             new_relation_lineages,
         }
+    }
+
+    pub(crate) fn with_entity_bindings(
+        mut self,
+        bindings: Vec<(crate::identity::data::EntityId, LineageId)>,
+    ) -> Self {
+        self.entity_bindings = bindings;
+        self
+    }
+
+    pub(crate) fn take_entity_bindings(
+        &mut self,
+    ) -> Vec<(crate::identity::data::EntityId, LineageId)> {
+        std::mem::take(&mut self.entity_bindings)
     }
 
     pub(crate) fn artifact(&self) -> &LineageFinalizationArtifact {
@@ -142,6 +159,7 @@ impl PreparedLineageFinalization {
         Vec<crate::lineage::data::LineageNode>,
         Vec<(RelationId, LineageId)>,
     ) {
+        debug_assert!(self.entity_bindings.is_empty());
         (
             self.artifact,
             self.new_nodes,

@@ -1,5 +1,5 @@
 //! Decode derived route selectors without constructing a root or publication.
-use super::RelationalCheckpointAdmissionRefusal as Refusal;
+use super::refusal::{projected_stop, RelationalCheckpointAdmissionRefusal as Refusal};
 use crate::durability::canonical_commit_artifact::borrowed_payload::{
     malformed, BorrowedPayload, Cursor,
 };
@@ -113,20 +113,4 @@ fn named_field<'a>(
 fn traversal(bytes: usize, request: &ExecutionRequest<'_, '_>) -> Result<(), Refusal> {
     crate::durability::artifact_payload_emission::request::account_work(request, bytes as u64)
         .map_err(super::refusal::native_stop)
-}
-
-pub(crate) fn projected_stop(
-    cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
-) -> Refusal {
-    match cause {
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => Refusal::Content(cause),
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Refusal::Request(cause),
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Frame(_)
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::PayloadDecode { .. }
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::PositionDisagreement { .. }
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::CommitIdDisagreement { .. }
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(_)
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::PositionAdmission(_)
-        | crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::NonCanonicalPayload => Refusal::InvalidProjectedMeaning,
-    }
 }

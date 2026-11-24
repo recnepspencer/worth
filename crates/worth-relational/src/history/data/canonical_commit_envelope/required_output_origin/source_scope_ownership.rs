@@ -1,10 +1,12 @@
 //! An opted-in publication is scoped by a live entity of its installed source kind.
 use super::*;
-use crate::{
-    mvcc::{RelationalInstalledApplicationPublicationAuthority, RequiredOutputPublicationMeaning},
-    storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState},
-    transactions::data::RecordRef,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
+use crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::OverlayStateView;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
@@ -18,8 +20,8 @@ pub(super) fn validate(
     state: &WorkingState,
     retiring: bool,
     source_input: Option<
-        &crate::runtime::RelationalPinnedRead<
-            crate::runtime::RelationalAppliedCandidateReadIdentity,
+        &crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead<
+            crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity,
         >,
     >,
     context: &mut MapKernelContext<'_, '_>,

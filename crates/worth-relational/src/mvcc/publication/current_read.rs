@@ -1,18 +1,10 @@
 //! Ordered owner-cell guards for a readonly source and a publication target.
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchCoordinationGuard,
-    RelationalBranchPublicationCell, RelationalBranchPublicationStateGuard,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::coordination::RelationalBranchCoordinationGuard;
+use crate::branch::reference_publication_cell::RelationalBranchPublicationCell;
+use crate::branch::reference_publication_cell::RelationalBranchPublicationStateGuard;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RelationalPublicationReadDependencyDenial {
-    EmptySourceUnsupported,
-    ForeignOwner,
-    AlreadyRequired,
-    CandidateUnavailable,
-    ConflictingSource,
-    NotCurrent,
-}
+pub use super::read_dependency_denial::RelationalPublicationReadDependencyDenial;
 
 /// Coordination precedes state acquisition, preserving the ordinary receiver's
 /// stop/latch boundaries. Both kinds of locks follow actual branch identity.

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::{projection::SnapshotProjectionRoot, RelationalBranchRoot};
 
 /// Why an immutable branch root remains retained by the Relational owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,6 +107,10 @@ impl RelationalRetainedHistoricalRoot {
             })
     }
 
+    pub(crate) fn projection_root(&self) -> SnapshotProjectionRoot<'_> {
+        self.root.project_snapshot()
+    }
+
     pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
         &self.root
     }
@@ -122,7 +126,7 @@ pub(crate) struct RelationalTransactionRetentionObligation {
 impl RelationalTransactionRetentionObligation {
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
-        identity: crate::branch::RelationalBranchIdentity,
+        identity: crate::branch::identity::RelationalBranchIdentity,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
         binding
@@ -146,7 +150,7 @@ pub(crate) struct RelationalCandidateRetentionObligation {
 impl RelationalCandidateRetentionObligation {
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
-        identity: crate::branch::RelationalBranchIdentity,
+        identity: crate::branch::identity::RelationalBranchIdentity,
         expected_root: Arc<RelationalBranchRoot>,
         prepared_root: Arc<RelationalBranchRoot>,
         publication_bases: Arc<dyn super::PublicationBasisAccess>,
@@ -184,7 +188,10 @@ pub(crate) struct RelationalPerformedSettlementObligation {
 }
 
 impl RelationalPerformedSettlementObligation {
-    pub(crate) fn record_interruption(&self, event: crate::runtime::RelationalInterruptionEvent) {
+    pub(crate) fn record_interruption(
+        &self,
+        event: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) {
         self._guard.record_interruption(event);
     }
 }
@@ -207,7 +214,7 @@ impl RelationalExternalBasisRetentionObligation {
     }
     pub(crate) fn acquire(
         binding: &super::RelationalBranchRetentionBinding,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Result<Self, super::RelationalRetentionAcquisitionDenial> {
         let owner = binding
             .owner

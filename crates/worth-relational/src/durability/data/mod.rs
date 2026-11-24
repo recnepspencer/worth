@@ -7,8 +7,8 @@ pub(crate) use checkpoint_roots::{
 mod complete_native_checkpoint;
 pub use complete_native_checkpoint::CompleteRelationalNativeCheckpoint;
 pub(in crate::durability) use native_checkpoint::OriginalCheckpointRead;
-mod branch_lifecycle_images;
-mod branch_root_schema_images;
+pub(crate) mod branch_lifecycle_images;
+pub(crate) mod branch_root_schema_images;
 mod checkpoint_coverage;
 mod checkpoint_directory;
 pub(crate) use checkpoint_directory::{
@@ -19,25 +19,30 @@ mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;
 mod checkpoint_member_list;
-mod record_identity_image;
+use crate::storage::data::checkpoint_page;
 pub(crate) use checkpoint_member_list::CapturedCheckpointMembers;
-mod checkpoint_page;
 pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
-mod history_member_directory;
-mod lineage_event_pages;
-pub(crate) use history_member_directory::{
+pub(crate) mod lineage_event_pages;
+pub(crate) use crate::storage::data::history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
 pub(crate) use lineage_event_pages::*;
 mod native_checkpoint;
-mod native_checkpoint_capture_denial;
+mod native_checkpoint_capture_conversion;
+pub(crate) mod native_checkpoint_capture_denial;
 mod recovery_branch_transitions;
-mod recovery_errors;
+pub(crate) mod recovery_errors;
 mod recovery_outcome;
 mod recovery_plan;
-mod recovery_stop;
+pub(crate) mod recovery_stop;
+pub(crate) mod recovery_verification;
 
+pub(crate) use crate::storage::data::record_identity_image::{
+    DurablePendingRecordReservation, DurableRecordGenerationClass,
+    DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
+    DurableRecordSlotFrontier, DurableReusableRecordSlot,
+};
 pub(crate) use branch_lifecycle_images::DurableBranchLifecycleImage;
 pub(crate) use branch_root_schema_images::{
     DurableBranchRootSchemaImage, DurableEntitySchemaRegistration,
@@ -50,11 +55,6 @@ pub use checkpoint_images::{
     RecordArenaCheckpointImage, RecordArenaCheckpointKind, RelationCheckpointImageKind,
     RelationEndpointsImage, RelationExtraImage, VersionedEntityMetadataImage,
     VersionedRelationMetadataImage,
-};
-pub(crate) use checkpoint_images::{
-    DurablePendingRecordReservation, DurableRecordGenerationClass,
-    DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
-    DurableRecordSlotFrontier, DurableReusableRecordSlot,
 };
 pub(crate) use checkpoint_manifest::*;
 pub use checkpoint_member::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
@@ -92,10 +92,10 @@ pub(crate) use checkpoint_index_definitions::CheckpointIndexDefinitions;
 mod checkpoint_lineage_basis;
 pub(crate) use checkpoint_lineage_basis::CheckpointLineageBasis;
 
-mod checkpoint_pages;
+use crate::storage::data::checkpoint_pages;
 pub(crate) use checkpoint_pages::CheckpointPages;
 
-mod checkpoint_symbol_buckets;
+use crate::storage::data::checkpoint_symbol_buckets;
 pub(crate) use checkpoint_symbol_buckets::CheckpointSymbolBuckets;
 
 mod checkpoint_lineage_event_pages;
@@ -105,3 +105,5 @@ pub(crate) use checkpoint_lineage_event_pages::{
 
 mod checkpoint_schema_images;
 pub(crate) use checkpoint_schema_images::CheckpointSchemaImages;
+
+pub(crate) use crate::storage::data::symbol_page_roster::RelationalCheckpointSymbolBucket;

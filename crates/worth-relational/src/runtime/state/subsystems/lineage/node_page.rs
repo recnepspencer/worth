@@ -1,7 +1,7 @@
 //! Request-funded readmission of one authenticated, bounded node-range page.
-use crate::durability::data::RelationalCheckpointPage;
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
 use crate::lineage::data::LineageNode;
+use crate::storage::data::checkpoint_page::RelationalCheckpointPage;
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -62,15 +62,10 @@ pub(super) fn readmit(
     {
         return Err(unavailable(Cause::Damaged));
     }
-    let mut entities = [None; 256];
-    for (slot, node) in page.nodes.iter().enumerate() {
-        entities[slot] = Some(node.entity_id());
-    }
-    let entities = &mut entities[..page.nodes.len()];
-    entities.sort_unstable();
-    if entities.windows(2).any(|pair| pair[0] == pair[1]) {
-        return Err(unavailable(Cause::Damaged));
-    }
+    // One entity may hold several lineages across retire/restore epochs (a
+    // history selection restores it at its original identity onto a fresh
+    // lineage); the strictly ascending lineage order above still refuses one
+    // lineage bound twice within a page.
     Ok(page)
 }
 
@@ -101,7 +96,7 @@ impl<'de> Visitor<'de> for NodePageVisitor<'_, '_, '_> {
             if nodes.len() == width {
                 return Err(A::Error::custom("lineage page width drift"));
             }
-            crate::execution::check_request(self.execution).map_err(|cause| {
+            crate::execution::request_custody::check_request(self.execution).map_err(|cause| {
                 *self.denial = Some(Failure::Request(cause));
                 A::Error::custom("lineage page request stopped")
             })?;

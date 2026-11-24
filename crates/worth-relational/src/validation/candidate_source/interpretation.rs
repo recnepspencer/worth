@@ -1,38 +1,25 @@
 //! Live Source custody stays with the proposal/materialization owner, not its receipts.
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationRecord};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+pub(crate) use crate::branch::materialization::source::NativeMaterializationSource;
 use crate::identity::data::VersionId;
-use crate::mvcc::RelationalMaterializationTransactionMode;
+use crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode;
+use crate::runtime::home_program_transition::coverage::captured_records::RelationalHomeTargetCoverage;
+use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 use std::sync::{Arc, Weak};
+use worth_foundational::facade::HomeProgramTransitionStepAssociation;
 mod content;
 mod restoration;
 pub(crate) use restoration::NativeSourceRestorationOrigin;
 
-/// Minted from the real suspension read. Retains its actual basis and manifest;
-/// neither this backing nor its identifiers grant an installed Source audience.
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct NativeMaterializationSource {
-    basis: AdmittedRelationalBranchBasis,
-    records: Arc<Vec<RelationalMaterializationRecord>>,
-}
-
-impl NativeMaterializationSource {
-    pub(crate) fn from_suspension(
-        basis: &AdmittedRelationalBranchBasis,
-        records: Arc<Vec<RelationalMaterializationRecord>>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
-            basis: basis.clone(),
-            records,
-        })
-    }
-
-    pub(crate) fn basis(&self) -> &AdmittedRelationalBranchBasis {
-        &self.basis
-    }
-
-    pub(crate) fn records(&self) -> &[RelationalMaterializationRecord] {
-        &self.records
-    }
+/// Scope and catalog evidence selected together by the transaction owner.
+pub(crate) struct ManagedSourceIssueInputs {
+    pub(crate) physical_basis: AdmittedRelationalBranchBasis,
+    pub(crate) posture: Option<RelationalMaterializationTransactionMode>,
+    pub(crate) materialization: Option<Arc<NativeMaterializationSource>>,
+    pub(crate) restoration: Option<NativeSourceRestorationOrigin>,
+    pub(crate) home_target_step: Option<HomeProgramTransitionStepAssociation>,
+    pub(crate) home_coverage: Option<Arc<RelationalHomeTargetCoverage>>,
+    pub(crate) catalog_receipt: Option<RelationalHomeProgramCatalogReceipt>,
 }
 
 /// One proposal's owner-issued interpretation. It is not a projected-row loan,
@@ -46,10 +33,9 @@ pub(crate) struct NativeManagedSourceInterpretation {
     posture: Option<RelationalMaterializationTransactionMode>,
     materialization: Option<Arc<NativeMaterializationSource>>,
     restoration: Option<NativeSourceRestorationOrigin>,
-    pub(super) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
-    pub(super) home_coverage:
-        std::sync::Mutex<Option<Arc<crate::runtime::RelationalHomeTargetCoverage>>>,
-    pub(super) execution_catalog: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    pub(super) home_target_step: Option<HomeProgramTransitionStepAssociation>,
+    pub(super) home_coverage: std::sync::Mutex<Option<Arc<RelationalHomeTargetCoverage>>>,
+    pub(super) catalog_receipt: Option<RelationalHomeProgramCatalogReceipt>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
     pub(super) authored_history:
         std::sync::OnceLock<Option<Arc<super::authored_history::PreparedSourceImpactHistory>>>,
@@ -58,24 +44,22 @@ pub(crate) struct NativeManagedSourceInterpretation {
 
 impl NativeManagedSourceInterpretation {
     pub(crate) fn issue(
-        input: &crate::mvcc::RelationalTransactionValidationInput,
+        input: impl Into<ManagedSourceIssueInputs>,
         proposed_version: VersionId,
         publication: crate::runtime::RelationalRuntimePublicationBinding,
     ) -> Arc<Self> {
+        let inputs = input.into();
         Arc::new(Self {
             content: std::sync::OnceLock::new(),
             publication,
-            physical_basis: input.basis().clone(),
+            physical_basis: inputs.physical_basis,
             proposed_version,
-            posture: input.intent().materialization_mode(),
-            materialization: input.intent().materialization_source().cloned(),
-            restoration: input.intent().restoration_origin().cloned(),
-            home_target: input.home_target().cloned(),
-            home_coverage: std::sync::Mutex::new(input.home_target_coverage().cloned()),
-            execution_catalog: input
-                .home_target()
-                .map(|target| target.meaning.clone())
-                .or_else(|| input.basis().inner.root.execution_contracts.get().cloned()),
+            posture: inputs.posture,
+            materialization: inputs.materialization,
+            restoration: inputs.restoration,
+            home_target_step: inputs.home_target_step,
+            home_coverage: std::sync::Mutex::new(inputs.home_coverage),
+            catalog_receipt: inputs.catalog_receipt,
             prepared: std::sync::OnceLock::new(),
             authored_history: std::sync::OnceLock::new(),
             context: std::sync::OnceLock::new(),
@@ -147,7 +131,7 @@ impl NativeManagedSourceInterpretation {
             .ok_or(Denial::MissingParticipant)?;
         if generation != prepared.registration_generation {
             return Err(Denial::Publication(
-                crate::mvcc::CompanionPreflightStop::RegistrationChanged,
+                crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop::RegistrationChanged,
             ));
         }
         Ok(())

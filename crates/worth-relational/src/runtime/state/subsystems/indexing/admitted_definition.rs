@@ -10,7 +10,7 @@ impl IndexDefinitionCatalog {
         field: &FieldKey,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         read: impl FnOnce(
-            &[crate::indexes::RetainedDerivedIndexDefinition],
+            &[crate::indexes::retained_definition::RetainedDerivedIndexDefinition],
             &mut worth_execution::MapKernelContext<'_, '_>,
         ) -> Result<R, E>,
     ) -> Result<R, E> {

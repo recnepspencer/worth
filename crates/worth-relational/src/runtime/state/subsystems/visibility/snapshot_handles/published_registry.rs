@@ -1,3 +1,4 @@
+mod head_selection;
 use super::published_release::PublishedSnapshotReleaseObservation;
 mod original_cleanup;
 use std::collections::{BTreeMap, HashMap};
@@ -132,16 +133,6 @@ impl PublishedSnapshotHandleRegistry {
             .by_id
             .get(&snapshot_id)
             .map(|binding| binding.binding.basis.branch_id().0.len())
-    }
-
-    pub(super) fn selected_root(
-        &self,
-        snapshot_id: SnapshotId,
-    ) -> Option<std::sync::Arc<crate::branch::RelationalBranchRoot>> {
-        self.lock()
-            .by_id
-            .get(&snapshot_id)
-            .map(|binding| std::sync::Arc::clone(binding.binding.basis.root()))
     }
 
     pub(super) fn binding_for_version(

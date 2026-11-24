@@ -118,6 +118,8 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
                 intent,
                 self.before,
                 pin,
+                // The source query's view of its own chain's links is #300.
+                None,
                 &mut ApplicationQueryNativeAccess::acquire(),
                 |plan, native| {
                     let source = runtime.project_applied_source_plan::<B, V>(

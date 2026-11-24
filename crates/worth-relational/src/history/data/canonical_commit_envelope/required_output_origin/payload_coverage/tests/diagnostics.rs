@@ -4,7 +4,7 @@ use crate::publication::patch::data::PublishedAuthoritativePatch;
 
 #[test]
 fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![entity_field_aspect(aspect_key("name"), field_key("name"))],
@@ -129,7 +129,7 @@ fn present_cell_refusals_identify_duplicate_binding_and_operation_form() {
 
 #[test]
 fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = AspectSchemaFixture {
         entity_aspects: vec![entity_summary_struct_aspect(
@@ -142,31 +142,32 @@ fn birth_field_clear_refuses_with_the_selected_struct_operation_summary() {
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
-            crate::transactions::data::WorkerIntentBatch::new("actual-struct-birth").push(
-                crate::transactions::data::MutationIntent::Create(
-                    crate::transactions::data::CreateIntent::Entity(
-                        crate::transactions::data::EntitySpec {
-                            partition_id: crate::identity::data::PartitionId::main(),
-                            kind_id: KindId(1),
-                            client_key: crate::symbols::data::ClientKey::raw(
-                                "private-key-sentinel",
-                            ),
-                            fields: string_aspect_field_patch([
-                                (
-                                    aspect_key("summary"),
-                                    field_key("title"),
-                                    "private-value-sentinel",
+            crate::transactions::data::primitives::WorkerIntentBatch::new("actual-struct-birth")
+                .push(
+                    crate::transactions::data::intents::mutation_intent::MutationIntent::Create(
+                        crate::transactions::data::intents::mutation_intent::CreateIntent::Entity(
+                            crate::transactions::data::primitives::EntitySpec {
+                                partition_id: crate::identity::data::PartitionId::main(),
+                                kind_id: KindId(1),
+                                client_key: crate::symbols::data::ClientKey::raw(
+                                    "private-key-sentinel",
                                 ),
-                                (
-                                    aspect_key("summary"),
-                                    field_key("status"),
-                                    "private-value-sentinel",
-                                ),
-                            ]),
-                        },
+                                fields: string_aspect_field_patch([
+                                    (
+                                        aspect_key("summary"),
+                                        field_key("title"),
+                                        "private-value-sentinel",
+                                    ),
+                                    (
+                                        aspect_key("summary"),
+                                        field_key("status"),
+                                        "private-value-sentinel",
+                                    ),
+                                ]),
+                            },
+                        ),
                     ),
                 ),
-            ),
             execution.allocation_policy(),
         )
         .unwrap();

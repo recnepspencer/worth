@@ -1,11 +1,12 @@
 //! The exact candidate registry is a nonwaiting reversible close preflight.
 use super::*;
-use crate::change_source::{RelationalMemoryCloseObservation as O, RelationalRuntimeHandle};
+use crate::change_source::memory_close_observation::RelationalMemoryCloseObservation as O;
+use crate::change_source::RelationalRuntimeHandle;
 use crate::tests::support::runtime_with_test_schema;
 
 #[test]
 fn memory_terminal_close_publication_registry_contention_preserves_admission() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let publication = runtime.publication_binding();

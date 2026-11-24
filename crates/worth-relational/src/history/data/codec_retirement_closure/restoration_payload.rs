@@ -3,7 +3,9 @@ use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
-use crate::{history::data::CommitId, identity::data::EntityId, transactions::data::RecordRef};
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
@@ -17,7 +19,7 @@ pub(super) fn validate_member(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let event = current
         .authored_source_restoration()
@@ -25,7 +27,7 @@ pub(super) fn validate_member(
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
         context,
-        event.entities.len() + runtime.runtime.history.catalog_len(),
+        event.entities.len() + runtime.input.projection.history.catalog_len(),
     )?;
     let old = event
         .entities
@@ -118,12 +120,12 @@ pub(super) fn validate_groups(
     current: &OwnedValidatedOutputOrigins,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let Some(event) = current.authored_source_restoration() else {
         return Ok(());
     };
-    charge(context, runtime.runtime.history.catalog_len())?;
+    charge(context, runtime.input.projection.history.catalog_len())?;
     let retired = validated_history
         .by_commit(
             event.retirement,
@@ -194,7 +196,7 @@ pub(super) fn validate_groups(
         {
             return Err("restoration changes producer provenance or membership".into());
         }
-        charge(context, runtime.runtime.history.catalog_len())?;
+        charge(context, runtime.input.projection.history.catalog_len())?;
         let live = validated_history
             .by_commit(
                 predecessor,
@@ -210,7 +212,7 @@ pub(super) fn validate_groups(
         for member in live
             .members
             .iter()
-            .filter(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+            .filter(|member| member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
         {
             charge(
                 context,
@@ -269,7 +271,7 @@ pub(super) fn validate_relation(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     use worth_foundational::facade::*;
     validate_groups(runtime, current, validated_history, context, schema)?;
@@ -281,7 +283,7 @@ pub(super) fn validate_relation(
     }
     charge(
         context,
-        event.relations.len() + runtime.runtime.history.catalog_len(),
+        event.relations.len() + runtime.input.projection.history.catalog_len(),
     )?;
     let old = event
         .relations
@@ -325,16 +327,15 @@ pub(super) fn validate_relation(
         .iter()
         .find(|edge| edge.id == id)
         .ok_or("restored edge absent")?;
-    let candidate =
-        crate::authority::mutation::intents::relation_endpoint_candidate::append_portable_in_scope(
-            &patch,
-            plan,
-            edge.source,
-            edge.target,
-            lease,
-            context,
-        )
-        .map_err(Stop::Request)?;
+    let candidate = crate::schema::portable_patch::append_portable_in_scope(
+        &patch,
+        plan,
+        edge.source,
+        edge.target,
+        lease,
+        context,
+    )
+    .map_err(Stop::Request)?;
     candidate.compare(|patch| {
         let expected = match readmit_portable_record_aspect_patch(
             patch,

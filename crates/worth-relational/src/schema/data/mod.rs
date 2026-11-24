@@ -1,13 +1,14 @@
 mod authority_projection;
 mod current_publication_storage;
 mod primary_schema_version;
+pub(crate) mod program_activation;
 pub use current_publication_storage::CurrentPublicationStorage;
 mod aspect_contracts;
 mod aspect_traces;
 mod authority_snapshot;
 mod continuity;
 mod extension;
-mod registry_errors;
+pub(crate) mod registry_errors;
 mod relation_integrity;
 mod structural_invariants;
 
@@ -15,7 +16,8 @@ use std::collections::BTreeMap;
 
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::identity::data::KindId;
-use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
+use crate::merge::data::identity::IdentityBasisDeclaration;
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 use serde::{Deserialize, Serialize};
 
 pub use aspect_contracts::{
@@ -31,10 +33,6 @@ pub use authority_snapshot::{
     schema_authority_snapshot_digest_bytes, SchemaAuthorityKindSnapshot,
     SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot, SchemaAuthoritySnapshotParts,
 };
-pub(crate) use naming_schemes::update_naming_layout_digest;
-pub use naming_schemes::{
-    SchemaAuthorityKindNamingBindingSnapshot, SchemaAuthorityNamingSchemeSnapshot,
-};
 pub use continuity::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
     DescriptorCanonicalBasisSupportPolicy, DescriptorCanonicalBasisVersion,
@@ -48,6 +46,10 @@ pub use continuity::{
     SchemaReconciliationOrderingMode, SchemaReconciliationPolicy, SchemaStratum,
     SchemaSubscriberImpact, SchemaTransitionArtifact, SchemaTransitionBarrier,
     SchemaTransitionSummary, SubscriberBoundaryVisibility, ValidatedSchemaTransition,
+};
+pub(crate) use naming_schemes::update_naming_layout_digest;
+pub use naming_schemes::{
+    SchemaAuthorityKindNamingBindingSnapshot, SchemaAuthorityNamingSchemeSnapshot,
 };
 pub use registry_errors::{SchemaRegistryError, SchemaRegistryErrorClass};
 pub(crate) use relation_integrity::{
@@ -109,7 +111,7 @@ pub struct KindResolution {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct RelationalSchemaRegistry {
-    pub(crate) content_formats: crate::content::RelationalContentFormatRegistry,
+    pub(crate) content_formats: crate::content::registry::RelationalContentFormatRegistry,
     pub(crate) entity_kinds: BTreeMap<KindId, EntityKindRegistration>,
     pub(crate) relation_kinds: BTreeMap<KindId, RelationKindRegistration>,
     /// Compiled from accepted Native metadata contracts. The declarations in
@@ -117,22 +119,16 @@ pub struct RelationalSchemaRegistry {
     pub(crate) native_private_kinds: std::collections::BTreeSet<KindId>,
     pub(crate) current_publication_storage: Option<CurrentPublicationStorage>,
     pub(crate) derived_relations: BTreeMap<
-        crate::derived_relation::DerivedRelationIdentity,
+        crate::derived_relation::definition::DerivedRelationIdentity,
         std::sync::Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
     >,
     pub(crate) projected_member_domains: BTreeMap<
         crate::projected_member_domain::ProjectedMemberDomainIdentity,
         std::sync::Arc<crate::projected_member_domain::RegisteredProjectedMemberDomain>,
     >,
-    pub(crate) persistent_name_schemes:
-        crate::lineage::data::InstalledPersistentNameSchemeRegistry,
-    pub(crate) kind_name_schemes: BTreeMap<
-        (
-            crate::lineage::data::PersistentNameSubjectKind,
-            KindId,
-        ),
-        String,
-    >,
+    pub(crate) persistent_name_schemes: crate::lineage::data::InstalledPersistentNameSchemeRegistry,
+    pub(crate) kind_name_schemes:
+        BTreeMap<(crate::lineage::data::PersistentNameSubjectKind, KindId), String>,
 }
 
 impl RelationalSchemaRegistry {
@@ -140,7 +136,7 @@ impl RelationalSchemaRegistry {
         mut self,
         field_meaning: worth_foundational::facade::CanonicalDigestId,
         format: worth_foundational::facade::CanonicalDigestId,
-    ) -> Result<Self, crate::content::RelationalContentDenial> {
+    ) -> Result<Self, crate::content::denial::RelationalContentDenial> {
         self.content_formats.bind_field(field_meaning, format)?;
         Ok(self)
     }
@@ -148,8 +144,8 @@ impl RelationalSchemaRegistry {
     pub fn register_content_format(
         mut self,
         identity: worth_foundational::facade::CanonicalDigestId,
-        codec: std::sync::Arc<dyn crate::content::RelationalContentCodec>,
-    ) -> Result<Self, crate::content::RelationalContentDenial> {
+        codec: std::sync::Arc<dyn crate::content::codec::RelationalContentCodec>,
+    ) -> Result<Self, crate::content::denial::RelationalContentDenial> {
         self.content_formats.register(identity, codec)?;
         Ok(self)
     }
@@ -172,7 +168,8 @@ impl RelationalSchemaRegistry {
                 registration.kind_id,
             ));
         }
-        let registration = crate::schema::canonicalize_entity_registration(registration)?;
+        let registration =
+            crate::schema::aspect_plans::canonicalize_entity_registration(registration)?;
         self.entity_kinds.insert(registration.kind_id, registration);
         Ok(self)
     }
@@ -191,7 +188,8 @@ impl RelationalSchemaRegistry {
                 registration.kind_id,
             ));
         }
-        let registration = crate::schema::canonicalize_relation_registration(registration)?;
+        let registration =
+            crate::schema::aspect_plans::canonicalize_relation_registration(registration)?;
         crate::schema::aggregate_identity::validate_binding(&self, &registration)?;
         crate::schema::current_publication_ownership::validate_binding(&self, &registration)?;
         if let Some(storage) = &registration.relation_integrity.current_publication_storage {

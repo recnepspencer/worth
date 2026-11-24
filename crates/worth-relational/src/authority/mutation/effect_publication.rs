@@ -1,13 +1,12 @@
-use crate::authority::mutation::canonical_deltas::{
-    authoritative_patch_with_delta_supplements, canonical_delta_for_mutation,
-};
+use super::canonical_deltas::canonical_publication_fragment;
+use super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use crate::authority::mutation::patch_details::{
     patch_detail_for_entity, patch_detail_for_relation, EntityPatchDetailKind,
     RelationPatchDetailKind,
 };
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchDetail;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::outcomes::RecordMutation;
 use super::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect, MutationWorkspace};
@@ -199,7 +198,7 @@ fn record_entity_publication_fragment(
     detail_kind: EntityPatchDetailKind,
     entity_id: crate::identity::data::EntityId,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     effect
         .publication
         .changed_records
@@ -221,7 +220,7 @@ fn record_relation_publication_fragment(
     source: crate::identity::data::EntityId,
     target: crate::identity::data::EntityId,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     let relation_birth = (canonical_delta.structural_change
         == crate::publication::patch::data::RecordStructuralChange::Created)
         .then_some(crate::publication::patch::data::PublishedRelationBirth {
@@ -276,49 +275,11 @@ fn record_patch_fragment(
     detail: PatchDetail,
     authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
     relation_birth: Option<crate::publication::patch::data::PublishedRelationBirth>,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
     let mut patch_fragment =
         canonical_publication_fragment(&canonical_delta, detail, authoritative_patch)?;
     patch_fragment.relation_birth = relation_birth;
     effect.publication.canonical_deltas.push(canonical_delta);
     effect.publication.patch_fragments.push(patch_fragment);
     Ok(())
-}
-
-pub(super) fn canonical_publication_fragment(
-    canonical_delta: &crate::authority::mutation::CanonicalRecordAspectDelta,
-    detail: PatchDetail,
-    authoritative_patch: Option<super::outcomes::MutationAspectPatch>,
-) -> Result<
-    crate::authority::mutation::FoundationalPatchFragment,
-    crate::transactions::data::CommitConflict,
-> {
-    Ok(match authoritative_patch {
-        Some(patch) => {
-            let patch = authoritative_patch_with_delta_supplements(canonical_delta, patch)
-                .map_err(|error| error.to_commit_conflict())?;
-            let published_patch =
-                crate::authority::mutation::canonical_deltas::published_patch_for_delta(
-                    canonical_delta,
-                    &patch,
-                )
-                .map_err(|error| error.to_commit_conflict())?;
-            crate::authority::mutation::FoundationalPatchFragment {
-                target: canonical_delta.target.clone(),
-                structural_change: canonical_delta.structural_change,
-                semantic_changes: crate::authority::mutation::canonical_deltas::semantic_changes(
-                    canonical_delta,
-                ),
-                contains_opaque_aspect: canonical_delta.contains_opaque_aspect,
-                detail,
-                relation_birth: None,
-                patch,
-                published_patch,
-            }
-        }
-        None => canonical_delta
-            .clone()
-            .into_foundational_patch_fragment(detail)
-            .map_err(|error| error.to_commit_conflict())?,
-    })
 }

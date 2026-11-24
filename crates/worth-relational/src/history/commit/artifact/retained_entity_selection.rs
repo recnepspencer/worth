@@ -1,21 +1,13 @@
 //! Bounded agreement of descriptive selection provenance with its envelope.
 use super::RelationalCommitArtifactDenial;
-use crate::branch::{relational_branch_observation, CANONICAL_RUNTIME_INSTANCE_ID};
+use crate::branch::reference::observation::relational_branch_observation;
+use crate::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
 use crate::history::data::{CanonicalCommitEnvelope, RelationalDescriptiveTouch};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::FoundationalBranchTarget;
 
-/// Internal meaning that a framed selection artifact failed to establish.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RelationalRetainedSelectionArtifactDenial {
-    SourceDescriptor,
-    EntityIdentity,
-    SchemaAgreement,
-    TargetPredecessor,
-    UnsupportedProfile,
-    SelectedRecordMeaning,
-}
+pub use crate::history::commit::artifact_denial::RelationalRetainedSelectionArtifactDenial;
 
 pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
@@ -42,7 +34,7 @@ fn validate_selection(
             selection.source_generation(),
         )
         .is_err()
-        || crate::history::RelationalCommitParentage::from_ordered(
+        || crate::history::commit::parentage::RelationalCommitParentage::from_ordered(
             source
                 .parent_commit_ids()
                 .iter()

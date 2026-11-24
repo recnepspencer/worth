@@ -1,6 +1,6 @@
 //! Coverage compiled at installation; commits consult only changed record kinds.
-use super::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 use crate::identity::data::KindId;
+use crate::indexes::data::definition::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
 use crate::schema::data::AspectContractPlanCatalog;
 use std::collections::{BTreeMap, BTreeSet};
 mod allocation;
@@ -10,7 +10,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 #[derive(Debug, Default)]
 pub(crate) struct InstalledIndexRouting {
-    maintenance: BTreeSet<crate::storage::substrate::maintenance::MaintenanceRoute>,
+    maintenance: BTreeSet<crate::storage::substrate::maintenance::routes::MaintenanceRoute>,
     entities: BTreeMap<KindId, Vec<DerivedIndexId>>,
     relations: BTreeMap<KindId, Vec<DerivedIndexId>>,
     entity_fields: BTreeMap<KindId, Vec<AspectFieldLocator>>,
@@ -33,7 +33,7 @@ impl InstalledIndexRouting {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         definitions: impl Iterator<Item = &'a DerivedIndexDefinition>,
         plans: &AspectContractPlanCatalog,
-    ) -> Result<Self, super::DerivedIndexMaintenanceDenialKind> {
+    ) -> Result<Self, crate::indexes::data::maintenance::DerivedIndexMaintenanceDenialKind> {
         let (mut routing, memory) = funding::run(execution, |pay| {
             pay(
                 1,
@@ -47,7 +47,7 @@ impl InstalledIndexRouting {
 
     pub(crate) fn maintenance_routes(
         &self,
-    ) -> &BTreeSet<crate::storage::substrate::maintenance::MaintenanceRoute> {
+    ) -> &BTreeSet<crate::storage::substrate::maintenance::routes::MaintenanceRoute> {
         &self.maintenance
     }
     pub(crate) fn entities(&self, kind: KindId) -> &[DerivedIndexId] {

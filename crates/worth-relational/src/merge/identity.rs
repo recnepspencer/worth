@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use crate::merge::aspect_plan_lookup::lowered_plan_for_record;
+use crate::merge::branch_delta::branch_delta_summary;
 use crate::merge::data::{
     HistoryScopedMergePlan, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
     IdentityMatchCandidate, IdentityMatchClass, IdentityResolutionReason, IdentityScopedMergePlan,
-    MergeAncestrySummary, MergePlanningError, MergeRecordIdentity,
-    NormalizedRelationalMergeRequest, VisibleMergeRecord, VisibleMergeRecordKind,
+    MergeAncestrySummary, MergeRecordIdentity, VisibleMergeRecord, VisibleMergeRecordKind,
 };
 use crate::merge::identity_records::{
     effective_identity_declarations, identity_summary, source_visible_records,
@@ -14,108 +14,87 @@ use crate::merge::identity_records::{
 use crate::merge::identity_target_index::{
     declared_key_set_match, DeclaredKeySetMatch, TargetIdentityIndex,
 };
-use crate::merge::planning::branch_delta_summary;
-use crate::merge::MergeAccess;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
-impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_identity_scope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
-    ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
-        let history_plan = self.plan_history_scope(execution, request)?;
-        self.discover_identity_scope(execution, history_plan)
-    }
+use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
-    fn discover_identity_scope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        history_plan: HistoryScopedMergePlan,
-    ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
-        let target_view = self
-            .runtime
-            .read_truth()
-            .read_version(execution, history_plan.basis.target_head.version_id)
-            .map_err(crate::merge::data::MergePlanningError::Execution)?;
-        let source_view = self
-            .runtime
-            .read_truth()
-            .read_version(execution, history_plan.basis.source_head.version_id)
-            .map_err(crate::merge::data::MergePlanningError::Execution)?;
+pub(super) fn discover_identity_scope(
+    registry: &RelationalSchemaRegistry,
+    aspect_plans: &AspectContractPlanCatalog,
+    target_view: &RelationalReadView,
+    source_view: &RelationalReadView,
+    history_plan: HistoryScopedMergePlan,
+) -> (IdentityScopedMergePlan, usize, usize) {
+    let ancestry = MergeAncestrySummary {
+        merge_base_rule: history_plan.basis.merge_base.rule,
+        merge_base_commit_id: history_plan.basis.merge_base.commit.commit_id,
+        supporting_left_ancestor_count: history_plan
+            .basis
+            .merge_base
+            .supporting_left_ancestors
+            .len(),
+        supporting_right_ancestor_count: history_plan
+            .basis
+            .merge_base
+            .supporting_right_ancestors
+            .len(),
+        target: branch_delta_summary(&history_plan.basis.target_head, &history_plan.target_delta),
+        source: branch_delta_summary(&history_plan.basis.source_head, &history_plan.source_delta),
+    };
 
-        let ancestry = MergeAncestrySummary {
-            merge_base_rule: history_plan.basis.merge_base.rule,
-            merge_base_commit_id: history_plan.basis.merge_base.commit.commit_id,
-            supporting_left_ancestor_count: history_plan
-                .basis
-                .merge_base
-                .supporting_left_ancestors
-                .len(),
-            supporting_right_ancestor_count: history_plan
-                .basis
-                .merge_base
-                .supporting_right_ancestors
-                .len(),
-            target: branch_delta_summary(
-                &history_plan.basis.target_head,
-                &history_plan.target_delta,
-            ),
-            source: branch_delta_summary(
-                &history_plan.basis.source_head,
-                &history_plan.source_delta,
-            ),
-        };
-
-        let source_records = source_visible_records(
-            &source_view,
-            &target_view,
-            history_plan.source_delta.touched_records.as_ref(),
-        );
-        let effective_identity_declarations =
-            effective_identity_declarations(self.runtime, &source_records);
-        let target_index = TargetIdentityIndex::new(
-            self.runtime,
-            &target_view,
-            source_records.as_slice(),
-            &effective_identity_declarations,
-        );
-        let candidates = source_records
-            .iter()
-            .map(|record| {
-                discover_identity_candidate(
-                    self.runtime,
-                    record,
-                    &effective_identity_declarations,
-                    &target_index,
-                )
-            })
-            .collect::<Vec<_>>();
-        let validated_schema_correspondences =
-            validate_schema_declared_correspondences(candidates.as_slice());
-        let identity_summary = identity_summary(
-            Arc::from(effective_identity_declarations.clone()),
-            Arc::from(candidates.clone()),
-            Arc::from(validated_schema_correspondences.clone()),
-        );
-
-        Ok(IdentityScopedMergePlan {
-            request: history_plan.request,
-            basis: history_plan.basis,
-            ancestry,
-            target_delta: history_plan.target_delta,
-            source_delta: history_plan.source_delta,
-            effective_identity_declarations: Arc::from(effective_identity_declarations),
-            source_records: Arc::from(source_records),
-            candidates: Arc::from(candidates),
-            validated_schema_correspondences: Arc::from(validated_schema_correspondences),
-            identity_summary,
+    let source_records = source_visible_records(
+        source_view,
+        target_view,
+        history_plan.source_delta.touched_records.as_ref(),
+    );
+    let effective_identity_declarations =
+        effective_identity_declarations(registry, &source_records);
+    let (target_index, indexed_rows) = TargetIdentityIndex::new(
+        aspect_plans,
+        target_view,
+        source_records.as_slice(),
+        &effective_identity_declarations,
+    );
+    let candidates = source_records
+        .iter()
+        .map(|record| {
+            discover_identity_candidate(
+                aspect_plans,
+                record,
+                &effective_identity_declarations,
+                &target_index,
+            )
         })
-    }
-}
+        .collect::<Vec<_>>();
+    let validated_schema_correspondences =
+        validate_schema_declared_correspondences(candidates.as_slice());
+    let identity_summary = identity_summary(
+        Arc::from(effective_identity_declarations.clone()),
+        Arc::from(candidates.clone()),
+        Arc::from(validated_schema_correspondences.clone()),
+    );
 
+    let plan = IdentityScopedMergePlan {
+        request: history_plan.request,
+        basis: history_plan.basis,
+        ancestry,
+        target_delta: history_plan.target_delta,
+        source_delta: history_plan.source_delta,
+        effective_identity_declarations: Arc::from(effective_identity_declarations),
+        source_records: Arc::from(source_records),
+        candidates: Arc::from(candidates),
+        validated_schema_correspondences: Arc::from(validated_schema_correspondences),
+        identity_summary,
+    };
+    (
+        plan,
+        target_view.entities().len() + target_view.relations().len(),
+        indexed_rows,
+    )
+}
 fn discover_identity_candidate(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source: &VisibleMergeRecord,
     effective_identity_declarations: &[IdentityBasisDeclaration],
     target_index: &TargetIdentityIndex,
@@ -130,7 +109,7 @@ fn discover_identity_candidate(
             effective_identity_declarations
                 .iter()
                 .filter(|declaration| {
-                    identity_declaration_applies_to_record(runtime, source, declaration, scope)
+                    identity_declaration_applies_to_record(aspect_plans, source, declaration, scope)
                 })
                 .cloned()
                 .collect::<Vec<_>>()
@@ -211,7 +190,7 @@ fn discover_identity_candidate(
                 }
             }
             IdentityBasisKind::DeclaredKeySet(keys) => {
-                match declared_key_set_match(runtime, source, keys.as_ref(), target_index) {
+                match declared_key_set_match(aspect_plans, source, keys.as_ref(), target_index) {
                     DeclaredKeySetMatch::ExactTarget(target_record) => {
                         return IdentityMatchCandidate {
                             scope: Some(declaration.scope.clone()),
@@ -286,7 +265,7 @@ fn source_identity_for_basis(
 }
 
 fn identity_declaration_applies_to_record(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source: &VisibleMergeRecord,
     declaration: &IdentityBasisDeclaration,
     kind_scope: &IdentityBasisScope,
@@ -295,7 +274,7 @@ fn identity_declaration_applies_to_record(
         IdentityBasisScope::EntityKind(_) | IdentityBasisScope::RelationKind(_) => {
             &declaration.scope == kind_scope
         }
-        IdentityBasisScope::AspectKey(aspect_key) => lowered_plan_for_record(runtime, source)
+        IdentityBasisScope::AspectKey(aspect_key) => lowered_plan_for_record(aspect_plans, source)
             .map(|plan| {
                 plan.executable_bindings
                     .iter()

@@ -7,8 +7,10 @@ mod members;
 mod port;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::EntityId;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
-use crate::validation::data::{StructuralRelationView, StructuralWalkDenialKind};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
+use crate::validation::data::structural_walk_denial::StructuralWalkDenialKind;
 pub use census::{
     AggregateCensusRead, AggregateCensusReadIdentity, AggregateReadCollection,
     PreparedAggregateCensus,

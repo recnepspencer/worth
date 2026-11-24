@@ -1,11 +1,11 @@
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 use crate::commit_strategies::{
-    data::CommitStrategyExecutionRegistration, FrozenCommitStrategyExecutorRegistry,
-    FrozenCommitStrategyRegistry,
+    FrozenCommitStrategyExecutorRegistry, FrozenCommitStrategyRegistry,
 };
 use crate::runtime::{
-    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingSubsystem,
-    LineageSubsystem, PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices,
-    RuntimeSubsystem, SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
+    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, LineageSubsystem,
+    PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices, RuntimeSubsystem,
+    SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
 };
 use crate::validation::data::CustomInvariantRegistration;
 use crate::validation::FrozenCustomInvariantRegistry;
@@ -15,16 +15,7 @@ use super::state::{
 };
 use super::{RelationalRuntime, RelationalRuntimeConstructionDenial as Denial};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RelationalRuntimeForkDenial {
-    PublicationInFlight,
-    PerformedPublicationRequiresSettlement {
-        commit_id: crate::history::data::CommitId,
-    },
-    IdentityCapacityExhausted,
-    CanonicalInventoryInvalid,
-    BranchIdentityRebind(crate::branch::RelationalBranchObservationConstructionDenial),
-}
+use super::fork_denial::RelationalRuntimeForkDenial;
 
 #[derive(Debug, Default)]
 pub(crate) struct RuntimeExtensions {
@@ -32,7 +23,7 @@ pub(crate) struct RuntimeExtensions {
     managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
-    durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+    durable_medium: Option<Box<dyn crate::durability::published_medium::RelationalDurableMedium>>,
 }
 
 impl RuntimeExtensions {
@@ -75,7 +66,9 @@ impl RuntimeExtensions {
 
     pub(crate) fn with_durable_medium(
         mut self,
-        durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+        durable_medium: Option<
+            Box<dyn crate::durability::published_medium::RelationalDurableMedium>,
+        >,
     ) -> Self {
         self.durable_medium = durable_medium;
         self
@@ -131,7 +124,7 @@ impl RuntimeExtensions {
     }
 
     fn build_publication_subsystem(&self) -> PublicationSubsystem {
-        let mut publication = <PublicationSubsystem as RuntimeSubsystem>::new(&());
+        let mut publication = PublicationSubsystem::default();
         if let Some(post_commit_consumer) = &self.post_commit_consumer {
             publication.post_commit_consumer = std::sync::Arc::clone(post_commit_consumer);
         }
@@ -221,7 +214,10 @@ impl RelationalRuntime {
             &config.schema.registry,
             crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
         );
-        history.retain_original_empty_birth(initial_root.retained_schema_authority());
+        crate::runtime::state::subsystems::history::history_canonical_routes::retain_original_empty_birth(
+            &history,
+            initial_root.retained_schema_authority(),
+        );
         // The new registry contains exactly one fresh cell, bound to this
         // runtime, with a nonzero retention budget and no escaped handles.
         history
@@ -231,12 +227,12 @@ impl RelationalRuntime {
         if let Some(medium) = extensions.durable_medium.take() {
             durability.attach_medium(medium);
         }
-        let visibility = <VisibilitySubsystem as RuntimeSubsystem>::new(&config);
+        let visibility = VisibilitySubsystem::new(&config);
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
             history,
-            indexes: <IndexingSubsystem as RuntimeSubsystem>::new(&()),
-            lineage: <LineageSubsystem as RuntimeSubsystem>::new(&()),
+            indexes: Default::default(),
+            lineage: LineageSubsystem::new(),
             durability,
             record_identity: <RecordIdentitySubsystem as RuntimeSubsystem>::new(&()),
             services,
@@ -265,11 +261,11 @@ impl RelationalRuntime {
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
             commit_strategies: RuntimeSubsystem::fork(&self.commit_strategies),
             partitions: self.fork_partitions(),
-            visibility: RuntimeSubsystem::fork(&self.visibility),
-            publication: RuntimeSubsystem::fork(&self.publication),
+            visibility: self.visibility.fork(),
+            publication: self.publication.fork(),
             history,
-            indexes: RuntimeSubsystem::fork(&self.indexes),
-            lineage: RuntimeSubsystem::fork(&self.lineage),
+            indexes: self.indexes.fork(),
+            lineage: self.lineage.fork(),
             durability: RuntimeSubsystem::fork(&self.durability),
             record_identity: RuntimeSubsystem::fork(&self.record_identity),
             services,

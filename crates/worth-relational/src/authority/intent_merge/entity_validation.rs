@@ -1,18 +1,20 @@
-use crate::capabilities::SchemaSource;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreateIntent, EntityMutationIntent, MutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent,
 };
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 
 use super::record_lookup::entity_exists_in_state;
 use super::schema_conflicts::schema_error_to_commit_conflict;
 
 pub(super) fn validate_entity_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     intent: &MutationIntent,
 ) -> Result<(), CommitConflict> {
-    let schema_registry = schema_source.schema_registry();
+    let schema_registry = schema;
     match intent {
         MutationIntent::Create(CreateIntent::Entity(spec)) => schema_registry
             .resolve_entity(spec.kind_id)
@@ -27,19 +29,19 @@ pub(super) fn validate_entity_intent(
             .map(|_| ())
             .map_err(schema_error_to_commit_conflict),
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(spec)) => {
-            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+            validate_existing_entity_intent(state, schema, spec.entity_id, intent)
         }
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
-            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+            validate_existing_entity_intent(state, schema, spec.entity_id, intent)
         }
         MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
-            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+            validate_existing_entity_intent(state, schema, spec.entity_id, intent)
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
-            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+            validate_existing_entity_intent(state, schema, spec.entity_id, intent)
         }
         MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
-            validate_existing_entity_intent(state, schema_source, spec.entity_id, intent)
+            validate_existing_entity_intent(state, schema, spec.entity_id, intent)
         }
         MutationIntent::Create(CreateIntent::Relation(_))
         | MutationIntent::Create(CreateIntent::RelationAspects(_))
@@ -51,15 +53,15 @@ pub(super) fn validate_entity_intent(
 
 fn validate_existing_entity_intent(
     state: &impl CurrentPartitionAccess,
-    schema_source: &impl SchemaSource,
+    schema: &RelationalSchemaRegistry,
     entity_id: crate::identity::data::EntityId,
     intent: &MutationIntent,
 ) -> Result<(), CommitConflict> {
-    let schema_registry = schema_source.schema_registry();
+    let schema_registry = schema;
     let exists_in_current_state = entity_exists_in_state(state, entity_id);
     if !exists_in_current_state {
         return Err(CommitConflict::new(ConflictClass::StaleTarget {
-            target: crate::transactions::data::ExistingRecordTarget::Entity(entity_id),
+            target: crate::transactions::data::primitives::ExistingRecordTarget::Entity(entity_id),
             context: "entity validation".to_string(),
         }));
     }

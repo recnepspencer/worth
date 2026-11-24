@@ -1,7 +1,9 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredPartitionIsolationContract;
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::super::context::InvariantExecutionContext;
 use super::common::canonicalize_violations;
@@ -57,7 +59,7 @@ pub(super) fn evaluate_partition_isolation_contract(
 }
 
 fn partition_isolation_violation(
-    class: crate::validation::data::InvariantClass,
+    class: crate::validation::data::execution::InvariantClass,
     contract: &LoweredPartitionIsolationContract,
     relation_id: Option<crate::identity::data::RelationId>,
     source: EntityReference,

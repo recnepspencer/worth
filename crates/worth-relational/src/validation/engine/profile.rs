@@ -1,4 +1,6 @@
-use crate::validation::data::{InvariantExecutionPoint, InvariantGroup, InvariantGroupSet};
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::groups::InvariantGroup;
+use crate::validation::data::groups::InvariantGroupSet;
 
 use super::observation::InvariantObservationKind;
 

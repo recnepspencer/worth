@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    RelationalMergeCorrespondencePosture, RelationalMergeRequestBindingDenial,
-    RelationalMergeSchemaReconciliationPosture, RelationalMergeTopologyIntent,
+use super::binding_denial::RelationalMergeRequestBindingDenial;
+use crate::merge::data::requests::normalized::{
+    RelationalMergeCorrespondencePosture, RelationalMergeSchemaReconciliationPosture,
+    RelationalMergeTopologyIntent,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

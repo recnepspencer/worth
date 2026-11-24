@@ -1,6 +1,6 @@
 //! One original-request stage shared by record reads and explicit maintenance.
 use super::result_memory::OriginalResultMemory;
-use super::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::{ChargedBytes, MapKernelContext, MapKernelFailure};
 use worth_foundational::PartitionIdentity;
 
@@ -70,7 +70,7 @@ pub(crate) fn metered_with_memory<T>(
     ) -> T,
     owned_bytes: impl Fn(&T) -> u64,
 ) -> Result<T, Cause> {
-    crate::execution::check_request(execution)?;
+    crate::execution::request_custody::check_request(execution)?;
     execution
         .in_scope(|lease| {
             let mut memory =

@@ -1,9 +1,10 @@
 use worth_foundational::FoundationalBranchTarget;
 
-use super::{
-    RelationalBranchBasisDenial, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
-    ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
-};
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::basis::RelationalBranchBasisPosture;
+use crate::branch::basis::ResolvedRelationalBasisDescriptor;
+use crate::branch::basis::RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
 
 pub(crate) fn resolve_relational_branch_basis_descriptor(
     descriptor: RelationalBranchBasisDescriptor,

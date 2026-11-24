@@ -6,8 +6,9 @@ use crate::inspection::data::{
     GraphInspectionSummary, InspectionAccessPath, InspectionAvailability, InspectionDegradation,
     InspectionOrigin, InspectionScope,
 };
-use crate::storage::data::{RelationalReadView, RetentionPlan};
+use crate::storage::data::RetentionPlan;
 use crate::visibility::cache_state::cached_historical_state_for_version;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::InspectionAccess;
 

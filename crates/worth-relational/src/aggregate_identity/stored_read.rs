@@ -3,7 +3,7 @@ use super::funding::PlanDenial;
 use super::{cohorts, funding, retention_extent as extent};
 use crate::graph_member::NativeMemberKey as Member;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;

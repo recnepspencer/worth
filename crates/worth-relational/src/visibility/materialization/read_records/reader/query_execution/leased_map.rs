@@ -5,7 +5,8 @@ use worth_execution::{
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use crate::query::data::{QueryExecutionOutcome, QueryWorkerFragment};
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::QueryWorkerFragment;
 
 const RESULT_BUDGET_DIVISOR: u64 = 4;
 
@@ -32,7 +33,7 @@ impl ChargedBytes for QueryPacketMapInput {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadExecutionStop {
-    ReadRequest(crate::execution::RelationalExecutionDenialCause),
+    ReadRequest(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Request(worth_execution::WorkCeilingDenial),
     PreparationAdmission(ScanDenial),
     PreparationStopped {
@@ -63,7 +64,7 @@ impl std::error::Error for QueryReadExecutionStop {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadPacketDenial {
-    ReadRequest(crate::execution::RelationalExecutionDenialCause),
+    ReadRequest(crate::execution::denial_cause::RelationalExecutionDenialCause),
     FragmentUnavailable,
 }
 

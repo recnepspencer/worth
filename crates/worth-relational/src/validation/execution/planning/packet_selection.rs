@@ -1,5 +1,6 @@
 use crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration;
-use crate::validation::data::{CustomInvariantNonApplicability, CustomInvariantScopePlanner};
+use crate::validation::custom_rule::CustomInvariantScopePlanner;
+use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use std::mem::size_of;
@@ -77,7 +78,7 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            let unrelated = runtime.home_target.is_none()
+            let unrelated = !runtime.rejudges_home_target()
                 && registration.managed_sources.is_empty()
                 && has_declared_applicability
                 && touched_kinds
@@ -93,7 +94,7 @@ pub(super) fn eligible_registrations<'state>(
                 return None;
             }
             if unrelated {
-                let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::empty();
+                let prepared_scope = crate::validation::custom_rule::PreparedCustomInvariantScope::empty();
                 let retained_touched = prepared_scope.retained_touched();
                 return Some(InvariantPacketRegistration::CustomNotApplicable {
                     registration: registration.clone(),
@@ -106,7 +107,7 @@ pub(super) fn eligible_registrations<'state>(
             let observation = request.observation_for(registration.execution_point());
             let version = request.version_for(registration.execution_point());
             let prepared_scope =
-                crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
+                crate::validation::custom_rule::PreparedCustomInvariantScope::capture_with_shared_inputs(
                     observation,
                     version,
                     request.semantic_plan(),

@@ -1,6 +1,6 @@
 //! A candidate pin read prepares the projection only, never a consequence plan.
 use super::*;
-use crate::transactions::data::TransactionId;
+use crate::transactions::data::primitives::TransactionId;
 
 impl AggregateProposal {
     fn pin_projection(

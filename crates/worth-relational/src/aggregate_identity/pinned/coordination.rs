@@ -1,7 +1,7 @@
 //! One exact-source, original-funded handoff for Native aggregate read audiences.
 use super::super::funding::AggregateWork;
 use super::*;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
 #[derive(Clone, Copy, Default)]
@@ -10,8 +10,8 @@ pub(super) struct Limits<'input> {
     pub(super) control: Option<&'input dyn Fn() -> Result<(), Cause>>,
 }
 
-pub(super) fn read<Snapshot, Value: ChargedBytes, Output>(
-    pin: &RelationalPinnedRead<Snapshot>,
+pub(super) fn read<Value: ChargedBytes, Output>(
+    basis: &VisibilitySnapshotBasis,
     execution: &ExecutionRequest<'_, '_>,
     limits: Limits<'_>,
     build: impl FnOnce(
@@ -34,9 +34,8 @@ pub(super) fn read<Snapshot, Value: ChargedBytes, Output>(
             context
                 .poll()
                 .map_err(|stop| FundingFailure::Execution(stop.into()))?;
-            let root =
-                RelationalBranchRootState::new(std::sync::Arc::clone(pin.pinned_basis().root()));
-            let view = InvariantStateView::new(&root, pin.pinned_basis().version_id());
+            let root = RelationalBranchRootState::new(std::sync::Arc::clone(basis.root()));
+            let view = InvariantStateView::new(&root, basis.version_id());
             let mut checkpoint = |units| read_checkpoint(limits, &mut work, units);
             let (value, retention) =
                 funding::run_read(execution, &mut checkpoint, &mut reads, |funded| {

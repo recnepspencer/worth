@@ -116,7 +116,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .fork_expected(selected)
                 .map_err(Denial::ProductAdmission)?
                 .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-                .create(phase)
+                .create_in(self.application.clone(), phase)
                 .map_err(Denial::CandidateCreation)
         })();
         match result {
@@ -184,14 +184,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 )
                 .map_err(Denial::Transaction)?;
             let port = native.preparation_port();
-            if let Some(ownership) = self.ownership {
+            if let Some(recipe) = self.ownership {
+                let layout = graph.layout_ref();
+                let ownership = layout
+                    .history_ownership(recipe)
+                    .expect("eligibility admitted the installed recipe");
                 let selected = native
                     .prepare_owned_model_graph_selection(
                         &execution,
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
-                        graph.layout_ref().installed_history_ownership(),
+                        layout.installed_history_ownership(),
                         self.model.entity(),
                     )
                     .map_err(Denial::OwnedGraph)?;

@@ -1,6 +1,6 @@
 //! Persistent, paid route nodes share holds without retaining an old image.
 use super::publication_basis::{PublicationBasisRoute, RetainedPublicationBasis};
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
@@ -31,7 +31,7 @@ impl PublicationBasisRoutes {
     }
     pub(crate) fn get_by_meaning(
         &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     ) -> Option<&Arc<RetainedPublicationBasis>> {
         self.find_by(|node| node.compare_meaning(meaning).reverse())
     }
@@ -50,7 +50,7 @@ impl PublicationBasisRoutes {
         }
         None
     }
-    pub(super) fn insert(
+    pub(crate) fn insert(
         &mut self,
         key: PublicationBasisRoute,
         value: Arc<RetainedPublicationBasis>,
@@ -62,7 +62,7 @@ impl PublicationBasisRoutes {
         self.len += usize::from(added);
         Ok(())
     }
-    pub(super) fn remove(
+    pub(crate) fn remove(
         &mut self,
         key: &PublicationBasisRoute,
         execution: &ExecutionRequest<'_, '_>,

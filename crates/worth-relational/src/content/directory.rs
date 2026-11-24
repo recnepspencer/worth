@@ -6,8 +6,8 @@ use super::{
     RelationalContentFrame,
 };
 use crate::{
-    schema::data::RelationalSchemaRegistry, transactions::data::RecordRef,
-    validation::engine::state_view::InvariantStateView,
+    identity::data::VersionId, schema::data::RelationalSchemaRegistry,
+    storage::overlay::CurrentPartitionAccess, transactions::data::primitives::RecordRef,
 };
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest};
 use worth_foundational::facade::ContentRefId;
@@ -66,7 +66,6 @@ impl ContentDirectory {
     ) -> Result<Self, Denial> {
         let staged = ContentFrameAdmission::admit(execution, &schema.content_formats, attachments)?;
         let mut next = self.clone();
-        let view = InvariantStateView::new(state, version);
         let mut resolved = ExecutionOrderedMap::default();
         let mut resolution = ContentResolution::new(
             &schema.content_formats,
@@ -76,7 +75,7 @@ impl ContentDirectory {
             &mut resolved,
         );
         for record in changed {
-            next.replace_record(execution, schema, &view, record, &mut resolution)?;
+            next.replace_record(execution, schema, state, version, record, &mut resolution)?;
         }
         Ok(next)
     }
@@ -84,31 +83,39 @@ impl ContentDirectory {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         schema: &RelationalSchemaRegistry,
-        view: &InvariantStateView<'_>,
+        state: &dyn CurrentPartitionAccess,
+        version: VersionId,
         record: &RecordRef,
         resolution: &mut ContentResolution<'_>,
     ) -> Result<(), Denial> {
         self.remove_record(execution, record)?;
         let mut identities = Identities::default();
-        field_references::visit(execution, schema, view, record, &mut |identity, format| {
-            let frame = resolution.resolve(execution, identity)?;
-            require_format(execution, &frame, format)?;
-            visit_directory(execution, identities.len())?;
-            if !identities.contains_key(&identity) {
-                identities
-                    .insert_cloned_native_for_request(&identity, &(), *execution)
-                    .map_err(map_denial)?;
-                visit_directory(execution, self.occurrences.len())?;
-                self.occurrences
-                    .insert_cloned_native_for_request(
-                        &(identity, Some(record.clone())),
-                        &frame,
-                        *execution,
-                    )
-                    .map_err(map_denial)?;
-            }
-            Ok(())
-        })?;
+        field_references::visit(
+            execution,
+            schema,
+            state,
+            version,
+            record,
+            &mut |identity, format| {
+                let frame = resolution.resolve(execution, identity)?;
+                require_format(execution, &frame, format)?;
+                visit_directory(execution, identities.len())?;
+                if !identities.contains_key(&identity) {
+                    identities
+                        .insert_cloned_native_for_request(&identity, &(), *execution)
+                        .map_err(map_denial)?;
+                    visit_directory(execution, self.occurrences.len())?;
+                    self.occurrences
+                        .insert_cloned_native_for_request(
+                            &(identity, Some(record.clone())),
+                            &frame,
+                            *execution,
+                        )
+                        .map_err(map_denial)?;
+                }
+                Ok(())
+            },
+        )?;
         if !identities.is_empty() {
             visit_directory(execution, self.records.len())?;
             self.records
@@ -226,7 +233,7 @@ pub(super) fn visit_directory(
 }
 
 pub(super) fn map_denial(cause: ExecutionOrderedMapDenial) -> Denial {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
     use worth_execution::ExecutionAllocationDenialClass as Class;
     Denial::Execution(match cause {
         ExecutionOrderedMapDenial::Request(cause) => cause.into(),

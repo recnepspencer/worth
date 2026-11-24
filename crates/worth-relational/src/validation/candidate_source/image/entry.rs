@@ -1,6 +1,6 @@
 //! Original-funded immutable Source condition and disposable entry headers.
 use super::*;
-use crate::mvcc::CompanionPreflightStop as Stop;
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
 use worth_execution::ExecutionRequest;
 
 pub(crate) struct ManagedIndexSourceAssociation {

@@ -1,22 +1,15 @@
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 
-use serde::{Deserialize, Serialize};
-
 use super::visibility_read_view::StrategyVisibilityReadView;
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
 use crate::snapshots::data::SnapshotHandle;
-use crate::visibility::materialization::read_records::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct StrategyExecutionSummary {
-    pub projected_entity_record_reads: usize,
-    pub projected_relation_record_reads: usize,
-    pub projected_partition_reads: usize,
-}
+use super::execution_summary::StrategyExecutionSummary;
 
 #[derive(Debug)]
 pub struct StrategyObservationContext<'runtime> {
@@ -30,7 +23,6 @@ pub struct StrategyObservationContext<'runtime> {
 
 impl<'runtime> StrategyObservationContext<'runtime> {
     pub(crate) fn new(
-        _runtime: &'runtime crate::runtime::RelationalRuntime,
         snapshot: &'runtime SnapshotHandle,
         read_contract: &'runtime crate::commit_strategies::data::StrategyReadContract,
         schema_registry: &'runtime RelationalSchemaRegistry,

@@ -7,7 +7,7 @@ use crate::identity::data::{EntityId, PartitionId};
 use crate::publication::patch::data::{
     PatchDetail, PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::num::NonZeroUsize;
 use worth_execution::{CancellationToken, LeaseRequest};
 use worth_foundational::{
@@ -102,7 +102,7 @@ fn fragment(
 }
 
 fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -117,10 +117,7 @@ fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'stat
 
 #[test]
 fn leased_publication_matches_serial_without_post_merge_clone() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .build()
-        .expect("valid native runtime configuration");
-    let preparation = runtime.preparation_runtime_snapshot();
+    let instrumentation = super::RuntimeInstrumentation::default();
     let fragments = vec![
         fragment(7, RecordStructuralChange::Updated),
         fragment(3, RecordStructuralChange::Deleted),
@@ -128,29 +125,26 @@ fn leased_publication_matches_serial_without_post_merge_clone() {
         fragment(8, RecordStructuralChange::RetainedForAudit),
         fragment(7, RecordStructuralChange::Created),
     ];
-    let serial = super::assemble_patch(&preparation, fragments.clone(), None).unwrap();
+    let serial = super::assemble_patch(&instrumentation, None, fragments.clone(), None).unwrap();
     let lease = publication_lease(10_000);
-    let leased = super::assemble_patch(&preparation, fragments, Some(&lease)).unwrap();
+    let leased = super::assemble_patch(&instrumentation, None, fragments, Some(&lease)).unwrap();
     assert_eq!(leased, serial);
 }
 
 #[test]
 fn leased_publication_stops_inside_large_packet_without_publishing() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .build()
-        .expect("valid native runtime configuration");
-    let preparation = runtime.preparation_runtime_snapshot();
+    let instrumentation = super::RuntimeInstrumentation::default();
     let fragments = (0..100)
         .map(|index| fragment(index, RecordStructuralChange::Updated))
         .collect();
     let lease = publication_lease(120);
-    let result = super::assemble_patch(&preparation, fragments, Some(&lease));
+    let result = super::assemble_patch(&instrumentation, None, fragments, Some(&lease));
     assert!(matches!(
         result,
         Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::WorkExhausted
                     ),
                     ..

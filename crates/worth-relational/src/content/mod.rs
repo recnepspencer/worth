@@ -1,22 +1,22 @@
 //! Immutable content authority carried by Native transactions and selected roots.
 mod admission_fault;
 mod attachments;
-mod codec;
-mod control;
+pub(crate) mod codec;
+pub(crate) mod codec_control;
+pub(crate) mod control;
 pub(crate) mod decoding;
-mod denial;
+pub(crate) mod denial;
 mod directory;
 mod field_references;
 mod frame;
 mod frame_admission;
-mod publication;
-mod read_closure;
+pub(crate) mod publication;
+pub(crate) mod read_closure;
 mod reconstruction;
-mod registry;
-mod schema_transition;
-pub use read_closure::RelationalContentReadClosure;
+pub(crate) mod registry;
 mod resolution;
-mod schema;
+pub(crate) mod schema;
+mod schema_transition;
 pub use schema::{
     RelationalContentFieldBinding, RelationalContentFormatDeclaration,
     RelationalContentSchemaSnapshot,
@@ -25,22 +25,19 @@ mod historical;
 mod preimage;
 mod projection;
 mod restoration;
-mod source;
+pub(crate) mod source;
 mod transaction;
-pub(crate) use publication::{commit_denial, prepare_publication, ContentPublication};
-pub(crate) use source::NativeContentSourceView;
 
 pub use attachments::RelationalContentAttachments;
 pub use codec::{RelationalContentCodec, RelationalContentSink};
-pub(crate) use control::run_commit_stage;
-pub use control::RelationalContentControl;
+pub use codec_control::RelationalContentControl;
 pub use denial::{RelationalContentDenial, RelationalContentRejection};
 pub(crate) use directory::ContentDirectory;
 pub use frame::{RelationalContentFrame, RelationalContentRecord};
 pub use registry::{RelationalContentFormat, RelationalContentFormatRegistry};
 
-pub const MAXIMUM_CONTENT_FRAME_BYTES: usize = 16 * 1024 * 1024;
-pub const MAXIMUM_STAGED_CONTENT_BYTES: usize = 64 * 1024 * 1024;
+pub(crate) mod limits;
+pub use limits::{MAXIMUM_CONTENT_FRAME_BYTES, MAXIMUM_STAGED_CONTENT_BYTES};
 
 pub(crate) fn charge_bytes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -56,3 +53,5 @@ pub(crate) fn charge_bytes(
         Ok(())
     })
 }
+
+mod basis_read;

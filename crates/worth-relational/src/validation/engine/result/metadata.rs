@@ -1,45 +1,16 @@
-use crate::validation::data::{
-    InvariantCostClass, InvariantExecutionPoint, InvariantGroupSet, InvariantPlanContract,
+use crate::validation::data::contracts::InvariantPlanContract;
+use crate::validation::data::execution::InvariantExecutionPoint;
+pub use crate::validation::data::execution_posture::{
+    InvariantExecutionDisposition, InvariantPlanScopeClass, InvariantScopeWideningCause,
 };
+use crate::validation::data::groups::{InvariantCostClass, InvariantGroupSet};
 use crate::{
     authority::commit::preparation::diagnostics::failures::PreparationFailureClass,
     authority::commit::preparation::planning::strategy::PreparationStrategy,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::validation::engine::InvariantObservationKind;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum InvariantPlanScopeClass {
-    TouchedScope,
-    PartitionScope,
-    BroaderScope,
-}
-
-impl InvariantPlanScopeClass {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::TouchedScope => "touched_scope",
-            Self::PartitionScope => "partition_scope",
-            Self::BroaderScope => "broader_scope",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum InvariantScopeWideningCause {
-    AllObservedPartitionScope,
-    FullObservedReadSet,
-}
-
-impl InvariantScopeWideningCause {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::AllObservedPartitionScope => "all_observed_partition_scope",
-            Self::FullObservedReadSet => "full_observed_read_set",
-        }
-    }
-}
+use crate::validation::data::observation_kind::InvariantObservationKind;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantProofBoundarySummary {
@@ -86,13 +57,6 @@ impl InvariantProofBoundarySummary {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum InvariantExecutionDisposition {
-    Executed,
-    SkippedByPlanContract,
-    SkippedByMayBreakMask,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantExecutionMetadata {
     execution_point: InvariantExecutionPoint,
@@ -109,7 +73,8 @@ pub struct InvariantExecutionMetadata {
     preparation_failures: Vec<PreparationFailureClass>,
     proof_boundary: Option<InvariantProofBoundarySummary>,
     #[serde(skip)]
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
 }
 
 impl InvariantExecutionMetadata {
@@ -128,7 +93,9 @@ impl InvariantExecutionMetadata {
         preparation_strategy: Option<PreparationStrategy>,
         preparation_failures: Vec<PreparationFailureClass>,
         proof_boundary: Option<InvariantProofBoundarySummary>,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self {
             execution_point,
@@ -196,7 +163,10 @@ impl InvariantExecutionMetadata {
         self.proof_boundary.as_ref()
     }
 
-    pub fn proposal_identity(&self) -> Option<&crate::mvcc::RelationalMutationProposalIdentity> {
+    pub fn proposal_identity(
+        &self,
+    ) -> Option<&crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>
+    {
         self.proposal_identity.as_ref()
     }
 

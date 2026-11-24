@@ -27,7 +27,7 @@ pub(super) fn retained(
     add(
         &mut bytes,
         tree::<
-            crate::derived_relation::DerivedRelationIdentity,
+            crate::derived_relation::definition::DerivedRelationIdentity,
             Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
         >(registry.derived_relations.len())?,
     )?;
@@ -154,13 +154,13 @@ fn declarations(
     let mut bytes = array::<DeclaredAspectContractBinding>(value.aspects.capacity())?;
     add(
         &mut bytes,
-        array::<crate::merge::data::IdentityBasisDeclaration>(
+        array::<crate::merge::data::identity::IdentityBasisDeclaration>(
             value.identity_declarations.capacity(),
         )?,
     )?;
     add(
         &mut bytes,
-        array::<crate::merge::data::AspectMergePolicyDeclaration>(
+        array::<crate::merge::data::policy::AspectMergePolicyDeclaration>(
             value.merge_policy_declarations.capacity(),
         )?,
     )?;
@@ -179,7 +179,7 @@ fn declarations(
     }
     for identity in &value.identity_declarations {
         control.checkpoint().map_err(Denial::Request)?;
-        use crate::merge::data::{IdentityBasisKind, IdentityBasisScope};
+        use crate::merge::data::identity::{IdentityBasisKind, IdentityBasisScope};
         if let IdentityBasisScope::AspectKey(key) = &identity.scope {
             add(&mut bytes, size(key.owned_allocation_capacity_bytes())?)?;
         }

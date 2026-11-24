@@ -1,8 +1,10 @@
 //! Explicit model correspondence across two owner runtime frames.
 use super::*;
 use crate::branch::{
-    relational_branch_observation, RelationalBranchCellCheckpoint, RelationalBranchCellDenial,
-    RelationalBranchIdentity, RelationalBranchReferenceObservation,
+    identity::RelationalBranchIdentity, reference::observation::relational_branch_observation,
+    reference::observation::RelationalBranchReferenceObservation,
+    reference::RelationalBranchCellDenial,
+    reference_checkpoint_data::RelationalBranchCellCheckpoint,
 };
 use crate::history::data::BranchId;
 

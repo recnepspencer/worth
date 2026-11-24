@@ -3,7 +3,7 @@ use super::{fixture::*, recovered, RelationalOperationControl};
 
 #[test]
 fn native_codec_candidate_requires_exact_recovered_owner_before_any_movement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     let (mut target, mut recovered, receipt) = recovered(execution, &world);

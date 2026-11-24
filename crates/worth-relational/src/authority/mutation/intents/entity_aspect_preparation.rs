@@ -4,10 +4,12 @@ use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::AspectContractPlanCatalog;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    ApplyEntityAspectPatchIntent, CommitConflict, ConflictClass, EntityFieldUpdateMissingState,
-    RecordAspectPatchTarget, UpdateEntityFieldsIntent,
-};
+use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::EntityFieldUpdateMissingState;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 pub(crate) struct PreparedEntityAspectMutation {
@@ -23,7 +25,10 @@ impl PreparedEntityAspectMutation {
     pub(crate) fn changes_state(
         &self,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<bool, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        bool,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         // The patch owner can change only these aspects. Untouched persistent
         // map entries never become whole-record comparison inputs.
         let keys = self
@@ -50,9 +55,9 @@ impl PreparedEntityAspectMutation {
                 .saturating_add(2);
             crate::execution::request_stage::checkpoint(context, bytes as u64).map_err(
                 |cause| {
-                    crate::transactions::data::TransactionCommitError::execution(
-                        crate::transactions::data::CommitExecutionDenial {
-                            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+                        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                                 cause.into(),
                             ),
                             partition_identity: None,
@@ -73,7 +78,10 @@ pub(crate) fn prepare_fields(
     intent: &UpdateEntityFieldsIntent,
     state: &impl CurrentPartitionAccess,
     plans: &AspectContractPlanCatalog,
-) -> Result<PreparedEntityAspectMutation, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    PreparedEntityAspectMutation,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let (kind_id, current) = current(intent.entity_id, state)?;
     let target = RecordAspectPatchTarget::Entity {
         entity_id: intent.entity_id,
@@ -95,7 +103,10 @@ pub(crate) fn prepare_portable(
     intent: &ApplyEntityAspectPatchIntent,
     state: &impl CurrentPartitionAccess,
     plans: &AspectContractPlanCatalog,
-) -> Result<PreparedEntityAspectMutation, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    PreparedEntityAspectMutation,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let (kind_id, current) = current(intent.entity_id, state)?;
     let target = RecordAspectPatchTarget::Entity {
         entity_id: intent.entity_id,
@@ -119,7 +130,10 @@ fn finish(
     >,
     patch: crate::authority::mutation::outcomes::MutationAspectPatch,
     target: RecordAspectPatchTarget,
-) -> Result<PreparedEntityAspectMutation, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    PreparedEntityAspectMutation,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let new_authoritative_aspect_state = record_aspect_patch::apply_entity(
         execution,
         authoritative_aspect_state

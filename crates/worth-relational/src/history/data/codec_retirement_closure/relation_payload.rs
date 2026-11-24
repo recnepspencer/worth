@@ -1,13 +1,13 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::identity::data::RelationId;
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
@@ -56,7 +56,7 @@ pub(super) fn validate(
             write,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )?
@@ -98,9 +98,9 @@ pub(super) fn reconstruct(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     let _memory = reserve(
         lease,
         bound
@@ -126,7 +126,7 @@ pub(super) fn reconstruct(
             crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
         ) {
             current = super::historical_selection::antecedent(
-                runtime.runtime,
+                runtime.input.projection.history,
                 &runtime.execution(),
                 &current,
                 origin,
@@ -184,7 +184,7 @@ pub(super) fn reconstruct(
             before,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )? || relation.birth != old.birth

@@ -17,8 +17,10 @@ pub mod optional_field_authoring;
 pub mod ordinary_field_authoring;
 pub mod original_input;
 pub mod output_correspondence;
+pub mod persistent_names;
 pub mod relation_effects;
 pub mod relation_initialization;
+pub mod same_commit_names;
 pub mod target_admission;
 pub mod write_index;
 
@@ -87,6 +89,7 @@ impl<Schema, Operation, Input, Scope>
             keys: BTreeSet::new(),
             conditional_definition: None,
             output_correspondence: Default::default(),
+            persistent_names: Default::default(),
             creation_partition: None,
             content_attachments: Default::default(),
             content_denial: None,
@@ -194,6 +197,7 @@ impl<Schema, Operation, Input, Scope>
             content_attachments: self.content_attachments,
             conditional_definition: self.conditional_definition,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            persistent_names: self.persistent_names,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,
             retain_client_observation: false,

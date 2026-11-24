@@ -1,7 +1,8 @@
 //! Fixed original producer DATA, with no second operational owner graph.
 use super::{refused, Stop};
 use crate::branch::{
-    RelationalBranchRoot, RelationalBranchRootSchemaAuthority, RelationalBranchVersion,
+    root::schema::RelationalBranchRootSchemaAuthority, root::RelationalBranchRoot,
+    version::RelationalBranchVersion,
 };
 use crate::durability::medium::RelationalDurableColdSource;
 use crate::runtime::{OriginalBranchSchemaInputsDenial, RelationalRuntime};

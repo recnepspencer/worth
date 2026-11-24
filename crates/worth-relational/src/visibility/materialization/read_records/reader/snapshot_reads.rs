@@ -1,16 +1,28 @@
-use super::*;
-use crate::visibility::snapshot_states::build_visibility_state;
+use super::context::VisibilityReadContext;
+use crate::query::data::QueryPlanContextId;
+use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
+use crate::visibility::cache_state::materialize_historical_visibility;
+use crate::visibility::snapshot_read_view::RelationalReadView;
+use crate::visibility::snapshot_states::{
+    read_view_from_snapshot_state,
+    resolution::{
+        resolve_snapshot_basis, resolve_snapshot_handle, resolve_snapshot_inspection,
+        resolve_snapshot_state,
+    },
+};
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
-    ) -> Result<Option<SnapshotInspectionSummary>, crate::execution::RelationalExecutionDenialCause>
-    {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Option<SnapshotInspectionSummary>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         let summary = resolve_snapshot_inspection(self.runtime, handle);
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         Ok(summary)
     }
 
@@ -33,12 +45,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Option<RelationalReadView>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
             basis
-                .root()
+                .projection_root()
                 .demand_all_full(execution, &self.runtime.services.symbols)
-                .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         }
         super::super::read_work::metered_with_memory(
             execution,
@@ -55,7 +70,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     return Ok(None);
                 }
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &resolved.state,
                     &resolved.handle,
                     &mut |units| context.checkpoint(units),
@@ -77,9 +92,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
-        self.try_read_version(execution, version_id)?
-            .map_err(crate::execution::RelationalExecutionDenialCause::HistoricalVisibility)
+    ) -> Result<RelationalReadView, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
+        self.try_read_version(execution, version_id)?.map_err(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::HistoricalVisibility,
+        )
     }
 
     /// Read a retained version with request-funded Full materialization.
@@ -90,7 +107,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<
         Result<RelationalReadView, crate::visibility::snapshot_states::HistoricalVisibilityDenial>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let state = materialize_historical_visibility(execution, self.runtime, version_id, true)?;
         let Some(state) = state else {
@@ -100,7 +117,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),
@@ -115,12 +132,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn query_plan_context(&self, handle: &SnapshotHandle) -> Option<QueryPlanContextId> {
         let snapshot = self.resolved_snapshot_handle(handle)?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)?;
-        if basis.root().has_materialization_unavailable() {
+        if basis.projection_root().has_materialization_unavailable() {
             return None;
         }
-        let root = basis.root();
+        let root = basis.projection_root();
         let (schema_version, descriptor_semantics_version, evidence_basis) =
-            query_schema_context_for_root(root);
+            root.query_schema_context();
         Some(QueryPlanContextId {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             snapshot_id: snapshot.snapshot_id,
@@ -135,12 +152,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn read_observation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        observation: &crate::mvcc::RelationalBranchObservation,
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
     ) -> Result<
-        Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial>,
-        crate::execution::RelationalExecutionDenialCause,
+        Result<RelationalReadView, crate::branch::basis_denial::RelationalBranchBasisDenial>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if let Err(denial) = self.require_local_observation(observation) {
             return Ok(Err(denial));
         }
@@ -150,18 +167,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .has_materialization_unavailable()
         {
             return Ok(Err(
-                crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable,
+                crate::branch::basis_denial::RelationalBranchBasisDenial::MaterializationUnavailable,
             ));
         }
         observation
             .selected_root()
             .demand_all_full(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let state = build_visibility_state(
-            self.runtime,
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-                observation,
-            ),
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
+        let state = observation.build_visibility_state(
+            self.runtime.runtime_instance_id(),
             crate::snapshots::data::SnapshotId(0),
             SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );
@@ -169,7 +183,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),
@@ -184,9 +198,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// Schema version carried by the observation's selected canonical root.
     pub fn observation_schema_version(
         &self,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<crate::schema::data::SchemaVersionId, crate::branch::RelationalBranchBasisDenial>
-    {
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<
+        crate::schema::data::SchemaVersionId,
+        crate::branch::basis_denial::RelationalBranchBasisDenial,
+    > {
         self.require_local_observation(observation)?;
         Ok(observation
             .selected_root()
@@ -202,7 +218,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
     ) -> Option<crate::schema::data::SchemaVersionId> {
         let basis = resolve_snapshot_basis(self.runtime, handle)?;
-        Some(basis.root().schema_authority().schema_version())
+        Some(basis.projection_root().schema_authority().schema_version())
     }
 
     pub(super) fn resolved_snapshot_handle(
@@ -214,43 +230,18 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     fn require_local_observation(
         &self,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<(), crate::branch::RelationalBranchBasisDenial> {
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<(), crate::branch::basis_denial::RelationalBranchBasisDenial> {
         if observation.identity().runtime_instance_id() != self.runtime.runtime_instance_id() {
-            return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
-                expected_runtime_instance_id: self.runtime.runtime_instance_id(),
-                actual_runtime_instance_id: observation.identity().runtime_instance_id(),
-            });
+            return Err(
+                crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
+                    expected_runtime_instance_id: self.runtime.runtime_instance_id(),
+                    actual_runtime_instance_id: observation.identity().runtime_instance_id(),
+                },
+            );
         }
         Ok(())
     }
-}
-
-pub(super) fn query_schema_context_for_root(
-    root: &crate::branch::RelationalBranchRoot,
-) -> (
-    crate::schema::data::SchemaVersionId,
-    crate::schema::data::DescriptorSemanticsVersion,
-    QueryPlanEvidenceBasis,
-) {
-    let evidence_basis = match root.commit_evidence() {
-        None => QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
-        Some(crate::branch::RelationalRootCommitEvidence::Original(envelope)) => {
-            QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
-                commit_id: envelope.envelope().commit.commit_id,
-            }
-        }
-        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
-            QueryPlanEvidenceBasis::CheckpointAdmissionImage {
-                commit_id: commit.index().commit.commit_id,
-            }
-        }
-    };
-    (
-        root.schema_authority().schema_version(),
-        root.schema_authority().descriptor_semantics_version(),
-        evidence_basis,
-    )
 }
 
 fn read_view_bytes(view: &RelationalReadView) -> u64 {

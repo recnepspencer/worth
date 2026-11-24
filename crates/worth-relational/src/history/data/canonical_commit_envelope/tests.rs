@@ -15,24 +15,39 @@ use crate::publication::patch::data::{
     PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
 use crate::schema::data::{DescriptorSemanticsVersion, RelationalSchemaRegistry, SchemaVersionId};
-use crate::transactions::data::{
-    AspectFieldPatch, EntityMutationIntent, MergedCommitPlan, MutationIntent, RecordRef,
-    TransactionId, UpdateEntityFieldsIntent,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::commit_log::{
+    CommitAspectSummary, CommitChangeSummary, CommitHistorySummary,
 };
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::commit_semantic_result::{
+    RelationalCommitPublicationMeaning, RelationalCommitSemanticResult,
+    RelationalCommitStructuralMeaning,
+};
+use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::TransactionId;
+use std::sync::Arc;
 
-fn envelope_with_patch_and_update(
+pub(crate) fn envelope_with_patch_and_update(
     patch_target: RecordRef,
     update_target: EntityId,
 ) -> CanonicalCommitEnvelope {
+    let receipt = RelationalCommitReceipt {
+        commit_id: CommitId(1),
+        version_id: VersionId(1),
+        branch_id: BranchId("main".to_owned()),
+        parents: Vec::new(),
+    };
+    let descriptor_semantics_version = DescriptorSemanticsVersion(1);
     let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         Default::default(),
         crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, Vec::new(), None),
-        RelationalCommitReceipt {
-            commit_id: CommitId(1),
-            version_id: VersionId(1),
-            branch_id: BranchId("main".to_string()),
-            parents: vec![],
-        },
+        receipt.clone(),
         BranchId("main".to_string()),
         CanonicalCommitAuthorityKind::VersionedTransaction,
         None,
@@ -54,7 +69,7 @@ fn envelope_with_patch_and_update(
             ordering: PatchOrdering::CanonicalCommitOrder,
             publication_mode: PatchPublicationMode::CommitNative,
             authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
-                target: patch_target,
+                target: patch_target.clone(),
                 structural_change: RecordStructuralChange::Updated,
                 relation_birth: None,
                 authoritative_patch:
@@ -81,26 +96,53 @@ fn envelope_with_patch_and_update(
         None,
         None,
         None,
-        DescriptorSemanticsVersion(1),
+        descriptor_semantics_version,
     );
-    // Pure predicate/inspection input: keep an actual original semantic image,
-    // then edit only this test body. No publication or readmission is claimed.
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let produced = crate::tests::support::create_entity_outcome(
-        execution,
-        &runtime,
-        "predicate-semantic-source",
-    );
-    let envelope = produced.publication().envelope.clone().into_arc();
-    crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
-    drop(produced);
-    drop(runtime);
-    let mut envelope = std::sync::Arc::try_unwrap(envelope)
-        .expect("source owner and result released their actual envelope shares");
-    *envelope.body_mut_for_test() = draft.into_body();
-    envelope
+    // Seal directly at the canonical owner. These descriptor predicates
+    // require one admitted wire value, with no claim of performed publication.
+    let semantic = RelationalCommitSemanticResult {
+        receipt,
+        created_entities: Vec::new(),
+        created_relations: Vec::new(),
+        changed_records: vec![patch_target],
+        structural: RelationalCommitStructuralMeaning {
+            invariant_groups: Default::default(),
+            commit_topology: CommitTopology::FlatEntityBatch,
+            touched_partitions: vec![PartitionId::main()],
+            descriptor_semantics_version,
+        },
+        schema: CommitSchemaSummary {
+            transition: None,
+            descriptor_semantics_version,
+        },
+        history: CommitHistorySummary {
+            target_branch: "main".to_owned(),
+            requested_merge_parent_count: 0,
+            effective_merge_parent_count: 0,
+            parent_count: 0,
+            merge_base_count: 0,
+            had_previous_branch_head: false,
+        },
+        change: CommitChangeSummary {
+            changed_record_count: 1,
+            adjacency_delta_count: 0,
+        },
+        aspects: CommitAspectSummary {
+            changed_entity_aspect_count: 0,
+            changed_relation_aspect_count: 0,
+            touched_aspects: Vec::new(),
+            opaque_aspect_delta_count: 0,
+            zero_aspect_structural_delta_count: 1,
+        },
+        publication: RelationalCommitPublicationMeaning {
+            patch_record_count: 1,
+            lineage_event_count: 0,
+            merge_parent_count: 0,
+        },
+        validation: Vec::new(),
+        decoded_memory: None,
+    };
+    draft.seal(Arc::new(semantic)).unwrap()
 }
 
 #[test]

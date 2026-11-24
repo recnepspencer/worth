@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, SuggestedFix};
-use crate::history::data::HistoryDriftClass;
+use crate::history::data::history_policy::HistoryDriftClass;
 use crate::identity::data::KindId;
 use crate::schema::data::{
     ContractId, DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion,
@@ -223,11 +223,16 @@ pub struct DurabilityError {
     pub detail: String,
     pub history_drift_class: Option<HistoryDriftClass>,
     pub authority_continuity_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
-    pub storage_unavailable: Option<crate::storage::data::RelationalStorageUnavailable>,
+    pub storage_unavailable:
+        Option<crate::storage::data::storage_unavailable::RelationalStorageUnavailable>,
     pub context: ErrorContext,
 }
 
 impl DurabilityError {
+    pub(crate) fn corrupt_checkpoint(detail: impl Into<String>) -> Self {
+        Self::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+    }
+
     pub fn new(class: RecoveryFailureClass, detail: impl Into<String>) -> Self {
         let suggested_fix = match class {
             RecoveryFailureClass::CheckpointSizeOverflow
@@ -292,8 +297,12 @@ impl DurabilityError {
     }
 }
 
-impl From<crate::storage::data::RelationalStorageUnavailable> for DurabilityError {
-    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+impl From<crate::storage::data::storage_unavailable::RelationalStorageUnavailable>
+    for DurabilityError
+{
+    fn from(
+        failure: crate::storage::data::storage_unavailable::RelationalStorageUnavailable,
+    ) -> Self {
         let mut error = Self::new(
             RecoveryFailureClass::ColdStorageUnavailable,
             format!("committed storage unavailable: {failure:?}"),

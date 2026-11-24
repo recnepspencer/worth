@@ -6,7 +6,7 @@ use crate::indexes::data::{
     BoundedRelatedEntityOrderedLookupDenialKind, BoundedRelatedEntityOrderedLookupOutcome,
     BoundedRelatedEntityOrderedLookupRequest,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
 impl IndexAccess<'_> {
     pub fn execute_bounded_related_entity_ordered_lookup(
         &self,

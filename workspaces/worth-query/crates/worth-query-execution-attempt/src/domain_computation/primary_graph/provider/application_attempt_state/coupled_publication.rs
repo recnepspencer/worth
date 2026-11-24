@@ -52,6 +52,7 @@ impl WorthQueryPrimaryGraphProvider {
                 "authored stage is not owned by an envelope receipt",
             ));
         }
+        refuse_coupled_part_names(&staged)?;
         let (roles, _) = super::super::native_publication_roles::collect(
             self.graph.layout_ref(),
             staged.attempt.native_publication_roles(),
@@ -90,6 +91,7 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or_else(unavailable)?;
         let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
         let staged = attempts.staged_attempt(session).ok_or_else(unavailable)?;
+        refuse_coupled_part_names(&staged)?;
         let attempt = staged.attempt;
         let idempotency = attempt.idempotency();
         let dependency = idempotency
@@ -227,4 +229,20 @@ pub fn authored_source(
         scope.local_slot(),
         scope.generation(),
     )
+}
+
+/// A coupled part's batch joins another attempt's transaction, which carries
+/// only that attempt's naming plan. Until coupled assembly composes a naming
+/// plan per part (across supersession and rekeying), a part declaring output
+/// names refuses rather than commit them unnamed.
+fn refuse_coupled_part_names(
+    staged: &super::WorthQueryStagedApplicationAttempt<'_>,
+) -> Result<(), Failure> {
+    match staged.naming_plan() {
+        Ok(None) => Ok(()),
+        Ok(Some(_)) | Err(()) => Err(Failure::new(
+            Cause::ProviderUnsupported,
+            "coupled producer and authored-stage outputs cannot declare persistent names",
+        )),
+    }
 }

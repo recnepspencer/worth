@@ -45,22 +45,33 @@ impl ManagedIndexSourcePublicationRoot<'_> {
     }
 }
 
+/// Exact publication coordinates selected by Native preflight.
+pub(crate) struct ManagedSourcePublicationSelection<'a> {
+    pub(crate) runtime_instance_id: u64,
+    pub(crate) branch_id: &'a crate::history::data::BranchId,
+    pub(crate) expected_root_id: u64,
+    pub(crate) registration_generation: u64,
+}
+
 impl super::NativeManagedSourceInterpretation {
     pub(crate) fn prepare_publication_loan(
         &self,
-        binding: &crate::mvcc::publication::CandidateCompanionBinding,
-    ) -> Result<ManagedIndexSourcePublication<'_>, crate::mvcc::CompanionPreflightStop> {
-        use crate::mvcc::CompanionPreflightStop as Stop;
+        selection: ManagedSourcePublicationSelection<'_>,
+    ) -> Result<
+        ManagedIndexSourcePublication<'_>,
+        crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop,
+    > {
+        use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
         let prepared = self.prepared.get().ok_or(Stop::ManagedSourceNotPrepared)?;
         let basis = self.physical_basis();
-        if basis.identity().runtime_instance_id() != binding.runtime_instance_id
-            || basis.identity().branch_id() != &binding.branch_id
-            || basis.descriptor().root_identity() != binding.expected_root_id
+        if basis.identity().runtime_instance_id() != selection.runtime_instance_id
+            || basis.identity().branch_id() != selection.branch_id
+            || basis.descriptor().root_identity() != selection.expected_root_id
         {
             return Err(Stop::SelectedSourceMismatch);
         }
         if !prepared.programs.is_empty()
-            && prepared.registration_generation != binding.registration_generation
+            && prepared.registration_generation != selection.registration_generation
         {
             return Err(Stop::RegistrationChanged);
         }

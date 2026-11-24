@@ -1,10 +1,12 @@
 pub(in crate::mvcc) use cell::CompanionReadCondition;
 pub(in crate::mvcc) use cell::ManagedSourceReadConditions;
-pub(crate) use cell::{ManagedSourceHistoryOwner, ManagedSourceRootImage};
+pub(crate) use cell::ManagedSourceRootImage;
 mod cell;
 mod managed_fork;
 mod preflight;
-mod registration;
+pub(crate) mod preflight_stop;
+pub(crate) mod registration;
+pub(crate) mod registration_stop;
 pub use managed_fork::ManagedIndexSourceForkPreparation;
 pub(crate) use managed_fork::PreparedManagedIndexSourceFork;
 
@@ -21,9 +23,5 @@ pub use preflight::{
     PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion,
 };
+pub use registration::PublicationCompanionRegistrationStop;
 pub(crate) use registration::{CompanionRegistrationEpoch, CompanionRegistry};
-pub use registration::{
-    PendingCompanionRegistration, PublicationCompanionRegistration,
-    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    PublicationCompanionRetirementDenial, RetiredPublicationCompanionRegistration,
-};

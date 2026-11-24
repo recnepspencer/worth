@@ -1,16 +1,14 @@
 use super::*;
-use crate::{
-    indexes::data::DerivedIndexExecutionDenialKind as IndexKind,
-    transactions::data::CommitExecutionDenialKind as CommitKind,
-};
+use crate::indexes::data::execution_denial::DerivedIndexExecutionDenialKind as IndexKind;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind as CommitKind;
 
 pub(super) fn assert_both(
     stop: impl Fn() -> PacketExecutionStop,
     expected: Cause,
     boundary: Option<u64>,
 ) {
-    let commit: crate::transactions::data::CommitExecutionDenial = stop().into();
-    let index: crate::indexes::data::DerivedIndexExecutionDenial = stop().into();
+    let commit: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial = stop().into();
+    let index: crate::indexes::data::execution_denial::DerivedIndexExecutionDenial = stop().into();
     assert_eq!(commit.kind, CommitKind::Cause(expected));
     assert_eq!(index.kind, IndexKind::Cause(expected));
     assert_eq!(commit.partition_identity, boundary);

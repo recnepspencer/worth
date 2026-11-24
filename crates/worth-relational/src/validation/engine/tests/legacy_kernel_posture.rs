@@ -8,7 +8,7 @@ use worth_foundational::{
 };
 
 fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 posture,
@@ -39,7 +39,7 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
         );
         InvariantEngine::new(&runtime).execute(execution, request)
     };
-    let serial_request = crate::test_execution_policy::serial_request();
+    let serial_request = crate::execution::test_policy::serial_request();
     let expected = run(&ExecutionRequest::serial(&serial_request)).unwrap();
     for (posture, workers) in [
         (ExecutionPosture::Serial, 4),
@@ -55,9 +55,9 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
     assert!(matches!(
         run(&ExecutionRequest::leased(&parallel)),
         Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
                     ),
                     partition_identity: None,

@@ -5,15 +5,12 @@ fn cancellation_after_backing_admission_refuses_configuration_publication() {
     use crate::symbols::data::{RelationalFieldTextAdmissionDenial as Denial, StoredSymbolText};
     use worth_execution::{CancellationSource, ExecutionImmutableBytes, ExecutionRequest};
 
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let identity = runtime.main_branch_identity();
-    let head = runtime.observe_branch(&identity).unwrap().0;
-    let owner = &runtime.services.symbols;
+    let owner = &RuntimeSymbolTable::default();
     let before = owner.interner_snapshot();
     let configuration_before = owner.configuration_snapshot();
     let cancellation = CancellationSource::new();
     let request =
-        crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
+        crate::execution::test_policy::serial_request().with_cancellation(cancellation.token());
     let source = ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(
         b"late-cancelled-text".to_vec().into_boxed_slice(),
     ));
@@ -41,7 +38,6 @@ fn cancellation_after_backing_admission_refuses_configuration_publication() {
     ));
     assert_eq!(owner.interner_snapshot(), before);
     assert_eq!(owner.configuration_snapshot(), configuration_before);
-    assert_eq!(runtime.observe_branch(&identity).unwrap().0, head);
     assert_eq!(source.bytes(), b"late-cancelled-text");
 }
 

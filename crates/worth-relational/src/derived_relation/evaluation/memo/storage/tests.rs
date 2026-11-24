@@ -1,7 +1,7 @@
 //! Owned storage transitions and stops; this fixture reads no Native graph.
 use super::*;
 use crate::derived_relation::evaluation::memo::tests::{id, identity, registry};
-use crate::derived_relation::DerivedRelationReads;
+use crate::derived_relation::read::DerivedRelationReads;
 use crate::graph_member::ProjectedMemberCoordinate;
 use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 use crate::schema::data::{SchemaId, SchemaVersionId};
@@ -39,7 +39,8 @@ impl SourceRead for Control {
     fn adjacency(
         &mut self,
         _: crate::derived_relation::evaluation::Adjacency,
-    ) -> Result<Vec<crate::validation::data::StructuralRelationRecord>, Denial> {
+    ) -> Result<Vec<crate::validation::data::structural_read::StructuralRelationRecord>, Denial>
+    {
         unreachable!("memo never acquires graph adjacency")
     }
     fn reads(&self) -> DerivedRelationReads {

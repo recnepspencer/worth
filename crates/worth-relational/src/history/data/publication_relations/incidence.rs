@@ -2,7 +2,7 @@
 use super::{
     charge, creation, endpoints, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop,
 };
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
 use crate::storage::partition::AdjacencyDirection;

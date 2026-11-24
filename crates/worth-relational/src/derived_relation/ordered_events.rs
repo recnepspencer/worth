@@ -1,7 +1,9 @@
 //! Ordered physical-event membership, retaining one original-side acquisition.
 use super::evaluation::{evaluate_position, insert_member, SourceRead};
-use super::{DerivedRelationData as Data, DerivedRelationDenial as Definition};
-use super::{DerivedRelationHandle as Handle, DerivedRelationReadDenial as Denial};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::definition::DerivedRelationHandle as Handle;
+use crate::derived_relation::read::DerivedRelationData as Data;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;

@@ -7,8 +7,8 @@ use worth_harness::facade::{
 
 use crate::facade::harness::RelationalHarnessError;
 use crate::facade::runtime::RelationalRuntime;
-use crate::storage::data::RelationalReadView;
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::super::data::{RelationalFixture, RelationalHarnessAdapter};
 use super::super::targets::{parse_target, resolve_targets};

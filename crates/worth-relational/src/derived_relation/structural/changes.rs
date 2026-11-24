@@ -4,7 +4,10 @@ mod proof;
 pub use proof::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 
 use super::{DefinitionDenial, Denial, Handle, Reads, StructuralRelationView, StructuralSource};
-use crate::validation::data::TouchedStructuralSet;
+use crate::derived_relation::read::DerivedRelationAdjacency;
+use crate::identity::data::{EntityId, KindId};
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
+use crate::validation::data::structural_read::{StructuralReadError, StructuralRelationRecord};
 use std::sync::Arc;
 
 pub(crate) fn prepare(
@@ -78,13 +81,13 @@ impl super::SourceRead for ChangeSource<'_, '_> {
     fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial> {
         self.0.check_scratch_peak(bytes)
     }
-    fn entity_kind(&mut self, id: super::EntityId) -> Result<super::KindId, Denial> {
+    fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial> {
         match self.0.view.entity_kind(id) {
             Ok(kind) => {
                 self.0.reads.entity_records += 1;
                 Ok(kind)
             }
-            Err(super::StructuralReadError::RecordUnavailable) => {
+            Err(StructuralReadError::RecordUnavailable) => {
                 Err(DefinitionDenial::RecordUnavailable.into())
             }
             Err(cause) => Err(self.0.view.derived_refusal(cause)),
@@ -92,8 +95,8 @@ impl super::SourceRead for ChangeSource<'_, '_> {
     }
     fn adjacency(
         &mut self,
-        probe: super::Adjacency,
-    ) -> Result<Vec<super::StructuralRelationRecord>, Denial> {
+        probe: DerivedRelationAdjacency,
+    ) -> Result<Vec<StructuralRelationRecord>, Denial> {
         self.0.adjacency(probe)
     }
     fn reads(&self) -> Reads {

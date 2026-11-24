@@ -3,13 +3,13 @@ use super::{
     basis, traversal::Read, RelationalModelOwnership, RelationalOwnedModelEntityBoundary,
     RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial as Denial,
 };
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    identity::data::{EntityId, RelationId},
-    runtime::RelationalRuntime,
-    validation::data::StructuralRelationRecord,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 use std::collections::{BTreeMap, BTreeSet};
+mod canonical;
 mod transfers;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 
@@ -78,55 +78,6 @@ impl RelationalOwnedModelGraphSelection {
     }
 }
 
-impl RelationalRuntime {
-    pub fn prepare_owned_model_graph_selection(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        current: &AdmittedRelationalBranchBasis,
-        selected: &AdmittedRelationalBranchBasis,
-        ownership: &RelationalModelOwnership,
-        installed_ownership: &RelationalModelOwnership,
-        model: EntityId,
-    ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
-        let mut result = None;
-        execution
-            .run_native_with_checkpoint(|context| {
-                result = Some((|| {
-                    let entities = self.prepare_entity_boundary(
-                        execution, context, current, selected, ownership, model,
-                    )?;
-                    let bytes = ownership
-                        .retention_bytes(context)?
-                        .saturating_add(installed_ownership.retention_bytes(context)?);
-                    crate::execution::request_stage::checkpoint(context, bytes).map_err(
-                        |stop| {
-                            Denial::Ownership(super::RelationalModelOwnershipDenial::Request(
-                                worth_execution::WorkCeilingDenial::Stopped(stop),
-                            ))
-                        },
-                    )?;
-                    let meaning_memory =
-                        execution.reserve_retained_memory(bytes).map_err(|stop| {
-                            Denial::Ownership(super::RelationalModelOwnershipDenial::Request(stop))
-                        })?;
-                    prepare(
-                        self,
-                        execution,
-                        context,
-                        entities,
-                        ownership,
-                        installed_ownership,
-                        meaning_memory,
-                    )
-                })());
-            })
-            .map_err(|cause| {
-                Denial::Ownership(super::RelationalModelOwnershipDenial::Request(cause))
-            })?;
-        result.expect("completed graph selection preparation")
-    }
-}
-
 fn in_union(entities: &RelationalOwnedModelEntityBoundary, id: EntityId) -> bool {
     entities.current_entities().contains(&id) || entities.selected_entities().contains(&id)
 }
@@ -135,8 +86,8 @@ fn declared(
     ownership: &RelationalModelOwnership,
     edge: StructuralRelationRecord,
 ) -> Result<bool, Denial> {
-    read.charge(ownership.relation_lookup_work())?;
-    Ok(ownership.declares_relation(edge.kind_id))
+    read.charge(ownership.plan.relation_lookup_work())?;
+    Ok(ownership.plan.declares_relation(edge.kind_id))
 }
 fn insert(
     read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
@@ -149,8 +100,8 @@ fn insert(
     }
     Ok(())
 }
-fn prepare(
-    native: &RelationalRuntime,
+pub(super) fn prepare(
+    history: &HistorySubsystem,
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     entities: RelationalOwnedModelEntityBoundary,
@@ -160,12 +111,16 @@ fn prepare(
 ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
     let current = entities.current_basis();
     let selected = entities.selected_basis();
-    let restoration = transfers::prepare(native, execution, context, &entities, installed)?;
+    let restoration = transfers::prepare(history, execution, context, &entities, installed)?;
     let restored = &restoration.selected;
     let transferred = &restoration.transferred;
     let in_domain = |id: EntityId| restoration.current.contains(&id) || restored.contains(&id);
-    let (current_relations, current_memory) =
-        basis::read(native, execution, current, context, |read| {
+    let (current_relations, current_memory) = basis::read(
+        history.runtime_instance_id,
+        execution,
+        current,
+        context,
+        |read| {
             let mut map = BTreeMap::new();
             for &entity in restoration.current.union(restored) {
                 let owned = if transferred.contains_key(&entity) {
@@ -204,9 +159,14 @@ fn prepare(
                 }
             }
             Ok::<_, Denial>(map)
-        })?;
-    let (selected_relations, selected_memory) =
-        basis::read(native, execution, selected, context, |read| {
+        },
+    )?;
+    let (selected_relations, selected_memory) = basis::read(
+        history.runtime_instance_id,
+        execution,
+        selected,
+        context,
+        |read| {
             let mut map = BTreeMap::new();
             for &entity in restored {
                 if entities.selected_entities().contains(&entity) {
@@ -229,53 +189,61 @@ fn prepare(
                 }
             }
             Ok::<_, Denial>(map)
-        })?;
-    let ((), validation_memory) = basis::read(native, execution, current, context, |read| {
-        for edge in selected_relations.values() {
-            if let Some(now) = read.relation(edge.relation_id)?
-                && !in_domain(now.source)
-                && !(declared(read, installed, now)? && in_domain(now.target))
-            {
-                return Err(Denial::ForeignRelationSource {
-                    relation: now.relation_id,
-                    owner: now.source,
-                });
-            }
-            if let Some(&owner) = transferred.get(&edge.target)
-                && !restored.contains(&edge.source)
-            {
-                if read.kind(edge.source)?.is_none() {
-                    return Err(Denial::SelectedOwnerUnavailable {
-                        entity: edge.target,
-                        owner,
-                        source: edge.source,
-                        relation: edge.relation_id,
-                    });
-                }
-                let actual_owner = installed.owner(read, edge.source)?;
-                if actual_owner != Some(owner) {
-                    return Err(Denial::SelectedOwnerChanged {
-                        entity: edge.target,
-                        owner,
-                        source: edge.source,
-                        actual_owner,
-                        relation: edge.relation_id,
-                    });
-                }
-            }
-            for endpoint in [edge.source, edge.target] {
-                if !restored.contains(&endpoint)
-                    && (restoration.current.contains(&endpoint) || read.kind(endpoint)?.is_none())
+        },
+    )?;
+    let ((), validation_memory) = basis::read(
+        history.runtime_instance_id,
+        execution,
+        current,
+        context,
+        |read| {
+            for edge in selected_relations.values() {
+                if let Some(now) = read.relation(edge.relation_id)?
+                    && !in_domain(now.source)
+                    && !(declared(read, installed, now)? && in_domain(now.target))
                 {
-                    return Err(Denial::SelectedEndpointUnavailable {
-                        relation: edge.relation_id,
-                        endpoint,
+                    return Err(Denial::ForeignRelationSource {
+                        relation: now.relation_id,
+                        owner: now.source,
                     });
                 }
+                if let Some(&owner) = transferred.get(&edge.target)
+                    && !restored.contains(&edge.source)
+                {
+                    if read.kind(edge.source)?.is_none() {
+                        return Err(Denial::SelectedOwnerUnavailable {
+                            entity: edge.target,
+                            owner,
+                            source: edge.source,
+                            relation: edge.relation_id,
+                        });
+                    }
+                    let actual_owner = installed.plan.owner(read, edge.source)?;
+                    if actual_owner != Some(owner) {
+                        return Err(Denial::SelectedOwnerChanged {
+                            entity: edge.target,
+                            owner,
+                            source: edge.source,
+                            actual_owner,
+                            relation: edge.relation_id,
+                        });
+                    }
+                }
+                for endpoint in [edge.source, edge.target] {
+                    if !restored.contains(&endpoint)
+                        && (restoration.current.contains(&endpoint)
+                            || read.kind(endpoint)?.is_none())
+                    {
+                        return Err(Denial::SelectedEndpointUnavailable {
+                            relation: edge.relation_id,
+                            endpoint,
+                        });
+                    }
+                }
             }
-        }
-        Ok::<_, Denial>(())
-    })?;
+            Ok::<_, Denial>(())
+        },
+    )?;
     Ok(RelationalOwnedModelGraphSelection {
         ownership: ownership.clone(),
         installed_ownership: installed.clone(),

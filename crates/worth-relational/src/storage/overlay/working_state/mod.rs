@@ -17,7 +17,6 @@ use super::{EntityWorkingSetLayout, PartitionCloneMode, PartitionMutationJournal
 
 #[derive(Debug, Clone)]
 pub(crate) struct WorkingState {
-    pub(crate) content: crate::content::ContentPublication,
     pub(crate) adjacency_policy: AdjacencyPolicy,
     pub(crate) clone_mode: PartitionCloneMode,
     pub(crate) entity_working_set_layout: EntityWorkingSetLayout,

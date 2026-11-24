@@ -1,6 +1,7 @@
 //! Logical aggregate custody for an actual applied business revision.
 use super::projection::AggregateProjection;
-use crate::{branch::RelationalBranchRoot, identity::data::VersionId};
+use crate::branch::root::RelationalBranchRoot;
+use crate::identity::data::VersionId;
 use std::sync::Arc;
 
 #[derive(Clone)]

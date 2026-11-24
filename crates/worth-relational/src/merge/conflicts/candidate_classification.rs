@@ -1,3 +1,4 @@
+use crate::schema::data::AspectContractPlanCatalog;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -18,11 +19,11 @@ use crate::merge::data::{
     IdentityMatchClass, IdentityResolutionReason, MergeConflictClass, MergeConflictClassification,
     RelationConflictPropagation, VisibleMergeRecord,
 };
-use crate::storage::data::RelationalReadView;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(super) fn classify_candidate(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     record: &VisibleMergeRecord,
     candidate_target_record: Option<RecordRef>,
     has_validated_schema_correspondence: bool,
@@ -46,8 +47,11 @@ pub(super) fn classify_candidate(
     let target_record = candidate_target_record
         .as_ref()
         .and_then(|target_record| visible_target_record(target_view, target_record));
-    let aspect_evidence =
-        aspect_conflict_evidence(runtime, record, target_record.as_ref().or(Some(record)));
+    let aspect_evidence = aspect_conflict_evidence(
+        aspect_plans,
+        record,
+        target_record.as_ref().or(Some(record)),
+    );
     let normalized_match_class = normalize_match_class_for_classification(
         match_class,
         reason.clone(),

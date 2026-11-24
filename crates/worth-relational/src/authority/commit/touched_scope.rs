@@ -1,8 +1,9 @@
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    EntityMutationIntent, ExistingRecordTarget, MergedCommitPlan, MutationIntent,
-};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::ExistingRecordTarget;
 
 pub(super) fn touched_partitions_for_plan_set(
     current_state: &impl CurrentPartitionAccess,
@@ -79,10 +80,13 @@ mod tests {
     use crate::storage::overlay::{PartitionState, WorkingState};
     use crate::storage::partition::AdjacencySet;
     use crate::storage::substrate::{EntityArena, RelationArena, RelationEndpoints, RelationExtra};
-    use crate::transactions::data::{
-        AspectFieldPatch, DeleteEntityIntent, EntityMutationIntent, MergedCommitPlan,
-        MutationIntent, TransactionId, UpdateEntityFieldsIntent,
-    };
+    use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+    use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
+    use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+    use crate::transactions::data::intents::mutation_intent::MutationIntent;
+    use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+    use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+    use crate::transactions::data::primitives::TransactionId;
 
     use super::touched_partitions_for_plan_set;
 

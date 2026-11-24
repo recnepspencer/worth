@@ -1,11 +1,12 @@
 //! Fallible backing replacement precedes mutation of the retained input intents.
 //! Interner/key strings and snapshot-entry Vecs remain existing System owners.
 use super::{
+    footprint::RelationalTransactionFootprint,
     footprint_client_keys::{normalize_created_entity, normalize_created_relation},
     index_row::{IndexKey, IndexRow},
+    overlay::DetachedRelationalTransactionOverlay,
+    staging::RelationalTransactionStagingDenial as Denial,
     staging_storage::OrderedStore,
-    DetachedRelationalTransactionOverlay, RelationalTransactionFootprint,
-    RelationalTransactionStagingDenial as Denial,
 };
 use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner, Symbol};
 use std::collections::BTreeSet;
@@ -21,13 +22,16 @@ impl DetachedRelationalTransactionOverlay {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> (
         Vec<(Symbol, String)>,
-        Result<(), crate::transactions::data::TransactionCommitError>,
+        Result<
+            (),
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+        >,
     ) {
         let allocation_policy = request.allocation_policy();
         if let Err(denial) = allocation_policy.check_live() {
             return (
                 Vec::new(),
-                Err(crate::transactions::data::TransactionCommitError::conflict(
+                Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                     Denial::from(denial).into_conflict(),
                 )),
             );
@@ -41,7 +45,7 @@ impl DetachedRelationalTransactionOverlay {
             {
                 return (
                     Vec::new(),
-                    Err(crate::transactions::data::TransactionCommitError::conflict(
+                    Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                         Denial::from(denial).into_conflict(),
                     )),
                 );
@@ -50,7 +54,7 @@ impl DetachedRelationalTransactionOverlay {
         if let Err(denial) = footprint.collect_raw_client_keys(&mut raw_values, allocation_policy) {
             return (
                 Vec::new(),
-                Err(crate::transactions::data::TransactionCommitError::conflict(
+                Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                     denial.into_conflict(),
                 )),
             );
@@ -61,7 +65,7 @@ impl DetachedRelationalTransactionOverlay {
             return (
                 Vec::new(),
                 allocation_policy.check_live().map_err(|denial| {
-                    crate::transactions::data::TransactionCommitError::conflict(
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                         Denial::from(denial).into_conflict(),
                     )
                 }),
@@ -70,7 +74,7 @@ impl DetachedRelationalTransactionOverlay {
         let Some(generation) = self.normalization_generation.checked_add(1) else {
             return (
                 Vec::new(),
-                Err(crate::transactions::data::TransactionCommitError::conflict(
+                Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                     Denial::CardinalityOverflow.into_conflict(),
                 )),
             );
@@ -84,7 +88,7 @@ impl DetachedRelationalTransactionOverlay {
             if let Err(denial) = allocation_policy.check_live() {
                 return (
                     entries,
-                    Err(crate::transactions::data::TransactionCommitError::conflict(
+                    Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                         Denial::from(denial).into_conflict(),
                     )),
                 );
@@ -95,7 +99,7 @@ impl DetachedRelationalTransactionOverlay {
                 Err(denial) => {
                     return (
                         entries,
-                        Err(crate::transactions::data::TransactionCommitError::conflict(
+                        Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                             Denial::from(denial).into_conflict(),
                         )),
                     )
@@ -135,7 +139,7 @@ impl DetachedRelationalTransactionOverlay {
         match replacement {
             Err(denial) => (
                 entries,
-                Err(crate::transactions::data::TransactionCommitError::conflict(
+                Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                     denial.into_conflict(),
                 )),
             ),
@@ -148,7 +152,7 @@ impl DetachedRelationalTransactionOverlay {
                 ) {
                     return (
                         entries,
-                        Err(crate::transactions::data::TransactionCommitError::conflict(
+                        Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
                             denial.into_conflict(),
                         )),
                     );
@@ -178,7 +182,9 @@ mod selected_policy;
 
 /// Both full-overlay and delta staging use the intent owner's exact key rewrite.
 pub(super) fn normalize_intents<'a>(
-    intents: impl Iterator<Item = &'a mut crate::transactions::data::MutationIntent>,
+    intents: impl Iterator<
+        Item = &'a mut crate::transactions::data::intents::mutation_intent::MutationIntent,
+    >,
     interner: &mut StringInterner,
     policy: ClientKeySymbolPolicy,
     allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,

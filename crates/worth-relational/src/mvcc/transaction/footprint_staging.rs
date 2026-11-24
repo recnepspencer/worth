@@ -1,8 +1,10 @@
 use super::{
-    index_row::IndexRow, staging_storage::Author, RelationalTransactionFootprint,
-    RelationalTransactionReadLocus, RelationalTransactionStagingDenial as Denial,
+    footprint::{RelationalTransactionFootprint, RelationalTransactionReadLocus},
+    index_row::IndexRow,
+    staging::RelationalTransactionStagingDenial as Denial,
+    staging_storage::Author,
 };
-use crate::transactions::data::WorkerIntentBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::ExecutionAllocationPolicy;
 
 impl RelationalTransactionFootprint {

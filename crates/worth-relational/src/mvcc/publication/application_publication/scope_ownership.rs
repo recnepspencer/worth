@@ -1,17 +1,18 @@
 //! Immutable installed producer declarations; source references do not opt in.
 use super::RelationalInstalledApplicationPublicationAuthority;
-use crate::{identity::data::KindId, storage::overlay::PartitionAccess};
-use std::{collections::BTreeMap, sync::Arc};
-
-#[derive(Clone, Debug, Default)]
-pub(crate) struct InstalledSourceScopeOwnership(Arc<BTreeMap<String, KindId>>);
+use crate::identity::data::KindId;
+use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
+use crate::storage::overlay::PartitionAccess;
 
 impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn require_current_ownership_storage(
         &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         source: crate::identity::data::EntityId,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         if basis
             .inner
             .root
@@ -20,10 +21,10 @@ impl RelationalInstalledApplicationPublicationAuthority {
             .current_publication_storage
             .is_none()
         {
-            return Err(crate::transactions::data::TransactionCommitError::publication(
+            return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::authored_retirement(
                     crate::publication::data::AuthoredRetirementRefusal::CurrentOwnershipStorageMissing,
-                    crate::transactions::data::RecordRef::Entity(source),
+                    crate::transactions::data::primitives::RecordRef::Entity(source),
                 ),
             ));
         }
@@ -38,8 +39,7 @@ impl RelationalInstalledApplicationPublicationAuthority {
         mut self,
         producers: impl IntoIterator<Item = (String, KindId)>,
     ) -> Self {
-        self.source_scope_ownership =
-            InstalledSourceScopeOwnership(Arc::new(producers.into_iter().collect()));
+        self.source_scope_ownership = InstalledSourceScopeOwnership::new(producers);
         self
     }
 
@@ -50,34 +50,16 @@ impl RelationalInstalledApplicationPublicationAuthority {
     }
 }
 
-impl InstalledSourceScopeOwnership {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-    pub(crate) fn lookup_work(&self, producer: &str) -> usize {
-        if self.0.is_empty() {
-            return 0;
-        }
-        let height = usize::BITS as usize - self.0.len().max(1).leading_zeros() as usize;
-        self.0
-            .len()
-            .min(11)
-            .saturating_mul(height)
-            .saturating_add(1)
-            .saturating_mul(producer.len().saturating_add(1))
-    }
-    pub(crate) fn scope_kind(&self, producer: &str) -> Option<KindId> {
-        self.0.get(producer).copied()
-    }
-}
-
 impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn demand_source_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         publication: &super::RequiredOutputPublication,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         use super::RequiredOutputPublication as Publication;
         let meaning = match publication {
             Publication::Birth { meaning, .. } | Publication::Preserve { meaning, .. } => meaning,

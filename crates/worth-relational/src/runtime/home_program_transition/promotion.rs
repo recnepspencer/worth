@@ -7,7 +7,7 @@ use crate::runtime::RelationalInitialSchemaInstallationReceipt;
 pub enum RelationalHomeProgramPromotionRefused<BindingRefusal> {
     Preparation(RelationalHomeProgramContractDenial),
     Binding(BindingRefusal),
-    Admission(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    Admission(crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial),
 }
 
 impl RelationalRuntime {

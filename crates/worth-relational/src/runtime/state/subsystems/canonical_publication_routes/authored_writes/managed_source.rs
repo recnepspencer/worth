@@ -1,5 +1,6 @@
 //! Optional Source impact postings derive only from the actual frozen envelope.
 use super::*;
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
 use crate::history::data::{CanonicalCommitEnvelope, LiveManagedSourceHistory};
 
 pub(super) fn append(
@@ -9,7 +10,7 @@ pub(super) fn append(
     envelope: &Arc<CanonicalCommitEnvelope>,
 ) -> Result<(), Denial> {
     let Some(packet) = LiveManagedSourceHistory::verified(envelope) else {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         // Selected prefixes are monotone. The greatest missing ordinal suffices
         // for every open source-to-target interval and adds no per-gap tree.
         generation.managed_last_gap = Some(generation.ordinal);
@@ -24,7 +25,7 @@ pub(super) fn append(
     }
     generation.managed_run_catalog = Some(packet.catalog.clone());
     for (key, _) in packet.impacts.iter() {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         generation.append(
             execution,
             context,

@@ -1,4 +1,4 @@
-use crate::validation::data::InvariantRule;
+use crate::validation::data::rules::InvariantRule;
 
 use super::InvariantExecutionRequest;
 
@@ -20,34 +20,34 @@ pub(super) fn rule_matches_plan_scope(
 
 #[cfg(test)]
 pub(super) fn relation_rule_kind(
-    rule: &crate::validation::data::InvariantRule,
+    rule: &crate::validation::data::rules::InvariantRule,
 ) -> Option<crate::identity::data::KindId> {
     match rule {
-        crate::validation::data::InvariantRule::EndpointKindContract(contract) => {
+        crate::validation::data::rules::InvariantRule::EndpointKindContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::CardinalityMaximumContract(contract) => {
+        crate::validation::data::rules::InvariantRule::CardinalityMaximumContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::CardinalityMinimumContract(contract) => {
+        crate::validation::data::rules::InvariantRule::CardinalityMinimumContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::UniquenessContract(contract) => {
+        crate::validation::data::rules::InvariantRule::UniquenessContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::SymmetryContract(contract) => {
+        crate::validation::data::rules::InvariantRule::SymmetryContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::EndpointDeletionIntegrityContract(contract) => {
+        crate::validation::data::rules::InvariantRule::EndpointDeletionIntegrityContract(
+            contract,
+        ) => Some(contract.relation_kind_id),
+        crate::validation::data::rules::InvariantRule::AcyclicityContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::AcyclicityContract(contract) => {
+        crate::validation::data::rules::InvariantRule::PartitionIsolationContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::PartitionIsolationContract(contract) => {
-            Some(contract.relation_kind_id)
-        }
-        crate::validation::data::InvariantRule::ConnectivityMinimumContract(contract) => {
+        crate::validation::data::rules::InvariantRule::ConnectivityMinimumContract(contract) => {
             Some(contract.relation_kind_id)
         }
         _ => None,

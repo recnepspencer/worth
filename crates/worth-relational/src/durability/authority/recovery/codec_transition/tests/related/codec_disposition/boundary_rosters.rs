@@ -1,7 +1,10 @@
 //! Hostile checkpoint claims cannot create relation birth ownership.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture, RequiredOutputRolePosture,
+};
 pub(super) fn refuse_missing_and_foreign() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = super::super::incoming_reference::installed_references(1);
     let (world, owned) = world_with_boundary(execution, runtime, receipt.clone());
@@ -86,12 +89,12 @@ pub(super) fn refuse_missing_and_foreign() {
                 &selected,
                 "native.closed.producer",
                 &[19; 32],
-                &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-                &crate::mvcc::native_roles_fixture(
+                &native_meaning_fixture("native.closed.producer"),
+                &native_roles_fixture(
                     &world
                         .outputs
                         .map(|id| (id, crate::identity::data::KindId(3))),
-                    crate::mvcc::RequiredOutputRolePosture::Create,
+                    RequiredOutputRolePosture::Create,
                 ),
             )
             .unwrap_err();

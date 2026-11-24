@@ -6,10 +6,7 @@ use super::{
 use crate::durability::{
     data::RelationalNativeCheckpoint, source_initial_inputs::RelationalCompleteSourceArtifact,
 };
-use worth_execution::{
-    ExecutionArray, ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest,
-};
-use worth_foundational::CanonicalDigestId;
+use worth_execution::{ExecutionArray, ExecutionMemoryReservation, ExecutionRequest};
 use worth_proof::{AuthorityMarker, NativeCheckpointOriginalsVerified};
 
 pub(super) struct VerifiedOriginalCustody {
@@ -19,9 +16,6 @@ pub(super) struct VerifiedOriginalCustody {
     pub(super) commits: ExecutionArray<OriginalCanonicalCommit>,
     pub(super) roots: CapturedRoots,
     pub(super) original: FrozenOriginalInputs,
-    // The same actual input owners above prevent address reuse for this local
-    // schema-identity lookup. No address is written into the wire image.
-    pub(super) carriers: ExecutionOrderedMap<usize, CanonicalDigestId>,
 }
 
 /// Private concrete payload. Descriptive bytes cannot construct this phase.
@@ -64,10 +58,9 @@ impl VerifiedCheckpointOriginals {
             commits,
             roots,
             original,
-            carriers,
             manifest,
         } = *custody;
-        drop((commits, roots, original, carriers, manifest));
+        drop((commits, roots, original, manifest));
         (checkpoint, source_artifact)
     }
 }

@@ -1,4 +1,5 @@
-use super::{RelationalContentControl as Control, RelationalContentDenial as Denial};
+use super::codec_control::RelationalContentControl as Control;
+use super::denial::RelationalContentDenial as Denial;
 use std::any::Any;
 use worth_foundational::facade::ContentFormat;
 
@@ -7,7 +8,7 @@ use worth_foundational::facade::ContentFormat;
 pub trait RelationalContentCodec: std::fmt::Debug + Send + Sync {
     fn format(&self) -> &ContentFormat;
     fn maximum_frame_bytes(&self) -> usize {
-        super::MAXIMUM_CONTENT_FRAME_BYTES
+        crate::content::limits::MAXIMUM_CONTENT_FRAME_BYTES
     }
     fn payload_length(
         &self,

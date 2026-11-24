@@ -1,5 +1,5 @@
 //! Consultation policy for one shared metadata compilation, never retained.
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use worth_execution::ExecutionRequest;
 
 #[derive(Clone, Copy)]
@@ -11,7 +11,7 @@ impl SchemaCompilationControl<'_, '_> {
     pub(crate) fn checkpoint(self) -> Result<(), Denial> {
         match self {
             Self::Configuration => Ok(()),
-            Self::Request(request) => crate::execution::check_request(&request),
+            Self::Request(request) => crate::execution::request_custody::check_request(&request),
         }
     }
     pub(crate) fn checked_bytes(self, bytes: Option<usize>) -> Result<usize, Denial> {

@@ -1,7 +1,8 @@
 use super::super::phase_backing::CommitPhaseBacking;
 use super::super::rejection::{attach_rejection, elapsed_micros};
 use super::preparation::{
-    prepare_publication_artifacts, PublicationPreparation, PublicationPreparationInput,
+    prepare_publication_artifacts, PublicationArtifactOwners, PublicationPreparation,
+    PublicationPreparationInput,
 };
 use crate::authority::commit::phases::publication::enforce_patch_budget;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
@@ -12,16 +13,18 @@ use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
-use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming,
-    PublishedMergeExecutionAuthority, TransactionCommitError,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPatchBudgetSummary;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
-    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
+    pub(super) content: crate::content::publication::ContentPublication,
+    pub(super) selected_branch_state: &'a crate::branch::root_selection::SelectedRelationalBranchState,
     pub(super) effect: MutationEffect,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a BranchId,
@@ -29,8 +32,8 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) merge_parent_branches: &'a [BranchId],
     pub(super) merge_base_commits: &'a [CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) created_entities: &'a crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
@@ -42,7 +45,8 @@ pub(super) struct ArtifactAssemblyInput<'a> {
 }
 
 pub(super) fn assemble_authoritative_publication_phase(
-    runtime: &RelationalPreparationRuntime,
+    owners: PublicationArtifactOwners<'_>,
+    max_patch_records: Option<usize>,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     input: ArtifactAssemblyInput<'_>,
@@ -53,23 +57,29 @@ pub(super) fn assemble_authoritative_publication_phase(
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
     let lease = super::super::request_lease(execution);
-    let patch = assemble_patch(runtime, patch_fragments, lease)?;
+    let patch = assemble_patch(
+        owners.authority.envelope.diagnostics.instrumentation,
+        owners.work,
+        patch_fragments,
+        lease,
+    )?;
     let patch_budget_summary = CommitPatchBudgetSummary {
         patch_record_count: patch.authoritative_record_patches.len(),
-        max_patch_records_per_commit: runtime
-            .config
-            .publication
-            .policy
-            .max_patch_records_per_commit,
+        max_patch_records_per_commit: max_patch_records,
     };
     commit_log.record_patch_budget(&patch_budget_summary);
-    enforce_patch_budget(runtime, &patch)
-        .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
+    enforce_patch_budget(
+        max_patch_records,
+        owners.authority.envelope.diagnostics,
+        &patch,
+    )
+    .map_err(|error| attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error))?;
     let publication = prepare_publication_artifacts(
-        runtime,
+        owners,
         PublicationPreparationInput {
             defer_lineage: input.defer_lineage,
             working_state: input.working_state,
+            content: input.content,
             selected_branch_state: input.selected_branch_state,
             patch,
             commit_reference: input.commit_reference,

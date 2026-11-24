@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::branch::{
-    PreparedRelationalBranchRootCapture, RelationalBranchRoot, RelationalBranchRootCaptureDenial,
-};
+use crate::branch::root::PreparedRelationalBranchRootCapture;
+use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRootCaptureDenial;
 use crate::history::data::CanonicalCommitEnvelope;
 
 use super::HistorySubsystem;
@@ -13,8 +13,10 @@ use super::HistorySubsystem;
 impl HistorySubsystem {
     pub(crate) fn readmit_checkpoint_region_directory(
         &self,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
-        commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        commit: crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
         content_records: &crate::content::RelationalContentAttachments,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
@@ -30,10 +32,12 @@ impl HistorySubsystem {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
-        descriptor: crate::branch::RelationalBranchRootDescriptor,
-        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        descriptor: crate::branch::target::RelationalBranchRootDescriptor,
+        schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
         RelationalBranchRoot::readmit_region_directory(
             &self.root_identity_issuer,
@@ -52,10 +56,10 @@ impl HistorySubsystem {
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
-        content: &crate::content::ContentPublication,
+        content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::runtime::RuntimeSymbolTable,
-        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {
@@ -73,7 +77,7 @@ impl HistorySubsystem {
             content,
             registry,
             symbols,
-            execution_contracts,
+            planned_schema,
         )
     }
 
@@ -90,9 +94,9 @@ impl HistorySubsystem {
             crate::identity::data::PartitionId,
             crate::storage::overlay::PartitionState,
         >,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
-        descriptor: crate::branch::RelationalBranchRootDescriptor,
-        schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        descriptor: crate::branch::target::RelationalBranchRootDescriptor,
+        schema_authority: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
         RelationalBranchRoot::readmit(
@@ -116,10 +120,10 @@ impl HistorySubsystem {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit: crate::history::data::CommitId,
     ) -> Result<
-        Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
-        super::history_catalog_recovery::RelationalHistoryRecoveryDenial,
+        Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
+        super::history_recovery_denial::RelationalHistoryRecoveryDenial,
     > {
-        use super::history_catalog_recovery::RelationalHistoryRecoveryDenial as Denial;
+        use super::history_recovery_denial::RelationalHistoryRecoveryDenial as Denial;
         let artifact = self
             .commit_artifact(commit)
             .ok_or_else(|| Denial::Invalid("root has no actual admitted catalog entry".into()))?;
@@ -130,7 +134,7 @@ impl HistorySubsystem {
         let positioned = residency
             .demand_positioned(execution, 1 << 30)
             .map_err(Denial::Source)?;
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::branch::root::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             positioned.canonical_arc().clone(),
         )

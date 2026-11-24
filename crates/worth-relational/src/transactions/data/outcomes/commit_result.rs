@@ -1,25 +1,29 @@
+pub(crate) mod assembly;
 mod seal;
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
 use crate::history::data::{CanonicalCommitEnvelope, SharedCanonicalCommitEnvelope};
-use crate::performance::data::RuntimeComplexityCounters;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::publication::bundle::PublicationStatus;
 use crate::publication::patch::data::PublishedAuthoritativeRecordPatch;
+use crate::runtime::state::subsystems::visibility::PublishedSnapshotReleaseObservation;
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaTransitionSummary};
 use crate::snapshots::data::{SnapshotHandle, SnapshotId};
 use crate::transactions::data::{
-    AspectEmissionTrace, AspectEvaluationTrace, AspectTagAccuracyReport, CommitAspectSummary,
-    CommitChangeSummary, CommitHistorySummary, CommitLog, CommitPatchBudgetSummary,
-    CommitPublicationSummary, CommitSummary, PatchVsTruthDeltaReport, RecordRef, TransactionId,
+    aspect_reports::{AspectTagAccuracyReport, PatchVsTruthDeltaReport},
+    aspect_traces::{AspectEmissionTrace, AspectEvaluationTrace},
+    commit_log::{
+        CommitAspectSummary, CommitChangeSummary, CommitHistorySummary, CommitLog,
+        CommitPatchBudgetSummary, CommitPublicationSummary, CommitSummary,
+    },
+    primitives::{RecordRef, TransactionId},
 };
-use crate::validation::data::InvariantGroupSet;
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use super::{
-    CommitCreatedEntityBindings, CommitCreatedRelationBindings, CommitValidation,
-    CommitValidationSummary,
-};
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::outcomes::live_commit_validation::CommitValidation;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitOutcome {
@@ -64,7 +68,9 @@ pub struct CommitPhaseTiming {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitPublication {
-    pub(crate) source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
+    pub(crate) source_effects: Option<
+        crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects,
+    >,
     pub diagnostics: Vec<RelationalDiagnosticArtifact>,
     pub envelope: SharedCanonicalCommitEnvelope,
     pub patch_position: crate::publication::patch::data::PatchStreamPosition,
@@ -73,21 +79,7 @@ pub struct CommitPublication {
     pub strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommitStructuralSummary {
-    pub invariant_groups: InvariantGroupSet,
-    pub commit_topology: crate::transactions::data::CommitTopology,
-    pub touched_partitions: Vec<crate::identity::data::PartitionId>,
-    pub bulk_entity_slots_reserved: usize,
-    pub bulk_relation_slots_reserved: usize,
-    pub descriptor_semantics_version: DescriptorSemanticsVersion,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommitSchemaSummary {
-    pub transition: Option<SchemaTransitionSummary>,
-    pub descriptor_semantics_version: DescriptorSemanticsVersion,
-}
+pub use super::commit_summaries::{CommitSchemaSummary, CommitStructuralSummary};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitExecution {
@@ -109,8 +101,10 @@ pub struct CommitExecution {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitResult {
-    snapshot_release: Arc<crate::runtime::PublishedSnapshotReleaseObservation>,
-    semantic_result: Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+    snapshot_release: Arc<PublishedSnapshotReleaseObservation>,
+    semantic_result: Arc<
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
+    >,
     outcome: CommitOutcome,
     summary: CommitSummary,
     structural_summary: CommitStructuralSummary,
@@ -120,7 +114,8 @@ pub struct CommitResult {
     execution: CommitExecution,
     created_entities: CommitCreatedEntityBindings,
     created_relations: CommitCreatedRelationBindings,
-    late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+    late_interruption:
+        Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>,
 }
 
 impl Deref for CommitResult {
@@ -162,13 +157,14 @@ impl CommitOutcome {
 }
 
 impl CommitResult {
-    pub(crate) fn snapshot_release_observation(
-        &self,
-    ) -> &Arc<crate::runtime::PublishedSnapshotReleaseObservation> {
+    pub(crate) fn snapshot_release_observation(&self) -> &Arc<PublishedSnapshotReleaseObservation> {
         &self.snapshot_release
     }
     /// The same immutable original semantic value sealed in this publication.
-    pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
+    pub fn semantic_result(
+        &self,
+    ) -> &crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult
+    {
         &self.semantic_result
     }
 
@@ -182,7 +178,10 @@ impl CommitResult {
         &self.outcome
     }
 
-    pub const fn late_interruption(&self) -> Option<crate::runtime::RelationalInterruptionEvent> {
+    pub const fn late_interruption(
+        &self,
+    ) -> Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>
+    {
         self.late_interruption
     }
 
@@ -193,7 +192,7 @@ impl CommitResult {
     /// cannot replace its map or rebuild a lookup from decomposed axes.
     pub fn created_entity(
         &self,
-        created: &crate::transactions::data::CreatedEntityRef,
+        created: &crate::transactions::data::primitives::CreatedEntityRef,
     ) -> Option<crate::identity::data::EntityId> {
         self.created_entities.resolve(created)
     }
@@ -202,7 +201,7 @@ impl CommitResult {
     /// correspondence by the authoritative commit that produced this result.
     pub fn created_relation(
         &self,
-        created: &crate::transactions::data::CreatedRelationRef,
+        created: &crate::transactions::data::primitives::CreatedRelationRef,
     ) -> Option<crate::identity::data::RelationId> {
         self.created_relations.resolve(created)
     }

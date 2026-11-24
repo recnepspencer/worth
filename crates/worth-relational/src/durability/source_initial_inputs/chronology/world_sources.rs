@@ -1,11 +1,11 @@
 //! Released originals select exact predecessors; other fates cannot rewind Native.
 use super::*;
 use crate::durability::data::DurableBranchRootSchemaImage;
-use crate::durability::{
+use crate::durability::home_world_catalog::{
     RelationalWorldOriginalDescription as Original, RelationalWorldSourceCatalog as Catalog,
     RelationalWorldSourceDescription as Source,
 };
-use crate::history::{data::CommitId, RelationalCommitIndexEntry as Index};
+use crate::history::{commit::RelationalCommitIndexEntry as Index, data::CommitId};
 use worth_foundational::{CanonicalDigestId, WorldOriginalFate as Fate};
 mod source;
 
@@ -203,7 +203,7 @@ impl<'a> WorldSources<'a> {
     pub(super) fn finish(
         &self,
         fold: &mut Fold<'a>,
-        cells: &'a [crate::branch::RelationalBranchCellCheckpoint],
+        cells: &'a [crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         for cell in cells {
@@ -228,7 +228,10 @@ impl<'a> WorldSources<'a> {
         Ok(())
     }
 }
-fn matches_cell(state: &Axes<'_>, cell: &crate::branch::RelationalBranchCellCheckpoint) -> bool {
+fn matches_cell(
+    state: &Axes<'_>,
+    cell: &crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint,
+) -> bool {
     !state.removed
         && state.generation == cell.observation.generation()
         && state.truth == cell.truth_version

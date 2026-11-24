@@ -1,7 +1,7 @@
 //! Prepared DATA commitment retains the exact immutable producer envelope.
-use super::commitment_writer::{in_context, CommitmentWriter};
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
 use crate::durability::data::RelationalRecoveryStop;
+use crate::history::commit::payload_commitment::writer::{in_context, CommitmentWriter};
 use crate::history::data::{AuthoritativeArtifactEnvelopeRef, CanonicalCommitEnvelope};
 use crate::publication::patch::data::PatchStreamPosition;
 use sha2::{Digest as _, Sha256};

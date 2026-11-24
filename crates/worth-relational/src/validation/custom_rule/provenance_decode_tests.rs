@@ -2,9 +2,9 @@
 //! basis still decodes, and decodes as "no basis": never as vacuous truth.
 use super::{CustomInvariantNonApplicability, CustomInvariantProvenance};
 use crate::identity::data::VersionId;
-use crate::validation::data::{
-    CustomInvariantTraversalSummary, StructuralCountView, TouchedStructuralSet,
-};
+use crate::validation::custom_rule::traversal::CustomInvariantTraversalSummary;
+use crate::validation::data::custom_rule::touched_scope::planned_records::StructuralCountView;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use crate::validation::engine::InvariantObservationKind;
 
 fn provenance(

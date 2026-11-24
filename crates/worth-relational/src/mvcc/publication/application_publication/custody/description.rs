@@ -1,11 +1,10 @@
 //! Recorded selectors compare with a genuine Native origin; they issue no custody.
 use super::super::{RequiredOutputPublicationMeaning, RequiredOutputRolePosture};
 use super::*;
-use crate::{
-    execution::request_stage::checkpoint,
-    identity::data::{EntityId, KindId},
-    transactions::data::TransactionCommitError,
-};
+use crate::execution::request_stage::checkpoint;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 #[derive(Clone, Copy)]
 pub struct RecordedRequiredOutputRole<'a> {
     pub role: &'a str,

@@ -1,17 +1,19 @@
+use super::InvariantCheckResult;
 use serde::{Deserialize, Serialize};
 
-use crate::validation::data::{
-    CustomInvariantProvenance, InvariantCheckResult, InvariantExecutionPoint,
-    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict, InvariantViolationFields,
+use crate::validation::custom_rule::CustomInvariantProvenance;
+use crate::validation::data::execution::{
+    InvariantExecutionPoint, InvariantFailureEffect, InvariantReportedRule, InvariantVerdict,
     InvariantWitnessKey,
 };
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::{InvariantExecutionResult, InvariantFailure, InvariantProofBoundarySummary};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InvariantProofBoundaryArtifact {
-    scope_class: crate::validation::engine::InvariantPlanScopeClass,
-    widened_causes: Vec<crate::validation::engine::InvariantScopeWideningCause>,
+    scope_class: crate::validation::engine::result::metadata::InvariantPlanScopeClass,
+    widened_causes: Vec<crate::validation::engine::result::metadata::InvariantScopeWideningCause>,
     packet_count: usize,
     touched_partition_count: usize,
 }
@@ -26,11 +28,15 @@ impl InvariantProofBoundaryArtifact {
         }
     }
 
-    pub fn scope_class(&self) -> crate::validation::engine::InvariantPlanScopeClass {
+    pub fn scope_class(
+        &self,
+    ) -> crate::validation::engine::result::metadata::InvariantPlanScopeClass {
         self.scope_class
     }
 
-    pub fn widened_causes(&self) -> &[crate::validation::engine::InvariantScopeWideningCause] {
+    pub fn widened_causes(
+        &self,
+    ) -> &[crate::validation::engine::result::metadata::InvariantScopeWideningCause] {
         &self.widened_causes
     }
 
@@ -111,7 +117,7 @@ impl CustomInvariantTraceArtifact {
     fn from_result(
         result: &InvariantCheckResult,
         provenance: &CustomInvariantProvenance,
-        identity: &crate::validation::data::CustomInvariantSemanticIdentity,
+        identity: &crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
     ) -> Self {
         Self {
             rule_id: identity.rule_id.as_str().to_string(),

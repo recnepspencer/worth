@@ -1,64 +1,11 @@
-use serde::{Deserialize, Serialize};
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionPosture;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ParallelLegality {
-    ProvenParallel,
-    RequiresSerial,
-}
+pub use crate::transactions::data::preparation_strategy_posture::{
+    ParallelLegality, ParallelProfitability, PreparationStrategySelection, SerialPreparationReason,
+};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ParallelProfitability {
-    Profitable,
-    NotProfitable,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PreparationStrategySelection {
-    Serial,
-    StagedParallel,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SerialPreparationReason {
-    NoLease,
-    SerialPosture,
-    ProofRequiresSerial,
-    InsufficientPacketBreadth,
-    ProfitabilityThreshold,
-}
-
-impl SerialPreparationReason {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::NoLease => "no_lease",
-            Self::SerialPosture => "serial_posture",
-            Self::ProofRequiresSerial => "proof_requires_serial",
-            Self::InsufficientPacketBreadth => "insufficient_packet_breadth",
-            Self::ProfitabilityThreshold => "profitability_threshold",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PreparationStrategy {
-    pub(crate) parallel_legality: ParallelLegality,
-    pub(crate) parallel_profitability: ParallelProfitability,
-    pub(crate) selected_mode: PreparationStrategySelection,
-    pub(crate) serial_selection_reason: Option<SerialPreparationReason>,
-}
-
-impl PreparationStrategy {
-    pub(crate) fn serial(reason: SerialPreparationReason) -> Self {
-        Self {
-            parallel_legality: ParallelLegality::RequiresSerial,
-            parallel_profitability: ParallelProfitability::NotProfitable,
-            selected_mode: PreparationStrategySelection::Serial,
-            serial_selection_reason: Some(reason),
-        }
-    }
-}
+pub use crate::transactions::data::preparation_strategy::PreparationStrategy;
 
 pub(crate) const MIN_PARALLEL_PACKET_WIDTH: usize = 2;
 pub(crate) const TARGET_PREPARATION_ITEMS_PER_PACKET: usize = 32;

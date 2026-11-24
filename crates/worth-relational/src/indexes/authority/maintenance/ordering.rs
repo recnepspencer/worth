@@ -11,7 +11,7 @@ use crate::indexes::data::{
 use crate::indexes::projected_field_values::{
     compare_related_entries, entity_index_projection_scope,
 };
-use crate::visibility::materialization::read_records::authoritative_state_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value;
 
 struct OrderingContract<'a> {
     relation_kind: KindId,

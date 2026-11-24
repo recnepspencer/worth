@@ -27,7 +27,7 @@ pub(super) enum PublishedSnapshotRetirement {
 #[derive(Debug)]
 pub(super) struct PublishedSnapshotBindingRetirement {
     binding: Option<SnapshotHandleBinding>,
-    basis: Option<crate::visibility::snapshot_states::VisibilitySnapshotBasisRetirement>,
+    basis: Option<crate::history::retention::VisibilitySnapshotBasisRetirement>,
 }
 impl PublishedSnapshotRetirement {
     pub(super) fn removed(binding: SnapshotHandleBinding) -> Self {

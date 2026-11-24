@@ -42,7 +42,7 @@ pub(crate) fn latest_available_checkpoint_basis(
         return Some(basis);
     }
 
-    durable_canonical_envelopes(runtime)
+    durable_canonical_envelopes(runtime.durability.canonical_coverage())
         .last()
         .map(checkpoint_basis_from_envelope)
 }

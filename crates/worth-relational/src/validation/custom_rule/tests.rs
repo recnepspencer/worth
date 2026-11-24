@@ -1,51 +1,92 @@
 use std::sync::Arc;
 
 use super::*;
-use crate::facade::identity::KindId;
-use crate::facade::runtime::RelationalRuntimeApi;
-use crate::facade::schema::RelationalSchemaRegistry;
-use crate::facade::transactions::{
-    CreateIntent, CreatedEntityRef, DeleteEntityIntent, DeleteRelationIntent, EntityReference,
-    EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec, TransactionId,
-    UpdateRelationEndpointsIntent, WorkerIntentBatch,
-};
+use crate::identity::data::{KindId, VersionId};
 use crate::symbols::data::ClientKey;
 use crate::tests::support::{create_entity, create_relation, runtime_with_test_schema};
-use crate::transactions::data::MergedCommitPlan;
-use crate::validation::data::{
-    CustomInvariantExecutionError, CustomInvariantOperationalMetadata,
-    CustomInvariantPreparationError, CustomInvariantSemanticIdentity,
-    CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCostClass,
-    InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
+use crate::transactions::data::intents::mutation_intent::DeleteRelationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateRelationEndpointsIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
+use crate::transactions::data::primitives::TransactionId;
+use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroup;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
+use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
+use crate::validation::data::CustomInvariantExecutionError;
+use crate::validation::data::CustomInvariantPreparationError;
+use crate::validation::data::CustomInvariantVerdict;
+use crate::validation::engine::{
+    InvariantObservation, InvariantRuntimeInputs, InvariantRuntimeView,
 };
-use crate::validation::engine::InvariantObservation;
 
 mod touched_scope_tests;
 
 struct TestRule;
 
+fn empty_invariant_view(
+    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+) -> InvariantRuntimeView<'_> {
+    use crate::runtime::state::subsystems::schema_contract_runtime::SchemaContractRuntimeSubsystem;
+
+    let config = Arc::new(crate::config::data::RelationalRuntimeConfig::default());
+    let schema_contract_runtime = Arc::new(SchemaContractRuntimeSubsystem::for_schema(
+        &config.schema.registry,
+        &config.schema.invariant_catalog.registrations,
+        Default::default(),
+        Default::default(),
+        0,
+        false,
+    ));
+    InvariantRuntimeView::from_inputs(InvariantRuntimeInputs {
+        selected_registry: crate::schema::SchemaRegistryCustody::Runtime(Arc::clone(&config)),
+        prior_registry: None,
+        commit_work_budget: None,
+        config,
+        schema_contract_runtime,
+        instrumentation,
+        current_version_id: VersionId(0),
+        entity_count: 0,
+        relation_count: 0,
+        version_depth: 0,
+        snapshot_pressure: false,
+    })
+}
+
 fn prepared_scope(
-    runtime: &crate::runtime::RelationalRuntime,
+    current_version: VersionId,
     observation: &InvariantObservation<'_>,
     merged_plan: Option<&MergedCommitPlan>,
 ) -> PreparedCustomInvariantScope {
-    prepared_scope_with_access(
-        runtime,
+    scope_with_access(
+        current_version,
         observation,
         merged_plan,
-        &crate::validation::data::CustomInvariantAccessContract::default(),
+        &crate::validation::data::descriptor::CustomInvariantAccessContract::default(),
     )
 }
 
-fn prepared_scope_with_access(
-    runtime: &crate::runtime::RelationalRuntime,
+fn scope_with_access(
+    current_version: VersionId,
     observation: &InvariantObservation<'_>,
     merged_plan: Option<&MergedCommitPlan>,
-    access: &crate::validation::data::CustomInvariantAccessContract,
+    access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
 ) -> PreparedCustomInvariantScope {
     PreparedCustomInvariantScope::capture(
         observation,
-        runtime.current_version_id(),
+        current_version,
         merged_plan,
         access,
         &super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
@@ -54,7 +95,7 @@ fn prepared_scope_with_access(
 
 #[test]
 fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -76,13 +117,13 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
         client_key: ClientKey::raw("planned"),
         source: EntityReference::Existing(shared),
         target: EntityReference::Existing(target),
-        fields: crate::transactions::data::AspectFieldPatch::default(),
+        fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
     }));
     let merged_plan = MergedCommitPlan {
         transaction_id: TransactionId(9_001),
         merged_intents: vec![relation],
     };
-    let access = crate::validation::data::CustomInvariantAccessContract {
+    let access = crate::validation::data::descriptor::CustomInvariantAccessContract {
         read_entity_kinds: vec![KindId(1)],
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(3)],
@@ -90,8 +131,13 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
         include_relation_endpoint_entity_touches: true,
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared = prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let prepared = scope_with_access(
+        runtime.current_version_id(),
+        &observation,
+        Some(&merged_plan),
+        &access,
+    );
+    let view = runtime.invariant_validation_view();
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
         *execution,
@@ -110,17 +156,15 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
 
 #[test]
 fn custom_scope_planner_preserves_owner_selected_current_version() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .build()
-        .expect("valid native runtime configuration");
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, None);
-    let selected_version = crate::identity::data::VersionId(77);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let partitions = std::collections::BTreeMap::new();
+    let observation = InvariantObservation::committed_branch(&partitions);
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let view = empty_invariant_view(&instrumentation);
+    let prepared_scope = prepared_scope(view.current_version_id(), &observation, None);
+    let selected_version = VersionId(77);
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
         *execution,
@@ -129,27 +173,30 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
         selected_version,
         &prepared_scope,
         super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(u64::MAX).unwrap())),
-        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
+        std::sync::Arc::new(
+            crate::validation::data::descriptor::CustomInvariantAccessContract::default(),
+        ),
     );
 
     assert_eq!(planner.version_id(), selected_version);
     assert_eq!(planner.current_version_id(), selected_version);
-    assert_ne!(planner.current_version_id(), runtime.current_version_id());
+    assert_ne!(planner.current_version_id(), view.current_version_id());
 }
 
 impl CustomInvariantRule for TestRule {
     type Scope = usize;
 
-    fn descriptor(&self) -> crate::validation::data::CustomInvariantDescriptor {
-        crate::validation::data::CustomInvariantDescriptor {
+    fn descriptor(&self) -> crate::validation::data::descriptor::CustomInvariantDescriptor {
+        crate::validation::data::descriptor::CustomInvariantDescriptor {
             identity: CustomInvariantSemanticIdentity {
-                rule_id: crate::validation::data::CustomInvariantRuleId::new("test.rule"),
+                rule_id: crate::validation::data::rule_id::CustomInvariantRuleId::new("test.rule"),
                 semantic_version: CustomInvariantSemanticVersion::new(1, 0),
             },
             display_name: Arc::from("Test Rule"),
             operational: CustomInvariantOperationalMetadata {
                 maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
-                access: crate::validation::data::CustomInvariantAccessContract::default(),
+                access: crate::validation::data::descriptor::CustomInvariantAccessContract::default(
+                ),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,
@@ -192,16 +239,18 @@ fn custom_registration_rejects_empty_ids() {
     impl CustomInvariantRule for EmptyRule {
         type Scope = ();
 
-        fn descriptor(&self) -> crate::validation::data::CustomInvariantDescriptor {
-            crate::validation::data::CustomInvariantDescriptor {
+        fn descriptor(&self) -> crate::validation::data::descriptor::CustomInvariantDescriptor {
+            crate::validation::data::descriptor::CustomInvariantDescriptor {
                 identity: CustomInvariantSemanticIdentity {
-                    rule_id: crate::validation::data::CustomInvariantRuleId::new(""),
+                    rule_id: crate::validation::data::rule_id::CustomInvariantRuleId::new(""),
                     semantic_version: CustomInvariantSemanticVersion::new(1, 0),
                 },
                 display_name: Arc::from("Empty"),
                 operational: CustomInvariantOperationalMetadata {
                     maximum_work_units: Some(std::num::NonZeroU64::new(1).unwrap()),
-                    access: crate::validation::data::CustomInvariantAccessContract::default(),
+                    access:
+                        crate::validation::data::descriptor::CustomInvariantAccessContract::default(
+                        ),
                     execution_point: InvariantExecutionPoint::CommitBoundary,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                     cost_class: InvariantCostClass::Touched,
@@ -232,26 +281,26 @@ fn custom_registration_rejects_empty_ids() {
 
 #[test]
 fn traversal_budget_is_session_wide() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .build()
-        .expect("valid native runtime configuration");
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, None);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let partitions = std::collections::BTreeMap::new();
+    let observation = InvariantObservation::committed_branch(&partitions);
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let view = empty_invariant_view(&instrumentation);
+    let prepared_scope = prepared_scope(view.current_version_id(), &observation, None);
     let context = CustomInvariantExecutionContext::new(
         &view,
         *execution,
         &observation,
-        runtime.current_version_id(),
-        runtime.current_version_id(),
+        view.current_version_id(),
+        view.current_version_id(),
         &prepared_scope,
         None,
         super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(u64::MAX).unwrap())),
-        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
+        std::sync::Arc::new(
+            crate::validation::data::descriptor::CustomInvariantAccessContract::default(),
+        ),
     );
 
     for _ in 0..8 {

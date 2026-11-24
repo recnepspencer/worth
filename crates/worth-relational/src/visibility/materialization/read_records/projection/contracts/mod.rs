@@ -1,9 +1,9 @@
-mod denial;
+pub(crate) mod denial;
 pub use denial::{
     ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
 };
-mod projection_aspect_filter;
-mod projection_aspect_scope;
+pub(crate) mod projection_aspect_filter;
+pub(crate) mod projection_aspect_scope;
 mod projection_contract_admission;
 mod projection_mask_basis;
 

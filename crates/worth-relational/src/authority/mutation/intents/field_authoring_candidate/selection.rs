@@ -1,7 +1,7 @@
 //! Borrowed source ordinals preserve the old maps' ordering and winners.
 use super::*;
 use crate::schema::data::LoweredAspectContractBinding;
-use crate::transactions::data::AspectFieldTargetRejectionReason as Reason;
+use crate::transactions::data::outcomes::conflict_class::AspectFieldTargetRejectionReason as Reason;
 use worth_foundational::facade::*;
 #[derive(Clone, Copy)]
 pub(super) struct Selected<'a> {

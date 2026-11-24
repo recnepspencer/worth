@@ -18,11 +18,11 @@ pub enum RelationalCheckpointAdmissionRefusal {
     MissingCaptureOrigin,
     OwnerUnavailable,
     CapacityOverflow,
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Buffer(worth_execution::ExecutionRequestArrayDenial),
-    Native(crate::durability::data::DurabilityError),
-    Content(crate::content::RelationalContentDenial),
+    Native(crate::durability::data::recovery_errors::DurabilityError),
+    Content(crate::content::denial::RelationalContentDenial),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,14 +75,30 @@ pub(super) const CANONICAL_MEANINGS: [CheckpointAdmissionMeaning; 8] = [
 ];
 
 pub(crate) fn native_stop(
-    cause: crate::durability::data::RelationalRecoveryStop,
+    cause: crate::durability::data::recovery_stop::RelationalRecoveryStop,
 ) -> RelationalCheckpointAdmissionRefusal {
-    use crate::durability::data::RelationalRecoveryStop as Stop;
+    use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
     match cause {
         Stop::AdmissionImage(cause) => cause,
         Stop::Content(cause) => RelationalCheckpointAdmissionRefusal::Content(cause),
         Stop::Request(cause) => RelationalCheckpointAdmissionRefusal::Request(cause),
         Stop::Allocation(cause) => RelationalCheckpointAdmissionRefusal::Allocation(cause),
         Stop::Durability(cause) => RelationalCheckpointAdmissionRefusal::Native(cause),
+    }
+}
+
+pub(crate) fn projected_stop(
+    cause: crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal,
+) -> RelationalCheckpointAdmissionRefusal {
+    match cause {
+        crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Content(cause) => RelationalCheckpointAdmissionRefusal::Content(cause),
+        crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalCheckpointAdmissionRefusal::Request(cause),
+        crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Frame(_)
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::PayloadDecode { .. }
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::PositionDisagreement { .. }
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::CommitIdDisagreement { .. }
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::FieldText(_)
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::PositionAdmission(_)
+        | crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::NonCanonicalPayload => RelationalCheckpointAdmissionRefusal::InvalidProjectedMeaning,
     }
 }

@@ -63,7 +63,10 @@ impl Artifact {
         // These bytes were deterministically emitted from the exact immutable
         // owner whose two leaves were prepared, with count/emission agreement.
         // External bytes still pass the full frame verification door.
-        let artifact = Self { bytes, header };
+        let artifact = Self::from_verified(super::verified_frame::VerifiedCanonicalCommitFrame {
+            bytes,
+            header,
+        });
         request
             .consult()
             .map_err(MemoryFramePreparationDenial::Request)?;

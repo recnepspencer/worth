@@ -6,12 +6,14 @@ use super::ErrorContext;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalError {
-    Transaction(crate::transactions::data::TransactionCommitError),
-    Durability(crate::durability::data::DurabilityError),
-    History(crate::history::data::BranchCreateError),
+    Transaction(
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    ),
+    Durability(crate::durability::data::recovery_errors::DurabilityError),
+    History(crate::history::data::branch_creation::BranchCreateError),
     Schema(crate::schema::data::SchemaRegistryError),
-    Publication(crate::publication::data::PublicationError),
-    Replay(crate::replay::data::ReplayError),
+    Publication(crate::publication::data::publication_error::PublicationError),
+    Replay(crate::replay::data::replay_errors::ReplayError),
 }
 
 impl RelationalError {
@@ -27,20 +29,24 @@ impl RelationalError {
     }
 }
 
-impl From<crate::transactions::data::TransactionCommitError> for RelationalError {
-    fn from(value: crate::transactions::data::TransactionCommitError) -> Self {
+impl From<crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+    for RelationalError
+{
+    fn from(
+        value: crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    ) -> Self {
         Self::Transaction(value)
     }
 }
 
-impl From<crate::durability::data::DurabilityError> for RelationalError {
-    fn from(value: crate::durability::data::DurabilityError) -> Self {
+impl From<crate::durability::data::recovery_errors::DurabilityError> for RelationalError {
+    fn from(value: crate::durability::data::recovery_errors::DurabilityError) -> Self {
         Self::Durability(value)
     }
 }
 
-impl From<crate::history::data::BranchCreateError> for RelationalError {
-    fn from(value: crate::history::data::BranchCreateError) -> Self {
+impl From<crate::history::data::branch_creation::BranchCreateError> for RelationalError {
+    fn from(value: crate::history::data::branch_creation::BranchCreateError) -> Self {
         Self::History(value)
     }
 }
@@ -51,14 +57,14 @@ impl From<crate::schema::data::SchemaRegistryError> for RelationalError {
     }
 }
 
-impl From<crate::publication::data::PublicationError> for RelationalError {
-    fn from(value: crate::publication::data::PublicationError) -> Self {
+impl From<crate::publication::data::publication_error::PublicationError> for RelationalError {
+    fn from(value: crate::publication::data::publication_error::PublicationError) -> Self {
         Self::Publication(value)
     }
 }
 
-impl From<crate::replay::data::ReplayError> for RelationalError {
-    fn from(value: crate::replay::data::ReplayError) -> Self {
+impl From<crate::replay::data::replay_errors::ReplayError> for RelationalError {
+    fn from(value: crate::replay::data::replay_errors::ReplayError) -> Self {
         Self::Replay(value)
     }
 }

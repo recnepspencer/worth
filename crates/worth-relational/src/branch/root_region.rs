@@ -7,23 +7,8 @@ use crate::storage::overlay::PartitionState;
 
 use super::root::RelationalBranchRootCaptureDenial;
 
-#[derive(Debug)]
-pub(crate) struct RelationalRootRegion {
-    pub(super) creation_root_id: u64,
-    pub(super) id: u64,
-    pub(super) partition_id: PartitionId,
-    pub(super) partition: RelationalRegionRetention,
-    allocation_inventory: Option<crate::storage::overlay::RelationalPartitionAllocationInventory>,
-    pub(super) content_digest: [u8; 32],
-    pub(super) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
-    pub(super) directory: std::sync::Arc<crate::storage::residency::RegionRecordDirectory>,
-    pub(super) live_counts: crate::storage::residency::LiveRecordCounts,
-    pub(super) entity_slots: usize,
-    pub(super) relation_slots: usize,
-    pub(super) content_values_hashed: u64,
-    materialization_unavailable_records: usize,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
-}
+pub(super) mod backing;
+pub(crate) use backing::RelationalRootRegion;
 
 impl RelationalRootRegion {
     pub(super) fn new(

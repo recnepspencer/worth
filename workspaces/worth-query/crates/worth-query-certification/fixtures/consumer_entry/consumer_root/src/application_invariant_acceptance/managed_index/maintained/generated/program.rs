@@ -31,7 +31,8 @@ impl WorthQueryApplicationRequiredOutputConnection<Catalog> for Connection {
         input: &source::operation::RequestItem,
     ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
         Ok(producer::Demand {
-            directory: input.directory.clone(),
+            directory: super::super::peer_scope::ORDERED_SUCCESSOR.get()
+                .map_or_else(|| input.directory.clone(), |(successor, _)| successor.to_owned()),
         })
     }
 }

@@ -1,5 +1,6 @@
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::{DurablePublicationFate, RelationalDurableMedium};
+use crate::durability::medium::DurablePublicationFate;
+use crate::durability::published_medium::RelationalDurableMedium;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 

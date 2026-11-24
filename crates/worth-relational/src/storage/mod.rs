@@ -6,4 +6,9 @@ pub(crate) mod partition;
 pub(crate) mod residency;
 pub(crate) mod substrate;
 
-pub(crate) use authority::{PreparedMirrorPublication, RelationalPublishedPartitionDelta};
+pub(crate) use overlay::published_delta::RelationalPublishedPartitionDelta;
+pub(crate) mod changed_record_retention;
+pub(crate) mod mirror_plan;
+pub(crate) mod mirror_publication;
+pub(crate) mod record_retention;
+pub(crate) use mirror_plan::PreparedMirrorPublication;

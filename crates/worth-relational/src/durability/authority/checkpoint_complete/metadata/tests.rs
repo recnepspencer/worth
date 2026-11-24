@@ -150,6 +150,7 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         name_birth: None,
         kept_name: None,
         relation_id: None,
+        entity_id: None,
     };
     let borrowed = [OriginalLineageEvent {
         event: &event,
@@ -266,11 +267,14 @@ fn metadata_member_directories_preserve_dictionary_ranges_and_alias_custody() {
     let request = ExecutionRequest::serial(&host);
     let dictionary = OriginalSymbolDictionary::capture(&original, &[], &request).unwrap();
     let lineage = capture_lineage(&[], None, &request).unwrap();
-    let original = crate::runtime::IndexingSubsystem::default()
+    let frozen = crate::runtime::state::subsystems::indexing::IndexingSubsystem::default()
         .checkpoint_inputs_for_request(&request)
-        .unwrap()
-        .resolve_for_request(&request)
         .unwrap();
+    let original = crate::durability::authority::checkpoint_image::capture_frozen_indexes(
+        crate::durability::derived_index_artifacts::FrozenIndexCheckpoint::new(frozen, None),
+        &request,
+    )
+    .unwrap();
     let output = capture_metadata_members(
         &dictionary,
         &lineage,

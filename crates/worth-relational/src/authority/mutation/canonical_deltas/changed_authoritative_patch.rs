@@ -6,7 +6,7 @@ use worth_proof::TransitionOutcome;
 
 use super::data::{CanonicalDeltaError, CanonicalRecordAspectDelta, EvaluatedAspectBinding};
 use super::patch_fragments::{validate_patch_value, validate_struct_patch_value};
-use crate::transactions::data::AspectDeltaPatchConstructionDenial;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchConstructionDenial;
 
 pub(super) fn authoritative_patch_filtered_to_changed_bindings(
     delta: &CanonicalRecordAspectDelta,

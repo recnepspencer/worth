@@ -3,16 +3,18 @@ use super::*;
 #[derive(Clone, Copy)]
 pub(super) enum OwnershipReadSource<'a> {
     Admitted(&'a AdmittedRelationalBranchBasis),
-    Candidate(&'a crate::branch::RelationalBranchRoot),
+    Candidate(&'a crate::branch::root::RelationalBranchRoot),
 }
 impl<'a> OwnershipReadSource<'a> {
-    pub(super) fn root(self) -> &'a crate::branch::RelationalBranchRoot {
+    pub(super) fn root(self) -> &'a crate::branch::root::RelationalBranchRoot {
         match self {
             Self::Admitted(basis) => &basis.inner.root,
             Self::Candidate(root) => root,
         }
     }
-    pub(super) fn descriptor(self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
+    pub(super) fn descriptor(
+        self,
+    ) -> Option<crate::branch::basis::RelationalBranchBasisDescriptor> {
         match self {
             Self::Admitted(basis) => Some(basis.descriptor().clone()),
             Self::Candidate(_) => None,
@@ -27,9 +29,11 @@ impl<'a> OwnershipReadSource<'a> {
             .demand_head_partition(execution, partition)
             .map_err(|cause| match self {
                 Self::Admitted(basis) => {
-                    crate::authority::commit::preparation::storage_read_denial(basis, cause)
+                    crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                        basis, cause,
+                    )
                 }
-                Self::Candidate(_) => super::super::request(cause),
+                Self::Candidate(_) => super::super::read_request::request(cause),
             })
     }
 }

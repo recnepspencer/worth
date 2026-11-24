@@ -36,7 +36,7 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
                 partition_id: PartitionId::main(),
                 kind_id: KindId(3),
                 client_key: ClientKey::raw("proposed-one"),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         ));
         let lease = super::super::super::fixture::request(

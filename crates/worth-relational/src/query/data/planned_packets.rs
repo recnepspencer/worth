@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaVersionId};
-use crate::snapshots::data::{SnapshotHandle, SnapshotId};
-use crate::transactions::data::RecordRef;
-use crate::visibility::materialization::read_records::ProjectionAspectFilter;
+use crate::snapshots::data::coordinates::SnapshotId;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::materialization::read_records::projection::contracts::projection_aspect_filter::ProjectionAspectFilter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct DeterministicQueryPlanKey(pub u128);
@@ -180,14 +180,6 @@ pub struct PlannedQueryPacket {
     pub reduction: ReductionDiscipline,
     pub plan_key: DeterministicQueryPlanKey,
     pub target_count_hint: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SnapshotPinnedQueryPlan {
-    pub packet: PlannedQueryPacket,
-    pub snapshot: SnapshotHandle,
-    pub legality: QueryParallelLegality,
-    pub profitability: QueryParallelProfitability,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

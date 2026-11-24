@@ -1,6 +1,7 @@
 //! A small escaped index subject retains only its own actual metadata bill.
 use super::RelationalCommitIndexEntry;
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
+use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 #[derive(Debug)]
@@ -15,16 +16,19 @@ impl RetainedCanonicalIndex {
         Arc::ptr_eq(&self.0, &other.0)
     }
     /// Weak identity of this exact retained index owner, for custody census.
-    pub(crate) fn allocation_witness(&self) -> crate::durability::RelationalAllocationWitness {
-        crate::durability::RelationalAllocationWitness::of(&self.0)
+    pub(crate) fn allocation_witness(&self) -> RelationalAllocationWitness {
+        RelationalAllocationWitness::of(&self.0)
     }
     fn reserve(
         receipt: &RelationalCommitReceipt,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Option<ExecutionMemoryReservation>, crate::execution::RelationalExecutionDenialCause>
-    {
-        let bytes = Self::allocation_bytes(receipt)
-            .ok_or(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?;
+    ) -> Result<
+        Option<ExecutionMemoryReservation>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        let bytes = Self::allocation_bytes(receipt).ok_or(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::MemoryOverflow,
+        )?;
         request.reserve_retained_memory(bytes).map_err(Into::into)
     }
     pub(crate) fn allocation_bytes(receipt: &RelationalCommitReceipt) -> Option<u64> {
@@ -46,14 +50,14 @@ impl RetainedCanonicalIndex {
     }
     pub(crate) fn from_publication(
         commit: &PositionedCanonicalCommit,
-        roots: &crate::branch::RelationalBranchRootDescriptor,
+        roots: &crate::branch::target::RelationalBranchRootDescriptor,
         digest: [u8; 32],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         Self,
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
-    > {
-        use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+        crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial,
+    >{
+        use crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
         let bytes = Self::allocation_bytes(&commit.commit).ok_or(Denial::FrameSizeOverflow)?;
         let memory = request
             .reserve_retained_memory(bytes)
@@ -74,7 +78,7 @@ impl RetainedCanonicalIndex {
     pub(crate) fn copy_original(
         entry: &RelationalCommitIndexEntry,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let memory = Self::reserve(&entry.commit, request)?;
         Ok(Self(Arc::new(Backing {
             entry: entry.clone(),

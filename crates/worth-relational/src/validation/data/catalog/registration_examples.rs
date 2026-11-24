@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectKey, FieldKey};
 
-use crate::validation::data::InvariantRule;
+use crate::validation::data::rules::InvariantRule;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum InvariantRegistrationContract {

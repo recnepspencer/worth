@@ -1,10 +1,10 @@
 //! Carry original relation inputs across sequential prefix-reference lowering.
 use super::CommitCreatedRelationBindings;
 use crate::symbols::data::SymbolTextLookup;
-use crate::transactions::data::{
-    CommitCreatedEntityBindings, CreateIntent, CreatedRelationRef, EntityReference, MutationIntent,
-    TransactionCommitError,
-};
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::{CreatedRelationRef, EntityReference};
 use std::collections::BTreeMap;
 use worth_execution::ExecutionRequest;
 
@@ -190,20 +190,20 @@ fn visit(
     Ok(())
 }
 fn disagreement(detail: &str) -> TransactionCommitError {
-    TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-        crate::transactions::data::ConflictClass::KindSchemaMismatch {
+    TransactionCommitError::conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+        crate::transactions::data::outcomes::conflict_class::ConflictClass::KindSchemaMismatch {
             detail: detail.into(),
         },
     ))
 }
 fn overflow() -> TransactionCommitError {
-    crate::mvcc::plan_copy_admission::copy_overflow()
+    crate::transactions::data::copy_denial::copy_overflow()
 }
 fn stop(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+    cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

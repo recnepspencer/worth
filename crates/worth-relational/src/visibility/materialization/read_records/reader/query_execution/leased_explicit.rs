@@ -1,20 +1,24 @@
+use super::super::record_identity_materialization::{
+    authoritative_entity_record_for_id_at_version_with_registry,
+    authoritative_relation_record_for_id_at_version_with_registry,
+};
 use std::collections::BTreeSet;
 
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::RelationalPinnedRead;
 use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::VersionId;
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
 
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
-use crate::transactions::data::RecordRef;
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_explicit_fragment(
-    reader: &RelationalPinnedRead,
+    projection: &impl ProjectionRecordSource,
+    current_version: crate::identity::data::VersionId,
     state_access: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
     version_id: VersionId,
@@ -30,7 +34,6 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         ));
     };
     let mut budget = QueryPacketBudget::new(context, ceiling)?;
-    let projection = reader;
     let mut entities = Vec::new();
     let mut relations = Vec::new();
     let mut touched_partitions = BTreeSet::new();
@@ -61,14 +64,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 }
                 budget
                     .check_temporary_record(projection.candidate_entity_bytes_for_id(*entity_id))?;
-                if let Some(record) = reader
-                    .authoritative_entity_record_for_id_at_version_with_registry(
-                        state_access,
-                        registry,
-                        *entity_id,
-                        version_id,
-                    )
-                {
+                if let Some(record) = authoritative_entity_record_for_id_at_version_with_registry(
+                    state_access,
+                    registry,
+                    *entity_id,
+                    version_id,
+                    current_version,
+                ) {
                     budget.push_result(&mut entities, record)?;
                 }
             }
@@ -84,14 +86,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 budget.check_temporary_record(
                     projection.candidate_relation_bytes_for_id(*relation_id),
                 )?;
-                if let Some(record) = reader
-                    .authoritative_relation_record_for_id_at_version_with_registry(
-                        state_access,
-                        registry,
-                        *relation_id,
-                        version_id,
-                    )
-                {
+                if let Some(record) = authoritative_relation_record_for_id_at_version_with_registry(
+                    state_access,
+                    registry,
+                    *relation_id,
+                    version_id,
+                    current_version,
+                ) {
                     budget.push_result(&mut relations, record)?;
                 }
             }

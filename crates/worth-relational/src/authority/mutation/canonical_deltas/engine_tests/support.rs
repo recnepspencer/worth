@@ -13,7 +13,7 @@ use crate::config::data::{
     AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CrossContextPolicy,
 };
 use crate::identity::data::{KindId, VersionId};
-use crate::runtime::PendingSymbolMeanings;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding, LoweredAspectContractPlan, RelationalSchemaRegistry,

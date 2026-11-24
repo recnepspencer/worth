@@ -1,19 +1,18 @@
 //! Descriptive provenance of a Native-prepared graph selection; never mutation authority.
 use super::*;
-use crate::{
-    branch::RelationalOwnedModelGraphSelection,
-    identity::data::{EntityId, KindId, RelationId},
-    storage::overlay::CurrentPartitionAccess,
-    validation::data::StructuralRelationRecord,
-};
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::RelationId;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct SelectedEntity {
-    id: EntityId,
-    kind: KindId,
+pub(crate) struct SelectedEntity {
+    pub(crate) id: EntityId,
+    pub(crate) kind: KindId,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CanonicalOwnedGraphSelection {
-    selected_basis: crate::branch::RelationalBranchBasisDescriptor,
+    selected_basis: RelationalBranchBasisDescriptor,
     model: EntityId,
     current_entities: Vec<EntityId>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -33,37 +32,25 @@ impl CanonicalOwnedGraphSelection {
         )
         .ok()
     }
-    pub(crate) fn from_prepared(
-        graph: &RelationalOwnedModelGraphSelection,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
-        let entities = graph.entities();
-        let mut selected_entities = Vec::new();
-        for &id in graph.restored_entities() {
-            let kind = entities.selected_basis().inner.root.get_current_partition(id.partition_id)
-                .and_then(|region| region.entity(id)).filter(|slot| slot.is_live()).and_then(|slot| slot.kind_id())
-                .ok_or_else(|| crate::transactions::data::TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::MutationStateInconsistency {
-                        detail: "prepared graph selected entity unavailable".into(),
-                        evidence: crate::transactions::data::MutationStateInconsistencyEvidence::MaterializationTransition { record: RecordRef::Entity(id) },
-                    })))?;
-            selected_entities.push(SelectedEntity { id, kind });
-        }
-        Ok(Self {
+    pub(crate) fn from_observed(
+        selected_basis: RelationalBranchBasisDescriptor,
+        model: EntityId,
+        current_entities: Vec<EntityId>,
+        transfer_participants: Vec<EntityId>,
+        selected_entities: Vec<SelectedEntity>,
+        current_relations: Vec<StructuralRelationRecord>,
+        selected_relations: Vec<StructuralRelationRecord>,
+    ) -> Self {
+        Self {
             _decoded_memory: None,
-            selected_basis: entities
-                .selected_basis()
-                .descriptor()
-                .in_canonical_frame()
-                .map_err(|_| {
-                    crate::mvcc::origin_denial("graph selection basis cannot enter canonical frame")
-                })?,
-            model: entities.model(),
-            current_entities: graph.current_entities().iter().copied().collect(),
-            transfer_participants: graph.transfer_participants().iter().copied().collect(),
+            selected_basis,
+            model,
+            current_entities,
+            transfer_participants,
             selected_entities,
-            current_relations: graph.current_relations().values().copied().collect(),
-            selected_relations: graph.selected_relations().values().copied().collect(),
-        })
+            current_relations,
+            selected_relations,
+        }
     }
     pub(crate) fn transfer_participants(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.transfer_participants.iter().copied()
@@ -71,7 +58,7 @@ impl CanonicalOwnedGraphSelection {
     pub fn model(&self) -> EntityId {
         self.model
     }
-    pub fn selected_basis(&self) -> &crate::branch::RelationalBranchBasisDescriptor {
+    pub fn selected_basis(&self) -> &RelationalBranchBasisDescriptor {
         &self.selected_basis
     }
     pub(crate) fn selected_entities(
@@ -92,6 +79,9 @@ impl CanonicalOwnedGraphSelection {
     }
     pub(crate) fn current_relations(&self) -> &[StructuralRelationRecord] {
         &self.current_relations
+    }
+    pub(crate) fn current_entities(&self) -> &[EntityId] {
+        &self.current_entities
     }
     pub(crate) fn retired_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.current_entities.iter().copied().filter(|id| {

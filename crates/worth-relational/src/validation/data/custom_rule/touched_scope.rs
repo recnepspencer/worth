@@ -1,4 +1,4 @@
-mod planned_records;
+pub(crate) mod planned_records;
 mod touched_ids;
 pub use touched_ids::{InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds};
 

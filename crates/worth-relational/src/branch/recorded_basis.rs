@@ -2,7 +2,8 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use super::{RelationalBranchBasisDescriptor, RelationalBranchRootDescriptor};
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::target::RelationalBranchRootDescriptor;
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 
@@ -12,6 +13,7 @@ pub use memory_component::{AdmittedRelationalMemoryComponent, ObservedRelational
 mod export;
 mod json;
 mod json_emission;
+mod live_export;
 mod readmission;
 
 /// Recorded Native meaning, never an admitted basis or recovery capability.
@@ -56,7 +58,7 @@ impl RecordedRelationalComponentReference {
     pub(crate) fn from_readmitted_source(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptor: &RelationalBranchBasisDescriptor,
-        entry: &crate::history::RelationalCommitIndexEntry,
+        entry: &crate::history::commit::RelationalCommitIndexEntry,
     ) -> Result<Self, RelationalRecordedComponentRefusal> {
         Self::copy_original(
             execution,
@@ -108,14 +110,5 @@ impl RecordedRelationalCanonicalComponent {
     }
 }
 
-#[derive(Debug)]
-pub enum RelationalRecordedComponentRefusal {
-    Request(crate::execution::RelationalExecutionDenialCause),
-    Basis(super::RelationalBranchBasisDenial),
-    Frame(super::RelationalBranchObservationConstructionDenial),
-    Source(crate::durability::data::RelationalRecoveryStop),
-    MissingPerformedCommit { commit_id: CommitId },
-    CanonicalMismatch { commit_id: CommitId },
-    PayloadEncoding { detail: String },
-    PayloadBacking(worth_execution::ExecutionRequestArrayDenial),
-}
+pub(crate) mod refusal;
+pub use refusal::RelationalRecordedComponentRefusal;

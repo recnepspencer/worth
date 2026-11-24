@@ -1,19 +1,45 @@
 //! Bind cold page placement and admit each verified page into its runtime once.
 use super::{event_residency, node_residency, LineageSubsystem, ResidentLineageEventPage};
-use crate::durability::data::RelationalCheckpointDirectory;
+use crate::durability::data::lineage_event_pages::RelationalCheckpointLineageEventPage;
+use crate::durability::medium::RelationalDurableColdSource;
+use crate::history::data::RelationalCommitReceipt;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageEventRecord;
+use crate::storage::data::{
+    checkpoint_page::RelationalCheckpointPage, RelationalStorageUnavailable,
+};
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::{collections::BTreeSet, sync::Arc};
 
+/// The exact decoded page routes and source custody prepared for installation.
+pub(crate) struct PreparedLineageColdPages {
+    nodes: node_residency::RuntimeLineageNodeResidency,
+    events: event_residency::RuntimeLineageEventResidency,
+}
+
+impl PreparedLineageColdPages {
+    pub(crate) fn prepare(
+        nodes: &[RelationalCheckpointPage],
+        events: &[RelationalCheckpointLineageEventPage],
+        source: &Arc<dyn RelationalDurableColdSource>,
+        commits: impl Iterator<Item = RelationalCommitReceipt>,
+    ) -> Result<Self, RelationalStorageUnavailable> {
+        let nodes = node_residency::RuntimeLineageNodeResidency::new(nodes, source)?;
+        let events = event_residency::RuntimeLineageEventResidency::new(events, source, commits)?;
+        Ok(Self { nodes, events })
+    }
+}
+
 impl LineageSubsystem {
-    pub(crate) fn install_cold_pages(
+    pub(crate) fn install_cold_pages<'a, Source>(
         &self,
-        directory: &RelationalCheckpointDirectory,
-    ) -> Result<(), crate::storage::data::RelationalStorageUnavailable> {
-        let nodes = node_residency::RuntimeLineageNodeResidency::new(directory)?;
-        let events = event_residency::RuntimeLineageEventResidency::new(directory)?;
+        source: &'a Source,
+    ) -> Result<(), RelationalStorageUnavailable>
+    where
+        &'a Source: TryInto<PreparedLineageColdPages, Error = RelationalStorageUnavailable>,
+    {
+        let PreparedLineageColdPages { nodes, events } = source.try_into()?;
         *self.node_residency.write() = Some(Arc::new(nodes));
         *self.event_residency.write() = Some(Arc::new(events));
         self.event_admissions.write().clear();
@@ -25,7 +51,7 @@ impl LineageSubsystem {
         nodes: Option<&BTreeSet<LineageId>>,
         branches: Option<&BTreeSet<BranchId>>,
     ) -> Result<Vec<ResidentLineageEventPage>, Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let Some(residency) = self.event_residency.read().clone() else {
             return Ok(Vec::new());
         };
@@ -100,6 +126,12 @@ impl LineageSubsystem {
     }
     pub(crate) fn has_paged_events(&self) -> bool {
         self.event_residency.read().is_some()
+    }
+
+    /// Whether lineage nodes are served from cold pages, so the derived
+    /// entity index holds only the epochs demanded so far.
+    pub(crate) fn has_paged_nodes(&self) -> bool {
+        self.node_residency.read().is_some()
     }
 }
 

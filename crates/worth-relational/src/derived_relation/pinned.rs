@@ -1,21 +1,25 @@
 //! The same recipe evaluator over one actual immutable published Native root.
 use super::evaluation::SourceRead;
-use super::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
-use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle};
-use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
+};
+use crate::derived_relation::read::DerivedRelationReads as Reads;
+use crate::derived_relation::read::{
+    DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data,
+};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
-use crate::runtime::RelationalPinnedRead;
 use crate::storage::data::RecordLifecycleState;
-use crate::validation::data::StructuralRelationRecord;
-use crate::visibility::materialization::read_records::{
-    RelationalAdjacencyDirection as Direction, RelationalAdjacencyVisit as Visit,
-    VisibilityProjectionView,
-};
+use crate::validation::data::structural_read::StructuralRelationRecord;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection as Direction;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyVisit as Visit;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 
 mod acquisition;
+pub(crate) use acquisition::read_projected_source;
 mod scope;
 pub use scope::{PinnedDerivedRelationDenial, PinnedDerivedRelationScope};
 
@@ -23,8 +27,8 @@ pub use scope::{PinnedDerivedRelationDenial, PinnedDerivedRelationScope};
 /// no later source, decision, mutation or disclosure authority.
 pub struct PinnedDerivedRelationRead {
     data: Data,
-    steps: Vec<super::DerivedRelationWalkStep>,
-    shape: super::DerivedRelationReadShape,
+    steps: Vec<crate::derived_relation::proof::DerivedRelationWalkStep>,
+    shape: crate::derived_relation::read_shape::DerivedRelationReadShape,
     work: usize,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -36,10 +40,10 @@ impl PinnedDerivedRelationRead {
     pub const fn work_units(&self) -> usize {
         self.work
     }
-    pub fn steps(&self) -> &[super::DerivedRelationWalkStep] {
+    pub fn steps(&self) -> &[crate::derived_relation::proof::DerivedRelationWalkStep] {
         &self.steps
     }
-    pub const fn shape(&self) -> super::DerivedRelationReadShape {
+    pub const fn shape(&self) -> crate::derived_relation::read_shape::DerivedRelationReadShape {
         self.shape
     }
 }
@@ -99,10 +103,10 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_, '_> {
             .projection
             .read_exact_entity_state(&self.execution, id, |metadata, _| metadata)
             .map_err(|cause| match cause {
-                crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
                     Denial::Definition(DefinitionDenial::RecordUnavailable)
                 }
-                crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => {
                     Denial::Request(cause)
                 }
             })?
@@ -157,7 +161,7 @@ impl SourceRead for PinnedSource<'_, '_, '_, '_, '_, '_> {
                             )?;
                             let record = projection
                                 .read_exact_relation_metadata(&self.execution, id)
-                                .map_err(|cause| match cause {crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired=>Denial::Definition(DefinitionDenial::RecordUnavailable),crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause)=>Denial::Request(cause)})?;
+                                .map_err(|cause| match cause {crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired=>Denial::Definition(DefinitionDenial::RecordUnavailable),crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause)=>Denial::Request(cause)})?;
                             if let Some(record) = record {
                                 reads.relation_records += 1;
                                 if record.lifecycle == RecordLifecycleState::Live

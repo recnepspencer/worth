@@ -1,78 +1,12 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+pub(crate) mod reservation_latch;
+use reservation_latch::PatchPositionReservationLatch;
 
-use serde::{Deserialize, Serialize};
-
-/// Typed reason why owner work stopped before its effect boundary.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RelationalOperationInterruption {
-    Cancelled,
-    TimedOut,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RelationalInterruptionBoundary {
-    ObservationAdmission,
-    TransactionAdmission,
-    ProposalValidation,
-    CandidatePreparation,
-    PublicationPreflight,
-    BeforeCriticalSection,
-    AfterLinearization,
-    Settlement,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelationalInterruptionEvent {
-    interruption: RelationalOperationInterruption,
-    boundary: RelationalInterruptionBoundary,
-}
-
-impl RelationalInterruptionEvent {
-    /// Observes the caller's cancellation or deadline at a named boundary.
-    /// This consults borrowed request control only; it creates no request and
-    /// performs no storage work. Readers still charge their own native work.
-    /// Retains the interruption and boundary of an already-produced request stop.
-    /// Work and nested stops remain the caller's typed stop rather than an event.
-    pub fn from_request_stop(
-        stop: worth_execution::MapKernelStop,
-        boundary: RelationalInterruptionBoundary,
-    ) -> Result<Self, worth_execution::MapKernelStop> {
-        use worth_execution::MapKernelStop as Stop;
-        let interruption = match stop {
-            Stop::Cancelled => RelationalOperationInterruption::Cancelled,
-            Stop::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
-            Stop::WorkCounterOverflow
-            | Stop::AccountingUnavailable
-            | Stop::WorkCeiling
-            | Stop::NestedStopped => return Err(stop),
-        };
-        Ok(Self {
-            interruption,
-            boundary,
-        })
-    }
-
-    #[cfg(test)]
-    pub(crate) fn observe_request(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        boundary: RelationalInterruptionBoundary,
-    ) -> Option<Self> {
-        match execution.check_live() {
-            Ok(()) => None,
-            Err(stop) => Self::from_request_stop(stop, boundary).ok(),
-        }
-    }
-
-    pub const fn interruption(self) -> RelationalOperationInterruption {
-        self.interruption
-    }
-
-    pub const fn boundary(self) -> RelationalInterruptionBoundary {
-        self.boundary
-    }
-}
+pub(crate) mod interruption_event;
+pub use interruption_event::{
+    RelationalInterruptionBoundary, RelationalInterruptionEvent, RelationalOperationInterruption,
+};
 
 /// Caller-owned cancellation source. Tokens are cheap, read-only shares.
 #[derive(Debug, Clone, Default)]
@@ -123,51 +57,10 @@ struct RelationalCriticalSectionPause {
 const PATCH_POSITION_RESERVATION_PAUSE_BUDGET: std::time::Duration =
     std::time::Duration::from_secs(60);
 
-/// Release gate for the reservation-held pause. Opening never blocks, so an
-/// observer can free the publisher before it asserts, and waiting is bounded, so
-/// a seam that is moved out of the reservation window fails a run by name
-/// instead of hanging it.
-#[derive(Debug, Default)]
-pub struct RelationalPatchPositionReservationGateForTest {
-    opened: std::sync::Mutex<bool>,
-    signal: std::sync::Condvar,
-}
-
-impl RelationalPatchPositionReservationGateForTest {
-    // The entire protected state is one bool. Either value remains a valid
-    // latch state after unwinding; no observer callback runs under this lock.
-    pub fn open(&self) {
-        let mut opened = self
-            .opened
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        *opened = true;
-        self.signal.notify_all();
-    }
-
-    fn wait_for_open(&self, budget: std::time::Duration) {
-        let deadline = Instant::now() + budget;
-        let mut opened = self
-            .opened
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        while !*opened {
-            let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
-                return;
-            };
-            opened = self
-                .signal
-                .wait_timeout(opened, remaining)
-                .unwrap_or_else(|error| error.into_inner())
-                .0;
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 struct RelationalPatchPositionReservationPause {
     reached: std::sync::mpsc::SyncSender<()>,
-    release: Arc<RelationalPatchPositionReservationGateForTest>,
+    release: Arc<PatchPositionReservationLatch>,
 }
 
 #[derive(Debug, Clone)]

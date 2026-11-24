@@ -1,7 +1,7 @@
 //! A fully funded, single-use batch bound to its actual prepared canonical root.
 use super::super::prepared_generation;
 use super::{publication::PreparedRefresh, work::MaintenanceWork};
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexMaintenanceDenialKind as Denial};
 use std::sync::Arc;
@@ -20,7 +20,7 @@ pub(super) struct CandidateIndexPreparation {
     commit_id: crate::history::data::CommitId,
     version_id: crate::identity::data::VersionId,
     schema_version: crate::schema::data::SchemaVersionId,
-    publication: crate::runtime::PreparedGenerationBatch,
+    publication: crate::runtime::state::subsystems::indexing::PreparedGenerationBatch,
 }
 
 impl PreparedCandidateIndexPublication {
@@ -40,7 +40,7 @@ impl PreparedCandidateIndexPublication {
 
     pub(crate) fn covers_home_definitions(
         &self,
-        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        definitions: &crate::runtime::state::subsystems::indexing::PreparedRelationalIndexDefinitions,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, worth_execution::WorkCeilingDenial> {
         self.prepared
@@ -51,29 +51,26 @@ impl PreparedCandidateIndexPublication {
     pub(crate) fn admit_catalog(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
+    ) -> Result<(), worth_execution::WorkCeilingDenial> {
         use crate::indexes::data::SelectedIndexGenerationAdmissionStop as Stop;
-        use crate::mvcc::RelationalPublicationOutcome as Outcome;
-        let mut metadata = execution
-            .reserve_retained_memory(0)
-            .map_err(Outcome::RequestStopped)?;
+        let mut metadata = execution.reserve_retained_memory(0)?;
         let mut total = 0u64;
         let admission = self
             .prepared
             .publication
             .admit_actual_geometry(|units, bytes| {
-                execution.consult().map_err(Outcome::RequestStopped)?;
-                pay_catalog_work(execution, units).map_err(Outcome::RequestStopped)?;
-                total = total.checked_add(bytes).ok_or(Outcome::RequestStopped(
+                execution.consult()?;
+                pay_catalog_work(execution, units)?;
+                total = total.checked_add(bytes).ok_or(
                     worth_execution::WorkCeilingDenial::Admission(
                         worth_execution::LeaseDenial::ChargedBytesOverflow,
                     ),
-                ))?;
+                )?;
                 if let Some(memory) = metadata.as_mut() {
                     memory.resize(total).map_err(|denial| {
-                        Outcome::RequestStopped(worth_execution::WorkCeilingDenial::Admission(
+                        worth_execution::WorkCeilingDenial::Admission(
                             worth_execution::LeaseDenial::MemoryExhausted(denial),
-                        ))
+                        )
                     })?;
                 }
                 Ok(())
@@ -84,10 +81,8 @@ impl PreparedCandidateIndexPublication {
                 Ok(())
             }
             Err(Stop::Admission(outcome)) => Err(outcome),
-            Err(Stop::AccountingOverflow) => Err(Outcome::RequestStopped(
-                worth_execution::WorkCeilingDenial::Admission(
-                    worth_execution::LeaseDenial::ChargedBytesOverflow,
-                ),
+            Err(Stop::AccountingOverflow) => Err(worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::ChargedBytesOverflow,
             )),
         }
     }
@@ -96,7 +91,7 @@ impl PreparedCandidateIndexPublication {
         self.prepared.publication.install_admitted();
     }
 
-    pub(crate) fn publish(mut self, _runtime: &crate::runtime::RelationalRuntime) {
+    pub(crate) fn publish(mut self) {
         self.prepared.publication.settle_artifacts();
         // Native payload was installed at cutover. Retire the retained backing
         // and keys before releasing either original-request reservation.
@@ -113,12 +108,14 @@ impl PreparedCandidateIndexPublication {
 }
 
 impl CandidateIndexPreparation {
-    pub(super) fn selection_state(&self) -> Option<Arc<crate::runtime::IndexSelectionState>> {
+    pub(super) fn selection_state(
+        &self,
+    ) -> Option<Arc<crate::runtime::state::subsystems::indexing::IndexSelectionState>> {
         self.publication.selection_state()
     }
 
     pub(super) fn prepare(
-        indexes: &crate::runtime::IndexingSubsystem,
+        indexes: &crate::runtime::state::subsystems::indexing::IndexingSubsystem,
         prepared_root: &Arc<RelationalBranchRoot>,
         mut prepared: PreparedRefresh,
         work: &mut MaintenanceWork,

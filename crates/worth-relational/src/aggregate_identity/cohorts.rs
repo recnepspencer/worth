@@ -13,7 +13,7 @@ mod components;
 mod derived;
 mod stored;
 use crate::structural_traversal::{walk as walk_native_breadth_first, BreadthFirstRead};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
 pub(super) use stored::read_stored_group;
 use worth_foundational::facade::AggregateIdentity;

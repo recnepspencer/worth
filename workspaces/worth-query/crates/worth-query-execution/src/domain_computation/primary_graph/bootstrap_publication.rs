@@ -61,7 +61,11 @@ pub(super) fn commit_bootstrap_rows(
             for (ordinal, row) in rows.into_iter().enumerate() {
                 batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
             }
-            batch = append_typed_rows(batch, entity_rows, relation_rows);
+            let (batch, naming) =
+                append_typed_rows(batch, entity_rows, relation_rows, graph.layout_ref())?;
+            if let Some(naming) = naming {
+                transaction.attach_naming_plan(naming);
+            }
             transaction
                 .push_batch(
                     batch,
@@ -159,55 +163,8 @@ pub(super) fn map_bootstrap_staging_denial(
 pub(crate) mod commit_denial;
 pub(super) use commit_denial::map_bootstrap_commit_denial;
 
-pub(super) fn append_typed_rows(
-    mut batch: WorkerIntentBatch,
-    entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
-    relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
-) -> WorkerIntentBatch {
-    for row in entity_rows {
-        batch = append_typed_entity(batch, row);
-    }
-    for row in relation_rows {
-        batch = append_typed_relation(batch, row);
-    }
-    batch
-}
-
-fn append_typed_entity(
-    batch: WorkerIntentBatch,
-    row: WorthQueryTypedEntityBootstrapRow,
-) -> WorkerIntentBatch {
-    batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: PartitionId::main(),
-        kind_id: row.kind,
-        client_key: ClientKey::raw(row.key),
-        fields: AspectFieldPatch::from(row.fields),
-    })))
-}
-
-fn append_typed_relation(
-    batch: WorkerIntentBatch,
-    row: WorthQueryTypedRelationBootstrapRow,
-) -> WorkerIntentBatch {
-    batch.push(MutationIntent::Create(CreateIntent::Relation(
-        RelationSpec {
-            partition_id: PartitionId::main(),
-            kind_id: row.kind,
-            client_key: ClientKey::raw(row.key),
-            source: EntityReference::Created(CreatedEntityRef {
-                partition_id: PartitionId::main(),
-                kind_id: row.from_kind,
-                client_key: ClientKey::raw(row.from_key),
-            }),
-            target: EntityReference::Created(CreatedEntityRef {
-                partition_id: PartitionId::main(),
-                kind_id: row.to_kind,
-                client_key: ClientKey::raw(row.to_key),
-            }),
-            fields: AspectFieldPatch::default(),
-        },
-    )))
-}
+pub(super) use typed_seed_rows::append_typed_rows;
+mod typed_seed_rows;
 
 fn append_principal_row(
     batch: WorkerIntentBatch,

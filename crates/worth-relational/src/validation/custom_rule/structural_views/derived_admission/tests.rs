@@ -1,7 +1,7 @@
 //! Exact registered owners remain distinct even when their descriptions agree.
 use super::{DerivedAdmissionCache, PROBES};
+use crate::config::data::CrossContextPolicy;
 use crate::derived_relation::*;
-use crate::facade::config::CrossContextPolicy;
 use crate::graph_member::NativeMemberDomain;
 use crate::identity::data::KindId;
 use crate::schema::data::{

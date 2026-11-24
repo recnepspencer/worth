@@ -1,6 +1,7 @@
 //! Paid exact-generation relation facts at the original immutable basis.
 use super::*;
-use crate::{identity::data::RelationId, validation::data::StructuralRelationRecord};
+use crate::identity::data::RelationId;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
     pub(in crate::branch::model_ownership) fn relation(
@@ -33,7 +34,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         let count = self.state.relation_candidate_count(entity, outgoing);
         self.retain_bytes(count.saturating_mul(512) as u64)?;
         self.charge(count.saturating_mul(3).saturating_add(1))?;
-        let ids = self.state.relation_candidates(entity, outgoing);
+        let ids = self.state.gather_relation_candidates(entity, outgoing);
         let mut edges = Vec::new();
         for &id in ids.iter() {
             if let Some(edge) = self.relation(id)? {

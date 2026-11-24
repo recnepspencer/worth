@@ -5,8 +5,8 @@ use memory_close::CachedSnapshotState;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, RwLock};
 
+use crate::config::data::runtime_config::RelationalRuntimeConfig;
 use crate::history::data::BranchId;
-use crate::runtime::RelationalRuntimeConfig;
 use crate::visibility::snapshot_states::{SnapshotState, VisibilitySnapshotStateKey};
 
 #[derive(Debug)]

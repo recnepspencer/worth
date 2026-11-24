@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use crate::branch::RelationalBranchRoot;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::{PartitionAccess, PartitionState};
@@ -14,12 +11,12 @@ pub(super) struct HistoricalProjectionReader<'view> {
     basis: &'view HistoricalVisibilityBasis,
 }
 
-pub(super) enum HistoricalProjectionStorage<'view> {
-    Retained(&'view Arc<RelationalBranchRoot>),
+enum HistoricalProjectionStorage<T> {
+    Retained(T),
     EmptyGenesis,
 }
 
-impl PartitionAccess for HistoricalProjectionStorage<'_> {
+impl<T: PartitionAccess> PartitionAccess for HistoricalProjectionStorage<T> {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         match self {
             Self::Retained(root) => root.get_partition(partition_id),
@@ -28,7 +25,9 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
     }
 }
 
-impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionStorage<'_> {
+impl<T: PartitionAccess> crate::storage::overlay::CurrentPartitionAccess
+    for HistoricalProjectionStorage<T>
+{
     fn get_current_partition(
         &self,
         id: PartitionId,
@@ -54,7 +53,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionSto
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         match self {
             Self::Retained(root) => root.demand_head_partition(execution, id),
-            Self::EmptyGenesis => crate::execution::check_request(execution)
+            Self::EmptyGenesis => crate::execution::request_custody::check_request(execution)
                 .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request),
         }
     }
@@ -70,14 +69,14 @@ impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionSto
         memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
         match self {
-            Self::Retained(root) => root.as_ref().partition_ids_with_memory(memory),
+            Self::Retained(root) => root.partition_ids_with_memory(memory),
             Self::EmptyGenesis => Ok(Vec::new()),
         }
     }
 
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         match self {
-            Self::Retained(root) => Box::new(root.partition_ids_iter()),
+            Self::Retained(root) => root.partition_ids_iter(),
             Self::EmptyGenesis => Box::new(std::iter::empty()),
         }
     }
@@ -96,7 +95,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.collect_entity_records(Some(kind), charge, memory)
     }
     #[cfg(test)]
@@ -104,7 +104,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.collect_entity_records(None, charge, memory)
     }
     fn collect_entity_records(
@@ -112,7 +113,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
@@ -136,7 +138,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.entity_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn entity_records_in_selected_partition(
@@ -145,13 +148,14 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.view.reader().paid_entities_in_partition(
             &self.storage(),
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_selected_version(
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(
                 self.view.current_version,
                 self.view.version_id(),
             ),
@@ -177,7 +181,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.collect_relation_records(Some(kind), charge, memory)
     }
     #[cfg(test)]
@@ -185,7 +192,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.collect_relation_records(None, charge, memory)
     }
     fn collect_relation_records(
@@ -193,7 +203,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
@@ -213,7 +226,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.relation_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn relation_records_in_selected_partition(
@@ -222,13 +238,16 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.view.reader().paid_relations_in_partition(
             &self.storage(),
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_selected_version(
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(
                 self.view.current_version,
                 self.view.version_id(),
             ),
@@ -249,7 +268,7 @@ impl<'view> HistoricalProjectionReader<'view> {
             )
     }
 
-    pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {
+    pub(super) fn storage(&self) -> impl PartitionAccess + '_ {
         match self.basis.root() {
             Some(root) => HistoricalProjectionStorage::Retained(root),
             None => HistoricalProjectionStorage::EmptyGenesis,
@@ -257,10 +276,13 @@ impl<'view> HistoricalProjectionReader<'view> {
     }
 
     pub(super) fn registry(&self) -> &crate::schema::data::RelationalSchemaRegistry {
-        self.basis
-            .root()
-            .map_or(self.view.schema.registry(), |root| {
-                root.schema_authority().registry()
-            })
+        match self.basis.root() {
+            Some(root) => root.schema_authority().registry(),
+            None => self
+                .view
+                .empty_history_schema
+                .as_deref()
+                .expect("an empty historical projection retains its fallback schema"),
+        }
     }
 }

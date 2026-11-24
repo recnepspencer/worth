@@ -1,17 +1,16 @@
 pub(crate) mod denial;
-mod denial_cause;
+pub(crate) mod denial_cause;
 pub(crate) mod phase_observation;
 pub(crate) mod request_stage;
 pub(crate) mod result_memory;
 pub(crate) use denial::{allocation_commit_error, kernel_failure};
-mod ordered_scan;
+pub(crate) mod ordered_scan;
 pub use denial_cause::RelationalExecutionDenialCause;
-pub(crate) use ordered_scan::admit_ordered_scan;
-mod packet_memory;
-mod read_only_packets;
+pub(crate) mod packet_memory;
+pub(crate) mod read_only_packets;
 mod tracked_packets;
 pub(crate) use packet_memory::{PacketMemory, SharedPacketScratch};
-mod request_work;
+pub(crate) mod request_work;
 
 pub(crate) use request_work::{
     run_with_remaining_request_work, transaction_stage, RequestWorkBudget,
@@ -28,10 +27,18 @@ pub(crate) use read_only_packets::{
     PacketBudgetDenial, PacketExecutionStop, PacketKernelContext, ReadOnlyPacket,
 };
 
-mod unleased_read_only_packets;
+pub(crate) mod unleased_read_only_packets;
 pub(crate) use read_only_packets::admit_read_only_packet_order;
 pub(crate) use unleased_read_only_packets::execute_unleased_read_only_packets;
 
-mod request_custody;
+pub(crate) mod request_custody;
 pub(crate) use request_custody::check_request;
-pub use request_work::RelationalWorkAccountRecorderForTest;
+
+#[cfg(test)]
+#[path = "../tests/support/runtime.rs"]
+pub(crate) mod test_authority;
+
+pub(crate) mod content_stage;
+
+#[cfg(test)]
+pub(crate) mod test_policy;

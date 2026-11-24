@@ -34,7 +34,7 @@ pub(super) fn decode(
     let funding = copying::reserve(execution, quote.retained)?;
     let mut meaning: RecordedComponentMeaning =
         serde_json::from_slice(bytes).map_err(|_| copying::malformed())?;
-    crate::execution::check_request(execution).map_err(Refusal::Request)?;
+    crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
     meaning._funding = funding;
     Ok(RecordedRelationalComponentReference {
         meaning: Arc::new(meaning),

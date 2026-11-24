@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, CommitId};
-use crate::identity::data::LineageId;
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{LineageEventKind, LineageEventRecord};
 
 use super::{
@@ -70,6 +70,10 @@ pub struct LineageEventBatchDigestBasis {
     canonical_event_kinds: Vec<LineageEventKind>,
     canonical_source_orderings: Vec<Vec<LineageId>>,
     canonical_target_orderings: Vec<Vec<LineageId>>,
+    /// Every explicit `(event, entity)` binding; empty for every commit
+    /// without a selection restore, so those digests never change.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    canonical_entity_bindings: Vec<(u64, EntityId)>,
 }
 
 impl LineageEventBatchDigestBasis {
@@ -148,6 +152,10 @@ pub(super) fn event_batch_digest_basis_from_parts(
         canonical_event_kinds: events.iter().map(|event| event.kind).collect(),
         canonical_source_orderings: events.iter().map(|event| event.sources.clone()).collect(),
         canonical_target_orderings: events.iter().map(|event| event.targets.clone()).collect(),
+        canonical_entity_bindings: events
+            .iter()
+            .filter_map(|event| event.entity_id.map(|entity| (event.event_id, entity)))
+            .collect(),
     }
 }
 

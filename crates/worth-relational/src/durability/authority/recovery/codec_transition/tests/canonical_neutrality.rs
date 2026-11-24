@@ -3,7 +3,7 @@
 //! independent worlds, each with its own source and recovered target runtime,
 //! publish byte-identical artifacts.
 use super::fixture::*;
-use crate::mvcc::RelationalOperationControl;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::runtime::RelationalRuntime;
 
 fn artifacts(
@@ -74,7 +74,7 @@ fn transitioned(
 
 #[test]
 fn output_origin_and_codec_retirement_artifacts_are_runtime_neutral() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let first = world(execution, true);
     let second = world(execution, true);

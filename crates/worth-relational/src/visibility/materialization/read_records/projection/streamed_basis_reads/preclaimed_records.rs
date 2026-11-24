@@ -8,9 +8,8 @@ pub(super) fn entity(
     source: &(impl ProjectionRecordSource + ?Sized),
     id: EntityId,
 ) -> Option<EntityReadRecord> {
-    let root = source.selected_root()?;
+    let registry = source.selected_schema_registry()?;
     let partition = source.selected_storage()?.get_partition(id.partition_id)?;
-    let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_entity_record(
             registry,
@@ -34,9 +33,8 @@ pub(super) fn relation(
     source: &(impl ProjectionRecordSource + ?Sized),
     id: RelationId,
 ) -> Option<RelationReadRecord> {
-    let root = source.selected_root()?;
+    let registry = source.selected_schema_registry()?;
     let partition = source.selected_storage()?.get_partition(id.partition_id)?;
-    let registry = root.schema_authority().registry();
     let record = if source.is_exact_basis() {
         materialization::materialize_current_authoritative_relation_record(
             registry,

@@ -13,7 +13,7 @@ impl PerformedPublicationStream {
 impl RelationalPerformedSourceWalk {
     pub(crate) fn next(
         &mut self,
-    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+    ) -> Option<Arc<crate::history::commit::RelationalCommitEnvelopeResidency>> {
         let node = self.current.take()?;
         self.current = node.previous.clone();
         Some(node.route.envelope.clone())

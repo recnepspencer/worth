@@ -6,10 +6,13 @@ use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 
-use crate::branch::{RelationalBranchRootSchemaAuthority, RelationalRootRegionCheckpoint};
+use crate::branch::{
+    root::schema::RelationalBranchRootSchemaAuthority,
+    root_checkpoint::RelationalRootRegionCheckpoint,
+};
 use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalCheckpointDirectory,
-    RelationalCheckpointRegion, RelationalRecoveryStop,
+    DurabilityError, RelationalCheckpointDirectory, RelationalCheckpointRegion,
+    RelationalRecoveryStop,
 };
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::identity::data::PartitionId;
@@ -27,7 +30,7 @@ type CellKey = (
 pub(crate) struct ReadmittedRegionDirectory {
     pub(crate) schemas: ReadmittedSchemas,
     directory: Arc<RelationalCheckpointDirectory>,
-    symbols: crate::runtime::RuntimeSymbolTable,
+    symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     cells: ExecutionOrderedMap<CellKey, Arc<RelationalRegionResidency>>,
 }
 
@@ -73,7 +76,7 @@ impl ReadmittedSchemas {
 impl ReadmittedRegionDirectory {
     pub(crate) fn new(
         directory: Arc<RelationalCheckpointDirectory>,
-        symbols: crate::runtime::RuntimeSymbolTable,
+        symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         request: &ExecutionRequest<'_, '_>,
         configured_schema: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<Self, RelationalRecoveryStop> {
@@ -81,7 +84,11 @@ impl ReadmittedRegionDirectory {
             let schemas = ReadmittedSchemas::Source(catalog.clone());
             return Ok(Self {
                 schemas,
-                symbols: symbols.from_selected_directory_for_request(&directory, request)?,
+                symbols: symbols.from_selected_directory_for_request(
+                    directory.manifest.symbol_page_roster(),
+                    directory.symbol_member_custody(),
+                    request,
+                )?,
                 directory,
                 cells: Default::default(),
             });
@@ -101,7 +108,7 @@ impl ReadmittedRegionDirectory {
         let nodes = if count == 0 {
             0
         } else {
-            crate::branch::retained_compilation_tree_bytes::<
+            crate::branch::root::schema::standard_tree_quote::retained_tree_bytes::<
                 [u8; 32],
                 Arc<RelationalBranchRootSchemaAuthority>,
             >(count)
@@ -155,7 +162,7 @@ impl ReadmittedRegionDirectory {
 
     pub(crate) fn from_readmitted_schemas(
         directory: Arc<RelationalCheckpointDirectory>,
-        symbols: crate::runtime::RuntimeSymbolTable,
+        symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         schemas: ReadmittedSchemas,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, RelationalRecoveryStop> {
@@ -264,5 +271,20 @@ impl ReadmittedRegionDirectory {
 }
 
 pub(crate) fn corrupt(detail: impl Into<String>) -> DurabilityError {
-    DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+    DurabilityError::corrupt_checkpoint(detail)
+}
+
+impl From<crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial>
+    for crate::durability::data::RelationalRecoveryStop
+{
+    fn from(
+        cause: crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial,
+    ) -> Self {
+        use crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial as Denial;
+        match cause {
+            Denial::Invalid(message) => corrupt(message).into(),
+            Denial::StorageUnavailable(cause) => cause.into(),
+            Denial::Request(cause) => Self::Request(cause),
+        }
+    }
 }

@@ -109,7 +109,7 @@ fn refuse_zero_budget(source: &Artifact) {
     let stop = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), stop.token(), None);
     let request = ExecutionRequest::serial(&host);
-    assert!(matches!(source.readmit_framed(&request), Err(crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(_))));
+    assert!(matches!(source.readmit_framed(&request), Err(crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal::Request(_))));
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 fn arc_slice_bytes<T>(count: usize) -> u64 {

@@ -1,7 +1,7 @@
 use super::{DerivedIndexEntryMap, DerivedIndexRows};
 
 use crate::identity::data::EntityId;
-use crate::storage::data::AuthoritativeFieldComparisonKey;
+use crate::storage::data::authoritative_field_comparison_key::AuthoritativeFieldComparisonKey;
 
 use super::{
     DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration, RelatedEntityOrderingEntry,

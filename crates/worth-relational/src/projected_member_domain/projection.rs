@@ -1,11 +1,10 @@
 //! Logical members issued by a genuine exact-view carrier observation.
 use super::{ProjectedMemberCaseHandle, ProjectedMemberDomainHandle};
-use crate::derived_relation::{
-    DerivedRelationDenial as Denial, DerivedRelationReadDenial as ReadDenial,
-};
+use crate::derived_relation::definition::DerivedRelationDenial as Denial;
+use crate::derived_relation::DerivedRelationReadDenial as ReadDenial;
 use crate::graph_member::{NativeMemberKey, ProjectedMemberCoordinate};
 use crate::identity::data::EntityId;
-use crate::validation::data::StructuralRelationView;
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::sync::Arc;
 
@@ -17,7 +16,7 @@ pub struct ObservedProjectedMember {
     domain: ProjectedMemberDomainHandle,
     source: InvariantSourceAffinity,
     // The original read owner outlives every escaped coordinate clone.
-    _retention: crate::validation::CustomInvariantWorkMeter,
+    _retention: crate::validation::custom_rule::work_meter::CustomInvariantWorkMeter,
 }
 impl ObservedProjectedMember {
     pub fn key(&self) -> &NativeMemberKey {

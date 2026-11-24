@@ -1,6 +1,6 @@
 //! One exhaustive traversal of the symbolic entity endpoints in an intent.
 use super::{CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent};
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 impl MutationIntent {
     pub(crate) fn visit_entity_references_mut<E>(

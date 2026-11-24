@@ -1,11 +1,12 @@
 //! One Native-selected head and publication exclusion through caller installation.
-use super::super::CompanionBranchCell;
 use super::{
     CompanionRegistrationState, PendingCompanionRegistration, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop as Stop,
 };
-use crate::branch::RelationalBranchIdentity;
-use crate::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::mvcc::publication::companion::CompanionBranchCell;
+use crate::runtime::RelationalRuntime;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::sync::Arc;
 
 impl PublicationCompanionRegistration {

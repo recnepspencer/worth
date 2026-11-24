@@ -1,7 +1,8 @@
 //! Derive selected-prefix postings only from actual verified canonical owners.
 use super::*;
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteSelector as Selector;
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::RelationalAuthoredWriteSelector as Selector;
 
 pub(super) fn append(
     generation: &mut AuthoredWriteGeneration,
@@ -10,7 +11,10 @@ pub(super) fn append(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), Denial> {
     let Some(entries) = envelope.authored_index_writes.verified_entries() else {
-        crate::history::visit_authored_write_lookup(context, generation.incomplete_indexes.len())?;
+        crate::history::access::relevant_writes::ordered_visit(
+            context,
+            generation.incomplete_indexes.len(),
+        )?;
         generation
             .incomplete_indexes
             .insert_cloned_native_for_request(&generation.ordinal, &(), execution)?;
@@ -27,14 +31,17 @@ pub(super) fn append(
         generation.index_run_start = generation.ordinal;
     }
     generation.index_run_last = Some(coverage);
-    crate::history::visit_authored_write_lookup(context, generation.index_coverage.len())?;
+    crate::history::access::relevant_writes::ordered_visit(
+        context,
+        generation.index_coverage.len(),
+    )?;
     generation.index_coverage.insert_cloned_native_for_request(
         &generation.ordinal,
         &coverage,
         execution,
     )?;
     for entry in entries {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         for (kind, value) in [
             (entry.old_kind, entry.old_key.as_ref()),
             (entry.new_kind, entry.new_key.as_ref()),

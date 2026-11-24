@@ -10,6 +10,9 @@ mod observation_identity;
 mod path_evaluation;
 mod plan;
 mod plan_validation;
+mod runtime_dependencies;
+mod runtime_freshness;
+mod runtime_observation;
 
 pub use admission::{
     RelationalAuthorizationBudgetedObservationStop, RelationalAuthorizationObservationAdmission,

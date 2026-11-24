@@ -1,5 +1,5 @@
 //! A native scan limit and the caller's execution stop are distinct failures.
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum NativeScanStop<Limit> {
     Request(Cause),

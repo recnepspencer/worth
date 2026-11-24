@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use worth_foundational::facade::AspectKey;
 
-use super::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]

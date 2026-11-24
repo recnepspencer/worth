@@ -1,6 +1,6 @@
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 
-use super::DurabilityError;
+use crate::durability::data::recovery_errors::DurabilityError;
 
 /// An in-process recovery refusal. Request control is never durable evidence.
 ///
@@ -16,11 +16,13 @@ use super::DurabilityError;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalRecoveryStop {
-    AdmissionImage(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal),
+    AdmissionImage(
+        crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
+    ),
     Request(RelationalExecutionDenialCause),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Durability(DurabilityError),
-    Content(crate::content::RelationalContentDenial),
+    Content(crate::content::denial::RelationalContentDenial),
 }
 
 impl From<RelationalExecutionDenialCause> for RelationalRecoveryStop {
@@ -39,13 +41,13 @@ impl From<DurabilityError> for RelationalRecoveryStop {
     }
 }
 
-impl From<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+impl From<crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal>
     for RelationalRecoveryStop
 {
     fn from(
-        cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+        cause: crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
     ) -> Self {
-        use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Image;
+        use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Image;
         match cause {
             Image::Request(cause) => Self::Request(cause),
             Image::Content(cause) => cause.into(),
@@ -73,8 +75,12 @@ impl From<crate::durability::checkpoint_admission::RelationalCheckpointAdmission
     }
 }
 
-impl From<crate::storage::data::RelationalStorageUnavailable> for RelationalRecoveryStop {
-    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+impl From<crate::storage::data::storage_unavailable::RelationalStorageUnavailable>
+    for RelationalRecoveryStop
+{
+    fn from(
+        failure: crate::storage::data::storage_unavailable::RelationalStorageUnavailable,
+    ) -> Self {
         Self::Durability(failure.into())
     }
 }
@@ -95,77 +101,45 @@ impl std::fmt::Display for RelationalRecoveryStop {
 
 impl std::error::Error for RelationalRecoveryStop {}
 
-impl From<super::RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
-    fn from(denial: super::RelationalNativeCheckpointCaptureDenial) -> Self {
-        match denial {
-            super::RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause) => cause.into(),
-            super::RelationalNativeCheckpointCaptureDenial::RetentionCapacityExhausted => {
-                super::DurabilityError::new(
-                    super::RecoveryFailureClass::ColdStorageUnavailable,
-                    "checkpoint retention capacity exhausted",
-                )
-                .into()
-            }
-            super::RelationalNativeCheckpointCaptureDenial::RetentionIdentityExhausted => {
-                super::DurabilityError::new(
-                    super::RecoveryFailureClass::ColdStorageUnavailable,
-                    "checkpoint retention identity exhausted",
-                )
-                .into()
-            }
-            super::RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => {
-                super::DurabilityError::new(
-                    super::RecoveryFailureClass::ColdStorageUnavailable,
-                    "checkpoint owner unavailable",
-                )
-                .into()
-            }
-            super::RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable => {
-                super::DurabilityError::new(
-                    super::RecoveryFailureClass::UnsupportedLegacySemantics,
-                    "original complete checkpoint authority unavailable",
-                )
-                .into()
-            }
-            super::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause) => {
-                use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal as Frame;
-                let class = match cause {
-                    Frame::UnsupportedVersion(_) => {
-                        super::RecoveryFailureClass::UnsupportedLegacySemantics
-                    }
-                    Frame::SizeLimit { .. } => super::RecoveryFailureClass::CheckpointSizeOverflow,
-                    Frame::InvalidVersion
-                    | Frame::InvalidPayloadShape
-                    | Frame::UnrecognizedMagic
-                    | Frame::TruncatedHeader { .. }
-                    | Frame::TruncatedPayload { .. }
-                    | Frame::TrailingBytes { .. }
-                    | Frame::DigestMismatch { .. } => {
-                        super::RecoveryFailureClass::CorruptCheckpoint
-                    }
-                };
-                Self::Durability(DurabilityError::new(
-                    class,
-                    format!("checkpoint source artifact frame: {cause:?}"),
-                ))
-            }
-            super::RelationalNativeCheckpointCaptureDenial::Content(cause) => Self::from(cause),
-            super::RelationalNativeCheckpointCaptureDenial::Request(cause) => Self::Request(cause),
-            super::RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
-            super::RelationalNativeCheckpointCaptureDenial::Allocation(error) => {
-                crate::symbols::data::field_text_recovery_stop(
-                    crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(error),
-                )
-            }
+impl From<crate::content::denial::RelationalContentDenial> for RelationalRecoveryStop {
+    fn from(cause: crate::content::denial::RelationalContentDenial) -> Self {
+        match cause {
+            crate::content::denial::RelationalContentDenial::Execution(cause) => Self::from(cause),
+            cause => Self::Content(cause),
         }
     }
 }
 
-impl From<crate::content::RelationalContentDenial> for RelationalRecoveryStop {
-    fn from(cause: crate::content::RelationalContentDenial) -> Self {
-        match cause {
-            crate::content::RelationalContentDenial::Execution(cause) => Self::from(cause),
-            cause => Self::Content(cause),
+pub(crate) fn map_stop(
+    cause: worth_execution::ExecutionOrderedMapDenial,
+) -> RelationalRecoveryStop {
+    match cause {
+        worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
+            RelationalRecoveryStop::Request(cause.into())
         }
+        worth_execution::ExecutionOrderedMapDenial::Allocation(cause) => {
+            RelationalRecoveryStop::Allocation(cause)
+        }
+        worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
+            RelationalRecoveryStop::Request(RelationalExecutionDenialCause::MemoryOverflow)
+        }
+    }
+}
+
+pub(crate) fn account_work(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    work: u64,
+) -> Result<(), RelationalRecoveryStop> {
+    let mut answer = None;
+    let scope = request.run_native_with_checkpoint(|context| {
+        answer = Some(crate::execution::request_stage::checkpoint(context, work));
+    });
+    match (scope, answer) {
+        (_, Some(Err(cause))) => Err(RelationalRecoveryStop::Request(
+            worth_execution::WorkCeilingDenial::Stopped(cause).into(),
+        )),
+        (Err(cause), _) => Err(RelationalRecoveryStop::Request(cause.into())),
+        (Ok(_), Some(Ok(()))) => Ok(()),
+        (Ok(_), None) => unreachable!("completed artifact work executes its callback"),
     }
 }

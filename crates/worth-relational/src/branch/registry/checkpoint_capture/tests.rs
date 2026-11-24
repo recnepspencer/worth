@@ -1,8 +1,8 @@
 //! Original registry DATA copies own their exact heaps independently of cells.
 use super::*;
-use crate::branch::{
-    RelationalBranchReferenceCell, RelationalBranchRootDescriptor, RelationalBranchTarget,
-};
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::target::RelationalBranchRootDescriptor;
+use crate::branch::target::RelationalBranchTarget;
 use std::alloc::Layout;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::FoundationalBranchTarget;
@@ -32,7 +32,9 @@ fn source() -> RelationalBranchReferenceRegistry {
     registry
 }
 
-fn observation_bytes(value: &crate::branch::RelationalBranchReferenceObservation) -> usize {
+fn observation_bytes(
+    value: &crate::branch::reference::observation::RelationalBranchReferenceObservation,
+) -> usize {
     value.branch_id().as_str().len()
         + match value.target() {
             FoundationalBranchTarget::Empty => 0,
@@ -137,7 +139,7 @@ fn branch_metadata_clone_retains_exact_data_after_original_cells_die() {
 #[test]
 fn branch_metadata_refuses_exact_data_bill_before_any_metadata_copy() {
     let registry = source();
-    let ordinary = crate::test_execution_policy::serial_request();
+    let ordinary = crate::execution::test_policy::serial_request();
     let baseline = registry
         .capture_checkpoint_metadata(&ExecutionRequest::serial(&ordinary), "runtime")
         .unwrap();
@@ -150,7 +152,7 @@ fn branch_metadata_refuses_exact_data_bill_before_any_metadata_copy() {
         .unwrap_err();
     match failure {
         CheckpointBranchMetadataCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+            crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                 requested,
                 admitted,
                 ancestor: 0,

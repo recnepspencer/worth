@@ -32,12 +32,7 @@ pub struct RecoveryAuthorityContinuityCheck {
     pub first_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RecoveryVerificationMode {
-    NormalRecoveryVerification,
-    AuditRecoveryVerification,
-    CorruptionDiagnosisReplay,
-}
+pub use super::recovery_verification::RecoveryVerificationMode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecoveryVerificationPlan {
@@ -75,19 +70,22 @@ pub struct RecoveryPlan {
     pub(crate) home_world_selection: Option<
         std::sync::Arc<
             worth_proof::VerifiedHomeWorldSelection<
-                std::sync::Arc<crate::durability::RelationalWorldSourceCatalog>,
+                std::sync::Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
             >,
         >,
     >,
     /// Actual retained Memory transition DATA, independent of external-source admission.
-    pub(crate) retained_transition_prefix:
-        Option<std::sync::Arc<crate::runtime::OriginalBranchSchemaInputs>>,
+    pub(crate) retained_transition_prefix: Option<
+        std::sync::Arc<
+            crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs,
+        >,
+    >,
     pub(crate) original_source: Option<
         std::sync::Arc<
             crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
         >,
     >,
-    pub config: crate::runtime::RelationalRuntimeConfig,
+    pub config: crate::config::data::runtime_config::RelationalRuntimeConfig,
     pub(crate) cold_source:
         Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub checkpoint: Option<DurableCheckpoint>,
@@ -163,7 +161,7 @@ impl RecoveryAuthorityContinuityCheck {
 
 impl RecoveryPlan {
     pub(crate) fn new(
-        config: crate::runtime::RelationalRuntimeConfig,
+        config: crate::config::data::runtime_config::RelationalRuntimeConfig,
         checkpoint: Option<DurableCheckpoint>,
         tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
         branch_transitions: super::RecoveryBranchTransitions,
@@ -179,7 +177,7 @@ impl RecoveryPlan {
         restore_authoritative_envelope_commit_ids.dedup();
         let checkpoint_covered_position = checkpoint
             .as_ref()
-            .map(crate::durability::access::checkpoint_coverage);
+            .map(crate::durability::checkpoint_coverage::checkpoint_coverage);
         Self {
             home_world_selection: None,
             original_source: None,

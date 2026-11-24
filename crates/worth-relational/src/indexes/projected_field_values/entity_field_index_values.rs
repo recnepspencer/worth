@@ -1,15 +1,15 @@
+use super::field_projection_scope::entity_index_projection_scope;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
 
 use crate::identity::data::EntityId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::materialization::read_records::entity_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_value;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
-use super::field_projection_scope::{
-    entity_index_projection_scope, entity_index_projection_scopes,
-    source_entity_index_projection_scope_for_kind,
+use super::selected_projection_scopes::{
+    entity_index_projection_scopes, source_entity_index_projection_scope_for_kind,
 };
 use super::IndexProjectionSource;
 
@@ -20,12 +20,12 @@ pub(in crate::indexes) fn build_entity_aspect_field_index(
     field_locator: &AspectFieldLocator,
 ) -> Result<
     BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>,
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let mut entries = BTreeMap::new();
     for scope in entity_index_projection_scopes(projection, field_locator) {
         projection.try_for_each_entity_field(execution, scope.kind_id(), field_locator,
-            |_, _| Ok::<_, crate::execution::RelationalExecutionDenialCause>(()),
+            |_, _| Ok::<_, crate::execution::denial_cause::RelationalExecutionDenialCause>(()),
             |entity_id, value| {
                 if let Some(value) = value {
                     let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
@@ -45,7 +45,7 @@ pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
-    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    context: &mut crate::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>, IndexKernelStop> {
     let mut entries = BTreeMap::new();
     let budget = std::cell::RefCell::new(context);
@@ -102,7 +102,7 @@ pub(in crate::indexes) fn entity_aspect_field_ordering_value(
     field_locator: &AspectFieldLocator,
 ) -> Result<
     Option<worth_foundational::facade::AspectValue>,
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     Ok({
         projection

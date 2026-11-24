@@ -13,8 +13,15 @@ mod retained_selection;
 use std::cell::Cell;
 use std::marker::PhantomData;
 
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::home_program_step::AdmittedRelationalHomeProgramStep;
+use crate::branch::root::RelationalBranchRoot;
+use crate::durability::authority::RecoveredCodecPublicationCustody;
 use crate::history::data::BranchId;
-use crate::transactions::data::TransactionId;
+use crate::runtime::state::subsystems::indexing::PreparedRelationalIndexDefinitions;
+use crate::transactions::data::primitives::TransactionId;
+use std::sync::Arc;
 
 /// Opaque, single-use owner artifact whose fallible commit preparation is complete.
 ///
@@ -23,12 +30,12 @@ use crate::transactions::data::TransactionId;
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
     configuration_invariant_generation: u64,
-    receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
-    publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+    receiver_epoch: crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
+    publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
     candidate_id: u64,
-    _payload: std::sync::Arc<std::sync::Mutex<Option<CandidatePayload>>>,
+    _payload: Arc<std::sync::Mutex<Option<CandidatePayload>>>,
     reservation_count: usize,
     consumed: bool,
     _not_sync: PhantomData<Cell<()>>,
@@ -36,33 +43,34 @@ pub struct PreparedRelationalCommitCandidate {
 
 pub(crate) struct CandidatePayload {
     coupled_read: Option<coupled_read::CoupledCandidateReadContext>,
-    current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
+    current_read: Option<AdmittedRelationalBranchBasis>,
     managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     companion_read: Option<super::companion::CompanionReadCondition>,
-    expected_basis: crate::branch::RelationalBranchBasisDescriptor,
-    expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
-    publication_cell: crate::branch::RelationalBranchPublicationCell,
+    expected_basis: RelationalBranchBasisDescriptor,
+    expected_root: Arc<RelationalBranchRoot>,
+    publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
     retention: crate::history::retention::RelationalCandidateRetentionObligation,
-    published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
-    control: crate::mvcc::RelationalOperationControl,
+    published_snapshot_slot:
+        crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
+    control: crate::runtime::operation_control::RelationalOperationControl,
 }
 
 pub(super) struct PreparedRelationalPublicationParts {
-    pub(super) current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(super) current_read: Option<AdmittedRelationalBranchBasis>,
     pub(super) managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
     pub(super) candidate_id: u64,
-    pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
-    pub(super) expected: crate::branch::RelationalBranchBasisDescriptor,
-    pub(super) expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
-    pub(super) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    pub(super) publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
+    pub(super) expected: RelationalBranchBasisDescriptor,
+    pub(super) expected_root: Arc<RelationalBranchRoot>,
+    pub(super) publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     pub(super) movement: super::PreparedCanonicalBranchMovement,
     pub(super) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
     pub(super) candidate_retention:
         crate::history::retention::RelationalCandidateRetentionObligation,
-    pub(super) control: crate::mvcc::RelationalOperationControl,
+    pub(super) control: crate::runtime::operation_control::RelationalOperationControl,
 }
 
 pub(crate) enum PreparedRelationalCandidateAdmissionStop {
@@ -74,21 +82,21 @@ impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
         configuration_invariant_generation: u64,
-        receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
-        publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+        receiver_epoch: crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
+        publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
-        expected_basis: crate::branch::RelationalBranchBasisDescriptor,
-        expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
-        publication_cell: crate::branch::RelationalBranchPublicationCell,
+        expected_basis: RelationalBranchBasisDescriptor,
+        expected_root: Arc<RelationalBranchRoot>,
+        publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
         execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
         retention: crate::history::retention::RelationalCandidateRetentionObligation,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
-        control: crate::mvcc::RelationalOperationControl,
+        published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
+        control: crate::runtime::operation_control::RelationalOperationControl,
         maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
         let reservation_count = execution.reservation_count();
-        let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+        let payload = Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
             coupled_read: None,
             current_read: None,
             companion_read: None,
@@ -104,14 +112,14 @@ impl PreparedRelationalCommitCandidate {
         let candidate_id = publication_binding
             .register_candidate(maximum_candidates, &payload)
             .map_err(|denial| match denial {
-                crate::runtime::RelationalCandidateRegistrationDenial::CapacityExhausted {
+                crate::runtime::state::runtime_state::publication_lifecycle::RelationalCandidateRegistrationDenial::CapacityExhausted {
                     maximum_candidates,
                 } => PreparedRelationalCandidateAdmissionStop::Deferred(
                     super::RelationalPublicationDeferred::CandidateCapacityExhausted {
                         maximum_candidates,
                     },
                 ),
-                crate::runtime::RelationalCandidateRegistrationDenial::IdentityExhausted => {
+                crate::runtime::state::runtime_state::publication_lifecycle::RelationalCandidateRegistrationDenial::IdentityExhausted => {
                     PreparedRelationalCandidateAdmissionStop::Failed(
                         super::RelationalPublicationFailure::new(
                             super::RelationalPublicationFailureKind::CandidateIdentityExhausted,
@@ -149,7 +157,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn belongs_to_receiver_epoch(
         &self,
-        epoch: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
+        epoch: &crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
     ) -> bool {
         self.receiver_epoch.same_epoch(epoch)
     }
@@ -158,7 +166,7 @@ impl PreparedRelationalCommitCandidate {
         self.configuration_invariant_generation
     }
 
-    pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
+    pub(crate) fn expected_basis(&self) -> Option<RelationalBranchBasisDescriptor> {
         self._payload
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -169,7 +177,12 @@ impl PreparedRelationalCommitCandidate {
     /// Basis, successor parent count, and fixed-size root/commit identities.
     pub(crate) fn with_successor_shape<R>(
         &self,
-        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize, u64, crate::history::data::CommitId) -> R,
+        read: impl FnOnce(
+            &RelationalBranchBasisDescriptor,
+            usize,
+            u64,
+            crate::history::data::CommitId,
+        ) -> R,
     ) -> Option<R> {
         let payload = self
             ._payload
@@ -186,7 +199,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn belongs_to_publication_owner(
         &self,
-        binding: &crate::runtime::RelationalRuntimePublicationBinding,
+        binding: &crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     ) -> bool {
         self.publication_binding.belongs_to_same_owner(binding)
     }
@@ -197,27 +210,24 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn index_preparation_roots(
         &self,
-    ) -> Option<(
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
-    )> {
+    ) -> Option<(Arc<RelationalBranchRoot>, Arc<RelationalBranchRoot>)> {
         let payload = self
             ._payload
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let payload = payload.as_ref()?;
         Some((
-            std::sync::Arc::clone(&payload.expected_root),
-            std::sync::Arc::clone(payload.execution.prepared_root()),
+            Arc::clone(&payload.expected_root),
+            Arc::clone(payload.execution.prepared_root()),
         ))
     }
 
     pub(crate) fn change_summary_basis_and_roots(
         &self,
     ) -> Option<(
-        crate::branch::RelationalBranchBasisDescriptor,
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        RelationalBranchBasisDescriptor,
+        Arc<RelationalBranchRoot>,
+        Arc<RelationalBranchRoot>,
     )> {
         let payload = self
             ._payload
@@ -226,14 +236,14 @@ impl PreparedRelationalCommitCandidate {
         let payload = payload.as_ref()?;
         Some((
             payload.expected_basis.clone(),
-            std::sync::Arc::clone(&payload.expected_root),
-            std::sync::Arc::clone(payload.execution.prepared_root()),
+            Arc::clone(&payload.expected_root),
+            Arc::clone(payload.execution.prepared_root()),
         ))
     }
 
     pub(crate) fn recovered_codec_publication_custody(
         &self,
-    ) -> Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+    ) -> Option<Arc<RecoveredCodecPublicationCustody>> {
         self._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -246,9 +256,7 @@ impl PreparedRelationalCommitCandidate {
             })
     }
 
-    pub(crate) fn home_step(
-        &self,
-    ) -> Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+    pub(crate) fn home_step(&self) -> Option<Arc<AdmittedRelationalHomeProgramStep>> {
         self._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -256,9 +264,7 @@ impl PreparedRelationalCommitCandidate {
             .and_then(|payload| payload.execution.home_step().cloned())
     }
 
-    pub(crate) fn home_index_definitions(
-        &self,
-    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+    pub(crate) fn home_index_definitions(&self) -> Option<Arc<PreparedRelationalIndexDefinitions>> {
         self._payload
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -268,7 +274,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn covers_home_definitions(
         &self,
-        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        definitions: &PreparedRelationalIndexDefinitions,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, worth_execution::WorkCeilingDenial> {
         match self
@@ -294,7 +300,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn attach_prepared_indexes(
         &mut self,
-        prepared: crate::indexes::PreparedCandidateIndexPublication,
+        prepared: crate::indexes::authority::PreparedCandidateIndexPublication,
     ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
         let mut payload = self
             ._payload
@@ -318,7 +324,7 @@ impl PreparedRelationalCommitCandidate {
     #[cfg(test)]
     pub(crate) fn publication_cell_for_test(
         &self,
-    ) -> crate::branch::RelationalBranchPublicationCell {
+    ) -> crate::branch::reference_publication_cell::RelationalBranchPublicationCell {
         self._payload
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -329,10 +335,8 @@ impl PreparedRelationalCommitCandidate {
     }
 
     #[cfg(test)]
-    pub(crate) fn expected_root_for_test(
-        &self,
-    ) -> std::sync::Arc<crate::branch::RelationalBranchRoot> {
-        std::sync::Arc::clone(
+    pub(crate) fn expected_root_for_test(&self) -> Arc<crate::branch::root::RelationalBranchRoot> {
+        Arc::clone(
             &self
                 ._payload
                 .lock()

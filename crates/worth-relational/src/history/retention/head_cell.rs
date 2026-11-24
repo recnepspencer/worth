@@ -1,7 +1,8 @@
 //! A live head cell lends checked custody before a retirement can have effects.
 use super::owner::RelationalBranchRetentionOwnerInner;
 use super::{RelationalHeadRetentionObligation, RelationalRetentionAcquisitionDenial};
-use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
 use std::sync::{Arc, Mutex};
 #[cfg(test)]
 mod memory_close_tests;

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::KindId;
-use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
+use crate::merge::data::identity::IdentityBasisDeclaration;
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 use crate::schema::data::{
     AspectContractPlanRevision, RelationIntegrityPlanRevision, SchemaId, SchemaVersionId,
 };

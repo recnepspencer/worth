@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) struct ReadmittedRegionSet {
     pub(super) root_id: u64,
-    pub(super) regions: Arc<crate::branch::RelationalPersistentRegionSet>,
+    pub(super) regions: Arc<crate::branch::root_regions::RelationalPersistentRegionSet>,
     pub(super) entity_slot_count: usize,
     pub(super) relation_slot_count: usize,
     pub(super) publication_cost: crate::branch::root::RelationalBranchRootPublicationCost,
@@ -15,9 +15,9 @@ impl RelationalBranchRoot {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
         partitions: BTreeMap<PartitionId, PartitionState>,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
-        schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        schema_authority: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         validate_schema_root(original.envelope(), &descriptor)?;
@@ -79,10 +79,12 @@ impl RelationalBranchRoot {
         issuer: &RelationalBranchRootIdentityIssuer,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
-        directory: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        directory: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
+        original: Arc<crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
-        schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        schema_authority: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         let root_id = issuer.issue_root_id()?;
         let mut regions =
@@ -90,7 +92,7 @@ impl RelationalBranchRoot {
         let mut entity_slot_count = 0_usize;
         let mut relation_slot_count = 0_usize;
         for region in directory.iter().cloned() {
-            crate::execution::check_request(execution)
+            crate::execution::request_custody::check_request(execution)
                 .map_err(RelationalBranchRootCaptureDenial::Request)?;
             entity_slot_count = entity_slot_count
                 .checked_add(region.entity_slots)
@@ -122,9 +124,9 @@ impl RelationalBranchRoot {
 
     fn bind_readmitted_regions(
         prepared: ReadmittedRegionSet,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
-        schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+        schema_authority: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
@@ -232,7 +234,7 @@ impl RelationalBranchRoot {
 pub(super) fn readmit_checkpoint_region(
     root_id: u64,
     region_id: u64,
-    checkpoint: crate::branch::RelationalRootRegionCheckpoint,
+    checkpoint: crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Arc<crate::branch::root_region::RelationalRootRegion>, RelationalBranchRootCaptureDenial>
 {

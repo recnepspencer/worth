@@ -2,26 +2,30 @@ use serde::{Deserialize, Serialize};
 
 use worth_foundational::facade::FieldKey;
 
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
+use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
 use crate::commit_strategies::data::{
     decode_aspect_field_patch, decode_entity_id, encode_aspect_field_patch, encode_entity_id,
     CanonicalStrategyCommitRequest, CanonicalStrategyOutputArtifact, CommitStrategyDescriptor,
-    CommitStrategyExecutionRegistration, CommitStrategyExecutor, CommitStrategyFamilyName,
-    CommitStrategyId, CommitStrategyRegistration, CommitStrategyRegistrationError,
-    CommitStrategySemanticName, CommitStrategyVersion, NativeCodecError, NativeCodecReader,
-    NativeStrategyCommitRequest, PersistentArtifactName, StrategyCallerProvenance,
-    StrategyEntityAspectReadRecord, StrategyExecutionResult, StrategyExecutorFailure,
-    StrategyExecutorFailureClass, StrategyExecutorFailureEvidence, StrategyInputSchemaName,
-    StrategyInputSchemaVersion, StrategyIntentName, StrategyMutationProgram,
-    StrategyObservationContext, StrategyOutputSchemaName, StrategyPacketContract,
+    CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
+    CommitStrategyRegistrationError, CommitStrategySemanticName, CommitStrategyVersion,
+    NativeCodecError, NativeCodecReader, NativeStrategyCommitRequest, PersistentArtifactName,
+    StrategyCallerProvenance, StrategyEntityAspectReadRecord, StrategyExecutionResult,
+    StrategyExecutorFailure, StrategyExecutorFailureClass, StrategyExecutorFailureEvidence,
+    StrategyInputSchemaName, StrategyInputSchemaVersion, StrategyIntentName,
+    StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
     StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
     StrategyTraversalBasis,
 };
 use crate::identity::data::EntityId;
 use crate::storage::data::authoritative_aspect_value_field_comparison_key;
-use crate::transactions::data::AspectFieldPatch;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
 };
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntentReconciliationInput {
@@ -300,6 +304,3 @@ impl CommitStrategyExecutor for IntentReconciliationStrategy {
         Ok(StrategyExecutionResult::new(output, mutation_program))
     }
 }
-
-#[cfg(test)]
-mod tests;

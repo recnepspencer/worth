@@ -15,11 +15,8 @@ pub struct RelationalTransactionIntent {
     )>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RelationalMaterializationTransactionMode {
-    Suspend,
-    Rematerialize,
-}
+pub(crate) mod materialization_mode;
+pub(crate) use materialization_mode::RelationalMaterializationTransactionMode;
 
 impl RelationalTransactionIntent {
     /// Exhaustively expose only portable authored policy to the Home commitment.

@@ -1,6 +1,8 @@
 use crate::diagnostics::data::{RelationalDiagnosticFields, RelationalDiagnosticValue};
 use crate::merge::data::{MergeExecutionDiagnosticsPlan, PreparedMergeExecution};
-use crate::transactions::data::{MergeExecutionStructuralSummary, MergeExecutionSummary};
+use crate::transactions::data::outcomes::plan_artifacts::{
+    MergeExecutionStructuralSummary, MergeExecutionSummary,
+};
 
 pub(super) fn merge_execution_summary_fields(
     summary: &MergeExecutionSummary,

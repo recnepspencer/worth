@@ -166,7 +166,7 @@ fn invariant_work_packets<'state>(
     proof_kind: PreparationProofKind,
     budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
     packet_offset: usize,
-) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
+) -> Vec<crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'state>> {
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
     let current_version_minimum_index = Arc::new(std::sync::OnceLock::new());
 
@@ -181,7 +181,7 @@ fn invariant_work_packets<'state>(
             if budget.is_some_and(|budget| {
                 !budget.try_plan_item(
                     2 * std::mem::size_of::<
-                        crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+                        crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>,
                     >() as u64,
                 )
             }) {
@@ -213,7 +213,7 @@ fn invariant_work_packets<'state>(
                     _ => PreparationWriteExclusionClass::ReadOnly,
                 },
             };
-            Some(crate::authority::commit::preparation::InvariantWorkPacket {
+            Some(crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket {
                 packet_index,
                 registration,
                 reduction_key: ValidationReductionKey::new(

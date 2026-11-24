@@ -1,4 +1,5 @@
-use super::{IndexProjectionSource, RelationalRuntime};
+use super::IndexProjectionSource;
+use crate::runtime::RelationalRuntime;
 
 pub(super) enum IndexBuildProjection {
     Exact(crate::runtime::VisibilityProjectionView),

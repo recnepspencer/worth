@@ -3,12 +3,15 @@ impl crate::mvcc::ValidatedRelationalProposal {
     /// Consuming the proposal prevents a sealed candidate from being rebound.
     pub fn bind_caller_association(
         mut self,
-        association: crate::mvcc::RelationalCallerAssociation,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+        association: crate::history::data::RelationalCallerAssociation,
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         if self.state.caller_association.is_some() {
             return Err(super::origin_denial("caller association is already bound"));
         }
-        use crate::durability::medium::RelationalHomeProgramWriteDenial as Denial;
+        use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial as Denial;
         let home = worth_foundational::facade::HomeProgramTransitionCaller::recognizes(
             association.as_bytes(),
         );
@@ -22,8 +25,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
         };
         if let Some(denial) = denial {
             return Err(
-                crate::transactions::data::TransactionCommitError::publication_denied(
-                    crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(denial),
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication_denied(
+                    crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(denial),
                 ),
             );
         }

@@ -3,20 +3,21 @@ use super::phase_backing::CommitPhaseBacking;
 
 pub(super) struct SnapshotValidatedCommitExecution {
     admitted: super::execution_admission::AdmittedCommitState,
-    selected_branch_state: crate::branch::SelectedRelationalBranchState,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,
+    public_structural_summary: crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
+    content: crate::content::publication::ContentPublication,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
     effect: crate::authority::mutation::MutationEffect,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
+    created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     mutation_identities:
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     merge_parent_branches: Vec<crate::history::data::BranchId>,
     additional_diagnostics_entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
-    merge_execution_authority: Option<crate::transactions::data::PublishedMergeExecutionAuthority>,
+    merge_execution_authority: Option<crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority>,
     schema_continuity: crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     source_interpretation:
@@ -35,28 +36,30 @@ impl SnapshotValidatedCommitExecution {
         self,
     ) -> (
         super::execution_admission::AdmittedCommitState,
-        crate::branch::SelectedRelationalBranchState,
-        crate::transactions::data::CommitStructuralSummary,
+        crate::branch::root_selection::SelectedRelationalBranchState,
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
         crate::storage::overlay::WorkingState,
+        crate::content::publication::ContentPublication,
         Vec<crate::validation::engine::InvariantExecutionResult>,
         crate::identity::data::VersionId,
         crate::authority::mutation::MutationEffect,
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
+        crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         Vec<crate::history::data::BranchId>,
         Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
-        Option<crate::transactions::data::PublishedMergeExecutionAuthority>,
+        Option<crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority>,
         crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
-    ) {
+    ){
         (
             self.admitted,
             self.selected_branch_state,
             self.public_structural_summary,
             self.working_state,
+            self.content,
             self.invariant_executions,
             self.version_id,
             self.effect,
@@ -76,12 +79,10 @@ impl SnapshotValidatedCommitExecution {
 
 pub(super) fn validate_snapshot_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
     history_bound: CommitPhaseBacking<HistoryBoundCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<SnapshotValidatedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.
@@ -93,8 +94,8 @@ pub(super) fn validate_snapshot_publication(
             .prepared
             .admitted
             .commit_phase_state();
-        log.begin_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
-        log.complete_phase(crate::transactions::data::CommitPhase::InvariantPostCheck);
+        log.begin_phase(crate::transactions::data::commit_log::CommitPhase::InvariantPostCheck);
+        log.complete_phase(crate::transactions::data::commit_log::CommitPhase::InvariantPostCheck);
         into_snapshot_validated_execution(history_bound)
     };
     CommitPhaseBacking::new(execution, result)
@@ -110,6 +111,7 @@ fn into_snapshot_validated_execution(
     let super::mutation_execution::MutatedCommitExecution {
         prepared,
         working_state,
+        content,
         invariant_executions,
         outcome,
         mutation_identities,
@@ -132,6 +134,7 @@ fn into_snapshot_validated_execution(
         selected_branch_state,
         public_structural_summary,
         working_state,
+        content,
         invariant_executions,
         version_id,
         effect,

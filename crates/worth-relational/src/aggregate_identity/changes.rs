@@ -1,6 +1,6 @@
 //! Retain only the actual business interpreter's cohort-relevant output.
 use crate::authority::mutation::AdjacencyDelta;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) struct AggregateChanges {
     pub(super) has_entity_deletions: bool,

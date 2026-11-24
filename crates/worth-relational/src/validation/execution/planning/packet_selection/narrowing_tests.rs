@@ -1,16 +1,20 @@
 //! Candidate applicability belongs to the request, never to an unrelated rule.
 use super::*;
-use crate::facade::{
-    identity::{KindId, PartitionId},
-    runtime::{RelationalRuntime, RelationalRuntimeApi},
-    schema::{
-        EntityKindRegistration, KindAspectContractDeclarations, RelationalSchemaRegistry, SchemaId,
-        SchemaVersionId,
-    },
-};
-use crate::transactions::data::{
-    CreateIntent, EntitySpec, MergedCommitPlan, MutationIntent, TransactionId, WorkerIntentBatch,
-};
+use crate::facade::runtime::RelationalRuntime;
+use crate::facade::runtime::RelationalRuntimeApi;
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
+use crate::schema::data::EntityKindRegistration;
+use crate::schema::data::KindAspectContractDeclarations;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::data::SchemaId;
+use crate::schema::data::SchemaVersionId;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::TransactionId;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::{
     custom_rule::{CustomPreparationBudget, CustomPreparationStop},
     data::*,
@@ -121,7 +125,7 @@ fn request(serial: bool) -> ExecutionResourceLease<'static> {
     if serial {
         ExecutionResourceLease::serial(request).unwrap()
     } else {
-        crate::tests::support::test_execution_authority()
+        crate::execution::test_authority::test_execution_authority()
             .request_lease(request)
             .unwrap()
     }
@@ -152,7 +156,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             Some(&plan),
             None,
         );
-        let view = InvariantRuntimeView::from_runtime(&runtime);
+        let view = runtime.invariant_validation_view();
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         let selected = eligible_registrations(
             &view,
@@ -175,7 +179,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             let InvariantPacketRegistration::CustomNotApplicable {
                 work,
                 basis:
-                    crate::validation::data::CustomInvariantNonApplicability::CandidateOutsideClosure,
+                    crate::validation::data::non_applicability::CustomInvariantNonApplicability::CandidateOutsideClosure,
                 ..
             } = selected
             else {
@@ -245,7 +249,7 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
         );
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         eligible_registrations(
-            &InvariantRuntimeView::from_runtime(&runtime),
+            &runtime.invariant_validation_view(),
             ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),

@@ -101,7 +101,9 @@ fn canonical_aspect_value_bytes(value: &AspectValue) -> Vec<u8> {
 mod tests {
     use worth_foundational::facade::{AspectValue, CanonicalF64, InternedString};
 
-    use super::{AuthoritativeFieldComparisonKey, AuthoritativeFieldComparisonKeyDecodeDenialKind};
+    use crate::storage::data::authoritative_field_comparison_key::{
+        AuthoritativeFieldComparisonKey, AuthoritativeFieldComparisonKeyDecodeDenialKind,
+    };
 
     #[test]
     fn comparison_key_preserves_aspect_value_family_even_when_display_collides() {

@@ -5,10 +5,13 @@ use worth_foundational::facade::AspectValue;
 
 use super::query_packetization::PacketizedQueryWork;
 use super::query_preparation::QueryPreparationBudget;
-use super::*;
+use crate::authority::commit::preparation::planning::strategy::TARGET_PREPARATION_ITEMS_PER_PACKET;
 use crate::identity::data::{EntityId, KindId, PartitionId};
+use crate::query::data::{PlannedQueryPacket, QueryScope};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
+
+pub(super) const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 
 type PreparationResult = Result<Vec<PacketizedQueryWork>, MapKernelFailure<()>>;
 

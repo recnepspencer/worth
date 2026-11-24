@@ -1,12 +1,12 @@
-mod access_denial;
-mod failure_cause;
+pub(crate) mod access_denial;
+pub(crate) mod failure_cause;
 mod memory_denial;
 pub use access_denial::{CustomInvariantAccessDenial, CustomInvariantAccessDenialKind};
 pub use failure_cause::CustomInvariantFailureCause;
-mod errors;
-mod refusal;
+pub(crate) mod errors;
+pub(crate) mod refusal;
 pub use refusal::CustomInvariantRefusal;
-mod touched_scope;
+pub(crate) mod touched_scope;
 
 pub use crate::validation::custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,
@@ -28,7 +28,3 @@ pub(crate) use touched_scope::{PlannedEntityCreate, PlannedRelationCreate, Touch
 
 pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantExecution;
 pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantScope;
-pub(crate) use errors::{
-    CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,
-    CustomInvariantTraversalError, PreparedCustomInvariantExecutionOutcome,
-};

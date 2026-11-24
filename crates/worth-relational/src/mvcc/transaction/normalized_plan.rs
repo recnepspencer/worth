@@ -1,7 +1,9 @@
 //! Independent normalized-plan data and its original request reservation.
-use crate::transactions::data::{
-    MergedCommitPlan, MutationIntent, TransactionCommitError, TransactionId, WorkerIntentBatch,
-};
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::TransactionId;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod coupled_suffix;
 
@@ -135,8 +137,4 @@ pub(crate) fn request_denial(cause: worth_execution::WorkCeilingDenial) -> Trans
     TransactionCommitError::execution(cause.into())
 }
 
-pub(crate) fn copy_overflow() -> TransactionCommitError {
-    TransactionCommitError::execution(
-        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow.into(),
-    )
-}
+pub(crate) use crate::transactions::data::copy_denial::copy_overflow;

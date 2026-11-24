@@ -1,4 +1,4 @@
-use crate::branch::PositionedBranchTransition;
+use crate::branch::transition::PositionedBranchTransition;
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// The branch transitions a recovery replays, merged into its commit tail by

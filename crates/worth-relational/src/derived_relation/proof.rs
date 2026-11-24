@@ -1,17 +1,11 @@
 //! Prepared reads retain their genuine observation and original native payer.
-use super::{DerivedRelationData, DerivedRelationHandle};
+use crate::derived_relation::definition::DerivedRelationHandle;
+use crate::derived_relation::read::DerivedRelationData;
+use crate::derived_relation::read_shape::DerivedRelationReadShape;
 use crate::graph_member::NativeMemberKey;
 use crate::validation::engine::InvariantSourceAffinity;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-
-/// The complete source interpretation admitted by a genuine structural view.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum DerivedRelationReadShape {
-    Adjacency { reverse: bool },
-    Reachable { reverse: bool },
-    Component,
-}
 
 /// A descriptive step retained by an actual admitted breadth-first traversal.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -76,7 +70,7 @@ pub(super) struct PreparedBody {
     pub(super) data: DerivedRelationData,
     pub(super) steps: Vec<DerivedRelationWalkStep>,
     // Backing precedes its original meter so its reservation survives last drop.
-    pub(super) _retention: crate::validation::CustomInvariantWorkMeter,
+    pub(super) _retention: crate::validation::custom_rule::CustomInvariantWorkMeter,
 }
 
 impl PreparedDerivedRelationRead {

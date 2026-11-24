@@ -30,7 +30,7 @@ pub(super) fn expand(
     let mut envelopes = Vec::new();
     for entry in &manifest.commits {
         envelopes.push(
-            crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
+            crate::history::commit::RelationalCommitEnvelopeResidency::readmit_selected(
                 entry,
                 &directory,
                 execution,
@@ -68,7 +68,8 @@ pub(super) fn expand(
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         symbols.restore_snapshot(lane, symbol_table.clone())
     });
-    let admitted_symbols = crate::runtime::RuntimeSymbolTable::default();
+    let admitted_symbols =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
     admitted_symbols.replace(symbols);
     let symbols = admitted_symbols;
     let mut schemas = BTreeMap::new();
@@ -77,16 +78,17 @@ pub(super) fn expand(
         let expected = registry
             .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
             .map_err(RelationalRecoveryStop::Request)?;
-        let schema = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
-            schemas.len() as u64 + 1,
-            registry,
-            contracts,
-            &expected,
-            image.descriptor_semantics_version(),
-            crate::schema::SchemaCompilationControl::Request(*execution),
-        )
-        .map_err(RelationalRecoveryStop::Request)?
-        .ok_or_else(|| corrupt("checkpoint schema readmission failed"))?;
+        let schema =
+            crate::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
+                schemas.len() as u64 + 1,
+                registry,
+                contracts,
+                &expected,
+                image.descriptor_semantics_version(),
+                crate::schema::SchemaCompilationControl::Request(*execution),
+            )
+            .map_err(RelationalRecoveryStop::Request)?
+            .ok_or_else(|| corrupt("checkpoint schema readmission failed"))?;
         if schemas.insert(image.carrier_digest(), schema).is_some() {
             return Err(corrupt("duplicate checkpoint schema carrier").into());
         }
@@ -192,7 +194,13 @@ pub(super) fn expand(
         manifest.branch_data.ordinary_owned_parts();
     let relation_lineages: Vec<_> = envelopes
         .iter()
-        .flat_map(|envelope| envelope.envelope().lineage_relation_lineages().iter().copied())
+        .flat_map(|envelope| {
+            envelope
+                .envelope()
+                .lineage_relation_lineages()
+                .iter()
+                .copied()
+        })
         .collect();
     Ok(DurableCheckpoint {
         recorded_components: manifest
@@ -247,8 +255,11 @@ fn expand_regions(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     regions: &[RelationalCheckpointRegion],
     schema_digest: [u8; 32],
-    schemas: &BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
-    symbols: &crate::runtime::RuntimeSymbolTable,
+    schemas: &BTreeMap<
+        [u8; 32],
+        Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+    >,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     source: &Arc<dyn RelationalDurableColdSource>,
     history_members: &Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<

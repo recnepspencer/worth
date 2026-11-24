@@ -1,7 +1,7 @@
 use crate::identity::data::VersionId;
 use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn write_aspect_versions_for_delta_for_request(
     request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -96,11 +96,11 @@ mod tests {
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
     use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
     use crate::publication::patch::data::{ordered_aspect_keys, RecordStructuralChange};
-    use crate::runtime::RuntimeSymbolTable;
+    use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
     use crate::schema::data::AspectContractPlanRevision;
     use crate::storage::overlay::WorkingState;
     use crate::storage::substrate::{EntityRecordKind, SlotInit};
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
     use worth_foundational::facade::AspectKey;
 
     use super::write_aspect_versions_for_delta;

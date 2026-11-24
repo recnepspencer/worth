@@ -3,7 +3,7 @@ use super::fixture::*;
 
 #[test]
 fn codec_only_restore_refuses_partial_branch_adoption_while_exact_restore_keeps_both_heads() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     world

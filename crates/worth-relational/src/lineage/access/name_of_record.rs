@@ -11,7 +11,8 @@ impl PersistentNameBranchIndex {
     /// `Live` when the name designates exactly this record's lineage at
     /// `basis`; `Ended` when the record's name has since moved on or ended;
     /// `Unnamed` when no name was bound to the record's lineage at or before
-    /// `basis`.
+    /// `basis`. The record's lineage is the one bound to it at `basis`, so a
+    /// later history restore onto a fresh lineage never changes the answer.
     ///
     /// Complexity: O(1) expected probes plus O(log t) in that one name's
     /// timeline for a live record, and O(t) in it for an ended one; total
@@ -25,7 +26,7 @@ impl PersistentNameBranchIndex {
             LineageRecordTarget::Entity(entity) => LineageHolder::Entity(entity),
             LineageRecordTarget::Relation(relation) => LineageHolder::Relation(relation),
         };
-        let Some(lineage) = self.lineage_of_holder(holder) else {
+        let Some(lineage) = self.lineage_of_holder(holder, basis) else {
             return PersistentNameOfRecord::Unnamed;
         };
         let Some(key) = self.name_of_lineage(lineage) else {

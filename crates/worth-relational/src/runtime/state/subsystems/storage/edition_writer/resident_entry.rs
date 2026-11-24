@@ -5,7 +5,7 @@ pub(super) trait ResidentTargetEditor {
     fn read_target(
         &self,
         target: &ResidentMirrorTarget,
-    ) -> Result<&PartitionState, crate::execution::RelationalExecutionDenialCause>;
+    ) -> Result<&PartitionState, crate::execution::denial_cause::RelationalExecutionDenialCause>;
     fn edit_target(&mut self, target: &ResidentMirrorTarget) -> &mut PartitionState;
 }
 
@@ -17,7 +17,8 @@ pub(crate) struct ResidentPartitionEntry<'entry> {
 impl ResidentPartitionEntry<'_> {
     pub(crate) fn read(
         &self,
-    ) -> Result<&PartitionState, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<&PartitionState, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.writer.read_target(self.target)
     }
 

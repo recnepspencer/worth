@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::EntityReference;
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
 
 pub(super) fn include_affected_reference(

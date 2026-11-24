@@ -1,9 +1,9 @@
 use crate::history::data::RecordAllocationClass;
-use crate::identity::data::{PartitionId, VersionId};
+use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 use crate::runtime::ResidentPartitionEntry;
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind};
+use crate::storage::substrate::RecordKind;
 
 #[derive(Default)]
 pub(super) struct RetentionCounts {
@@ -25,52 +25,6 @@ pub(super) struct RetentionPassCounts {
     pub(super) chunks_scanned: usize,
     pub(super) reclaimable: usize,
     pub(super) reclaimed: usize,
-}
-
-pub(super) fn refresh_entity_retention_state(
-    runtime: &RelationalRuntime,
-    partition_id: PartitionId,
-    slot: usize,
-    retired_at: Option<VersionId>,
-    retention_fence: VersionId,
-) {
-    if retired_at.is_none() {
-        return;
-    }
-    let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
-        runtime
-            .storage_authority()
-            .refresh_retention_state::<EntityRecordKind>(
-                partition,
-                slot,
-                retired_at,
-                retention_fence,
-            );
-    }
-}
-
-pub(super) fn refresh_relation_retention_state(
-    runtime: &RelationalRuntime,
-    partition_id: PartitionId,
-    slot: usize,
-    retired_at: Option<VersionId>,
-    retention_fence: VersionId,
-) {
-    if retired_at.is_none() {
-        return;
-    }
-    let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
-        runtime
-            .storage_authority()
-            .refresh_retention_state::<RelationRecordKind>(
-                partition,
-                slot,
-                retired_at,
-                retention_fence,
-            );
-    }
 }
 
 pub(super) fn inspect_partition_retention<K: RecordKind>(
@@ -210,7 +164,7 @@ mod tests {
             .partitions
             .demand_resident_edit(
                 &execution,
-                &runtime.services.instrumentation,
+                &runtime.services.instrumentation.complexity_counters,
                 &runtime.services.symbols,
             )
             .unwrap();

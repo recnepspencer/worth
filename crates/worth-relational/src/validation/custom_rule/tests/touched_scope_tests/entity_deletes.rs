@@ -2,14 +2,16 @@ use super::*;
 
 #[test]
 fn touched_scope_tracks_planned_entity_deletes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
     let entity_id = create_entity(execution, &runtime, "entity");
-    let intent = MutationIntent::Entity(crate::facade::transactions::EntityMutationIntent::Delete(
-        DeleteEntityIntent { entity_id },
-    ));
+    let intent = MutationIntent::Entity(
+        crate::transactions::data::intents::mutation_intent::EntityMutationIntent::Delete(
+            DeleteEntityIntent { entity_id },
+        ),
+    );
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("delete-entity").push(intent.clone()),
@@ -21,8 +23,8 @@ fn touched_scope_tracks_planned_entity_deletes() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),

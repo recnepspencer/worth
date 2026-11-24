@@ -1,17 +1,11 @@
 //! The index owner required by native preparation: its actual optional Home catalog.
-use crate::runtime::{IndexDefinitionCatalog, PreparedRelationalIndexDefinitions};
+use crate::runtime::state::subsystems::indexing::{
+    IndexDefinitionCatalog, PreparedRelationalIndexDefinitions,
+};
 use std::sync::Arc;
 pub(super) struct IndexMaintenanceOwner<'a> {
-    pub(super) indexes: &'a crate::runtime::IndexingSubsystem,
+    pub(super) indexes: &'a crate::runtime::state::subsystems::indexing::IndexingSubsystem,
     pub(super) definitions: Option<&'a PreparedRelationalIndexDefinitions>,
-}
-impl super::IndexAuthority<'_> {
-    pub(super) fn maintenance(&self) -> IndexMaintenanceOwner<'_> {
-        IndexMaintenanceOwner {
-            indexes: &self.runtime.indexes,
-            definitions: None,
-        }
-    }
 }
 impl IndexMaintenanceOwner<'_> {
     pub(super) fn prepared_catalog(&self) -> Option<&IndexDefinitionCatalog> {
@@ -25,7 +19,7 @@ impl IndexMaintenanceOwner<'_> {
     }
     pub(super) fn routes(
         &self,
-        root: &crate::branch::RelationalBranchRoot,
+        root: &crate::branch::root::RelationalBranchRoot,
     ) -> Result<
         Arc<crate::indexes::data::InstalledIndexRouting>,
         super::DerivedIndexMaintenanceDenialKind,

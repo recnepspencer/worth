@@ -8,11 +8,11 @@ use worth_foundational::{
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::publication::patch::data::ordered_aspect_keys;
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::schema::data::{AspectBinding, RelationalSchemaRegistry};
-use crate::transactions::data::AspectTraceEvidence;
+use crate::transactions::data::aspect_traces::AspectTraceEvidence;
 
-use super::super::canonical_delta_for_mutation;
+use super::super::super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use super::super::data::{AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence};
 use super::support::{
     assert_authoritative_whole_aspect_locator, authoritative_string_patch,
@@ -23,7 +23,7 @@ use super::support::{
 
 #[test]
 fn entity_field_delta_materializes_authoritative_aspect_patch() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -75,7 +75,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
 
 #[test]
 fn entity_struct_delta_materializes_authoritative_patch_value() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -136,7 +136,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
 
 #[test]
 fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
@@ -201,7 +201,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
 
 #[test]
 fn relation_field_delta_materializes_authoritative_aspect_patch() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let config = mutation_config();
     let mut state = empty_working_state(&config);
     let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();

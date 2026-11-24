@@ -104,7 +104,7 @@ impl RelationalContentFrame {
             let mut bytes = Vec::new();
             bytes.try_reserve_exact(total).map_err(|_| {
                 Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
                 )
             })?;
             let identity = {
@@ -166,7 +166,7 @@ impl RelationalContentFrame {
             let mut bytes = Vec::new();
             bytes.try_reserve_exact(frame.len()).map_err(|_| {
                 Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
                 )
             })?;
             {

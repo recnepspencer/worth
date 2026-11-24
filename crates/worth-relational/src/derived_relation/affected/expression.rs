@@ -1,11 +1,12 @@
 //! Every named/reversed/Boolean occurrence contributes its inverse prefix.
 use super::super::evaluation::{evaluate_position, insert_member, SourceRead};
-use super::super::{
-    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
-    DerivedRelationNode as Node, DerivedRelationReadDenial as Denial,
-};
 use super::lifecycle::{self, Lifecycle};
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
+    DerivedRelationNode as Node,
+};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::graph_member::{NativeMemberDomain as Domain, NativeMemberKey as Member};
 use crate::schema::data::RelationalSchemaRegistry;
 use std::collections::{BTreeMap, BTreeSet};
@@ -20,7 +21,7 @@ impl Position {
     fn order(
         &self,
     ) -> (
-        &crate::derived_relation::DerivedRelationIdentity,
+        &crate::derived_relation::definition::DerivedRelationIdentity,
         usize,
         bool,
     ) {
@@ -58,7 +59,13 @@ pub(super) fn collect(
     events: &[Lifecycle],
     before: &mut impl SourceRead,
     after: &mut impl SourceRead,
-) -> Result<(BTreeSet<Member>, Vec<super::super::DerivedRelationData>), Denial> {
+) -> Result<
+    (
+        BTreeSet<Member>,
+        Vec<crate::derived_relation::read::DerivedRelationData>,
+    ),
+    Denial,
+> {
     let root = Position {
         definition: definition.clone(),
         node: definition.parts().nodes.len() - 1,
@@ -311,7 +318,7 @@ fn pullback(
     first: &Position,
     anchor: &Member,
     read: &mut impl SourceRead,
-) -> Result<Option<super::super::DerivedRelationData>, Denial> {
+) -> Result<Option<crate::derived_relation::read::DerivedRelationData>, Denial> {
     let pair = &first.definition.entry.endpoints[first.node];
     let input = if first.reverse { &pair.0 } else { &pair.1 };
     let expected = match input {

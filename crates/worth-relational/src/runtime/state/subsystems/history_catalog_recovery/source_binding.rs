@@ -12,7 +12,7 @@ impl HistorySubsystem {
         source: &PositionedCanonicalCommit,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<CanonicalCommitEnvelope>, RelationalHistoryRecoveryDenial> {
-        let prepared = self.prepare_recovered_source_catalog(execution, source)?;
+        let prepared = prepare_recovered_source_catalog(self, execution, source)?;
         let artifact = &prepared.artifact;
         let canonical = artifact
             .resident_envelope()
@@ -47,7 +47,7 @@ impl HistorySubsystem {
         if root.links_envelope(&canonical) {
             return Ok(canonical);
         }
-        let original = self.original_for_envelope(execution, &canonical)?;
+        let original = original_for_envelope(self, execution, &canonical)?;
         let next = if Arc::ptr_eq(&canonical, source.canonical_arc()) {
             root.readmit_canonical_envelope(execution, source, original, symbols)
         } else {
@@ -67,38 +67,37 @@ pub(super) struct PreparedRecoveredSourceCatalog {
     pub(super) expected: Option<Arc<crate::history::RelationalCommitArtifact>>,
     pub(super) artifact: Arc<crate::history::RelationalCommitArtifact>,
 }
-impl HistorySubsystem {
-    pub(super) fn prepare_recovered_source_catalog(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        positioned: &PositionedCanonicalCommit,
-    ) -> Result<PreparedRecoveredSourceCatalog, RelationalHistoryRecoveryDenial> {
-        use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Wire;
-        use crate::history::RelationalCommitArtifact as Artifact;
-        let expected = self.commit_artifact(positioned.commit.commit_id);
-        if let Some(existing) = &expected
-            && let Some(resident) = existing.resident_envelope()
-            && Wire::matches_positioned_payload_for_request(positioned, &resident, request)
-                .map_err(RelationalHistoryRecoveryDenial::Source)?
-        {
-            return Ok(PreparedRecoveredSourceCatalog {
-                artifact: Arc::clone(existing),
-                expected,
-            });
-        }
-        let cell = expected
-            .as_ref()
-            .map(|artifact| artifact.envelope_residency())
-            .or_else(|| {
-                self.ledger
-                    .read()
-                    .commit_envelopes
-                    .get(&positioned.commit.commit_id)
-                    .cloned()
-            });
-        let artifact = if let Some((entry, source)) =
-            cell.as_ref().and_then(|cell| cell.source_placement())
-        {
+pub(super) fn prepare_recovered_source_catalog(
+    history: &HistorySubsystem,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    positioned: &PositionedCanonicalCommit,
+) -> Result<PreparedRecoveredSourceCatalog, RelationalHistoryRecoveryDenial> {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Wire;
+    use crate::history::RelationalCommitArtifact as Artifact;
+    let expected = history.commit_artifact(positioned.commit.commit_id);
+    if let Some(existing) = &expected
+        && let Some(resident) = existing.resident_envelope()
+        && Wire::matches_positioned_payload_for_request(positioned, &resident, request)
+            .map_err(RelationalHistoryRecoveryDenial::Source)?
+    {
+        return Ok(PreparedRecoveredSourceCatalog {
+            artifact: Arc::clone(existing),
+            expected,
+        });
+    }
+    let cell = expected
+        .as_ref()
+        .map(|artifact| artifact.envelope_residency())
+        .or_else(|| {
+            history
+                .ledger
+                .read()
+                .commit_envelopes
+                .get(&positioned.commit.commit_id)
+                .cloned()
+        });
+    let artifact =
+        if let Some((entry, source)) = cell.as_ref().and_then(|cell| cell.source_placement()) {
             let directory = cell.as_ref().and_then(|cell| cell.selected_directory());
             let artifact = Artifact::from_index(entry.clone(), source)
                 .map_err(RelationalHistoryRecoveryDenial::Artifact)?;
@@ -125,7 +124,8 @@ impl HistorySubsystem {
                 .as_ref()
                 .and_then(|cell| cell.original_owner())
                 .or_else(|| {
-                    self.branch_cell(&positioned.branch_context)
+                    history
+                        .branch_cell(&positioned.branch_context)
                         .and_then(|cell| cell.root())
                         .filter(|root| root.commit_id() == Some(positioned.commit.commit_id))
                         .and_then(|root| root.canonical_payload())
@@ -143,114 +143,110 @@ impl HistorySubsystem {
                 }
                 _ => Arc::clone(positioned.canonical_arc()),
             };
-            self.prepare_catalog_artifact_for_envelope(
+            prepare_catalog_artifact_for_envelope(
+                history,
                 request,
                 canonical,
                 expected.as_ref().map(|a| a.roots()),
             )?
         };
-        Ok(PreparedRecoveredSourceCatalog { expected, artifact })
-    }
-
-    pub(super) fn prepare_catalog_artifact_for_envelope(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        envelope: Arc<CanonicalCommitEnvelope>,
-        descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
-    ) -> Result<Arc<crate::history::RelationalCommitArtifact>, RelationalHistoryRecoveryDenial>
-    {
-        use crate::history::RelationalCommitArtifact as Artifact;
-        let cell = self
-            .ledger
-            .read()
-            .commit_envelopes
-            .get(&envelope.commit.commit_id)
-            .cloned();
-        // A retained indexed source already owns its publication; no Original bytes are allocated.
-        let artifact = if let Some((entry, source)) =
-            cell.as_ref().and_then(|cell| cell.source_placement())
-        {
-            let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
-                entry.position, &envelope, request,
-            ).map_err(RelationalHistoryRecoveryDenial::Source)?;
-            if entry.commit != envelope.commit || entry.payload_digest != digest {
-                return Err(RelationalHistoryRecoveryDenial::Artifact(
-                    crate::history::RelationalCommitArtifactDenial::RootLinkage,
-                ));
-            }
-            let artifact = Artifact::from_index(entry.clone(), source)
-                .map_err(RelationalHistoryRecoveryDenial::Artifact)?;
-            if let Some(directory) = cell.as_ref().and_then(|cell| cell.selected_directory()) {
-                let _displaced = artifact
-                    .envelope_residency()
-                    .install_selected(entry, directory)
-                    .map_err(|cause| {
-                        RelationalHistoryRecoveryDenial::Invalid(format!(
-                            "selected source preservation: {cause:?}"
-                        ))
-                    })?;
-            }
-            artifact
-        } else {
-            let root = self
-                .branch_cell(&envelope.branch_context)
-                .and_then(|cell| cell.root())
-                .filter(|root| root.links_envelope(&envelope));
-            let carried = cell
-                .as_ref()
-                .and_then(|cell| cell.original_owner())
-                .filter(|original| Arc::ptr_eq(original.envelope(), &envelope))
-                .or_else(|| root.as_ref().and_then(|root| root.canonical_payload()));
-            let original = match carried {
-                Some(original) => original,
-                None => {
-                    crate::branch::RelationalOriginalRootCommitEvidence::prepare(request, envelope)
-                        .map_err(RelationalHistoryRecoveryDenial::Root)?
-                }
-            };
-            match (root, descriptor) {
-                (Some(root), _) => {
-                    Artifact::from_envelope_with_root(Arc::clone(original.envelope()), root)
-                }
-                (None, Some(descriptor)) => {
-                    Artifact::from_preencoded_with_descriptor(original, descriptor.clone())
-                }
-                (None, None) => Artifact::from_preencoded(original),
-            }
-            .map_err(RelationalHistoryRecoveryDenial::Artifact)?
-        };
-        artifact.prepare_catalog_owner(request).map_err(|cause| {
-            RelationalHistoryRecoveryDenial::Root(
-                crate::branch::RelationalBranchRootCaptureDenial::Request(cause),
-            )
-        })
-    }
+    Ok(PreparedRecoveredSourceCatalog { expected, artifact })
 }
 
-impl HistorySubsystem {
-    pub(super) fn original_for_envelope(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        envelope: &Arc<CanonicalCommitEnvelope>,
-    ) -> Result<
-        Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
-        RelationalHistoryRecoveryDenial,
-    > {
-        let carried = self
-            .ledger
-            .read()
-            .commit_envelopes
-            .get(&envelope.commit.commit_id)
-            .cloned()
-            .and_then(|cell| cell.original_owner())
-            .filter(|original| Arc::ptr_eq(original.envelope(), envelope));
-        match carried {
-            Some(original) => Ok(original),
-            None => crate::branch::RelationalOriginalRootCommitEvidence::prepare(
-                request,
-                Arc::clone(envelope),
-            )
-            .map_err(RelationalHistoryRecoveryDenial::Root),
+pub(super) fn prepare_catalog_artifact_for_envelope(
+    history: &HistorySubsystem,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    envelope: Arc<CanonicalCommitEnvelope>,
+    descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
+) -> Result<Arc<crate::history::RelationalCommitArtifact>, RelationalHistoryRecoveryDenial> {
+    use crate::history::RelationalCommitArtifact as Artifact;
+    let cell = history
+        .ledger
+        .read()
+        .commit_envelopes
+        .get(&envelope.commit.commit_id)
+        .cloned();
+    // A retained indexed source already owns its publication; no Original bytes are allocated.
+    let artifact = if let Some((entry, source)) =
+        cell.as_ref().and_then(|cell| cell.source_placement())
+    {
+        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
+            entry.position,
+            &envelope,
+            request,
+        )
+        .map_err(RelationalHistoryRecoveryDenial::Source)?;
+        if entry.commit != envelope.commit || entry.payload_digest != digest {
+            return Err(RelationalHistoryRecoveryDenial::Artifact(
+                crate::history::RelationalCommitArtifactDenial::RootLinkage,
+            ));
         }
+        let artifact = Artifact::from_index(entry.clone(), source)
+            .map_err(RelationalHistoryRecoveryDenial::Artifact)?;
+        if let Some(directory) = cell.as_ref().and_then(|cell| cell.selected_directory()) {
+            let _displaced = artifact
+                .envelope_residency()
+                .install_selected(entry, directory)
+                .map_err(|cause| {
+                    RelationalHistoryRecoveryDenial::Invalid(format!(
+                        "selected source preservation: {cause:?}"
+                    ))
+                })?;
+        }
+        artifact
+    } else {
+        let root = history
+            .branch_cell(&envelope.branch_context)
+            .and_then(|cell| cell.root())
+            .filter(|root| root.links_envelope(&envelope));
+        let carried = cell
+            .as_ref()
+            .and_then(|cell| cell.original_owner())
+            .filter(|original| Arc::ptr_eq(original.envelope(), &envelope))
+            .or_else(|| root.as_ref().and_then(|root| root.canonical_payload()));
+        let original = match carried {
+            Some(original) => original,
+            None => crate::branch::RelationalOriginalRootCommitEvidence::prepare(request, envelope)
+                .map_err(RelationalHistoryRecoveryDenial::Root)?,
+        };
+        match (root, descriptor) {
+            (Some(root), _) => {
+                Artifact::from_envelope_with_root(Arc::clone(original.envelope()), root)
+            }
+            (None, Some(descriptor)) => {
+                Artifact::from_preencoded_with_descriptor(original, descriptor.clone())
+            }
+            (None, None) => Artifact::from_preencoded(original),
+        }
+        .map_err(RelationalHistoryRecoveryDenial::Artifact)?
+    };
+    artifact.prepare_catalog_owner(request).map_err(|cause| {
+        RelationalHistoryRecoveryDenial::Root(
+            crate::branch::RelationalBranchRootCaptureDenial::Request(cause),
+        )
+    })
+}
+
+pub(super) fn original_for_envelope(
+    history: &HistorySubsystem,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    envelope: &Arc<CanonicalCommitEnvelope>,
+) -> Result<Arc<crate::branch::RelationalOriginalRootCommitEvidence>, RelationalHistoryRecoveryDenial>
+{
+    let carried = history
+        .ledger
+        .read()
+        .commit_envelopes
+        .get(&envelope.commit.commit_id)
+        .cloned()
+        .and_then(|cell| cell.original_owner())
+        .filter(|original| Arc::ptr_eq(original.envelope(), envelope));
+    match carried {
+        Some(original) => Ok(original),
+        None => crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            request,
+            Arc::clone(envelope),
+        )
+        .map_err(RelationalHistoryRecoveryDenial::Root),
     }
 }

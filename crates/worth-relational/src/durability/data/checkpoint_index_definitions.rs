@@ -1,14 +1,14 @@
 //! The roster shares original immutable definitions; no definition heap is copied.
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::indexes::data::DerivedIndexDefinition;
-use crate::runtime::CapturedIndexDefinitionCatalog;
+use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Debug)]
 struct Backing {
-    definitions: Vec<crate::indexes::RetainedDerivedIndexDefinition>,
+    definitions: Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 #[derive(Debug, Clone, Default)]
@@ -33,9 +33,11 @@ impl CheckpointIndexDefinitions {
             .0
             .pad_to_align()
             .size();
-        let roster = Layout::array::<crate::indexes::RetainedDerivedIndexDefinition>(count)
-            .map_err(|_| Cause::ChargedBytesOverflow)?
-            .size();
+        let roster = Layout::array::<
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+        >(count)
+        .map_err(|_| Cause::ChargedBytesOverflow)?
+        .size();
         let bytes = control
             .checked_add(roster)
             .and_then(|n| u64::try_from(n).ok())
@@ -64,14 +66,16 @@ impl CheckpointIndexDefinitions {
         Self(Some(Arc::new(Backing {
             definitions: definitions
                 .into_iter()
-                .map(crate::indexes::RetainedDerivedIndexDefinition::from_owned)
+                .map(
+                    crate::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned,
+                )
                 .collect(),
             _memory: None,
         })))
     }
 }
 impl std::ops::Deref for CheckpointIndexDefinitions {
-    type Target = [crate::indexes::RetainedDerivedIndexDefinition];
+    type Target = [crate::indexes::retained_definition::RetainedDerivedIndexDefinition];
     fn deref(&self) -> &Self::Target {
         self.0.as_ref().map_or(&[], |owner| &owner.definitions)
     }
@@ -88,7 +92,9 @@ impl Serialize for CheckpointIndexDefinitions {
     }
 }
 impl CheckpointIndexDefinitions {
-    fn deref_slice(&self) -> &[crate::indexes::RetainedDerivedIndexDefinition] {
+    fn deref_slice(
+        &self,
+    ) -> &[crate::indexes::retained_definition::RetainedDerivedIndexDefinition] {
         self
     }
 }
@@ -98,8 +104,9 @@ impl<'de> Deserialize<'de> for CheckpointIndexDefinitions {
     }
 }
 impl<'a> IntoIterator for &'a CheckpointIndexDefinitions {
-    type Item = &'a crate::indexes::RetainedDerivedIndexDefinition;
-    type IntoIter = std::slice::Iter<'a, crate::indexes::RetainedDerivedIndexDefinition>;
+    type Item = &'a crate::indexes::retained_definition::RetainedDerivedIndexDefinition;
+    type IntoIter =
+        std::slice::Iter<'a, crate::indexes::retained_definition::RetainedDerivedIndexDefinition>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }

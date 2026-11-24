@@ -1,5 +1,5 @@
 //! Strict physical legacy objects and explicit registered-derived source objects.
-use crate::derived_relation::DerivedRelationIdentity;
+use crate::derived_relation::definition::DerivedRelationIdentity;
 use crate::identity::data::KindId;
 use serde::Serialize;
 
@@ -95,8 +95,13 @@ impl AggregateIdentitySource {
 
     pub(super) fn try_write_canonical(
         &self,
-        emit: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        emit: &mut dyn FnMut(
+            &[u8],
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         match self {
             Self::Orbit(kind) => emit(&kind.0.to_be_bytes())?,
             Self::Components { relations } => {

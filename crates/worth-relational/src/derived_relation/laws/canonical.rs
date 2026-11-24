@@ -1,13 +1,13 @@
 //! Optional law suffix binds every executable constraint without old-byte drift.
-use super::DerivedRelationGraphLaws;
 use crate::config::data::CrossContextPolicy;
+use crate::derived_relation::laws::meaning::DerivedRelationGraphLaws;
 use sha2::{Digest, Sha256};
 
 pub(crate) fn update_digest_for_compilation(
     hasher: &mut Sha256,
     laws: &DerivedRelationGraphLaws,
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
     hasher.update(b"\0WORTH_DERIVED_RELATION_LAWS_V1\0");
     hasher.update([
         u8::from(laws.self_edges_allowed),

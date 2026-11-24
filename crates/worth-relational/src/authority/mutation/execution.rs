@@ -1,7 +1,7 @@
 use crate::config::data::MutationConfig;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::AuthoritativeApplyPlan;
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
 
 use super::effect_assembly::assemble_effect;
 use super::intents::dispatch_intent;
@@ -12,8 +12,8 @@ use super::{
 pub(crate) struct MutationApplyOutcome {
     pub(crate) effect: MutationEffect,
     pub(crate) preparation_telemetry: MutationPreparationTelemetry,
-    pub(crate) created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    pub(crate) created_relations: crate::transactions::data::CommitCreatedRelationBindings,
+    pub(crate) created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(crate) created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
 }
 
 pub(crate) fn apply_plan_to_working_state(
@@ -23,9 +23,9 @@ pub(crate) fn apply_plan_to_working_state(
     config: &MutationConfig,
     schema_registry: &RelationalSchemaRegistry,
     aspect_plans: &AspectContractPlanCatalog,
-    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
+    symbols: &mut dyn crate::runtime::state::subsystems::services::symbol_table::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
-    record_allocations: &mut dyn crate::runtime::MutationRecordAllocations,
+    record_allocations: &mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
@@ -52,9 +52,9 @@ pub(crate) fn apply_plan_with_publication_edges(
     config: &MutationConfig,
     schema_registry: &RelationalSchemaRegistry,
     aspect_plans: &AspectContractPlanCatalog,
-    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
+    symbols: &mut dyn crate::runtime::state::subsystems::services::symbol_table::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
-    record_allocations: &mut dyn crate::runtime::MutationRecordAllocations,
+    record_allocations: &mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     deferred_publication_edges: Option<
@@ -98,11 +98,12 @@ pub(crate) fn apply_plan_with_publication_edges(
 }
 
 fn estimated_mutation_effect_shape(
-    intents: &[crate::transactions::data::MutationIntent],
+    intents: &[crate::transactions::data::intents::MutationIntent],
 ) -> (usize, usize) {
-    use crate::transactions::data::{
-        CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-    };
+    use crate::transactions::data::intents::CreateIntent;
+    use crate::transactions::data::intents::EntityMutationIntent;
+    use crate::transactions::data::intents::MutationIntent;
+    use crate::transactions::data::intents::RelationMutationIntent;
 
     let mut change_count = 0usize;
     let mut event_count = 0usize;

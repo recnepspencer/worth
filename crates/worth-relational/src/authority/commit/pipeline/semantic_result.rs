@@ -1,12 +1,17 @@
 //! The single original semantic producer; no publication or measured work is recorded.
 use crate::history::data::CanonicalCommitEnvelopeBody;
-use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitCreatedEntityBindings, CommitCreatedRelationBindings, CommitLog, CommitSchemaSummary,
-    CommitStructuralSummary, RecordRef, RelationalCommitPublicationMeaning,
-    RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal as Refusal,
-    RelationalCommitStructuralMeaning, TransactionCommitError,
-};
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitPublicationMeaning;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal as Refusal;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitStructuralMeaning;
+use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
+use crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::InvariantExecutionResult;
 use std::sync::Arc;
 
@@ -21,11 +26,14 @@ pub(super) struct SemanticResultInput<'a> {
 }
 
 pub(super) fn prepare_semantic_result(
-    runtime: &RelationalPreparationRuntime,
+    symbols: &RuntimeSymbolTable,
     input: SemanticResultInput<'_>,
 ) -> Result<Arc<RelationalCommitSemanticResult>, TransactionCommitError> {
-    let denied =
-        |refusal| crate::mvcc::origin_denial(format!("original semantic result: {refusal:?}"));
+    let denied = |refusal| {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+            "original semantic result: {refusal:?}"
+        ))
+    };
     let original = input.log.summary();
     let history = original
         .history_summary
@@ -43,10 +51,7 @@ pub(super) fn prepare_semantic_result(
         .publication_summary
         .as_ref()
         .ok_or_else(|| denied(Refusal::MissingOriginalSummary))?;
-    let (created_entities, created_relations, validation) = runtime
-        .services
-        .symbols
-        .with_read(|symbols| {
+    let (created_entities, created_relations, validation) = symbols.with_read(|symbols| {
             let entities = input.entities.canonical_meaning(symbols)?;
             // Borrow a single reverse index of the genuine allocation roster. Each
             // relation endpoint pays one lookup, rather than rescanning all creates.
@@ -59,7 +64,7 @@ pub(super) fn prepare_semantic_result(
                 .validation
                 .iter()
                 .map(|execution| {
-                    crate::transactions::data::RelationalInvariantExecutionMeaning::from_original(
+                    crate::transactions::data::outcomes::commit_semantic_result::validation::production::from_original(
                         execution, symbols,
                     )
                 })

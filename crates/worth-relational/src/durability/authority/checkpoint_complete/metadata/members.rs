@@ -4,7 +4,7 @@ mod lineage_pages;
 use super::super::symbols::OriginalSymbolDictionary;
 use super::{array_stop, encode_indexes, map_stop, OriginalCheckpointLineage};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
-use crate::runtime::OriginalCheckpointIndexes;
+use crate::runtime::state::subsystems::indexing::OriginalCheckpointIndexes;
 use worth_execution::{ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest};
 use RelationalNativeCheckpointCaptureDenial as Denial;
 pub(in crate::durability::authority::checkpoint_complete) struct CheckpointMetadataMembers {

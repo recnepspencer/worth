@@ -1,22 +1,21 @@
 //! Follow the selected producer antecedent, never the displaced current publication.
-use super::{charge, CodecRetirementClosureStop as Stop, RelationalRuntime};
+use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
-use crate::{
-    history::data::CanonicalOutputPublication, mvcc::RequiredOutputRolePosture as Posture,
-};
+use crate::history::data::CanonicalOutputPublication;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_execution::MapKernelContext;
 
 pub(crate) fn antecedent(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: &OwnedValidatedOutputOrigins,
     origin: &crate::history::data::CanonicalRequiredOutputOrigin,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
-    let runtime = super::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let CanonicalOutputPublication::HistoricalSelection {
         selected,
         generation,
@@ -28,8 +27,12 @@ pub(crate) fn antecedent(
     let previous = validated_history
         .by_commit(
             selected,
-            &mut |commit| runtime.commit(commit),
-            &runtime.execution(),
+            &mut |commit| {
+                history
+                    .demand_commit_envelope(execution, commit)
+                    .map_err(Stop::Request)
+            },
+            execution,
             context,
         )?
         .ok_or("historical producer antecedent is unavailable")?;

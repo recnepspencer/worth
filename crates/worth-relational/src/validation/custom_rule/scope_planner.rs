@@ -1,7 +1,7 @@
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use crate::identity::data::VersionId;
 #[cfg(test)]
-use crate::transactions::data::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::engine::{InvariantObservation, InvariantObservationKind};
@@ -9,7 +9,8 @@ use crate::validation::engine::{InvariantObservation, InvariantObservationKind};
 use super::structural_views::{StructuralAspectStateView, StructuralRelationView};
 use super::touched_scope_collection::collect_touched_structural_set;
 use super::traversal::BoundedStructuralTraversal;
-use crate::validation::data::{StructuralCountView, TouchedStructuralSet};
+use crate::validation::data::custom_rule::touched_scope::StructuralCountView;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use std::sync::Arc;
 
 mod claim_nested;
@@ -42,7 +43,7 @@ impl PreparedCustomInvariantScope {
         observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
         merged_plan: Option<&MergedCommitPlan>,
-        access: &crate::validation::data::CustomInvariantAccessContract,
+        access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
     ) -> Self {
         Self::capture_with_shared_inputs(
@@ -59,7 +60,7 @@ impl PreparedCustomInvariantScope {
         observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
         semantic_plan: Option<RelationalSemanticPlan<'_>>,
-        access: &crate::validation::data::CustomInvariantAccessContract,
+        access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
         inputs: Option<Arc<crate::validation::engine::input_preparation::SharedCandidateInputs>>,
     ) -> Self {
@@ -95,7 +96,7 @@ impl PreparedCustomInvariantScope {
         &self,
         state: &InvariantStateView<'_>,
         committed: &InvariantStateView<'_>,
-        access: &crate::validation::data::CustomInvariantAccessContract,
+        access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
     ) -> Arc<TouchedStructuralSet> {
         let count = [
@@ -230,7 +231,8 @@ pub struct CustomInvariantScopePlanner<'runtime> {
     counts: StructuralCountView,
     traversal: BoundedStructuralTraversal<'runtime>,
     work: super::CustomInvariantWorkMeter,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
 }
 
 impl<'runtime> CustomInvariantScopePlanner<'runtime> {
@@ -242,7 +244,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         current_version_id: VersionId,
         prepared_scope: &PreparedCustomInvariantScope,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let inputs = runtime.shared_candidate_inputs();

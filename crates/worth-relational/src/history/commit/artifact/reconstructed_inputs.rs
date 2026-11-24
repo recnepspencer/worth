@@ -3,10 +3,13 @@ use super::*;
 impl RelationalCommitArtifact {
     pub(crate) fn with_reconstructed_original_inputs(
         &self,
-        inputs: OriginalCanonicalInputs,
+        inputs: impl TryInto<
+            CapturedOriginalCanonicalInputs,
+            Error = crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         let control = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .map_err(|_| Cause::ChargedBytesOverflow)?
@@ -30,7 +33,7 @@ impl RelationalCommitArtifact {
             roots: self.roots.clone(),
             schema_version: self.schema_version,
             envelope: self.envelope.clone(),
-            original_inputs: Some(inputs),
+            original_inputs: Some(inputs.try_into()?),
             allocation_memory,
         })
     }

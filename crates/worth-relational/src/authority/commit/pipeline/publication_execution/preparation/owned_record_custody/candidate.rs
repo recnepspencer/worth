@@ -136,7 +136,7 @@ impl<'a> CandidateWrites<'a> {
         consider(RecordRef::Entity(origin.meaning.source_scope));
         for member in &origin.members {
             visit(context, 1)?;
-            if member.posture != crate::mvcc::RequiredOutputRolePosture::Retire {
+            if member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
                 consider(RecordRef::Entity(member.id));
             }
         }

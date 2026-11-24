@@ -1,13 +1,12 @@
 //! Reconstructive selection for an ordinary author's exact retired output roster.
 use super::{charge, require_linear_history, CodecRetirementClosureStop as Stop};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CanonicalRequiredOutputOrigin, SelectedOutputPublication},
-    mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget},
-    runtime::RelationalRuntime,
-    transactions::data::EntityReference,
-};
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::history::data::SelectedOutputPublication;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::{
     ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, MapKernelContext,
@@ -15,9 +14,13 @@ use worth_execution::{
 
 /// Explicit reconstruction: selected ancestry and the supplied member roster,
 /// never another route or branch. Payload/readmission follows in its owner.
-pub(crate) fn select_authored_retirement(
+pub(crate) fn select_authored_retirement<'r>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    runtime: impl Into<
+        crate::history::data::codec_retirement_closure::history_request::RetirementHistoryInputs<
+            'r,
+        >,
+    >,
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
@@ -68,7 +71,7 @@ fn select(
 ) -> Result<Option<SelectedOutputPublication>, Stop> {
     // The private caller has verified current full-GEN Retire targets at birth.
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(roles.len()))?;
@@ -83,13 +86,12 @@ fn select(
         require_linear_history(&envelope)?;
         let validated = envelope.as_view();
         for (ordinal, origin) in envelope.output_origins().enumerate() {
-            let comparisons =
-                roles
-                    .len()
-                    .checked_mul(origin.members.len())
-                    .ok_or(Stop::Request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                    ))?;
+            let comparisons = roles
+                .len()
+                .checked_mul(origin.members.len())
+                .ok_or(Stop::Request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+            ))?;
             charge(context, comparisons)?;
             if roles.iter().any(|role| {
                 origin
@@ -108,9 +110,10 @@ fn select(
                 }
                 return Ok(Some(SelectedOutputPublication {
                     origin: Arc::clone(origin),
-                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
-                        Arc::clone(&envelope),
-                    ),
+                    evidence:
+                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                            Arc::clone(&envelope),
+                        ),
                     ordinal,
                 }));
             }
@@ -177,11 +180,10 @@ fn has_owned_birth(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
-    use crate::{
-        publication::patch::data::RecordStructuralChange, storage::overlay::PartitionAccess,
-        transactions::data::RecordRef,
-    };
-    if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
+    use crate::publication::patch::data::RecordStructuralChange;
+    use crate::storage::overlay::PartitionAccess;
+    use crate::transactions::data::primitives::RecordRef;
+    if basis.descriptor().runtime_instance_id() != runtime.input.projection.runtime_identity
         || !basis.is_current()
     {
         return Err("authored retirement requires the exact current native basis".into());

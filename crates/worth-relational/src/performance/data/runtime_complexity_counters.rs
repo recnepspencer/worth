@@ -1,3 +1,5 @@
+mod preparation;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct RuntimeComplexityCounters {
     pub full_state_clones: usize,
@@ -256,4 +258,34 @@ pub struct RuntimeComplexityCounters {
     pub aggregate_maintenance_relation_records: usize,
     #[serde(default)]
     pub aggregate_maintenance_aspect_states: usize,
+}
+
+impl RuntimeComplexityCounters {
+    pub(crate) fn count_replay_digest_parity(&mut self) {
+        self.replay_digest_parity_checks += 1;
+    }
+
+    pub(crate) fn count_descriptor_version_mismatch(&mut self) {
+        self.descriptor_version_mismatches_encountered += 1;
+    }
+
+    pub(crate) fn count_query_serial_strategy(&mut self) {
+        self.query_serial_strategy_count += 1;
+    }
+
+    pub(crate) fn count_query_staged_parallel_strategy(&mut self) {
+        self.query_staged_parallel_strategy_count += 1;
+    }
+
+    pub(crate) fn count_query_index_attempt(&mut self) {
+        self.query_index_attempt_count += 1;
+    }
+
+    pub(crate) fn count_query_index_path(&mut self) {
+        self.query_index_path_count += 1;
+    }
+
+    pub(crate) fn count_query_index_parity_verification(&mut self) {
+        self.query_index_parity_verification_count += 1;
+    }
 }

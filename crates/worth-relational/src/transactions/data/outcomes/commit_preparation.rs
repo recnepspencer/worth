@@ -1,6 +1,6 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, SuggestedFix};
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::VersionId;
 use serde::{Deserialize, Serialize};
 
@@ -14,9 +14,9 @@ pub enum CommitPreparationReason {
     SelectedBranchRoot(SelectedBranchRootDenialReason),
     ProposalIdentityOrdinalExhausted,
     SymbolIdentityExhausted,
-    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    StorageUnavailable(crate::storage::data::storage_unavailable::RelationalStorageUnavailable),
     ManagedIndexSource,
-    SemanticResult(super::RelationalCommitSemanticResultRefusal),
+    SemanticResult(crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct CommitPreparationError {
     context: ErrorContext,
     #[serde(skip)]
     managed_source:
-        Option<crate::validation::candidate_source::ManagedIndexSourcePreparationDenial>,
+        Option<crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial>,
 }
 
 impl CommitPreparationError {
@@ -85,7 +85,7 @@ impl CommitPreparationError {
         branch_id: BranchId,
         expected_commit_id: Option<u64>,
         expected_version_id: VersionId,
-        failure: crate::storage::data::RelationalStorageUnavailable,
+        failure: crate::storage::data::storage_unavailable::RelationalStorageUnavailable,
     ) -> Self {
         Self {
             managed_source: None,
@@ -122,7 +122,7 @@ impl CommitPreparationError {
     pub(crate) fn semantic_result(
         branch_id: BranchId,
         expected_version_id: VersionId,
-        cause: super::RelationalCommitSemanticResultRefusal,
+        cause: crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal,
     ) -> Self {
         let mut error = Self::proposal_identity_exhausted(branch_id, expected_version_id);
         error.reason = CommitPreparationReason::SemanticResult(cause);
@@ -130,14 +130,12 @@ impl CommitPreparationError {
     }
 
     pub(crate) fn managed_index_source(
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
-        cause: crate::validation::candidate_source::ManagedIndexSourcePreparationDenial,
+        branch: BranchId,
+        commit: Option<u64>,
+        version: VersionId,
+        cause: crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial,
     ) -> Self {
-        let mut error = Self::selected_branch_root_reference_mismatch(
-            basis.identity().branch_id().clone(),
-            basis.observation().commit_id().map(|id| id.0),
-            basis.observation().version_id(),
-        );
+        let mut error = Self::selected_branch_root_reference_mismatch(branch, commit, version);
         error.reason = CommitPreparationReason::ManagedIndexSource;
         error.managed_source = Some(cause);
         error
@@ -145,7 +143,8 @@ impl CommitPreparationError {
 
     pub fn managed_source_denial(
         &self,
-    ) -> Option<&crate::validation::candidate_source::ManagedIndexSourcePreparationDenial> {
+    ) -> Option<&crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial>
+    {
         self.managed_source.as_ref()
     }
 
@@ -204,9 +203,11 @@ impl CommitPreparationError {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommitPreparationError, CommitPreparationReason};
-    use crate::history::data::BranchId;
+    use crate::history::data::coordinates::BranchId;
     use crate::identity::data::VersionId;
+    use crate::transactions::data::outcomes::commit_preparation::{
+        CommitPreparationError, CommitPreparationReason,
+    };
 
     #[test]
     fn proposal_ordinal_exhaustion_has_a_dedicated_typed_reason() {

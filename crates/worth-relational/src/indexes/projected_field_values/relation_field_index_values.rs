@@ -1,3 +1,4 @@
+use super::field_projection_scope::relation_index_projection_scope;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
@@ -6,9 +7,7 @@ use crate::identity::data::RelationId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
-use super::field_projection_scope::{
-    relation_index_projection_scope, relation_index_projection_scopes,
-};
+use super::selected_projection_scopes::relation_index_projection_scopes;
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_aspect_field_index(
@@ -18,12 +17,12 @@ pub(in crate::indexes) fn build_relation_aspect_field_index(
     field_locator: &AspectFieldLocator,
 ) -> Result<
     BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>>,
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let mut entries = BTreeMap::new();
     for scope in relation_index_projection_scopes(projection, field_locator) {
         projection.try_for_each_relation_field(execution, scope.kind_id(), field_locator,
-            |_, _| Ok::<_, crate::execution::RelationalExecutionDenialCause>(()),
+            |_, _| Ok::<_, crate::execution::denial_cause::RelationalExecutionDenialCause>(()),
             |relation_id, value| {
                 if let Some(value) = value {
                     let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
@@ -43,7 +42,7 @@ pub(in crate::indexes) fn build_relation_aspect_field_index_checked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
-    context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
+    context: &mut crate::execution::packet_memory::PacketKernelContext<'_, '_, '_>,
 ) -> Result<BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>>, IndexKernelStop> {
     let mut entries = BTreeMap::new();
     let budget = std::cell::RefCell::new(context);

@@ -8,7 +8,7 @@ use worth_foundational::facade::{AggregateDefinitionIdentity, AspectIdentity};
 
 #[test]
 fn aggregate_revision_streaming_preserves_the_recorded_canonical_byte_sequence() {
-    let identity = crate::derived_relation::DerivedRelationIdentity {
+    let identity = crate::derived_relation::definition::DerivedRelationIdentity {
         schema: crate::schema::data::SchemaId("schema".into()),
         version: crate::schema::data::SchemaVersionId(2),
         name: "path".into(),
@@ -111,7 +111,7 @@ fn aggregate_revision_streaming_preserves_the_recorded_canonical_byte_sequence()
 }
 fn reference_identity(
     bytes: &mut Vec<u8>,
-    identity: &crate::derived_relation::DerivedRelationIdentity,
+    identity: &crate::derived_relation::definition::DerivedRelationIdentity,
 ) {
     for text in [&identity.schema.0, &identity.name] {
         bytes.extend((text.len() as u64).to_le_bytes());

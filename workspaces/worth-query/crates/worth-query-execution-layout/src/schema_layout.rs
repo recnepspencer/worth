@@ -35,6 +35,7 @@ mod member_domain;
 pub use member_domain::MemberDomainBinding;
 pub(crate) mod lowering;
 mod native_outputs;
+pub mod persistent_naming;
 mod physical_identity;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
@@ -115,6 +116,14 @@ pub struct WorthQueryPrimaryGraphLayout {
     workflow: WorthQueryWorkflowLayout,
     workflow_reads: Option<crate::workflow_read_indexes::WorkflowReadIndexes>,
     pub bootstrap_publication: bootstrap_publication::BootstrapPublicationLayout,
+    persistent_names: Option<persistent_naming::WorthQueryPersistentNameLayout>,
+}
+
+impl WorthQueryPrimaryGraphLayout {
+    /// The installed persistent-name contract, absent for a schemaless world.
+    pub fn persistent_names(&self) -> Option<&persistent_naming::WorthQueryPersistentNameLayout> {
+        self.persistent_names.as_ref()
+    }
 }
 
 #[derive(Clone, Debug)]

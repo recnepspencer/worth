@@ -8,13 +8,14 @@ pub(super) struct PreparedRefresh {
     pub(super) publication: IndexGenerationPublicationBasis,
     pub(super) entries: Vec<(DerivedIndexId, DerivedIndexEntries)>,
     pub(super) reused: Vec<DerivedIndexGeneration>,
-    pub(super) basis: Option<crate::runtime::PreparedIndexBasisSelection>,
+    pub(super) basis:
+        Option<crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection>,
 }
 
 impl PreparedRefresh {
     pub(super) fn publish_admitted(
         mut self,
-        runtime: &crate::runtime::RelationalRuntime,
+        indexes: &crate::runtime::state::subsystems::indexing::IndexingSubsystem,
         work: &mut MaintenanceWork,
     ) -> Result<Vec<DerivedIndexGeneration>, Denial> {
         let count = self
@@ -30,8 +31,7 @@ impl PreparedRefresh {
             .checked_add(count)
             .ok_or(Denial::WorkBudgetExceeded)?;
         work.prepare(initialized as u64, 0)?;
-        let identities = runtime
-            .indexes
+        let identities = indexes
             .reserve_generation_ids(self.entries.len())
             .ok_or(Denial::GenerationIdentityExhausted)?;
         let mut generations = Vec::with_capacity(count);
@@ -63,8 +63,7 @@ impl PreparedRefresh {
                 generation.source_branch_id.0.len() + generation.applicability.branch_id.0.len();
             work.prepare(width as u64 + 1, width as u64)?;
         }
-        let mut publication = runtime
-            .indexes
+        let mut publication = indexes
             .prepare_generation_batch(generations.clone(), self.basis.take(), |units, bytes| {
                 work.prepare(units, bytes)
             })

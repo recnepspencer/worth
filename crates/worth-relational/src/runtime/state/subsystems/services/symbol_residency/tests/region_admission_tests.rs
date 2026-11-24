@@ -73,8 +73,12 @@ fn dictionary_snapshot_shares_directory_and_page_owners_without_sharing_later_ed
              execution: request,
              ..
          }| {
-            let parent_pages =
-                RuntimeSymbolResidency::from_selected_directory(&directory, &request).unwrap();
+            let parent_pages = RuntimeSymbolResidency::from_selected_directory(
+                directory.manifest.symbol_page_roster(),
+                directory.symbol_member_custody(),
+                &request,
+            )
+            .unwrap();
             parent_pages
                 .demand_ids(
                     &table,
@@ -141,7 +145,8 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .unwrap();
             let (table, _, _, _) = checkpoint_dictionary(&execution, &runtime);
             let ticket =
-                crate::storage::residency::SymbolPublicationAdmission::prepare(&root).unwrap();
+                crate::branch::symbol_publication::SymbolPublicationAdmission::prepare(&root)
+                    .unwrap();
             let before_acceptance = table.detached_owner_snapshot();
             let pending = table.begin_pending_meanings();
             let binding = pending.binding();
@@ -309,8 +314,12 @@ fn a_refused_page_cache_update_preserves_the_previous_shared_proof_and_dictionar
              refused,
              budget,
          }| {
-            let pages =
-                RuntimeSymbolResidency::from_selected_directory(&directory, &execution).unwrap();
+            let pages = RuntimeSymbolResidency::from_selected_directory(
+                directory.manifest.symbol_page_roster(),
+                directory.symbol_member_custody(),
+                &execution,
+            )
+            .unwrap();
             let symbol = all.entries.first().unwrap().0;
             pages.demand_ids(&table, &execution, [symbol]).unwrap();
             let page = RelationalCheckpointPage::find(&pages.by_id, u64::from(symbol.0)).unwrap();

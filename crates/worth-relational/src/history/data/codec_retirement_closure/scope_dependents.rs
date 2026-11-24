@@ -1,9 +1,8 @@
 //! Current owned publications whose exact source would be removed by a candidate.
 use super::{charge, CodecRetirementClosureStop as Stop, PublicationHistoryFailure as Failure};
-use crate::{
-    history::data::CanonicalRequiredOutputOrigin, identity::data::EntityId,
-    mvcc::RequiredOutputRolePosture,
-};
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
@@ -18,12 +17,12 @@ pub(crate) enum OwnedScopeDependentSelection<'a> {
 }
 
 /// One current-fact selection owner serves source removal and the write fence.
-pub(crate) fn select_owned_scope_dependent(
+pub(crate) fn select_owned_scope_dependent<'a>(
     mut selection: OwnedScopeDependentSelection<'_>,
-    current: &crate::publication::ownership::CurrentPublicationRoster,
+    origins: impl Iterator<Item = &'a Arc<CanonicalRequiredOutputOrigin>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Failure> {
-    for origin in current.origins() {
+    for origin in origins {
         crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
             Failure::at_source(origin.meaning.source_scope, Stop::Request(cause.into()))
         })?;
@@ -48,7 +47,7 @@ pub(crate) fn select_owned_scope_dependent(
 /// Surviving opted-in writers reached by actual retained required inputs or owned
 /// edges of a retiring authored source and its admitted source-scope closure. Selection uses the closure
 /// owner's already-authenticated current publications; this never walks history.
-pub(super) fn linked_owners(
+pub(crate) fn linked_owners(
     anchors: &[EntityId],
     retiring: &[crate::history::data::SelectedOutputPublication],
     current: &[crate::history::data::SelectedOutputPublication],

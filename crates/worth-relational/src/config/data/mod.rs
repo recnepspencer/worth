@@ -2,7 +2,7 @@ mod overrides;
 mod policies;
 mod profiles;
 mod provenance;
-mod runtime_config;
+pub(crate) mod runtime_config;
 mod sections;
 
 pub use overrides::RelationalConfigOverride;

@@ -1,5 +1,6 @@
 //! Relational owns a scan's coverage by deriving identities from its entries.
-use super::{read_only_packets::PacketAdmissionDenial, PacketExecutionStop};
+use super::read_only_packets::PacketAdmissionDenial;
+use crate::execution::read_only_packets::PacketExecutionStop;
 use worth_execution::{ChargedBytes, ExecutionScan, ScanDenial};
 use worth_foundational::PartitionIdentity;
 

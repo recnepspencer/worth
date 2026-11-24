@@ -6,10 +6,10 @@ use crate::storage::overlay::{CurrentPartitionAccess, PartitionState};
 use crate::storage::substrate::{
     EntityExtra, EntityRecordKind, RecordKind, RelationEndpoints, RelationExtra, RelationRecordKind,
 };
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityCascadeDeleteMissingState,
-    MutationStateInconsistencyEvidence,
-};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::EntityCascadeDeleteMissingState;
+use crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence;
 
 use super::outcomes::{MutationOutcome, RecordMutation};
 use super::{AdjacencyDelta, AdjacencyDeltaKind};
@@ -21,12 +21,15 @@ pub(super) use relation_lifecycle::{delete_relation, retain_relation_dangling_fo
 pub(super) fn allocate_entity_with_extra(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
-    allocations: &mut dyn crate::runtime::MutationRecordAllocations,
+    allocations: &mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
     version_id: crate::identity::data::VersionId,
     partition_id: PartitionId,
     kind_id: KindId,
     extra: EntityExtra,
-) -> Result<EntityId, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    EntityId,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let (slot, generation) = allocate_record::<EntityRecordKind>(
         execution,
         state,
@@ -57,7 +60,9 @@ pub(super) fn allocate_entity_with_extra(
         .map_err(execution_denial)?;
     let entity_id = EntityId::new(partition_id, slot as u64, generation);
     allocations
-        .record(crate::transactions::data::RecordRef::Entity(entity_id))
+        .record(crate::transactions::data::primitives::RecordRef::Entity(
+            entity_id,
+        ))
         .map_err(record_allocation_conflict)?;
     Ok(entity_id)
 }
@@ -65,14 +70,17 @@ pub(super) fn allocate_entity_with_extra(
 pub(super) fn allocate_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
-    allocations: &mut dyn crate::runtime::MutationRecordAllocations,
+    allocations: &mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
     version_id: crate::identity::data::VersionId,
     partition_id: PartitionId,
     kind_id: KindId,
     source: EntityId,
     target: EntityId,
     mut extra: RelationExtra,
-) -> Result<RelationId, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    RelationId,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     extra.endpoints = Some(RelationEndpoints { source, target });
     let (slot, generation) = allocate_record::<RelationRecordKind>(
         execution,
@@ -86,7 +94,9 @@ pub(super) fn allocate_relation(
     )?;
     let relation_id = RelationId::new(partition_id, slot as u64, generation);
     allocations
-        .record(crate::transactions::data::RecordRef::Relation(relation_id))
+        .record(crate::transactions::data::primitives::RecordRef::Relation(
+            relation_id,
+        ))
         .map_err(record_allocation_conflict)?;
     Ok(relation_id)
 }
@@ -100,20 +110,25 @@ fn ensure_partition_state<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &'a mut WorkingState,
     partition_id: PartitionId,
-) -> Result<&'a mut PartitionState, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    &'a mut PartitionState,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     state
         .get_partition_mut_for_request(partition_id, execution)
         .map_err(execution_denial)
 }
 fn execution_denial(
     cause: crate::execution::RelationalExecutionDenialCause,
-) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::execution(cause.into())
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        cause.into(),
+    )
 }
 fn map_denial(
     cause: worth_execution::ExecutionOrderedMapDenial,
-) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::TransactionCommitError as Error;
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError as Error;
     match cause {
         worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
             Error::execution(cause.into())
@@ -132,13 +147,16 @@ fn map_denial(
 fn allocate_record<K: RecordKind>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut WorkingState,
-    allocations: &mut dyn crate::runtime::MutationRecordAllocations,
+    allocations: &mut dyn crate::runtime::state::subsystems::record_identity::MutationRecordAllocations,
     class: crate::history::data::RecordAllocationClass,
     partition_id: PartitionId,
     kind_id: KindId,
     version_id: crate::identity::data::VersionId,
     extra: K::Extra,
-) -> Result<(usize, u32), crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    (usize, u32),
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let partition = ensure_partition_state(execution, state, partition_id)?;
     let arena = K::arena_mut(partition);
     let reserved = allocations
@@ -159,14 +177,14 @@ fn allocate_record<K: RecordKind>(
         .map_err(|denial| {
             let detail = match denial {
                 crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                    return crate::transactions::data::TransactionCommitError::execution(
+                    return crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
                         cause.into(),
                     )
                 }
                 crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
             };
             record_allocation_conflict(
-                crate::transactions::data::RecordAllocationDenial::ArenaWriteDenied {
+                crate::transactions::data::outcomes::conflict_class::RecordAllocationDenial::ArenaWriteDenied {
                     class,
                     partition_id,
                     slot: reserved.slot,
@@ -179,7 +197,7 @@ fn allocate_record<K: RecordKind>(
 }
 
 fn record_allocation_conflict(
-    denial: crate::transactions::data::RecordAllocationDenial,
+    denial: crate::transactions::data::outcomes::conflict_class::RecordAllocationDenial,
 ) -> CommitConflict {
     CommitConflict::new(ConflictClass::RecordAllocationDenied { denial })
 }

@@ -237,7 +237,7 @@ where
             let (field, value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
                 .into_field_parts(principal.principal().principal_identity());
             let scope = runtime.runtime.primary_graph().ok_or(Stop::ForeignSelectedRuntime)?.retain_entity_resolution_context()
-                .resolve_applied_field(execution, before, candidate, field, value).map_err(Stop::Scope)?;
+                .resolve_applied_field(execution, before, candidate, None, field, value).map_err(Stop::Scope)?;
             let operation = crate::domain_computation::authorization::authorize_applied_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
                 execution, runtime, shared, &current, &installed.prepared_graph, &principal, &scope, before, candidate, request,
             ).map_err(Stop::Operation)?;

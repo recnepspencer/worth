@@ -41,7 +41,7 @@ pub struct RelationalCreatedRelationCorrespondence {
 }
 
 pub(crate) fn entity_key(
-    created: &crate::transactions::data::CreatedEntityRef,
+    created: &crate::transactions::data::primitives::CreatedEntityRef,
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<RelationalCreatedEntityKey, super::RelationalCommitSemanticResultRefusal> {
     Ok(RelationalCreatedEntityKey {
@@ -56,14 +56,14 @@ pub(crate) fn entity_key(
 }
 
 pub(crate) fn endpoint(
-    reference: &crate::transactions::data::EntityReference,
+    reference: &crate::transactions::data::primitives::EntityReference,
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<RelationalCreatedEndpoint, super::RelationalCommitSemanticResultRefusal> {
     match reference {
-        crate::transactions::data::EntityReference::Existing(id) => {
+        crate::transactions::data::primitives::EntityReference::Existing(id) => {
             Ok(RelationalCreatedEndpoint::Existing(*id))
         }
-        crate::transactions::data::EntityReference::Created(created) => Ok(
+        crate::transactions::data::primitives::EntityReference::Created(created) => Ok(
             RelationalCreatedEndpoint::Created(entity_key(created, symbols)?),
         ),
     }

@@ -1,23 +1,25 @@
 //! One coupled chain record as a single round of its latest re-derivation
 //! would publish it. Folding a successor round re-runs the ordinary record
 //! publication from the chain's base, not a patch-by-patch netting of rounds.
-use super::canonical_deltas::{canonical_delta_for_mutation, CanonicalRecordAspectDelta};
-use super::effect_publication::canonical_publication_fragment;
+use super::canonical_deltas::canonical_publication_fragment;
+use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::intents::entity_aspect_preparation::{
     prepare_fields, prepare_portable, PreparedEntityAspectMutation,
 };
 use super::intents::field_authoring_candidate::FieldAuthoringDomain;
 use super::intents::record_aspect_patch;
+use super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use super::patch_details::{patch_detail_for_entity, EntityPatchDetailKind};
 use super::{FoundationalPatchFragment, RecordMutation};
 use crate::identity::data::EntityId;
 use crate::schema::data::AspectContractPlanCatalog;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::StorageAllocation;
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MutationIntent, RecordAspectPatchTarget,
-    TransactionCommitError,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 /// `intent` is the round's one authored intent on `entity`: the Create of a
@@ -63,9 +65,11 @@ pub(crate) fn succession_record(
             (updated(entity, prepared), EntityPatchDetailKind::Updated)
         }
         _ => {
-            return Err(crate::mvcc::origin_denial(
-                "a folded chain record has no single entity write",
-            ))
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "a folded chain record has no single entity write",
+                ),
+            )
         }
     };
     let delta = canonical_delta_for_mutation(&mutation, plans)
@@ -117,7 +121,7 @@ pub(crate) fn restamp_succession_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     state: &mut crate::storage::overlay::WorkingState,
     delta_state: &mut crate::storage::overlay::WorkingState,
-    symbols: &mut dyn crate::runtime::MutationSymbolMeanings,
+    symbols: &mut dyn crate::runtime::state::subsystems::services::symbol_table::MutationSymbolMeanings,
     base: &impl CurrentPartitionAccess,
     delta: &CanonicalRecordAspectDelta,
     entity: EntityId,

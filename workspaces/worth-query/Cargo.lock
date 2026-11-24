@@ -1630,6 +1630,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-persistent-naming"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "serde",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
 name = "worth-query-court-decl-host-replay"
 version = "0.1.0"
 dependencies = [
@@ -2041,6 +2052,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-query-declaration",
+ "worth-query-execution-naming",
  "worth-query-installation",
  "worth-relational",
 ]

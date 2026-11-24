@@ -2,7 +2,8 @@
 use super::{planned_incidence::PlannedIncidence, RelationIntegrityScopeAccumulator};
 use crate::identity::data::KindId;
 use crate::storage::partition::AdjacencyDirection;
-use crate::transactions::data::{EntityReference, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeSet;
 
 impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
@@ -28,7 +29,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 && !self.predecessor.state().has_read_misses()
             {
                 let scope = &self.scopes[&kind];
-                crate::inspection::relation_law_sources::record(
+                super::super::relation_law_sources::record(
                     kind,
                     scope.complete_source_set,
                     &scope.connectivity_sources,

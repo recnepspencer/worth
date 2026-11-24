@@ -11,20 +11,20 @@ pub(super) struct RestorationBoundary {
     pub _memory: Vec<ExecutionMemoryReservation>,
 }
 pub(super) fn prepare(
-    native: &RelationalRuntime,
+    selected_history: &HistorySubsystem,
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     entities: &RelationalOwnedModelEntityBoundary,
     installed: &RelationalModelOwnership,
 ) -> Result<RestorationBoundary, Denial> {
     let ((participants, current_edges), mut memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.current_basis(),
         context,
         |read| {
             let participants = history::participants(
-                native,
+                selected_history,
                 execution,
                 entities.current_basis(),
                 entities.model(),
@@ -41,7 +41,7 @@ pub(super) fn prepare(
         },
     )?;
     let ((current, selected, transferred, participants), selected_memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.selected_basis(),
         context,
@@ -63,7 +63,7 @@ pub(super) fn prepare(
                 .difference(entities.selected_entities())
             {
                 if read.kind(entity)?.is_some()
-                    && let Some(owner) = installed.owner(read, entity)?
+                    && let Some(owner) = installed.plan.owner(read, entity)?
                 {
                     read.retain()?;
                     selected.insert(entity);
@@ -105,7 +105,7 @@ pub(super) fn prepare(
                         selected.insert(entity);
                     }
                     if !entities.selected_entities().contains(&entity)
-                        && let Some(owner) = installed.owner(read, entity)?
+                        && let Some(owner) = installed.plan.owner(read, entity)?
                     {
                         if let std::collections::btree_map::Entry::Vacant(entry) =
                             transferred.entry(entity)
@@ -127,7 +127,7 @@ pub(super) fn prepare(
     let mut current = current;
     let mut participants = participants;
     let ((), current_memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.current_basis(),
         context,
@@ -195,7 +195,7 @@ fn observation(
     entity: EntityId,
 ) -> Result<OwnershipObservation, Denial> {
     let owner = if read.kind(entity)?.is_some() {
-        installed.owner(read, entity)?
+        installed.plan.owner(read, entity)?
     } else {
         None
     };

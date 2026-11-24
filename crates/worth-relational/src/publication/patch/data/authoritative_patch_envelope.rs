@@ -2,7 +2,7 @@ use crate::publication::patch::data::{
     PatchDetail, PatchOrdering, PatchPublicationMode, PatchStreamPosition,
     PublishedAuthoritativePatch, RecordStructuralChange,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::AspectKey;
 

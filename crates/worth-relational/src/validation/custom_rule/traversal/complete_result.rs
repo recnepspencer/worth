@@ -1,6 +1,6 @@
 use crate::identity::data::{EntityId, KindId};
 
-use super::super::{CustomInvariantInterruption, StructuralReadError, StructuralRelationRecord};
+use super::super::StructuralRelationRecord;
 
 /// Complete-walk boundary acquisitions: materialized adjacency lists and
 /// explicit entity/relation reads, including metadata denied after acquisition.
@@ -46,13 +46,7 @@ impl CompleteStructuralWalk {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum StructuralWalkDenialKind {
-    Interrupted(CustomInvariantInterruption),
-    Read(StructuralReadError),
-    MemoryBudgetExceeded,
-    MemoryAdmission(worth_execution::MemoryLimitDenial),
-}
+pub use crate::validation::data::structural_walk_denial::StructuralWalkDenialKind;
 
 /// A refused walk has observations but never a partial successful result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

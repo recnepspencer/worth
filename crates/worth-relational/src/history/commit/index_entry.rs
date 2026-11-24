@@ -10,7 +10,7 @@ pub(crate) struct RelationalCommitIndexEntry {
     // The receipt carries id, version, parents and branch, without the payload.
     pub(crate) commit: RelationalCommitReceipt,
     pub(crate) position: PatchStreamPosition,
-    pub(crate) root: crate::branch::RelationalBranchRootDescriptor,
+    pub(crate) root: crate::branch::target::RelationalBranchRootDescriptor,
     pub(crate) payload_digest: [u8; 32],
     pub(crate) schema_version: crate::schema::data::SchemaVersionId,
 }

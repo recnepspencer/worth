@@ -3,7 +3,9 @@ use crate::schema::data::{
 };
 
 use super::errors::SchemaTransitionValidationError;
-use super::{classify_schema_transition, is_narrowing};
+use crate::schema::continuity::transition_classification::{
+    classify_schema_transition, is_narrowing,
+};
 
 pub fn validate_schema_transition(
     proposed: ProposedSchemaTransition,

@@ -7,7 +7,7 @@ use worth_foundational::facade::{
 };
 #[derive(Debug)]
 pub(crate) enum ExtraPayloadDenial {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Application(AuthoritativePatchApplicationDenial),
 }
 fn admit<T>(
@@ -19,9 +19,10 @@ fn admit<T>(
         Option<ExecutionMemoryReservation>,
         Option<ExecutionMemoryReservation>,
     ),
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
-    let overflow = || crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow;
+    let overflow =
+        || crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow;
     let bounds = patch
         .application_retained_storage_bounds(current)
         .ok_or_else(overflow)?;
@@ -31,10 +32,10 @@ fn admit<T>(
         .ok_or_else(overflow)?;
     let memory = request
         .reserve_retained_memory(bytes)
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     let scratch = request
         .reserve_retained_memory(u64::try_from(bounds.transient_bytes).map_err(|_| overflow())?)
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
     Ok((memory, scratch))
 }
 pub(super) fn apply<T>(
@@ -71,7 +72,7 @@ pub(super) fn copy<T>(
     request: &ExecutionRequest<'_, '_>,
     state: Option<&State>,
     build: impl FnOnce(Option<State>, Option<ExecutionMemoryReservation>) -> T,
-) -> Result<T, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<T, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let (memory, _scratch) = admit::<T>(request, state, &Patch::empty())?;
     Ok(build(state.cloned(), memory))
 }

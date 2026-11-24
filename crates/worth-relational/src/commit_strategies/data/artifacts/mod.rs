@@ -1,5 +1,5 @@
 mod artifact_bundle;
-mod merge_descriptor;
+pub(crate) mod merge_descriptor;
 mod replay_descriptor;
 
 #[cfg(test)]

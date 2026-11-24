@@ -1,11 +1,12 @@
 use super::*;
+use crate::storage::overlay::{OverlayStateView, WorkingState};
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_test_schema();
     let shared = create_entity(execution, &runtime, "shared");
     let existing_neighbor = create_entity(execution, &runtime, "existing-neighbor");
@@ -17,29 +18,23 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         client_key: ClientKey::raw("planned"),
         source: EntityReference::Existing(shared),
         target: EntityReference::Existing(new_neighbor),
-        fields: crate::transactions::data::AspectFieldPatch::default(),
+        fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
     }));
     let merged_plan = MergedCommitPlan {
         transaction_id: TransactionId(9_002),
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let access = crate::validation::data::CustomInvariantAccessContract {
+    let access = CustomInvariantAccessContract {
         read_entity_kinds: vec![KindId(1)],
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(1)],
         affected_relation_kinds: vec![KindId(2)],
         include_relation_endpoint_entity_touches: true,
     };
-    let prepared_scope =
-        prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
-    let planner = test_scope_planner(
-        &runtime,
-        *execution,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
+    let version = runtime.current_version_id();
+    let prepared_scope = scope_with_access(version, &observation, Some(&merged_plan), &access);
+    let planner = test_scope_planner(&runtime, *execution, &observation, version, &prepared_scope);
 
     assert_eq!(
         planner.touched().direct_visible_entity_ids(),
@@ -53,7 +48,7 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
 
 #[test]
 fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -88,7 +83,7 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
 
 #[test]
 fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -111,7 +106,7 @@ fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -138,8 +133,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -170,7 +165,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
 
 #[test]
 fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -186,7 +181,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
         partition_id: created_target.partition_id,
         kind_id: created_target.kind_id,
         client_key: created_target.client_key.clone(),
-        fields: crate::transactions::data::AspectFieldPatch::default(),
+        fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
     }));
     let update_relation = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
         UpdateRelationEndpointsIntent {
@@ -209,8 +204,8 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
         merged_intents: vec![create_target, update_relation],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -236,7 +231,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
 
 #[test]
 fn touched_scope_tracks_planned_relation_deletes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -257,8 +252,8 @@ fn touched_scope_tracks_planned_relation_deletes() {
         merged_intents: vec![intent],
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope_with_access(
-        &runtime,
+    let prepared_scope = scope_with_access(
+        runtime.current_version_id(),
         &observation,
         Some(&merged_plan),
         &test_access_contract(),
@@ -289,7 +284,7 @@ fn test_scope_planner<'a>(
     version: crate::identity::data::VersionId,
     prepared: &PreparedCustomInvariantScope,
 ) -> CustomInvariantScopePlanner<'a> {
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+    let view = runtime.invariant_validation_view();
     CustomInvariantScopePlanner::new_at_current_version(
         &view,
         execution,
@@ -298,7 +293,7 @@ fn test_scope_planner<'a>(
         runtime.current_version_id(),
         prepared,
         super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
-        Arc::new(crate::validation::data::CustomInvariantAccessContract {
+        Arc::new(CustomInvariantAccessContract {
             read_entity_kinds: vec![KindId(1)],
             read_relation_kinds: vec![KindId(2)],
             affected_entity_kinds: vec![KindId(1)],
@@ -322,21 +317,20 @@ fn proposed_relation_scope(
     relation_id: crate::identity::data::RelationId,
     intent: MutationIntent,
     proposed_state: ProposedRelationState,
-) -> crate::validation::data::TouchedStructuralSet {
+) -> crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet {
     let committed = runtime.storage_access().current_edition();
     let current_version = runtime.current_version_id();
     let proposed_version = current_version.saturating_next();
     let partition_id = relation_id.partition_id;
-    let mut proposed =
-        crate::storage::overlay::WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
-            &committed,
-            [partition_id],
-            runtime.config.storage.adjacency_policy.clone(),
-            crate::storage::overlay::PartitionCloneMode::Full,
-            crate::storage::overlay::EntityWorkingSetLayout::CanonicalSoA,
-            None,
-            None,
-        );
+    let mut proposed = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
+        &committed,
+        [partition_id],
+        runtime.config.storage.adjacency_policy.clone(),
+        crate::storage::overlay::PartitionCloneMode::Full,
+        crate::storage::overlay::EntityWorkingSetLayout::CanonicalSoA,
+        None,
+        None,
+    );
     let relation_slot = relation_id.slot_index();
     match proposed_state {
         ProposedRelationState::Retarget { source, target } => {
@@ -360,7 +354,7 @@ fn proposed_relation_scope(
             .expect("fixture slot is materialized"),
     }
     proposed.mark_relation_slot_touched(partition_id, relation_slot);
-    let overlay = crate::storage::overlay::OverlayStateView::new(&committed, &proposed);
+    let overlay = OverlayStateView::new(&committed, &proposed);
     let observation =
         InvariantObservation::speculative_with_proposal(overlay, current_version, None);
     let plan = MergedCommitPlan {
@@ -387,8 +381,8 @@ fn proposed_relation_scope(
     .clone()
 }
 
-fn test_access_contract() -> crate::validation::data::CustomInvariantAccessContract {
-    crate::validation::data::CustomInvariantAccessContract {
+fn test_access_contract() -> CustomInvariantAccessContract {
+    CustomInvariantAccessContract {
         read_entity_kinds: vec![KindId(1)],
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(1)],

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 
-use super::super::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
 /// Owner-sealed branch-local transition for reproducible record payload.
 /// Public callers cannot construct these intents directly.
@@ -41,21 +41,29 @@ pub struct RematerializeRelationIntent {
 }
 
 impl MaterializationMutationIntent {
-    pub(crate) fn record(&self) -> super::super::RecordRef {
+    pub(crate) fn record(&self) -> crate::transactions::data::primitives::RecordRef {
         match self {
-            Self::SuspendEntity(intent) => super::super::RecordRef::Entity(intent.entity_id),
-            Self::SuspendRelation(intent) => super::super::RecordRef::Relation(intent.relation_id),
-            Self::RematerializeEntity(intent) => super::super::RecordRef::Entity(intent.entity_id),
+            Self::SuspendEntity(intent) => {
+                crate::transactions::data::primitives::RecordRef::Entity(intent.entity_id)
+            }
+            Self::SuspendRelation(intent) => {
+                crate::transactions::data::primitives::RecordRef::Relation(intent.relation_id)
+            }
+            Self::RematerializeEntity(intent) => {
+                crate::transactions::data::primitives::RecordRef::Entity(intent.entity_id)
+            }
             Self::RematerializeRelation(intent) => {
-                super::super::RecordRef::Relation(intent.relation_id)
+                crate::transactions::data::primitives::RecordRef::Relation(intent.relation_id)
             }
         }
     }
 
     pub(crate) fn partition_id(&self) -> crate::identity::data::PartitionId {
         match self.record() {
-            super::super::RecordRef::Entity(entity) => entity.partition_id,
-            super::super::RecordRef::Relation(relation) => relation.partition_id,
+            crate::transactions::data::primitives::RecordRef::Entity(entity) => entity.partition_id,
+            crate::transactions::data::primitives::RecordRef::Relation(relation) => {
+                relation.partition_id
+            }
         }
     }
 

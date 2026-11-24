@@ -11,10 +11,13 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId
 use crate::schema::data::{
     ContractId, EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
 };
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{
-    CustomInvariantFailureIdentity, CustomInvariantFailurePhase, RelationCardinalityBoundary,
-    RelationEndpointBoundary, ResultCustomInvariantFailureKind, StorageInconsistencyFailure,
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::results::custom_invariant_failure::{
+    CustomInvariantFailureIdentity, CustomInvariantFailureKind as ResultCustomInvariantFailureKind,
+    CustomInvariantFailurePhase,
+};
+use crate::validation::data::results::{
+    RelationCardinalityBoundary, RelationEndpointBoundary, StorageInconsistencyFailure,
     StorageInconsistencyLookup, StorageInconsistencyScan,
 };
 
@@ -121,8 +124,8 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         detail: &'a str,
     },
     CustomInvariantViolation {
-        identity: &'a crate::validation::data::CustomInvariantSemanticIdentity,
-        refusal: &'a crate::validation::data::CustomInvariantRefusal,
+        identity: &'a crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
+        refusal: &'a crate::validation::data::custom_rule::refusal::CustomInvariantRefusal,
     },
     PartitionIsolation {
         contract_id: &'a ContractId,

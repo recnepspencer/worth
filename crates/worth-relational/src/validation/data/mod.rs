@@ -1,12 +1,17 @@
-mod catalog;
-mod contracts;
-mod custom_rule;
-mod descriptor;
-mod execution;
-mod groups;
-mod results;
-mod rule_id;
-mod rules;
+pub(crate) mod catalog;
+pub(crate) mod compilation_denial;
+pub(crate) mod contracts;
+pub(crate) mod custom_rule;
+pub(crate) mod descriptor;
+pub(crate) mod execution;
+pub(crate) mod groups;
+pub(crate) mod observation_kind;
+pub(crate) mod registration_conflict;
+pub(crate) mod results;
+pub(crate) mod rule_id;
+pub(crate) mod rules;
+pub(crate) mod structural_read;
+pub(crate) mod structural_walk_denial;
 
 pub(crate) use catalog::append_relation_integrity_registrations;
 pub use catalog::{InvariantCatalog, InvariantRegistration};
@@ -23,24 +28,16 @@ pub use custom_rule::{
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };
-pub(crate) use custom_rule::{
-    CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,
-    PreparedCustomInvariantExecution, PreparedCustomInvariantExecutionOutcome,
-    PreparedCustomInvariantScope,
-};
-pub(crate) use custom_rule::{
-    CustomInvariantTraversalError, PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet,
-};
+pub(crate) use custom_rule::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
+pub(crate) use custom_rule::{PreparedCustomInvariantExecution, PreparedCustomInvariantScope};
 pub use descriptor::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
-    InvariantRuleDescriptor, InvariantSemanticsClass, SupportedExecutionPoints,
 };
 #[allow(unused_imports)]
 pub use execution::InvariantWitnessBasis;
 pub use execution::{
-    InvariantCheckResult, InvariantClass, InvariantDecisionKind, InvariantDecisionRecord,
-    InvariantExecutionPoint, InvariantFailureEffect, InvariantReportedRule, InvariantVerdict,
-    InvariantWitnessKey,
+    InvariantClass, InvariantDecisionKind, InvariantDecisionRecord, InvariantExecutionPoint,
+    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict, InvariantWitnessKey,
 };
 pub use groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet};
 pub use results::{
@@ -51,10 +48,13 @@ pub use results::{
 };
 pub use rule_id::{
     CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
-    InvariantRuleId, NativeInvariantRuleId,
 };
 pub use rules::{InvariantRule, RecordKindTag};
 
 pub use custom_rule::{
     CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
 };
+
+pub(crate) mod execution_posture;
+pub(crate) mod non_applicability;
+pub use crate::validation::engine::result::InvariantCheckResult;

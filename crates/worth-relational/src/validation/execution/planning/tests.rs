@@ -1,18 +1,21 @@
 use super::{plan_invariant_execution, planned_proof_boundary_summary};
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-use crate::facade::{
-    runtime::RelationalRuntimeApi,
-    schema::{
-        EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
-        RelationalSchemaRegistry, SchemaId, SchemaVersionId,
-    },
-};
+use crate::facade::runtime::RelationalRuntimeApi;
 use crate::identity::data::{KindId, PartitionId};
+use crate::schema::data::EntityKindRegistration;
+use crate::schema::data::KindAspectContractDeclarations;
+use crate::schema::data::RelationKindRegistration;
+use crate::schema::data::RelationalSchemaRegistry;
+use crate::schema::data::SchemaId;
+use crate::schema::data::SchemaVersionId;
 use crate::schema::data::{EndpointKindContractDeclaration, RelationIntegrityDeclarations};
-use crate::transactions::data::{
-    CreateIntent, EntitySpec, MergedCommitPlan, MutationIntent, RelationSpec, WorkerIntentBatch,
-};
-use crate::validation::data::InvariantPlanContract;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::data::contracts::InvariantPlanContract;
 use crate::validation::engine::{
     InvariantExecutionRequest, InvariantObservation, InvariantPlanScopeClass,
     InvariantRequestProfile, InvariantScopeWideningCause,
@@ -108,7 +111,7 @@ fn create_entity(
                 partition_id: PartitionId::main(),
                 kind_id: KindId(1),
                 client_key: crate::symbols::data::ClientKey::raw(name),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         )),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -119,15 +122,15 @@ fn create_entity(
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(entity_id) => Some(*entity_id),
-            crate::facade::transactions::RecordRef::Relation(_) => None,
+            crate::transactions::data::primitives::RecordRef::Entity(entity_id) => Some(*entity_id),
+            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
         })
         .expect("created entity")
 }
 
 #[test]
 fn planner_packets_only_include_relation_integrity_registrations_authorized_by_plan_scope() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = relation_runtime();
@@ -140,9 +143,9 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("planned"),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(source),
+                target: crate::transactions::data::primitives::EntityReference::Existing(target),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             },
         ))),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -151,7 +154,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
     let plan = txn
         .prepare_merged_plan(
             &worth_execution::ExecutionRequest::serial(
-                &crate::test_execution_policy::serial_request(),
+                &crate::execution::test_policy::serial_request(),
             ),
             &runtime,
         )
@@ -159,7 +162,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
         .clone();
 
     let request = request_for_plan(&runtime, &plan);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,
@@ -185,7 +188,7 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
 
 #[test]
 fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = relation_runtime();
@@ -198,9 +201,9 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
                 partition_id: PartitionId::main(),
                 kind_id: KindId(2),
                 client_key: crate::symbols::data::ClientKey::raw("planned"),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(source),
+                target: crate::transactions::data::primitives::EntityReference::Existing(target),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             },
         ))),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -209,7 +212,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
     let plan = txn
         .prepare_merged_plan(
             &worth_execution::ExecutionRequest::serial(
-                &crate::test_execution_policy::serial_request(),
+                &crate::execution::test_policy::serial_request(),
             ),
             &runtime,
         )
@@ -217,7 +220,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
         .clone();
 
     let request = request_for_plan(&runtime, &plan);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,
@@ -238,7 +241,7 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
 
 #[test]
 fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = relation_runtime();
@@ -251,7 +254,7 @@ fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available
         None,
     );
 
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let prepared = plan_invariant_execution(
         &view,
         *execution,
@@ -269,27 +272,27 @@ fn planner_proof_boundary_reports_broader_scope_when_no_merged_plan_is_available
 }
 
 fn relation_kind_for_rule(
-    rule: &crate::validation::data::InvariantRule,
+    rule: &crate::validation::data::rules::InvariantRule,
 ) -> Option<crate::identity::data::KindId> {
     match rule {
-        crate::validation::data::InvariantRule::EndpointKindContract(contract) => {
+        crate::validation::data::rules::InvariantRule::EndpointKindContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::CardinalityMaximumContract(contract) => {
+        crate::validation::data::rules::InvariantRule::CardinalityMaximumContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::CardinalityMinimumContract(contract) => {
+        crate::validation::data::rules::InvariantRule::CardinalityMinimumContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::UniquenessContract(contract) => {
+        crate::validation::data::rules::InvariantRule::UniquenessContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::SymmetryContract(contract) => {
+        crate::validation::data::rules::InvariantRule::SymmetryContract(contract) => {
             Some(contract.relation_kind_id)
         }
-        crate::validation::data::InvariantRule::EndpointDeletionIntegrityContract(contract) => {
-            Some(contract.relation_kind_id)
-        }
+        crate::validation::data::rules::InvariantRule::EndpointDeletionIntegrityContract(
+            contract,
+        ) => Some(contract.relation_kind_id),
         _ => None,
     }
 }

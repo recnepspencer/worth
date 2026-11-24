@@ -9,11 +9,14 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
+use crate::execution::request_work::RequestWorkBudget;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::publication::patch::data::{
     CanonicalAuthoritativePatch, PatchOrdering, PatchPublicationMode,
     PublishedAuthoritativeRecordPatch,
 };
-use crate::transactions::data::RecordRef;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
@@ -23,11 +26,15 @@ mod consequence_patch;
 pub(crate) use consequence_patch::extend_patch;
 
 pub(super) fn assemble_patch(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &RuntimeInstrumentation,
+    work_budget: Option<&RequestWorkBudget>,
     fragments: Vec<FoundationalPatchFragment>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<CanonicalAuthoritativePatch, crate::transactions::data::TransactionCommitError> {
-    let records = prepare_patch_fragments(runtime, fragments, lease)?;
+) -> Result<
+    CanonicalAuthoritativePatch,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
+    let records = prepare_patch_fragments(instrumentation, work_budget, fragments, lease)?;
     Ok(CanonicalAuthoritativePatch {
         ordering: PatchOrdering::CanonicalCommitOrder,
         publication_mode: PatchPublicationMode::CommitNative,
@@ -36,11 +43,14 @@ pub(super) fn assemble_patch(
 }
 
 fn prepare_patch_fragments(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &RuntimeInstrumentation,
+    work_budget: Option<&RequestWorkBudget>,
     fragments: Vec<FoundationalPatchFragment>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Vec<PublishedAuthoritativeRecordPatch>, crate::transactions::data::TransactionCommitError>
-{
+) -> Result<
+    Vec<PublishedAuthoritativeRecordPatch>,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     if fragments.is_empty() {
         return Ok(Vec::new());
     }
@@ -54,13 +64,11 @@ fn prepare_patch_fragments(
 
     if lease.is_none() {
         record_patch_shape(
-            runtime,
+            instrumentation,
             fragments.len(),
             fragment_partition_count(&fragments),
         );
-        runtime
-            .performance_access()
-            .count_preparation_serial_strategy();
+        instrumentation.count(RuntimeComplexityCounters::count_preparation_serial_strategy);
         return Ok(direct_diff_record_order(
             fragments
                 .into_iter()
@@ -90,7 +98,7 @@ fn prepare_patch_fragments(
     let mut partition_count = None;
     let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(
         lease,
-        runtime.commit_work_budget.as_ref(),
+        work_budget,
         preparation_bytes,
         |budget| {
             let mut partitions = BTreeSet::new();
@@ -131,29 +139,22 @@ fn prepare_patch_fragments(
         },
     )?;
     record_patch_shape(
-        runtime,
+        instrumentation,
         fragments.len(),
         partition_count.expect(/* Proof: The checked fold fills this output on success; every stopped fold returns before this extraction. */ "checked partition fold"),
     );
     if use_parallel_packets {
-        runtime
-            .performance_access()
-            .count_preparation_parallel_legal();
-        runtime
-            .performance_access()
-            .count_preparation_parallel_profitable();
-        runtime
-            .performance_access()
-            .count_preparation_staged_parallel_strategy();
+        instrumentation.count(RuntimeComplexityCounters::count_preparation_parallel_legal);
+        instrumentation.count(RuntimeComplexityCounters::count_preparation_parallel_profitable);
+        instrumentation
+            .count(RuntimeComplexityCounters::count_preparation_staged_parallel_strategy);
     } else {
-        runtime
-            .performance_access()
-            .count_preparation_serial_strategy();
+        instrumentation.count(RuntimeComplexityCounters::count_preparation_serial_strategy);
     }
     let streams = crate::execution::execute_read_only_packets_with_budget(
         inputs,
         lease,
-        runtime.commit_work_budget.as_ref(),
+        work_budget,
         |(floor, records), context| {
             checked_fragments::diff_fragment_slice_stream(*floor, records, context)
         },
@@ -163,11 +164,11 @@ fn prepare_patch_fragments(
             })
         },
     )
-    .map_err(|stop| crate::transactions::data::TransactionCommitError::execution(stop.into()))?;
+    .map_err(|stop| crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(stop.into()))?;
     crate::authority::commit::preparation::reduction::merge::canonical_merge_values_checked(
         streams,
         lease,
-        runtime.commit_work_budget.as_ref(),
+        work_budget,
         |_, record| record.owned_allocation_capacity_bytes(),
         |_| 0,
     )
@@ -175,16 +176,18 @@ fn prepare_patch_fragments(
 }
 
 fn record_patch_shape(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &RuntimeInstrumentation,
     record_count: usize,
     partition_count: usize,
 ) {
-    runtime.performance_access().count_preparation_packet_shape(
-        coarse_preparation_packet_count(record_count, TARGET_PREPARATION_ITEMS_PER_PACKET),
-        record_count,
-        record_count.min(TARGET_PREPARATION_ITEMS_PER_PACKET),
-        partition_count,
-    );
+    instrumentation.count(|counters| {
+        counters.count_preparation_packet_shape(
+            coarse_preparation_packet_count(record_count, TARGET_PREPARATION_ITEMS_PER_PACKET),
+            record_count,
+            record_count.min(TARGET_PREPARATION_ITEMS_PER_PACKET),
+            partition_count,
+        );
+    });
 }
 
 fn fragment_partition(fragment: &FoundationalPatchFragment) -> crate::identity::data::PartitionId {
@@ -307,11 +310,10 @@ fn diff_kind_order(
 }
 
 pub(super) fn diagnostics_summary_artifact(
-    config: &crate::config::data::RelationalRuntimeConfig,
+    max_entries: usize,
     reserved_entries: Vec<RelationalDiagnosticsEntry>,
     entries: Vec<RelationalDiagnosticsEntry>,
 ) -> RelationalDiagnosticArtifact {
-    let max_entries = config.diagnostics.profile.max_entries_per_artifact;
     // Reserved entries are proof-carrying summary surfaces for the authoritative lifecycle.
     // They must survive even when the optional diagnostics budget is exhausted or configured
     // below the reserved-entry count.

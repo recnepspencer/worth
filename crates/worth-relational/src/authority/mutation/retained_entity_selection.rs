@@ -4,13 +4,15 @@ use super::outcomes::{MutationEvent, MutationOutcome, RecordMutation};
 use super::{
     BranchLocalDeleteAllowance, MutationApplyDenial, MutationApplyOutcome, MutationWorkspace,
 };
-use crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload;
+use crate::authority::commit::semantic_plan::retained_entity_payload::PreparedRetainedEntityPayload;
 use crate::config::data::MutationConfig;
 use crate::identity::data::VersionId;
-use crate::runtime::{PendingRecordAllocations, PendingSymbolMeanings};
+use crate::runtime::state::subsystems::record_identity::PendingRecordAllocations;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::{CommitConflict, ConflictClass};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 
 pub(crate) fn apply(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -68,7 +70,7 @@ pub(crate) fn apply(
             .apply_extra_update_for_request(&context.execution, entity.slot_index(), extra, version)
             .map_err(request_denial)?
             .ok_or_else(stale)?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(before)
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(before)
     })?;
     let after = workspace.with_context(|context| {
         context
@@ -109,6 +111,8 @@ fn stale() -> CommitConflict {
 
 fn request_denial(
     cause: crate::execution::RelationalExecutionDenialCause,
-) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::execution(cause.into())
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        cause.into(),
+    )
 }

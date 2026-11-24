@@ -1,6 +1,9 @@
 //! Warm source-keyed position image; cold history's unresolved locator is unchanged.
 use super::*;
-use crate::transactions::data::*;
+use crate::transactions::data::outcomes::{
+    commit_conflict::CommitConflict, conflict_class::ConflictClass,
+    transaction_commit_error::TransactionCommitError,
+};
 use std::sync::Arc;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest,
@@ -27,7 +30,7 @@ impl CurrentPositions {
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), TransactionCommitError> {
         let prior = self.at(meaning.source_scope);
-        crate::publication::ownership::checkpoint(context, prior.len() as u64 + 1)?;
+        crate::publication::ownership::read_request::checkpoint(context, prior.len() as u64 + 1)?;
         let bytes = (prior.len() + 1)
             .checked_mul(std::mem::size_of::<RoutePresence>() * 4)
             .and_then(|bytes| {
@@ -37,13 +40,13 @@ impl CurrentPositions {
             })
             .and_then(|sum| sum.checked_add(meaning.family.len()))
             .ok_or_else(|| {
-                crate::publication::ownership::request(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                crate::publication::ownership::read_request::request(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 )
             })?;
         let funding = execution
             .reserve_retained_memory(bytes as u64)
-            .map_err(crate::publication::ownership::request)?;
+            .map_err(crate::publication::ownership::read_request::request)?;
         let mut routes = prior
             .iter()
             .filter(|p| !p.meaning.same_route(meaning))
@@ -70,12 +73,12 @@ impl CurrentPositions {
 }
 fn denial(cause: ExecutionOrderedMapDenial) -> TransactionCommitError {
     match cause {
-        ExecutionOrderedMapDenial::Request(stop) => crate::publication::ownership::request(stop),
-        ExecutionOrderedMapDenial::CapacityOverflow => crate::publication::ownership::request(
-            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        ExecutionOrderedMapDenial::Request(stop) => crate::publication::ownership::read_request::request(stop),
+        ExecutionOrderedMapDenial::CapacityOverflow => crate::publication::ownership::read_request::request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
         ),
         ExecutionOrderedMapDenial::Allocation(denial) => {
-            crate::execution::allocation_commit_error(TransactionCommitError::conflict(
+            crate::execution::denial::allocation_commit_error(TransactionCommitError::conflict(
                 CommitConflict::new(ConflictClass::ExecutionAllocationDenied { denial }),
             ))
         }

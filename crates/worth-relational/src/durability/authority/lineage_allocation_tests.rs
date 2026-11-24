@@ -54,3 +54,69 @@ fn relation_restores_malformed_restores_and_foreign_commits_refuse() {
         Err(LineageAllocationRefusal::ForeignCommit { event_id })
     );
 }
+
+/// A selection restore commit: it created nothing, rematerialized a named
+/// `e6` (restored from lineage 5 onto lineage 6, naming `e6`) and an unnamed
+/// `e7` (no lineage event).
+fn selection_restore() -> super::lineage_allocation_fixtures::CommitLineage {
+    let mut commit = super::lineage_allocation_fixtures::CommitLineage::new(4, Vec::new());
+    commit.rematerialized_entities = vec![entity(7), entity(6)];
+    commit.push(
+        crate::lineage::data::LineageEventKind::Restore,
+        LineageSubject::Entity,
+        &[5],
+        &[6],
+    );
+    commit.allocating(6).entity_id = Some(entity(6));
+    commit
+}
+
+#[test]
+fn explicit_bindings_anchor_to_rematerialized_entities_beside_unnamed_ones() {
+    assert_eq!(
+        entity_allocation_bindings(&selection_restore().view()),
+        Ok(vec![(LineageId(6), entity(6))])
+    );
+}
+
+#[test]
+fn forged_duplicate_created_relation_and_non_allocating_bindings_refuse() {
+    use crate::lineage::data::LineageEventKind::{Replace, Restore, Retire};
+    let malformed = |commit: &super::lineage_allocation_fixtures::CommitLineage, event_id| {
+        assert_eq!(
+            entity_allocation_bindings(&commit.view()),
+            Err(LineageAllocationRefusal::MalformedEntityBinding { event_id })
+        );
+    };
+    // (a) an entity the commit never rematerialized.
+    let mut forged = selection_restore();
+    forged.allocating(6).entity_id = Some(entity(8));
+    malformed(&forged, 40);
+    // (b) the same entity bound twice in one commit.
+    let mut duplicate = selection_restore();
+    duplicate.push(Restore, LineageSubject::Entity, &[4], &[9]);
+    duplicate.allocating(9).entity_id = Some(entity(6));
+    malformed(&duplicate, 41);
+    // (c) an entity the commit created, never a rematerialized one.
+    let mut created = selection_restore();
+    created.created_entities = vec![entity(6)];
+    created.push(
+        crate::lineage::data::LineageEventKind::Create,
+        LineageSubject::Entity,
+        &[],
+        &[10],
+    );
+    malformed(&created, 40);
+    // (d) a relation allocation.
+    let mut relation = selection_restore();
+    relation.allocating(6).subject = LineageSubject::Relation;
+    malformed(&relation, 40);
+    // (e) non-allocating events.
+    for kind in [Retire, Replace] {
+        let mut ending = selection_restore();
+        let targets: &[u64] = if kind == Retire { &[] } else { &[11] };
+        ending.push(kind, LineageSubject::Entity, &[6], targets);
+        ending.events[1].entity_id = Some(entity(7));
+        malformed(&ending, 41);
+    }
+}

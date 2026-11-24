@@ -277,10 +277,10 @@ impl InvariantViolationDiagnosticProjection<'_> {
                     (
                         "refusal",
                         match refusal {
-                            crate::validation::data::CustomInvariantRefusal::Empty => {
+                            crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::Empty => {
                                 RelationalDiagnosticValue::Null
                             }
-                            crate::validation::data::CustomInvariantRefusal::DeclaredValue {
+                            crate::validation::data::custom_rule::refusal::CustomInvariantRefusal::DeclaredValue {
                                 value_identity,
                                 bytes,
                             } => RelationalDiagnosticValue::object([

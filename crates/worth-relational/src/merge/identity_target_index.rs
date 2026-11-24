@@ -1,3 +1,4 @@
+use crate::schema::data::AspectContractPlanCatalog;
 use std::collections::BTreeMap;
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
@@ -10,8 +11,9 @@ use crate::merge::data::{
     VisibleMergeRecordKind,
 };
 use crate::merge::identity_digest::{declared_identity_signature, DeclaredIdentityDigest};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
-use crate::transactions::data::RecordRef;
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 use worth_foundational::facade::AspectKey;
 
 pub(crate) struct TargetIdentityIndex {
@@ -24,11 +26,11 @@ pub(crate) struct TargetIdentityIndex {
 
 impl TargetIdentityIndex {
     pub(crate) fn new(
-        runtime: &crate::runtime::RelationalRuntime,
+        aspect_plans: &AspectContractPlanCatalog,
         target_view: &RelationalReadView,
         source_records: &[VisibleMergeRecord],
         effective_identity_declarations: &[IdentityBasisDeclaration],
-    ) -> Self {
+    ) -> (Self, usize) {
         let relevant_entity_kinds = source_records
             .iter()
             .filter(|record| record.record_kind == VisibleMergeRecordKind::Entity)
@@ -69,20 +71,21 @@ impl TargetIdentityIndex {
             .collect::<BTreeMap<_, _>>();
         let entities_by_lineage = target_entities_by_lineage(target_entities.as_slice());
         let visible_records = target_visible_records(target_entities, target_relations);
-        let declared_key_indexes =
-            build_declared_key_indexes(runtime, &visible_records, effective_identity_declarations);
-        runtime
-            .performance_access()
-            .count_merge_identity_target_indexing(
-                target_view.entities().len() + target_view.relations().len(),
-                visible_records.len(),
-            );
-        Self {
-            entities_by_storage,
-            entities_by_lineage,
-            relations_by_storage,
-            declared_key_indexes,
-        }
+        let declared_key_indexes = build_declared_key_indexes(
+            aspect_plans,
+            &visible_records,
+            effective_identity_declarations,
+        );
+
+        (
+            Self {
+                entities_by_storage,
+                entities_by_lineage,
+                relations_by_storage,
+                declared_key_indexes,
+            },
+            visible_records.len(),
+        )
     }
 
     pub(crate) fn storage_match(&self, record_ref: &RecordRef) -> Option<RecordRef> {
@@ -123,12 +126,12 @@ pub(crate) enum DeclaredKeySetMatch {
 }
 
 pub(crate) fn declared_key_set_match(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source: &VisibleMergeRecord,
     aspect_keys: &[AspectKey],
     target_index: &TargetIdentityIndex,
 ) -> DeclaredKeySetMatch {
-    let Some(source_signature) = extract_declared_key_signature(runtime, source, aspect_keys)
+    let Some(source_signature) = extract_declared_key_signature(aspect_plans, source, aspect_keys)
     else {
         return DeclaredKeySetMatch::MissingSourceEvidence;
     };
@@ -222,7 +225,7 @@ static EMPTY_DECLARED_KEY_INDEX: std::sync::LazyLock<
 > = std::sync::LazyLock::new(BTreeMap::new);
 
 fn build_declared_key_indexes(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     visible_records: &[VisibleMergeRecord],
     effective_identity_declarations: &[IdentityBasisDeclaration],
 ) -> BTreeMap<DeclaredKeyIndexKey, BTreeMap<DeclaredIdentityDigest, Vec<RecordRef>>> {
@@ -237,8 +240,9 @@ fn build_declared_key_indexes(
             VisibleMergeRecordKind::Entity => IdentityBasisScope::EntityKind(kind_id),
             VisibleMergeRecordKind::Relation => IdentityBasisScope::RelationKind(kind_id),
         };
-        for keys in applicable_declared_key_sets(runtime, record, &catalog, &kind_scope) {
-            let Some(signature) = extract_declared_key_signature(runtime, record, keys.as_slice())
+        for keys in applicable_declared_key_sets(aspect_plans, record, &catalog, &kind_scope) {
+            let Some(signature) =
+                extract_declared_key_signature(aspect_plans, record, keys.as_slice())
             else {
                 continue;
             };
@@ -289,7 +293,7 @@ fn build_declared_key_declaration_catalog(
 }
 
 fn applicable_declared_key_sets(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     record: &VisibleMergeRecord,
     catalog: &DeclaredKeyDeclarationCatalog,
     kind_scope: &IdentityBasisScope,
@@ -299,7 +303,7 @@ fn applicable_declared_key_sets(
         .get(kind_scope)
         .cloned()
         .unwrap_or_default();
-    let Some(plan) = lowered_plan_for_record(runtime, record) else {
+    let Some(plan) = lowered_plan_for_record(aspect_plans, record) else {
         return applicable;
     };
     for binding in &plan.executable_bindings {
@@ -313,11 +317,11 @@ fn applicable_declared_key_sets(
 }
 
 fn extract_declared_key_signature(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     record: &VisibleMergeRecord,
     aspect_keys: &[AspectKey],
 ) -> Option<DeclaredIdentityDigest> {
-    let plan = lowered_plan_for_record(runtime, record)?;
+    let plan = lowered_plan_for_record(aspect_plans, record)?;
     let bindings = aspect_keys
         .iter()
         .map(|aspect_key| {
@@ -328,13 +332,12 @@ fn extract_declared_key_signature(
         .collect::<Option<Vec<_>>>()?;
     let components = bindings
         .into_iter()
-        .map(|binding| extract_identity_component(runtime, record, binding))
+        .map(|binding| extract_identity_component(record, binding))
         .collect::<Option<Vec<_>>>()?;
     declared_identity_signature(&components)
 }
 
 fn extract_identity_component(
-    _runtime: &crate::runtime::RelationalRuntime,
     record: &VisibleMergeRecord,
     binding: &crate::schema::data::LoweredAspectContractBinding,
 ) -> Option<MergeAspectComponent> {

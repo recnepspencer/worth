@@ -1,6 +1,8 @@
-use crate::transactions::data::{
-    CommitConflict, CommitLog, CommitPhase, ConflictClass, TransactionCommitError,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::time::Instant;
 
 pub(super) fn invalid_merge_context(detail: &str) -> TransactionCommitError {

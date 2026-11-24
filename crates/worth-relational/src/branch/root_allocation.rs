@@ -1,8 +1,10 @@
 #[path = "root_allocation/request.rs"]
 mod request;
+pub(in crate::branch) use super::super::retained_allocation::{
+    reserve_arc_memory, reserve_box_memory,
+};
 use super::RelationalBranchRoot;
 use crate::branch::root_regions::RelationalPersistentRegionNodeObservation;
-pub(in crate::branch) use request::{reserve_arc_memory, reserve_box_memory};
 #[path = "root_allocation/union.rs"]
 mod union;
 
@@ -48,7 +50,7 @@ impl From<RelationalPersistentRegionNodeObservation>
     for RelationalRootAuthoritativeAllocationObservation
 {
     fn from(node: RelationalPersistentRegionNodeObservation) -> Self {
-        use crate::branch::RelationalPersistentRegionAllocationKind as Region;
+        use crate::branch::root_regions::RelationalPersistentRegionAllocationKind as Region;
         let kind = match node.allocation_kind {
             Region::SetObject => {
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject

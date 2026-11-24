@@ -44,7 +44,7 @@ pub(super) fn load_available_envelopes(
 
     let start_after_position = checkpoint.map(|checkpoint| checkpoint.position());
     let retained_envelopes =
-        retained_canonical_envelopes_after(runtime, start_after_position, usize::MAX).map_err(
+        retained_canonical_envelopes_after(&runtime.history, runtime.durability.canonical_coverage(), start_after_position, usize::MAX).map_err(
             |gap| {
                 let detail = format!(
                     "subscriber stream position {} is retained for commit {} but has no retained canonical envelope or durable recovery coverage",

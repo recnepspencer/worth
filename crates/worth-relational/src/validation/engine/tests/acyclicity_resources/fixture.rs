@@ -1,9 +1,11 @@
 //! A genuine native DAG, using issued entity identities and ordinary transactions.
 use super::super::validation_engine_fixtures::*;
 use crate::mvcc::ValidatedRelationalProposal;
-use crate::transactions::data::{
-    AspectFieldPatch, BulkEntityCreateIntent, CommitResult, EntityReference, TransactionCommitError,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::CommitResult;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -20,7 +22,7 @@ impl DagFixture {
     }
 
     pub(super) fn from_runtime(runtime: RelationalRuntime, count: usize) -> Self {
-        let backing = crate::test_execution_policy::serial_request();
+        let backing = crate::execution::test_policy::serial_request();
         let execution = ExecutionRequest::serial(&backing);
         let keys: Vec<_> = (0..count)
             .map(|index| ClientKey::raw(format!("dag-node-{index}")))
@@ -43,7 +45,7 @@ impl DagFixture {
             .into_iter()
             .map(|client_key| {
                 receipt
-                    .created_entity(&crate::transactions::data::CreatedEntityRef {
+                    .created_entity(&crate::transactions::data::primitives::CreatedEntityRef {
                         partition_id: PartitionId::main(),
                         kind_id: KindId(3),
                         client_key,
@@ -121,7 +123,7 @@ impl DagFixture {
         .unwrap();
         txn.prepare_merged_plan(
             &worth_execution::ExecutionRequest::serial(
-                &crate::test_execution_policy::serial_request(),
+                &crate::execution::test_policy::serial_request(),
             ),
             &self.runtime,
         )
@@ -165,7 +167,7 @@ pub(super) fn request(
     cancellation: CancellationToken,
     deadline: Option<std::time::Instant>,
 ) -> ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,

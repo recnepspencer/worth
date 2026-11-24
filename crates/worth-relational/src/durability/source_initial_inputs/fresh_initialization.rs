@@ -1,6 +1,6 @@
 //! Only the closed physical-fresh recipe can issue original initialization.
 use super::RelationalInitialInputsRefusal as Refusal;
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableReadProtection};
 use crate::runtime::RelationalRuntime;
 use std::sync::{Arc, Weak};

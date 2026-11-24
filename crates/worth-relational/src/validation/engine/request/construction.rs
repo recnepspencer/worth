@@ -1,15 +1,15 @@
 use super::InvariantPreparationControl;
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::transactions::data::MergedCommitPlan;
-use crate::validation::data::InvariantPlanContract;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::validation::data::contracts::InvariantPlanContract;
 use std::collections::BTreeMap;
 
 use super::relation_integrity_scopes::prepare_relation_integrity_scopes;
 use super::InvariantExecutionRequest;
 use crate::validation::engine::{InvariantObservation, InvariantRequestProfile};
 
+#[cfg(test)]
 impl<'state> InvariantExecutionRequest<'state> {
-    #[cfg(test)]
     pub(crate) fn from_profile_with_contract<'runtime>(
         profile: InvariantRequestProfile,
         runtime: &'runtime crate::runtime::RelationalRuntime,
@@ -21,8 +21,8 @@ impl<'state> InvariantExecutionRequest<'state> {
     where
         'runtime: 'state,
     {
-        let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
-        let backing = crate::test_execution_policy::serial_request();
+        let view = runtime.invariant_validation_view();
+        let backing = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
             &execution,
@@ -33,15 +33,13 @@ impl<'state> InvariantExecutionRequest<'state> {
             view.current_version_id(),
             merged_plan,
             plan_contract,
-            &InvariantPreparationControl::new(
-                crate::mvcc::RelationalOperationControl::uninterrupted(),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-            ),
+            &InvariantPreparationControl::uninterrupted_proposal_validation(),
         )
         .expect("uninterrupted System scope preparation")
     }
+}
 
+impl<'state> InvariantExecutionRequest<'state> {
     pub(crate) fn from_profile_with_contract_at_current_version<'runtime>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
@@ -52,7 +50,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         merged_plan: Option<&'state MergedCommitPlan>,
         plan_contract: Option<InvariantPlanContract>,
         control: &InvariantPreparationControl<'_, '_>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         Self::from_semantic_plan(
             execution,
             profile,
@@ -76,7 +77,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         semantic_plan: Option<RelationalSemanticPlan<'state>>,
         plan_contract: Option<InvariantPlanContract>,
         control: &InvariantPreparationControl<'_, '_>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         control.check()?;
         debug_assert!(
             /* Proof: Request construction is private to the invariant planner, which selects each profile by supports_observation before building its packet. Unsupported registrations are refused at runtime construction. */
@@ -106,7 +110,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         let relation_integrity_scopes = super::scope_admission::prepare(execution, |admit| {
             prepare_relation_integrity_scopes(
                 semantic_plan,
-                runtime.home_target.is_some(),
+                runtime.rejudges_home_target(),
                 super::relation_integrity_scopes::RelationScopeState {
                     current: super::super::state_view::InvariantStateView::new(
                         scope_state,
@@ -155,14 +159,14 @@ fn relation_scope_requirements_for(
     control: &InvariantPreparationControl<'_, '_>,
 ) -> Result<
     BTreeMap<crate::identity::data::KindId, super::RelationScopeRequirement>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     runtime.schema_contract_runtime.invariant_points[profile.execution_point() as usize]
         .iter()
         .filter(|registration| {
             profile != InvariantRequestProfile::ProposedState
                 || registration.execution_point
-                    != crate::validation::data::InvariantExecutionPoint::CommitBoundary
+                    != crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
         })
         .try_fold(BTreeMap::new(), |mut requirements, registration| {
             control.check()?;

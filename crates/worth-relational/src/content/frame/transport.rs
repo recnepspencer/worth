@@ -25,7 +25,7 @@ impl RelationalContentRecord {
             let mut bytes = Vec::new();
             bytes.try_reserve_exact(frame.len()).map_err(|_| {
                 Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
                 )
             })?;
             for chunk in frame.chunks(4096) {

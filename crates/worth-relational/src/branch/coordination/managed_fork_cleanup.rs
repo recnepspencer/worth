@@ -1,14 +1,15 @@
 //! Native fork protocol evidence; public geometry and Query guard have separate courts.
 use super::*;
-use crate::mvcc::{
-    CompanionBranchCellSlot, CompanionPreflightStop, ManagedIndexSourceForkPreparation,
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    RelationalPublicationCompanion,
-};
+use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
+use crate::mvcc::CompanionBranchCellSlot;
+use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::PreparedPublicationCompanionEffect;
+use crate::mvcc::PublicationCompanionPreflight;
+use crate::mvcc::RelationalPublicationCompanion;
 use crate::tests::support::{
     create_entity, durable_runtime_for_medium, OwnedTestDurableMedium, ScriptedPublication,
 };
-use crate::validation::candidate_source::ManagedIndexBranchImage;
+use crate::validation::candidate_source::image::ManagedIndexBranchImage;
 use std::collections::BTreeMap;
 use std::sync::atomic::AtomicUsize;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -126,8 +127,8 @@ fn managed_fork_refusal_and_success_drop_lookup_outside_native_coordination() {
     let stopped = port.fork_branch(&execution, target.clone(), source);
     assert!(matches!(
         stopped,
-        Err(crate::branch::RelationalBranchTransitionStop::Denied(
-            crate::branch::RelationalForkDenial::DurablePublicationRefused(
+        Err(crate::branch::transition::RelationalBranchTransitionStop::Denied(
+            crate::branch::fork::RelationalForkDenial::DurablePublicationRefused(
                 crate::durability::medium::RelationalDurablePublicationRefusal::ProvenNoEffect { .. }
             )
         ))

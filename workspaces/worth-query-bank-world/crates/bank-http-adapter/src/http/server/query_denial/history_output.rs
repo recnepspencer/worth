@@ -118,6 +118,15 @@ fn document(cause: WorthQueryDocumentHistoryDenial) -> BankHttpDenial {
         | D::InstalledBindingMismatch
         | D::ForeignModel
         | D::UnsupportedReadMode => operator(),
+        // The caller chose the metadata, so a smaller record can pass.
+        D::StepMetadataTooLarge {
+            length: _,
+            maximum: _,
+        } => exhausted(),
+        // The installation chose the producer, so no request can pass.
+        D::WorkflowProducer { producer: _ } | D::ExternalEffectProducer { producer: _ } => {
+            operator()
+        }
         // These are valid document-operation descriptions, but no read handoff emits them.
         D::ForeignRuntime
         | D::ForeignHistoryNode

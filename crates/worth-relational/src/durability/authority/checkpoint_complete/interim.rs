@@ -1,24 +1,20 @@
 //! Memory capture proof is distinct from Home selection and original-frame demand.
-pub(in crate::durability::authority) mod bootstrap;
+pub(crate) mod bootstrap;
 mod capture;
 mod component;
 mod origin;
+pub(in crate::durability::authority) mod origin_readmission;
+pub(crate) mod receiver;
 mod request_scope;
-pub use bootstrap::NativeInterimBootstrapContinuation;
-pub(in crate::durability::authority) mod receiver;
 pub(in crate::durability::authority) mod verified;
 use crate::durability::checkpoint_admission::{
     CheckpointAdmissionBindingMismatch as Mismatch, RelationalCheckpointAdmissionArtifact,
     RelationalCheckpointAdmissionRefusal as Refusal,
 };
-use crate::history::{RelationalCommitArtifact, RetainedCanonicalIndex};
+use crate::history::commit::{RelationalCommitArtifact, RetainedCanonicalIndex};
 pub use component::CapturedNativeInterimComponent;
 pub use origin::CapturedNativeInterimOrigin;
-pub use receiver::AdmittedNativeInterimReceiver;
-use std::{
-    ops::Range,
-    sync::{Arc, Weak},
-};
+use std::{ops::Range, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionOrderedMap,
     ExecutionRequest,
@@ -43,8 +39,8 @@ pub struct CapturedNativeInterimAdmission {
     rows: ExecutionArray<crate::durability::checkpoint_admission::EncodedAdmissionRow>,
     roots: ExecutionImmutableBytes,
     _artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
-    current: crate::branch::CheckpointBranchMetadata,
-    owner: Weak<crate::runtime::RelationalRuntimeState>,
+    current: crate::branch::registry::CheckpointBranchMetadata,
+    owner: crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin,
     native_digest: CanonicalDigestId,
     covered: u64,
     transitions: u64,
@@ -182,23 +178,7 @@ impl CapturedNativeInterimAdmission {
     }
 }
 
-impl crate::durability::authority::DurabilityAuthority<'_> {
-    pub fn capture_interim_checkpoint(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        (
-            crate::durability::data::RelationalNativeCheckpoint,
-            CapturedNativeInterimAdmission,
-        ),
-        super::Denial,
-    > {
-        policy.check_live()?;
-        crate::execution::check_request(request).map_err(super::Denial::Request)?;
-        capture::capture(self.runtime, request)
-    }
-}
+mod runtime_capture;
 
 pub(super) fn reserve_arc<T>(
     request: &ExecutionRequest<'_, '_>,

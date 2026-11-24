@@ -1,6 +1,6 @@
 //! Stream only the selected root's typed kind candidates, admitting Head on demand.
 use super::*;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 fn corrupt(partition: PartitionId) -> Cause {
     Cause::StorageUnavailable(crate::storage::data::RelationalStorageUnavailable {
         subject: crate::storage::data::RelationalStorageSubject::Region(partition),
@@ -15,12 +15,11 @@ pub(super) fn entity<E>(
     mut prepare: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
 ) -> Result<(), ReadStop<E>> {
-    crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(root) = source.selected_root() else {
+    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+    let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
-    let registry = root.schema_authority().registry();
-    for id in root.entity_ids_of_kind(kind, partition) {
+    for id in source.selected_entity_ids(kind, partition) {
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;
@@ -51,7 +50,7 @@ pub(super) fn entity<E>(
             bytes,
         )
         .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let record = head.entity_record(registry, id);
         let actual = record
             .as_ref()
@@ -78,12 +77,11 @@ pub(super) fn relation<E>(
     mut prepare: impl FnMut(u64, u64) -> Result<(), E>,
     mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
 ) -> Result<(), ReadStop<E>> {
-    crate::execution::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(root) = source.selected_root() else {
+    crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
+    let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
-    let registry = root.schema_authority().registry();
-    for id in root.relation_ids_of_kind(kind, partition) {
+    for id in source.selected_relation_ids(kind, partition) {
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;
@@ -114,7 +112,7 @@ pub(super) fn relation<E>(
             bytes,
         )
         .map_err(ReadStop::Admission)?;
-        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
         let record = head.relation_record(registry, id);
         let actual = record
             .as_ref()

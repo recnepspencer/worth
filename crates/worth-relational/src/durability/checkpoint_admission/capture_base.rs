@@ -8,6 +8,7 @@ use crate::durability::{
         normalized::NormalizedOriginalInputs, RelationalCompleteSourceArtifact,
     },
 };
+use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
 use std::sync::{Arc, OnceLock};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
@@ -41,16 +42,15 @@ impl SelectedCheckpointCaptureBase {
     pub(crate) fn normalized(&self) -> &NormalizedOriginalInputs {
         &self.normalized
     }
-    pub(crate) fn restore_original(
-        runtime: &crate::runtime::RelationalRuntime,
+    pub(crate) fn restore_original<'a>(
+        selection: impl Into<&'a RelationalCheckpointManifestSelection>,
         original: &crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
         match (&original.selected, &original.normalized) {
             (None, None) => Ok(()),
-            (Some(_), Some(_)) => runtime
-                .durability
-                .checkpoint_selection()
+            (Some(_), Some(_)) => selection
+                .into()
                 .restore_capture_base(original, request)
                 .map_err(crate::durability::data::RelationalRecoveryStop::AdmissionImage),
             (None, Some(_)) | (Some(_), None) => {

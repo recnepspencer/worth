@@ -1,20 +1,24 @@
 mod ancestry;
+mod ancestry_walk;
 mod aspect_history;
+mod aspect_history_projection;
 mod aspect_history_queries;
 mod bounded_commit_patches;
 mod branch_envelope_reads;
 mod commit_surfaces;
 mod envelope_reads;
+mod merge_basis_resolution;
 mod merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;
 mod patch_stream_commit;
 pub(crate) mod relevant_writes;
+pub use relevant_writes::live_cursor::RelationalAuthoredWriteCursor;
 pub use relevant_writes::{
     RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
     RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
-    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
-    RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
+    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial,
+    RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
     RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
 };

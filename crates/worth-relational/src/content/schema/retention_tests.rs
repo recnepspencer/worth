@@ -9,19 +9,22 @@ fn extracted_content_snapshot_retains_original_request_bill_until_last_clone() {
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
     let mut registry = crate::schema::data::RelationalSchemaRegistry::new();
-    registry.content_formats = crate::content::RelationalContentFormatRegistry::from_recorded(
-        RelationalContentSchemaSnapshot::new(
-            vec![RelationalContentFormatDeclaration {
-                identity: [7; 32],
-                descriptor: ContentFormat::new("retained-format", 1).unwrap(),
-                maximum_frame_bytes: 1024,
-            }],
-            Vec::new(),
-        ),
-    )
-    .unwrap();
+    registry.content_formats =
+        crate::content::registry::RelationalContentFormatRegistry::from_recorded(
+            RelationalContentSchemaSnapshot::new(
+                vec![RelationalContentFormatDeclaration {
+                    identity: [7; 32],
+                    descriptor: ContentFormat::new("retained-format", 1).unwrap(),
+                    maximum_frame_bytes: 1024,
+                }],
+                Vec::new(),
+            ),
+        )
+        .unwrap();
     let snapshot = registry
-        .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(request))
+        .snapshot_for_compilation(
+            crate::schema::compilation_control::SchemaCompilationControl::Request(request),
+        )
         .unwrap();
     let content = snapshot.content_formats.clone();
     let projection_bytes = budget.charged_memory_bytes();

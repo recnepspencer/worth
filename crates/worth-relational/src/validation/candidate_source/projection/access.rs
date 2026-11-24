@@ -1,17 +1,22 @@
 //! Closed acquisition postures preserve their real Native proof owners.
-use super::*;
-use crate::derived_relation::{
-    DerivedRelationData, DerivedRelationHandle, DerivedRelationReadShape,
-    PinnedDerivedRelationRead, PreparedDerivedRelationRead,
+use super::super::{
+    applied_affinity::AppliedSourceAffinity, ManagedIndexPublishedSourceRoot,
+    ManagedIndexSourceRows,
 };
-use crate::mvcc::ManagedIndexSourceRebuild;
+use super::*;
+use crate::derived_relation::definition::DerivedRelationHandle;
+use crate::derived_relation::pinned::PinnedDerivedRelationRead;
+use crate::derived_relation::proof::{DerivedRelationReadIdentity, PreparedDerivedRelationRead};
+use crate::derived_relation::read::DerivedRelationData;
+use crate::derived_relation::read_shape::DerivedRelationReadShape;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use std::{
     cell::{Cell, RefCell},
     sync::Arc,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-pub(crate) enum SourceProjectionBacking<'a> {
+pub(in crate::validation::candidate_source) enum SourceProjectionBacking<'a> {
     Invariant {
         relations: &'a StructuralRelationView<'a>,
         aspects: &'a StructuralAspectStateView<'a>,
@@ -20,13 +25,15 @@ pub(crate) enum SourceProjectionBacking<'a> {
         before: bool,
     },
     Applied {
-        loan: &'a super::super::ManagedIndexAppliedSourceRead<'a>,
+        projection: &'a VisibilityProjectionView,
+        affinity: &'a Arc<AppliedSourceAffinity>,
         execution: ExecutionRequest<'a, 'a>,
         memory: RefCell<Option<ExecutionMemoryReservation>>,
         bytes: Cell<u64>,
     },
     Selected {
-        loan: &'a ManagedIndexSourceRebuild,
+        projection: &'a VisibilityProjectionView,
+        expected: &'a Arc<ManagedIndexPublishedSourceRoot>,
         execution: ExecutionRequest<'a, 'a>,
         memory: RefCell<Option<ExecutionMemoryReservation>>,
         bytes: Cell<u64>,
@@ -36,7 +43,7 @@ pub(crate) enum SourceProjectionBacking<'a> {
 /// This type grants no graph, audience or publication authority.
 pub(in crate::validation::candidate_source) enum SourceProjectionRetention {
     Invariant {
-        _meter: crate::validation::CustomInvariantWorkMeter,
+        _meter: crate::validation::custom_rule::CustomInvariantWorkMeter,
     },
     Request {
         _memory: Option<ExecutionMemoryReservation>,
@@ -53,36 +60,37 @@ pub struct PreparedManagedIndexRelationRead {
 enum PreparedBody {
     Applied {
         read: PinnedDerivedRelationRead,
-        affinity: Arc<super::super::applied_read::AppliedSourceAffinity>,
+        affinity: Arc<AppliedSourceAffinity>,
     },
     Invariant(PreparedDerivedRelationRead),
     Selected {
         read: PinnedDerivedRelationRead,
         entry: Arc<super::super::ManagedIndexPublishedSourceRoot>,
-        root: Arc<crate::branch::RelationalBranchRoot>,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
     },
 }
 impl ManagedIndexSourceProjection<'_> {
     pub(super) fn physical_projection(
         &self,
-    ) -> Option<(
-        &crate::runtime::VisibilityProjectionView,
-        &ExecutionRequest<'_, '_>,
-    )> {
+    ) -> Option<(&VisibilityProjectionView, &ExecutionRequest<'_, '_>)> {
         match &self.backing {
             SourceProjectionBacking::Selected {
-                loan, execution, ..
-            } => Some((&loan.projection, execution)),
+                projection,
+                execution,
+                ..
+            } => Some((projection, execution)),
             SourceProjectionBacking::Applied {
-                loan, execution, ..
-            } => Some((&loan.projection, execution)),
+                projection,
+                execution,
+                ..
+            } => Some((projection, execution)),
             SourceProjectionBacking::Invariant { .. } => None,
         }
     }
     pub(in crate::validation::candidate_source) fn scope_identity(
         &self,
         scope: EntityId,
-    ) -> Result<Option<crate::derived_relation::DerivedRelationReadIdentity>, Denial> {
+    ) -> Result<Option<DerivedRelationReadIdentity>, Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant { relations, .. } => {
                 Ok(Some(relations.derived_source_identity(
@@ -208,25 +216,41 @@ impl ManagedIndexSourceProjection<'_> {
     ) -> Result<PreparedManagedIndexRelationRead, Denial> {
         let body = match &self.backing {
             SourceProjectionBacking::Applied {
-                loan, execution, ..
+                projection,
+                affinity,
+                execution,
+                ..
             } => PreparedBody::Applied {
-                read: loan
-                    .projection
-                    .derived_source(execution, path, root.into(), shape, None)?,
-                affinity: Arc::clone(&loan.affinity),
+                read: PinnedDerivedRelationRead::acquire_projected(
+                    projection,
+                    execution,
+                    path,
+                    root.into(),
+                    shape,
+                    None,
+                )?,
+                affinity: Arc::clone(affinity),
             },
             SourceProjectionBacking::Invariant { relations, .. } => {
                 PreparedBody::Invariant(relations.prepare_derived_source(path, root, shape)?)
             }
             SourceProjectionBacking::Selected {
-                loan, execution, ..
+                projection,
+                expected,
+                execution,
+                ..
             } => PreparedBody::Selected {
-                read: loan
-                    .projection
-                    .derived_source(execution, path, root.into(), shape, None)?,
-                entry: Arc::clone(&loan.expected),
+                read: PinnedDerivedRelationRead::acquire_projected(
+                    projection,
+                    execution,
+                    path,
+                    root.into(),
+                    shape,
+                    None,
+                )?,
+                entry: Arc::clone(expected),
                 root: Arc::clone(
-                    loan.projection
+                    projection
                         .selected_root()
                         .ok_or(Definition::RecordUnavailable)?,
                 ),
@@ -251,9 +275,11 @@ impl ManagedIndexSourceProjection<'_> {
         }
         match (&self.backing, &read.body) {
             (
-                SourceProjectionBacking::Applied { loan, .. },
+                SourceProjectionBacking::Applied {
+                    affinity: expected, ..
+                },
                 PreparedBody::Applied { read, affinity },
-            ) if Arc::ptr_eq(&loan.affinity, affinity) => Ok(read.data()),
+            ) if Arc::ptr_eq(expected, affinity) => Ok(read.data()),
             (
                 SourceProjectionBacking::Invariant { relations, .. },
                 PreparedBody::Invariant(read),
@@ -264,11 +290,14 @@ impl ManagedIndexSourceProjection<'_> {
                 relations.read_prepared_derived_source(read, shape)
             }
             (
-                SourceProjectionBacking::Selected { loan, .. },
+                SourceProjectionBacking::Selected {
+                    projection,
+                    expected,
+                    ..
+                },
                 PreparedBody::Selected { read, entry, root },
-            ) if Arc::ptr_eq(&loan.expected, entry)
-                && loan
-                    .projection
+            ) if Arc::ptr_eq(expected, entry)
+                && projection
                     .selected_root()
                     .is_some_and(|actual| Arc::ptr_eq(actual, root)) =>
             {
@@ -314,34 +343,39 @@ impl ManagedIndexSourceProjection<'_> {
         }
     }
 }
-fn record_denial(cause: crate::runtime::RelationalBorrowedRecordReadDenial) -> Denial {
+fn record_denial(
+    cause: crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial,
+) -> Denial {
     match cause {
-        crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+        crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => {
             Denial::Request(cause)
         }
-        crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+        crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
             Definition::RecordUnavailable.into()
         }
     }
 }
-impl ManagedIndexSourceRebuild {
-    /// Each operation reborrows this caller's original request. The retained loan
-    /// contains neither a request nor an invariant audience.
-    pub fn rows<'a>(
-        &'a self,
-        execution: ExecutionRequest<'a, 'a>,
-    ) -> super::super::ManagedIndexSourceRows<'a> {
-        super::super::ManagedIndexSourceRows {
-            scope: self.scope(),
-            projection: ManagedIndexSourceProjection {
-                program: self.program(),
-                backing: SourceProjectionBacking::Selected {
-                    loan: self,
-                    execution,
-                    memory: RefCell::new(None),
-                    bytes: Cell::new(0),
-                },
+
+mod applied_rows;
+pub(in crate::validation::candidate_source) use applied_rows::applied_rows;
+
+pub(crate) fn selected_rows<'a>(
+    projection: &'a VisibilityProjectionView,
+    expected: &'a Arc<ManagedIndexPublishedSourceRoot>,
+    execution: ExecutionRequest<'a, 'a>,
+) -> ManagedIndexSourceRows<'a> {
+    let association = &expected.association;
+    ManagedIndexSourceRows {
+        scope: association.scope,
+        projection: ManagedIndexSourceProjection {
+            program: &association.program,
+            backing: SourceProjectionBacking::Selected {
+                projection,
+                expected,
+                execution,
+                memory: RefCell::new(None),
+                bytes: Cell::new(0),
             },
-        }
+        },
     }
 }

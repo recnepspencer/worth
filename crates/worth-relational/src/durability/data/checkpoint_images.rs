@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{PortableAspectContract, PortableRecordAspectState};
 
 use super::CheckpointCoverage;
-use crate::branch::RelationalBranchCellCheckpoint;
+use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 use crate::history::data::CommitId;
 use crate::history::data::PositionedCanonicalCommit;
 use crate::identity::data::{
@@ -13,6 +13,10 @@ use crate::identity::data::{
 };
 use crate::indexes::data::{DerivedIndexArtifacts, DerivedIndexDefinition};
 use crate::lineage::data::LineageCheckpointArtifact;
+use crate::storage::data::record_identity_image::{
+    DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordSlotFrontier,
+    DurableReusableRecordSlot,
+};
 use crate::storage::data::{RecordLifecycleState, RelationalFieldRevision};
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 
@@ -165,53 +169,6 @@ impl DurableBranchRootImage {
     pub(crate) const CURRENT_FORMAT_VERSION: u16 = 6;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum DurableRecordGenerationClass {
-    Entity,
-    Relation,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordGenerationHighWater {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-    pub(crate) generation: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DurableReusableRecordSlot {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordSlotFrontier {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) next_slot: u64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum DurableRecordReservationOrigin {
-    AppendFrontier,
-    Reclaimed { prior_generation: u32 },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DurablePendingRecordReservation {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-    pub(crate) generation: u32,
-    pub(crate) origin: DurableRecordReservationOrigin,
-}
-
-pub(crate) use super::record_identity_image::DurableRecordIdentityState;
-
 pub(crate) fn branch_root_partition_image_digest(
     _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition_images: &[PartitionCheckpointImage],
@@ -268,7 +225,7 @@ pub(crate) fn branch_root_image_digest(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
     pub(crate) recorded_components:
-        BTreeMap<CommitId, Vec<crate::branch::RelationalBranchBasisDescriptor>>,
+        BTreeMap<CommitId, Vec<crate::branch::basis_descriptor::RelationalBranchBasisDescriptor>>,
     pub(crate) retained_empty_components: Vec<super::RelationalCheckpointEmptyComponent>,
     pub(crate) root_kind_images:
         BTreeMap<CommitId, crate::storage::residency::CheckpointRegionKindImages>,
@@ -280,7 +237,7 @@ pub struct DurableCheckpoint {
     /// Empty materialized images are valid and cannot select the cold path.
     pub(crate) canonical_directory: Option<super::NativeCheckpointDirectoryEdge>,
     pub(crate) commit_descriptors:
-        BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
+        BTreeMap<CommitId, crate::branch::target::RelationalBranchRootDescriptor>,
     pub(crate) mirror_schema_digest: Option<[u8; 32]>,
     pub(crate) branch_cells: Vec<RelationalBranchCellCheckpoint>,
     /// One posture for every branch cell, in branch order.
@@ -321,7 +278,7 @@ mod tests {
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
         let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-        let host_request = crate::test_execution_policy::serial_request();
+        let host_request = crate::execution::test_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
         let runtime = runtime_with_test_schema();

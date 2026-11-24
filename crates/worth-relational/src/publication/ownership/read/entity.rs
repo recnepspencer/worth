@@ -2,7 +2,7 @@
 use super::*;
 pub(super) fn load(
     roster: &mut CurrentPublicationRoster,
-    view: &InvariantStateView<'_>,
+    view: &StructuralStateView<'_>,
     id: EntityId,
     kind: KindId,
     storage: &CurrentPublicationStorage,

@@ -1,5 +1,6 @@
 use super::native_strategy_fixtures::*;
 use crate::authority::commit::pipeline::{stage_observation, CommitStage};
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use std::sync::{

@@ -8,7 +8,10 @@ impl HistorySubsystem {
     pub(crate) fn set_runtime_instance_id(
         &mut self,
         runtime_instance_id: u64,
-    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+    ) -> Result<
+        (),
+        crate::branch::reference::observation::RelationalBranchObservationConstructionDenial,
+    > {
         let metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         self.record_branch_population_scan();
         // Complete every fallible identity rebind before replacing live cells.
@@ -21,20 +24,20 @@ impl HistorySubsystem {
                 rebound.bind_basis_registry_metrics(Arc::clone(&metrics));
                 Ok((rebound.identity().branch_id().clone(), rebound))
             })
-            .collect::<Result<_, crate::branch::RelationalBranchObservationConstructionDenial>>()?;
+            .collect::<Result<_, crate::branch::reference::observation::RelationalBranchObservationConstructionDenial>>()?;
         self.branch_cells.restore_all(cells);
         self.runtime_instance_id = runtime_instance_id;
         self.basis_registry_metrics = metrics;
         self.try_reset_retention_owner(runtime_instance_id)
             .map_err(|_| {
-                crate::branch::RelationalBranchObservationConstructionDenial::RetentionUnavailable
+                crate::branch::reference::observation::RelationalBranchObservationConstructionDenial::RetentionUnavailable
             })?;
         Ok(())
     }
 
     pub(crate) fn detached_owner_snapshot(
         &self,
-    ) -> Result<Self, crate::runtime::RelationalRuntimeForkDenial> {
+    ) -> Result<Self, crate::runtime::fork_denial::RelationalRuntimeForkDenial> {
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         let branch_cells = self.branch_cells.detached_owner_snapshot();
         let mut cells = branch_cells.take_all();
@@ -48,9 +51,9 @@ impl HistorySubsystem {
         );
         canonical_publication_routes.install_checkpoint_catalog(self.commit_artifacts());
         for positioned in self.canonical_publication_routes.performed_snapshot() {
-            let artifact = self
-                .commit_artifact(positioned.commit.commit_id)
-                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            let artifact = self.commit_artifact(positioned.commit.commit_id).ok_or(
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,
+            )?;
             canonical_publication_routes
                 .install_recovered(
                     positioned,
@@ -58,7 +61,7 @@ impl HistorySubsystem {
                     artifact.roots().clone(),
                 )
                 .map_err(|_| {
-                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
                 })?;
         }
         let mut snapshot = Self {
@@ -88,19 +91,21 @@ impl HistorySubsystem {
         };
         snapshot
             .try_reset_retention_owner(snapshot.runtime_instance_id)
-            .map_err(|_| crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            .map_err(|_| {
+                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+            })?;
         Ok(snapshot)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::runtime::RelationalRuntimeForkDenial;
+    use crate::runtime::fork_denial::RelationalRuntimeForkDenial;
     use crate::tests::support::{create_entity, runtime_with_test_schema};
 
     #[test]
     fn fork_refuses_a_missing_performed_artifact_without_reconstructing_inventory() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         create_entity(&execution, &runtime, "performed-inventory");

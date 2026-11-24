@@ -34,7 +34,7 @@ impl RecordedRelationalComponentReference {
         descriptor: &RelationalBranchBasisDescriptor,
         target: Option<CanonicalDescription<'_>>,
     ) -> Result<Self, RelationalRecordedComponentRefusal> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(RelationalRecordedComponentRefusal::Request)?;
         // canonical_observation uses the owner's one exactly sized String;
         // writing this prefix, decimal runtime and UTF-8 branch never grows it.
@@ -87,7 +87,7 @@ impl RecordedRelationalComponentReference {
                 })
             }
         };
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(RelationalRecordedComponentRefusal::Request)?;
         Ok(Self {
             meaning: Arc::new(RecordedComponentMeaning {

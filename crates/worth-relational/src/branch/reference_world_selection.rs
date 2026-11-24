@@ -1,18 +1,25 @@
 //! Reconstruction restores an actual original cell, never a relabelled basis.
 use super::*;
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_errors::DurabilityError;
+use crate::durability::data::recovery_errors::RecoveryFailureClass;
+
+pub(crate) struct WorldSourceSelection<'a> {
+    pub(crate) history: &'a crate::runtime::state::subsystems::history::HistorySubsystem,
+    pub(crate) visibility: crate::branch::head_visibility_inputs::BranchHeadVisibilityInputs<'a>,
+}
 
 impl RelationalBranchReferenceCell {
-    pub(crate) fn select_recovered_world_source(
+    pub(crate) fn select_recovered_world_source<'a>(
         &self,
-        runtime: &crate::runtime::RelationalRuntime,
-        original: &super::super::RelationalBranchBasisDescriptor,
-        root: Arc<super::super::RelationalBranchRoot>,
-    ) -> Result<Arc<super::super::RelationalBranchRoot>, DurabilityError> {
+        inputs: impl Into<WorldSourceSelection<'a>>,
+        original: &crate::branch::basis::RelationalBranchBasisDescriptor,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
+    ) -> Result<Arc<crate::branch::root::RelationalBranchRoot>, DurabilityError> {
+        let inputs = inputs.into();
         let corrupt = |message| DurabilityError::new(RecoveryFailureClass::ReplayFailure, message);
         if original.runtime_instance_id() != self.identity.runtime_instance_id()
             || original.branch_id() != self.identity.branch_id()
-            || original.posture() != super::super::RelationalBranchBasisPosture::Live
+            || original.posture() != crate::branch::basis::RelationalBranchBasisPosture::Live
         {
             return Err(corrupt(
                 "World recovery source belongs to another branch or posture",
@@ -28,13 +35,13 @@ impl RelationalBranchReferenceCell {
         let previous = self
             .root()
             .ok_or_else(|| corrupt("World recovery head has no root"))?;
-        let retirement = runtime
+        let retirement = inputs
             .history
             .retention_binding()
             .reserve_head_retirement_capacity(&self.identity, &previous, &self.head_retention)
             .map_err(|_| corrupt("World recovery head retirement could not be reserved"))?;
         let mut prepared = self.state_snapshot();
-        if prepared.lifecycle != super::super::RelationalBranchLifecyclePosture::Live {
+        if prepared.lifecycle != crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live {
             return Err(corrupt(
                 "World recovery cannot restore an inactive Native branch",
             ));
@@ -59,22 +66,20 @@ impl RelationalBranchReferenceCell {
         prepared.root = Some(root.clone());
         let displaced = state.replace_with(prepared);
         retirement.transfer_head(&root).replace_head();
-        runtime
+        inputs
             .history
             .move_branch_head_basis(Some(&previous), Some(&root));
         drop(state);
         drop(_coordination);
-        runtime
-            .visibility_pins()
-            .move_branch_head_visibility_residency(
-                self.identity.branch_id(),
-                previous
-                    .axes()
-                    .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
-                root.axes()
-                    .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
-                None,
-            );
+        inputs.visibility.move_residency(
+            self.identity.branch_id(),
+            previous
+                .axes()
+                .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
+            root.axes()
+                .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
+            None,
+        );
         Ok(displaced)
     }
 }

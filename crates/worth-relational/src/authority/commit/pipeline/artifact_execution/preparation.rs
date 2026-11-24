@@ -7,10 +7,14 @@ use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::transactions::data::{
-    AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
-    PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
-};
+use crate::transactions::data::aspect_traces::AspectEvaluationTrace;
+use crate::transactions::data::commit_log::CommitAspectSummary;
+use crate::transactions::data::commit_log::CommitChangeSummary;
+use crate::transactions::data::commit_log::CommitPublicationSummary;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+pub(crate) use authoritative_publication::ArtifactAuthority;
 use authoritative_publication::{
     prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
 };
@@ -31,7 +35,7 @@ pub(in crate::authority::commit::pipeline) struct PublicationPreparation {
 }
 
 pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
-    artifacts: crate::storage::overlay::PublicationArtifacts,
+    artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     changed_records: Vec<RecordRef>,
     canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
@@ -41,13 +45,15 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
         crate::identity::data::LineageId,
     )>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
 
 pub(super) struct PublicationPreparationInput<'a> {
     pub(super) defer_lineage: bool,
-    pub(super) working_state: &'a mut crate::runtime::WorkingState,
-    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
+    pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
+    pub(super) content: crate::content::publication::ContentPublication,
+    pub(super) selected_branch_state: &'a crate::branch::root_selection::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a crate::history::data::BranchId,
@@ -55,8 +61,8 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) created_entities: &'a crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
@@ -69,14 +75,22 @@ pub(super) struct PublicationPreparationInput<'a> {
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
 }
 
+pub(crate) struct PublicationArtifactOwners<'a> {
+    pub(crate) index_catalog: super::index_catalog::PublicationIndexCatalogInputs<'a>,
+    pub(crate) authored_indexes: super::authored_index_writes::AuthoredIndexWriteInputs<'a>,
+    pub(crate) authority: ArtifactAuthority<'a>,
+    pub(crate) work: Option<&'a crate::execution::RequestWorkBudget>,
+}
+
 pub(super) fn prepare_publication_artifacts(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    owners: PublicationArtifactOwners<'_>,
     input: PublicationPreparationInput<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CommitPhaseBacking<PublicationPreparation>, TransactionCommitError> {
     let PublicationPreparationInput {
         defer_lineage,
         working_state,
+        content,
         selected_branch_state,
         patch,
         commit_reference,
@@ -101,7 +115,8 @@ pub(super) fn prepare_publication_artifacts(
         diagnostics,
         adjacency,
     } = effect;
-    let (catalog, index_definition_delta) = super::index_catalog::prepare(runtime, execution)?;
+    let (catalog, index_definition_delta) =
+        super::index_catalog::prepare(owners.index_catalog, execution)?;
     let content_schema = match &schema_continuity.target_schema_registry {
         Some(registry) => registry.clone(),
         None => selected_branch_state
@@ -110,20 +125,20 @@ pub(super) fn prepare_publication_artifacts(
             .retained_schema_authority()
             .registry_arc(),
     };
-    working_state.content =
-        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
-            working_state.content.prepare_final_fields(
-                execution,
-                selected_branch_state.state().root(),
-                &content_schema,
-                working_state,
-                &publication.changed_records,
-                version_id,
-            )
-        })
-        .map_err(crate::content::commit_denial)?;
+    let content = crate::execution::content_stage::run_commit_stage(execution, owners.work, || {
+        content.prepare_final_fields(
+            execution,
+            selected_branch_state.state().root(),
+            &content_schema,
+            working_state,
+            &publication.changed_records,
+            version_id,
+        )
+    })
+    .map_err(crate::content::publication::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
-        runtime,
+        owners.work,
+        owners.authority.envelope.symbols,
         &catalog,
         selected_branch_state,
         working_state,
@@ -141,7 +156,7 @@ pub(super) fn prepare_publication_artifacts(
         execution,
     )?;
     let authored_index_writes = super::authored_index_writes::prepare(
-        runtime,
+        owners.authored_indexes,
         &catalog,
         selected_branch_state,
         working_state,
@@ -153,16 +168,26 @@ pub(super) fn prepare_publication_artifacts(
             && merge_base_commits.is_empty(),
         *execution,
     )?;
-    let traces = capture_publication_traces(runtime, &patch, &publication.canonical_deltas);
+    let traces = capture_publication_traces(
+        owners.authority.envelope.diagnostics.profile,
+        &patch,
+        &publication.canonical_deltas,
+    );
     let diagnostics_summary = diagnostics_summary_artifact(
-        &runtime.config,
+        owners
+            .authority
+            .envelope
+            .diagnostics
+            .profile
+            .max_entries_per_artifact,
         additional_diagnostics_entries,
         diagnostics.entries,
     );
     let authority = prepare_authoritative_publication(
         execution,
-        runtime,
+        owners.authority,
         PublicationAuthorityInput {
+            content,
             index_definition_delta,
             defer_lineage,
             working_state,
@@ -211,7 +236,8 @@ struct PublicationCompletionInput<'a> {
     traces: PublicationTraceCapture,
     authority: CommitPhaseBacking<PreparedPublicationAuthority>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
 
 fn finish_publication_preparation(
@@ -304,7 +330,7 @@ impl PublicationFinalizeArtifacts {
     pub(in crate::authority::commit::pipeline) fn into_parts(
         self,
     ) -> (
-        crate::storage::overlay::PublicationArtifacts,
+        crate::publication::authority::artifacts::PublicationArtifacts,
         Vec<RecordRef>,
         crate::history::data::CanonicalCommitEnvelopeDraft,
         Vec<crate::authority::mutation::AdjacencyDelta>,
@@ -314,7 +340,7 @@ impl PublicationFinalizeArtifacts {
             crate::identity::data::LineageId,
         )>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-        Option<crate::branch::RetainedRelationalSchemaRegistry>,
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     ) {
         (
             self.artifacts,

@@ -17,9 +17,7 @@ mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
 pub(crate) use inventory_digest::custom_invariant_inventory_digest_for_compilation;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use recovered_codec_transition::{
-    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
-};
+pub(crate) use recovered_codec_transition::{codec_field_changes, CodecFieldLocus};
 
 /// Move-only authority to extend an uncommitted runtime's initial schema.
 #[derive(Debug)]
@@ -30,10 +28,10 @@ pub struct RelationalInitialSchemaInstallation<'runtime> {
 }
 
 pub(in crate::runtime) mod denial;
-use denial::schema_denial;
-pub use denial::{
+pub use crate::durability::initial_schema_installation_denial::{
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
 };
+use denial::schema_denial;
 impl RelationalRuntime {
     pub(crate) fn initial_schema_authority_snapshot(
         &self,
@@ -154,7 +152,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         custom_invariants: Vec<CustomInvariantRegistration>,
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
         publication: Option<(
-            crate::durability::source_initial_inputs::RelationalFreshInitialization,
+            crate::durability::source_initial_inputs::fresh_initialization::RelationalFreshInitialization,
             &worth_execution::ExecutionRequest<'_, '_>,
         )>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
@@ -264,13 +262,13 @@ impl RelationalInitialSchemaInstallation<'_> {
         })?;
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
-        self.runtime
-            .history
-            .transition_empty_branches_to_initial_schema(&merged, |before, after| {
+        crate::runtime::state::subsystems::history::history_branch_cells::initial_schema::transition_empty_branches_to_initial_schema(
+            &self.runtime.history,
+            &merged, |before, after| {
                 match publication {
                     None => Ok(InitialSchemaCutover::Receiver),
                     Some((_initialization, request)) => {
-                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(RelationalInitialSchemaInstallationDenial::original_capture)?;
+                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(denial::original_capture_denial)?;
                         let image = crate::durability::source_initial_inputs::capture::capture(
                             &installed.config.history.main_branch, &original, Some((before, after, routes.branch_transition_head())), request,
                         ).map_err(RelationalInitialSchemaInstallationDenial::from_initial_inputs)?;

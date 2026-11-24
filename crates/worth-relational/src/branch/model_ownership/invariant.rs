@@ -3,8 +3,25 @@ use super::{
     traversal::{walk, Read},
     *,
 };
-use crate::validation::data::*;
-use crate::validation::StructuralPresenceDenial;
+use crate::validation::custom_rule::structural_views::{
+    StructuralPresenceDenial, StructuralRelationView,
+};
+use crate::validation::custom_rule::{
+    CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+};
+use crate::validation::data::custom_rule::errors::{
+    CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
+};
+use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
+use crate::validation::data::descriptor::{
+    CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
+};
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet};
+use crate::validation::data::rule_id::{
+    CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
+};
 use std::sync::Arc;
 
 impl RelationalModelOwnership {
@@ -24,8 +41,8 @@ impl CustomInvariantRule for StructuralExclusivity {
     type Scope = ();
 
     fn descriptor(&self) -> CustomInvariantDescriptor {
-        let entities = self.0.entity_kinds();
-        let relations = self.0.relation_kinds();
+        let entities = self.0.plan.entity_kinds();
+        let relations = self.0.plan.relation_kinds();
         CustomInvariantDescriptor {
             identity: CustomInvariantSemanticIdentity {
                 rule_id: CustomInvariantRuleId::new("worth.model-ownership.exclusivity"),
@@ -119,7 +136,7 @@ impl RelationalModelOwnership {
         let mut read = CandidateRead(&relations);
         let mut affected = BTreeSet::new();
         for entity in changed_targets(context, &mut read)? {
-            for domain in &self.domains {
+            for domain in &self.plan.domains {
                 for descendant in walk(&mut read, entity, true, &domain.relations)? {
                     read.retain()?;
                     affected.insert(descendant);
@@ -127,7 +144,7 @@ impl RelationalModelOwnership {
             }
         }
         for entity in affected {
-            self.owner(&mut read, entity)?;
+            self.plan.owner(&mut read, entity)?;
         }
         Ok(())
     }

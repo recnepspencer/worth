@@ -14,10 +14,10 @@ use worth_execution::ExecutionResourceLease;
 
 pub(super) fn candidate_matches(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     state: &WorkingState,
     original: &OwnedValidatedOutputOrigins,
-    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     records: &[CanonicalRequiredOutputMaterializationRecord],
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -135,7 +135,7 @@ pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
     let mut origin_frames = OutputOriginHistory::default();
     let validated_history = &mut origin_frames;
@@ -155,7 +155,7 @@ pub(super) fn validate(
     }
     let oldest = oldest.ok_or("maintenance producers absent")?;
     let mut next = Some(event.source_commit);
-    for _ in 0..runtime.runtime.history.catalog_len() {
+    for _ in 0..runtime.input.projection.history.catalog_len() {
         charge(context, 1)?;
         let previous = runtime
             .commit(next.ok_or("maintenance source ancestry absent")?)?
@@ -190,7 +190,7 @@ fn validate_one(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
     let event = envelope
         .required_output_materialization
@@ -241,7 +241,7 @@ fn validate_record(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = original.materialization_origin_for_record(&member.record, context)?;
     let (plan, expected) = match member.record {
@@ -252,14 +252,13 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance entity absent")?;
             let plan = runtime
-                .runtime
-                .schema_contract_runtime
-                .aspect_contract_plans
+                .input
+                .plans
                 .entity_plans
                 .get(&entry.kind)
                 .ok_or("maintenance entity contract absent")?;
             if !envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
-                crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeEntity(value))
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Materialization(crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent::RematerializeEntity(value))
                 if value.entity_id == id && value.kind_id == entry.kind)) {
                 return Err("maintenance entity kind differs from producer".into());
             }
@@ -284,14 +283,13 @@ fn validate_record(
                 .find(|entry| entry.id == id)
                 .ok_or("maintenance relation absent")?;
             let plan = runtime
-                .runtime
-                .schema_contract_runtime
-                .aspect_contract_plans
+                .input
+                .plans
                 .relation_plans
                 .get(&entry.kind)
                 .ok_or("maintenance relation contract absent")?;
             let intent_matches = envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
-                crate::transactions::data::MutationIntent::Materialization(crate::transactions::data::MaterializationMutationIntent::RematerializeRelation(value))
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Materialization(crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent::RematerializeRelation(value))
                 if value.relation_id == id && value.kind_id == entry.kind && value.source == entry.source && value.target == entry.target));
             if !intent_matches {
                 return Err("maintenance relation endpoints/kind differ from producer".into());

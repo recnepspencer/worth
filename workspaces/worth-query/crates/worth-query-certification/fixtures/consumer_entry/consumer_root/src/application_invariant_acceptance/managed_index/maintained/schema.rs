@@ -44,6 +44,7 @@ impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition 
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
+    let schema = super::ordered_decision::declare(schema);
     let schema = geometry::declare(authoring::declare(mutation::declare(
         schema
             .principal_binding(CatalogPrincipal::reference())

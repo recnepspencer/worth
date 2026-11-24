@@ -1,10 +1,11 @@
 //! Historical bytes are selected by the exact authoritative field patch.
 use super::{
-    control, field_references, NativeContentSourceView, RelationalContentDenial as Denial,
+    control, field_references, source::NativeContentSourceView, RelationalContentDenial as Denial,
     RelationalContentFrame,
 };
 use crate::{
-    history::data::CanonicalCommitEnvelope, identity::data::EntityId, transactions::data::RecordRef,
+    history::data::CanonicalCommitEnvelope, identity::data::EntityId,
+    transactions::data::primitives::RecordRef,
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 impl CanonicalCommitEnvelope {

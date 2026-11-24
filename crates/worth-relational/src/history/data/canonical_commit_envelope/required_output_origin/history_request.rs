@@ -1,23 +1,35 @@
 //! Original-request canonical reads for publication preparation, with narrow history reach.
 use crate::history::data::{CanonicalCommitEnvelope, CodecRetirementClosureStop as Stop, CommitId};
 use crate::identity::data::VersionId;
-use crate::runtime::{RelationalPreparationHistory, RelationalPreparationRuntime};
+use crate::publication::ownership::read::roster::CurrentPublicationRoster;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
-pub(super) struct PreparationRuntimeRequest<'r, 'q, 'l> {
-    pub(super) runtime: &'r RelationalPreparationRuntime,
+pub(crate) struct OutputPreparationInputs<'r> {
+    pub(crate) history: &'r RelationalPreparationHistory,
+    pub(crate) current_ownership: &'r Option<Arc<CurrentPublicationRoster>>,
+    pub(crate) runtime_instance_id: u64,
+    pub(crate) custom_invariant_generation: u64,
+}
+
+pub(super) struct OutputPreparationRequest<'r, 'q, 'l> {
+    pub(super) current_ownership: &'r Option<Arc<CurrentPublicationRoster>>,
+    pub(super) runtime_instance_id: u64,
+    pub(super) custom_invariant_generation: u64,
     pub(super) history: PreparationHistoryRequest<'r, 'q, 'l>,
 }
-impl<'r, 'q, 'l> PreparationRuntimeRequest<'r, 'q, 'l> {
+impl<'r, 'q, 'l> OutputPreparationRequest<'r, 'q, 'l> {
     pub(super) fn new(
-        runtime: &'r RelationalPreparationRuntime,
+        inputs: OutputPreparationInputs<'r>,
         execution: &ExecutionRequest<'q, 'l>,
     ) -> Self {
         Self {
-            runtime,
+            current_ownership: inputs.current_ownership,
+            runtime_instance_id: inputs.runtime_instance_id,
+            custom_invariant_generation: inputs.custom_invariant_generation,
             history: PreparationHistoryRequest {
-                history: &runtime.history,
+                history: inputs.history,
                 execution: *execution,
             },
         }

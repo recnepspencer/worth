@@ -1,7 +1,9 @@
 //! The concrete intent grammar owns these vectors, keys and field payloads.
 use super::*;
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{AspectFieldPatch, EntityReference, MutationIntent};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::EntityReference;
 
 pub(super) fn quote(
     value: BorrowedPayload<'_>,

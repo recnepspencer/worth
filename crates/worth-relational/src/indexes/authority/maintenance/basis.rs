@@ -1,6 +1,6 @@
 use crate::indexes::data::{DerivedIndexBuildRequest, DerivedIndexMaintenanceDenialKind as Denial};
-use crate::mvcc::RelationalBranchObservation;
-use crate::runtime::VisibilityProjectionView;
+use crate::mvcc::observation::RelationalBranchObservation;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 
 pub(super) fn validate(
     request: &DerivedIndexBuildRequest,
@@ -22,7 +22,7 @@ pub(super) fn validate(
 }
 
 fn validate_before_root(
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     before: Option<&VisibilityProjectionView>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
@@ -30,10 +30,10 @@ fn validate_before_root(
         return Ok(());
     };
     match root.commit_evidence().ok_or(Denial::CommitMismatch)? {
-        crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
+        crate::branch::root::RelationalRootCommitEvidence::Original(envelope) => {
             validate_before(envelope.envelope(), Some(before))
         }
-        crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
+        crate::branch::root::RelationalRootCommitEvidence::Checkpoint(commit) => {
             let prior = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;
             commit
                 .require_index_predecessor(prior, before.version_id(), execution)
@@ -43,10 +43,10 @@ fn validate_before_root(
 }
 
 pub(super) fn image_stop(
-    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    cause: crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
     mismatch: Denial,
 ) -> Denial {
-    use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
+    use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
     match cause {
         Refusal::Request(cause) => Denial::Execution(cause),
         Refusal::Content(cause) => Denial::Execution(cause.into_execution_cause()),
@@ -82,9 +82,9 @@ fn allocation_stop(cause: worth_execution::ExecutionAllocationDenial) -> Denial 
         worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
             Denial::Execution(cause.into())
         }
-        worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
-            Denial::Execution(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
-        }
+        worth_execution::ExecutionAllocationDenialClass::Physical(_) => Denial::Execution(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+        ),
     }
 }
 
@@ -103,7 +103,7 @@ fn validate_before(
 
 pub(super) fn validate_root_predecessor(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
-    prior: &std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    prior: &std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
 ) -> Result<(), Denial> {
     let checkpoint = envelope
         .branch_cell_checkpoint

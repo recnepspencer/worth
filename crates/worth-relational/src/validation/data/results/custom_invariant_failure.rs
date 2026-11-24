@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::validation::data::CustomInvariantSemanticIdentity;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomInvariantFailureIdentity {

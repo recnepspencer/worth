@@ -114,6 +114,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
             &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+            &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
         )>,
         coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -165,9 +166,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }
         };
         let (applied, access) = match applied {
-            Some((before_pin, candidate, participants)) => (
+            Some((before_pin, candidate, participants, assembly)) => (
                 Some((before_pin, candidate)),
-                access.with_applied_participants(participants),
+                access.with_applied_participants(participants).with_applied_managed_sources(assembly),
             ),
             None => (None, access),
         };

@@ -1,17 +1,22 @@
 //! Historical validation meaning excludes execution work and packet bookkeeping.
 use crate::identity::data::VersionId;
-use crate::validation::data::{
-    CustomInvariantNonApplicability, CustomInvariantTouchedSummary, InvariantCostClass,
-    InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect, InvariantGroupSet,
-    InvariantPlanContract, InvariantReportedRule, InvariantVerdict, StructuralCountView,
+use crate::validation::data::contracts::InvariantPlanContract;
+use crate::validation::data::custom_rule::touched_scope::planned_records::{
+    CustomInvariantTouchedSummary, StructuralCountView,
 };
-use crate::validation::engine::{
-    InvariantExecutionDisposition, InvariantObservationKind, InvariantPlanScopeClass,
-    InvariantScopeWideningCause,
+use crate::validation::data::execution::{
+    InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect, InvariantReportedRule,
+    InvariantVerdict,
 };
+use crate::validation::data::execution_posture::{
+    InvariantExecutionDisposition, InvariantPlanScopeClass, InvariantScopeWideningCause,
+};
+use crate::validation::data::groups::{InvariantCostClass, InvariantGroupSet};
+use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
+use crate::validation::data::observation_kind::InvariantObservationKind;
 use serde::{Deserialize, Serialize};
 
-mod production;
+pub(crate) mod production;
 mod readmission;
 mod readmission_memory;
 pub(crate) use readmission_memory::{

@@ -1,4 +1,4 @@
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 
 /// Typed denial for owner identity lookup. This is not a transaction-binding
 /// denial and cannot admit a fork or transaction.

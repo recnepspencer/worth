@@ -20,8 +20,10 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         locator: &AspectFieldLocator,
-    ) -> Result<Option<RelationalFieldRevision>, crate::execution::RelationalExecutionDenialCause>
-    {
+    ) -> Result<
+        Option<RelationalFieldRevision>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         super::super::read_work::metered(
             execution,
             |context| {
@@ -39,9 +41,11 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: RelationId,
         locator: &AspectFieldLocator,
-    ) -> Result<Option<RelationalFieldRevision>, crate::execution::RelationalExecutionDenialCause>
-    {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Option<RelationalFieldRevision>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         if !self.is_exact_basis() {
             return Ok(None);
         }
@@ -65,7 +69,3 @@ impl VisibilityProjectionView {
 #[cfg(test)]
 #[path = "field_revisions/restore_tests.rs"]
 mod restore_tests;
-
-#[cfg(test)]
-#[path = "field_revisions/tests.rs"]
-mod tests;

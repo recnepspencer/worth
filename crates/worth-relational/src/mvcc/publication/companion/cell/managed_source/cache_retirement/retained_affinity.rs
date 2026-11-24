@@ -1,8 +1,8 @@
 //! Real Native deletion and retained cache custody; no projected-row READ claim.
 use super::*;
-use crate::branch::RelationalBranchDeletionOutcome;
+use crate::branch::lifecycle::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
-use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceForkPreparation;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);
@@ -76,8 +76,8 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     let snapshot = snapshot_for_owner_identity(&runtime, &identity);
     let cell = owner.0.slots.lock().unwrap()[1].admitted().unwrap();
     let weak = Arc::downgrade(&cell.core);
-    let fork_grant = Arc::downgrade(cell.core._fork_memory.as_ref().unwrap());
-    let generation = cell.core.registration_generation;
+    let fork_grant = Arc::downgrade(cell.core.fork_funding().unwrap());
+    let generation = cell.core.registration_generation();
     let old = runtime
         .read_truth()
         .observe_managed_index_source(&execution, &snapshot, &program, scope)
@@ -86,7 +86,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         !old.same_source(&main_observation),
         "fork owns a fresh affinity even when material is shared"
     );
-    let selected = old.selected.clone();
+    let selected = old.selected_position().clone();
     assert!(ManagedSourceReadConditions::from_observation(
         &old,
         runtime.runtime_instance_id(),
@@ -122,13 +122,14 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ),
         Err(CompanionPreflightStop::ForeignCell)
     ));
-    let image = crate::visibility::snapshot_states::resolve_snapshot_basis(&runtime, &snapshot)
-        .unwrap()
-        .root()
-        .managed_source_image
-        .get()
-        .unwrap()
-        .clone();
+    let image =
+        crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(&runtime, &snapshot)
+            .unwrap()
+            .root()
+            .managed_source_image
+            .get()
+            .unwrap()
+            .clone();
     assert!(matches!(
         image.admit_selected(&selected, generation + 1),
         Err(Denial::Publication(
@@ -136,7 +137,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ))
     ));
     assert!(matches!(
-        image.affinity.admit(&main_observation.selected, generation),
+        crate::branch::projection_view::managed_source::affinity::admit_affinity(
+            image.affinity(),
+            main_observation.selected_position(),
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     let foreign = crate::tests::support::runtime_with_test_schema();
@@ -146,7 +151,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .positioned_snapshot(&foreign_snapshot)
         .unwrap();
     assert!(matches!(
-        image.affinity.admit(&foreign_selected, generation),
+        crate::branch::projection_view::managed_source::affinity::admit_affinity(
+            image.affinity(),
+            &foreign_selected,
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     drop(foreign);

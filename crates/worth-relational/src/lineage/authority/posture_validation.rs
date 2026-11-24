@@ -9,9 +9,9 @@ use crate::lineage::data::{
     LineagePostureClaim, LineagePostureKind, LineageRecordTarget, LineageSubject,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::posture_continuity::{classify_minted_births, validate_explicit_restores};
 use super::posture_merge_validation::validate_merge_claim;
@@ -288,13 +288,21 @@ pub(super) fn validate_commit_postures(
                 continue;
             };
             if !claimed_created_targets.contains(&target) {
-                return Err(LineageNameDenial::MissingBirth { target, scheme_id: scheme_id.to_owned() });
+                return Err(LineageNameDenial::MissingBirth {
+                    target,
+                    scheme_id: scheme_id.to_owned(),
+                });
             }
-            if let Some(birth) = births_to_mint.get(&target) && birth.scheme_id != scheme_id {
+            if let Some(birth) = births_to_mint.get(&target)
+                && birth.scheme_id != scheme_id
+            {
                 return Err(mismatch(
                     LineagePostureKind::Create,
                     target,
-                    &format!("birth scheme `{}` does not match kind's installed scheme `{scheme_id}`", birth.scheme_id),
+                    &format!(
+                        "birth scheme `{}` does not match kind's installed scheme `{scheme_id}`",
+                        birth.scheme_id
+                    ),
                 ));
             }
         }

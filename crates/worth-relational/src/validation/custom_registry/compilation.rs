@@ -1,27 +1,9 @@
 //! One controlled compiler for ordinary and Home invariant inventories.
 use super::*;
 use crate::schema::{data::RelationalSchemaRegistry, SchemaCompilationControl};
+use crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog;
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
 
-#[derive(Debug)]
-pub(crate) enum CustomInvariantCompilationDenial {
-    Source(crate::derived_relation::DerivedRelationDenial),
-    Duplicate(DuplicateCustomInvariantRegistration),
-    Execution(crate::execution::RelationalExecutionDenialCause),
-    CapacityOverflow,
-}
-impl CustomInvariantCompilationDenial {
-    /// The descriptive Source binding path has no execution request or storage
-    /// admission. Its shared validation can therefore refuse only its meaning.
-    pub(crate) fn configuration_source(self) -> crate::derived_relation::DerivedRelationDenial {
-        match self {
-            Self::Source(cause) => cause,
-            Self::Execution(_) | Self::Duplicate(_) | Self::CapacityOverflow => {
-                unreachable!("configuration Source validation neither reserves nor executes")
-            }
-        }
-    }
-}
 impl FrozenCustomInvariantRegistry {
     pub(crate) fn compile(
         registry: &RelationalSchemaRegistry,
@@ -87,9 +69,7 @@ impl FrozenCustomInvariantRegistry {
             control.checkpoint().map_err(Denial::Execution)?;
             groups.push(group);
         }
-        let history = crate::validation::candidate_source::authored_history::catalog::SourceHistoryCatalog::compile(
-            &groups, quote.programs, funding.clone(), control,
-        )?;
+        let history = compile_source_history(&groups, quote.programs, funding.clone(), control)?;
         let postings =
             crate::validation::candidate_source::routing::SourceProgramPostings::compile(
                 &groups, control,
@@ -129,4 +109,34 @@ fn includes(point: usize, actual: InvariantExecutionPoint) -> bool {
     point == actual as usize
         || (point == InvariantExecutionPoint::ProposedState as usize
             && InvariantExecutionPoint::ProposedState.includes(actual))
+}
+
+fn compile_source_history(
+    groups: &[SourcePreparationGroup],
+    capacity: usize,
+    funding: Option<Arc<CustomInvariantCompilationFunding>>,
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<
+    SourceHistoryCatalog,
+    crate::validation::data::compilation_denial::CustomInvariantCompilationDenial,
+> {
+    use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as Denial;
+    let mut programs = Vec::with_capacity(capacity);
+    for group in groups {
+        for program in group.programs() {
+            control.checkpoint().map_err(Denial::Execution)?;
+            let mut found = false;
+            for prior in &programs {
+                control.checkpoint().map_err(Denial::Execution)?;
+                if prior == program {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                programs.push(program.clone());
+            }
+        }
+    }
+    Ok(SourceHistoryCatalog::from_programs(programs, funding))
 }

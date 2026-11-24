@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::branch::{
-    RelationalBranchBasisRegistryMetrics, RelationalBranchReferenceCell,
-    RelationalBranchReferenceRegistry, RelationalForkTargetReservation,
-    RelationalForkTargetReservationDenial,
-};
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::registry::RelationalForkTargetReservation;
+use crate::branch::registry::RelationalForkTargetReservationDenial;
 use crate::history::data::BranchId;
 use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial,
@@ -26,35 +26,21 @@ pub(crate) struct RelationalForkOwnerBinding {
     retention: RelationalBranchRetentionBinding,
     basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
     visibility: Option<RelationalForkVisibilityBinding>,
-    /// The publication routes whose transition stream records each fork.
-    routes: Arc<super::RelationalCanonicalPublicationRoutes>,
-    root_issuer: crate::branch::RelationalBranchRootIdentityIssuer,
+    root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
 }
 
 #[derive(Debug, Clone)]
 struct RelationalForkVisibilityBinding {
     cache: Arc<super::super::visibility::VisibilityCache>,
     protect_branch_heads: bool,
-    instrumentation: super::super::services::RuntimeInstrumentation,
+    instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
 }
 
 impl RelationalForkOwnerBinding {
-    pub(crate) fn observe_original_frontiers(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (
-            crate::publication::patch::data::PatchStreamPosition,
-            crate::branch::RelationalBranchTransitionSequence,
-        ),
-        worth_execution::WorkCeilingDenial,
-    > {
-        self.routes.observe_fork_original_frontiers(execution)
-    }
-
     pub(crate) fn root_identity_issuer(
         &self,
-    ) -> &crate::branch::RelationalBranchRootIdentityIssuer {
+    ) -> &crate::branch::root::RelationalBranchRootIdentityIssuer {
         &self.root_issuer
     }
 
@@ -64,8 +50,7 @@ impl RelationalForkOwnerBinding {
         head_versions: BranchHeadVersionIndexAuthority,
         retention: RelationalBranchRetentionBinding,
         basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
-        routes: Arc<super::RelationalCanonicalPublicationRoutes>,
-        root_issuer: crate::branch::RelationalBranchRootIdentityIssuer,
+        root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
     ) -> Self {
         Self {
             branches,
@@ -74,21 +59,15 @@ impl RelationalForkOwnerBinding {
             retention,
             basis_metrics,
             visibility: None,
-            routes,
             root_issuer,
         }
-    }
-
-    /// Admit a transition before taking branch coordination or publication state.
-    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
-        self.routes.begin_branch_transition()
     }
 
     pub(crate) fn with_visibility(
         mut self,
         cache: Arc<super::super::visibility::VisibilityCache>,
         protect_branch_heads: bool,
-        instrumentation: super::super::services::RuntimeInstrumentation,
+        instrumentation: crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     ) -> Self {
         self.visibility = Some(RelationalForkVisibilityBinding {
             cache,
@@ -135,8 +114,8 @@ impl RelationalForkOwnerBinding {
     pub(crate) fn install_head(
         &self,
         cell: &RelationalBranchReferenceCell,
-        root: &Arc<crate::branch::RelationalBranchRoot>,
-        source_root: &Arc<crate::branch::RelationalBranchRoot>,
+        root: &Arc<crate::branch::root::RelationalBranchRoot>,
+        source_root: &Arc<crate::branch::root::RelationalBranchRoot>,
     ) -> Result<(), RelationalRetentionAcquisitionDenial> {
         // The controlled fork shares operational custody, not just canonical
         // coordinates. Keep the image alive until the new head owns its Arc.
@@ -168,27 +147,28 @@ impl RelationalForkOwnerBinding {
     ) {
         self.costs.record_reference_allocation();
         self.costs.record_branch_cell_contact();
-        cell.publication_cell().record_sharing_cost_checked(|costs| {
-            costs.shared_root_acquisitions = costs.shared_root_acquisitions.saturating_add(1);
-            costs.copied_commit_envelopes = costs
-                .copied_commit_envelopes
-                .saturating_add(cost.copied_commit_envelopes);
-            costs.fork_materialized_entity_count = costs
-                .fork_materialized_entity_count
-                .saturating_add(cost.entity_count);
-            costs.fork_materialized_relation_count = costs
-                .fork_materialized_relation_count
-                .saturating_add(cost.relation_count);
-            let next_copied_truth = costs
-                .copied_truth_bytes
-                .checked_add(cost.authoritative_bytes)?;
-            let next_fork_bytes = costs
-                .fork_materialized_authoritative_bytes
-                .checked_add(cost.authoritative_bytes)?;
-            costs.copied_truth_bytes = next_copied_truth;
-            costs.fork_materialized_authoritative_bytes = next_fork_bytes;
-            Some(())
-        });
+        cell.publication_cell()
+            .record_sharing_cost_checked(|costs| {
+                costs.shared_root_acquisitions = costs.shared_root_acquisitions.saturating_add(1);
+                costs.copied_commit_envelopes = costs
+                    .copied_commit_envelopes
+                    .saturating_add(cost.copied_commit_envelopes);
+                costs.fork_materialized_entity_count = costs
+                    .fork_materialized_entity_count
+                    .saturating_add(cost.entity_count);
+                costs.fork_materialized_relation_count = costs
+                    .fork_materialized_relation_count
+                    .saturating_add(cost.relation_count);
+                let next_copied_truth = costs
+                    .copied_truth_bytes
+                    .checked_add(cost.authoritative_bytes)?;
+                let next_fork_bytes = costs
+                    .fork_materialized_authoritative_bytes
+                    .checked_add(cost.authoritative_bytes)?;
+                costs.copied_truth_bytes = next_copied_truth;
+                costs.fork_materialized_authoritative_bytes = next_fork_bytes;
+                Some(())
+            });
         self.head_versions.move_head(None, cell.root().as_deref());
         if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version)
             && visibility.protect_branch_heads

@@ -29,10 +29,10 @@ pub struct RelationalNativeCheckpoint {
     captured_coverage: Option<NativeCheckpointCoverage>,
     members: super::CapturedCheckpointMembers,
     publications: CapturedRegionPublications,
-    manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+    manifest_publication: Option<crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestPublication>,
     canonical_publication:
         Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
-    publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
+    publication: Option<Arc<crate::durability::published_medium::CheckpointPublication>>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last
@@ -40,7 +40,7 @@ pub struct RelationalNativeCheckpoint {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct NativeCheckpointCoverage {
     position: crate::publication::patch::data::PatchStreamPosition,
-    transitions: crate::branch::RelationalBranchTransitionSequence,
+    transitions: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
 }
 
 /// Actual MessagePack value bytes emitted during one native capture. The
@@ -144,7 +144,7 @@ impl RelationalNativeCheckpoint {
 
     pub(crate) fn with_component_holds(
         mut self,
-        holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+        holds: Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
     ) -> Self {
         self.component_custody = ComponentCaptureCustody::new(holds);
         self
@@ -197,7 +197,7 @@ impl RelationalNativeCheckpoint {
     pub fn acknowledgement_progress(
         &self,
     ) -> Result<
-        Option<crate::durability::medium::RelationalCheckpointAcknowledgementProgress>,
+        Option<crate::durability::published_medium::RelationalCheckpointAcknowledgementProgress>,
         crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
     > {
         self.publication
@@ -208,7 +208,7 @@ impl RelationalNativeCheckpoint {
 
     pub fn publication_subject(
         &self,
-    ) -> Option<&crate::durability::medium::OpaqueCapturedCheckpointSubject> {
+    ) -> Option<&crate::durability::published_medium::OpaqueCapturedCheckpointSubject> {
         self.publication
             .as_ref()
             .map(|publication| publication.subject())
@@ -256,7 +256,7 @@ impl RelationalNativeCheckpoint {
 
     pub(crate) fn manifest_publication(
         &self,
-    ) -> Option<&crate::runtime::RelationalCheckpointManifestPublication> {
+    ) -> Option<&crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestPublication>{
         self.manifest_publication.as_ref()
     }
     /// Count of captured region publications this capture's acknowledgement
@@ -294,7 +294,7 @@ impl RelationalNativeCheckpoint {
 
     pub(crate) fn with_manifest_publication(
         mut self,
-        publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+        publication: Option<crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestPublication>,
     ) -> Self {
         self.manifest_publication = publication;
         self
@@ -310,7 +310,7 @@ impl RelationalNativeCheckpoint {
         bytes: ExecutionImmutableBytes,
         sections: NativeCheckpointSectionBytes,
         position: crate::publication::patch::data::PatchStreamPosition,
-        transitions: crate::branch::RelationalBranchTransitionSequence,
+        transitions: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     ) -> Self {
         let region = 0..bytes.len();
         Self {
@@ -342,7 +342,7 @@ impl RelationalNativeCheckpoint {
     /// the covered position; recovery checks the decoded checkpoint against it.
     pub fn covered_branch_transitions(
         &self,
-    ) -> Option<crate::branch::RelationalBranchTransitionSequence> {
+    ) -> Option<crate::branch::transition::sequence::RelationalBranchTransitionSequence> {
         self.captured_coverage.map(|coverage| coverage.transitions)
     }
 }

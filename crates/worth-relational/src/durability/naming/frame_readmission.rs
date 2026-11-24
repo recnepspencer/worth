@@ -112,6 +112,7 @@ fn bind_event(
         name_birth,
         kept_name,
         relation_id: None,
+        entity_id: None,
     })
 }
 

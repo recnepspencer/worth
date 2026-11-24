@@ -1,6 +1,5 @@
-use crate::runtime::PartitionEdition;
+use crate::runtime::state::subsystems::storage::PartitionEdition;
 use crate::storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState};
-use serde::{Deserialize, Serialize};
 
 mod affinity;
 mod custom_semantics;
@@ -8,30 +7,17 @@ mod identity;
 pub(crate) use affinity::InvariantSourceAffinity;
 pub(crate) use identity::InvariantObservationIdentity;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum InvariantObservationKind {
-    Committed,
-    Speculative,
-}
-
-impl InvariantObservationKind {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::Committed => "committed",
-            Self::Speculative => "speculative",
-        }
-    }
-}
+pub use crate::validation::data::observation_kind::InvariantObservationKind;
 
 #[derive(Clone)]
 pub(crate) struct CommittedInvariantView<'runtime> {
     identity: InvariantObservationIdentity,
     applied_created_entities:
-        Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings>,
+        Option<&'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings>,
     committed: CommittedInvariantState<'runtime>,
     enforcement: Option<OverlayStateView<'runtime, WorkingState>>,
     enforcement_version_id: Option<crate::identity::data::VersionId>,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity: Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
@@ -58,7 +44,9 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         state: &'runtime dyn CurrentPartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self {
             identity: InvariantObservationIdentity::issue(),
@@ -112,7 +100,8 @@ impl<'runtime> CommittedInvariantView<'runtime> {
 
     pub(crate) fn proposal_identity(
         &self,
-    ) -> Option<&crate::mvcc::RelationalMutationProposalIdentity> {
+    ) -> Option<&crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>
+    {
         self.proposal_identity.as_ref()
     }
 }
@@ -122,9 +111,9 @@ pub(crate) struct SpeculativeInvariantView<'runtime> {
     identity: InvariantObservationIdentity,
     state: OverlayStateView<'runtime, WorkingState>,
     before_image_version_id: crate::identity::data::VersionId,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity: Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     applied_created_entities:
-        Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings>,
+        Option<&'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings>,
     aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
@@ -132,7 +121,9 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
     pub(crate) fn new(
         state: OverlayStateView<'runtime, WorkingState>,
         before_image_version_id: crate::identity::data::VersionId,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self {
             identity: InvariantObservationIdentity::issue(),
@@ -168,7 +159,7 @@ pub(crate) enum InvariantObservation<'runtime> {
 impl<'runtime> InvariantObservation<'runtime> {
     pub(crate) fn with_applied_created_entities(
         mut self,
-        created: &'runtime crate::transactions::data::CommitCreatedEntityBindings,
+        created: &'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     ) -> Self {
         if let Self::Committed(view) = &mut self {
             view.applied_created_entities = Some(created);
@@ -245,7 +236,9 @@ impl<'runtime> InvariantObservation<'runtime> {
         state: &'runtime dyn CurrentPartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self::Committed(CommittedInvariantView::from_branch_with_proposed(
             state,
@@ -259,10 +252,13 @@ impl<'runtime> InvariantObservation<'runtime> {
         Self::Committed(CommittedInvariantView::from_branch(state))
     }
 
+    #[cfg(test)]
     pub(crate) fn speculative_with_proposal(
         state: OverlayStateView<'runtime, WorkingState>,
         before_image_version_id: crate::identity::data::VersionId,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self::Speculative(SpeculativeInvariantView::new(
             state,
@@ -275,8 +271,10 @@ impl<'runtime> InvariantObservation<'runtime> {
     pub(crate) fn applied_with_proposal(
         state: OverlayStateView<'runtime, WorkingState>,
         before_image_version_id: crate::identity::data::VersionId,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
-        created_entities: &'runtime crate::transactions::data::CommitCreatedEntityBindings,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
+        created_entities: &'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     ) -> Self {
         let mut view =
             SpeculativeInvariantView::new(state, before_image_version_id, proposal_identity);
@@ -286,7 +284,7 @@ impl<'runtime> InvariantObservation<'runtime> {
 
     pub(crate) fn applied_created_entities(
         &self,
-    ) -> Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings> {
+    ) -> Option<&'runtime crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings>{
         match self {
             Self::Committed(view) => view.applied_created_entities,
             Self::Speculative(view) => view.applied_created_entities,
@@ -366,7 +364,8 @@ impl<'runtime> InvariantObservation<'runtime> {
 
     pub(crate) fn proposal_identity(
         &self,
-    ) -> Option<&crate::mvcc::RelationalMutationProposalIdentity> {
+    ) -> Option<&crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>
+    {
         match self {
             Self::Committed(view) => view.proposal_identity(),
             Self::Speculative(view) => view.proposal_identity.as_ref(),

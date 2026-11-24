@@ -20,7 +20,7 @@ impl RelationalCommitEnvelopeResidency {
                     &positioned.schema_authority,
                 )
             || entry.payload_digest
-                != RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
+                != crate::history::commit::payload_commitment::digest_envelope_for_request(
                     positioned.position(),
                     positioned.envelope(),
                     request,

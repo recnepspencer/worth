@@ -2,11 +2,11 @@
 use super::funding::{self, BuildResult, FundingFailure, PlanDenial};
 use super::observations::{Acquisition, AggregateReadObservations};
 use super::retention_extent as extent;
-use crate::branch::RelationalBranchRootState;
+use crate::branch::root::RelationalBranchRootState;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::graph_member::{NativeMemberKey, ProjectedMemberCoordinate};
+use crate::history::retention::VisibilitySnapshotBasis;
 use crate::identity::data::{EntityId, KindId};
-use crate::runtime::RelationalPinnedRead;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelFailure};
 
@@ -23,6 +23,7 @@ mod proposed;
 mod resolution;
 mod result;
 pub use denial::{PinnedAggregateReadDenial, PinnedAggregateReadDenialKind};
+pub(crate) use lineage::read_aggregate_lineage;
 pub use lineage::{PinnedAggregateLineageRead, PinnedAggregateLineageScope};
 pub use result::PinnedAggregateRead;
 
@@ -94,57 +95,38 @@ impl<'input, Projection> PinnedAggregateReadScope<'input, Projection> {
     }
 }
 
-impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    /// Read one complete stored group and all its incident lineage from this
-    /// exact root/schema. Work grows with its relation-kind roster, group and
-    /// raw incident adjacency. No current catalog, whole-graph materialization
-    /// or identity-only lookup is used.
-    pub fn read_aggregate(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        scope: PinnedAggregateReadScope<'_>,
-    ) -> Result<PinnedAggregateRead, PinnedAggregateReadDenial> {
-        self.read_aggregate_scope(execution, scope)
-    }
-    pub fn read_projected_aggregate(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        scope: PinnedAggregateReadScope<'_, NativeMemberKey>,
-    ) -> Result<PinnedAggregateRead<NativeMemberKey>, PinnedAggregateReadDenial> {
-        self.read_aggregate_scope(execution, scope)
-    }
-    fn read_aggregate_scope<Projection>(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        scope: PinnedAggregateReadScope<'_, Projection>,
-    ) -> Result<PinnedAggregateRead<Projection>, PinnedAggregateReadDenial> {
-        coordination::read(
-            self,
-            execution,
-            scope.limits,
-            |root, view, funded| {
-                funded.retain(result::controls())?;
-                let contract = contract::resolve(root, scope.selection, funded)?;
-                let registry = root.schema_authority().registry();
-                member::validate(view, registry, contract, &scope.member, funded)?;
-                if let Some(candidate) = self.candidate_aggregate()
-                    && let Some(value) = proposed::read(candidate, contract, &scope.member, funded)?
-                {
-                    return Ok(value);
-                }
-                let group =
-                    super::stored_read::collect(view, contract, registry, scope.member, funded)?;
-                let lineage =
-                    super::stored_lineage::read(view, &group.stored, contract, registry, funded)?;
-                funded.checkpoint(0)?;
-                Ok(result::Value {
-                    definition: contract.definition,
-                    identity: group.stored.record.identity,
-                    members: group.members,
-                    lineage,
-                })
-            },
-            PinnedAggregateRead::finish,
-        )
-    }
+pub(crate) fn read_aggregate_scope<Projection>(
+    basis: &VisibilitySnapshotBasis,
+    candidate: Option<&super::AggregateCandidateRead>,
+    execution: &ExecutionRequest<'_, '_>,
+    scope: PinnedAggregateReadScope<'_, Projection>,
+) -> Result<PinnedAggregateRead<Projection>, PinnedAggregateReadDenial> {
+    coordination::read(
+        basis,
+        execution,
+        scope.limits,
+        |root, view, funded| {
+            funded.retain(result::controls())?;
+            let contract = contract::resolve(root, scope.selection, funded)?;
+            let registry = root.schema_authority().registry();
+            member::validate(view, registry, contract, &scope.member, funded)?;
+            if let Some(candidate) = candidate
+                && let Some(value) = proposed::read(candidate, contract, &scope.member, funded)?
+            {
+                return Ok(value);
+            }
+            let group =
+                super::stored_read::collect(view, contract, registry, scope.member, funded)?;
+            let lineage =
+                super::stored_lineage::read(view, &group.stored, contract, registry, funded)?;
+            funded.checkpoint(0)?;
+            Ok(result::Value {
+                definition: contract.definition,
+                identity: group.stored.record.identity,
+                members: group.members,
+                lineage,
+            })
+        },
+        PinnedAggregateRead::finish,
+    )
 }

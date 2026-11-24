@@ -97,6 +97,18 @@ impl WorthQueryApplicationQueryBasisCustody {
             .then(|| self.application_basis.snapshot_handle())
     }
 
+    /// The selected World occurrence's Relational branch observation: the
+    /// basis every read under this custody answers at.
+    pub fn relational_observation(
+        &self,
+    ) -> worth_relational::facade::mvcc::RelationalBranchObservation {
+        self.product
+            .observation()
+            .basis()
+            .relational_basis()
+            .observation()
+    }
+
     pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
         self.application_basis.identity()
     }

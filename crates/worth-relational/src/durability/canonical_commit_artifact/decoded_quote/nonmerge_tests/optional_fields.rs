@@ -3,7 +3,7 @@ use crate::durability::canonical_commit_artifact::borrowed_payload::{
     omit_nil_record_field, replace_record,
 };
 use crate::schema::data::*;
-use crate::transactions::data::RelationalInvariantCheckMeaning;
+use crate::transactions::data::outcomes::commit_semantic_result::validation::RelationalInvariantCheckMeaning;
 use crate::validation::data::*;
 use serde::Serialize;
 

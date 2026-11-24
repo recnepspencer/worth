@@ -2,23 +2,45 @@
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
-use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::config::data::MutationConfig;
+use crate::history::data::canonical_commit_envelope::{
+    recorded_inputs::RecordedCanonicalInputs, schema_carrier::RecordedBranchSchemaImage,
+};
 
-/// Shares the actual admitted schema owners; no Root, Runtime or Services pin.
-#[derive(Debug, Clone)]
-pub(crate) struct OriginalCanonicalInputs {
-    pub(crate) result_schema: Arc<RelationalBranchRootSchemaAuthority>,
-    pub(crate) prestate_schema: Arc<RelationalBranchRootSchemaAuthority>,
+/// The producer's two selected schema roles before their recorded images are bound.
+pub(crate) struct OriginalCanonicalInputs<Schema> {
+    pub(crate) result_schema: Arc<Schema>,
+    pub(crate) prestate_schema: Arc<Schema>,
     pub(crate) mutation: MutationConfig,
 }
 
+/// Both original carriers share their admitted backing for service-free reconstruction.
+#[derive(Debug, Clone)]
+pub(crate) struct CapturedOriginalCanonicalInputs {
+    pub(crate) result_schema: RecordedBranchSchemaImage,
+    pub(crate) prestate_schema: RecordedBranchSchemaImage,
+    pub(crate) mutation: MutationConfig,
+}
+
+impl CapturedOriginalCanonicalInputs {
+    pub(crate) fn recorded(&self) -> RecordedCanonicalInputs {
+        let prestate_schema = self.prestate_schema.carrier_digest();
+        let result_schema = self.result_schema.carrier_digest();
+        RecordedCanonicalInputs {
+            prestate_schema,
+            result_schema,
+            mutation: self.mutation.clone(),
+            result_image: (prestate_schema != result_schema).then(|| self.result_schema.clone()),
+        }
+    }
+}
+
 impl super::RelationalCommitArtifact {
-    pub(crate) fn set_original_inputs(&mut self, inputs: OriginalCanonicalInputs) {
+    pub(crate) fn set_original_inputs(&mut self, inputs: CapturedOriginalCanonicalInputs) {
         self.original_inputs = Some(inputs);
     }
 
-    pub(crate) fn original_inputs(&self) -> Option<&OriginalCanonicalInputs> {
+    pub(crate) fn original_inputs(&self) -> Option<&CapturedOriginalCanonicalInputs> {
         self.original_inputs.as_ref()
     }
 
@@ -27,20 +49,20 @@ impl super::RelationalCommitArtifact {
     pub(crate) fn prepare_catalog_owner(
         mut self,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Arc<Self>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let layout = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .ok()
             .map(|(layout, _)| layout.pad_to_align());
         let bytes = layout
             .and_then(|layout| u64::try_from(layout.size()).ok())
-            .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+            .ok_or(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
         let memory = execution
             .reserve_retained_memory(bytes)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         execution
             .check_live()
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         self.allocation_memory = memory;
         Ok(Arc::new(self))
     }

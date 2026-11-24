@@ -10,17 +10,7 @@ pub(crate) trait SchemaSource {
     fn schema_registry(&self) -> &RelationalSchemaRegistry;
 }
 
-pub(crate) trait AspectPlanSource {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog;
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan>;
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan>;
-}
+pub(crate) use crate::schema::aspect_plan_source::AspectPlanSource;
 
 /// Schema truth is read from the configuration this handle holds in force, so
 /// registry and contract runtime answers always come from the same installed
@@ -128,23 +118,5 @@ impl RelationalRuntime {
         self.schema_contract_runtime
             .relation_integrity_registrations
             .plan(&kind_id)
-    }
-}
-
-impl AspectPlanSource for AspectContractPlanCatalog {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
-        self
-    }
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        self.entity_plans.get(&kind_id)
-    }
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        self.relation_plans.get(&kind_id)
     }
 }

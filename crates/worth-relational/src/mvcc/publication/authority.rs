@@ -1,40 +1,40 @@
 mod recovered_preparation;
-mod runtime;
 use super::PublicationPreparationDenial;
-use runtime::PublicationPreparationRuntime;
 use std::sync::Arc;
 
-use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::history::commit::RelationalCommitArtifact;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
-use crate::history::RelationalCommitArtifact;
-use crate::runtime::RelationalRuntime;
 
 use super::validation::{
     validate_publication, PublicationRequest, PublicationSequence, ValidatedPublication,
 };
 
 pub(crate) struct RelationalPublicationAuthority<'runtime> {
-    runtime: &'runtime RelationalRuntime,
-}
-
-pub(crate) struct RelationalPreparationPublicationAuthority<'runtime> {
-    runtime: &'runtime crate::runtime::RelationalPreparationRuntime,
+    pub(crate) history: &'runtime crate::runtime::state::subsystems::history::HistorySubsystem,
+    pub(crate) symbols:
+        &'runtime crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    pub(crate) schema: &'runtime crate::schema::data::RelationalSchemaRegistry,
 }
 
 pub(crate) struct PreparedRelationalPublication {
-    publication: crate::runtime::PreparedVersionedArtifactPublication,
+    publication: crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
 }
 
 pub(crate) struct PreparedRecoveredRelationalPublication {
-    publication: crate::runtime::PreparedRecoveredVersionedArtifactPublication,
+    publication:
+        crate::runtime::state::subsystems::history::PreparedRecoveredVersionedArtifactPublication,
 }
 
 pub(crate) struct PreparedRelationalPublicationAccelerators {
-    publication: crate::runtime::PreparedVersionedArtifactAccelerators,
+    publication: crate::runtime::state::subsystems::history::PreparedVersionedArtifactAccelerators,
 }
 
 impl PreparedRelationalPublication {
-    pub(crate) fn caller_association(&self) -> Option<&crate::mvcc::RelationalCallerAssociation> {
+    pub(crate) fn caller_association(
+        &self,
+    ) -> Option<&crate::history::data::RelationalCallerAssociation> {
         self.publication.envelope.caller_association()
     }
     pub(crate) fn canonical_envelope(&self) -> &Arc<CanonicalCommitEnvelope> {
@@ -42,7 +42,7 @@ impl PreparedRelationalPublication {
     }
     pub(crate) fn envelope_residency(
         &self,
-    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+    ) -> Arc<crate::history::commit::RelationalCommitEnvelopeResidency> {
         self.publication.artifact.envelope_residency()
     }
     pub(crate) fn descriptive_touches(
@@ -51,15 +51,15 @@ impl PreparedRelationalPublication {
         self.publication.envelope.descriptive_touches()
     }
 
-    pub(crate) fn root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
+    pub(crate) fn root(&self) -> &Arc<crate::branch::root::RelationalBranchRoot> {
         &self.publication.root
     }
 
     pub(crate) fn into_canonical_parts(
         self,
     ) -> (
-        crate::branch::RelationalBranchReferenceCell,
-        Arc<crate::branch::RelationalBranchRoot>,
+        crate::branch::reference::RelationalBranchReferenceCell,
+        Arc<crate::branch::root::RelationalBranchRoot>,
         Arc<CanonicalCommitEnvelope>,
         PreparedRelationalPublicationAccelerators,
     ) {
@@ -80,82 +80,61 @@ impl PreparedRelationalPublication {
     }
 }
 
+pub(crate) struct RecoveredPublicationInstall<'a> {
+    pub(crate) history: &'a crate::runtime::state::subsystems::history::HistorySubsystem,
+}
+
 impl PreparedRecoveredRelationalPublication {
-    pub(crate) fn install_recovered(
+    pub(crate) fn install_recovered<'a, Owner: ?Sized>(
         self,
-        runtime: &RelationalRuntime,
+        install: &'a Owner,
         positioned: &crate::history::data::PositionedCanonicalCommit,
-    ) -> Result<(), String> {
-        runtime
-            .history
-            .install_prepared_recovered_versioned_artifact(self.publication, positioned)
+    ) -> Result<(), String>
+    where
+        &'a Owner: Into<RecoveredPublicationInstall<'a>>,
+    {
+        crate::durability::authority::install_recovered_versioned_artifact(
+            install.into().history,
+            self.publication,
+            positioned,
+        )
     }
 }
 
 impl PreparedRelationalPublicationAccelerators {
     pub(crate) fn install(
         self,
-        runtime: &RelationalRuntime,
+        history: &crate::runtime::state::subsystems::history::HistorySubsystem,
         position: crate::publication::patch::data::PatchStreamPosition,
     ) {
-        runtime
-            .history
-            .install_prepared_versioned_accelerators(self.publication, position);
+        self.publication.install(history, position);
     }
 }
 
-impl RelationalRuntime {
-    pub(crate) fn mvcc_publication_authority(&self) -> RelationalPublicationAuthority<'_> {
-        RelationalPublicationAuthority { runtime: self }
-    }
-}
-
-impl crate::runtime::RelationalPreparationRuntime {
-    pub(crate) fn mvcc_publication_authority(
-        &self,
-    ) -> RelationalPreparationPublicationAuthority<'_> {
-        RelationalPreparationPublicationAuthority { runtime: self }
-    }
-}
-
+/// Complete initial-input and catalog custody after the selected root has been captured.
 #[allow(clippy::too_many_arguments)]
-fn prepare_versioned_publication(
-    runtime: &impl PublicationPreparationRuntime,
+pub(crate) fn assemble_versioned_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    commit_id: CommitId,
     commit_reference: RelationalCommitReceipt,
-    binding: &AdmittedRelationalBranchBasis,
-    selected_branch_state: &SelectedRelationalBranchState,
-    published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
+    validated: ValidatedPublication,
+    prepared_root: crate::branch::root::PreparedRelationalBranchRootCapture,
     envelope: Arc<CanonicalCommitEnvelope>,
-    schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    sequence: PublicationSequence,
+    runtime_instance_id: u64,
+    original_inputs: Option<VersionedPublicationOriginalInputs>,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    original_artifact: Option<&RelationalCommitArtifact>,
-    recovered_content: Option<&crate::content::ContentPublication>,
-) -> Result<crate::runtime::PreparedVersionedArtifactPublication, PublicationPreparationDenial> {
-    let validated = runtime.validate_publication_request(PublicationRequest {
-        commit_id,
-        commit_reference: &commit_reference,
-        binding,
-        envelope: envelope.as_ref(),
-        sequence,
-    })?;
-    let sequence_successors = crate::runtime::PreparedCommitSequence::new(&commit_reference)?;
-    let prepared_root = runtime.prepare_publication_root(
-        execution,
-        selected_branch_state,
-        &published_partition_delta,
-        &envelope,
-        recovered_content.unwrap_or(&envelope.content),
-        schema_registry,
-    )?;
+    recovered_original_artifact: Option<&RelationalCommitArtifact>,
+) -> Result<
+    crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
+    PublicationPreparationDenial,
+> {
+    let commit_id = commit_reference.commit_id;
+    let recovery_readmission = original_inputs.is_none();
     let prepared_root = match output_positions {
         Some(positions) => prepared_root.bind_output_publication_positions(positions),
         None => prepared_root,
     };
-    let target = crate::branch::RelationalBranchTarget::from_commit_receipt(
-        runtime.publication_runtime_instance_id(),
+    let target = crate::branch::target::RelationalBranchTarget::from_commit_receipt(
+        runtime_instance_id,
         &commit_reference,
         prepared_root
             .root()
@@ -168,44 +147,33 @@ fn prepare_versioned_publication(
         .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target))
         .map_err(|denial| format!("prepared target binding denied: {denial:?}"))?;
     let root = prepared_root.into_root();
-    let original_inputs = if matches!(sequence, PublicationSequence::Truth) {
-        let original = crate::history::OriginalCanonicalInputs {
+    let original_inputs = if let Some(inputs) = original_inputs {
+        let original = crate::history::commit::OriginalCanonicalInputs {
             result_schema: root.retained_schema_authority(),
-            prestate_schema: selected_branch_state
-                .state()
-                .root()
-                .retained_schema_authority(),
-            mutation: runtime.publication_mutation_config(),
+            prestate_schema: inputs.prestate_schema,
+            mutation: inputs.mutation,
         };
-        let recorded =
-            crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs::capture(
-                &original, execution,
-            )
-            .map_err(|cause| match cause {
-                crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                    PublicationPreparationDenial::Execution(cause)
-                }
-                crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
-                    PublicationPreparationDenial::Execution(
-                        crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-                    )
-                }
-                crate::durability::data::RelationalRecoveryStop::Content(cause) => {
-                    PublicationPreparationDenial::Execution(cause.into_execution_cause())
-                }
-                crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
-                    PublicationPreparationDenial::Invalid(format!(
-                        "original input capture: {cause:?}"
-                    ))
-                }
-                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
-                    PublicationPreparationDenial::Invalid(format!(
-                        "original input capture: {cause:?}"
-                    ))
-                }
-            })?;
+        let original = original.capture(execution).map_err(|cause| match cause {
+            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+                PublicationPreparationDenial::Execution(cause)
+            }
+            crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
+                PublicationPreparationDenial::Execution(
+                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                )
+            }
+            crate::durability::data::RelationalRecoveryStop::Content(cause) => {
+                PublicationPreparationDenial::Execution(cause.into_execution_cause())
+            }
+            crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
+                PublicationPreparationDenial::Invalid(format!("original input capture: {cause:?}"))
+            }
+            crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
+                PublicationPreparationDenial::Invalid(format!("original input capture: {cause:?}"))
+            }
+        })?;
         envelope
-            .retain_recorded_original_inputs(recorded)
+            .retain_recorded_original_inputs(original.recorded())
             .map_err(|cause| PublicationPreparationDenial::Invalid(cause.into()))?;
         Some(original)
     } else {
@@ -217,9 +185,9 @@ fn prepare_versioned_publication(
     if let Some(original) = original_inputs {
         artifact.set_original_inputs(original);
     }
-    if matches!(sequence, PublicationSequence::RecoveryTruth)
+    if recovery_readmission
         && let Some(previous) =
-            original_artifact.filter(|artifact| artifact.original_inputs().is_some())
+            recovered_original_artifact.filter(|artifact| artifact.original_inputs().is_some())
     {
         artifact
             .preserve_original_inputs(previous)
@@ -242,49 +210,32 @@ fn prepare_versioned_publication(
                 .map(|allocation| allocation.authoritative_bytes)
                 .sum(),
         );
-    Ok(crate::runtime::PreparedVersionedArtifactPublication {
-        commit_id,
-        commit_reference,
-        branch_id: validated.branch_id,
-        next_cell: validated.next_cell,
-        envelope,
-        root,
-        artifact,
-        new_authoritative_bytes,
-        recovery_readmission: matches!(sequence, PublicationSequence::RecoveryTruth),
-        sequence: sequence_successors,
-    })
-}
-
-impl RelationalPreparationPublicationAuthority<'_> {
-    pub(crate) fn prepare_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit_id: CommitId,
-        commit_reference: RelationalCommitReceipt,
-        binding: &AdmittedRelationalBranchBasis,
-        selected_branch_state: &SelectedRelationalBranchState,
-        published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
-        envelope: Arc<CanonicalCommitEnvelope>,
-        schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-        output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    ) -> Result<PreparedRelationalPublication, PublicationPreparationDenial> {
-        let publication = prepare_versioned_publication(
-            self.runtime,
-            execution,
+    Ok(
+        crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication {
             commit_id,
             commit_reference,
-            binding,
-            selected_branch_state,
-            published_partition_delta,
+            branch_id: validated.branch_id,
+            next_cell: validated.next_cell,
             envelope,
-            schema_registry,
-            PublicationSequence::Truth,
-            output_positions,
-            None,
-            None,
-        )?;
-        Ok(PreparedRelationalPublication { publication })
+            root,
+            artifact,
+            new_authoritative_bytes,
+            recovery_readmission,
+            sequence: validated.sequence_successors,
+        },
+    )
+}
+
+pub(crate) struct VersionedPublicationOriginalInputs {
+    pub(crate) prestate_schema: Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>,
+    pub(crate) mutation: crate::config::data::MutationConfig,
+}
+
+impl PreparedRelationalPublication {
+    pub(crate) fn from_versioned(
+        publication: crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
+    ) -> Self {
+        Self { publication }
     }
 }
 
@@ -298,7 +249,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), String> {
         validate_publication(
-            self.runtime,
+            self.history,
             PublicationRequest {
                 commit_id,
                 commit_reference,

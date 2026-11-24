@@ -1,8 +1,8 @@
 //! Request-funded readmission of one event payload and its complete range routing.
-use crate::durability::data::{
+use crate::durability::data::lineage_event_pages::{
     RelationalCheckpointLineageEventPage, RelationalCheckpointLineageEventRow,
 };
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -78,7 +78,7 @@ impl<'de> Visitor<'de> for EventPageVisitor<'_, '_, '_> {
             if rows.len() == width {
                 return Err(A::Error::custom("lineage page width drift"));
             }
-            crate::execution::check_request(self.execution).map_err(|cause| {
+            crate::execution::request_custody::check_request(self.execution).map_err(|cause| {
                 *self.denial = Some(Failure::Request(cause));
                 A::Error::custom("lineage page request stopped")
             })?;
@@ -152,10 +152,22 @@ fn valid_event_shape(event: &crate::lineage::data::LineageEventRecord) -> bool {
                 && targets.len() == 1
         }
     };
+    let entity_binding_ok = match event.entity_id() {
+        None => true,
+        Some(_) => {
+            event.subject() == crate::lineage::data::LineageSubject::Entity
+                && matches!(
+                    event.kind(),
+                    LineageEventKind::Create | LineageEventKind::Restore
+                )
+                && targets.len() == 1
+        }
+    };
     source_set.len() == sources.len()
         && target_set.len() == targets.len()
         && source_set.is_disjoint(&target_set)
         && relation_binding_ok
+        && entity_binding_ok
         && match event.kind() {
             LineageEventKind::Create => sources.is_empty() && targets.len() == 1,
             LineageEventKind::Replace => sources.len() == 1 && targets.len() == 1,
@@ -191,6 +203,7 @@ mod tests {
             name_birth: None,
             kept_name: None,
             relation_id: None,
+            entity_id: None,
         }
     }
 

@@ -28,7 +28,8 @@ impl RelationalCanonicalPublicationRoutes {
         }
         let memory = request
             .reserve_retained_memory(
-                super::schema_inputs::roster_bytes(count).ok_or(Denial::SizeOverflow)?,
+                crate::durability::source_initial_inputs::producer_roster::roster_bytes(count)
+                    .ok_or(Denial::SizeOverflow)?,
             )
             .map_err(Denial::Request)?;
         let mut transitions = Vec::with_capacity(count);

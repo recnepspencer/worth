@@ -2,14 +2,15 @@
 use super::{
     charge, intent_writes_entity, require_linear_history, CodecRetirementClosureStop as Stop,
 };
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::history::data::CanonicalCommitEnvelope;
+use crate::identity::data::EntityId;
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
-use crate::{branch::AdmittedRelationalBranchBasis, identity::data::EntityId};
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 use worth_foundational::facade::AuthoritativeRecordAspectState;
@@ -23,7 +24,7 @@ pub(super) fn latest(
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.runtime.history.catalog_len();
+    let bound = runtime.input.projection.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound.saturating_add(1))?;
         let commit = next.ok_or("output correspondence has no complete native publication")?;
@@ -112,7 +113,7 @@ pub(super) fn validate_member(
         .entity_arena
         .get(&id)
         .ok_or("output generation absent or retired")?;
-    let write = if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+    let write = if member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
         row.retired_at()
             .ok_or("output lacks its actual retirement position")?
     } else {
@@ -123,7 +124,7 @@ pub(super) fn validate_member(
             .ok_or("output native write position absent")?
             .effective_at
     };
-    if row.is_live() != (member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+    if row.is_live() != (member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire)
         || row.kind_id() != Some(member.kind)
         || !super::materialization::write_matches(
             &RecordRef::Entity(id),
@@ -132,7 +133,7 @@ pub(super) fn validate_member(
             write,
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
-            runtime.runtime.history.catalog_len(),
+            runtime.input.projection.history.catalog_len(),
             &runtime.execution(),
             context,
         )?
@@ -161,7 +162,7 @@ pub(super) fn validate_member(
         context,
         payload.map_or(0, |payload| payload.owned_allocation_capacity_bytes()),
     )?;
-    if member.posture != crate::mvcc::RequiredOutputRolePosture::Retire
+    if member.posture != crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire
         && reconstructed
             .as_ref()
             .and_then(|state| state.state.as_ref())

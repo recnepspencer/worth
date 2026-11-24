@@ -1,8 +1,9 @@
 //! Declared source-scope custody is observed by its existing Native fact reader.
 use super::*;
 use crate::identity::data::RelationId;
-use crate::publication::ownership::CurrentPublicationRoster;
-use crate::{mvcc::RequiredOutputRolePosture as Posture, transactions::data::RecordRef};
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::publication::ownership::read::roster::CurrentPublicationRoster;
+use crate::transactions::data::primitives::RecordRef;
 use std::rc::Rc;
 
 /// What the ownership walk consumes of one entity's authenticated roster:
@@ -62,7 +63,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         outgoing: bool,
         members: impl Iterator<Item = (EntityId, EntityId, bool)>,
     ) -> Result<Vec<EntityId>, RelationalModelOwnershipDenial> {
-        use super::traversal::Read;
+        use super::super::traversal::Read;
         let mut neighbors = Vec::new();
         for (scope, member, retired) in members {
             self.charge(1)?;
@@ -131,12 +132,15 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         }
         let records = [RecordRef::Entity(entity)];
         let roster = match self.basis {
-            Some(basis) => {
-                crate::publication::ownership::read(self.execution, basis, &records, self.context)
-            }
+            Some(basis) => crate::publication::ownership::read::read(
+                self.execution,
+                basis,
+                &records,
+                self.context,
+            ),
             None => {
                 crate::branch::model_ownership::custody_observation::record(entity);
-                crate::publication::ownership::read_candidate(
+                crate::publication::ownership::read::read_candidate(
                     self.execution,
                     self.root,
                     &records,
@@ -170,7 +174,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         entity: EntityId,
         relations: impl Iterator<Item = (EntityId, RelationId)>,
     ) -> Result<std::collections::BTreeSet<RelationId>, RelationalModelOwnershipDenial> {
-        use super::traversal::Read;
+        use super::super::traversal::Read;
         let mut edges = std::collections::BTreeSet::new();
         for (source, id) in relations {
             self.charge(1)?;

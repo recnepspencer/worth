@@ -1,7 +1,6 @@
 //! The same two-pass serializer lane, admitted through the original request.
-use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalRecoveryStop as Stop,
-};
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use std::io::{self, Write};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 
@@ -158,20 +157,7 @@ impl Write for Emission<'_, '_, '_> {
 
 /// Charge a bounded unit before the artifact encoder performs it. Preserve a
 /// concrete inner control stop even if the SDK reports a nested scope stop.
-pub(crate) fn account_work(request: &ExecutionRequest<'_, '_>, work: u64) -> Result<(), Stop> {
-    let mut answer = None;
-    let scope = request.run_native_with_checkpoint(|context| {
-        answer = Some(crate::execution::request_stage::checkpoint(context, work));
-    });
-    match (scope, answer) {
-        (_, Some(Err(cause))) => Err(Stop::Request(
-            worth_execution::WorkCeilingDenial::Stopped(cause).into(),
-        )),
-        (Err(cause), _) => Err(Stop::Request(cause.into())),
-        (Ok(_), Some(Ok(()))) => Ok(()),
-        (Ok(_), None) => unreachable!("completed artifact work executes its callback"),
-    }
-}
+pub(crate) use crate::durability::data::recovery_stop::account_work;
 fn settle(result: Result<(), rmp_serde::encode::Error>, failure: Option<Stop>) -> Result<(), Stop> {
     if let Some(cause) = failure {
         return Err(cause);

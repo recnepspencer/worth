@@ -65,8 +65,23 @@ pub enum WorthQueryDocumentHistoryDenial {
     RecordingIdentityExhausted,
     AttemptInFlight,
     IntentDrift,
+    /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
+    StepMetadataTooLarge {
+        length: usize,
+        maximum: usize,
+    },
     ForeignRecording,
     UnsupportedOperation,
+    /// A producer the stage's outputs can reach is workflow control or needs
+    /// workflow authority, which no undo could take back.
+    WorkflowProducer {
+        producer: String,
+    },
+    /// A producer the stage's outputs can reach declares an external effect,
+    /// which no undo could take back.
+    ExternalEffectProducer {
+        producer: String,
+    },
     EmptyGroup,
     GroupMemberLimitExceeded,
     GroupResultLimitExceeded,

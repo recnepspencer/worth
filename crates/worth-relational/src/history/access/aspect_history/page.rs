@@ -5,7 +5,7 @@ use worth_foundational::facade::AspectKey;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::cursor::RetainedCanonicalRecordHistory;
 

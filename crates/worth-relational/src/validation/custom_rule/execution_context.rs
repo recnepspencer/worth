@@ -5,16 +5,16 @@ use crate::validation::engine::{InvariantObservation, InvariantObservationKind};
 
 use super::structural_views::{StructuralAspectStateView, StructuralRelationView};
 use super::traversal::{BoundedStructuralTraversal, CustomInvariantTraversalSummary};
-use crate::validation::data::{
-    CustomInvariantTouchedSummary, StructuralCountView, TouchedStructuralSet,
-};
+use crate::validation::data::custom_rule::touched_scope::planned_records::CustomInvariantTouchedSummary;
+use crate::validation::data::custom_rule::touched_scope::StructuralCountView;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use std::sync::Arc;
 
 pub struct CustomInvariantExecutionContext<'runtime> {
     pub(super) managed_scope:
         std::sync::Mutex<Option<super::managed_source::ManagedSourceInvocation>>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
-    performance: crate::performance::PerformanceAccess<'runtime>,
+    performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
     observation_kind: InvariantObservationKind,
     version_id: VersionId,
     current_version_id: VersionId,
@@ -25,23 +25,12 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     committed_relations: StructuralRelationView<'runtime>,
     counts: StructuralCountView,
     traversal: BoundedStructuralTraversal<'runtime>,
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     work: super::CustomInvariantWorkMeter,
 }
 
-/// Why Relational reported an installed custom invariant not applicable
-/// instead of evaluating it against the candidate.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum CustomInvariantNonApplicability {
-    /// The candidate's complete footprint was proven and touches no kind in
-    /// the rule's declared closure: the rule holds vacuously.
-    CandidateOutsideClosure,
-    /// The footprint was not proven outside the closure; the rule's scope
-    /// planner found no touch it applies to.
-    NoApplicableTouch,
-    /// Checked scope preparation was refused before the rule could run.
-    PreparationRefused,
-}
+pub use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CustomInvariantProvenance {
@@ -52,7 +41,8 @@ pub struct CustomInvariantProvenance {
     pub counts: StructuralCountView,
     pub traversal: CustomInvariantTraversalSummary,
     #[serde(skip)]
-    pub proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    pub proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     pub work_units: std::num::NonZeroU64,
     /// `None` when the rule evaluated the candidate. An artifact written
     /// before this field decodes as `None`: no basis, so a not-applicable
@@ -85,7 +75,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Option<Arc<TouchedStructuralSet>>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         work.try_charge(1);
         Self::from_prepared_scope(
@@ -110,7 +100,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Option<Arc<TouchedStructuralSet>>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let inputs = runtime.shared_candidate_inputs();
@@ -189,7 +179,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         prepared_scope: &super::scope_planner::PreparedCustomInvariantScope,
         retained_touched: Arc<TouchedStructuralSet>,
         work: super::CustomInvariantWorkMeter,
-        access: Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
         basis: CustomInvariantNonApplicability,
     ) -> CustomInvariantProvenance {
         let mut provenance = Self::from_prepared_scope(
@@ -223,7 +213,9 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         self.observation_kind
     }
 
-    pub(crate) fn performance_access(&self) -> &crate::performance::PerformanceAccess<'runtime> {
+    pub(crate) fn performance_access(
+        &self,
+    ) -> &crate::validation::engine::metrics::InvariantMetrics<'runtime> {
         &self.performance
     }
 

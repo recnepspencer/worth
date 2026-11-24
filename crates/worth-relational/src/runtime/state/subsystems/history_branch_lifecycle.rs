@@ -8,7 +8,7 @@ impl HistorySubsystem {
     pub(crate) fn remove_branch_cell(
         &self,
         branch_id: &BranchId,
-    ) -> Option<crate::branch::RelationalBranchReferenceCell> {
+    ) -> Option<crate::branch::reference::RelationalBranchReferenceCell> {
         self.branch_cells.remove(branch_id)
     }
 
@@ -29,7 +29,7 @@ impl HistorySubsystem {
     /// Every branch's lifecycle posture, in branch order, for a checkpoint.
     pub(crate) fn branch_lifecycle_snapshot(
         &self,
-    ) -> Vec<crate::durability::data::DurableBranchLifecycleImage> {
+    ) -> Vec<crate::durability::data::branch_lifecycle_images::DurableBranchLifecycleImage> {
         self.branch_cells.lifecycle_postures()
     }
 
@@ -50,13 +50,8 @@ impl HistorySubsystem {
         self.branch_cells.restore_retired_names(names)
     }
 
-    /// Admit a transition before taking branch coordination or publication state.
-    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
-        self.canonical_publication_routes.begin_branch_transition()
-    }
-
     #[cfg(test)]
-    fn fill_retired_branch_name_capacity_for_test(&self) {
+    pub(crate) fn exhaust_retired_branch_name_roster_for_test(&self) {
         let mut ordinal = 0_u64;
         loop {
             let name = BranchId(format!("__retired-branch-capacity-proof-{ordinal}"));
@@ -68,12 +63,5 @@ impl HistorySubsystem {
                 .checked_add(1)
                 .expect("retired branch capacity proof ordinal remains bounded");
         }
-    }
-}
-
-#[cfg(test)]
-impl crate::runtime::RelationalRuntime {
-    pub(crate) fn fill_retired_branch_name_capacity_for_test(&self) {
-        self.history.fill_retired_branch_name_capacity_for_test();
     }
 }

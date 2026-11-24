@@ -4,10 +4,11 @@ use crate::schema::data::{
     EndpointDeletionIntegrityMode, MinimumCardinalityEnforcement, PairMinimumSemantics,
     PartitionIsolationMode, SymmetryMode, UniquenessScope,
 };
-use crate::validation::data::{
-    InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect, InvariantSemanticsClass,
-    NativeInvariantRuleId, RecordKindTag,
-};
+use crate::validation::data::descriptor::InvariantSemanticsClass;
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::rule_id::NativeInvariantRuleId;
+use crate::validation::data::rules::RecordKindTag;
 
 pub(super) fn native_rule_id_tag(value: NativeInvariantRuleId) -> u8 {
     match value {

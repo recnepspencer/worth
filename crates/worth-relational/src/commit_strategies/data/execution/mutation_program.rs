@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize};
 
-use crate::transactions::data::WorkerIntentBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct StrategyMutationProgramDigest(pub [u8; 32]);
@@ -79,7 +79,7 @@ impl<'de> Deserialize<'de> for StrategyMutationProgram {
 pub(super) fn compute_mutation_program_digest(
     worker_batches: &[WorkerIntentBatch],
 ) -> StrategyMutationProgramDigest {
-    super::super::strategy_mutation_program_digest(worker_batches)
+    crate::commit_strategies::data::canonical_digest::mutation_program_terms::strategy_mutation_program_digest(worker_batches)
 }
 
 #[cfg(test)]

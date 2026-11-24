@@ -1,15 +1,13 @@
-use crate::runtime::RelationalRuntime;
+use crate::schema::data::AspectContractPlanCatalog;
 use worth_foundational::facade::AspectKey;
 
 pub(super) fn declared_aspects_for_entity_kind(
-    runtime: &RelationalRuntime,
+    catalog: &AspectContractPlanCatalog,
     kind_id: crate::identity::data::KindId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
-    runtime
-        .schema_contract_runtime
-        .aspect_contract_plans
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    catalog
         .entity_plans
         .get(&kind_id)
         .map(|plan| plan_aspect_keys(plan, charge, memory))
@@ -17,14 +15,12 @@ pub(super) fn declared_aspects_for_entity_kind(
 }
 
 pub(super) fn declared_aspects_for_relation_kind(
-    runtime: &RelationalRuntime,
+    catalog: &AspectContractPlanCatalog,
     kind_id: crate::identity::data::KindId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
-    runtime
-        .schema_contract_runtime
-        .aspect_contract_plans
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    catalog
         .relation_plans
         .get(&kind_id)
         .map(|plan| plan_aspect_keys(plan, charge, memory))
@@ -35,7 +31,7 @@ fn plan_aspect_keys(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<Vec<AspectKey>, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<Vec<AspectKey>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let mut aspects = Vec::new();
     for binding in &plan.executable_bindings {
         charge(super::super::read_prices::ASPECT_BINDING)

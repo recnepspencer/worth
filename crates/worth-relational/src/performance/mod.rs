@@ -1,4 +1,5 @@
 mod access;
+pub(crate) mod complexity_counter_sink;
 pub mod data;
 pub(crate) mod operation_complexity_accounting;
 

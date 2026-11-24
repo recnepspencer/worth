@@ -10,7 +10,7 @@ use crate::publication::patch::data::{
     PatchDetail, PublishedAuthoritativeAspectChange, PublishedAuthoritativePatch,
     PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::changed_authoritative_patch::authoritative_patch_filtered_to_changed_bindings;
 use super::data::{
@@ -19,7 +19,8 @@ use super::data::{
 };
 use super::published_patch_projection::published_patch_from_foundational_patch;
 use super::semantic_change_projection::semantic_changes;
-use crate::transactions::data::{AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial};
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchConstructionDenial;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchValueDenial;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FoundationalPatchFragment {
@@ -81,7 +82,7 @@ impl CanonicalRecordAspectDelta {
 
 pub(crate) fn authoritative_patch_with_delta_supplements(
     delta: &CanonicalRecordAspectDelta,
-    authoritative_patch: super::super::outcomes::MutationAspectPatch,
+    authoritative_patch: super::super::outcomes::mutation_aspect_patch::MutationAspectPatch,
 ) -> Result<AuthoritativeRecordAspectPatch, CanonicalDeltaError> {
     let changed_authoritative_patch =
         authoritative_patch_filtered_to_changed_bindings(delta, authoritative_patch.as_patch())?;

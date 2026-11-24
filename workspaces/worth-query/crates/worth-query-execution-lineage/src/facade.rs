@@ -48,6 +48,16 @@ pub mod ports {
     pub use crate::domain_computation::product_publication::unpublished_internal_port::ProductUnpublishedApplicationInternalPort;
     pub use crate::ports::*;
 }
+/// Operation-output persistent-name vocabulary for the upper execution split
+/// crates, which reach the naming owner through this crate.
+pub mod persistent_naming {
+    pub use worth_query_execution_naming::facade::{
+        admit_output_birth, admit_same_commit_names, same_commit_name_of, AuthoredOperationNaming,
+        BoundOperationNaming, LoweredExecutionNameSchemeCatalog, OperationMergeKeeper,
+        OperationNamedOutput, OperationNamingEntry, OperationOutputKey, OutputBirthPosture,
+        WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+    };
+}
 pub mod test_read_stops {
     pub use crate::test_read_stops::*;
 }

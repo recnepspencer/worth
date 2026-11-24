@@ -42,7 +42,14 @@ impl RelationalPreparationPort {
         let installed = execution
             .run_native_with_checkpoint(|context| {
                 crate::execution::request_stage::checkpoint(context, count as u64)?;
-                graph.ownership_matches_installation(&runtime, context)
+                graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0
@@ -55,8 +62,7 @@ impl RelationalPreparationPort {
         let funding = execution
             .reserve_retained_memory((count as u64).saturating_mul(128))
             .map_err(Error::Request)?;
-        let meaning = crate::history::data::CanonicalOwnedGraphSelection::from_prepared(&graph)
-            .map_err(Error::Preparation)?;
+        let meaning = graph.canonical_meaning().map_err(Error::Preparation)?;
         Ok(RelationalOwnedGraphSelection {
             transaction,
             retained: PreparedOwnedGraphSelection {
@@ -103,10 +109,14 @@ impl RelationalPreparationPort {
         };
         let installed = execution
             .run_native_with_checkpoint(|context| {
-                input
-                    .retained
-                    .graph
-                    .ownership_matches_installation(&runtime, context)
+                input.retained.graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0

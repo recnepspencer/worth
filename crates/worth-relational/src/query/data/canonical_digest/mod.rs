@@ -11,13 +11,15 @@ pub(crate) use checked::{
 use sha2::{Digest, Sha256};
 
 #[cfg(test)]
-use crate::query::data::{CanonicalQueryResult, IndexParityMode, QueryAccessPath};
-use crate::query::data::{
+use crate::query::data::fragment_reduction::CanonicalQueryResult;
+#[cfg(test)]
+use crate::query::data::index_access_parity::{IndexParityMode, QueryAccessPath};
+use crate::query::data::planned_packets::{
     DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryAccessContract,
     QueryExecutionShape, QueryLocalityClass, QueryOrderingContract, QueryPlanContextId, QueryScope,
     ReductionDiscipline,
 };
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::read_records::{EntityReadRecord, RelationReadRecord};
 
 use primitive_terms::{encode_string, encode_u128, encode_u64};
 #[cfg(test)]

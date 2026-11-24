@@ -3,7 +3,7 @@ use super::*;
 
 pub(crate) enum StructuralPresenceDenial {
     Read(StructuralReadError),
-    Request(crate::validation::data::StructuralWalkDenialKind),
+    Request(crate::validation::data::structural_walk_denial::StructuralWalkDenialKind),
     Native(crate::execution::RelationalExecutionDenialCause),
 }
 

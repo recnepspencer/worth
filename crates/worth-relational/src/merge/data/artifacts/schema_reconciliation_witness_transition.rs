@@ -1,18 +1,19 @@
-use crate::merge::data::MergePolicyDecisionBoundary;
+use crate::merge::data::policy::MergePolicyDecisionBoundary;
+use crate::schema::continuity::transition_classification::classify_schema_transition;
+use crate::schema::continuity::transition_validation::validate_schema_transition;
 use crate::schema::data::{
     FreeFormSchemaDiffIntent, HistoricalInterpretationSensitivity, ProposedSchemaTransition,
     SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId,
     SchemaPublicationImpact, SchemaReconciliationClassification, SchemaReconciliationPolicy,
     SchemaStratum, SchemaSubscriberImpact, SchemaVersionId,
 };
-use crate::schema::{classify_schema_transition, validate_schema_transition};
 use worth_foundational::FieldKey;
 
-use super::super::MergeManualResolutionClass;
 use super::schema_reconciliation_witness_rows::{
     RelationalSchemaReconciliationWitnessDenial, RelationalSchemaReconciliationWitnessPosture,
     RelationalSchemaReconciliationWitnessRowInput,
 };
+use crate::merge::data::policy::MergeManualResolutionClass;
 
 pub(super) struct DerivedSchemaReconciliationTruth {
     pub(super) classification: SchemaReconciliationClassification,
@@ -282,9 +283,10 @@ fn fallback_schema_id(prefix: &str, registry_digest: &str) -> SchemaId {
 mod tests {
     use super::*;
     use crate::identity::data::{EntityId, PartitionId};
-    use crate::merge::data::{MergePolicyRejectClass, RelationalSchemaReconciliationBasisRow};
+    use crate::merge::data::artifacts::schema_reconciliation_witness_rows::RelationalSchemaReconciliationBasisRow;
+    use crate::merge::data::policy::MergePolicyRejectClass;
     use crate::schema::data::{DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion};
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
 
     #[test]
     fn schema_witness_validation_preserves_prior_classification_policy_and_denials() {
@@ -340,7 +342,7 @@ mod tests {
             } else {
                 let validated = validate_schema_transition(proposed, admission).unwrap();
                 Some(
-                    crate::schema::lower_schema_transition(
+                    crate::schema::continuity::transition_lowering::lower_schema_transition(
                         validated,
                         admission,
                         DescriptorSemanticsVersion::default(),

@@ -3,12 +3,11 @@ use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
 #[path = "canonical_publication_routes/narrowed_cutover_control.rs"]
 mod narrowed_cutover_control;
-
-use dashmap::DashMap;
-
+use crate::branch::reference_publication_cell::RelationalBranchPublicationCell;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
+use dashmap::DashMap;
 
 #[path = "canonical_publication_routes/associated_effect_observation.rs"]
 mod associated_effect_observation;
@@ -18,11 +17,11 @@ mod authored_writes;
 mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[path = "canonical_publication_routes/fork_frontiers.rs"]
+mod fork_frontiers;
 #[cfg(test)]
 #[path = "canonical_publication_routes/lifecycle_order_control.rs"]
 mod lifecycle_order_control;
-#[path = "canonical_publication_routes/fork_frontiers.rs"]
-mod fork_frontiers;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/pending_settlement.rs"]
@@ -30,22 +29,23 @@ mod pending_settlement;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
-mod position_admission;
+pub(crate) mod position_admission;
 #[path = "canonical_publication_routes/recovered_source.rs"]
 mod recovered_source;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
 pub(crate) use authored_writes::AuthoredWriteGeneration;
-#[path = "canonical_publication_routes/position_retention.rs"]
-mod position_retention;
-pub(crate) use position_retention::RetainedCanonicalPosition;
-
 #[path = "canonical_publication_routes/indexed_catalog.rs"]
 mod indexed_catalog;
+#[path = "canonical_publication_routes/position_retention.rs"]
+mod position_retention;
+#[path = "canonical_publication_routes/retained_position.rs"]
+pub(crate) mod retained_position;
 #[path = "canonical_publication_routes/source_retirement.rs"]
 mod source_retirement;
+pub(crate) use crate::branch::transition::BranchTransitionRecordError;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
-    BranchTransitionPublication, BranchTransitionRecordError, OriginalBranchSchemaInputs,
+    BranchTransitionPublication, ForkTransitionRoutes, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
@@ -83,9 +83,9 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 }
 
 struct CanonicalPublicationRoute {
-    envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     commit: crate::history::data::RelationalCommitReceipt,
-    roots: crate::branch::RelationalBranchRootDescriptor,
+    roots: crate::branch::target::RelationalBranchRootDescriptor,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
     performed_position: AtomicU64,
     performed: AtomicBool,
@@ -93,8 +93,8 @@ struct CanonicalPublicationRoute {
 }
 
 struct CanonicalPublicationHandoff {
-    root: Arc<crate::branch::RelationalBranchRoot>,
-    publication_cell: Option<crate::branch::RelationalBranchPublicationCell>,
+    root: Arc<crate::branch::root::RelationalBranchRoot>,
+    publication_cell: Option<RelationalBranchPublicationCell>,
 }
 
 pub(crate) enum CanonicalPublicationRecordError {
@@ -115,10 +115,7 @@ pub(crate) enum CanonicalPublicationRecordError {
     Durable(crate::durability::medium::RelationalDurableStepStop),
 }
 
-pub(crate) enum CanonicalCheckpointAdmissionError {
-    PublicationInFlight,
-    PerformedPublicationRequiresSettlement(CommitId),
-}
+pub(crate) use crate::durability::checkpoint_selection_denial::CanonicalCheckpointAdmissionError;
 
 pub(crate) struct PreparedCanonicalPublicationRoute {
     routes: Arc<RelationalCanonicalPublicationRoutes>,
@@ -155,8 +152,8 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_recovered(
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        roots: crate::branch::RelationalBranchRootDescriptor,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        roots: crate::branch::target::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
         let (positioned, route) = recovered_source::prepare_route(positioned, envelope, roots)?;
         let installs_version_route = positioned.envelope().authority_kind().advances_version();
@@ -186,8 +183,8 @@ impl RelationalCanonicalPublicationRoutes {
 
     pub(crate) fn reserve(
         routes: &Arc<Self>,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        root: Arc<crate::branch::RelationalBranchRoot>,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
         authored_writes: Option<AuthoredWriteGeneration>,
         original_payload: crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
@@ -281,7 +278,7 @@ impl PreparedCanonicalPublicationRoute {
     /// without waiting for the route to perform.
     pub(crate) fn envelope_residency(
         &self,
-    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+    ) -> Arc<crate::history::commit::RelationalCommitEnvelopeResidency> {
         Arc::clone(&self.route.envelope)
     }
 
@@ -302,11 +299,11 @@ impl PreparedCanonicalPublicationRoute {
 
     pub(crate) fn record_performed_with_cutover<T>(
         &self,
-        publication_cell: crate::branch::RelationalBranchPublicationCell,
+        publication_cell: RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
-        medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
+        medium: Option<&crate::durability::published_medium::RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {

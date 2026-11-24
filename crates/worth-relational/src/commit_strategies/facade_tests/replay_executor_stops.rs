@@ -1,5 +1,8 @@
 use super::native_strategy_fixtures::*;
 use crate::authority::commit::pipeline::{stage_observation, CommitStage};
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
 use crate::durability::data::RelationalRecoveryStop;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use std::sync::{
@@ -23,7 +26,7 @@ impl CommitStrategyExecutor for RefuseOnce {
         &self,
         _: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
-        _: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         assert_eq!(
             self.published.load(Ordering::SeqCst),

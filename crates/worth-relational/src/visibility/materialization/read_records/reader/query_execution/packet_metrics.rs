@@ -1,7 +1,6 @@
-use crate::performance::PerformanceAccess;
-use crate::query::data::{
-    QueryParallelLegality, QueryParallelProfitability, SnapshotPinnedQueryPlan,
-};
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
+use crate::query::data::{QueryParallelLegality, QueryParallelProfitability};
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 
 use super::super::query_packetization::{
     packetized_fragment_scratch_reuse_count, packetized_query_item_count,
@@ -34,24 +33,24 @@ impl PacketizedQueryMetrics {
 }
 
 pub(in crate::visibility::materialization::read_records::reader) fn record_query_packet_metrics(
-    performance: &PerformanceAccess<'_>,
+    instrumentation: &RuntimeInstrumentation,
     plan: &SnapshotPinnedQueryPlan,
     metrics: &PacketizedQueryMetrics,
 ) {
-    performance.count_query_packet_shape(
+    instrumentation.count_query_packet_shape(
         metrics.packet_count,
         metrics.target_count,
         metrics.peak_width,
         metrics.scope_units,
     );
     if metrics.scratch_reuse_count > 0 {
-        performance.count_query_fragment_scratch_reuse_by(metrics.scratch_reuse_count);
+        instrumentation.count_query_fragment_scratch_reuse_by(metrics.scratch_reuse_count);
     }
 
     if matches!(plan.legality, QueryParallelLegality::LegalReadOnlySnapshot) {
-        performance.count_query_parallel_legal();
+        instrumentation.count_query_parallel_legal();
     }
     if matches!(plan.profitability, QueryParallelProfitability::Profitable) {
-        performance.count_query_parallel_profitable();
+        instrumentation.count_query_parallel_profitable();
     }
 }

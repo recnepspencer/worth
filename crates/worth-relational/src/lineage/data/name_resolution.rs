@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::identity::data::{EntityId, LineageId, RelationId};
 
 use super::naming::{PersistentNameIdentity, PersistentNameSubjectKind};

@@ -10,7 +10,7 @@ use crate::validation::candidate_source::{
 pub(super) struct ManagedSourceInvocation {
     pub(super) scope: crate::identity::data::EntityId,
     pub(super) sources: std::sync::Arc<[ManagedIndexSourceProgram]>,
-    pub(super) audience: crate::validation::data::CustomInvariantSemanticIdentity,
+    pub(super) audience: crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
 }
 
 impl CustomInvariantScopePlanner<'_> {

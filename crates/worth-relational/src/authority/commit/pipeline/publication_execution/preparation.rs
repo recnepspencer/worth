@@ -1,4 +1,5 @@
 mod application_effect;
+mod source_history;
 use super::super::phase_backing::CommitPhaseBacking;
 mod current_ownership;
 mod owned_record_custody;
@@ -8,54 +9,41 @@ mod root_admission;
 mod semantic_summary;
 use std::sync::Arc;
 
-use super::super::artifact_execution::preparation::PublicationPreparation;
-use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
-use crate::identity::data::VersionId;
+use super::PublicationPhaseOwners;
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
-use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{CommitLog, TransactionCommitError};
+use crate::runtime::state::runtime_state::preparation_runtime::mirror_publication::prepare_mirror_publication;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
+mod input;
+pub(super) use input::PreparePublicationPhaseInput;
 mod prepared_phase;
 pub(super) use prepared_phase::{PreparedPublicationCompletion, PreparedPublicationPhase};
 
-pub(super) struct PreparePublicationPhaseInput<'a> {
-    pub(super) structural: &'a crate::transactions::data::CommitStructuralSummary,
-    pub(super) validation: &'a [crate::validation::engine::InvariantExecutionResult],
-    pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
-    pub(super) lineage_deferred: bool,
-    pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
-    pub(super) source_interpretation:
-        &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
-    pub(super) recovered_codec_publication_custody:
-        Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
-    pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
-    pub(super) required_output_materialization:
-        Option<Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
-    pub(super) commit_log: &'a mut CommitLog,
-    pub(super) working_state: crate::storage::overlay::WorkingState,
-    pub(super) mutation_identities:
-        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
-    pub(super) selected_branch_state: crate::branch::SelectedRelationalBranchState,
-    pub(super) publication: CommitPhaseBacking<PublicationPreparation>,
-    pub(super) version_id: VersionId,
-    pub(super) previous_branch_head_version: Option<VersionId>,
-    pub(super) commit_id: CommitId,
-    pub(super) commit_reference: RelationalCommitReceipt,
-    pub(super) branch_basis: crate::branch::AdmittedRelationalBranchBasis,
-    pub(super) branch_id: BranchId,
-    pub(super) merge_base_commits: Vec<CommitId>,
-    pub(super) merge_parent_branches: Vec<BranchId>,
-}
-
-pub(super) fn prepare_publication_phase(
+pub(super) fn prepare_publication_phase<
+    Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture),
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    owners: PublicationPhaseOwners<'_, Attach>,
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<CommitPhaseBacking<PreparedPublicationPhase>, TransactionCommitError> {
     let result = {
+        let PublicationPhaseOwners {
+            root,
+            work,
+            diagnostics,
+            lineage,
+            fallback_schema,
+            custom_invariants,
+            invariant_generation,
+            max_patch_records,
+            mirror,
+            ..
+        } = owners;
+        let history_owner = root.history;
+        let symbols = root.symbols;
+        let storage = root.storage;
+        let runtime_identity = root.runtime_identity;
         let PreparePublicationPhaseInput {
             lineage_deferred,
             naming_plan,
@@ -103,7 +91,7 @@ pub(super) fn prepare_publication_phase(
         )?;
         let current_ownership = current_ownership::select(
             execution,
-            runtime,
+            work,
             &branch_basis,
             &canonical_commit_envelope,
             created_entities,
@@ -111,66 +99,76 @@ pub(super) fn prepare_publication_phase(
             &working_state,
             required_output_publication.as_ref(),
         )?;
-        let runtime_with_current = runtime.with_current_ownership(current_ownership);
-        let runtime = &runtime_with_current;
         if required_output_materialization.is_some()
             && (recovered_codec_publication_custody.is_some()
                 || required_output_publication.is_some())
         {
-            return Err(crate::mvcc::origin_denial(
-                "materialization maintenance cannot also publish producer or codec retirement meaning",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "materialization maintenance cannot also publish producer or codec retirement meaning",
+                ),
+            );
         }
         canonical_commit_envelope.required_output_materialization = required_output_materialization;
         if recovered_codec_publication_custody.is_some() && required_output_publication.is_some() {
-            return Err(crate::mvcc::origin_denial(
-                "codec retirement cannot also mint a producer completion",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "codec retirement cannot also mint a producer completion",
+                ),
+            );
         }
-        let mut output_positions = crate::execution::transaction_stage(
-            execution,
-            runtime.commit_work_budget.as_ref(),
-            || {
-                Ok::<_, TransactionCommitError>(
-                    if let Some(custody) = recovered_codec_publication_custody {
-                        Some(custody.install_retirements(
-                            execution,
+        let mut live_inputs =
+            crate::publication::live_publication_inputs::LivePublicationInputs::default();
+        let mut output_positions = crate::execution::transaction_stage(execution, work, || {
+            Ok::<_, TransactionCommitError>(
+                if let Some(custody) = recovered_codec_publication_custody {
+                    Some(custody.install_retirements(
+                        execution,
+                        &mut canonical_commit_envelope,
+                        &branch_basis,
+                    )?)
+                } else if let Some(admission) = required_output_publication {
+                    Some(crate::history::data::canonical_commit_envelope::required_output_origin::installation::complete::install_required_output_origin(
                             &mut canonical_commit_envelope,
-                            &branch_basis,
-                        )?)
-                    } else if let Some(admission) = required_output_publication {
-                        Some(canonical_commit_envelope.install_required_output_origin(
                             execution,
-                            runtime,
+                            crate::history::data::canonical_commit_envelope::required_output_origin::history_request::OutputPreparationInputs {
+                                current_ownership: &current_ownership,
+                                history: history_owner,
+                                runtime_instance_id: runtime_identity,
+                                custom_invariant_generation: invariant_generation,
+                            },
                             &branch_basis,
                             created_entities,
                             created_relations,
                             &working_state,
                             admission,
+                            &mut live_inputs,
                         )?)
-                    } else {
-                        None
-                    },
-                )
-            },
-        )?;
+                } else {
+                    None
+                },
+            )
+        })?;
         let check_custody = || {
             owned_record_custody::require(
                 execution,
-                runtime,
+                current_ownership.as_deref(),
                 &canonical_commit_envelope,
                 &adjacency_deltas,
             )
         };
-        crate::execution::transaction_stage(
-            execution,
-            runtime.commit_work_budget.as_ref(),
-            check_custody,
-        )?;
+        crate::execution::transaction_stage(execution, work, check_custody)?;
         let (_current_ownership_funding, additional_aspects, additional_adjacency) =
             ownership_completion::complete(
                 execution,
-                runtime,
+                ownership_completion::OwnershipCompletionInputs {
+                    current: current_ownership.as_deref(),
+                    storage: storage,
+                    symbols: symbols,
+                    diagnostics: diagnostics,
+                    work: work,
+                    max_patch_records: max_patch_records,
+                },
                 &branch_basis,
                 &selected_branch_state,
                 &mut working_state,
@@ -180,14 +178,22 @@ pub(super) fn prepare_publication_phase(
                 &mut changed_records,
                 &mut output_positions,
             )?;
+        let lineage_identities = lineage.identities;
         if lineage_deferred {
             (lineage_nodes, relation_lineages) = prepared_phase::complete_deferred_lineage(
-                execution, runtime, &mut working_state, &mut canonical_commit_envelope,
-                &changed_records, created_entities, created_relations, naming_plan,
+                execution,
+                lineage,
+                &mut working_state,
+                &mut canonical_commit_envelope,
+                &changed_records,
+                created_entities,
+                created_relations,
+                naming_plan,
             )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
-            runtime,
+            max_patch_records,
+            diagnostics,
             &canonical_commit_envelope.patch,
         )?;
         semantic_summary::complete(
@@ -199,7 +205,7 @@ pub(super) fn prepare_publication_phase(
         )?;
         canonical_commit_envelope.caller_association = caller_association;
         let semantic_result = super::super::semantic_result::prepare_semantic_result(
-            runtime,
+            symbols,
             super::super::semantic_result::SemanticResultInput {
                 structural,
                 validation,
@@ -215,25 +221,21 @@ pub(super) fn prepare_publication_phase(
                 .seal(semantic_result)
                 .map_err(|refusal| {
                     TransactionCommitError::preparation(
-                        crate::transactions::data::CommitPreparationError::semantic_result(
+                        crate::transactions::data::outcomes::commit_preparation::CommitPreparationError::semantic_result(
                             branch_id.clone(),
                             version_id,
                             refusal,
                         ),
                     )
                 })?;
-        let canonical_commit_envelope = crate::execution::transaction_stage(
-            execution,
-            runtime.commit_work_budget.as_ref(),
-            || {
-                canonical_commit_envelope
-                    .freeze_with_managed_source_history(source_interpretation, *execution)
-            },
-        )?;
+        let canonical_commit_envelope =
+            crate::execution::transaction_stage(execution, work, || {
+                source_history::freeze(canonical_commit_envelope, source_interpretation, *execution)
+            })?;
+        let live_inputs = live_inputs.bind(&canonical_commit_envelope);
         let clone_mode = working_state.clone_mode();
         let committed_partitions = working_state.into_partition_commits().1;
-        runtime
-            .history
+        history_owner
             .validate_branch_root_capture(committed_partitions.len())
             .map_err(|denial| {
                 TransactionCommitError::publication(PublicationError::new(
@@ -253,30 +255,29 @@ pub(super) fn prepare_publication_phase(
                     .map(|root| root.schema_authority().registry_arc())
             })
             .unwrap_or_else(|| {
-                crate::branch::RetainedRelationalSchemaRegistry::from_configuration(
-                    std::sync::Arc::new(runtime.config.schema.registry.clone()),
+                crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry::from_configuration(
+                    std::sync::Arc::new(fallback_schema.clone()),
                 )
             });
-        let prepared_history =
-            root_admission::run(execution, runtime.commit_work_budget.as_ref(), || {
-                runtime.mvcc_publication_authority().prepare_commit(
-                    execution,
-                    commit_id,
-                    commit_reference.clone(),
-                    &branch_basis,
-                    &selected_branch_state,
-                    published_partition_delta,
-                    Arc::clone(&canonical_commit_envelope),
-                    publication_schema_registry.as_ref(),
-                    output_positions,
-                )
-            })
-            .map_err(|denial| {
-                preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
-            })?;
-        crate::branch::validate_candidate_ownership(
+        let prepared_history = root_admission::run(execution, work, || {
+            root.prepare_commit_publication(
+                execution,
+                commit_id,
+                commit_reference.clone(),
+                &branch_basis,
+                &selected_branch_state,
+                published_partition_delta,
+                Arc::clone(&canonical_commit_envelope),
+                publication_schema_registry.as_ref(),
+                output_positions,
+            )
+        })
+        .map_err(|denial| {
+            preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
+        })?;
+        crate::branch::model_ownership::validate_candidate_ownership(
             execution,
-            runtime,
+            custom_invariants,
             prepared_history.root(),
             &canonical_commit_envelope,
         )?;
@@ -285,7 +286,7 @@ pub(super) fn prepare_publication_phase(
             prepared_history.root(),
             &canonical_commit_envelope,
         )?;
-        runtime
+        lineage_identities
             .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
             .map_err(|detail| {
                 TransactionCommitError::publication(PublicationError::new(
@@ -294,20 +295,18 @@ pub(super) fn prepare_publication_phase(
                 ))
                 .with_commit_log(commit_log.clone())
             })?;
-        let validated_lineage_events = crate::runtime::ValidatedLineageEventBatch::from_reserved(
-            canonical_commit_envelope.lineage_events().to_vec(),
-        );
+        let validated_lineage_events =
+            crate::runtime::state::subsystems::lineage::ValidatedLineageEventBatch::from_reserved(
+                canonical_commit_envelope.lineage_events().to_vec(),
+            );
         let reserve_route = |execution: worth_execution::ExecutionRequest<'_, '_>| {
-            runtime.history.reserve_canonical_publication_route(
+            history_owner.reserve_canonical_publication_route(
                 execution,
                 prepared_history.envelope_residency(),
                 Arc::clone(prepared_history.root()),
             )
         };
-        let canonical_publication_route = match (
-            super::super::request_lease(execution),
-            runtime.commit_work_budget.as_ref(),
-        ) {
+        let canonical_publication_route = match (super::super::request_lease(execution), work) {
             (Some(_), Some(budget)) => budget
                 .run_stage(*execution, || reserve_route(*execution))
                 .map_err(|stop| TransactionCommitError::execution(stop.into()))
@@ -317,45 +316,33 @@ pub(super) fn prepare_publication_phase(
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
         let symbol_publication =
-            crate::storage::residency::SymbolPublicationAdmission::prepare(prepared_history.root())
-                .map_err(|failure| {
-                    crate::authority::commit::preparation::storage_read_denial(
-                        &branch_basis,
-                        failure,
-                    )
-                })?;
-        let mirror_publication = crate::execution::transaction_stage(
-            execution,
-            runtime.commit_work_budget.as_ref(),
-            || {
-                runtime
-                    .mirror_residency
-                    .prepare_publication(
-                        execution,
-                        &runtime.services.symbols,
-                        &branch_id,
-                        prepared_history.root(),
-                        &symbol_publication,
-                        clone_mode,
-                        committed_partitions,
-                    )
-                    .map_err(|failure| {
-                        crate::authority::commit::preparation::storage_read_denial(
-                            &branch_basis,
-                            failure,
-                        )
-                    })
-            },
-        )?;
-        runtime
-            .services
-            .symbols
-            .register_symbol_publication(symbol_publication.key());
+            crate::branch::symbol_publication::SymbolPublicationAdmission::prepare(
+                prepared_history.root(),
+            )
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+            })?;
+        let mirror_publication = crate::execution::transaction_stage(execution, work, || {
+            prepare_mirror_publication(
+                mirror,
+                symbols,
+                execution,
+                &branch_id,
+                prepared_history.root(),
+                &symbol_publication,
+                clone_mode,
+                committed_partitions,
+            )
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+            })
+        })?;
+        symbols.register_symbol_publication(symbol_publication.key());
         let symbol_meanings = mutation_identities
             .symbols
             .seal_for_publication(
                 &canonical_commit_envelope.symbol_texts,
-                &runtime.services.symbols,
+                symbols,
                 symbol_publication.required(),
             )
             .map_err(|detail| {
@@ -366,10 +353,11 @@ pub(super) fn prepare_publication_phase(
                 .with_commit_log(commit_log.clone())
             })?;
         PreparedPublicationPhase {
+            live_inputs: Some(live_inputs),
             application_unchanged,
             record_allocations: mutation_identities.records,
             symbol_meanings,
-            _candidate_symbols: runtime.services.symbols.clone(),
+            _candidate_symbols: symbols.clone(),
             mirror_publication,
             prepared_history,
             validated_lineage_events,

@@ -3,10 +3,10 @@ use super::{
     control, field_references, ContentDirectory, RelationalContentDenial as Denial,
     RelationalContentFrame,
 };
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::identity::data::{EntityId, KindId};
-use crate::transactions::data::RecordRef;
-use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Read;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Read;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 #[derive(Clone, Debug)]
@@ -55,18 +55,6 @@ impl NativeContentSourceView {
         )?;
         Ok(Some(frame))
     }
-    pub(crate) fn read_source(
-        &self,
-        budget: &crate::validation::data::CustomInvariantReadBudget<'_>,
-        row: EntityId,
-        kind: KindId,
-        locator: &AspectFieldLocator,
-        value: Option<&AspectValue>,
-    ) -> Result<Option<RelationalContentFrame>, Read> {
-        control::run_source(budget, |control| {
-            self.read(control, row, kind, locator, value)
-        })
-    }
     pub(crate) fn read_selected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -80,7 +68,7 @@ impl NativeContentSourceView {
         })
         .map_err(|cause| match cause {
             Denial::Execution(cause) => Read::Source(
-                crate::derived_relation::DerivedRelationReadDenial::Request(cause),
+                crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(cause),
             ),
             cause => Read::Content(cause),
         })

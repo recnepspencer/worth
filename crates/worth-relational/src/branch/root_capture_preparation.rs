@@ -39,10 +39,10 @@ pub(super) fn prepare(
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
     envelope: Arc<CanonicalCommitEnvelope>,
-    content: &crate::content::ContentPublication,
+    content: &crate::content::publication::ContentPublication,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    symbols: &crate::runtime::RuntimeSymbolTable,
-    execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    planned_schema: Option<&Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     crate::execution::phase_observation::run(
         execution,
@@ -56,11 +56,12 @@ pub(super) fn prepare(
             let prepared_schema = prepare_schema(
                 issuer,
                 previous,
-                &envelope,
+                &envelope.schema_authority,
+                envelope.descriptor_semantics_version,
                 registry,
-                execution_contracts.as_ref(),
+                planned_schema,
             )?;
-            let change = crate::storage::substrate::maintenance::CommitChange::from_publication(
+            let change = crate::branch::commit_change::build_commit_change(
                 execution,
                 previous.map(Arc::as_ref),
                 published_delta,
@@ -122,11 +123,12 @@ pub(super) fn prepare(
                         envelope.commit.commit_id,
                     )
                 },
-                execution_contracts: match execution_contracts {
-                    Some(contracts) => std::sync::OnceLock::from(contracts),
-                    None => previous
+                execution_contracts: if planned_schema.is_none() {
+                    previous
                         .map(|source| source.execution_contracts.clone())
-                        .unwrap_or_default(),
+                        .unwrap_or_default()
+                } else {
+                    Default::default()
                 },
                 schema_authority: prepared_schema.authority,
                 _memory: memory,
@@ -155,9 +157,9 @@ fn prepare_regions(
     partitions: &impl PartitionAccess,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    symbols: &crate::runtime::RuntimeSymbolTable,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
-    change: &Arc<crate::storage::substrate::maintenance::CommitChange>,
+    change: &Arc<crate::branch::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
@@ -232,18 +234,16 @@ pub(super) fn root_slot_counts(
 fn prepare_schema(
     issuer: &RelationalBranchRootIdentityIssuer,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
+    expected: &crate::schema::data::SchemaAuthoritySnapshot,
+    semantics: crate::schema::data::DescriptorSemanticsVersion,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    execution: Option<&Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    planned_authority: Option<&Arc<RelationalBranchRootSchemaAuthority>>,
 ) -> Result<PreparedRootSchema, RelationalBranchRootCaptureDenial> {
-    let schema_root =
-        crate::schema::data::schema_authority_snapshot_digest_bytes(&envelope.schema_authority);
-    if let Some(execution) = execution.filter(|execution| {
-        execution.schema.matches(&envelope.schema_authority)
-            && execution.schema.descriptor_semantics_version()
-                == envelope.descriptor_semantics_version
+    let schema_root = crate::schema::data::schema_authority_snapshot_digest_bytes(expected);
+    if let Some(authority) = planned_authority.filter(|authority| {
+        authority.matches(expected) && authority.descriptor_semantics_version() == semantics
     }) {
-        let authority = execution.schema.clone();
+        let authority = Arc::clone(authority);
         let reused =
             previous.is_some_and(|source| Arc::ptr_eq(&source.schema_authority, &authority));
         return Ok(PreparedRootSchema {
@@ -259,9 +259,8 @@ fn prepare_schema(
         });
     }
     if let Some(previous) = previous.filter(|root| {
-        root.schema_authority.matches(&envelope.schema_authority)
-            && root.schema_authority.descriptor_semantics_version()
-                == envelope.descriptor_semantics_version
+        root.schema_authority.matches(expected)
+            && root.schema_authority.descriptor_semantics_version() == semantics
     }) {
         return Ok(PreparedRootSchema {
             authority: Arc::clone(&previous.schema_authority),
@@ -273,8 +272,8 @@ fn prepare_schema(
     let authority = RelationalBranchRootSchemaAuthority::capture(
         allocation_id,
         registry,
-        &envelope.schema_authority,
-        envelope.descriptor_semantics_version,
+        expected,
+        semantics,
         previous.map(|root| root.schema_authority.as_ref()),
     )
     .ok_or(RelationalBranchRootCaptureDenial::SchemaRootMismatch {
@@ -304,9 +303,11 @@ impl PreparedRootSchema {
                 cost.new_authoritative_bytes = cost
                     .new_authoritative_bytes
                     .checked_add(authoritative_bytes)
-                    .ok_or(RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
-                        crate::identity::data::PartitionId::main(),
-                    ))?;
+                    .ok_or(
+                        RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
+                            crate::identity::data::PartitionId::main(),
+                        ),
+                    )?;
             }
         }
         Ok(cost)

@@ -1,11 +1,25 @@
 //! Ordinary Native consequence mutation shares allocation, symbols and work custody.
-use crate::publication::ownership::{checkpoint, request};
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CanonicalCommitEnvelopeBody, CommitId},
-    identity::data::{EntityId, KindId, RelationId},
-    storage::overlay::{CurrentPartitionAccess, WorkingState},
-    transactions::data::*,
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CanonicalCommitEnvelopeBody;
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::RelationId;
+use crate::publication::ownership::read_request::checkpoint;
+use crate::publication::ownership::read_request::request;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::{
+    CreateIntent, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent, MutationIntent,
+    RelationMutationIntent, UpdateEntityFieldsIntent,
+};
+use crate::transactions::data::outcomes::{
+    created_entity_bindings::CommitCreatedEntityBindings, plan_artifacts::AuthoritativeApplyPlan,
+    transaction_commit_error::TransactionCommitError,
+};
+use crate::transactions::data::primitives::{
+    CreatedEntityRef, EntityReference, EntitySpec, RelationSpec,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 const LINK: &str = crate::schema::current_publication_ownership::LINK;
@@ -25,8 +39,7 @@ pub(crate) struct Writer<'a, 'request, 'scope, 'kernel, 'authority> {
     config: &'a crate::config::data::StorageConfig,
     basis: &'a AdmittedRelationalBranchBasis,
     pub(crate) working: &'a mut WorkingState,
-    identities:
-        &'a mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+    identities: &'a mut super::pending_identities::PendingMutationIdentities,
     candidate: &'a CanonicalCommitEnvelopeBody,
     context: &'a mut MapKernelContext<'kernel, 'authority>,
     funding: ExecutionMemoryReservation,
@@ -47,7 +60,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         config: &'a crate::config::data::StorageConfig,
         basis: &'a AdmittedRelationalBranchBasis,
         working: &'a mut WorkingState,
-        identities: &'a mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+        identities: &'a mut super::pending_identities::PendingMutationIdentities,
         candidate: &'a CanonicalCommitEnvelopeBody,
         context: &'a mut MapKernelContext<'kernel, 'authority>,
     ) -> Result<Self, TransactionCommitError> {
@@ -125,7 +138,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         let partition = link
             .map(|(_, target, _)| target.partition_id)
             .ok_or_else(|| {
-                crate::mvcc::origin_denial("ownership creation requires its publication source")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "ownership creation requires its publication source",
+                )
             })?;
         let key = ClientKey::raw(aspect);
         let created = CreatedEntityRef {
@@ -153,7 +168,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         }
         let bindings = self.apply(intents)?;
         bindings.resolve(&created).ok_or_else(|| {
-            crate::mvcc::origin_denial("Native current ownership allocation lost its binding")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "Native current ownership allocation lost its binding",
+            )
         })
     }
     pub(crate) fn create_link(
@@ -254,11 +271,11 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
                 MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
                     relations.insert(spec.relation_id);
                 }
-                _ => {
-                    return Err(crate::mvcc::origin_denial(
+                _ => return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "unsupported Native ownership consequence",
-                    ))
-                }
+                    ),
+                ),
             }
         }
         partitions.extend(entities.iter().map(|id| id.partition_id));
@@ -269,7 +286,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
                 .root
                 .demand_head_partition(self.execution, *partition)
                 .map_err(|cause| {
-                    crate::authority::commit::preparation::storage_read_denial(self.basis, cause)
+                    crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                        self.basis, cause,
+                    )
                 })?;
         }
         let mut held = self.funding.bytes();
@@ -314,7 +333,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             &mut self.identities.symbols,
             BranchLocalDeleteAllowance::default(),
             &mut self.identities.records,
-            crate::authority::commit::pipeline::request_lease(self.execution),
+            crate::execution::request_custody::request_lease(self.execution),
             // The borrowed context belongs to the enclosing ownership stage.
             // Nested mutation reports charge that stage, never redispatch its account.
             None,
@@ -322,7 +341,9 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         .map_err(|cause| match cause {
             MutationApplyDenial::Commit(cause) => cause,
             MutationApplyDenial::Symbols(cause) => {
-                crate::mvcc::origin_denial(format!("Native ownership symbol admission: {cause:?}"))
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    format!("Native ownership symbol admission: {cause:?}"),
+                )
             }
         })?;
         crate::authority::mutation::apply_adjacency_deltas_for_request(

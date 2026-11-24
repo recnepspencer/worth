@@ -2,30 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::merge::data::{
-    MergeConflictClass, MergePlanningArtifactCore, MergePolicyDecisionBoundary,
-    MergeSchemaSnapshotDigestBasis, PreparedMergeExecution, RelationalSchemaReconciliationBasisRow,
-    RelationalSchemaReconciliationCorrespondenceLinkRow, RelationalSchemaReconciliationWitness,
-    RelationalSchemaReconciliationWitnessRow, RelationalSchemaReconciliationWitnessRowInput,
-    VisibleMergeRecord,
+    MergeConflictClass, MergePolicyDecisionBoundary, MergeSchemaSnapshotDigestBasis,
+    RelationalSchemaReconciliationBasisRow, RelationalSchemaReconciliationCorrespondenceLinkRow,
+    RelationalSchemaReconciliationWitness, RelationalSchemaReconciliationWitnessRow,
+    RelationalSchemaReconciliationWitnessRowInput, VisibleMergeRecord,
 };
-
-use super::MergeAccess;
-
-impl<'runtime> MergeAccess<'runtime> {
-    pub fn retain_schema_reconciliation_witness_from_prepared_execution(
-        &self,
-        prepared: &PreparedMergeExecution,
-    ) -> RelationalSchemaReconciliationWitness {
-        prepared.artifact().schema_reconciliation_witness.clone()
-    }
-
-    pub fn retain_schema_reconciliation_witness_from_planning_artifact(
-        &self,
-        artifact: &MergePlanningArtifactCore,
-    ) -> RelationalSchemaReconciliationWitness {
-        artifact.schema_reconciliation_witness.clone()
-    }
-}
 
 pub(crate) fn retained_schema_reconciliation_witness(
     plan: &crate::merge::data::LoweredMergePlan,

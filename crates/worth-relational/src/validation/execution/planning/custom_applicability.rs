@@ -3,11 +3,13 @@
 use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, EntityReference, MutationIntent, RecordRef,
-    RelationMutationIntent,
-};
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;
 use crate::validation::engine::InvariantExecutionRequest;
 

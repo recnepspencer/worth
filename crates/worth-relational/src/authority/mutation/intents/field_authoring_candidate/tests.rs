@@ -7,7 +7,8 @@ use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding,
 };
-use crate::transactions::data::{planned_single_field_locator, RecordAspectPatchTarget};
+use crate::transactions::data::aspect_field_patch::planned_single_field_locator;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use std::collections::BTreeMap;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::*;
@@ -186,7 +187,10 @@ fn mutation_patch_retains_moved_values_through_real_consumer_and_refunds() {
     };
     let mut catalog = AspectContractPlanCatalog::empty();
     catalog.entity_plans.insert(KindId(1), plan);
-    let delta = canonical_deltas::canonical_delta_for_mutation(&change, &catalog).unwrap();
+    let delta = crate::authority::mutation::mutation_delta_dispatch::canonical_delta_for_mutation(
+        &change, &catalog,
+    )
+    .unwrap();
     assert_eq!(budget.charged_memory_bytes(), bill);
     let outcomes::RecordMutation::EntityCreated {
         authoritative_patch: Some(patch),

@@ -1,7 +1,7 @@
 //! Original-request backing keeps consumed candidate stages off deeper frames.
-use crate::transactions::data::{
-    CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 pub(crate) struct CommitPhaseBacking<T> {

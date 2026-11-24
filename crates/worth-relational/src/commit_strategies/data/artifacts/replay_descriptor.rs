@@ -1,23 +1,26 @@
+use crate::commit_strategies::data::artifact_basis::StrategyArtifactBasis;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::commit_strategies::data::canonical_digest::{
     commit_validation_summary_digest, lowering_summary_digest, preview_validation_cost_digest,
     runtime_invariant_catalog_digest,
 };
-use crate::commit_strategies::data::{
-    CanonicalStrategyInputDigest, CanonicalStrategyOutputDigest, CommitStrategyDescriptorDigest,
-    CommitStrategyId, LoweredStrategyCommitPlan, StrategyInputSchemaName,
-    StrategyInputSchemaVersion, StrategyMutationProgramDigest, StrategyOutputSchemaName,
-    StrategyPreviewValidationCostSummary,
-};
+use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptorDigest;
+use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
+use crate::commit_strategies::data::execution::mutation_program::StrategyMutationProgramDigest;
+use crate::commit_strategies::data::execution::output_artifact::CanonicalStrategyOutputDigest;
+use crate::commit_strategies::data::request::CanonicalStrategyInputDigest;
+use crate::commit_strategies::data::strategy_id::CommitStrategyId;
+use crate::commit_strategies::data::validation::StrategyPreviewValidationCostSummary;
+use crate::commit_strategies::data::{StrategyInputSchemaName, StrategyOutputSchemaName};
 use crate::config::data::RelationalRuntimeConfig;
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::identity::data::VersionId;
 use crate::schema::data::{
     schema_authority_snapshot_digest_bytes, DescriptorCanonicalBasisVersion,
     DescriptorSemanticsVersion,
 };
-use crate::transactions::data::CommitValidationSummary;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StrategyReplayDescriptor {
@@ -39,7 +42,7 @@ pub struct StrategyReplayDescriptor {
 
 impl StrategyReplayDescriptor {
     pub fn from_lowered(
-        lowered: &LoweredStrategyCommitPlan,
+        lowered: &StrategyArtifactBasis,
         runtime_config: &RelationalRuntimeConfig,
     ) -> Self {
         Self {

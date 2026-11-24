@@ -1,6 +1,7 @@
 use std::sync::{Arc, Weak};
 
-use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
 
 use super::owner::RelationalBranchRetentionOwnerInner;
 

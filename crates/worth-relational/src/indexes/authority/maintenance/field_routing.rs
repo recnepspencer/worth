@@ -10,7 +10,7 @@ pub(super) fn positions(
     routing: &InstalledIndexRouting,
     pending: &BTreeMap<DerivedIndexId, usize>,
     exact: Option<&super::field_changes::FieldChanges>,
-    record: crate::transactions::data::RecordRef,
+    record: crate::transactions::data::primitives::RecordRef,
     entity: bool,
     kinds: impl Iterator<Item = KindId>,
     work: &mut MaintenanceWork,

@@ -1,18 +1,13 @@
 //! Read the supported cache tuple into request-owned original generation DATA.
-use super::funding::{IndexArray, IndexCheckpointWork};
+use super::funding::IndexCheckpointWork;
 use super::{decode_budget::*, generation_decode_quote as quote, DerivedIndexCheckpointArtifacts};
 use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
 use crate::durability::data::RelationalRecoveryStop as Stop;
-use crate::indexes::data::{DerivedIndexArtifacts, DerivedIndexGeneration};
+use crate::indexes::data::DerivedIndexArtifacts;
+use crate::runtime::state::subsystems::indexing::checkpoint_image::CapturedCheckpointGenerations;
 use std::sync::Arc;
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 
-pub(crate) struct CapturedCheckpointGenerations {
-    pub(crate) generations: IndexArray<Arc<DerivedIndexGeneration>>,
-    /// Exact-root selections the image carried beside its generations.
-    pub(crate) bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
-    _funding: IndexArray<Option<ExecutionMemoryReservation>>,
-}
 pub(crate) fn decode(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     payload: &[u8],

@@ -1,6 +1,7 @@
 //! Recorded declarations never manufacture executable format handles.
 use super::{Denial, RelationalContentFormatRegistry};
-use crate::content::{RelationalContentSchemaSnapshot, MAXIMUM_CONTENT_FRAME_BYTES};
+use crate::content::limits::MAXIMUM_CONTENT_FRAME_BYTES;
+use crate::content::schema::RelationalContentSchemaSnapshot;
 use worth_foundational::facade::CanonicalDigestId;
 
 impl RelationalContentFormatRegistry {

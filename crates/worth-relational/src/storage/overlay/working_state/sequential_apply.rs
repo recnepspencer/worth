@@ -6,7 +6,7 @@ impl WorkingState {
         &mut self,
         next: Self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.adopt_sequential_apply_using(next, Some(request))
     }
 
@@ -14,9 +14,8 @@ impl WorkingState {
         &mut self,
         next: Self,
         request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.clone_mode = PartitionCloneMode::GraphSparseEntities;
-        self.content = next.content;
         for (id, mut overlay) in next.partitions {
             if let Some(request) = request {
                 request.consult()?;
