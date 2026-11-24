@@ -1,4 +1,5 @@
 //! Genuine production Host fixture and passive semantic observations.
+pub mod adversarial_verdict;
 pub mod branch_comparison;
 pub mod checkpoint_causality;
 pub mod comparison;

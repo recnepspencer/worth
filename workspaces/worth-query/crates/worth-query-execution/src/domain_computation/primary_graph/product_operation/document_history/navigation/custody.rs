@@ -5,8 +5,8 @@ use crate::{
     domain_computation::{
         execution_runtime::product_world::WorthQueryPreparedProductPublication,
         primary_graph::{
-            WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch,
-            WorthQueryPrimaryGraphApplicationRuntime,
+            product_operation::WorthQueryRuntimeCustody, WorthQueryApplicationIdempotencyBinding,
+            WorthQueryExpectedProductBranch,
         },
         WorthQueryProductUnpublishedRecovery,
     },
@@ -64,7 +64,7 @@ pub(super) enum NavigationPhase<'runtime, S> {
 
 pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) pending_slot: Option<super::pending_capacity::PendingNavigationSlot>,
-    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(super) application: WorthQueryRuntimeCustody<'runtime, S>,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
     pub(super) output_profile: Option<WorthQueryHistoryOutputProfile>,
     pub(super) output_source: Option<super::output_authority::HistoryRestoredOutputBasis>,
@@ -72,8 +72,8 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) output_source_memory: Option<ExecutionMemoryReservation>,
     pub(super) expected: WorthQueryHistorySelection,
     pub(super) model: super::super::HistoryModelIdentity,
-    pub(super) ownership:
-        Option<&'runtime worth_relational::facade::branch::RelationalModelOwnership>,
+    /// The installed ownership recipe's identity when the model is an owned graph.
+    pub(super) ownership: Option<&'static str>,
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
     pub(super) intent: WorthQueryHistoryNavigationIntent,

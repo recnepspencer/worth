@@ -107,7 +107,10 @@ pub trait InstalledProducerExecutor<Schema>:
         &self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<super::super::authored_edit::ProducerDependencyScopes, WorthQueryOutputDemandDenial>;
-    fn supports_history_group(&self) -> bool;
+    /// Why document history cannot record this producer's work, naming it.
+    fn history_refusal(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial>;
 
     fn recover_publication(
         &self,
@@ -180,17 +183,27 @@ where
         });
         Ok(super::super::authored_edit::ProducerDependencyScopes { identity: Binding::IDENTITY.into(), family: <Binding::OutputFamily as worth_query_declaration::facade::application_program::WorthQueryProducerOutputFamily<Schema>>::IDENTITY, family_type: crate::equality_type_id::EqualityTypeId::of::<Binding::OutputFamily>().into_external(), contract: self.mutation.operation().contracts().read_touch_overlap().clone(), queries })
     }
-    fn supports_history_group(&self) -> bool {
+    fn history_refusal(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial> {
+        use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial as Denial;
         use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
-        !Operation::<Schema, Binding>::WORKFLOW_CONTROL
-            && !Operation::<Schema, Binding>::REQUIRES_WORKFLOW_AUTHORITY
-            && !Operation::<Schema, Binding>::workflow_execution_requirements().is_applicable()
-            && !self
-                .mutation
-                .operation()
-                .contracts()
-                .external_effect()
-                .is_declared()
+        if Operation::<Schema, Binding>::WORKFLOW_CONTROL
+            || Operation::<Schema, Binding>::REQUIRES_WORKFLOW_AUTHORITY
+            || Operation::<Schema, Binding>::workflow_execution_requirements().is_applicable()
+        {
+            return Some(Denial::WorkflowProducer {
+                producer: Binding::IDENTITY.into(),
+            });
+        }
+        self.mutation
+            .operation()
+            .contracts()
+            .external_effect()
+            .is_declared()
+            .then(|| Denial::ExternalEffectProducer {
+                producer: Binding::IDENTITY.into(),
+            })
     }
 
     fn recover_publication(

@@ -95,6 +95,10 @@ impl QueryJournalPublication {
                     if self.proven_no_effect(&observed) {
                         drop(failure.into_stopped());
                         Endpoint::NoEffect(observed)
+                    } else if observed.terminal().is_some() {
+                        self.state().invalid |= !self.matches(observed.source());
+                        drop(failure.into_stopped());
+                        Endpoint::Terminal(observed)
                     } else {
                         Endpoint::Stopped(failure.into_stopped())
                     }

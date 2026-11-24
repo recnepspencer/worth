@@ -380,6 +380,7 @@ mod storage_retention_contract;
 mod causal_inspection_contract;
 mod disclosure_and_program_fences_contract;
 mod projection_derive_contract;
+mod projection_name_derive_contract;
 mod projection_relation_derive_contract;
 mod runtime_and_handler_fences_contract;
 mod semantic_refusal_contract;

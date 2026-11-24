@@ -1,7 +1,9 @@
 //! Handler-facing persistent-name births and postures over this candidate's
 //! outputs. Each call only declares meaning; Relational mints and validates
 //! every name against the performed effects at commit.
-use worth_query_declaration::facade::application_naming::WorthQueryName;
+use worth_query_declaration::facade::application_naming::{
+    WorthQueryName, WorthQuerySameCommitName,
+};
 use worth_query_execution_naming::facade::{WorthQueryOutputBirth, WorthQueryOutputMergeKeeper};
 
 use super::*;
@@ -31,6 +33,25 @@ where
         birth: WorthQueryOutputBirth,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.name_created_relation(created, birth)
+    }
+
+    /// The reference to the name an entity this candidate created and
+    /// already named will be born with. A later-role output of the same
+    /// occurrence embeds it in its discriminator; nothing else accepts it.
+    pub fn same_commit_entity_name<Entity>(
+        &self,
+        created: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+    ) -> Result<WorthQuerySameCommitName<Entity>, WorthQueryApplicationAttemptDenial> {
+        self.candidate.same_commit_entity_name(created)
+    }
+
+    /// The reference to the name a relation this candidate linked and
+    /// already named will be born with.
+    pub fn same_commit_relation_name<Relation, From, To>(
+        &self,
+        created: &WorthQueryApplicationCreatedRelation<Schema, Relation, From, To>,
+    ) -> Result<WorthQuerySameCommitName<Relation>, WorthQueryApplicationAttemptDenial> {
+        self.candidate.same_commit_relation_name(created)
     }
 
     /// Ends `held` with the entity this candidate deletes, so the same

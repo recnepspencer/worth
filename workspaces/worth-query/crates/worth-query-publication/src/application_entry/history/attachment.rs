@@ -1,5 +1,7 @@
 use super::*;
+use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_execution::facade::product::WorthQueryOwnedProductHead;
+use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryAttachmentFailure;
 
 impl<S: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, S> {
     /// Attach the actual owned slot using the declared READ on this current branch.
@@ -17,7 +19,15 @@ impl<S: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, S> {
         Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        self.attach_history_payload(phase, head, access, OrdinaryHistoryPayload)
+        self.attach_history_payload(
+            phase,
+            head,
+            access,
+            OrdinaryHistoryPayload,
+            |runtime, head, read| {
+                runtime.attach_document_history(phase, &program_publication_access(), head, read)
+            },
+        )
     }
 
     /// Attach with a reusable purpose for fresh governed payload READ admission.
@@ -53,17 +63,30 @@ impl<S: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, S> {
                 operation,
                 input,
             },
+            |runtime, head, read| {
+                runtime.attach_document_history(phase, &program_publication_access(), head, read)
+            },
         )
     }
 
-    fn attach_history_payload<'head, H, Payload>(
+    /// One attachment for every custody: `attach` hands the admitted read and
+    /// the head to the runtime owner that will hold the document's head.
+    pub(super) fn attach_history_payload<'head, 'document, H, Payload>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         head: WorthQueryOwnedProductHead<'head, S>,
         access: H::Access,
         payload: Payload,
+        attach: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<S>,
+            WorthQueryOwnedProductHead<'head, S>,
+            WorthQueryDocumentHistoryRead<'_, S, H>,
+        ) -> Result<
+            WorthQueryDocumentHistory<'document, S, H>,
+            WorthQueryDocumentHistoryAttachmentFailure<'head, S>,
+        >,
     ) -> Result<
-        WorthQueryApplicationHistoryDocument<'head, S, H, Payload>,
+        WorthQueryApplicationHistoryDocument<'document, S, H, Payload>,
         WorthQueryApplicationHistoryAttachmentFailure<'head, S>,
     >
     where
@@ -94,18 +117,15 @@ impl<S: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, S> {
             None,
             |runtime, binding, external, plan| {
                 let read = WorthQueryDocumentHistoryRead::new(&installed, binding, external, plan);
-                Ok(runtime
-                    .attach_document_history(
-                        phase,
-                        &program_publication_access(),
-                        head.take().expect("one attachment transfer"),
-                        read,
-                    )
-                    .map_err(|failure| {
-                        let (original, denial) = failure.into_parts();
-                        head = Some(original);
-                        WorthQueryApplicationHistoryDenial::Document(denial)
-                    }))
+                Ok(
+                    attach(runtime, head.take().expect("one attachment transfer"), read).map_err(
+                        |failure| {
+                            let (original, denial) = failure.into_parts();
+                            head = Some(original);
+                            WorthQueryApplicationHistoryDenial::Document(denial)
+                        },
+                    ),
+                )
             },
         );
         let result = result

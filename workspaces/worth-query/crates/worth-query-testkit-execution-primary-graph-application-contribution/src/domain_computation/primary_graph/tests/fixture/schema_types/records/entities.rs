@@ -54,6 +54,12 @@ impl Account {
         entity(ExecutionRecords, Self)
     }
 }
+/// Courts of the persistent-name reader hold account names; nothing owns an
+/// account.
+impl worth_query_declaration::facade::application_naming::WorthQueryNamedKind for Account {
+    type Subject = worth_query_declaration::facade::application_naming::EntityNameSubject;
+    type OwnerScope = worth_query_declaration::facade::application_naming::Unowned;
+}
 pub struct Activity;
 impl fragment::Entity for Activity {
     const NAME: &'static str = "Activity";

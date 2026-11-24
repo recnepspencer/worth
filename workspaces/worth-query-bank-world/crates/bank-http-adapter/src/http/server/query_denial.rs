@@ -201,7 +201,10 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
         | Projection::RelationNotProjected
         | Projection::RelationContractMismatch
         | Projection::RelationCardinalityMismatch
-        | Projection::RelationOmitted => internal_denied(),
+        | Projection::RelationOmitted
+        | Projection::PersistentNamesUnavailable
+        | Projection::PersistentNameMissing
+        | Projection::PersistentNameKindMismatch => internal_denied(),
     }
 }
 

@@ -1,5 +1,6 @@
 //! An owned-member edit that leaves the producer model source unchanged.
 use super::*;
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource;
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Intent {
@@ -27,6 +28,14 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope MemberKey, field MemberKey::at("MemberKey"), value scope,
 );
+thread_local! {
+    static STOP_DURING_DECIDE: std::cell::RefCell<Option<WorthQueryCancellationSource>> =
+        const { std::cell::RefCell::new(None) };
+}
+/// The next member decision on this thread cancels this request and stops.
+pub(super) fn stop_request_during_next_decide(cancellation: WorthQueryCancellationSource) {
+    STOP_DURING_DECIDE.with(|stop| *stop.borrow_mut() = Some(cancellation));
+}
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -34,6 +43,10 @@ impl OperationHandler<Schema, Binding> for Handler {
         input: &Intent,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Member>, Denial> {
+        if let Some(cancellation) = STOP_DURING_DECIDE.with(|stop| stop.borrow_mut().take()) {
+            cancellation.cancel();
+            return HandlerResult::Cancelled;
+        }
         if input.value > 1000 {
             return HandlerResult::DomainDenied(Denial::ValueOutOfRange);
         }

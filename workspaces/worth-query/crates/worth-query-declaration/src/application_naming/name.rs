@@ -15,6 +15,17 @@ use std::marker::PhantomData;
 /// arbitrary strings, cannot substitute a name of one kind for another, and
 /// cannot mutate a held name in place.
 ///
+/// # Held as a value
+///
+/// A name of a [`super::WorthQueryNamedKind`] is a canonical value, so a
+/// record column, an action input or a structured result holds it. Its one
+/// stored form is versioned text tagged with the kind's declared subject;
+/// reading it back accepts only text stored as that same kind and refuses
+/// everything else with [`super::StoredNameDenial`]. That codec is the only
+/// way a name is read from stored data, and it grants nothing: a name read
+/// back is a held reference that every reader, selection and discriminator
+/// admits only against a recorded birth of its kind.
+///
 /// Forging from raw bytes is refused at compile time:
 ///
 /// ```compile_fail

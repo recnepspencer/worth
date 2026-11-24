@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionParts,
 };
@@ -74,7 +75,21 @@ where
         }
 
         let layout = self.lease.layout.workflow().clone();
+        let basis = self.lease.product().relational_basis();
+        let def_id = bound.contract.definition().identity().as_str();
         let lineage = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted(
+                execution,
+                runtime,
+                basis,
+                [Some(layout.lineage.identity_index_id)],
+            )
+            .map_err(|stop| match stop {
+                crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop::Admission(
+                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                ) => WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, def_id),
+                _ => lineage::lineage_denial(def_id),
+            })?;
             select_lineage::<Spec>(
                 runtime,
                 execution,

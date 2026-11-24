@@ -1659,6 +1659,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-testkit-execution-primary-graph-application-attempt"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-execution-primary-graph-application-contribution"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-relational",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
 name = "worth-query-testkit-host"
 version = "0.1.0"
 dependencies = [
@@ -1989,6 +2021,7 @@ dependencies = [
  "worth-query-execution",
  "worth-query-host",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
  "worth-query-testkit-host",
  "worth-query-testkit-installation",
  "worth-relational",

@@ -36,7 +36,9 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 pub mod managed_index;
+pub mod name_owner;
 pub mod naming;
+pub mod relation_naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
     WorthQueryComputationManagedIndexDenialKind,

@@ -19,6 +19,7 @@ mod historical_result;
 mod incremental_expectation;
 mod inventory;
 mod protocol;
+mod recovery_rebuild_match;
 mod release_head;
 mod topology_transcript;
 mod tree;
@@ -94,7 +95,8 @@ pub(super) fn build(
     let (root, mut build, referenced_artifacts) = match observed_successor {
         Some(observed) => {
             adoption::admit_observed(base, source, &final_inventory, &observed, allowance)?;
-            let (expected_root, scratch_bytes) = incremental_expectation::derive(
+            let used_before_incremental = allowance.used();
+            let (expected_root, scratch_bytes) = match incremental_expectation::derive(
                 base,
                 source,
                 &final_inventory,
@@ -102,7 +104,32 @@ pub(super) fn build(
                 &observed,
                 maintenance,
                 allowance,
-            )?;
+            ) {
+                Ok(matched) => matched,
+                Err(
+                    conflict @ CandidateBuildDenial::SuccessorCandidate(
+                        PhysicalRecoverySuccessorCandidateDenial::Conflict { .. },
+                    ),
+                ) => {
+                    allowance.release_to_baseline(used_before_incremental);
+                    match recovery_rebuild_match::match_observed(
+                        base,
+                        source,
+                        &final_inventory,
+                        format,
+                        &observed,
+                        maintenance,
+                        allowance,
+                    )? {
+                        Some(matched) => matched,
+                        None => return Err(conflict),
+                    }
+                }
+                Err(other) => {
+                    allowance.release_to_baseline(used_before_incremental);
+                    return Err(other);
+                }
+            };
             debug_assert_eq!(expected_root, observed.root);
             comparison_scratch_bytes = scratch_bytes;
             observed_build(format, observed, allowance)?

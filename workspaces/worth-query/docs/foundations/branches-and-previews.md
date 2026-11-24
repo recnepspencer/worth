@@ -1062,3 +1062,185 @@ the group. A homogeneous member list can use source-completion or
 fixed required-output actions. Group creation, finish and abort preserve the
 document's payload and configured output mode.
 
+
+## Record a multi-stage envelope as one step
+
+Use an envelope when one user action needs several different operations to
+commit together, for example an edit of the model and an edit of a member it
+owns. The document records the whole envelope as one step: one undo restores
+every stage, and a refusal records nothing.
+
+Open the envelope on the attached document, author its stages, then execute.
+`program` is the installed `WorthQueryProgramApplicationRuntime`, and `request`
+is an ordinary request on the document's own branch. `key` identifies the whole
+envelope for retries.
+
+```rust,ignore
+use worth_query_host::facade::application_entry::{
+    WorthQueryHistoryEditEnvelopeOutcome, WorthQueryHistoryStepMetadata,
+};
+
+let mut envelope = match document.edit_envelope(&program, &request, key) {
+    Ok(envelope) => envelope,
+    Err(failure) => return Err(failure.into_parts()),
+};
+envelope.push_stage::<ApplicationNoOutputGraph, _>(SetModelIntent { key: model, value })?;
+envelope.push_stage::<ApplicationNoOutputGraph, _>(SetMemberIntent { key: member, value })?;
+match envelope.execute_recorded(metadata, ExecutionAllocationPolicy::SystemAllocation) {
+    Ok(WorthQueryHistoryEditEnvelopeOutcome::Recorded { document, step, receipt }) => {
+        // `step` is the document's new current step; `receipt` holds the stage results.
+    }
+    Ok(WorthQueryHistoryEditEnvelopeOutcome::AlreadyRecorded { document, step }) => {
+        // An earlier call with this key and these stages recorded `step`.
+    }
+    Err(failure) => {
+        let (document, denial) = failure.into_parts();
+        // The document is at its prior head. The same key may be retried.
+    }
+}
+```
+
+The stage calls are the request envelope's own, with the same type parameters
+and the same stage tokens:
+
+- `push_stage::<R, I>(intent)`
+- `push_stage_with_source::<R, I, E>(intent, source)`
+- `ordered_authored()`, before the first stage
+
+`execute_recorded(metadata, allocation)` replaces the request envelope's
+`execute`. `cancel()` returns the document untouched. Nothing is admitted,
+reserved or forked before `execute_recorded`.
+
+The call is one-shot. The stages run on a private candidate forked from the
+document's head. They commit there once, and only then does the head move.
+There is no unfinished envelope to keep, advance or abort.
+
+### What the outcome names
+
+- `Recorded { document, step, receipt }`: the envelope committed and `step` is
+  the new current step. `receipt` is the live `WorthQueryEditEnvelopeReceipt`;
+  read each stage's result from it with the token `push_stage` returned.
+- `AlreadyRecorded { document, step }`: an earlier call with the same key and
+  the same stages already recorded `step`. Nothing ran and no producer was
+  contacted. There is no receipt, because stage results exist only on the call
+  that committed. This is the envelope's counterpart of `AlreadyRecorded` on
+  `edit` and `group_edits`, and it stands where the request envelope would
+  return `RecoveredCommitted`.
+
+The same key with different stages or inputs refuses
+`History(Document(IntentDrift))`.
+
+### Which stages a document accepts
+
+Every stage must be an operation the history declaration enrolled, with
+`.operation::<Binding>(label)` or `.owned_operation::<Binding>(label)`. The
+first stage's label is the step's label. Each stage is checked before any
+effect:
+
+| Refusal (`Stage { ordinal, denial }`) | Cause |
+| --- | --- |
+| `OperationNotDeclared` | The stage's operation is not enrolled in this history. |
+| `UnsupportedOperation` | The operation has a workflow or an external effect. |
+| `WorkflowProducer { producer }` | A producer the stage's outputs can reach is workflow control or needs workflow authority. |
+| `ExternalEffectProducer { producer }` | A producer the stage's outputs can reach declares an external effect. |
+| `ForeignModel` | The stage's scope is another model. |
+| `UnownedOperationScope { subject, model }` | The stage's scope is an entity this model does not own at the head. |
+
+The two producer refusals cover every installed producer in the output
+families the stage declares, requires or discovers. `producer` is the
+producer binding's identity. No undo could take back a workflow or an external
+effect, so the stage is refused before any stage runs.
+
+Ownership is checked again at the committed candidate, before the head moves.
+A stage that moves its entity out of the model within the step refuses there,
+and the whole envelope rolls back.
+
+### Refusals
+
+`failure.into_parts()` returns the document and a
+`WorthQueryHistoryEditEnvelopeDenial`. In every case the document is at its
+prior head, nothing is pending and the same key may be used again.
+
+| Denial | Meaning |
+| --- | --- |
+| `Empty` | No stage was authored. |
+| `History(..)` | The document refused before any effect: foreign runtime, another branch, `HeadDiverged`, `IntentDrift`, `AttemptInFlight` or `StepMetadataTooLarge { length, maximum }`. |
+| `Stage { ordinal, denial }` | The document refused that stage (table above). |
+| `Candidate(..)` | The private candidate could not be forked, for example at the installed World branch budget. |
+| `Envelope(outcome)` | The envelope ended without committing: a domain denial, a stage execution denial, cancellation or a deadline. |
+| `Outputs(..)` | The stages committed on the candidate, but a bound output tree could not be recorded there. |
+| `Adoption(..)` | The stages committed on the candidate, but the head could not adopt it. |
+
+Step metadata is bounded by
+`ApplicationHistoryBinding::RETENTION_RESOURCES.maximum_step_metadata_bytes`
+(4096 by default).
+
+### Output trees
+
+A document configured with `with_output_trees` records every bound tree at the
+envelope's commit, before the head moves. `execute_recorded` drives the trees'
+producers until all are recorded or the request can no longer advance. Undo,
+redo and checkout then restore each tree with the step, without contacting a
+producer. An owned output family with no bound tree refuses
+`Outputs(RecordingQualification(Incomplete { model }))`.
+
+### After a stopped request
+
+A request that is cancelled or passes its deadline during `execute_recorded`
+returns the document at its prior head. Such a request can no longer close the
+private candidate, so the document keeps that candidate for later release.
+Until it is released it counts against the installed World branch budget.
+
+After a stopped envelope, run maintenance under a fresh request:
+
+```rust,ignore
+match document.maintain_history(&request)? {
+    WorthQueryHistoryReleaseOutcome::Closed => { /* one kept candidate closed; call again */ }
+    WorthQueryHistoryReleaseOutcome::NoPendingRelease => { /* nothing is kept */ }
+    waiting => { /* `waiting` names what holds the release; call again later */ }
+}
+```
+
+Each call closes at most one kept candidate. Closing the document also
+releases it.
+
+Maintenance does not have to come first. The next `edit`, `gesture` or
+`edit_envelope` on the document records, or is discarded, as usual. The kept
+candidate still waits for maintenance or for close.
+
+## Keep a document beside its runtime
+
+`attach_history` returns a document that borrows the runtime, so the two cannot
+live in one struct. `attach_owned_history` returns
+`WorthQueryOwnedApplicationHistoryDocument`, which holds the installed runtime
+alive instead of borrowing it:
+
+```rust,ignore
+use worth_query_host::facade::application_entry::WorthQueryOwnedApplicationHistoryDocument;
+
+struct Session {
+    runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
+    document: Option<WorthQueryOwnedApplicationHistoryDocument<Schema, History>>,
+}
+
+let document = request
+    .on_branch(head.branch())
+    .attach_owned_history::<History, _>(&runtime, &phase, head, access)?;
+```
+
+The request and the head must both belong to `runtime`. A head of another
+runtime refuses `ForeignRuntime`, and a request on another branch refuses as it
+does for `attach_history`. Either refusal returns the original head, unchanged
+and still usable on its own runtime.
+
+The owned document is the ordinary document type with no runtime borrow. Every
+document operation applies unchanged: reads, pages, `edit`, `group_edits`,
+`edit_envelope`, navigation, output trees, retention and `close`. It stays
+move-only. A document with no output trees is `Send + Sync`. A document with
+bound output trees is not, because the trees hold producers that are not
+shareable between threads.
+
+**Close the document before the runtime.** While an owned document is open,
+`runtime.close_conditional_runtime()` refuses `RuntimeKeepaliveRetained`.
+`document.close(&phase)` releases the hold and returns the
+`WorthQueryDocumentHistoryCloseReceipt`; the runtime then closes normally.

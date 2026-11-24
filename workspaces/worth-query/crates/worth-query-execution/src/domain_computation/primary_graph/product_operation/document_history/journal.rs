@@ -3,7 +3,7 @@ use super::{
     allocation::HistoryInsertionAllocation,
     observation::{Access, EnrollmentSink, WorthQueryHistoryEnrollmentObservationForTest},
     step::{DocumentIncarnation, WorthQueryHistoryNodeId, WorthQueryHistoryStep},
-    WorthQueryDocumentHistoryDenial as Denial,
+    WorthQueryDocumentHistoryDenial as Denial, WorthQueryHistoryStepMetadata,
 };
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -47,6 +47,7 @@ pub(super) enum NodeBinding {
     Reserved {
         parent: WorthQueryHistoryNodeId,
         label: Arc<str>,
+        metadata: WorthQueryHistoryStepMetadata,
     },
     Completed(RecordedNode),
 }
@@ -192,7 +193,13 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                 binding: NodeBinding::Completed(RecordedNode {
                     step: {
                         use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
-                        WorthQueryHistoryStep::new_history_step(current, None, None, endpoint)
+                        WorthQueryHistoryStep::new_history_step(
+                            current,
+                            None,
+                            None,
+                            WorthQueryHistoryStepMetadata::none(),
+                            endpoint,
+                        )
                     },
                     root_posture: None,
                 }),
@@ -269,7 +276,11 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         endpoint: WorthQueryProductBranchReadIdentity,
     ) -> WorthQueryHistoryStep {
         self.access(Access::Node);
-        let NodeBinding::Reserved { parent, label } = &self
+        let NodeBinding::Reserved {
+            parent,
+            label,
+            metadata,
+        } = &self
             .nodes
             .get(&reserved.node.ordinal())
             .expect("reserved node")
@@ -282,6 +293,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             reserved.node,
             Some(*parent),
             Some(Arc::clone(label)),
+            metadata.clone(),
             endpoint,
         )
     }

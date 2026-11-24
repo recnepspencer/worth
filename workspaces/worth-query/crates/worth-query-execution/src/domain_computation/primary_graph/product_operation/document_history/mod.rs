@@ -36,6 +36,10 @@ pub use description::{
     WorthQueryHistoryDescriptionContext,
 };
 mod disposal;
+mod envelope_recording;
+pub use envelope_recording::{
+    WorthQueryDocumentHistoryEnvelopeConstraint, WorthQueryDocumentHistoryEnvelopeIntent,
+};
 mod group;
 mod head_custody;
 pub use group::{
@@ -124,6 +128,7 @@ pub use paging::{
 pub use preview::WorthQueryHistoryPreview;
 pub(in crate::domain_computation::primary_graph) use selection::HistorySelectionCell;
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryStepMetadata;
 
 use super::WorthQueryOwnedProductHead;
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
@@ -136,7 +141,11 @@ pub struct WorthQueryDocumentHistory<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
 > {
-    pub(in crate::domain_computation::primary_graph) application: &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(in crate::domain_computation::primary_graph) application:
+        crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<
+            'runtime,
+            S,
+        >,
     pub(in crate::domain_computation::primary_graph) selection:
         std::sync::Arc<HistorySelectionCell<'runtime, S>>,
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
@@ -155,8 +164,21 @@ pub struct WorthQueryDocumentHistory<
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
-    pub fn application(&self) -> &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>{
-        self.application
+    pub fn application(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
+    {
+        &self.application
+    }
+
+    /// A separate hold on the runtime, for an owner created from this document.
+    pub(in crate::domain_computation::primary_graph) fn custody(
+        &self,
+    ) -> crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<
+        'runtime,
+        S,
+    > {
+        self.application.clone()
     }
 
     /// Descriptive targeting for the Publication owner; it grants no READ permission.

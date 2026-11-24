@@ -3,6 +3,7 @@
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::validate_selected_authorization_currentness;
+use crate::domain_computation::primary_graph::application_query::read_execution::persistent_names::observe_persistent_names;
 use crate::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows;
 use crate::domain_computation::primary_graph::application_query::read_execution::OneShotReadWorkObservation;
 use crate::domain_computation::primary_graph::application_query::read_execution::RawNonLiveKernelOutcome;
@@ -10,6 +11,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationAuthorizationWorkEvidence;
+use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
 use crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -56,6 +58,7 @@ pub fn execute_selected_authorized_read_with_native_access<
 >
 where
     Schema: ApplicationSchema,
+    QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
     execute_selected_authorized_body_with_native_access(
         execution,
@@ -63,7 +66,11 @@ where
         plan,
         native,
         |runtime, layout, plan| {
-            read_bounded_root_rows(runtime, execution, layout, plan, Some(spent))
+            let mut raw = read_bounded_root_rows(runtime, execution, layout, plan, Some(spent))?;
+            if QueryResult::PROJECTS_PERSISTENT_NAMES {
+                observe_persistent_names(runtime, execution, plan, &mut raw);
+            }
+            Ok(raw)
         },
     )
 }

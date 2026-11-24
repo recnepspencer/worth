@@ -173,7 +173,7 @@ where
             conditions,
         } = self;
         let current = WorthQueryApplicationRequest {
-            application: document.owner.application(),
+            application: request.application,
             principal: request.principal,
             scope: request.scope,
             branch: document.owner.branch(),

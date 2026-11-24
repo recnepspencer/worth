@@ -125,6 +125,14 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                         key, self.admission.admission_identity(), &self.admission.retain_graph_contract(), self.lease.snapshot(),
                     )).is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation));
                 }
+                if let (super::InstalledScopePosition::SourceQuery,
+                    super::super::fact::WorthQueryApplicationFactKey::AppliedSource(key),
+                ) = (scope, fact_key) {
+                    return self.expected_facts.as_ref().and_then(|expected| expected.applied_source(
+                        key, self.admission.admission_identity(), &self.admission.retain_graph_contract(),
+                        self.lease.projection_origin(),
+                    )) == Some(fact);
+                }
                 if let (
                     super::InstalledScopePosition::SourceQuery,
                     super::super::fact::WorthQueryApplicationFactKey::ManagedIndexSource(key),

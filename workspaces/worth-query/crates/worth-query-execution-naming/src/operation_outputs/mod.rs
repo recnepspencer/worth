@@ -13,12 +13,18 @@
 
 mod denial;
 mod lowering;
+mod same_commit;
 
 pub use denial::WorthQueryOutputNameDenial;
 pub use lowering::{admit_output_birth, OutputBirthPosture};
+pub use same_commit::admit_same_commit_names;
+
+use std::sync::Arc;
 
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, ApplicationNameSubjectKind, WorthQueryName,
+    ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSubjectKind,
+    IndexedRoleDiscriminator, OccurrencePath, SameCommitNameSlot, WorthQueryName,
+    WorthQueryNameRole,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::lineage::PendingBirthTarget;
@@ -33,8 +39,14 @@ use worth_relational::facade::lineage::PendingBirthTarget;
 pub struct WorthQueryOutputBirth {
     occurrence_key: String,
     role_path: String,
+    /// Which repetition of an indexed role this is. It leads the canonical
+    /// discriminator, so it tells siblings of one occurrence and role apart.
+    role_index: Option<u32>,
     canonical_discriminator: Vec<u8>,
     embedded_name_digests: Vec<[u8; 32]>,
+    /// Where the discriminator references names born by the same commit;
+    /// lowering writes each one once its referenced birth is known.
+    same_commit_names: Vec<SameCommitNameSlot>,
 }
 
 impl WorthQueryOutputBirth {
@@ -42,21 +54,48 @@ impl WorthQueryOutputBirth {
         Self {
             occurrence_key: occurrence_key.into(),
             role_path: role_path.into(),
+            role_index: None,
             canonical_discriminator: Vec::new(),
             embedded_name_digests: Vec::new(),
+            same_commit_names: Vec::new(),
         }
+    }
+
+    /// A birth in `occurrence` under a typed role. The role path is the
+    /// role's declared name, which the scheme's role order always holds. An
+    /// indexed role (`Instance(3)`) is born under that same declared name,
+    /// and its index leads the birth's canonical discriminator, so sibling
+    /// repetitions mint distinct names and order by number. The birth's
+    /// discriminator is then an `IndexedRoleDiscriminator`.
+    pub fn of_role<R: WorthQueryNameRole>(occurrence: &OccurrencePath, role: R) -> Self {
+        let mut birth = Self::new(occurrence, role.role_name());
+        if let Some(index) = role.role_index() {
+            birth.role_index = Some(index);
+            birth.canonical_discriminator =
+                IndexedRoleDiscriminator::index_alone(index).canonical_bytes();
+        }
+        birth
     }
 
     /// Distinguishes siblings of one occurrence and role. Embedded
     /// `WorthQueryName` references must name records live at the basis and
-    /// not retired in the committing transaction.
+    /// not retired in the committing transaction. An embedded
+    /// `WorthQuerySameCommitName` must designate an output the same
+    /// candidate named earlier, in the same occurrence, under a role this
+    /// birth's role declares it depends on.
     pub fn with_discriminator<D: ApplicationNameDiscriminator>(
         mut self,
         discriminator: &D,
     ) -> Self {
-        let (bytes, references) = discriminator.canonical_bytes_with_references();
+        let mut encoder = ApplicationNameDiscriminatorEncoder::new(D::DISCRIMINATOR_IDENTITY);
+        if let Some(index) = self.role_index {
+            encoder.role_index(index);
+        }
+        discriminator.encode_canonical(&mut encoder);
+        let (bytes, references, same_commit_names) = encoder.finish_with_same_commit_names();
         self.canonical_discriminator = bytes;
         self.embedded_name_digests = references;
+        self.same_commit_names = same_commit_names;
         self
     }
 
@@ -68,6 +107,8 @@ impl WorthQueryOutputBirth {
         &self.role_path
     }
 
+    /// Whether siblings of this occurrence and role are told apart: by a
+    /// typed discriminator, a role index, or both.
     pub fn has_discriminator(&self) -> bool {
         !self.canonical_discriminator.is_empty()
     }
@@ -174,18 +215,33 @@ pub enum OperationNamingEntry<T> {
 
 /// Ordered naming effects of one operation. Empty for every unnamed or
 /// schemaless program, in which case no naming plan reaches the commit.
-#[derive(Clone, Debug, Eq, PartialEq)]
+///
+/// The program is the candidate its same-commit name references are issued
+/// by: a reference designates one of this program's own named outputs, and
+/// both authoring and lowering refuse one another program issued. Two
+/// programs are equal when they declare the same effects.
+#[derive(Clone, Debug)]
 pub struct OperationNamingProgram<T> {
+    candidate: Arc<()>,
     entries: Vec<OperationNamingEntry<T>>,
 }
 
 impl<T> Default for OperationNamingProgram<T> {
     fn default() -> Self {
         Self {
+            candidate: Arc::new(()),
             entries: Vec::new(),
         }
     }
 }
+
+impl<T: PartialEq> PartialEq for OperationNamingProgram<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.entries == other.entries
+    }
+}
+
+impl<T: Eq> Eq for OperationNamingProgram<T> {}
 
 /// The program as authored against stable output keys.
 pub type AuthoredOperationNaming = OperationNamingProgram<OperationOutputKey>;
@@ -193,9 +249,37 @@ pub type AuthoredOperationNaming = OperationNamingProgram<OperationOutputKey>;
 /// resolves against its commit allocations.
 pub type BoundOperationNaming = OperationNamingProgram<PendingBirthTarget>;
 
+impl<T> OperationNamingEntry<T> {
+    /// The outputs this entry names, in declaration order.
+    pub fn named_outputs(&self) -> &[OperationNamedOutput<T>] {
+        match self {
+            Self::Birth(output)
+            | Self::Merge {
+                keeper: OperationMergeKeeper::MintNew(output),
+                ..
+            } => std::slice::from_ref(output),
+            Self::Split { children, .. } => children,
+            Self::Retire { .. } | Self::Merge { .. } => &[],
+        }
+    }
+}
+
 impl<T> OperationNamingProgram<T> {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    /// The identity this program issues same-commit name references under.
+    pub(crate) fn candidate(&self) -> &Arc<()> {
+        &self.candidate
+    }
+
+    /// Every output the program names, in declaration order. An output's
+    /// position here is the ordinal a same-commit reference designates.
+    pub fn named_outputs(&self) -> impl Iterator<Item = &OperationNamedOutput<T>> {
+        self.entries
+            .iter()
+            .flat_map(|entry| entry.named_outputs().iter())
     }
 
     pub fn push(&mut self, entry: OperationNamingEntry<T>) {
@@ -259,7 +343,10 @@ impl<T> OperationNamingProgram<T> {
                 },
             });
         }
-        Ok(OperationNamingProgram { entries })
+        Ok(OperationNamingProgram {
+            candidate: self.candidate,
+            entries,
+        })
     }
 }
 

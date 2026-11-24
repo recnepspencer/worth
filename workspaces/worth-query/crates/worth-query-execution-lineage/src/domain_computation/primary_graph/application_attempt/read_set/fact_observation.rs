@@ -27,6 +27,7 @@ pub fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64>
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
         | WorthQueryApplicationFactKey::ManagedIndexSource(_)
+        | WorthQueryApplicationFactKey::AppliedSource(_)
         | WorthQueryApplicationFactKey::SourceReadAuthorization(_)
         | WorthQueryApplicationFactKey::StructuralWalk(_)
         | WorthQueryApplicationFactKey::ComponentSelection(_)
@@ -113,6 +114,7 @@ fn observe_fact_inner(
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
         | WorthQueryApplicationFactKey::ManagedIndexSource(_)
+        | WorthQueryApplicationFactKey::AppliedSource(_)
         | WorthQueryApplicationFactKey::SourceReadAuthorization(_)
         | WorthQueryApplicationFactKey::StructuralWalk(_)
         | WorthQueryApplicationFactKey::ComponentSelection(_)

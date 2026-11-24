@@ -43,6 +43,13 @@ pub enum ExecutionNamingDenial {
         role_path: String,
         referenced_role: String,
     },
+    /// A same-occurrence discriminator reference targets an earlier role the
+    /// referencing role does not declare a dependency on.
+    UndeclaredSameOccurrenceDependency {
+        scheme_id: String,
+        role_path: String,
+        referenced_role: String,
+    },
     /// A birth referenced a raw name digest that was neither declared in the
     /// same occurrence nor supplied as an admitted basis reference.
     UnresolvedReferencedName {
@@ -149,6 +156,14 @@ impl fmt::Display for ExecutionNamingDenial {
             } => write!(
                 formatter,
                 "same-occurrence reference from `{role_path}` to `{referenced_role}` in scheme `{scheme_id}` violates installed acyclic role order"
+            ),
+            Self::UndeclaredSameOccurrenceDependency {
+                scheme_id,
+                role_path,
+                referenced_role,
+            } => write!(
+                formatter,
+                "role `{role_path}` in scheme `{scheme_id}` does not declare a dependency on `{referenced_role}`"
             ),
             Self::UnresolvedReferencedName {
                 scheme_id,

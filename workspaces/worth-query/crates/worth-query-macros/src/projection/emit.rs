@@ -35,6 +35,7 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
         result_shape(input, projection),
     );
     let (project_row, project) = (project_row(input, projection), project(input, projection));
+    let projects_names = projects_names(input, projection);
     let doc = format!("Result slot markers of `{row}`, one per projected field.");
     quote! {
         #[doc = #doc]
@@ -47,6 +48,7 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
             #builder
             #shape
             #project_row
+            #projects_names
         }
         #project
     }
@@ -238,6 +240,13 @@ fn project_row(input: &DeriveInput, projection: &ProjectionDeclaration) -> Token
         };
         quote!(#member: #read)
     });
+    let root = &projection.root;
+    let names = projection.names.iter().map(|name| {
+        let (member, read) = (&name.member, name_read(name.optional));
+        // Spanned to the field's type, where a name of another kind is refused.
+        quote_spanned!(name.value.span()=> #member: row.#read::<#root>()?)
+    });
+    let reads = reads.chain(names);
     quote! {
         /// Reads one row of query `Q`, at the root or under a parent's relation.
         #vis fn project_row<Q>(
@@ -251,6 +260,27 @@ fn project_row(input: &DeriveInput, projection: &ProjectionDeclaration) -> Token
     }
 }
 
+/// `name::<Root>()`, or `optional_name::<Root>()` for an `Option<..>` field.
+fn name_read(optional: bool) -> syn::Ident {
+    format_ident!("{}", if optional { "optional_name" } else { "name" })
+}
+
+/// `const PROJECTS_PERSISTENT_NAMES`: whether this row or a related row it
+/// nests projects a persistent name, so a read observes names only then.
+fn projects_names(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
+    let (vis, own) = (&input.vis, !projection.names.is_empty());
+    let nested = projection.slots.iter().filter_map(|slot| match &slot.kind {
+        SlotKind::Relation(Traversal { child, .. }) => Some(child),
+        SlotKind::Field { .. } => None,
+    });
+    quote! {
+        /// Whether this projection, or a related row it nests, projects a
+        /// persistent name.
+        #vis const PROJECTS_PERSISTENT_NAMES: bool =
+            #own #(|| <#nested>::PROJECTS_PERSISTENT_NAMES)*;
+    }
+}
+
 /// The projection of every query whose result binding carries this row.
 fn project(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
     let (graph, row, schema) = (host(), &input.ident, &projection.schema);
@@ -260,6 +290,7 @@ fn project(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStre
         where
             #bounds
         {
+            const PROJECTS_PERSISTENT_NAMES: bool = <#row>::PROJECTS_PERSISTENT_NAMES;
             fn project(
                 row: &#graph::primary_graph::WorthQueryApplicationProjectionRow<'_, #schema, Q>,
             ) -> ::core::result::Result<
