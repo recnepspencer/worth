@@ -15,12 +15,12 @@ use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
+    Arc,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::WorthQueryApplicationHomeLocation as Location;
 use worth_store::physical_runtime::{
-    certification::{MediaFaultDirective, MediaOperationRole},
+    certification::{CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole},
     FilesystemAccessPosture, FilesystemMediaAdmission,
 };
 
@@ -38,12 +38,19 @@ fn host_mutation_media_fault_sweep_recovers_to_memory_oracle() {
     let execution = ExecutionRequest::serial(&req);
     let reference = build_reference(&execution);
     let saved = RestorableHome::prepare(|loc| prepare_prefix(loc, &execution));
-    let counts = measure_media_roles(saved.location(), &execution);
-    assert!(!counts.is_empty(), "Host mutation must perform identified media ops");
+    let counts = measure_op_media_roles(saved.location(), &execution, |home, _| {
+        assert!(requests::set(home.runtime(), TARGET_KEY, TARGET_VAL)
+            .receipt()
+            .is_some());
+    });
+    assert!(
+        !counts.is_empty(),
+        "Host mutation must perform identified media ops"
+    );
 
     let cases = enumerate_admissible_cases(&counts);
     assert!(!cases.is_empty());
-    let verdicts = run_parallel_media_cases(&cases, &reference);
+    let verdicts = run_parallel_media_cases(saved, &cases, &reference);
     assert_eq!(verdicts.len(), cases.len());
 }
 
@@ -63,75 +70,68 @@ pub(super) fn enumerate_admissible_cases(counts: &[(usize, u64)]) -> Vec<MediaCa
 }
 
 fn run_parallel_media_cases(
+    primary_home: RestorableHome,
     cases: &[MediaCase],
     reference: &ReferenceSnapshots,
 ) -> Vec<RecoveredPrefix> {
     let workers = std::thread::available_parallelism()
         .map(usize::from)
         .unwrap_or(4)
-        .clamp(1, 4)
+        .clamp(1, 8)
         .min(cases.len().max(1));
-    let next = AtomicUsize::new(0);
-    let results: Mutex<Vec<Option<Result<RecoveredPrefix, String>>>> =
-        Mutex::new((0..cases.len()).map(|_| None).collect());
-
-    std::thread::scope(|scope| {
-        for _ in 0..workers {
-            scope.spawn(|| {
-                let req = opening::serial();
-                let exec = ExecutionRequest::serial(&req);
-                let home = RestorableHome::prepare(|loc| prepare_prefix(loc, &exec));
-                let markers = tempfile::tempdir().unwrap();
-                loop {
-                    let idx = next.fetch_add(1, Ordering::Relaxed);
-                    let Some(&(role_idx, nth, dir_tag)) = cases.get(idx) else {
-                        break;
-                    };
-                    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        run_one_media_case((&home, markers.path()), (role_idx, nth, dir_tag), reference, &exec)
-                    }))
-                    .map_err(|payload| panic_message(&*payload));
-                    results.lock().unwrap()[idx] = Some(outcome);
-                }
-            });
-        }
-    });
-
-    let mut verdicts = Vec::with_capacity(cases.len());
-    for (idx, slot) in results.into_inner().unwrap().into_iter().enumerate() {
-        match slot.expect("every media case ran") {
-            Ok(v) => verdicts.push(v),
-            Err(msg) => panic!("media case #{idx} ({:?}) failed: {msg}", cases[idx]),
-        }
+    let mut homes = Vec::with_capacity(workers);
+    homes.push(primary_home);
+    if workers > 1 {
+        let extra: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (1..workers)
+                .map(|_| {
+                    scope.spawn(|| {
+                        let req = opening::serial();
+                        let exec = ExecutionRequest::serial(&req);
+                        RestorableHome::prepare(|loc| prepare_prefix(loc, &exec))
+                    })
+                })
+                .collect();
+            handles.into_iter().map(|h| h.join().unwrap()).collect()
+        });
+        homes.extend(extra);
     }
-    verdicts
+    super::parallel::run_parallel_worker_cases("media", &homes, cases, |home, &case| {
+        let req = opening::serial();
+        let exec = ExecutionRequest::serial(&req);
+        run_one_media_case(home, case, reference, &exec)
+    })
 }
 
 fn run_one_media_case(
-    paths: (&RestorableHome, &Path),
+    home: &RestorableHome,
     case: MediaCase,
     reference: &ReferenceSnapshots,
     execution: &ExecutionRequest<'_, '_>,
 ) -> RecoveredPrefix {
-    let (home, markers_root) = paths;
     let (role_idx, nth, dir_tag) = case;
     home.restore();
-    let ready = markers_root.join("ready");
-    let finished = markers_root.join("finished");
-    let _ = std::fs::remove_file(&ready);
-    let _ = std::fs::remove_file(&finished);
-    let spec = PathBuf::from(format!("{role_idx}:{nth}:{dir_tag}"));
+    let markers = tempfile::tempdir().unwrap();
+    let ready = markers.path().join("ready");
+    let finished = markers.path().join("finished");
+    let spec_str = format!("{role_idx}:{nth}:{dir_tag}");
+    let spec = PathBuf::from(&spec_str);
     let end = crate::killed_child::run_and_kill(
         MEDIA_CHILD,
         &[
             (ENV_HOME, home.location()),
-            (ENV_MARKERS, markers_root),
+            (ENV_MARKERS, markers.path()),
             (ENV_SPEC, &spec),
         ],
         &ready,
         &finished,
     );
     assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark);
+    let marker = std::fs::read_to_string(&ready).unwrap_or_default();
+    assert_eq!(
+        marker, spec_str,
+        "media ready marker must match active spec"
+    );
     let label = format!("{:?}#{nth}:{dir_tag}", MediaOperationRole::ALL[role_idx]);
     verify_reopen_and_continue(home.location(), reference, execution, &label)
 }
@@ -146,7 +146,11 @@ pub(super) fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
     }
 }
 
-fn measure_media_roles(location: &Path, execution: &ExecutionRequest<'_, '_>) -> Vec<(usize, u64)> {
+pub(super) fn measure_op_media_roles(
+    location: &Path,
+    execution: &ExecutionRequest<'_, '_>,
+    run_op: impl FnOnce(&host_observation::OracleHome, &ExecutionRequest<'_, '_>),
+) -> Vec<(usize, u64)> {
     let media =
         FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
     let authority = media.fault_schedule_authority();
@@ -165,13 +169,16 @@ fn measure_media_roles(location: &Path, execution: &ExecutionRequest<'_, '_>) ->
         .collect();
     let schedule = authority.schedule(rules).unwrap();
     let placement = AdversarialPlacement::new().with_media(media.with_fault_schedule(schedule));
-    let (home, _) = open_dir(location, Some(placement), Arc::new(AtomicUsize::new(0)), execution);
+    let (home, _) = open_dir(
+        location,
+        Some(placement),
+        Arc::new(AtomicUsize::new(0)),
+        execution,
+    );
     for act in &activations {
         act.arm().unwrap();
     }
-    assert!(requests::set(home.runtime(), TARGET_KEY, TARGET_VAL)
-        .receipt()
-        .is_some());
+    run_op(&home, execution);
     let counts: Vec<_> = activations
         .iter()
         .enumerate()
@@ -180,6 +187,37 @@ fn measure_media_roles(location: &Path, execution: &ExecutionRequest<'_, '_>) ->
         .collect();
     home.close(execution).unwrap().reclaim();
     counts
+}
+
+pub(super) fn open_with_one_shot_fault(
+    location: &Path,
+    role_idx: usize,
+    nth: u64,
+    dir_tag: &str,
+    execution: &ExecutionRequest<'_, '_>,
+) -> (
+    host_observation::OracleHome,
+    CertificationMediaFaultActivation,
+) {
+    let role = MediaOperationRole::ALL[role_idx];
+    let media =
+        FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
+    let authority = media.fault_schedule_authority();
+    let activation = authority.one_shot_activation();
+    let rule = authority
+        .rule(role, 1, decode_directive(dir_tag))
+        .for_nth_identified_operation_after_activation(
+            activation.clone(),
+            NonZeroU64::new(nth).unwrap(),
+        );
+    let schedule = authority.schedule(vec![rule]).unwrap();
+    let (home, _) = open_dir(
+        location,
+        Some(AdversarialPlacement::new().with_media(media.with_fault_schedule(schedule))),
+        Arc::new(AtomicUsize::new(0)),
+        execution,
+    );
+    (home, activation)
 }
 
 pub(super) fn decode_directive(tag: &str) -> MediaFaultDirective {
@@ -193,7 +231,10 @@ pub(super) fn decode_directive(tag: &str) -> MediaFaultDirective {
     }
 }
 
-pub(super) fn media_rule_admissible(role: MediaOperationRole, directive: MediaFaultDirective) -> bool {
+pub(super) fn media_rule_admissible(
+    role: MediaOperationRole,
+    directive: MediaFaultDirective,
+) -> bool {
     let media =
         FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
     let authority = media.fault_schedule_authority();
@@ -215,26 +256,10 @@ fn host_media_fault_child() {
     let role_idx: usize = parts.next().unwrap().parse().unwrap();
     let nth: u64 = parts.next().unwrap().parse().unwrap();
     let dir_tag = parts.next().unwrap();
-    let role = MediaOperationRole::ALL[role_idx];
-    let media =
-        FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
-    let authority = media.fault_schedule_authority();
-    let activation = authority.one_shot_activation();
-    let rule = authority
-        .rule(role, 1, decode_directive(dir_tag))
-        .for_nth_identified_operation_after_activation(
-            activation.clone(),
-            NonZeroU64::new(nth).unwrap(),
-        );
-    let schedule = authority.schedule(vec![rule]).unwrap();
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
-    let (home, _) = open_dir(
-        &location,
-        Some(AdversarialPlacement::new().with_media(media.with_fault_schedule(schedule))),
-        Arc::new(AtomicUsize::new(0)),
-        &execution,
-    );
+    let (home, activation) =
+        open_with_one_shot_fault(&location, role_idx, nth, dir_tag, &execution);
     activation.arm().unwrap();
     let _outcome = requests::set(home.runtime(), TARGET_KEY, TARGET_VAL);
     assert!(activation.is_consumed(), "media fault {spec} did not fire");
@@ -250,53 +275,59 @@ fn unrecoverable_media_damage_refuses_host_open_before_service() {
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
 
-    // Control: undamaged prepared fixture opens cleanly and serves PREFIX_VAL.
-    let healthy_dir = tempfile::tempdir().unwrap();
-    let healthy_home = healthy_dir.path().join("home");
-    prepare_prefix(&healthy_home, &execution);
-    let (healthy, _) = open_dir(&healthy_home, None, Arc::new(AtomicUsize::new(0)), &execution);
+    // Prepare one sealed fixture and restore it cleanly for each control/damage case.
+    let saved = RestorableHome::prepare(|loc| prepare_prefix(loc, &execution));
+    let (healthy, _) = open_dir(
+        saved.location(),
+        None,
+        Arc::new(AtomicUsize::new(0)),
+        &execution,
+    );
     assert_eq!(requests::balance(healthy.runtime()), PREFIX_VAL);
     healthy.close(&execution).unwrap().reclaim();
 
-    // Case 1: unrecoverable damage inside the Home descriptor frame (WSRHOME1).
-    let (desc_refused, desc_contacts) = corrupt_and_expect_refusal(b"WSRHOME1", 16, &execution);
-    assert_eq!(desc_contacts, 0, "refused descriptor open never runs handlers");
-    assert_frame_damage_refusal(&desc_refused, "descriptor WSRHOME1", |cause| {
-        matches!(cause, StoreRefusal::Descriptor(_))
-    });
-
-    // Case 2: unrecoverable damage inside the Application checkpoint manifest (WAPHCKP1).
-    let (ckpt_refused, ckpt_contacts) = corrupt_and_expect_refusal(b"WAPHCKP1", 16, &execution);
-    assert_eq!(ckpt_contacts, 0, "refused checkpoint open never runs handlers");
-    assert_frame_damage_refusal(&ckpt_refused, "checkpoint WAPHCKP1", |cause| {
-        matches!(cause, StoreRefusal::Checkpoint(_))
-    });
-
-    // Case 3: unrecoverable damage inside an authoritative relational journal artifact (WRTHRCCA).
-    let (art_refused, art_contacts) =
-        corrupt_and_expect_refusal(crate::open_refusals::ARTIFACT_MAGIC, 64, &execution);
-    assert_eq!(art_contacts, 0, "refused journal open never runs handlers");
-    assert_frame_damage_refusal(&art_refused, "artifact WRTHRCCA", |cause| {
-        matches!(cause, StoreRefusal::Relational(_))
-    });
+    let damage_cases: [(&[u8], usize, &str, fn(&StoreRefusal) -> bool); 3] = [
+        (b"WSRHOME1", 16, "descriptor WSRHOME1", |c| {
+            matches!(c, StoreRefusal::Descriptor(_))
+        }),
+        (b"WAPHCKP1", 16, "checkpoint WAPHCKP1", |c| {
+            matches!(c, StoreRefusal::Checkpoint(_))
+        }),
+        (
+            crate::open_refusals::ARTIFACT_MAGIC,
+            64,
+            "artifact WRTHRCCA",
+            |c| matches!(c, StoreRefusal::Relational(_)),
+        ),
+    ];
+    for (magic, offset, label, matcher) in damage_cases {
+        let (refused, contacts) = corrupt_and_expect_refusal(&saved, magic, offset, &execution);
+        assert_eq!(contacts, 0, "refused {label} open never runs handlers");
+        assert_frame_damage_refusal(&refused, label, matcher);
+    }
 }
 
+type OpenRefused = worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<
+    worth_query_testkit_host::facade::host::application_home::schema::HomeIdentitySchema,
+    worth_query_testkit_host::facade::host::application_home::HomeProgram,
+>;
+
 fn assert_frame_damage_refusal(
-    refused: &worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<
-        worth_query_testkit_host::facade::host::application_home::schema::HomeIdentitySchema,
-        worth_query_testkit_host::facade::host::application_home::HomeProgram,
-    >,
+    refused: &OpenRefused,
     label: &str,
     frame_match: impl FnOnce(&worth_store_application::ApplicationHomeOpenRefusal) -> bool,
 ) {
-    use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused as OpenRefused;
+    use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused as Refused;
     use worth_store_application::{
         ApplicationHomeOpenRefusal as StoreRefusal, ApplicationHomePhysicalRefusalKind as Kind,
         ApplicationHomePhysicalStage as Stage,
     };
     let ok = match refused {
-        OpenRefused::Physical { cause, .. } if frame_match(cause) => true,
-        OpenRefused::Physical { cause: StoreRefusal::Physical(p), .. } => {
+        Refused::Physical { cause, .. } if frame_match(cause) => true,
+        Refused::Physical {
+            cause: StoreRefusal::Physical(p),
+            ..
+        } => {
             p.stage() == Stage::Recovery
                 && p.kind() == Kind::PhysicalStep
                 && p.recovery_effects() == Some(0)
@@ -305,25 +336,26 @@ fn assert_frame_damage_refusal(
         }
         _ => false,
     };
-    assert!(ok, "damaged {label} refused with unexpected cause: {refused:?}");
+    assert!(
+        ok,
+        "damaged {label} refused with unexpected cause: {refused:?}"
+    );
 }
 
 fn corrupt_and_expect_refusal(
+    saved: &RestorableHome,
     magic: &[u8],
     offset: usize,
     execution: &ExecutionRequest<'_, '_>,
-) -> (
-    worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<
-        worth_query_testkit_host::facade::host::application_home::schema::HomeIdentitySchema,
-        worth_query_testkit_host::facade::host::application_home::HomeProgram,
-    >,
-    usize,
-) {
-    let dir = tempfile::tempdir().unwrap();
-    let home = dir.path().join("home");
-    prepare_prefix(&home, execution);
+) -> (OpenRefused, usize) {
+    saved.restore();
+    let home = saved.location().to_path_buf();
     let flipped = crate::open_refusals::flip_after(&home, magic, offset, &|_| true);
-    assert!(flipped > 0, "closed Home must persist {:?} frame", String::from_utf8_lossy(magic));
+    assert!(
+        flipped > 0,
+        "closed Home must persist {:?} frame",
+        String::from_utf8_lossy(magic)
+    );
     let contacts = Arc::new(AtomicUsize::new(0));
     let outcome = host_observation::opening::try_open_with_placement(
         PlacementOpenConfig {
@@ -337,7 +369,10 @@ fn corrupt_and_expect_refusal(
         execution,
     );
     let refused = match outcome {
-        Ok(_) => panic!("damaged {:?} frame must refuse open before service", String::from_utf8_lossy(magic)),
+        Ok(_) => panic!(
+            "damaged {:?} frame must refuse open before service",
+            String::from_utf8_lossy(magic)
+        ),
         Err(refused) => refused,
     };
     (refused, contacts.load(Ordering::SeqCst))

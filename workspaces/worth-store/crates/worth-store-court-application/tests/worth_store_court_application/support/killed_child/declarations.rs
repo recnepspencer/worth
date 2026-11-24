@@ -73,6 +73,7 @@ pub(crate) fn run_and_kill_observing_with_ctx(
         .spawn()
         .unwrap_or_else(|e| panic!("{ctx}: spawn {test} failed: {e:?}"));
     let deadline = std::time::Instant::now() + PARK_DEADLINE;
+    let mut polls = 0u32;
     loop {
         if announced.is_file() {
             on_park.take().unwrap()();
@@ -119,7 +120,15 @@ pub(crate) fn run_and_kill_observing_with_ctx(
                 String::from_utf8_lossy(&output.stderr)
             );
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        let delay_ms = if polls < 50 {
+            1
+        } else if polls < 150 {
+            2
+        } else {
+            10
+        };
+        polls = polls.saturating_add(1);
+        std::thread::sleep(std::time::Duration::from_millis(delay_ms));
     }
 }
 
