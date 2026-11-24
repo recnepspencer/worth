@@ -3,13 +3,11 @@ use super::{
     RelationalForkReadmissionCause,
 };
 use crate::branch::{
-    PositionedBranchTransition, RecordedRelationalComponentReference, RelationalBranchTransition,
+    PositionedBranchTransition, RecordedRelationalComponentReference,
     RelationalBranchTransitionSequence,
 };
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
-use crate::durability::authority::{
-    RecoveredRelationalBranchBasis, RefusedRelationalRecordedComponent,
-};
+use crate::durability::authority::RecoveredRelationalBranchBasis;
 use crate::history::data::RelationalCallerAssociation;
 use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
@@ -117,42 +115,8 @@ impl RecoveredRelationalRuntimeAuthority {
             .canonical_checkpoint_gate()
             .original_branch_transition(sequence)
             .ok_or_else(|| refused(Cause::MissingOriginal(sequence)))?;
-        if original.caller_association() != Some(association) {
-            return Err(refused(Cause::AssociationMismatch));
-        }
-        if original.recorded_artifact_digest().as_ref() != Some(digest) {
-            return Err(refused(Cause::ArtifactDigestMismatch));
-        }
-        match original.transition() {
-            RelationalBranchTransition::Fork {
-                target: actual_target,
-                source: actual_source,
-                source_generation,
-                source_truth_version,
-                source_head,
-            } => {
-                let before = source.descriptor();
-                if actual_source != before.branch_id()
-                    || *source_generation != before.reference().generation()
-                    || *source_truth_version != before.truth_version()
-                    || before.reference().target().as_basis() != Some(source_head)
-                {
-                    return Err(refused(Cause::SourceMismatch));
-                }
-                let after = target.descriptor();
-                if actual_target != after.branch_id()
-                    || after.reference().generation().get() != 0
-                    || after.truth_version() != crate::branch::RelationalBranchVersion::initial()
-                    || after.reference().target().as_basis() != Some(source_head)
-                {
-                    return Err(refused(Cause::TargetMismatch));
-                }
-            }
-            RelationalBranchTransition::RetainedFork { .. }
-            | RelationalBranchTransition::Archive { .. }
-            | RelationalBranchTransition::DeletionRequested { .. }
-            | RelationalBranchTransition::Delete { .. } => return Err(refused(Cause::NotFork)),
-        }
+        super::original_evidence::validate(&original, association, digest, source, target)
+            .map_err(refused)?;
         Ok(original)
     }
 }

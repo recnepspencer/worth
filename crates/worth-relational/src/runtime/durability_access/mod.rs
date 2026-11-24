@@ -2,7 +2,6 @@ mod authority_continuity;
 mod branch_transition_artifact_export;
 mod canonical_commit_artifact_export;
 mod canonical_source;
-mod continuity_issue_mapping;
 mod medium_recovery_plan;
 mod native_checkpoint_recovery_plan;
 mod recovery_plan_entrypoint;

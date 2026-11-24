@@ -7,20 +7,18 @@ use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 // the SAME genuine epochs; finite component-only controls use a separate budget
 // for that existing input, without claiming to price the entire Complete call.
 fn capture_bound(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
+    runtime_name: &str,
     metadata: &ExecutionRequest<'_, '_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CapturedCompleteComponents, Stop> {
-    let binding = runtime.configuration_binding();
-    let config = binding.operation();
-    let routes = runtime.history.canonical_checkpoint_gate();
+    let routes = history.canonical_checkpoint_gate();
     routes
         .with_checkpoint_selection(|_| {
-            let data = runtime
-                .history
-                .capture_checkpoint_branch_metadata(metadata, &config.config.execution.runtime_name)
+            let data = history
+                .capture_checkpoint_branch_metadata(metadata, runtime_name)
                 .map_err(|_| corrupt("genuine branch metadata fixture capture"))?;
-            capture_complete(runtime, request, &data)
+            capture_complete(history, request, &data)
         })
         .unwrap_or_else(|_| panic!("genuine component checkpoint gate must be settled"))
 }
@@ -64,7 +62,18 @@ fn complete_component_capture_keeps_exact_external_cut_without_new_basis() {
         &basis_b,
         lease_a,
         || {
-            let captured = capture_bound(&runtime, &request, &request).unwrap();
+            let captured = capture_bound(
+                &runtime.history,
+                &runtime
+                    .configuration_binding()
+                    .operation()
+                    .config
+                    .execution
+                    .runtime_name,
+                &request,
+                &request,
+            )
+            .unwrap();
             let keys = captured
                 .observations()
                 .map(|(descriptor, _)| rmp_serde::to_vec_named(descriptor).unwrap())
@@ -121,7 +130,18 @@ fn complete_component_capture_refuses_original_roster_before_effects() {
     let bill = std::alloc::Layout::array::<Current>(1).unwrap().size() as u64;
     let budget = SerialMemoryBudget::new(Some(controller() + bill - 1));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let refusal = capture_bound(&runtime, &metadata, &ExecutionRequest::serial(&host)).unwrap_err();
+    let refusal = capture_bound(
+        &runtime.history,
+        &runtime
+            .configuration_binding()
+            .operation()
+            .config
+            .execution
+            .runtime_name,
+        &metadata,
+        &ExecutionRequest::serial(&host),
+    )
+    .unwrap_err();
     match refusal {
         Stop::Request(
             crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
@@ -147,7 +167,18 @@ fn complete_component_holds_keep_actual_read_obligations_until_drop() {
     let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let before = runtime.branch_basis_cost_counters();
-    let captured = capture_bound(&runtime, &metadata, &ExecutionRequest::serial(&host)).unwrap();
+    let captured = capture_bound(
+        &runtime.history,
+        &runtime
+            .configuration_binding()
+            .operation()
+            .config
+            .execution
+            .runtime_name,
+        &metadata,
+        &ExecutionRequest::serial(&host),
+    )
+    .unwrap();
     assert_eq!(captured.observations().len(), 1);
     assert!(runtime.history.has_detached_retention_obligations());
     let data_and_holds = budget.charged_memory_bytes();

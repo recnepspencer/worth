@@ -302,7 +302,7 @@ pub(super) fn candidate(
     extra: Option<WorkerIntentBatch>,
 ) -> Result<
     crate::mvcc::PreparedRelationalCommitCandidate,
-    crate::runtime::RelationalSchemaTransitionAdmissionDenial,
+    crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial,
 > {
     let selected = basis(target);
     let (owner, installed) = target
@@ -331,7 +331,7 @@ pub(super) fn candidate(
     if let Some(batch) = extra {
         transaction
             .push_batch(batch, execution.allocation_policy())
-            .map_err(crate::runtime::RelationalSchemaTransitionAdmissionDenial::staging)?;
+            .map_err(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial::staging)?;
     }
     Ok(target
         .prepare_branch_transaction(execution, transaction)

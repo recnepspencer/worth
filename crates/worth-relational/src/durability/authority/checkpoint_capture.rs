@@ -1,8 +1,12 @@
 use crate::branch::root_checkpoint::RelationalBranchRootCheckpoint;
-use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
+use crate::history::commit::RelationalCommitArtifact;
+use crate::history::data::BranchId;
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
-use crate::runtime::RelationalRuntime;
+use crate::history::retention::RetainedIndexRoots;
+use std::sync::Arc;
+
+pub(super) mod runtime_selection;
 
 pub(super) struct CapturedCheckpointBasis {
     pub(super) recorded_components: std::collections::BTreeMap<
@@ -72,230 +76,125 @@ pub(super) struct CapturedCheckpointBasis {
 
 pub(super) type CapturedRecordIdentity = crate::durability::data::DurableRecordIdentityState;
 
-impl CapturedCheckpointBasis {
-    /// Select one immutable recovery basis while publication handoff is
-    /// excluded. Expensive checkpoint reconstruction, encoding, and I/O occur
-    /// only after the caller drops the admission guard.
-    pub(super) fn capture(
-        runtime: &RelationalRuntime,
-        routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
-        selection: crate::runtime::PerformedCheckpointSelection,
-    ) -> Result<Self, DurabilityError> {
-        Self::capture_with_record_identity(
-            runtime,
-            routes,
-            selection,
-            runtime.record_identity.checkpoint_identity(),
-        )
+pub(super) fn captured_lineage(
+    published: Vec<(
+        Arc<crate::lineage::data::LineageEventRecord>,
+        crate::history::data::CommitId,
+    )>,
+    lineage_event_leases: &[crate::runtime::state::subsystems::lineage::ResidentLineageEventPage],
+) -> Result<Vec<crate::durability::data::RelationalCheckpointLineageEventRow>, DurabilityError> {
+    let mut lineage_events = published
+        .into_iter()
+        .map(|(event, publication_commit_id)| {
+            (
+                event.event_id(),
+                crate::durability::data::RelationalCheckpointLineageEventRow {
+                    event,
+                    publication_commit_id,
+                },
+            )
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    for page in lineage_event_leases {
+        for row in page.rows() {
+            if let Some(existing) = lineage_events.get(&row.event.event_id())
+                && existing != row
+            {
+                return Err(DurabilityError::from(page.binding_failure()));
+            }
+            lineage_events
+                .entry(row.event.event_id())
+                .or_insert_with(|| row.clone());
+        }
     }
 
-    pub(super) fn capture_with_record_identity(
-        runtime: &RelationalRuntime,
-        routes: &crate::runtime::RelationalCanonicalPublicationRoutes,
-        selection: crate::runtime::PerformedCheckpointSelection,
-        record_identity: CapturedRecordIdentity,
-    ) -> Result<Self, DurabilityError> {
-        // Checkpointing is a cold lane: retire expired reader roots and their
-        // derived generations before selecting bounded payloads.
-        runtime.run_index_generation_reclamation_pass();
-        let envelopes = selection.positioned_snapshot();
-        let selected_directory = runtime.durability.checkpoint_selection().snapshot();
-        let artifacts = runtime.history.commit_artifacts();
-        let lineage_basis = super::checkpoint_lineage_basis::capture(
-            &artifacts,
-            selected_directory
-                .as_ref()
-                .map(|directory| &directory.manifest),
-        )?;
-        let journal_index = artifacts
-            .iter()
-            .filter_map(|artifact| {
-                artifact
-                    .envelope_residency()
-                    .journal_index()
-                    .map(|entry| entry.as_ref().clone())
-            })
-            .collect();
-        let covered_transitions = selection.covered_transitions();
-        let components = super::checkpoint_components::capture(runtime)?;
-        let branch_roots = components.roots;
-        let envelope_versions = artifacts
-            .iter()
-            .map(|artifact| {
-                let receipt = artifact.receipt();
-                (receipt.commit_id, receipt.version_id)
-            })
-            .collect::<std::collections::BTreeMap<_, _>>();
-        let root_bases = branch_roots
-            .iter()
-            .map(|root| {
-                envelope_versions
-                    .get(&root.commit_id())
-                    .copied()
-                    .map(|version| (version, root.schema_authority().schema_version()))
-                    .ok_or_else(|| {
-                        DurabilityError::new(
-                            crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                            "branch root has no selected canonical envelope",
-                        )
-                    })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let branch_cells = runtime.history().branch_cells_snapshot();
-        let root_bases = branch_roots
-            .iter()
-            .map(|root| root.commit_id())
-            .zip(root_bases)
-            .collect::<std::collections::BTreeMap<_, _>>();
-        let mut retained = crate::history::retention::RetainedIndexRoots::default();
-        for cell in &branch_cells {
-            retained.latest_branches.insert(cell.branch_id.clone());
-            let worth_foundational::FoundationalBranchTarget::Basis(target) =
-                cell.observation.target()
-            else {
-                continue;
-            };
-            let (version, schema) = root_bases
-                .get(&crate::history::data::CommitId(target.selected_commit_id()))
+    Ok(lineage_events.into_values().collect())
+}
+
+pub(super) fn capture_root_links(
+    artifacts: &[Arc<RelationalCommitArtifact>],
+    branch_roots: &[RelationalBranchRootCheckpoint],
+    branch_cells: &[crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint],
+    main: &BranchId,
+) -> Result<
+    (
+        RetainedIndexRoots,
+        Option<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+    ),
+    DurabilityError,
+> {
+    let envelope_versions = artifacts
+        .iter()
+        .map(|artifact| {
+            let receipt = artifact.receipt();
+            (receipt.commit_id, receipt.version_id)
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let root_bases = branch_roots
+        .iter()
+        .map(|root| {
+            envelope_versions
+                .get(&root.commit_id())
                 .copied()
+                .map(|version| (version, root.schema_authority().schema_version()))
                 .ok_or_else(|| {
                     DurabilityError::new(
                         crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                        "branch cell has no selected root image",
+                        "branch root has no selected canonical envelope",
                     )
-                })?;
-            retained
-                .live
-                .insert((cell.branch_id.clone(), version, schema));
-        }
-        let main_branch = runtime.main_branch_identity();
-        let mirror_schema_authority = branch_cells
-            .iter()
-            .find(|cell| &cell.branch_id == main_branch.branch_id())
-            .and_then(|cell| match cell.observation.target() {
-                worth_foundational::FoundationalBranchTarget::Basis(target) => branch_roots
-                    .iter()
-                    .find(|root| root.commit_id().0 == target.selected_commit_id()),
-                _ => None,
-            })
-            .map(|root| root.schema_authority().clone());
-        let (lineage_event_leases, lineage_event_pages_resident) = runtime
-            .lineage
-            .capture_resident_event_pages()
-            .map_err(DurabilityError::from)?;
-        let mut lineage_events = runtime
-            .lineage
-            .published_rows()
-            .into_iter()
-            .map(|(event, publication_commit_id)| {
-                (
-                    event.event_id(),
-                    crate::durability::data::RelationalCheckpointLineageEventRow {
-                        event,
-                        publication_commit_id,
-                    },
-                )
-            })
-            .collect::<std::collections::BTreeMap<_, _>>();
-        for page in &lineage_event_leases {
-            for row in page.rows() {
-                if let Some(existing) = lineage_events.get(&row.event.event_id())
-                    && existing != row
-                {
-                    return Err(DurabilityError::from(page.binding_failure()));
-                }
-                lineage_events
-                    .entry(row.event.event_id())
-                    .or_insert_with(|| row.clone());
-            }
-        }
-        let (index_state, index_original) = runtime.indexes.snapshot_with_original();
-        let derived_index_checkpoint =
-            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
-                |lane| {
-                    super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
-                        lane,
-                        index_state.retained_generations(lane, &retained),
-                        index_state.basis_checkpoint(lane, &retained),
-                    )
-                },
-            )?;
-        let captured = Self {
-            recorded_components: components.canonical,
-            retained_empty_components: components.empty,
-            empty_component_schemas: components.empty_schemas,
-            component_holds: components.held,
-            envelope_cells: artifacts
-                .iter()
-                .map(|artifact| artifact.envelope_residency())
-                .collect(),
-            journal_index,
-            lineage_basis,
-            latest_commit: selection.latest_receipt().or_else(|| {
-                selected_directory.as_ref().and_then(|directory| {
-                    directory
-                        .manifest
-                        .commits
-                        .last()
-                        .map(|entry| entry.commit.clone())
                 })
-            }),
-            selected_directory,
-            branch_cells,
-            branch_lifecycle: runtime.history.branch_lifecycle_snapshot(),
-            retired_branch_names: runtime.history.retired_branch_names(),
-            covered_transitions,
-            branch_roots,
-            record_identity,
-            commit_descriptors: artifacts
-                .iter()
-                .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
-                .collect(),
-            envelopes,
-            partitions: runtime.acquire_partition_edition(),
-            mirror_schema_authority,
-            aspect_contracts: runtime
-                .schema_contract_runtime
-                .aspect_contract_plans
-                .as_ref()
-                .clone(),
-            lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
-            relation_lineages: runtime.lineage.relation_lineages_snapshot(),
-            lineage_event_pages_resident,
-            lineage_event_leases,
-            guarded_member_sources: runtime
-                .lineage
-                .event_member_sources()
-                .into_iter()
-                .chain(runtime.lineage.node_export_sources())
-                .chain(runtime.services.symbols.checkpoint_export_sources())
-                .chain(
-                    index_original
-                        .clone()
-                        .into_iter()
-                        .flat_map(|image| image.checkpoint_export_sources()),
-                )
-                .collect(),
-            lineage_events: lineage_events.into_values().collect(),
-            index_definitions: index_state.definition_snapshot(),
-            carried_index_image: index_original
-                .as_ref()
-                .map(|image| image.directory().manifest.derived_indexes),
-            index_state,
-            index_original,
-            retained_indexes: retained,
-            derived_index_checkpoint,
-            symbol_table: runtime.services.symbols.snapshot(),
-            symbol_identity_frontier: runtime
-                .services
-                .symbols
-                .with_read(|symbols| symbols.identity_frontier()),
-            symbol_pages_resident: runtime.services.symbols.checkpoint_contents_resident(),
-            runtime_name: runtime.runtime_name().to_string(),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let root_bases = branch_roots
+        .iter()
+        .map(|root| root.commit_id())
+        .zip(root_bases)
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let mut retained = crate::history::retention::RetainedIndexRoots::default();
+    for cell in branch_cells {
+        retained.latest_branches.insert(cell.branch_id.clone());
+        let worth_foundational::FoundationalBranchTarget::Basis(target) = cell.observation.target()
+        else {
+            continue;
         };
-        routes
-            .validate_checkpoint_selection(&selection)
-            .map_err(super::checkpointing::checkpoint_admission_error)?;
-        Ok(captured)
+        let (version, schema) = root_bases
+            .get(&crate::history::data::CommitId(target.selected_commit_id()))
+            .copied()
+            .ok_or_else(|| {
+                DurabilityError::new(
+                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                    "branch cell has no selected root image",
+                )
+            })?;
+        retained
+            .live
+            .insert((cell.branch_id.clone(), version, schema));
     }
+    let mirror_schema_authority = branch_cells
+        .iter()
+        .find(|cell| &cell.branch_id == main)
+        .and_then(|cell| match cell.observation.target() {
+            worth_foundational::FoundationalBranchTarget::Basis(target) => branch_roots
+                .iter()
+                .find(|root| root.commit_id().0 == target.selected_commit_id()),
+            _ => None,
+        })
+        .map(|root| root.schema_authority().clone());
+    Ok((retained, mirror_schema_authority))
+}
+
+pub(super) fn capture_index_checkpoint(
+    index_state: &crate::runtime::state::subsystems::indexing::IndexingState,
+    retained: &RetainedIndexRoots,
+) -> Result<
+    crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts,
+    DurabilityError,
+> {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+            lane,
+            index_state.retained_generations(lane, retained),
+            index_state.basis_checkpoint(lane, retained),
+        )
+    })
 }

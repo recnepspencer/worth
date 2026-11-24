@@ -2,20 +2,19 @@ use crate::durability::data::{
     RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
     RecoveryVerificationOutcome,
 };
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::replay::data::ReplayVerificationLayer;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::SchemaContinuityBundleIssue;
 
 pub(super) fn apply_continuity_issue(
-    runtime: &RelationalRuntime,
+    instrumentation: &RuntimeInstrumentation,
     authority_continuity: &mut RecoveryAuthorityContinuityCheck,
     envelope: &crate::history::data::CanonicalCommitEnvelope,
     issue: SchemaContinuityBundleIssue,
 ) {
     let detail = issue.detail();
-    runtime
-        .performance_access()
-        .count_replay_verification_layer(ReplayVerificationLayer::DigestParity);
+    instrumentation.count(RuntimeComplexityCounters::count_replay_digest_parity);
     authority_continuity.verification_outcome = RecoveryVerificationOutcome::Rejected {
         layer: ReplayVerificationLayer::DigestParity,
         detail: detail.clone(),
@@ -44,13 +43,18 @@ pub(super) fn apply_continuity_issue(
             detail,
         ),
         SchemaContinuityBundleIssue::DescriptorSemanticsVersionMismatch { expected, found } => {
-            apply_descriptor_semantics_version_drift(runtime, authority_continuity, expected, found)
+            apply_descriptor_semantics_version_drift(
+                instrumentation,
+                authority_continuity,
+                expected,
+                found,
+            )
         }
         SchemaContinuityBundleIssue::DescriptorCanonicalBasisVersionMismatch {
             expected,
             found,
         } => apply_descriptor_canonical_basis_version_drift(
-            runtime,
+            instrumentation,
             authority_continuity,
             expected,
             found,
@@ -131,14 +135,12 @@ fn apply_reconciliation_descriptor_drift(
 }
 
 fn apply_descriptor_semantics_version_drift(
-    runtime: &RelationalRuntime,
+    instrumentation: &RuntimeInstrumentation,
     authority_continuity: &mut RecoveryAuthorityContinuityCheck,
     expected: crate::schema::data::DescriptorSemanticsVersion,
     found: crate::schema::data::DescriptorSemanticsVersion,
 ) {
-    runtime
-        .performance_access()
-        .count_descriptor_version_mismatch();
+    instrumentation.count_descriptor_version_mismatch();
     authority_continuity.descriptor_version_parity = RecoveryAuthorityParity::drift();
     authority_continuity.first_mismatch.get_or_insert(
         RecoveryAuthorityContinuityMismatch::DescriptorSemanticsVersion { expected, found },
@@ -146,14 +148,12 @@ fn apply_descriptor_semantics_version_drift(
 }
 
 fn apply_descriptor_canonical_basis_version_drift(
-    runtime: &RelationalRuntime,
+    instrumentation: &RuntimeInstrumentation,
     authority_continuity: &mut RecoveryAuthorityContinuityCheck,
     expected: crate::schema::data::DescriptorCanonicalBasisVersion,
     found: crate::schema::data::DescriptorCanonicalBasisVersion,
 ) {
-    runtime
-        .performance_access()
-        .count_descriptor_version_mismatch();
+    instrumentation.count_descriptor_version_mismatch();
     authority_continuity.descriptor_version_parity = RecoveryAuthorityParity::drift();
     authority_continuity.first_mismatch.get_or_insert(
         RecoveryAuthorityContinuityMismatch::DescriptorCanonicalBasisVersion { expected, found },

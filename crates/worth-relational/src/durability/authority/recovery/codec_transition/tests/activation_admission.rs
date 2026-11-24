@@ -42,7 +42,7 @@ fn activation_proof_rejects_foreign_owner_and_changed_exact_description_before_e
                 update,
             )
             .unwrap_err();
-        assert_eq!(denied.kind(),crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::RecoveredAuthorityMismatch);
+        assert_eq!(denied.kind(),crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::RecoveredAuthorityMismatch);
         assert!(selected.is_current());
         assert_eq!(source_before, protected_payload(&target, world.authored));
         assert!(!recovered.codec_transition_retires(world.output));

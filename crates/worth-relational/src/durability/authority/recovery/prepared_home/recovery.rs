@@ -1,5 +1,5 @@
 //! Genuine receiver installation precedes the single prepared source replay.
-use super::*;
+use super::{refusal::RefusedPreparedRelationalHomeRecovery, *};
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::{

@@ -1,12 +1,17 @@
 //! Freeze original producer DATA under the actual configuration/publication epoch.
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 use crate::durability::source_initial_inputs::producer_roster::{
     OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
 };
 use crate::history::commit::{CapturedOriginalCanonicalInputs, RelationalCommitArtifact};
 use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::{
+    durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    history::HistorySubsystem, services::symbol_table::RuntimeSymbolTable,
+};
 use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
@@ -34,16 +39,16 @@ pub(super) struct OriginalCanonicalCommit {
 impl FrozenOriginalInputs {
     /// Called while the actual complete capture still holds both epochs.
     pub(super) fn capture(
-        runtime: &RelationalRuntime,
-        selection: &crate::runtime::PerformedCheckpointSelection,
+        history: &HistorySubsystem,
+        selection: &RelationalCheckpointManifestSelection,
+        mut journal_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+        symbols: &RuntimeSymbolTable,
+        receipt: Option<&RelationalCommitReceipt>,
+        covered_transitions: RelationalBranchTransitionSequence,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let base = runtime
-            .durability
-            .checkpoint_selection()
-            .freeze_capture_base()?;
-        let branches = runtime
-            .history
+        let base = selection.freeze_capture_base()?;
+        let branches = history
             .capture_original_branch_schema_inputs(execution)
             .map_err(|cause| match cause {
                 OriginalBranchSchemaInputsDenial::Request(cause) => Denial::Request(cause.into()),
@@ -58,11 +63,9 @@ impl FrozenOriginalInputs {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
         let mut ordered = ExecutionOrderedMap::default();
-        let catalog = runtime
-            .history
+        let catalog = history
             .commit_artifacts_for_request(execution)
             .map_err(array_stop)?;
-        let mut journal_source = runtime.durability.cold_source();
         for artifact in catalog.iter() {
             if artifact.original_inputs().is_none() {
                 return Err(Denial::OriginalAuthorityUnavailable);
@@ -96,7 +99,7 @@ impl FrozenOriginalInputs {
             artifacts.push(artifact.clone()).map_err(array_stop)?;
         }
         let artifacts = artifacts.seal().map_err(array_stop)?;
-        let same_receipt = match (artifacts.last(), selection.selected_receipt()) {
+        let same_receipt = match (artifacts.last(), receipt) {
             (None, None) => true,
             (Some(artifact), Some(receipt)) => {
                 artifact.commit_id() == receipt.commit_id
@@ -111,7 +114,7 @@ impl FrozenOriginalInputs {
                 .transitions()
                 .last()
                 .map_or(0, |entry| entry.positioned.sequence().0)
-                != selection.covered_transitions().0
+                != covered_transitions.0
         {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
@@ -121,7 +124,7 @@ impl FrozenOriginalInputs {
             branches,
             journal_source,
             journal: None,
-            symbols: runtime.services.symbols.interner_snapshot(),
+            symbols: symbols.interner_snapshot(),
         })
     }
 

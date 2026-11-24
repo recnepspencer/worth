@@ -3,7 +3,7 @@ use super::{decoding::layout, frame::*, image::*, recorded::*};
 use crate::durability::data::branch_root_schema_images::DurableBranchRootSchemaImage;
 use crate::{
     branch::transition::original_inputs::OriginalEmptySchemaObservation,
-    runtime::OriginalBranchSchemaInputs,
+    durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs,
 };
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

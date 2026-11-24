@@ -1,7 +1,10 @@
 //! Install catalog meaning on the admitted original roots.
 use super::{
-    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
-    RelationalHomeProgramCatalogReadmissionDenial as Denial, RelationalHomeProgramPlanningRoot,
+    refusal::{
+        RefusedRelationalHomeProgramCatalogReadmission,
+        RelationalHomeProgramCatalogReadmissionDenial as Denial,
+    },
+    ReadmittedRelationalHomeProgramCatalogs, RelationalHomeProgramPlanningRoot,
 };
 use crate::branch::{AdmittedRelationalBranchBasis, RecordedRelationalComponentTarget};
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;

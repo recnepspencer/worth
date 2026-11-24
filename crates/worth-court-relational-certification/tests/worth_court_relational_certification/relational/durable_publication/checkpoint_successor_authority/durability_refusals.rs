@@ -1,68 +1,19 @@
-use std::sync::Arc;
-
-use crate::facade::durability::{
-    RecoveredCheckpointTransitionDenial as Denial,
-    RecoveredCheckpointTransitionError as TransitionError, RecoveredRelationalRuntimeAuthority,
+//! An original medium refusal never acknowledges or installs a successor.
+use super::{
+    candidate, main_basis, published_snapshots, recovered_world, Denial,
+    RelationalPublicationOutcome, TransitionError,
 };
-use crate::mvcc::{PreparedRelationalCommitCandidate, RelationalPublicationOutcome};
-use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::RelationalRuntime;
-use crate::tests::support::*;
-
-fn recovered_world(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> (
-    RelationalRuntime,
-    RecoveredRelationalRuntimeAuthority,
-    Arc<OwnedTestDurableMedium>,
-) {
-    let medium = OwnedTestDurableMedium::new();
-    let source = durable_runtime_for_medium(&medium);
-    create_entity(execution, &source, "checkpoint-predecessor");
-    let checkpoint = source
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    // The restored runtime continues the source's medium, which already holds
-    // the history its checkpoint covers.
-    let mut target = durable_runtime_for_medium(&medium);
-    let (_, authority) = target
-        .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
-        .unwrap();
-    (target, authority, medium)
-}
-
-fn candidate(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    name: &str,
-) -> PreparedRelationalCommitCandidate {
-    let mut transaction = test_owner_begin_transaction_for_main(runtime);
-    transaction
-        .push_batch(
-            batch_create(name),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap()
-}
-
-fn main_basis(runtime: &RelationalRuntime) -> crate::branch::AdmittedRelationalBranchBasis {
-    runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap()
-        .1
-}
+use worth_relational::facade::{
+    durability::RelationalDurabilityUnresolvedSubject, mvcc::RelationalPublicationDenial,
+};
+use worth_testkit_relational::{
+    durable_medium::ScriptedPublication,
+    shared_relational_certification_test_execution_policy::serial_request,
+};
 
 #[test]
 fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut runtime, authority, medium) = recovered_world(execution);
@@ -79,12 +30,21 @@ fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
     };
     assert!(matches!(refusal.denial(), Denial::Publication(outcome)
     if matches!(outcome.as_ref(), RelationalPublicationOutcome::Denied(
-        crate::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_)
+        RelationalPublicationDenial::DurablePublicationRefused(_)
     ))));
     assert_eq!(main_basis(&runtime).descriptor(), predecessor.descriptor());
     assert_eq!(runtime.history().immutable_commit_count(), count);
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
-    assert_eq!(medium.head(), PatchStreamPosition(1));
+    assert_eq!(published_snapshots(execution, &runtime).0, 0);
+    assert_eq!(
+        medium
+            .committed_artifacts()
+            .unwrap()
+            .last()
+            .unwrap()
+            .position()
+            .0,
+        1
+    );
 
     let authority = refusal.into_authority();
     let retried = candidate(execution, &runtime, "retried-transition");
@@ -92,7 +52,16 @@ fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
         .durability_recovery()
         .commit_checkpoint_transition(execution, authority, retried)
         .expect("the refused position was never consumed");
-    assert_eq!(medium.head(), PatchStreamPosition(2));
+    assert_eq!(
+        medium
+            .committed_artifacts()
+            .unwrap()
+            .last()
+            .unwrap()
+            .position()
+            .0,
+        2
+    );
     assert_eq!(runtime.history().immutable_commit_count(), count + 1);
     assert!(transition
         .into_parts()
@@ -103,7 +72,7 @@ fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
 
 #[test]
 fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut runtime, authority, medium) = recovered_world(execution);
@@ -124,14 +93,9 @@ fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
     let RelationalPublicationOutcome::DurabilityUnresolved(fate) = outcome.as_ref() else {
         panic!("the medium could not say whether the transition is durable")
     };
-    let offered = medium
-        .offered_commits()
-        .pop()
-        .expect("the medium was asked first");
-    let crate::durability::medium::RelationalDurabilityUnresolvedSubject::CanonicalCommit {
-        position,
-        digest,
-        ..
+    let offered = medium.offered().pop().expect("the medium was asked first");
+    let RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position, digest, ..
     } = fate.subject()
     else {
         panic!("a commit's unresolved fate names the commit")
@@ -140,5 +104,5 @@ fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
     assert_eq!(digest, offered.payload_digest());
     assert_eq!(main_basis(&runtime).descriptor(), predecessor.descriptor());
     assert_eq!(runtime.history().immutable_commit_count(), count);
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
+    assert_eq!(published_snapshots(execution, &runtime).0, 0);
 }

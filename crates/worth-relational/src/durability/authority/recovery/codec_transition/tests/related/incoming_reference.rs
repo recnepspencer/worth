@@ -312,7 +312,7 @@ fn assert_retirement_refused(
     .unwrap_err();
     assert_eq!(
         denied.kind(),
-        crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+        crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
     );
     assert!(
         denied.detail().contains("purpose=codec-retirement"),

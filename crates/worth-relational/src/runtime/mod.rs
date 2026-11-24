@@ -106,13 +106,13 @@ pub use initial_schema_installation::{
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
 mod court_patch_position_gate;
+pub use crate::durability::transition_admission_denial::{
+    RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
+};
 pub use court_patch_position_gate::RelationalPatchPositionReservationGateForTest;
 pub use operation_control::{
     RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,
     RelationalInterruptionEvent, RelationalOperationControl, RelationalOperationInterruption,
-};
-pub use schema_transition_admission::{
-    RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
 };
 pub use state::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

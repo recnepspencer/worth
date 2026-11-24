@@ -28,19 +28,19 @@ pub(super) fn capture(
         Vec<PreparedCodecRetirement>,
         Arc<ExecutionMemoryReservation>,
     ),
-    crate::runtime::RelationalSchemaTransitionAdmissionDenial,
+    crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial,
 > {
-    use crate::runtime::RelationalSchemaTransitionAdmissionDenial as Denial;
+    use crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial;
     let result = execution.in_scope(|lease| {
         worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(lease, None, |context| {
             let (origins, _roster) = retirement.complete_publications(context, lease).map_err(|stop| match stop {
                 crate::history::data::CodecRetirementClosureStop::Request(cause) => Denial::request(cause),
-                crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
+                crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
             })?;
             let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                 .and_then(|partition| partition.entity_arena.get(&activation.entity_id))
                 .filter(|row| row.is_live()).and_then(|row| row.kind_id())
-                .ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
+                .ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;
             let overflow = || Denial::request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow);
             let activation_bytes = std::mem::size_of_val(activation).checked_add(2 * std::mem::size_of::<usize>()).and_then(|n| n.checked_add(activation.field_locator.owned_allocation_capacity_bytes())).and_then(|n| n.checked_add(activation.expected.semantic_byte_width())).and_then(|n| n.checked_add(activation.replacement.semantic_byte_width())).ok_or_else(overflow)?;
             let mut bytes = origins.len().checked_mul(std::mem::size_of::<PreparedCodecRetirement>() + std::mem::size_of::<CanonicalRequiredOutputCodecRetirement>() + 512).and_then(|n| n.checked_add(activation_bytes)).ok_or_else(overflow)?;
@@ -50,7 +50,7 @@ pub(super) fn capture(
                     context.checkpoint((index + 1) as u64).map_err(|stop| Denial::request(stop.into()))?;
                     if origin.members[..index.min(origin.members.len())].iter().any(|old| old.kind == kind_id) { continue; }
                     for registry in [source.inner.root.schema_authority().registry(), target] {
-                        let kind = registry.entity_kinds.get(&kind_id).ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
+                        let kind = registry.entity_kinds.get(&kind_id).ok_or_else(|| Denial::new(crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec group has no actual kind contract"))?;
                         let quote = crate::durability::data::DurableEntitySchemaRegistration::capture_bytes(kind).ok_or_else(overflow)?;
                         context.checkpoint(quote as u64).map_err(|stop| Denial::request(stop.into()))?;
                         bytes = bytes.checked_add(quote).ok_or_else(overflow)?;

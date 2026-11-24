@@ -10,6 +10,7 @@ use worth_foundational::facade::{
 
 mod identity_space;
 mod recovery;
+pub(crate) mod refusal;
 
 #[derive(Debug)]
 pub enum RelationalHomeRecoveryPreparationDenial {
@@ -132,19 +133,4 @@ impl PreparedRelationalHomeRecovery {
         }
         Ok(schema.registry())
     }
-}
-
-/// Failures before reconstruction return this exact opaque preparation.
-/// Reconstruction failures consume that attempt, just like ordinary recovery;
-/// the Store source owner retains its independent original source for retry.
-#[derive(Debug)]
-pub enum RefusedPreparedRelationalHomeRecovery {
-    Preparation {
-        prepared: PreparedRelationalHomeRecovery,
-        cause: RelationalHomeRecoveryPreparationDenial,
-    },
-    Recovery(RelationalRecoveryStop),
-    Transition(
-        super::home_program_transition::refusal::RelationalHomeProgramTransitionSourceRefusal,
-    ),
 }

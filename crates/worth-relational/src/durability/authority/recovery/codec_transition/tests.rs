@@ -254,7 +254,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
             .unwrap_err();
         assert_eq!(
             denied.kind(),
-            crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+            crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
         );
         assert_eq!(source, protected_payload(&target, world.authored));
         assert_eq!(before, capture(execution, &target));

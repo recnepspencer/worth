@@ -1,8 +1,8 @@
 //! Derive native continuity meaning from proven physical canonical field changes.
 use crate::schema::data::*;
 use crate::{
-    runtime::RelationalSchemaTransitionAdmissionDenial as Denial,
-    runtime::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
     schema::codec_field_comparison::CodecFieldLocus,
 };
 

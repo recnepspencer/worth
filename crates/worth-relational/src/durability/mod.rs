@@ -2,6 +2,7 @@ pub(crate) use authority::RecordedReplayResultSchema;
 pub(crate) use authority::RecoveredRootInventory;
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod authority;
+pub(crate) mod authority_continuity;
 pub use authority::checkpoint_transition::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
@@ -41,6 +42,7 @@ pub(crate) mod published_medium;
 pub(crate) mod recovery;
 pub(crate) mod recovery_transition_history;
 pub(crate) mod source_initial_inputs;
+pub(crate) mod transition_admission_denial;
 
 pub(crate) mod home_world_catalog;
 pub use home_world_catalog::{

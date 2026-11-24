@@ -9,14 +9,14 @@ use crate::transactions::data::{
     intents::mutation_intent::UpdateEntityFieldsIntent, primitives::WorkerIntentBatch,
 };
 use crate::{
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
+};
+use crate::{
     mvcc::BranchBoundRelationalTransaction,
     mvcc::RelationalInstalledApplicationPublicationAuthority, mvcc::RelationalTransactionIntent,
     runtime::operation_control::RelationalOperationControl,
-};
-use crate::{
-    runtime::RelationalSchemaTransitionAdmissionDenial as Denial,
-    runtime::RelationalSchemaTransitionAdmissionDenialKind as Kind,
-    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
 };
 
 impl DurabilityRecoveryAuthority<'_> {
@@ -149,7 +149,11 @@ impl DurabilityRecoveryAuthority<'_> {
         })?;
         super::source_schema::admit_retired_relation_consequences(
             execution,
-            self.runtime,
+            &self
+                .runtime
+                .schema_contract_runtime
+                .custom_invariant_registries,
+            &self.runtime.indexes,
             basis,
             &retirement,
         )?;

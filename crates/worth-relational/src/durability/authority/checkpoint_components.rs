@@ -9,7 +9,7 @@ use crate::durability::data::{
     RelationalCheckpointEmptyComponent,
 };
 use crate::history::data::CommitId;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 pub(in crate::durability) use complete::{
     capture_complete, CapturedCompleteComponents, CompleteComponentHolds,
 };
@@ -25,12 +25,11 @@ pub(super) struct CapturedComponents {
     pub(super) held: Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
 }
 
-pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents, DurabilityError> {
-    let mut held = runtime.history.external_checkpoint_components();
+pub(super) fn capture(history: &HistorySubsystem) -> Result<CapturedComponents, DurabilityError> {
+    let mut held = history.external_checkpoint_components();
     let mut observations = BTreeMap::new();
-    for branch in runtime.history.branch_ids_snapshot() {
-        let cell = runtime
-            .history
+    for branch in history.branch_ids_snapshot() {
+        let cell = history
             .branch_cell(&branch)
             .ok_or_else(|| corrupt("current branch disappeared"))?;
         let root = cell

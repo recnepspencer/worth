@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{PortableAspectContract, PortableRecordAspectState};
 
 use super::CheckpointCoverage;
-use crate::branch::RelationalBranchCellCheckpoint;
+use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 use crate::history::data::CommitId;
 use crate::history::data::PositionedCanonicalCommit;
 use crate::identity::data::{
@@ -225,7 +225,7 @@ pub(crate) fn branch_root_image_digest(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
     pub(crate) recorded_components:
-        BTreeMap<CommitId, Vec<crate::branch::RelationalBranchBasisDescriptor>>,
+        BTreeMap<CommitId, Vec<crate::branch::basis_descriptor::RelationalBranchBasisDescriptor>>,
     pub(crate) retained_empty_components: Vec<super::RelationalCheckpointEmptyComponent>,
     pub(crate) root_kind_images:
         BTreeMap<CommitId, crate::storage::residency::CheckpointRegionKindImages>,
@@ -237,7 +237,7 @@ pub struct DurableCheckpoint {
     /// Empty materialized images are valid and cannot select the cold path.
     pub(crate) canonical_directory: Option<super::NativeCheckpointDirectoryEdge>,
     pub(crate) commit_descriptors:
-        BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
+        BTreeMap<CommitId, crate::branch::target::RelationalBranchRootDescriptor>,
     pub(crate) mirror_schema_digest: Option<[u8; 32]>,
     pub(crate) branch_cells: Vec<RelationalBranchCellCheckpoint>,
     /// One posture for every branch cell, in branch order.

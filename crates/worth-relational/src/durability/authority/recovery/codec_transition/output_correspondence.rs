@@ -2,7 +2,7 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
-use crate::runtime::{
+use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenial as Denial,
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };

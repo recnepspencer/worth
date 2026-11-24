@@ -261,6 +261,10 @@ pub struct RuntimeComplexityCounters {
 }
 
 impl RuntimeComplexityCounters {
+    pub(crate) fn count_replay_digest_parity(&mut self) {
+        self.replay_digest_parity_checks += 1;
+    }
+
     pub(crate) fn count_descriptor_version_mismatch(&mut self) {
         self.descriptor_version_mismatches_encountered += 1;
     }

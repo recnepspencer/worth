@@ -1,5 +1,9 @@
 //! Re-record content descriptors through the actual immutable-region owner.
-use crate::{branch::*, durability::data::*};
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::root::{schema::RelationalBranchRootSchemaAuthority, RelationalBranchRoot};
+use crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial;
+use crate::branch::target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
+use crate::durability::data::*;
 use worth_foundational::facade::FoundationalBranchTarget;
 
 pub(super) fn rebind(

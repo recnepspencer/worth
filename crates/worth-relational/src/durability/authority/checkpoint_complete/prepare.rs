@@ -1,28 +1,22 @@
 //! One invoked original-source fold produces the strong Complete result.
 use super::{
-    branches::BranchImages, canonical::CanonicalOutput, capture::FrozenCompleteMetadata,
+    branches::BranchImages, canonical::CanonicalOutput, capture::CapturedCompleteMetadata,
     roots::CapturedRoots, schemas::CompleteSchemas, symbols::OriginalSymbolDictionary,
     CompleteRelationalNativeCheckpoint, Denial,
 };
 use crate::durability::data::*;
-use crate::runtime::RelationalRuntime;
+use crate::durability::published_medium::RelationalDurableMediumBinding;
+use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
+use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 pub(super) fn prepare(
-    runtime: &RelationalRuntime,
+    mut frozen: CapturedCompleteMetadata,
+    selection: &RelationalCheckpointManifestSelection,
+    medium: Option<Arc<RelationalDurableMediumBinding>>,
     execution: &ExecutionRequest<'_, '_>,
     placement: RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<CompleteRelationalNativeCheckpoint, Denial> {
-    crate::execution::check_request(execution).map_err(Denial::Request)?;
-    if let (Some(actual), Some(selected)) = (
-        runtime.durability.cold_source(),
-        placement.publication_source(),
-    ) && !std::sync::Arc::ptr_eq(&actual, &selected)
-    {
-        return Err(Denial::OriginalAuthorityUnavailable);
-    }
-    let mut frozen =
-        FrozenCompleteMetadata::capture(runtime, execution, &placement)?.resolve(execution)?;
     let commits = frozen.original.read_canonical(execution, 1 << 30)?;
     let dictionary =
         OriginalSymbolDictionary::capture(&frozen.original.symbols, &commits, execution)?;
@@ -135,13 +129,8 @@ pub(super) fn prepare(
         placement
             .publication_source()
             .map(|source| {
-                RelationalHistoryMemberDirectory::empty_for_request(execution).map(|history| {
-                    runtime.durability.checkpoint_selection().prepare(
-                        manifest.clone(),
-                        source,
-                        history,
-                    )
-                })
+                RelationalHistoryMemberDirectory::empty_for_request(execution)
+                    .map(|history| selection.prepare(manifest.clone(), source, history))
             })
             .transpose()
             .map_err(stop)?
@@ -180,11 +169,7 @@ pub(super) fn prepare(
                 })
                 .transpose()?,
         )
-        .bind_original_publication(
-            runtime.durability.medium(),
-            Some(initial_artifact.clone()),
-            execution,
-        )?;
+        .bind_original_publication(medium, Some(initial_artifact.clone()), execution)?;
     let source_artifact =
         crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact::emit(
             &checkpoint,

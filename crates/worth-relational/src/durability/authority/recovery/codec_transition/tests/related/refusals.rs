@@ -93,7 +93,7 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
         .unwrap_err();
         assert_eq!(
             denied.kind(),
-            crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+            crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
         );
         assert!(denied.detail().contains("incident relation"), "{denied:?}");
         assert!(selected.is_current());

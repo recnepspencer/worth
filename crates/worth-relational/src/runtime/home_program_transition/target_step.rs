@@ -86,8 +86,9 @@ fn require_bases(
     target: &RelationalRootExecutionContracts,
     transition: &ProposedSchemaTransition,
 ) -> Result<(), RelationalHomeProgramContractDenial> {
-    use super::super::schema_transition_admission::{
-        registry_basis, RelationalSchemaTransitionAdmissionDenial as Cause,
+    use super::super::schema_transition_admission::registry_basis;
+    use crate::durability::transition_admission_denial::{
+        RelationalSchemaTransitionAdmissionDenial as Cause,
         RelationalSchemaTransitionAdmissionDenialKind as Kind,
     };
     let actual_source =

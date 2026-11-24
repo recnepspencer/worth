@@ -69,7 +69,7 @@ fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() 
         .unwrap_err();
     assert_eq!(
         denied.kind(),
-        crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
+        crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
     );
     assert_eq!(protected_payload(&target, world.authored), before);
     assert!(selected.is_current());

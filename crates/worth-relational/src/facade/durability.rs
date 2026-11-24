@@ -1,4 +1,8 @@
 pub use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+pub use crate::durability::authority::recovery::catalog_readmission::refusal::{
+    RefusedRelationalHomeProgramCatalogReadmission, RelationalHomeProgramCatalogReadmissionDenial,
+};
+pub use crate::durability::authority::recovery::prepared_home::refusal::RefusedPreparedRelationalHomeRecovery;
 pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage;
 pub use crate::durability::authority::{
     CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
@@ -8,12 +12,10 @@ pub use crate::durability::authority::{
 pub use crate::durability::authority::{
     ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,
     ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
-    ReadmittedRelationalHomeProgramCatalogs, RefusedPreparedRelationalHomeRecovery,
-    RefusedRelationalHomeProgramCatalogReadmission, RefusedRelationalRecordedComponent,
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalRecordedComponent,
     RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
-    RelationalAssociatedEffectSubject, RelationalHomeProgramCatalogReadmissionDenial,
-    RelationalHomeProgramPlanningRoot, RelationalHomeRecoveryPreparationDenial,
-    RelationalRecordedComponentAdmissionCause,
+    RelationalAssociatedEffectSubject, RelationalHomeProgramPlanningRoot,
+    RelationalHomeRecoveryPreparationDenial, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,

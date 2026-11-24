@@ -3,8 +3,8 @@ use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::{
-    runtime::RelationalSchemaTransitionAdmissionDenial as Denial,
-    runtime::RelationalSchemaTransitionAdmissionDenialKind as Kind,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial as Denial,
+    durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind as Kind,
     schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
 };
 use sha2::{Digest, Sha256};

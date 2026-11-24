@@ -47,7 +47,7 @@ impl FrozenCurrentCheckpointMetadata {
             .iter()
             .position(|cell| &cell.branch_id == main)
             .ok_or(Denial::OriginalAuthorityUnavailable)?;
-        let components = capture_complete(runtime, request, &branches)?;
+        let components = capture_complete(&runtime.history, request, &branches)?;
         let identity = runtime
             .record_identity
             .checkpoint_identity_for_request(request)

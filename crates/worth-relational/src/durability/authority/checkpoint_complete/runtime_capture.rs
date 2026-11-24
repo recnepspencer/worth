@@ -1,4 +1,4 @@
-use super::{prepare, CompleteRelationalNativeCheckpoint, Denial};
+use super::{capture, prepare, CompleteRelationalNativeCheckpoint, Denial};
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 
 impl DurabilityAuthority<'_> {
@@ -7,6 +7,22 @@ impl DurabilityAuthority<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         placement: crate::durability::data::RelationalCheckpointArtifactPolicy<'_>,
     ) -> Result<CompleteRelationalNativeCheckpoint, Denial> {
-        prepare::prepare(self.runtime, execution, placement)
+        crate::execution::check_request(execution).map_err(Denial::Request)?;
+        if let (Some(actual), Some(selected)) = (
+            self.runtime.durability.cold_source(),
+            placement.publication_source(),
+        ) && !std::sync::Arc::ptr_eq(&actual, &selected)
+        {
+            return Err(Denial::OriginalAuthorityUnavailable);
+        }
+        let frozen =
+            capture::freeze::capture(self.runtime, execution, &placement)?.resolve(execution)?;
+        prepare::prepare(
+            frozen,
+            self.runtime.durability.checkpoint_selection(),
+            self.runtime.durability.medium(),
+            execution,
+            placement,
+        )
     }
 }

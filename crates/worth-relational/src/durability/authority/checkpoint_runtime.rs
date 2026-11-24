@@ -85,7 +85,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         let selection = checkpoint_routes
             .checkpoint_selection()
             .map_err(checkpoint_admission_error)?;
-        super::checkpoint_capture::CapturedCheckpointBasis::capture(
+        super::checkpoint_capture::runtime_selection::capture(
             self.runtime,
             &checkpoint_routes,
             selection,

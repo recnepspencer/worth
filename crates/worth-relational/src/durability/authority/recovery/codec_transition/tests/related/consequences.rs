@@ -39,7 +39,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
     .unwrap_err();
     assert_eq!(
         denied.kind(),
-        crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::UnsupportedCodecConsequence
+        crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialKind::UnsupportedCodecConsequence
     );
     assert!(denied.detail().contains("custom invariant"));
     assert!(selected.is_current());

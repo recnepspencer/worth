@@ -1,4 +1,4 @@
-use super::super::RelationalHomeProgramCatalogReadmissionDenial as Denial;
+use super::super::refusal::RelationalHomeProgramCatalogReadmissionDenial as Denial;
 use super::RelationalHomeProgramPlanningRoot;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::runtime::RelationalRuntime;

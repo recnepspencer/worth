@@ -26,7 +26,10 @@ impl RecoveredCodecPublicationCustody {
         retirement: &crate::history::data::OwnedCodecRetirementClosure,
         activation: &crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
         memory: worth_execution::ExecutionMemoryReservation,
-    ) -> Result<Arc<Self>, crate::runtime::RelationalSchemaTransitionAdmissionDenial> {
+    ) -> Result<
+        Arc<Self>,
+        crate::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenial,
+    > {
         let (retirements, retirement_funding) = super::retirement_preparation::capture(
             execution, source, target, retirement, activation,
         )?;
