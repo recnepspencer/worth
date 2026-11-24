@@ -9,12 +9,21 @@
 //!
 //! - `WorthQuerySchema`: one marker's schema role (`schema`, `fragment`,
 //!   `entity` or `relation`).
-//! - `WorthQueryRecord`: an aspect marker, its `Record` shape and optional
-//!   column selection aliases, from one row struct.
+//! - `WorthQueryRelation`: a standalone relation marker, its integrity
+//!   constants, and its optional `reference()` constructor.
+//! - `WorthQueryRecord`: an aspect marker, its `Record` shape, optional
+//!   column selection aliases, and zero-string field selectors, from one row
+//!   struct.
 //! - `WorthQueryProjection`: the slot markers, their portable identities, the
 //!   query result shape and the projection, from one result row struct.
-//! - `WorthQueryAction`: the input binding, operation, mutation binding and
-//!   optional source-completion delivery, from one input struct.
+//! - `WorthQuery`: the query marker, input binding, named parameters, scope
+//!   extractor, query binding, and optional definition defaults, from one
+//!   request struct.
+//! - `WorthQueryAction`: the input binding, typed input-field accessors,
+//!   operation, mutation binding and optional source-completion delivery, from
+//!   one input struct.
+//! - `WorthQueryCorrection`: a standard recorded-inverse
+//!   `ApplicationCorrectionBinding` from one unit marker struct.
 //! - `WorthQueryNameRole`: a persistent-name scheme's roles, their
 //!   dependencies and their canonical order, from one enum.
 //! - `ApplicationNameDiscriminator`: a persistent-name discriminator's
@@ -29,12 +38,15 @@ use proc_macro::TokenStream;
 
 mod action;
 mod case;
+mod correction;
 mod facade_paths;
 mod grammar;
 mod name_discriminator;
 mod name_role;
 mod projection;
+mod query;
 mod record;
+mod relation;
 mod schema;
 
 /// Declares a unit struct's schema role: `schema` (an installation root),
@@ -42,6 +54,13 @@ mod schema;
 #[proc_macro_derive(WorthQuerySchema, attributes(worth_query))]
 pub fn derive_worth_query_schema(input: TokenStream) -> TokenStream {
     expand(input, schema::expand)
+}
+
+/// Declares a unit struct's `Relation` trait, integrity constants and optional
+/// `reference()` constructor.
+#[proc_macro_derive(WorthQueryRelation, attributes(worth_query))]
+pub fn derive_worth_query_relation(input: TokenStream) -> TokenStream {
+    expand(input, relation::expand)
 }
 
 /// Declares an aspect, its record shape and its column selections from one
@@ -57,10 +76,24 @@ pub fn derive_worth_query_projection(input: TokenStream) -> TokenStream {
     expand(input, projection::expand)
 }
 
+/// Declares a typed application query, its parameter references, its request
+/// binding and optional definition defaults from one request struct.
+#[proc_macro_derive(WorthQuery, attributes(worth_query))]
+pub fn derive_worth_query(input: TokenStream) -> TokenStream {
+    expand(input, query::expand)
+}
+
 /// Declares a mutation action from its input struct.
 #[proc_macro_derive(WorthQueryAction, attributes(worth_query))]
 pub fn derive_worth_query_action(input: TokenStream) -> TokenStream {
     expand(input, action::expand)
+}
+
+/// Declares a standard recorded-inverse `ApplicationCorrectionBinding` from
+/// one unit marker struct.
+#[proc_macro_derive(WorthQueryCorrection, attributes(worth_query))]
+pub fn derive_worth_query_correction(input: TokenStream) -> TokenStream {
+    expand(input, correction::expand)
 }
 
 /// Declares a persistent-name scheme's roles from an enum and orders it by

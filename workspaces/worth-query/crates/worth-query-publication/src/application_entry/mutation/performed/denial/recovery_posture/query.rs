@@ -27,7 +27,7 @@ pub(super) fn query_posture(
                 WorthQueryRequiredOutputRecoveryPosture::Terminal
             }
         }
-        Denial::BindingInstallation(_) | Denial::Limit(_) => {
+        Denial::InputPreparation(_) | Denial::BindingInstallation(_) | Denial::Limit(_) => {
             WorthQueryRequiredOutputRecoveryPosture::Terminal
         }
         Denial::ProductSelection(denial) => product_posture(*denial),

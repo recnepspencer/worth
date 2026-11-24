@@ -2,7 +2,8 @@
 use super::grammar::{ActionDeclaration, Scope};
 use crate::facade_paths::{declaration, fragment};
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Ident};
 
@@ -13,6 +14,7 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
     let operation = operation(input, action);
     let binding = mutation_binding(input, action);
     let scope_value = scope_value(input, action);
+    let input_fields = input_fields(input, action);
     let delivery = delivery(input, action);
     // An authored body reads input members; other handlers keep the default.
     let capture = action.body.then(|| quote!(, capture_input: true));
@@ -20,13 +22,28 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
         .validate
         .as_ref()
         .map(|validate| quote!(, validate: #validate));
+    let declared_fields = (!action.input_fields.is_empty()).then(|| {
+        let entries = action.input_fields.iter().map(|field| {
+            let member = &field.member;
+            let wire = &field.wire_name;
+            let value_ty = &field.value_ty;
+            let kind = if field.optional {
+                quote!(optional)
+            } else {
+                quote!(required)
+            };
+            quote_spanned!(value_ty.span()=> #kind(#wire, #member: #value_ty))
+        });
+        quote!(, fields: [#(#entries),*])
+    });
     quote! {
         #decl::worth_query_structured_value_binding!(#vis #input_binding for #intent {
-            identity: #input_identity #capture #validate
+            identity: #input_identity #capture #validate #declared_fields
         });
         #operation
         #binding
         #scope_value
+        #input_fields
         #delivery
     }
 }
@@ -43,10 +60,15 @@ fn operation(input: &DeriveInput, action: &ActionDeclaration) -> TokenStream {
     let decl = declaration();
     let (vis, operation, schema, input_binding) =
         (&input.vis, &action.operation, &action.schema, &action.input);
-    let access = action
-        .access
-        .as_ref()
-        .map(|access| quote!(; access { #access }));
+    let access = action.access.as_ref().map_or_else(
+        || {
+            action.body.then(|| {
+                let (selection, column) = action.scope.selected_column();
+                quote!(; access { read_fields: [<#selection>::at(#column)]; })
+            })
+        },
+        |access| Some(quote!(; access { #access })),
+    );
     let capabilities = action
         .capabilities
         .iter()
@@ -88,6 +110,13 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
         Scope::Principal { selection, column } => quote! {
             scope #selection, principal_field <#selection>::at(#column),
         },
+        Scope::Value {
+            selection,
+            column,
+            function,
+        } => quote! {
+            scope #selection, field <#selection>::at(#column), value #function,
+        },
     };
     quote! {
         #decl::worth_query_mutation_binding!(
@@ -122,6 +151,41 @@ fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenS
             fn worth_query_scope(input: &Self) -> <#selection as #frag::RecordSelection>::Value {
                 #read
             }
+        }
+    })
+}
+
+/// Compile-time-typed `<field>_input()` accessors verified against this
+/// action's authoritative `InputBinding` declared field inventory. Each
+/// accessor inherits its field's own visibility so private member types on
+/// `pub` action structs never trigger `E0446`.
+fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenStream> {
+    if action.input_fields.is_empty() {
+        return None;
+    }
+    let (decl, intent, input_binding) = (declaration(), &input.ident, &action.input);
+    let aschema = quote!(#decl::application_schema);
+    let accessors = action.input_fields.iter().map(|field| {
+        let field_vis = &field.vis;
+        let accessor = format_ident!("{}_input", field.member.unraw());
+        let wire = &field.wire_name;
+        let value_ty = &field.value_ty;
+        let carrier = if field.optional {
+            quote!(#aschema::ApplicationOptionalInputField)
+        } else {
+            quote!(#aschema::ApplicationInputField)
+        };
+        quote_spanned! {value_ty.span()=>
+            #[allow(dead_code, non_snake_case)]
+            #field_vis fn #accessor() -> #carrier<Self, #value_ty> {
+                #carrier::for_binding::<#input_binding>(#wire)
+                    .expect("derived WorthQueryAction field matches its declared input binding")
+            }
+        }
+    });
+    Some(quote! {
+        impl #intent {
+            #(#accessors)*
         }
     })
 }

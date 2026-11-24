@@ -1,5 +1,5 @@
 //! Each role lowers to the public schema traits a hand-written marker implements.
-use super::grammar::{Reference, Role, SchemaMarker};
+use super::grammar::{Reference, RelationLaws, Role, SchemaMarker};
 use crate::facade_paths::{declaration, fragment};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -24,7 +24,11 @@ pub(super) fn marker(input: &DeriveInput, marker: &SchemaMarker) -> TokenStream 
             relations,
             reference,
         } => entity(input, &name, aspects, relations, reference.as_ref()),
-        Role::Relation { to, reference } => relation(input, &name, to, reference.as_ref()),
+        Role::Relation {
+            to,
+            reference,
+            laws,
+        } => relation(input, &name, to, reference.as_ref(), laws),
     }
 }
 
@@ -109,13 +113,56 @@ fn entity(
     }
 }
 
-fn relation(
+pub(crate) fn relation(
     input: &DeriveInput,
     name: &LitStr,
     to: &Type,
     reference: Option<&(syn::Path, Reference)>,
+    laws: &RelationLaws,
 ) -> TokenStream {
     let (decl, frag, ident, vis) = (declaration(), fragment(), &input.ident, &input.vis);
+    let schema = quote!(#decl::application_schema);
+    let cardinality = laws
+        .cardinality
+        .as_ref()
+        .map(|value| quote!(const CARDINALITY: #schema::ApplicationRelationCardinality = #value;));
+    let acyclic = laws.acyclic.then(|| {
+        quote!(
+            const ACYCLIC: bool = true;
+        )
+    });
+    let self_edges = laws
+        .self_edges
+        .as_ref()
+        .map(|value| quote!(const SELF_EDGES: bool = #value;));
+    let unique = laws.unique.as_ref().map(|value| {
+        quote!(const UNIQUE: ::core::option::Option<#schema::ApplicationRelationUniquenessScope> = ::core::option::Option::Some(#value);)
+    });
+    let deletion = laws
+        .deletion
+        .as_ref()
+        .map(|value| quote!(const DELETION: #schema::ApplicationRelationDeletionPolicy = #value;));
+    let cross_context = laws.cross_context.as_ref().map(|value| {
+        quote!(const CROSS_CONTEXT: #schema::ApplicationRelationCrossContextPolicy = #value;)
+    });
+    let symmetric = laws.symmetric.then(|| {
+        quote!(
+            const SYMMETRIC: bool = true;
+        )
+    });
+    let orbit = laws.orbit.then(|| {
+        quote!(
+            const ORBIT: bool = true;
+        )
+    });
+    let same_partition = laws.same_partition_endpoints.then(|| {
+        quote!(
+            const SAME_PARTITION_ENDPOINTS: bool = true;
+        )
+    });
+    let reaches_at_least = laws.reaches_at_least.as_ref().map(|value| {
+        quote!(const REACHES_AT_LEAST: ::core::option::Option<#schema::ApplicationRelationMinimumReachability> = ::core::option::Option::Some(#value);)
+    });
     let reference = reference.map(|(from, Reference { schema, fragment })| {
         quote! {
             impl #ident {
@@ -130,6 +177,16 @@ fn relation(
         impl #frag::Relation for #ident {
             const NAME: &'static str = #name;
             type To = #to;
+            #cardinality
+            #acyclic
+            #self_edges
+            #unique
+            #deletion
+            #cross_context
+            #symmetric
+            #orbit
+            #same_partition
+            #reaches_at_least
         }
         #reference
     }

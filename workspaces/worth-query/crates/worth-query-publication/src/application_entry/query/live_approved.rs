@@ -65,7 +65,10 @@ where
         if self.retained.is_some() {
             return Err(WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis);
         }
-        let parameters = self.intent.parameters();
+        let parameters = self
+            .intent
+            .prepare_parameters()
+            .map_err(WorthQueryApplicationLiveOpenRequestDenial::InputPreparation)?;
         let scope_binding = self.intent.into_scope();
         let binding = self
             .application

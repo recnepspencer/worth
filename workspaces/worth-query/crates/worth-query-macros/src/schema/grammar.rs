@@ -2,7 +2,7 @@
 use super::DERIVE;
 use crate::grammar::{flag, type_list, unknown_key, value, visit_keys, Once};
 use syn::meta::ParseNestedMeta;
-use syn::{DeriveInput, LitStr, Path, Token, Type};
+use syn::{DeriveInput, Expr, LitBool, LitStr, Path, Token, Type};
 
 const KEYS: &[&str] = &[
     "schema",
@@ -18,6 +18,16 @@ const KEYS: &[&str] = &[
     "to",
     "from",
     "reference",
+    "cardinality",
+    "acyclic",
+    "self_edges",
+    "unique",
+    "deletion",
+    "cross_context",
+    "symmetric",
+    "orbit",
+    "same_partition_endpoints",
+    "reaches_at_least",
 ];
 
 pub(super) struct SchemaMarker {
@@ -44,13 +54,119 @@ pub(super) enum Role {
     Relation {
         to: Type,
         reference: Option<(Path, Reference)>,
+        laws: RelationLaws,
     },
 }
 
+/// Native integrity constants lowered onto `fragment::Relation`.
+pub(crate) struct RelationLaws {
+    pub(crate) cardinality: Option<Expr>,
+    pub(crate) acyclic: bool,
+    pub(crate) self_edges: Option<LitBool>,
+    pub(crate) unique: Option<Expr>,
+    pub(crate) deletion: Option<Expr>,
+    pub(crate) cross_context: Option<Expr>,
+    pub(crate) symmetric: bool,
+    pub(crate) orbit: bool,
+    pub(crate) same_partition_endpoints: bool,
+    pub(crate) reaches_at_least: Option<Expr>,
+}
+
 /// `reference(Schema, Fragment)`: where the generated `reference()` points.
-pub(super) struct Reference {
-    pub(super) schema: Type,
-    pub(super) fragment: Path,
+pub(crate) struct Reference {
+    pub(crate) schema: Type,
+    pub(crate) fragment: Path,
+}
+
+/// Reusable accumulator for relation integrity keys shared by
+/// `WorthQuerySchema` and `WorthQueryRelation`.
+pub(crate) struct RelationLawKeys {
+    cardinality: Once<Expr>,
+    acyclic: Once<()>,
+    self_edges: Once<LitBool>,
+    unique: Once<Expr>,
+    deletion: Once<Expr>,
+    cross_context: Once<Expr>,
+    symmetric: Once<()>,
+    orbit: Once<()>,
+    same_partition_endpoints: Once<()>,
+    reaches_at_least: Once<Expr>,
+}
+
+impl RelationLawKeys {
+    pub(crate) fn new() -> Self {
+        Self {
+            cardinality: Once::new("cardinality"),
+            acyclic: Once::new("acyclic"),
+            self_edges: Once::new("self_edges"),
+            unique: Once::new("unique"),
+            deletion: Once::new("deletion"),
+            cross_context: Once::new("cross_context"),
+            symmetric: Once::new("symmetric"),
+            orbit: Once::new("orbit"),
+            same_partition_endpoints: Once::new("same_partition_endpoints"),
+            reaches_at_least: Once::new("reaches_at_least"),
+        }
+    }
+
+    pub(crate) fn try_read(&mut self, key: &str, meta: &ParseNestedMeta<'_>) -> syn::Result<bool> {
+        match key {
+            "cardinality" => self.cardinality.set(meta, value(meta)?)?,
+            "acyclic" => {
+                flag(meta)?;
+                self.acyclic.set(meta, ())?;
+            }
+            "self_edges" => self.self_edges.set(meta, value(meta)?)?,
+            "unique" => self.unique.set(meta, value(meta)?)?,
+            "deletion" => self.deletion.set(meta, value(meta)?)?,
+            "cross_context" => self.cross_context.set(meta, value(meta)?)?,
+            "symmetric" => {
+                flag(meta)?;
+                self.symmetric.set(meta, ())?;
+            }
+            "orbit" => {
+                flag(meta)?;
+                self.orbit.set(meta, ())?;
+            }
+            "same_partition_endpoints" => {
+                flag(meta)?;
+                self.same_partition_endpoints.set(meta, ())?;
+            }
+            "reaches_at_least" => self.reaches_at_least.set(meta, value(meta)?)?,
+            _ => return Ok(false),
+        }
+        Ok(true)
+    }
+
+    pub(crate) fn refuse_unless(&self, allowed: bool, label: &str) -> syn::Result<()> {
+        self.cardinality.refuse_unless(allowed, label)?;
+        self.acyclic.refuse_unless(allowed, label)?;
+        self.self_edges.refuse_unless(allowed, label)?;
+        self.unique.refuse_unless(allowed, label)?;
+        self.deletion.refuse_unless(allowed, label)?;
+        self.cross_context.refuse_unless(allowed, label)?;
+        self.symmetric.refuse_unless(allowed, label)?;
+        self.orbit.refuse_unless(allowed, label)?;
+        self.same_partition_endpoints
+            .refuse_unless(allowed, label)?;
+        self.reaches_at_least.refuse_unless(allowed, label)?;
+        Ok(())
+    }
+
+    pub(crate) fn finish(self) -> RelationLaws {
+        RelationLaws {
+            cardinality: self.cardinality.optional(),
+            acyclic: self.acyclic.is_set(),
+            self_edges: self.self_edges.optional(),
+            unique: self.unique.optional(),
+            deletion: self.deletion.optional(),
+            cross_context: self.cross_context.optional(),
+            symmetric: self.symmetric.is_set(),
+            orbit: self.orbit.is_set(),
+            same_partition_endpoints: self.same_partition_endpoints.is_set(),
+            reaches_at_least: self.reaches_at_least.optional(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -83,6 +199,7 @@ struct Keys {
     to: Once<Type>,
     from: Once<Path>,
     reference: Once<Reference>,
+    laws: RelationLawKeys,
 }
 
 impl SchemaMarker {
@@ -119,10 +236,14 @@ impl Keys {
             to: Once::new("to"),
             from: Once::new("from"),
             reference: Once::new("reference"),
+            laws: RelationLawKeys::new(),
         }
     }
 
     fn read(&mut self, key: &str, meta: &ParseNestedMeta<'_>) -> syn::Result<()> {
+        if self.laws.try_read(key, meta)? {
+            return Ok(());
+        }
         match key {
             "schema" => self.role(meta, RoleKey::Root),
             "fragment" => self.role(meta, RoleKey::Fragment),
@@ -136,7 +257,7 @@ impl Keys {
             "relations" => self.relations.set(meta, type_list(meta)?),
             "to" => self.to.set(meta, value(meta)?),
             "from" => self.from.set(meta, value(meta)?),
-            "reference" => self.reference.set(meta, reference(meta)?),
+            "reference" => self.reference.set(meta, parse_reference(meta)?),
             _ => Err(unknown_key(meta, DERIVE, KEYS)),
         }
     }
@@ -161,6 +282,7 @@ impl Keys {
             .refuse_unless(role == RoleKey::Entity, label)?;
         self.to.refuse_unless(role == RoleKey::Relation, label)?;
         self.from.refuse_unless(role == RoleKey::Relation, label)?;
+        self.laws.refuse_unless(role == RoleKey::Relation, label)?;
         let referenced = matches!(role, RoleKey::Entity | RoleKey::Relation);
         self.reference.refuse_unless(referenced, label)?;
         Ok(match role {
@@ -180,24 +302,34 @@ impl Keys {
             },
             RoleKey::Relation => {
                 let to = self.to.required(missing, DERIVE)?;
-                let reference_span = self.reference.span();
-                let reference = match (self.from.optional(), self.reference.optional()) {
-                    (Some(from), Some(reference)) => Some((from, reference)),
-                    (None, Some(_)) => {
-                        return Err(syn::Error::new(
-                            reference_span.unwrap_or(missing),
-                            "a relation `reference(..)` also needs `from = Entity`",
-                        ));
-                    }
-                    (_, None) => None,
-                };
-                Role::Relation { to, reference }
+                let reference = relation_reference(self.from, self.reference, missing)?;
+                Role::Relation {
+                    to,
+                    reference,
+                    laws: self.laws.finish(),
+                }
             }
         })
     }
 }
 
-fn reference(meta: &ParseNestedMeta<'_>) -> syn::Result<Reference> {
+pub(crate) fn relation_reference(
+    from: Once<Path>,
+    reference: Once<Reference>,
+    missing: proc_macro2::Span,
+) -> syn::Result<Option<(Path, Reference)>> {
+    let reference_span = reference.span();
+    match (from.optional(), reference.optional()) {
+        (Some(from), Some(reference)) => Ok(Some((from, reference))),
+        (None, Some(_)) => Err(syn::Error::new(
+            reference_span.unwrap_or(missing),
+            "a relation `reference(..)` also needs `from = Entity`",
+        )),
+        (_, None) => Ok(None),
+    }
+}
+
+pub(crate) fn parse_reference(meta: &ParseNestedMeta<'_>) -> syn::Result<Reference> {
     let content;
     syn::parenthesized!(content in meta.input);
     let schema = content.parse()?;

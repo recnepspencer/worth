@@ -2,7 +2,7 @@
 //! and refuses cleanly after a conflicting edit.
 use super::{
     actions::Complete,
-    completion_correction::{CorrectCompletion, ReadDetails, RestoreDoneBinding, RestoredDone},
+    completion_correction::{CorrectCompletion, ReadDetails},
     program::*,
     schema::Schema,
 };
@@ -11,10 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use worth_query_decl::facade::{
-    application_program::{
-        ApplicationActionReference, ApplicationProgramAuthoring, ApplicationRootComposition,
-    },
-    application_schema::ApplicationSchema,
+    application_program::ApplicationProgramAuthoring, application_schema::ApplicationSchema,
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
@@ -38,13 +35,6 @@ use worth_query_host::facade::{
 };
 
 type Home = WorthQueryApplicationHome<Schema, Program>;
-type RestoreAction = ApplicationActionReference<
-    Schema,
-    ApplicationRootComposition,
-    BoardFeature,
-    RestoreDoneBinding,
-    RestoredDone,
->;
 
 #[test]
 fn recorded_authored_body_inverse_recovers_its_completed_command_after_reopen() {
@@ -288,5 +278,10 @@ fn close(home: Home) {
 }
 
 fn task_done(request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> bool {
-    request.query(ReadDetails(3)).execute().unwrap().rows()[0].done
+    request
+        .query(ReadDetails { task: 3 })
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .done
 }

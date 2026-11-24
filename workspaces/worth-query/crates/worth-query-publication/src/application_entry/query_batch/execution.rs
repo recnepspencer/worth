@@ -70,7 +70,9 @@ where
         checkpoint(request.scope)?;
         // Application-authored parameter/scope callbacks precede framework
         // admission; their internals are not part of the read-work contract.
-        let parameters = intent.parameters();
+        let parameters = intent
+            .prepare_parameters()
+            .map_err(|cause| item(index, ItemDenial::InputPreparation(cause)))?;
         let scope_binding = intent.into_scope();
         let principal = selected
             .resolve_authenticated_principal(

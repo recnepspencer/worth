@@ -26,6 +26,11 @@ pub(crate) fn snake_case(name: &str) -> String {
     snake
 }
 
+/// `task_key` becomes `TASK_KEY`.
+pub(crate) fn screaming_snake_case(name: &str) -> String {
+    snake_case(name).to_ascii_uppercase()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -38,5 +43,7 @@ mod tests {
         assert_eq!(snake_case("TaskRow"), "task_row");
         assert_eq!(snake_case("Row"), "row");
         assert_eq!(snake_case("Task_Row"), "task_row");
+        assert_eq!(screaming_snake_case("task_key"), "TASK_KEY");
+        assert_eq!(screaming_snake_case("due"), "DUE");
     }
 }
