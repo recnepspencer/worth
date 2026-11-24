@@ -102,6 +102,11 @@ fn encode_frame_payload(
             writer.digest(second.bytes());
         }
     }
+    writer.count("group schemes", batch.group_schemes.len())?;
+    for (group, scheme_id) in &batch.group_schemes {
+        writer.digest(group.bytes());
+        writer.text("group scheme id", scheme_id)?;
+    }
     writer.count("carrier declarations", batch.carriers.len())?;
     for (key, carriers) in &batch.carriers {
         encode_name_key(&mut writer, key);
@@ -172,7 +177,7 @@ fn encode_birth(writer: &mut WireWriter, birth: &PersistentNameBirthRecord) -> R
     writer.bytes("birth discriminator", parts.canonical_discriminator())
 }
 
-fn encode_entity(writer: &mut WireWriter, entity: EntityId) {
+pub(super) fn encode_entity(writer: &mut WireWriter, entity: EntityId) {
     writer.u32(entity.partition_value());
     writer.u64(entity.local_slot_value());
     writer.u32(entity.generation_value());

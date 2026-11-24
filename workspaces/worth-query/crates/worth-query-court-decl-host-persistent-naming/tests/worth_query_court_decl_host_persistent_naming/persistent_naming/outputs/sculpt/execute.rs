@@ -200,6 +200,7 @@ pub(super) fn execute(
                 };
                 writer.merge_entity_names(&parents, keeper)?
             }
+            Step::Groups(decl) => super::groups::declare(decl, &held, &members, writer)?,
             Step::Scoped(occurrence, steps) => {
                 let mut scoped = super::scoped::Scoped {
                     members: &members,

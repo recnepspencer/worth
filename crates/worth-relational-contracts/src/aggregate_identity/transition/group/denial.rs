@@ -28,6 +28,15 @@ pub enum AggregateGroupNamingDenial {
         rule: AggregateContinuityRule,
         least_member: PersistentNameIdentity,
     },
+    /// A member is not a live entity name after the commit.
+    MemberNotLive { name: PersistentNameIdentity },
+    /// A dissolved group is not live in its scheme at the commit basis.
+    UnknownGroup { identity: AggregateIdentity },
+    /// One scheme was named under two continuity rules.
+    ContinuityRuleChanged,
+    /// A history selection derives its groups; a declared partition beside
+    /// it is refused.
+    SelectionClaim,
     /// Two simultaneous live groups claim one `(scheme, anchor, rule)` name.
     LiveNameCollision {
         identity: AggregateIdentity,

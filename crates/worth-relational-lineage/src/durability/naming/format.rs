@@ -11,7 +11,7 @@ use crate::contracts::lineage::data::naming::PersistentNameSubjectKind;
 use super::refusal::PersistentNameDurabilityError as Refusal;
 
 /// The only format version this build writes and reads.
-pub const FORMAT_VERSION: u8 = 1;
+pub const FORMAT_VERSION: u8 = 2;
 
 pub(super) const LOG_MAGIC: &[u8; 4] = b"WPNL";
 pub(super) const FRAME_MAGIC: &[u8; 4] = b"WPNF";

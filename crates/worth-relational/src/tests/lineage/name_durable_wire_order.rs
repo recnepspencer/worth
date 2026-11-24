@@ -144,7 +144,8 @@ fn reordered_or_duplicated_carriers_refuse_non_canonical() {
         .with_carriers(PersistentNameKey::Group(group(1)), [name(1), name(2)])
         .with_carriers(PersistentNameKey::Group(group(2)), [name(1), name(2)]);
     let encoded = frame(&batch);
-    let declarations = SECTIONS + 5 * COUNT;
+    // Carrier declarations follow the (here empty) group scheme section.
+    let declarations = SECTIONS + 6 * COUNT;
     for tampered in swapped_and_duplicated(&encoded, declarations, CARRIER_DECLARATION) {
         assert_eq!(refusal(&tampered), non_canonical("carrier declarations"));
     }

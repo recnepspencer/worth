@@ -228,19 +228,21 @@
 //! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
-    IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection, NameOwnerPath,
-    NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
+    ApplicationGroupKind, ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
+    GroupMemberName, IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection,
+    NameOwnerPath, NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
     NameSelectionDenial, NameSubjectRole, NamedTarget, NamedTargetDelegate, NoNameOwner,
     OccurrencePath, OccurrencePathDenial, OccurrenceSegment, OwnedThrough, OwnerVia,
-    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned, WorthQueryName,
-    WorthQueryNameDelegate, WorthQueryNameRole, WorthQueryNamedKind, WorthQuerySameCommitName,
+    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned,
+    WorthQueryGroupPartition, WorthQueryName, WorthQueryNameDelegate, WorthQueryNameRole,
+    WorthQueryNamedKind, WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
-    DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
-    ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial, LineagePostureKind,
-    LineageRecordTarget, NameOwnerOf, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
-    NameResolutionCandidates, ObservedEntityNames, PersistentNameHolder, PersistentNameReadVeto,
+    AggregateGroupNamingDenial, DiscriminatorBasisDenialReason, ExecutionNameReadDenial,
+    ExecutionNameReader, ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial,
+    LineagePostureKind, LineageRecordTarget, NameOwnerOf, NameReadCurrentness,
+    NameReadDependencies, NameReadStaleness, NameResolutionCandidates, ObservedEntityNames,
+    PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionGroupResolution,
     WorthQueryDecisionNameDenial, WorthQueryDecisionNameResolution, WorthQueryLeastMergeKeeper,
     WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };

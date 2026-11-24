@@ -45,6 +45,9 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
             Self::Relation { relation, .. } | Self::Adjacency { relation, .. } => {
                 bytes(relation.capacity())
             }
+            Self::PersistentGroup(read) => {
+                bytes(read.group_kind.capacity()).saturating_add(bytes(read.member_kind.capacity()))
+            }
         }
     }
 }
@@ -68,6 +71,9 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 matching_relations, ..
             } => list(matching_relations),
             Self::Adjacency { relations, .. } => list(relations),
+            Self::PersistentGroup { read, answer } => {
+                bytes(read.group_kind.capacity()).saturating_add(answer.charged_bytes())
+            }
             // The index definition is shared with the index, not owned here.
             Self::IndexedEntitySelection {
                 locator,

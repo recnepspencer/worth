@@ -9,7 +9,7 @@
 //! so a fragment split off a kept group never answers for the group that
 //! kept its name.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -51,7 +51,7 @@ impl PersistentNameBranchIndex {
             .flat_map(|event| event_groups(*event))
             .filter(|group| self.group_is_live(*group))
             .collect();
-        self.ingest_group_births(batch.commit, events, journal)?;
+        self.ingest_group_births(batch.commit, events, &batch.group_schemes, journal)?;
         let retired = self.ingest_group_retirements(batch.commit, events, &live_before, journal)?;
         self.ingest_group_edges(batch.commit, events, &live_before, &retired, journal)
     }
@@ -67,12 +67,14 @@ impl PersistentNameBranchIndex {
         &mut self,
         commit: CommitId,
         events: &BTreeSet<Event>,
+        schemes: &BTreeMap<AggregateIdentity, String>,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
         for event in events {
             match *event {
                 Event::Born { group } => {
-                    let entry = NameEntry::born(commit, None, None, live_group(group));
+                    let scheme = schemes.get(&group).cloned();
+                    let entry = NameEntry::born(commit, None, scheme, live_group(group));
                     self.insert_entry(PersistentNameKey::Group(group), entry, journal)?;
                 }
                 Event::Revived { group } => {
@@ -112,6 +114,13 @@ impl PersistentNameBranchIndex {
                     "only a group live before the commit can retire",
                 ));
             }
+            let members = self
+                .names
+                .get(&PersistentNameKey::Group(group))
+                .and_then(NameEntry::current_live)
+                .map(|live| live.carriers.clone())
+                .unwrap_or_default();
+            self.end_member_tenures(group, &members, commit, journal);
             self.entry_mut(PersistentNameKey::Group(group), journal)
                 .set_state(commit, NameState::Ended);
             retired.insert(group);

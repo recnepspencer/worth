@@ -126,6 +126,19 @@ named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
 only a discriminator value, and the name it stands for is the one the
 two-commit route gives.
+Groups are named at runtime ([#334](https://github.com/recnepspencer/worth/issues/334)):
+an operation declares a `WorthQueryGroupPartition<G>` (`G: ApplicationGroupKind`)
+through `declare_group_partition` or a naming scope's `declare_groups`, naming
+members by `WorthQueryName`, `NameRef` or same-commit name under typed roles and
+dissolving held groups; Relational names the changed scope's next partition by
+the scheme's continuity rule at commit, refusing typed
+(`LineageNameDenial::GroupNaming`) with zero effects, publishes it as one
+canonical group lineage frame, and rebuilds group state on fork, history
+navigation, checkpoint restore, cold open and replay. Decisions read
+`group_name_of::<G, Member>` / `resolve_group::<G, Member>` as tracked facts
+(`Exact`/`Plural`/`Retired`/`Ambiguous`; committed basis), and
+`#[worth_query(group_name)]` projects a row's group names in its read
+([group schemes](build-an-application.md#persistent-naming-schemes)).
 Declare roles, discriminators and occurrences as Rust types
 ([naming declared as Rust types](build-an-application.md#naming-declared-as-rust-types)):
 `#[derive(WorthQueryNameRole)]` with `#[depends_on(..)]` and numeric
@@ -1207,14 +1220,6 @@ exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
 ## Known gaps
-
-Group persistent names have no commit path yet. Installation validates and
-lowers `application_group_name_scheme`s, but no operation can form, split, merge
-or retire a group, and the runtime name index ingests only entity and relation
-lineage. Query therefore offers no tracked `group_name_of` / `resolve_group`
-and no `#[worth_query(group_name)]` projection
-([#334](https://github.com/recnepspencer/worth/issues/334)). Name entities and
-relations, and keep group meaning in the application until that lands.
 
 Forwarding a managed-index read/provider error from an invariant hook retains
 its typed `ManagedIndex` failure category and diagnostic detail, rather than the

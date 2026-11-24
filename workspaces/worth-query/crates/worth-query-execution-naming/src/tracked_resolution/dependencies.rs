@@ -19,11 +19,17 @@ pub struct NameReadDependencies {
     branches: BTreeMap<BranchId, BranchNameDependencies>,
 }
 
+mod groups;
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct BranchNameDependencies {
     live_records: BTreeMap<LineageId, LineageRecordTarget>,
     ended_lineages: BTreeSet<LineageId>,
     awaited_births: BTreeSet<[u8; 32]>,
+    /// Groups an answer rested on: a held group and its live successors.
+    groups: BTreeSet<[u8; 32]>,
+    /// `(scheme, member)` group lookups and the group each one answered.
+    group_members: BTreeMap<(String, [u8; 32]), Option<[u8; 32]>>,
 }
 
 impl BranchNameDependencies {
@@ -31,6 +37,8 @@ impl BranchNameDependencies {
         self.live_records.is_empty()
             && self.ended_lineages.is_empty()
             && self.awaited_births.is_empty()
+            && self.groups.is_empty()
+            && self.group_members.is_empty()
     }
 
     fn rests_on(&self, lineage: &LineageId) -> bool {
@@ -55,6 +63,9 @@ pub struct NameReadStaleness {
     pub lineages: Vec<LineageId>,
     /// Digests of held names a read found unknown that the commit birthed.
     pub births: Vec<[u8; 32]>,
+    /// Groups a read rested on, or answered for a member, that the commit
+    /// retired, revived, split, merged or re-membered.
+    pub groups: Vec<[u8; 32]>,
 }
 
 impl NameReadDependencies {
@@ -123,7 +134,12 @@ impl NameReadDependencies {
     ///
     /// Complexity: O(commit lineage events * log dependencies).
     pub fn currentness_after_commit(&self, commit: &CommitResult) -> NameReadCurrentness {
-        self.currentness_after_lineage_events(commit.envelope().lineage_events())
+        let events = self.currentness_after_lineage_events(commit.envelope().lineage_events());
+        let groups = self.currentness_after_group_lineage(
+            &commit.envelope().branch_context,
+            commit.group_lineage(),
+        );
+        events.join(groups)
     }
 
     /// Whether one commit's canonical lineage events stale any recorded read.
@@ -168,6 +184,7 @@ impl NameReadDependencies {
         NameReadCurrentness::Stale(NameReadStaleness {
             lineages: stale_lineages.into_iter().collect(),
             births: births.into_iter().collect(),
+            groups: Vec::new(),
         })
     }
 

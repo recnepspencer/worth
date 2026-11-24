@@ -15,12 +15,14 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod navigation_grant;
 mod schema;
 use schema::*;
-pub(crate) use schema::{Member, MemberRole, MEMBER_SCHEME};
+pub(crate) use schema::{GroupRole, Loop, Member, MemberRole, MEMBER_SCHEME};
+mod cell_complex;
 mod completeness;
 pub(crate) mod coupled;
 mod delete;
 mod edit;
 mod ergonomics;
+pub(crate) mod groups;
 mod history;
 mod interleaving;
 mod lineage;

@@ -50,6 +50,9 @@ impl WorthQueryApplicationObservedFact {
             Self::SourcePublication { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }
+            Self::PersistentGroup { read, answer } => read
+                .remains_equal(answer, runtime, snapshot)
+                .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable),
             Self::RetiredOutputEntity {
                 entity_id,
                 kind,

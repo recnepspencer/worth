@@ -10,6 +10,7 @@ pub mod ownership_completion;
 pub mod preparation_denial;
 pub mod root_admission;
 pub mod semantic_summary;
+pub mod validated_lineage;
 use super::PublicationPhaseOwners;
 use crate::runtime::state::runtime_state::preparation_runtime::mirror_publication::prepare_mirror_publication;
 use contracts::publication::bundle::publication_status::PublicationStage;
@@ -305,9 +306,7 @@ pub(super) fn prepare_publication_phase<
                 .with_commit_log(commit_log.clone())
             })?;
         let validated_lineage_events =
-            worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::state::ValidatedLineageEventBatch::from_reserved(
-                canonical_commit_envelope.lineage_events().to_vec(),
-            );
+            validated_lineage::validated_lineage_events(&canonical_commit_envelope, commit_log)?;
         let reserve_route = |execution: worth_execution::ExecutionRequest<'_, '_>| {
             history_owner.reserve_canonical_publication_route(
                 execution,

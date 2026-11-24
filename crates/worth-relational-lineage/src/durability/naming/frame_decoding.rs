@@ -52,6 +52,7 @@ pub(super) struct DecodedCommitFrame {
     pub(super) entity_holders: BTreeMap<LineageId, EntityId>,
     pub(super) relation_holders: BTreeMap<LineageId, RelationId>,
     pub(super) group_events: Vec<AggregateGroupLineageEvent>,
+    pub(super) group_schemes: BTreeMap<AggregateIdentity, String>,
     pub(super) carriers: Vec<DecodedCarriers>,
 }
 
@@ -132,6 +133,17 @@ pub(super) fn decode_commit_frame(payload: &[u8]) -> Result<DecodedCommitFrame, 
         read_strictly_ascending(&mut reader, "group events", decode_group_event, |event| {
             *event
         })?;
+    let group_schemes = read_strictly_ascending(
+        &mut reader,
+        "group schemes",
+        |reader| {
+            let group = AggregateIdentity::from_bytes(reader.digest()?);
+            Ok((group, reader.text("group scheme id")?))
+        },
+        |(group, _)| *group,
+    )?
+    .into_iter()
+    .collect();
     let carriers = read_strictly_ascending(
         &mut reader,
         "carrier declarations",
@@ -146,6 +158,7 @@ pub(super) fn decode_commit_frame(payload: &[u8]) -> Result<DecodedCommitFrame, 
         entity_holders,
         relation_holders,
         group_events,
+        group_schemes,
         carriers,
     })
 }
@@ -263,7 +276,7 @@ fn decode_birth(reader: &mut WireReader<'_>) -> Result<PersistedBirthClaim, Refu
     })
 }
 
-fn decode_entity(reader: &mut WireReader<'_>) -> Result<EntityId, Refusal> {
+pub(super) fn decode_entity(reader: &mut WireReader<'_>) -> Result<EntityId, Refusal> {
     let (partition, slot, generation) = (reader.u32()?, reader.u64()?, reader.u32()?);
     Ok(EntityId::new(PartitionId(partition), slot, generation))
 }
@@ -273,7 +286,9 @@ fn decode_relation(reader: &mut WireReader<'_>) -> Result<RelationId, Refusal> {
     Ok(RelationId::new(PartitionId(partition), slot, generation))
 }
 
-fn decode_group_event(reader: &mut WireReader<'_>) -> Result<AggregateGroupLineageEvent, Refusal> {
+pub(super) fn decode_group_event(
+    reader: &mut WireReader<'_>,
+) -> Result<AggregateGroupLineageEvent, Refusal> {
     let tag = reader.u8()?;
     let arity = group_event_arity(tag)?;
     let first = AggregateIdentity::from_bytes(reader.digest()?);

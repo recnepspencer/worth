@@ -12,6 +12,7 @@
 //! [`worth_relational::facade::lineage::CommitNamingPlan`].
 
 mod denial;
+mod group_lowering;
 mod least_merge;
 mod lowering;
 mod same_commit;
@@ -25,7 +26,7 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSubjectKind,
-    IndexedRoleDiscriminator, OccurrencePath, SameCommitNameSlot, WorthQueryName,
+    GroupMemberName, IndexedRoleDiscriminator, OccurrencePath, SameCommitNameSlot, WorthQueryName,
     WorthQueryNameRole,
 };
 use worth_relational::facade::identity::KindId;
@@ -213,6 +214,14 @@ pub enum OperationNamingEntry<T> {
         parents: Vec<[u8; 32]>,
         keeper: OperationMergeKeeper<T>,
     },
+    /// The next partition of group kind `group_name`'s changed scope: each
+    /// group's members with their declared roles, and the held groups it
+    /// dissolves.
+    GroupPartition {
+        group_name: String,
+        dissolved: Vec<[u8; 32]>,
+        groups: Vec<Vec<(String, GroupMemberName)>>,
+    },
 }
 
 /// Ordered naming effects of one operation. Empty for every unnamed or
@@ -261,7 +270,7 @@ impl<T> OperationNamingEntry<T> {
                 ..
             } => std::slice::from_ref(output),
             Self::Split { children, .. } => children,
-            Self::Retire { .. } | Self::Merge { .. } => &[],
+            Self::Retire { .. } | Self::Merge { .. } | Self::GroupPartition { .. } => &[],
         }
     }
 }
@@ -309,6 +318,15 @@ impl<T> OperationNamingProgram<T> {
                 OperationNamingEntry::Retire { subject, name } => {
                     OperationNamingEntry::Retire { subject, name }
                 }
+                OperationNamingEntry::GroupPartition {
+                    group_name,
+                    dissolved,
+                    groups,
+                } => OperationNamingEntry::GroupPartition {
+                    group_name,
+                    dissolved,
+                    groups,
+                },
                 OperationNamingEntry::Split {
                     subject,
                     parent,

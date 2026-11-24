@@ -242,9 +242,14 @@ fn project_row(input: &DeriveInput, projection: &ProjectionDeclaration) -> Token
     });
     let root = &projection.root;
     let names = projection.names.iter().map(|name| {
-        let (member, read) = (&name.member, name_read(name.optional));
-        // Spanned to the field's type, where a name of another kind is refused.
-        quote_spanned!(name.value.span()=> #member: row.#read::<#root>()?)
+        let (member, read) = (&name.member, name_read(name.optional, name.group));
+        // Spanned to the field's type, where a name of another kind is
+        // refused; a group name's kind is the field's own.
+        if name.group {
+            quote_spanned!(name.value.span()=> #member: row.#read()?)
+        } else {
+            quote_spanned!(name.value.span()=> #member: row.#read::<#root>()?)
+        }
     });
     let reads = reads.chain(names);
     quote! {
@@ -260,9 +265,14 @@ fn project_row(input: &DeriveInput, projection: &ProjectionDeclaration) -> Token
     }
 }
 
-/// `name::<Root>()`, or `optional_name::<Root>()` for an `Option<..>` field.
-fn name_read(optional: bool) -> syn::Ident {
-    format_ident!("{}", if optional { "optional_name" } else { "name" })
+/// `name::<Root>()`, or `optional_name::<Root>()` for an `Option<..>` field;
+/// `group_name()` / `optional_group_name()` for a group name.
+fn name_read(optional: bool, group: bool) -> syn::Ident {
+    let read = if group { "group_name" } else { "name" };
+    match optional {
+        true => format_ident!("optional_{read}"),
+        false => format_ident!("{read}"),
+    }
 }
 
 /// `const PROJECTS_PERSISTENT_NAMES`: whether this row or a related row it

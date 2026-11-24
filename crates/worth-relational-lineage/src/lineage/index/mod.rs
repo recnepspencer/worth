@@ -12,6 +12,7 @@ pub mod entry;
 pub mod ingest_group;
 pub mod ingest_lineage;
 pub mod journal;
+pub mod member_groups;
 pub mod recorded_name;
 
 use std::collections::HashMap;
@@ -24,6 +25,7 @@ use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::lineage::data::name_resolution::PersistentNameKey;
+use crate::contracts::lineage::data::naming::PersistentNameIdentity;
 
 use journal::IngestionJournal;
 
@@ -47,6 +49,8 @@ pub struct PersistentNameBranchIndex {
     /// history restore rebinds the exact original record to a fresh lineage,
     /// and a pinned read must still see the lineage bound at its basis.
     holder_lineages: HashMap<LineageHolder, Vec<(CommitId, LineageId)>>,
+    /// Per member name and group scheme: which group held it from each commit.
+    member_groups: HashMap<PersistentNameIdentity, member_groups::MemberTenures>,
 }
 
 impl PersistentNameBranchIndex {
@@ -61,6 +65,7 @@ impl PersistentNameBranchIndex {
             lineage_names: HashMap::new(),
             lineage_holders: HashMap::new(),
             holder_lineages: HashMap::new(),
+            member_groups: HashMap::new(),
         }
     }
 
@@ -185,6 +190,7 @@ impl PersistentNameBranchIndex {
         batch: &PersistentNameCommittedBatch,
         journal: &mut IngestionJournal,
     ) -> Result<(), PersistentNameIndexDenial> {
+        let mut changed = Vec::new();
         for (key, carriers) in &batch.carriers {
             let Some(live) = self.names.get(key).and_then(NameEntry::current_live) else {
                 return Err(PersistentNameIndexDenial::InvalidTransition {
@@ -195,12 +201,26 @@ impl PersistentNameBranchIndex {
             if &live.carriers == carriers {
                 continue;
             }
+            let prior = live.carriers.clone();
             let updated = LiveName {
                 target: live.target,
                 carriers: carriers.clone(),
             };
             self.entry_mut(*key, journal)
                 .set_state(batch.commit, NameState::Live(updated));
+            if let PersistentNameKey::Group(group) = key {
+                changed.push((*group, prior, carriers));
+            }
+        }
+        // Every departure ends before any arrival starts, so a member moving
+        // between two groups of one scheme ends in its new group.
+        for (group, prior, carriers) in &changed {
+            let left = prior.difference(carriers).copied().collect();
+            self.end_member_tenures(*group, &left, batch.commit, journal);
+        }
+        for (group, prior, carriers) in &changed {
+            let joined = carriers.difference(prior).copied().collect();
+            self.start_member_tenures(*group, &joined, batch.commit, journal);
         }
         Ok(())
     }
