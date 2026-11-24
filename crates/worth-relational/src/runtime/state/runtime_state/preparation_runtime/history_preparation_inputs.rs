@@ -15,7 +15,7 @@ impl RelationalPreparationRuntime {
         '_,
         impl FnOnce(
                 &ExecutionRequest<'_, '_>,
-                &AdmittedCommitState,
+                &AdmittedCommitState<crate::mvcc::RelationalTransactionValidationInput>,
             ) -> Result<AcceptedMergeDraft, TransactionCommitError>
             + '_,
     > {
@@ -33,9 +33,9 @@ impl RelationalPreparationRuntime {
                     .descriptor_semantics_policy
                     .current_write_version(),
                 merge_draft: move |execution: &ExecutionRequest<'_, '_>,
-                                   admitted: &AdmittedCommitState| {
-                    prepare_merge_draft(execution, self, admitted)
-                },
+                                   admitted: &AdmittedCommitState<
+                    crate::mvcc::RelationalTransactionValidationInput,
+                >| { prepare_merge_draft(execution, self, admitted) },
             },
         }
     }

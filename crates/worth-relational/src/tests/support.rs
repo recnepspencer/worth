@@ -78,11 +78,9 @@ mod relation_integrity;
 mod savepoint;
 #[path = "support/schema.rs"]
 mod schema;
-mod schema_payload;
 #[path = "support/transaction_authority.rs"]
 mod transaction_authority;
 
-pub(crate) use crate::execution::test_authority::{test_execution_authority, test_execution_lease};
 pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
 pub(crate) use history::*;
@@ -92,8 +90,10 @@ pub(crate) use records::*;
 pub(crate) use relation_integrity::*;
 pub(crate) use savepoint::*;
 pub(crate) use schema::*;
-pub(crate) use schema_payload::canonical_schema_envelope_input;
 pub(crate) use transaction_authority::*;
+pub(crate) use worth_harness::facade::execution_fixture::{
+    test_execution_authority, test_execution_lease,
+};
 
 pub(crate) fn diagnostic_field<'a>(
     entry: &'a crate::facade::diagnostics::RelationalDiagnosticsEntry,

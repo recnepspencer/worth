@@ -1,14 +1,11 @@
-pub mod access;
-pub mod authority;
-pub mod data;
-pub(crate) mod overlay;
-pub(crate) mod partition;
+pub use worth_relational_storage::internal_port::storage::changed_record_retention;
+pub use worth_relational_storage::internal_port::storage::overlay;
+pub use worth_relational_storage::internal_port::storage::partition;
+pub use worth_relational_storage::internal_port::storage::record_retention;
+pub use worth_relational_storage::internal_port::storage::substrate;
+#[cfg(test)]
+pub use worth_relational_storage::internal_port::storage::*;
+pub(crate) mod access;
+pub(crate) mod authority;
+pub(crate) mod data;
 pub(crate) mod residency;
-pub(crate) mod substrate;
-
-pub(crate) use overlay::published_delta::RelationalPublishedPartitionDelta;
-pub(crate) mod changed_record_retention;
-pub(crate) mod mirror_plan;
-pub(crate) mod mirror_publication;
-pub(crate) mod record_retention;
-pub(crate) use mirror_plan::PreparedMirrorPublication;

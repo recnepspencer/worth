@@ -125,12 +125,12 @@ def resolve(segments, current, index):
     return module, tuple(rest)
 
 
-def references(node, index):
+def references(node, index, *, resolver=resolve):
     """Resolved crate references made by one module node's own text."""
     text = node.own_text()
     result = []
     for segments, glob, alias in use_trees(text) + qualified_paths(text):
-        resolved = resolve(segments, node.names, index)
+        resolved = resolver(segments, node.names, index)
         if resolved is None:
             continue
         module, rest = resolved

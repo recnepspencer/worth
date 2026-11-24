@@ -12,7 +12,6 @@ mod adjacency;
 mod aspect_presence;
 mod branches;
 mod custody;
-mod field_writes;
 mod indexed;
 
 fn keys(entity: EntityId) -> [RelationalAuthoredWriteSelector; 3] {
@@ -84,15 +83,6 @@ fn collect(
             return (commits, visits);
         }
     }
-}
-
-fn update_batch(entity: EntityId, value: &str) -> WorkerIntentBatch {
-    WorkerIntentBatch::new("authored-update").push(MutationIntent::Entity(
-        EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-            entity_id: entity,
-            fields: single_string_aspect_field_patch(aspect_key("name"), field_key("name"), value),
-        }),
-    ))
 }
 
 fn name_locator() -> AspectFieldLocator {

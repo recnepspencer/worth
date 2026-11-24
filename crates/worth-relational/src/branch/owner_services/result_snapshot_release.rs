@@ -3,6 +3,7 @@ use super::{RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapsho
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::CommitResult;
 use crate::visibility::snapshot_release::RelationalSnapshotReleaseDenial;
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::CommitResultOwnerPort as _;
 
 pub(super) fn release(
     runtime: &RelationalRuntime,

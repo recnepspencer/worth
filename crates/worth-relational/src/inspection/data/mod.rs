@@ -1,14 +1,11 @@
 mod commit;
-mod graph;
+pub(crate) use worth_relational_branch::internal_port::inspection::data::{
+    graph, structural_identity, taxonomy, transaction,
+};
 mod historical;
-#[path = "merge_support/rows.rs"]
-mod merge_support_rows;
-#[path = "merge_support/witness.rs"]
-mod merge_support_witness;
+pub(crate) use worth_relational_merge::internal_port::inspection::data::merge_support_rows;
+pub(crate) use worth_relational_merge::internal_port::inspection::data::merge_support_witness;
 mod retention;
-mod structural_identity;
-mod taxonomy;
-mod transaction;
 
 pub use commit::{CommitInspection, RecentCommitInspectionRequest, RecentCommitInspectionWindow};
 pub use graph::{

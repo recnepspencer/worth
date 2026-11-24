@@ -4,11 +4,7 @@ pub use crate::branch::historical_selection::{
 };
 mod historical_output_selection;
 pub use state::CompleteRelationalCheckpointPreparation;
-pub(crate) use state::{
-    LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
-};
+pub(crate) use state::{LineageNamingBasisBinding, OriginalBranchSchemaInputsDenial};
 pub mod builder;
 mod candidate_artifact_inputs;
 mod candidate_consumption;
@@ -40,11 +36,11 @@ pub(crate) use home_program_transition::{
 };
 pub(crate) mod checkpoint_split_doors_for_test;
 pub(crate) mod commit_strategy_validation;
-pub(crate) mod interruption_counters;
+pub(crate) use worth_relational_contracts::internal_port::runtime::interruption_counters;
 mod invariant_view;
 mod lineage_commit;
 mod managed_source_history;
-pub(crate) mod operation_control;
+pub(crate) use worth_relational_contracts::internal_port::runtime::operation_control;
 mod ownership_certification;
 mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
@@ -65,7 +61,6 @@ pub use state::{
 };
 
 pub use crate::config::data::RelationalRuntimeConfig;
-pub use crate::durability::data::RecoveryOutcome;
 pub use crate::performance::data::{
     ComplexityContract, ComplexityStatus, RelationalCandidateInputCounters,
     RuntimeComplexityCounters,
@@ -100,9 +95,9 @@ pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,
     VisibilityRetentionAuthority,
 };
+pub(crate) use initial_schema_installation::codec_field_changes;
 pub(crate) use initial_schema_installation::custom_invariant_inventory_digest_for_compilation;
 pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use initial_schema_installation::{codec_field_changes, CodecFieldLocus};
 pub use initial_schema_installation::{
     custom_invariant_inventory_digest, FreshRelationalInitialSchemaInstallation,
     RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
@@ -123,43 +118,25 @@ pub use state::{
     RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
 
-pub(crate) use crate::storage::overlay::WorkingState;
-pub(crate) mod close_denial;
-pub(crate) mod fork_denial;
 pub(crate) use construction::RuntimeExtensions;
 pub use fork_denial::RelationalRuntimeForkDenial;
 pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
-    authored_write_commit_denial, readmit_positioned_canonical_commit,
     AdmittedRelationalRuntimeOperation, BranchHeadVersionIndexAuthority,
-    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog, CommitStrategiesSubsystem,
-    DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage, IndexingState,
-    LineageIdentityAllocator, LineageState, LineageSubsystem, MirrorResidencyDemandBinding,
-    OriginalCheckpointIndexes, PartitionEdition, PatchPositionReservationAdmission,
-    PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
-    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
-    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
-    PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
-    RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
-    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageEventPage,
-    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,
-    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
-};
-pub(crate) use state::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
-    RelationalPendingSettlementReservation, RelationalSettlementClaim,
-    RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    BranchTransitionPublication, CanonicalCheckpointAdmissionError, CommitStrategiesSubsystem,
+    DurabilitySubsystem, HistorySubsystem, LineageIdentityAllocator, LineageSubsystem,
+    MirrorResidencyDemandBinding, PartitionEdition, PendingSymbolMeanings,
+    PerformedCheckpointSelection, PublicationSubsystem, PublishedSnapshotCapacityOwner,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
+    RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
+    RelationalCheckpointManifestSelection, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
+    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
+    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding, ResidentLineageNode, ResidentPartitionEdition,
+    ResidentPartitionEntry, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
 };
 pub use state::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
@@ -169,6 +146,14 @@ pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
+pub(crate) use state::{
+    RelationalPendingSettlementReservation, RelationalSettlementReservationDenial,
+    ReservedRelationalSettlement,
+};
+#[cfg(test)]
+pub(crate) use state::{SymbolReservationDenial, ValidatedLineageEventBatch};
+pub(crate) use worth_relational_contracts::internal_port::runtime::close_denial;
+pub(crate) use worth_relational_contracts::internal_port::runtime::fork_denial;
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
 
@@ -198,3 +183,24 @@ mod merge_ownership_probe;
 mod metadata_guard_probe;
 
 pub use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
+
+#[cfg(test)]
+mod merge_history_tests;
+
+#[cfg(test)]
+mod managed_fork_cleanup;
+
+#[cfg(test)]
+mod commit_request_tests;
+
+#[cfg(test)]
+mod root_content_tests;
+
+#[cfg(test)]
+mod commit_result_cleanup_tests;
+
+#[cfg(test)]
+pub(crate) use crate::durability::data::RecoveryOutcome;
+
+#[cfg(test)]
+pub(crate) use state::subsystems::LineageState;

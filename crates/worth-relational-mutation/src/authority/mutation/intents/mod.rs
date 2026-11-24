@@ -1,0 +1,24 @@
+pub mod apply_entity_aspect_patch;
+pub mod apply_relation_aspect_patch;
+pub mod bulk_create_entities;
+pub mod bulk_create_relations;
+pub mod create_entity;
+pub mod create_entity_aspects;
+pub mod create_relation;
+pub mod create_relation_aspects;
+pub mod delete_entity;
+pub mod delete_relation;
+pub mod dispatch;
+pub mod entity_aspect_preparation;
+pub mod entity_authoritative_deletion_patch;
+pub mod field_authoring_candidate;
+pub mod materialization;
+pub mod record_aspect_patch;
+pub mod relation_endpoint_candidate;
+pub mod replace_entity;
+pub mod revalidate_entity;
+pub mod revalidate_relation;
+pub mod update_entity_fields;
+pub mod update_relation_endpoints;
+
+pub(crate) use dispatch::dispatch_intent;

@@ -134,7 +134,7 @@ def path_at(stream, i):
 
 def resolved_origin(surface, current, segments):
     """Resolve a type/import path through module or item aliases and globs."""
-    target = resolve(segments, current, surface.index)
+    target = surface.resolve(segments, current, surface.index)
     if target is None:
         found = surface.origin(current, segments[0])[0]
         rest = segments[1:]

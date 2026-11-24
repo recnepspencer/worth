@@ -1,6 +1,7 @@
 use super::{checkpoint_complete, recovery, runtime_rebuild, RecoveredRelationalBranchBasis};
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;
+use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasisOwnerPort as _;
 
 use crate::runtime::RelationalRuntime;
 
@@ -35,7 +36,8 @@ pub struct RecoveredRelationalRuntimeAuthority {
     pub(super) home_program_predecessor:
         Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     pub(super) runtime_instance_id: u64,
-    pub(super) recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
+    pub(super) recovered_roots:
+        std::sync::Arc<runtime_rebuild::root_inventory::RecoveredRootInventory>,
     pub(super) recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (
@@ -139,7 +141,7 @@ impl RecoveredRelationalRuntimeAuthority {
             phase.finish_capture(matches);
         }
         if matches {
-            Ok(RecoveredRelationalBranchBasis { basis })
+            Ok(RecoveredRelationalBranchBasis::from_readmission(basis))
         } else {
             Err(basis)
         }

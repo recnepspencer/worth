@@ -2,6 +2,8 @@ use crate::facade::identity::{KindId, PartitionId};
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::tests::support::*;
 use std::sync::{Arc, Barrier};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 #[test]
 fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
@@ -14,7 +16,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
     let branch_cells_before = runtime.history.branch_cells_snapshot();
     let envelopes_before = runtime.history().commit_envelopes_snapshot();
     let commit_count_before = runtime.history().immutable_commit_count();
-    let patch_count_before = runtime.history.recorded_patch_position_count();
+    let patch_count_before = runtime.history.recorded_patch_position_count_for_test();
     let bundle_before = runtime.publication().latest_bundle();
     let diagnostics_before = runtime.publication().diagnostic_access().artifact_count();
     let durable_count_before = runtime.durability().durable_log().len();
@@ -43,7 +45,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
         commit_count_before
     );
     assert_eq!(
-        runtime.history.recorded_patch_position_count(),
+        runtime.history.recorded_patch_position_count_for_test(),
         patch_count_before
     );
     assert_eq!(runtime.publication().latest_bundle(), bundle_before);
@@ -72,7 +74,7 @@ fn preparation_is_truth_effect_free_and_discard_releases_reservations() {
         commit_count_before
     );
     assert_eq!(
-        runtime.history.recorded_patch_position_count(),
+        runtime.history.recorded_patch_position_count_for_test(),
         patch_count_before
     );
     assert_eq!(runtime.publication().latest_bundle(), bundle_before);
@@ -128,7 +130,7 @@ fn prepared_root_materializes_exactly_the_declared_write_partitions() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("candidate root construction succeeds");
-    let (touched, reused) = candidate.materialization_counts();
+    let (touched, reused) = candidate.materialization_counts_for_test();
 
     assert_eq!(touched, declared_write_partition_count);
     assert_eq!(touched, 2);

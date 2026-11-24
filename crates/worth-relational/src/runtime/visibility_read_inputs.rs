@@ -4,7 +4,7 @@ use crate::visibility::snapshot_states::{
     resolution::{SnapshotReadDirectory, SnapshotResolutionInputs},
     SnapshotRecordReadInputs,
 };
-use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::retirement::BranchBasisRetirementOwnerOwnerPort as _;
 
 impl RelationalRuntime {
     pub(crate) fn snapshot_record_read_inputs(&self) -> SnapshotRecordReadInputs<'_> {
@@ -19,11 +19,6 @@ impl RelationalRuntime {
 impl<'a> From<&'a RelationalRuntime> for SnapshotReadDirectory<'a> {
     fn from(runtime: &'a RelationalRuntime) -> Self {
         Self::new(&runtime.visibility, runtime.runtime_instance_id())
-    }
-}
-impl<'a> From<&'a Arc<RelationalRuntime>> for SnapshotReadDirectory<'a> {
-    fn from(runtime: &'a Arc<RelationalRuntime>) -> Self {
-        runtime.as_ref().into()
     }
 }
 impl<'a> From<&'a mut RelationalRuntime> for SnapshotReadDirectory<'a> {
@@ -52,7 +47,7 @@ use crate::visibility::cache_state::VisibilityCacheInputs;
 impl<'a> From<&'a RelationalRuntime> for HistoricalBasisInputs<'a> {
     fn from(runtime: &'a RelationalRuntime) -> Self {
         Self {
-            history: &runtime.history,
+            history: runtime.history.canonical_read(),
             genesis_branch: &runtime.config.history.main_branch,
         }
     }
@@ -139,11 +134,5 @@ impl<'a> From<&'a RelationalRuntime> for SnapshotObservationInputs<'a> {
                 .max_active_snapshot_handles,
             cache: runtime.into(),
         }
-    }
-}
-
-impl<'a> From<&'a Arc<RelationalRuntime>> for SnapshotObservationInputs<'a> {
-    fn from(runtime: &'a Arc<RelationalRuntime>) -> Self {
-        runtime.as_ref().into()
     }
 }

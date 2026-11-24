@@ -1,7 +1,7 @@
 mod compiled_artifacts;
-pub(crate) mod instrumentation;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation;
 pub(crate) mod sequence;
-pub(crate) mod symbol_table;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table;
 #[cfg(test)]
 mod tests;
 
@@ -10,10 +10,9 @@ use crate::runtime::state::subsystems::RuntimeSubsystem;
 pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
-pub(crate) use symbol_table::{
-    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication, RuntimeSymbolTable,
-    SymbolReservationDenial,
-};
+#[cfg(test)]
+pub(crate) use symbol_table::SymbolReservationDenial;
+pub(crate) use symbol_table::{PendingSymbolMeanings, RuntimeSymbolTable};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimeServices {

@@ -1,4 +1,6 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshotParts;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::assemble_positioned_relational_snapshot;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
@@ -73,13 +75,15 @@ impl VisibilityReadContext<'_> {
             ),
             None => None,
         };
-        Ok(PositionedRelationalSnapshot {
-            runtime_instance_id: self.runtime.runtime_instance_id(),
-            branch_id: basis.branch_id().clone(),
-            root_id: basis.root_id(),
-            version_id: basis.version_id(),
-            commit_id,
-            position,
-        })
+        Ok(assemble_positioned_relational_snapshot(
+            PositionedRelationalSnapshotParts {
+                runtime_instance_id: self.runtime.runtime_instance_id(),
+                branch_id: basis.branch_id().clone(),
+                root_id: basis.root_id(),
+                version_id: basis.version_id(),
+                commit_id,
+                position,
+            },
+        ))
     }
 }

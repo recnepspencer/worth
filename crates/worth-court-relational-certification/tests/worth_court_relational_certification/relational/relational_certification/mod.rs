@@ -26,6 +26,7 @@ fn supply_chain_semantic_world_target_is_present() {
 
 #[allow(unused_imports)]
 pub(crate) use worth_testkit_relational::shared_relational_certification_test_execution_policy as test_execution_policy;
+mod aspect_field_uniqueness;
 mod aspect_storage;
 #[path = "baseline_layers/mod.rs"]
 pub(crate) mod baseline_layers;
@@ -41,3 +42,5 @@ pub(crate) mod profile_contracts;
 
 mod history_ownership;
 mod unaccessed_medium;
+
+mod acyclicity_resources;

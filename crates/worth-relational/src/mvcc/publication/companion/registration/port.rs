@@ -1,5 +1,4 @@
 //! Runtime admission for existing companion registration and head-cell effects.
-#[cfg(test)]
 use super::guard_fault;
 use super::{registry_guard, CompanionRegistrationState, PublicationCompanionRegistrationStop};
 use crate::mvcc::publication::companion::RelationalPublicationCompanion;
@@ -74,12 +73,12 @@ impl PublicationCompanionRegistrationPort {
             .owner
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
+        let registry = self.publication.companion_registry();
         let mut state = registry_guard::acquire(
-            self.publication.companion_registry().state.try_write(),
+            registry.state.try_write(),
             PublicationCompanionRegistrationStop::PublicationPending,
         )?;
-        #[cfg(test)]
-        guard_fault::after_acquisition(guard_fault::Door::Remove);
+        registry.after_guard_acquisition(guard_fault::Door::Remove);
         match &*state {
             CompanionRegistrationState::RequiredActive { generation, .. }
                 if *generation == registration.generation =>
@@ -122,12 +121,12 @@ impl PendingCompanionRegistration {
             .owner
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
+        let registry = self.port.publication.companion_registry();
         let mut state = registry_guard::acquire(
-            self.port.publication.companion_registry().state.try_write(),
+            registry.state.try_write(),
             PublicationCompanionRegistrationStop::PublicationPending,
         )?;
-        #[cfg(test)]
-        guard_fault::after_acquisition(guard_fault::Door::Activate);
+        registry.after_guard_acquisition(guard_fault::Door::Activate);
         match &*state {
             CompanionRegistrationState::RequiredRebind { generation }
                 if *generation == self.generation =>

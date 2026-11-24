@@ -1,6 +1,7 @@
 //! Carries verified native recovery lineage across one validated, settled commit.
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 mod outcome;
-mod snapshot_closeout;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::checkpoint_transition::snapshot_closeout;
 pub use outcome::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,

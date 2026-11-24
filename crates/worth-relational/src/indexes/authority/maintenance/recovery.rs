@@ -15,6 +15,17 @@ impl IndexAuthority<'_> {
         basis: &AdmittedRelationalBranchBasis,
         budget: DerivedIndexMaintenanceBudget,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
+        self.reconstruct_for_basis_observed(execution, request, basis, budget, None)
+    }
+
+    pub(crate) fn reconstruct_for_basis_observed(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        request: DerivedIndexBuildRequest,
+        basis: &AdmittedRelationalBranchBasis,
+        budget: DerivedIndexMaintenanceBudget,
+        charge_rendezvous: Option<worth_relational_indexes::internal_port::indexes::authority::maintenance::charge_rendezvous::ChargeRendezvous<'_>>,
+    ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
         ReconstructionLane::enter_reconstruction(|lane| {
             reconstruction_projection::reconstruct_for_basis(
                 &self.maintenance(),
@@ -23,6 +34,7 @@ impl IndexAuthority<'_> {
                 &request,
                 basis,
                 budget,
+                charge_rendezvous,
                 |observation| self.runtime.read_truth().project_observation(observation),
             )
         })

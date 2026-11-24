@@ -13,6 +13,7 @@ use worth_foundational::facade::{AggregateIdentity, AggregateLineageKind};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 type Event = (
     CommitId,
@@ -56,7 +57,7 @@ fn identical_component_commits_keep_all_names_and_lineage_at_one_two_and_eight_w
 fn run(workers: usize) -> Vec<PublishedState> {
     let registry = registry();
     let control = Arc::new(Control {
-        source: registry.relation_kinds[&KindId(7)]
+        source: (*registry.owner_relation_kinds())[&KindId(7)]
             .relation_integrity
             .aggregate_identity
             .clone(),

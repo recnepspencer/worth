@@ -9,6 +9,9 @@ use crate::runtime::{
 };
 use crate::validation::data::CustomInvariantRegistration;
 use crate::validation::FrozenCustomInvariantRegistry;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
+use worth_relational_contracts::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
+use worth_relational_merge::internal_port::commit_strategies::frozen_registry::FrozenCommitStrategyRegistryOwnerPort as _;
 
 use super::state::{
     RelationalRuntimeConfiguration, RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
@@ -206,7 +209,9 @@ impl RelationalRuntime {
         .map_err(Denial::MainBranch)?;
         let services = extensions.build_runtime_services();
         services.symbols.replace(symbols);
-        let mut history = HistorySubsystem::from_main_cell(main_cell);
+        let mut history = crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory::from_branch(
+            HistorySubsystem::from_main_cell(main_cell),
+        );
         history
             .set_runtime_instance_id(services.runtime_instance_id())
             .map_err(Denial::MainBranch)?;
@@ -237,7 +242,7 @@ impl RelationalRuntime {
             record_identity: <RecordIdentitySubsystem as RuntimeSubsystem>::new(&()),
             services,
             owner_lifecycle: RelationalRuntimeOwner::new(),
-            publication_owner: RelationalRuntimePublicationOwner::new(),
+            publication_owner: RelationalRuntimePublicationOwner::standalone(),
             partitions: <StorageSubsystem as RuntimeSubsystem>::new(&()),
             visibility,
             publication: extensions.build_publication_subsystem(),

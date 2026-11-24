@@ -1,19 +1,22 @@
 //! One canonical sequence reservation owner for ordinary and applied proposals.
-use crate::{
-    history::data::CommitId, identity::data::VersionId, mvcc::RelationalTransactionValidationInput,
-    runtime::RelationalPreparationRuntime, transactions::data::TransactionCommitError,
-};
+use crate::history::data::CommitId;
+use crate::identity::data::VersionId;
+use crate::mvcc::RelationalTransactionValidationInput;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
 impl RelationalPreparationRuntime {
-    pub(super) fn reserve_proposal_sequence(
+    pub(in crate::mvcc) fn reserve_proposal_sequence(
         &self,
         validation_input: &RelationalTransactionValidationInput,
     ) -> Result<(VersionId, u64, CommitId), TransactionCommitError> {
         let proposed_version_id = match validation_input.coupled_proposal() {
             Some(prior) => prior.proposed_version_id(),
             None => self.history.reserve_version_id().ok_or_else(|| {
-                crate::transactions::data::TransactionCommitError::publication(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::new(
-                        crate::publication::bundle::PublicationStage::BundleAssembly,
+                        crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
                         "canonical version sequence overflow",
                     ),
                 )
@@ -22,8 +25,8 @@ impl RelationalPreparationRuntime {
         let ordinal = match validation_input.coupled_proposal() {
             Some(prior) => prior.ordinal(),
             None => self.services.next_proposal_ordinal().ok_or_else(|| {
-                crate::transactions::data::TransactionCommitError::preparation(
-                    crate::transactions::data::CommitPreparationError::proposal_identity_exhausted(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::preparation(
+                    crate::transactions::data::outcomes::commit_preparation::CommitPreparationError::proposal_identity_exhausted(
                         validation_input.target_branch().clone(),
                         proposed_version_id,
                     ),
@@ -33,9 +36,9 @@ impl RelationalPreparationRuntime {
         let commit_id = match validation_input.coupled_proposal() {
             Some(prior) => prior.commit_id(),
             None => self.history.reserve_commit_id().ok_or_else(|| {
-                crate::transactions::data::TransactionCommitError::publication(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::new(
-                        crate::publication::bundle::PublicationStage::BundleAssembly,
+                        crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
                         "canonical commit identity capacity exhausted",
                     ),
                 )

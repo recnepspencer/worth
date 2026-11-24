@@ -1,0 +1,134 @@
+pub mod diagnostic_artifacts;
+pub mod metadata;
+#[cfg(test)]
+pub mod tests;
+
+use crate::contracts::validation::data::execution::InvariantDecisionRecord;
+pub mod check_result;
+pub use check_result::InvariantCheckResult;
+
+pub use crate::contracts::validation::engine::result::execution_summary::InvariantExecutionSummary;
+pub use crate::contracts::validation::engine::result::failures::InvariantFailure;
+pub use diagnostic_artifacts::{
+    CustomInvariantTraceArtifact, InvariantFailureArtifact, InvariantProofBoundaryArtifact,
+};
+pub use metadata::{
+    InvariantExecutionDisposition, InvariantExecutionMetadata, InvariantPlanScopeClass,
+    InvariantProofBoundarySummary, InvariantScopeWideningCause,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InvariantExecutionResult {
+    metadata: InvariantExecutionMetadata,
+    summary: InvariantExecutionSummary,
+    results: Vec<InvariantCheckResult>,
+    decision_log: Vec<InvariantDecisionRecord>,
+}
+
+fn build_decision_log(results: &[InvariantCheckResult]) -> Vec<InvariantDecisionRecord> {
+    results
+        .iter()
+        .map(InvariantCheckResult::decision_record)
+        .collect()
+}
+
+impl InvariantExecutionResult {
+    pub fn executed(
+        metadata: InvariantExecutionMetadata,
+        results: Vec<InvariantCheckResult>,
+    ) -> Self {
+        assert_eq!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
+            metadata.disposition(),
+            InvariantExecutionDisposition::Executed,
+            "executed invariant results require an executed disposition",
+        );
+        let summary = InvariantExecutionSummary::from_results(&results);
+        let decision_log = build_decision_log(&results);
+        Self::from_reduced_parts(metadata, summary, results, decision_log)
+    }
+
+    /// The reducer already classified each check and admitted its decision log.
+    pub(crate) fn from_reduced_parts(
+        metadata: InvariantExecutionMetadata,
+        summary: InvariantExecutionSummary,
+        results: Vec<InvariantCheckResult>,
+        decision_log: Vec<InvariantDecisionRecord>,
+    ) -> Self {
+        debug_assert_eq!(
+            /* Proof: executed derives the summary from this exact result Vec. The other caller, ReducedInvariantPrefix::project, moves the same retained worker results that absorb added to its summary; no result is removed in between. */
+            summary.result_count(),
+            results.len()
+        );
+        debug_assert_eq!(
+            /* Proof: executed builds one decision for each result in this exact Vec. ReducedInvariantPrefix::project likewise pushes one decision for each retained worker result before moving those same results into the output Vec. */
+            decision_log.len(),
+            results.len()
+        );
+        Self {
+            metadata,
+            summary,
+            results,
+            decision_log,
+        }
+    }
+
+    pub fn skipped(metadata: InvariantExecutionMetadata) -> Self {
+        assert_ne!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
+            metadata.disposition(),
+            InvariantExecutionDisposition::Executed,
+            "skipped invariant results require a skipped disposition",
+        );
+        Self {
+            metadata,
+            summary: InvariantExecutionSummary::empty(),
+            results: Vec::new(),
+            decision_log: Vec::new(),
+        }
+    }
+
+    pub fn metadata(&self) -> &InvariantExecutionMetadata {
+        &self.metadata
+    }
+
+    pub fn summary(&self) -> &InvariantExecutionSummary {
+        &self.summary
+    }
+
+    pub fn results(&self) -> &[InvariantCheckResult] {
+        &self.results
+    }
+
+    pub fn decision_log(&self) -> &[InvariantDecisionRecord] {
+        &self.decision_log
+    }
+
+    pub fn blocking_failures(&self) -> Vec<InvariantFailure> {
+        self.summary.blocking_failures(&self.results)
+    }
+
+    pub fn publication_failures(&self) -> Vec<InvariantFailure> {
+        self.summary.publication_failures(&self.results)
+    }
+
+    pub fn proof_boundary_artifact(&self) -> Option<InvariantProofBoundaryArtifact> {
+        diagnostic_artifacts::proof_boundary_artifact(self)
+    }
+
+    pub fn failure_artifact(&self, failure: &InvariantFailure) -> InvariantFailureArtifact {
+        diagnostic_artifacts::failure_artifact(self, failure)
+    }
+
+    pub fn custom_trace_artifact(
+        result: &InvariantCheckResult,
+    ) -> Option<CustomInvariantTraceArtifact> {
+        diagnostic_artifacts::custom_trace_artifact(result)
+    }
+
+    pub fn into_results(self) -> Vec<InvariantCheckResult> {
+        self.results
+    }
+}
+
+pub mod commit_trace;

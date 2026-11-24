@@ -1,3 +1,4 @@
+use worth_relational_durability::internal_port::durability::branch_transition_artifact::retained_export::RelationalBranchTransitionArtifactsOwnerPort as _;
 use super::DurabilityAccess;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifacts;
 use worth_execution::ExecutionAllocationPolicy;

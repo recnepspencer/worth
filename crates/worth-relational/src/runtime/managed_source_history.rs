@@ -6,7 +6,6 @@ use crate::history::access::relevant_writes::{
 };
 use crate::identity::data::EntityId;
 use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
-use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
 impl RelationalRuntime {
@@ -32,11 +31,5 @@ impl<'a> From<&'a RelationalRuntime> for ManagedSourceHistoryReads<'a> {
                 .custom_invariant_registries
                 .source_history,
         }
-    }
-}
-
-impl<'a> From<&'a Arc<RelationalRuntime>> for ManagedSourceHistoryReads<'a> {
-    fn from(runtime: &'a Arc<RelationalRuntime>) -> Self {
-        runtime.as_ref().into()
     }
 }

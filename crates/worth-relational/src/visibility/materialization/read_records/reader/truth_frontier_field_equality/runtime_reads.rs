@@ -1,4 +1,5 @@
 //! Select the installed read operands before handing off to the read implementation.
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::truth_frontier_field_equality::assemble_bounded_frontier_field_equality_truth_read;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
@@ -59,11 +60,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 )?;
                 matching_entity_ids.insert(record.entity_id);
             }
-            Ok(BoundedFrontierFieldEqualityTruthRead {
+            Ok(assemble_bounded_frontier_field_equality_truth_read(
                 matching_entity_ids,
                 entity_records_examined,
                 field_reads,
-            })
+            ))
         })
     }
 }

@@ -176,8 +176,8 @@ fn run(steps: &[Step], case: u64) {
             }
         }
         if matches!(step, Step::Undo | Step::Redo(_) | Step::Checkout(_)) {
-            for index in 0..KEYS.len() {
-                match (before[index], nodes[current].live[index]) {
+            for (index, was_live) in before.iter().enumerate().take(KEYS.len()) {
+                match (*was_live, nodes[current].live[index]) {
                     (false, true) => RESTORED.fetch_add(1, Ordering::Relaxed),
                     (true, false) => RETIRED.fetch_add(1, Ordering::Relaxed),
                     _ => 0,

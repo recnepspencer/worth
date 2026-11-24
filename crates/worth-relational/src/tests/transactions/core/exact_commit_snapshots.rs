@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::runtime::RelationalRetainedCommitSnapshotDenialKind;
 use crate::tests::support::*;
@@ -25,14 +26,14 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     assert!(counters.visibility_exact_state_materializations <= 1);
     assert_eq!(created_observation.commit(), &created_commit);
     assert_eq!(
-        created_observation.snapshot_handle().version_id,
+        created_observation.snapshot_handle().version_id(),
         created_commit.version_id
     );
     let created_record = runtime
         .read_truth()
         .project_snapshot(created_observation.snapshot_handle())
         .expect("retained handle resolves")
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .expect("read request remains live")
         .into_iter()
         .find(|record| record.entity_id == entity)
@@ -48,7 +49,7 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .read_truth()
         .project_snapshot(updated_observation.snapshot_handle())
         .expect("retained update handle resolves")
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .expect("read request remains live")
         .into_iter()
         .find(|record| record.entity_id == entity)
@@ -58,7 +59,7 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
         .read_truth()
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
-        .all_authoritative_entity_records(execution,)
+        .all_authoritative_entity_records_for_test(execution,)
         .expect("read request remains live")
         .into_iter()
         .all(|record| record.entity_id != entity));

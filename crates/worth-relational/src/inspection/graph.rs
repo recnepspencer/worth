@@ -144,8 +144,8 @@ impl<'runtime> InspectionAccess<'runtime> {
                 };
             };
             let mut touched_partitions = BTreeSet::new();
-            let count = match request.record_class {
-                InspectionRecordClass::Entity => read_view
+            let count = if request.record_class == InspectionRecordClass::Entity {
+                read_view
                     .entities()
                     .iter()
                     .filter(|record| partition_scope.allows(record.entity_id.partition_id))
@@ -154,8 +154,9 @@ impl<'runtime> InspectionAccess<'runtime> {
                         touched_partitions.insert(record.entity_id.partition_id);
                         1_u64
                     })
-                    .sum(),
-                InspectionRecordClass::Relation => read_view
+                    .sum()
+            } else {
+                read_view
                     .relations()
                     .iter()
                     .filter(|record| partition_scope.allows(record.relation_id.partition_id))
@@ -164,7 +165,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                         touched_partitions.insert(record.relation_id.partition_id);
                         1_u64
                     })
-                    .sum(),
+                    .sum()
             };
             KindInspectionSummary {
                 scope: request.scope.clone(),

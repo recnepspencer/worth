@@ -18,12 +18,12 @@ impl<'runtime> MergeAccess<'runtime> {
         let target_view = self
             .runtime
             .read_truth()
-            .read_version(execution, history_plan.basis.target_head.version_id)
+            .read_version(execution, history_plan.basis.target_head().version_id)
             .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let source_view = self
             .runtime
             .read_truth()
-            .read_version(execution, history_plan.basis.source_head.version_id)
+            .read_version(execution, history_plan.basis.source_head().version_id)
             .map_err(crate::merge::data::MergePlanningError::Execution)?;
 
         let (plan, target_rows, indexed_rows) = super::identity::discover_identity_scope(

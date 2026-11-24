@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::KindId;
 use crate::facade::merge::{
@@ -16,6 +18,9 @@ use crate::tests::support::{
     string_aspect_field_patch, CascadeDeletePolicy, CrossContextPolicy,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
 
 pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
     let name_key = aspect_key("name");
@@ -152,10 +157,13 @@ pub(super) fn recover_with_rewritten_commit_err(
                 let readmitted =
                     RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
                         .expect("original merge artifact readmits before rewrite");
-                let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+                let mut envelope = copy_original_for_test(readmitted.envelope(), execution);
                 edit.take().expect("one matching commit")(envelope.body_mut_for_test());
-                RelationalCanonicalCommitArtifact::from_positioned(
-                    &PositionedCanonicalCommit::for_test(artifact.position(), Arc::new(envelope)),
+                RelationalCanonicalCommitArtifact::from_positioned_for_test(
+                    &PositionedCanonicalCommit::positioned_commit_for_test(
+                        artifact.position(),
+                        Arc::new(envelope),
+                    ),
                     execution.allocation_policy(),
                 )
                 .expect("rewritten envelope encodes")

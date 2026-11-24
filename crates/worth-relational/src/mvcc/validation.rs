@@ -1,8 +1,14 @@
 //! Owner-private inputs carried from exact transaction admission through
 //! schema, invariant, footprint, and publication validation.
 
-#[path = "validation/custom_invariant_execution_receipt.rs"]
-mod custom_invariant_execution_receipt;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::TransactionSchemaChangeOwnerPort as _;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::validation::{
+    custom_invariant_execution_receipt, invariant_evidence, proposal_invariants, proposal_source,
+};
+use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachmentsOwnerPort as _;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
 mod proposal_candidate;
@@ -11,35 +17,35 @@ mod proposal_completion;
 mod proposal_footprint;
 #[path = "validation/proposal_identity.rs"]
 pub(crate) mod proposal_identity;
-#[path = "validation/proposal_invariants.rs"]
-mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
-mod proposal_source;
+#[path = "validation/proposal_identity/sequence.rs"]
+mod proposal_sequence;
 #[path = "validation/proposal_touches.rs"]
-mod proposal_touches;
+pub(crate) mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 mod proposal_validation;
 pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
 #[path = "validation/validated_proposal.rs"]
-mod validated_proposal;
+pub(crate) mod validated_proposal;
 
 pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
+pub use invariant_evidence::RelationalMutationInvariantEvidence;
 pub use proposal_footprint::{
     RecordedMemberRestoration, RecordedMemberRestorationRefusal, ValidatedMutationFootprint,
     ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
     ValidatedMutationFootprintWork, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
-pub(crate) use proposal_touches::project_applied_intents;
+pub(crate) use proposal_source::StrategyProposalDecoration;
 pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
-pub use validated_proposal::{RelationalMutationInvariantEvidence, ValidatedRelationalProposal};
-pub(crate) use validated_proposal::{StrategyProposalDecoration, ValidatedProposalState};
+pub(crate) use validated_proposal::ValidatedProposalState;
+pub use validated_proposal::ValidatedRelationalProposal;
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::history::data::BranchId;
@@ -148,7 +154,7 @@ impl RelationalTransactionValidationInput {
             home_target_coverage: None,
             schema_origin: crate::mvcc::TransactionSchemaOrigin::BasisRoot,
             recovered_codec_publication_custody: None,
-            schema_authority: basis.inner.root.retained_schema_authority(),
+            schema_authority: basis.owner_inner().root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
@@ -339,14 +345,51 @@ impl RelationalTransactionValidationInput {
         transaction.naming_plan = self.naming_plan;
     }
 
-    pub(crate) fn release_transaction_retention(&mut self) {
-        self.retention = None;
-    }
-
     pub(crate) fn control(&self) -> &crate::mvcc::RelationalOperationControl {
         &self.control
     }
 }
 
-#[cfg(test)]
-mod merge_history_tests;
+impl crate::authority::commit::pipeline::publication_validation::DraftValidationInput
+    for RelationalTransactionValidationInput
+{
+    fn basis(&self) -> &AdmittedRelationalBranchBasis {
+        self.basis()
+    }
+
+    fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
+        self.merge_parent_bases()
+    }
+
+    fn control(&self) -> &crate::runtime::operation_control::RelationalOperationControl {
+        self.control()
+    }
+
+    fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
+        self.coupled_proposal()
+    }
+
+    fn into_publication(
+        self,
+    ) -> crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput
+    {
+        use crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput;
+        let (transition, reconciliation) = self.intent.into_schema_change();
+        CommitPublicationValidationInput {
+            basis: self.basis,
+            merge_parent_bases: self.merge_parent_bases,
+            schema_authority: self.schema_authority,
+            schema_authority_input: self.schema_authority_input,
+            transition,
+            reconciliation,
+            appendix_adoption: self.appendix_adoption,
+            recovered_codec_publication_custody: self.recovered_codec_publication_custody,
+            prepared_home_indexes: self
+                .home_target
+                .and_then(|target| target.index_definitions.clone()),
+            home_step: self.home_step,
+            retention: self.retention,
+            naming_plan: self.naming_plan,
+        }
+    }
+}

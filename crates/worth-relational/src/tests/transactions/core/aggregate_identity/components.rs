@@ -1,4 +1,5 @@
 //! Actual multi-relation Native commits, physical multiplicity and one identity owner.
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 mod fixtures;
 mod proposal;
 mod registration;
@@ -298,5 +299,8 @@ fn native_unaccounted_components_keep_original_cancellation_and_no_publication()
         runtime.history().branch_head(&BranchId("main".into())),
         before
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
 }

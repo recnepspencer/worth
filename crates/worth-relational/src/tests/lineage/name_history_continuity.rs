@@ -3,6 +3,8 @@
 //! independent-occurrence isolation across Entities and Relations.
 
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::VersionId;
@@ -12,9 +14,9 @@ use crate::facade::lineage::{
     PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameKey,
     PersistentNameResolution, PersistentNameTarget,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::name_index_fixtures::{exact, main_branch, resolve, retired};
@@ -35,7 +37,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     let r1 = push_relation(&mut staged, VersionId(1), e1, anchor);
     let e_birth = face_birth("occ.cls", "authored", vec![], "front", e1);
     let r_birth = seam_birth("occ.cls", "seam", vec![], "edge", r1);
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -62,7 +64,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     )
     .expect("initial births succeed");
     let e1_lin = staged_entity_lineage(&staged, e1).unwrap();
-    let r1_lin = c1.relation_lineages()[&r1];
+    let r1_lin = c1.relation_lineages_for_test()[&r1];
     let name_for = |lin| {
         c1.artifact()
             .event_batch()
@@ -117,7 +119,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
             e_name,
         ),
     ] {
-        let err = finalize_postures_in_working_state(
+        let err = finalize_postures_in_working_state_for_test(
             &allocator,
             &mut staged,
             &receipt_at(2, 2),
@@ -146,7 +148,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     retire_relation(&mut staged, r1, VersionId(2));
     let e2 = push_entity(&mut staged, VersionId(2));
     let r2 = push_relation(&mut staged, VersionId(2), e2, anchor);
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -186,7 +188,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     let c2_ev = c2.artifact().event_batch().events();
     assert!(c2_ev.iter().all(|e| e.kind() != LineageEventKind::Retire));
     let e2_lin = staged_entity_lineage(&staged, e2).unwrap();
-    let r2_lin = c2.relation_lineages()[&r2];
+    let r2_lin = c2.relation_lineages_for_test()[&r2];
     assert_ne!(e2, e1);
     assert_ne!(r2, r1);
     assert!(c2_ev.iter().any(|e| {
@@ -207,7 +209,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     // Commit 3: Retire both e2 and r2.
     retire_entity(&mut staged, e2, VersionId(3));
     retire_relation(&mut staged, r2, VersionId(3));
-    let c3 = finalize_postures_in_working_state(
+    let c3 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(3, 3),
@@ -247,7 +249,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
         (r_name, (LineageSubject::Relation, r2_lin)),
     ]);
     let before4 = allocator.frontiers();
-    let bad_subj = finalize_postures_in_working_state(
+    let bad_subj = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),
@@ -272,7 +274,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
             ..
         })
     ));
-    let double_restore = finalize_postures_in_working_state(
+    let double_restore = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),
@@ -303,7 +305,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     assert_eq!(allocator.frontiers(), before4);
 
     // Case 2 (cross-commit restore): explicit Restore for entity + birth-classified Restore for relation.
-    let c4 = finalize_postures_in_working_state(
+    let c4 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),
@@ -327,7 +329,7 @@ fn regeneration_vs_restore_vs_live_conflict() {
     )
     .expect("cross-commit explicit and birth-classified Restore succeed");
     let e3_lin = staged_entity_lineage(&staged, e3).unwrap();
-    let r3_lin = c4.relation_lineages()[&r3];
+    let r3_lin = c4.relation_lineages_for_test()[&r3];
     let c4_ev = c4.artifact().event_batch().events();
     assert_eq!(c4_ev.len(), 2);
     assert!(c4_ev
@@ -343,8 +345,8 @@ fn regeneration_vs_restore_vs_live_conflict() {
     // Derived index agrees at every historical and restored basis.
     let mut index = PersistentNameBranchIndex::new(main_branch(), None);
     for (commit, prepared) in [(1, &c1), (2, &c2), (3, &c3), (4, &c4)] {
-        let batch =
-            PersistentNameCommittedBatch::new(CommitId(commit)).with_prepared_lineage(prepared);
+        let batch = PersistentNameCommittedBatch::new(CommitId(commit))
+            .with_prepared_lineage_for_test(prepared);
         index.apply(&batch).expect("canonical commit ingests");
     }
     let (ek, rk) = (

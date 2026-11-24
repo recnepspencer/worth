@@ -1,4 +1,6 @@
 //! Install catalog meaning on the admitted original roots.
+use worth_relational_durability::internal_port::durability::authority::recovery::catalog_readmission::planning_root::RelationalHomeProgramPlanningRootOwnerPort as _;
+use worth_relational_durability::internal_port::durability::authority::recovery::catalog_readmission::ReadmittedRelationalHomeProgramCatalogsOwnerPort as _;
 use super::{
     refusal::{
         RefusedRelationalHomeProgramCatalogReadmission,
@@ -15,6 +17,7 @@ use crate::runtime::{
 use std::sync::{Arc, Mutex, TryLockError};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_proof::AdmittedHomeProgramTransitionCatalog;
+use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasisFieldsPort as _, AdmittedRelationalBranchBasisOwnerPort as _};
 
 #[path = "prefix.rs"]
 mod prefix;
@@ -85,7 +88,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .map_err(Denial::Admission)?;
         if self.runtime_instance_id != runtime.runtime_instance_id()
             || target.meaning.runtime != self.runtime_instance_id
-            || root.runtime != self.runtime_instance_id
+            || !root.is_from_runtime(self.runtime_instance_id)
         {
             return Err(Denial::ForeignRuntime);
         }
@@ -93,7 +96,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .home_program_predecessor
             .as_ref()
             .ok_or(Denial::PredecessorRequired)?;
-        if &planning.source != original.predecessor() || &root.source != original.predecessor() {
+        if &planning.source != original.predecessor() || root.source() != original.predecessor() {
             return Err(Denial::PredecessorMismatch);
         }
         if original.assignments().len() != original.plan().steps() as usize
@@ -128,12 +131,11 @@ impl RecoveredRelationalRuntimeAuthority {
             prefix.push(Mutex::new(None)).map_err(Denial::Backing)?;
         }
         let prefix = prefix.seal().map_err(Denial::Backing)?;
-        let predecessor = root.basis.clone();
-        *custody = Some(ReadmittedRelationalHomeProgramCatalogs {
-            current: predecessor.clone(),
+        let predecessor = root.basis().clone();
+        *custody = Some(ReadmittedRelationalHomeProgramCatalogs::from_planning_root(
             predecessor,
             prefix,
-        });
+        ));
         let custody = custody.as_mut().expect("same staged custody");
         prefix::admit(self, request, runtime, original, &subjects, custody)?;
 
@@ -150,11 +152,11 @@ impl RecoveredRelationalRuntimeAuthority {
                 return Err(Denial::ConfigurationChanged);
             }
         }
-        if !custody.current.is_current() {
+        if !custody.current().is_current() {
             return Err(Denial::CurrentHeadChanged);
         }
-        require_root(&custody.predecessor, &planning.contracts)?;
-        for (step, cell) in custody.prefix.iter().enumerate() {
+        require_root(custody.predecessor(), &planning.contracts)?;
+        for (step, cell) in custody.readmitted_prefix().iter().enumerate() {
             let held = cell.lock().unwrap_or_else(|cause| cause.into_inner());
             let publication = held
                 .as_ref()
@@ -169,8 +171,8 @@ impl RecoveredRelationalRuntimeAuthority {
         request.consult().map_err(Denial::Request)?;
         // Nothing below allocates, polls, reads source, calls providers or can
         // refuse. All restoration receivers use the same serialization guard.
-        install_root(&custody.predecessor, &planning.contracts);
-        for (step, cell) in custody.prefix.iter().enumerate() {
+        install_root(custody.predecessor(), &planning.contracts);
+        for (step, cell) in custody.readmitted_prefix().iter().enumerate() {
             let held = cell.lock().unwrap_or_else(|cause| cause.into_inner());
             let asset = if step < original.plan().target_meaning().step() as usize {
                 &planning.contracts
@@ -192,17 +194,19 @@ fn require_root(
     basis: &AdmittedRelationalBranchBasis,
     asset: &PreparedRelationalHomeProgramContracts,
 ) -> Result<(), Denial> {
-    if basis.inner.root.schema_authority().authority_digest()
+    if basis
+        .owner_inner()
+        .root
+        .schema_authority()
+        .authority_digest()
         != asset.meaning.schema.authority_digest()
     {
         return Err(Denial::RootSchemaMismatch);
     }
-    if basis
-        .inner
-        .root
-        .execution_contracts
-        .get()
-        .is_some_and(|installed| !Arc::ptr_eq(installed, &asset.meaning))
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(
+        &basis.owner_inner().root,
+    )
+    .is_some_and(|installed| !Arc::ptr_eq(&installed, &asset.meaning))
     {
         return Err(Denial::ConflictingInventory);
     }
@@ -212,12 +216,15 @@ fn install_root(
     basis: &AdmittedRelationalBranchBasis,
     asset: &PreparedRelationalHomeProgramContracts,
 ) {
-    if basis.inner.root.execution_contracts.get().is_none() {
-        basis
-            .inner
-            .root
-            .execution_contracts
-            .set(asset.meaning.clone())
-            .expect("serialized preflight excluded a conflicting catalog");
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(
+        &basis.owner_inner().root,
+    )
+    .is_none()
+    {
+        crate::runtime::home_program_transition::install_root_execution_contracts(
+            &basis.owner_inner().root,
+            &asset.meaning,
+        )
+        .expect("serialized preflight excluded a conflicting catalog");
     }
 }

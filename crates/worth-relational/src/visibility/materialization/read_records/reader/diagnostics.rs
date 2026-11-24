@@ -15,6 +15,7 @@ use crate::visibility::{
         resolve_snapshot_basis, resolve_snapshot_handle, SnapshotReadDirectory,
     },
 };
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_version_read_path(
@@ -23,7 +24,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Option<RelationalDiagnosticArtifact> {
         let inputs = VisibilityCacheInputs::from(self.runtime);
         if version_id.is_zero()
-            || version_id.as_u64() > inputs.history.history.current_version_id().as_u64()
+            || version_id.as_u64() > inputs.history.history.branch.current_version_id().as_u64()
         {
             return None;
         }
@@ -62,11 +63,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let inputs = VisibilityCacheInputs::from(self.runtime);
         let snapshot = resolve_snapshot_handle(directory, handle)?;
         let basis = resolve_snapshot_basis(directory, handle)?;
-        let version_id = snapshot.version_id;
+        let version_id = *snapshot.owner_version_id();
         let residency = residency(inputs, basis.key());
         let cached = cached_state(inputs, basis.key()).is_some();
         let recent_window = inputs.policy.recent_version_window;
-        let published_handle = !directory.is_active(handle.snapshot_id);
+        let published_handle = !directory.is_active(*handle.owner_snapshot_id());
         let protected = inputs.protects(&residency);
         let recent_candidate = (!inputs.policy.protect_active_snapshots || published_handle)
             && inputs.policy.enabled
@@ -75,9 +76,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let mut entries = Vec::new();
         if published_handle {
             entries.push(published_snapshot_handle_read_entry(
-                handle.snapshot_id,
-                snapshot.version_id,
-                snapshot.read_policy,
+                *handle.owner_snapshot_id(),
+                *snapshot.owner_version_id(),
+                *snapshot.owner_read_policy(),
             ));
         }
         if !cached {

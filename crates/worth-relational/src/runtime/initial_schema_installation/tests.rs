@@ -16,8 +16,7 @@ fn initial_schema_transition_preserves_retention_identity_exhaustion() {
 fn recovered_initial_schema_readmission_requires_full_schema_identity() {
     let source_registry = crate::tests::support::test_schema_registry();
     let mut foreign_registry = source_registry.clone();
-    foreign_registry
-        .entity_kinds
+    (*foreign_registry.owner_entity_kinds_mut())
         .values_mut()
         .next()
         .expect("test schema has one entity kind")

@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 use crate::facade::history::BranchId;
 use crate::facade::merge::{MergeExecutionError, MergeExecutionRequest, MergeIntent};
@@ -27,11 +29,11 @@ fn compile_execution_ready_merge_plan_rejects_missing_source_record() {
     let mut prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
     prepared.execution_ready_plan_mut_for_test().source_records = Arc::from([]);
@@ -64,11 +66,11 @@ fn verify_prepared_merge_execution_rejects_corrupted_compiled_plan() {
     let mut prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
     prepared.bound_executable_plan_mut_for_test().record_plans = Arc::from([]);

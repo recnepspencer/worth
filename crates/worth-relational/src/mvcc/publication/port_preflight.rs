@@ -3,6 +3,12 @@ use super::{
     PreparedBranchPublicationPreflight, RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
 };
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::companion::preflight::cutover::PreparedPublicationCompanionEffectOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::companion::preflight::PublicationCompanionPreflightOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::outcome::{
+    RelationalPublicationOutcomeOwnerPort as _, StaleRelationalBranchObservationOwnerPort as _,
+};
 
 impl PreparedBranchPublicationPreflight {
     pub(super) fn preflight(

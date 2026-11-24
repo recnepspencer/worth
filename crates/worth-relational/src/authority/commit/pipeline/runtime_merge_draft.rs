@@ -8,6 +8,7 @@ use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{InvariantExecutionResult, InvariantPreparationControl};
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 
 // This provisional result can still be discarded by the outer head probe.
 // It is not PreparedAuthorityScope until that probe and mirror admission finish.
@@ -24,7 +25,7 @@ struct PendingMergeDraft {
 pub(crate) fn prepare_merge_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitState,
+    admitted: &AdmittedCommitState<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let mut cleanup =
         crate::authority::commit::phases::applied_mutation::CoupledPreparationCleanup::new(
@@ -61,7 +62,7 @@ pub(crate) fn prepare_merge_draft(
                 basis.identity().branch_id(),
                 accepted
                     .structural_summary
-                    .touched_partitions
+                    .touched_partitions()
                     .iter()
                     .copied(),
             )
@@ -89,7 +90,7 @@ pub(crate) fn prepare_merge_draft(
 fn prepare_symbol_round(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitState,
+    admitted: &AdmittedCommitState<crate::mvcc::RelationalTransactionValidationInput>,
     selected: SelectedRelationalBranchRead<'_>,
 ) -> Result<PendingMergeDraft, TransactionCommitError> {
     let input = admitted.validation_input();

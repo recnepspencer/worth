@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::identity::EntityId;
 use crate::facade::runtime::{
     ProjectionAspectScope, RelationProjectionRecord, RelationRecordProjection,
@@ -144,7 +145,7 @@ fn all_authoritative_relation_records_use_canonical_relation_order_not_creation_
         .read_truth()
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
-        .all_authoritative_relation_records(execution)
+        .all_authoritative_relation_records_for_test(execution)
         .expect("read request remains live");
 
     assert_eq!(

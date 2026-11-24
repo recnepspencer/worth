@@ -118,9 +118,12 @@ fn an_aligned_peer_read_reopens_and_rederives_when_a_later_stage_edits_the_peer(
             run.detail
         );
         // The round then stops. Its chain linked the Source's own relation
-        // kind and the peer's list changed after the chain began; the
-        // own-output view holds records, not relations (#277), so the
-        // round's independence of its own links is not proved.
+        // kind, and the peer's list changed after the chain began. The probe
+        // recorded that list as a SourceAdjacencyRevision. The own-output
+        // view serves relation lists but not list revisions (#277), so
+        // successor independence compares the revision between the chain
+        // head and now, and it differs. The chain holds no relation on that
+        // list; proving that from the overlay is public #327.
         assert!(!run.committed);
         assert!(run.detail.contains(POSTPONED), "{}", run.detail);
         assert_eq!(run.rows, ["p"]);

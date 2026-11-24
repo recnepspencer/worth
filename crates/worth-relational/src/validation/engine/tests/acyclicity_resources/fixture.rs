@@ -1,15 +1,13 @@
 //! A genuine native DAG, using issued entity identities and ordinary transactions.
 use super::super::validation_engine_fixtures::*;
+use super::packet_capacity::edge;
+use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use crate::mvcc::ValidatedRelationalProposal;
 use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::CommitResult;
-use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
+use worth_execution::ExecutionRequest;
 
 pub(super) struct DagFixture {
     pub(super) runtime: RelationalRuntime,
@@ -18,11 +16,17 @@ pub(super) struct DagFixture {
 
 impl DagFixture {
     pub(super) fn new(count: usize) -> Self {
-        Self::from_runtime(runtime_with_acyclicity_and_connectivity(), count)
+        Self::from_runtime(
+            RelationalRuntimeApi::builder()
+                .schema_registry(acyclicity_and_connectivity_registry())
+                .build()
+                .expect("valid native runtime configuration"),
+            count,
+        )
     }
 
     pub(super) fn from_runtime(runtime: RelationalRuntime, count: usize) -> Self {
-        let backing = crate::execution::test_policy::serial_request();
+        let backing = worth_harness::facade::execution_fixture::serial_request();
         let execution = ExecutionRequest::serial(&backing);
         let keys: Vec<_> = (0..count)
             .map(|index| ClientKey::raw(format!("dag-node-{index}")))
@@ -79,27 +83,6 @@ impl DagFixture {
         batch
     }
 
-    pub(super) fn edge_batch(
-        &self,
-        source: crate::identity::data::EntityId,
-        target: crate::identity::data::EntityId,
-        key: &str,
-    ) -> WorkerIntentBatch {
-        WorkerIntentBatch::new(key).push(edge(source, target, key.to_owned()))
-    }
-
-    pub(super) fn graph_batch(&self, edges: &[(usize, usize)]) -> WorkerIntentBatch {
-        let mut batch = WorkerIntentBatch::new("graph-oracle");
-        for (index, &(source, target)) in edges.iter().enumerate() {
-            batch = batch.push(edge(
-                self.nodes[source],
-                self.nodes[target],
-                format!("oracle-{index}"),
-            ));
-        }
-        batch
-    }
-
     pub(super) fn validate(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -112,23 +95,6 @@ impl DagFixture {
         )
         .unwrap();
         txn.validate(execution, &self.runtime)
-    }
-
-    pub(super) fn merged_plan(&self, batch: WorkerIntentBatch) -> MergedCommitPlan {
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&self.runtime);
-        txn.push_batch(
-            batch,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-        txn.prepare_merged_plan(
-            &worth_execution::ExecutionRequest::serial(
-                &crate::execution::test_policy::serial_request(),
-            ),
-            &self.runtime,
-        )
-        .unwrap()
-        .clone()
     }
 
     pub(super) fn publish(
@@ -144,39 +110,4 @@ impl DagFixture {
         .unwrap();
         txn.commit(execution, &self.runtime)
     }
-}
-
-fn edge(
-    source: crate::identity::data::EntityId,
-    target: crate::identity::data::EntityId,
-    key: String,
-) -> MutationIntent {
-    MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(2),
-        client_key: ClientKey::raw(key),
-        source: EntityReference::Existing(source),
-        target: EntityReference::Existing(target),
-        fields: AspectFieldPatch::default(),
-    }))
-}
-
-pub(super) fn request(
-    bytes: u64,
-    work: u64,
-    cancellation: CancellationToken,
-    deadline: Option<std::time::Instant>,
-) -> ExecutionResourceLease<'static> {
-    crate::execution::test_authority::test_execution_authority()
-        .request_lease(LeaseRequest {
-            policy: ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(work)),
-            ),
-            cancellation,
-            deadline: deadline
-                .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
-        })
-        .unwrap()
 }

@@ -1,3 +1,6 @@
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
+use worth_relational_branch::internal_port::branch::root_snapshot_custody::exact_observation::VisibilityProjectionViewOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::*;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::visibility::snapshot_states::resolution::resolve_snapshot_basis;
@@ -51,15 +54,14 @@ impl VisibilityReadContext<'_> {
         let context = self
             .query_plan_context(&snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
-        Ok(RelationalPinnedRead {
-            applied_changes: None,
-            current_version: self.runtime.current_version_id(),
-            instrumentation: self.runtime.services.instrumentation.clone(),
+        Ok(RelationalPinnedRead::capture_exact_pin(
+            self.runtime.current_version_id(),
+            self.runtime.services.instrumentation.clone(),
             snapshot,
             basis,
             context,
             indexes,
-        })
+        ))
     }
 }
 
@@ -125,15 +127,14 @@ impl VisibilityReadContext<'_> {
             denied,
         )?;
         let (current_version, instrumentation, _) = view.retain_pinning_metadata();
-        Ok(RelationalPinnedRead {
-            applied_changes: None,
+        Ok(RelationalPinnedRead::capture_exact_pin(
             current_version,
             instrumentation,
-            snapshot: (),
+            (),
             basis,
             context,
             indexes,
-        })
+        ))
     }
 
     fn pin_indexes<E>(
@@ -191,3 +192,7 @@ impl VisibilityReadContext<'_> {
         Ok((basis, indexes))
     }
 }
+
+#[cfg(test)]
+#[path = "pinning_tests.rs"]
+mod tests;

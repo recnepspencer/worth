@@ -161,7 +161,7 @@ fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_hand
         ProbeStage::PostMutation,
     );
     let historical_after_release = {
-        let version_id = baseline_snapshot.version_id;
+        let version_id = baseline_snapshot.version_id();
         assert!(release_snapshot_handle(&mut world, &baseline_snapshot));
         assert!(world
             .runtime

@@ -1,4 +1,7 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use std::sync::Arc;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 use super::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
 use crate::config::data::CascadeDeletePolicy;
@@ -6,8 +9,7 @@ use crate::history::data::BranchId;
 use crate::schema::data::SchemaVersionId;
 use crate::tests::support::*;
 
-#[path = "root_authoritative_payload_tests/word_codec.rs"]
-mod word_codec;
+pub(crate) use worth_relational_branch::internal_port::branch::root::authoritative_payload_tests::word_codec;
 
 #[test]
 fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_is_removed() {
@@ -15,7 +17,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         content::*, mvcc::RelationalTransactionIntent, schema::data::*, transactions::data::*,
     };
     use worth_foundational::facade::*;
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let format = CanonicalDigestId::new([3; 32]);
     let contract = AspectContract::struct_aspect(
@@ -45,7 +47,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     .build_registry()
     .register_content_format(
         format,
-        Arc::new(word_codec::WordCodec(
+        Arc::new(word_codec::WordCodecForTest(
             ContentFormat::new("word", 1).unwrap(),
         )),
     )
@@ -92,8 +94,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     let (root, mut envelope) =
         committed_root_and_envelope(&execution, &runtime, committed.commit.commit_id);
     let mut changed = root.schema_authority().registry().clone();
-    changed
-        .entity_kinds
+    (*changed.owner_entity_kinds_mut())
         .get_mut(&crate::identity::data::KindId(1))
         .unwrap()
         .aspect_contract_declarations = KindAspectContractDeclarations::default();
@@ -108,7 +109,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
     )
     .expect("configuration compilation cannot refuse")
     .unwrap();
-    let descriptor = super::RelationalBranchRootDescriptor::new(
+    let descriptor = crate::branch::target::RelationalBranchRootDescriptor::new(
         *root.descriptor().unwrap().truth_root(),
         authority.registry().authority_digest_bytes(),
     );
@@ -154,7 +155,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
 
 #[test]
 fn strategy_artifacts_are_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
@@ -177,7 +178,7 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
 
 #[test]
 fn merge_execution_authority_is_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -228,7 +229,7 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
 
 #[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
-    let host_request = crate::execution::test_policy::serial_request();
+    let host_request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
@@ -261,14 +262,14 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let (root, envelope) =
         committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
 
-    let mut transition = envelope.copy_original_for_test(execution);
+    let mut transition = copy_original_for_test(&envelope, execution);
     assert!(transition
         .body_mut_for_test()
         .schema_transition
         .take()
         .is_some());
     assert_axis_mutation_rejected(execution, &runtime, &root, transition, "schema transition");
-    let mut continuation = envelope.copy_original_for_test(execution);
+    let mut continuation = copy_original_for_test(&envelope, execution);
     assert!(continuation
         .body_mut_for_test()
         .schema_continuation_descriptor
@@ -315,7 +316,7 @@ fn committed_root_and_envelope(
     assert_eq!(envelope.commit.commit_id, commit_id);
     (
         Arc::clone(&root),
-        envelope.copy_original_for_test(execution),
+        copy_original_for_test(envelope, execution),
     )
 }
 

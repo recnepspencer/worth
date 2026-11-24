@@ -1,14 +1,2 @@
 mod acyclicity_resources;
-mod aspect_field_uniqueness;
-mod custom_checked_execution;
-mod custom_invariant_budget;
-mod custom_invariant_order;
-mod custom_invariants;
-mod custom_rules;
-mod dispatch;
-mod legacy_kernel_posture;
-mod relation_integrity;
-mod relation_integrity_preparation;
-mod request_execution;
-mod shared_aspect_inputs;
-mod validation_engine_fixtures;
+use worth_relational_mutation::internal_port::validation::engine::tests::validation_engine_fixtures;

@@ -21,6 +21,11 @@ The product center is:
 - `inspection`
 - `publication`
 
+The implementation spans ten Cargo packages. Applications and SDK consumers
+enter through this facade. See the
+[Relational package graph](../../docs/relational-maintenance.md#relational-package-graph)
+for the ownership and dependency rules.
+
 ## Persistent aggregate identity
 
 `schema::AggregateIdentitySource::Orbit(kind)` binds the existing homogeneous

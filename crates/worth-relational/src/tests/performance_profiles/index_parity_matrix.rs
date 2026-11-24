@@ -115,7 +115,7 @@ fn perf_index_parity_matrix() {
         assert!(build.failed_indexes.is_empty());
         runtime
             .indexes
-            .corrupt_latest_generation(index.index_id, |generation| {
+            .corrupt_latest_generation_for_test(index.index_id, |generation| {
                 generation.status =
                     crate::facade::indexes::DerivedIndexPublicationStatus::BuildFailed;
             });

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 use crate::history::data::{
     AspectHistoryEntry, AspectHistoryQueryResult, BranchId, HistoryAspectQueryTarget,
@@ -167,10 +168,10 @@ impl<'runtime> HistoryAccess<'runtime> {
             .lineage
             .shared_events()
             .iter()
-            .filter(|event| traversed_event_ids.contains(&event.event_id))
+            .filter(|event| traversed_event_ids.contains(event.owner_event_id()))
         {
-            scope.extend(event.sources.iter().copied());
-            scope.extend(event.targets.iter().copied());
+            scope.extend((*event.owner_sources()).iter().copied());
+            scope.extend((*event.owner_targets()).iter().copied());
         }
         scope
     }

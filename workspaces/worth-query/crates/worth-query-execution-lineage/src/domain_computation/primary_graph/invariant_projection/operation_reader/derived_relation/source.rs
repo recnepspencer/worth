@@ -111,6 +111,20 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         if !self.reader.work_budget.consume(native.work_units()) {
             return Err(Denial::new(Kind::WorkBudgetExceeded, relation.name()));
         }
+        // Native's derived traversal reads the current image: one that crosses
+        // a list its chain's own links touch read the chain's effect (#277),
+        // before any decision fact records it.
+        if self.reader.native.own_outputs().is_some_and(|own| {
+            own.crossed_by_derived_traversal(
+                native
+                    .data()
+                    .adjacency_dependencies()
+                    .iter()
+                    .map(|probe| (probe.anchor, probe.relation, probe.outgoing)),
+            )
+        }) {
+            return Err(Denial::new(Kind::EndpointUnavailable, relation.name()));
+        }
         // This finite replay allowance covers each actual physical adjacency's
         // existing frontier metric plus its empty-read admission. It is not a
         // claim that the extra admission fits the caller's original work limit.

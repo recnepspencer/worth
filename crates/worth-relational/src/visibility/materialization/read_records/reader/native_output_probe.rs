@@ -4,6 +4,7 @@ use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use worth_foundational::facade::AspectKey;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 impl VisibilityReadContext<'_> {
     /// An unavailable handle differs from an absent or retired entity. Cold
     /// storage failure is neither and is returned before borrowing the slot.
@@ -14,12 +15,12 @@ impl VisibilityReadContext<'_> {
         entity: EntityId,
     ) -> Result<Option<Option<KindId>>, RelationalExecutionDenialCause> {
         crate::execution::request_custody::check_request(execution)?;
-        if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
+        if (*handle.owner_runtime_instance_id()) != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
         self.runtime
             .visibility
-            .with_selected_snapshot_head(handle.snapshot_id, entity.partition_id, |head| {
+            .with_selected_snapshot_head(*handle.owner_snapshot_id(), entity.partition_id, |head| {
                 head.demand_with_symbols(execution, &self.runtime.services.symbols)?;
                 Ok(head
                     .view()
@@ -48,12 +49,12 @@ impl VisibilityReadContext<'_> {
         aspect: &AspectKey,
     ) -> Result<Option<Option<u64>>, RelationalExecutionDenialCause> {
         crate::execution::request_custody::check_request(execution)?;
-        if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
+        if (*handle.owner_runtime_instance_id()) != self.runtime.runtime_instance_id() {
             return Ok(None);
         }
         self.runtime
             .visibility
-            .with_selected_snapshot_head(handle.snapshot_id, entity.partition_id, |head| {
+            .with_selected_snapshot_head(*handle.owner_snapshot_id(), entity.partition_id, |head| {
                 head.demand_with_symbols(execution, &self.runtime.services.symbols)?;
                 let Some(partition) = head.view() else {
                     return Ok(None);

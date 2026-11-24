@@ -81,7 +81,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     // live commit measures one publication's consults; reconstruction of the
     // same commit must make exactly that many before the executor runs.
     let counted = one_publication.clone();
-    let committed = stage_observation::with_observer(
+    let committed = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 counted.fetch_add(1, Ordering::SeqCst);
@@ -102,7 +102,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
         verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
     };
     let observed = published.clone();
-    let result = stage_observation::with_observer(
+    let result = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 observed.fetch_add(1, Ordering::SeqCst);
@@ -120,7 +120,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     // Retry is a new verification from the same retained bytes, after the one-shot refusal.
     published.store(0, Ordering::SeqCst);
     let observed = published.clone();
-    let retry = stage_observation::with_observer(
+    let retry = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 observed.fetch_add(1, Ordering::SeqCst);

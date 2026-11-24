@@ -6,6 +6,8 @@
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use std::sync::{Arc, Weak};
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
+use worth_relational_storage::internal_port::storage::substrate::allocation_witness::RelationalAllocationWitnessOwnerPort as _;
 
 pub use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 
@@ -80,9 +82,10 @@ impl RelationalRuntime {
                         RelationalAllocationWitness::of(positioned.canonical_arc())
                     }),
                     resident_payload_bytes: cell.resident_payload_bytes(),
-                    selected_directory: cell
-                        .selected_directory()
-                        .map(|directory| RelationalAllocationWitness::of(&directory)),
+                    selected_directory: cell.selected_directory().map(|directory| {
+                        let directory: std::sync::Arc<dyn std::any::Any + Send + Sync> = directory;
+                        RelationalAllocationWitness::of_erased(&directory)
+                    }),
                     source_placement: cell
                         .source_placement()
                         .map(|(entry, _)| entry.allocation_witness()),
@@ -119,7 +122,7 @@ impl RelationalRuntime {
     ) -> bool {
         self.durability
             .cold_source()
-            .is_some_and(|attached| std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source)))
+            .is_some_and(|attached| Arc::ptr_eq(&attached, source))
     }
 
     /// Weak identity of this runtime's attached durable cold source, if any.

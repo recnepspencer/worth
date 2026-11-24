@@ -11,9 +11,9 @@ fn empty_required_struct_refusal_carries_numeric_member_and_redacts_proposal_str
 }
 
 fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usize) {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = schema::runtime();
+    let mut runtime = build_runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -67,7 +67,7 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
     release_test_commit_snapshot(&runtime, &baseline);
     let before = test_owner_main_basis(&runtime).unwrap();
     let before_partition = before
-        .inner
+        .owner_inner()
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
@@ -77,7 +77,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
             .adjacency
             .get(baseline_ids[0].slot_index())
             .unwrap()
-            .current_ids(),
+            .current_ids()
+            .to_vec(),
         [edge_id]
     );
     assert_eq!(
@@ -85,7 +86,8 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
             .reverse_adjacency
             .get(baseline_ids[1].slot_index())
             .unwrap()
-            .current_ids(),
+            .current_ids()
+            .to_vec(),
         [edge_id]
     );
     for id in baseline_ids {
@@ -172,11 +174,11 @@ fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usi
     assert_eq!(after.reference(), before.reference());
     assert_eq!(after.truth_version(), before.truth_version());
     assert_eq!(
-        after.inner.root.canonical_envelope(),
-        before.inner.root.canonical_envelope()
+        after.owner_inner().root.canonical_envelope(),
+        before.owner_inner().root.canonical_envelope()
     );
     let after_partition = after
-        .inner
+        .owner_inner()
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")

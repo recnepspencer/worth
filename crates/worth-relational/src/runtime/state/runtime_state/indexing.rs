@@ -2,6 +2,7 @@
 use crate::durability::derived_index_artifacts::{
     cold_checkpoint::DeferredIndexImage, FrozenIndexCheckpoint,
 };
+use crate::runtime::state::subsystems::history::canonical_publication_routes::RelationalCanonicalPublicationRoutes;
 use crate::runtime::state::subsystems::indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem,
 };
@@ -13,10 +14,16 @@ use worth_execution::ExecutionRequest;
 mod restore;
 mod retirement;
 
+#[derive(Clone, Debug)]
+struct InstalledIndexImage {
+    image: Arc<DeferredIndexImage>,
+    history_routes: Arc<RelationalCanonicalPublicationRoutes>,
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct RuntimeIndexingSubsystem {
     catalog: IndexingSubsystem,
-    cold: RuntimeOwnedState<Option<Arc<DeferredIndexImage>>>,
+    cold: RuntimeOwnedState<Option<InstalledIndexImage>>,
 }
 
 impl std::ops::Deref for RuntimeIndexingSubsystem {
@@ -56,21 +63,27 @@ impl RuntimeIndexingSubsystem {
     > {
         let cold = self.cold.read();
         let indexes = self.catalog.checkpoint_inputs_for_request(request)?;
-        Ok(FrozenIndexCheckpoint::new(indexes, cold.clone()))
+        Ok(FrozenIndexCheckpoint::new(
+            indexes,
+            cold.as_ref().map(|original| original.image.clone()),
+        ))
     }
 
     pub(crate) fn snapshot_with_original(
         &self,
     ) -> (IndexingState, Option<Arc<DeferredIndexImage>>) {
         let cold = self.cold.read();
-        (self.catalog.snapshot(), cold.clone())
+        (
+            self.catalog.snapshot(),
+            cold.as_ref().map(|original| original.image.clone()),
+        )
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct RuntimeIndexDefinitionReadBinding {
     catalog: IndexDefinitionReadBinding,
-    cold: RuntimeOwnedState<Option<Arc<DeferredIndexImage>>>,
+    cold: RuntimeOwnedState<Option<InstalledIndexImage>>,
 }
 
 impl Clone for RuntimeIndexDefinitionReadBinding {
@@ -99,7 +112,7 @@ impl RuntimeIndexDefinitionReadBinding {
             let cold = self.cold.read();
             cold.as_ref()
                 .filter(|_| self.catalog.has_definitions())
-                .cloned()
+                .map(|original| original.image.clone())
         }) else {
             return Ok(());
         };
@@ -113,7 +126,7 @@ impl RuntimeIndexDefinitionReadBinding {
         let mut cold = self.cold.write();
         if cold
             .as_ref()
-            .is_some_and(|pending| Arc::ptr_eq(pending, &image))
+            .is_some_and(|pending| Arc::ptr_eq(&pending.image, &image))
         {
             merge.install(&admitted);
             *cold = None;

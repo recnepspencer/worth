@@ -10,6 +10,9 @@ use std::sync::{
     Mutex,
 };
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational_branch::internal_port::branch::projection_view::companion_slot::CompanionBranchCellCoreFixturePort as _;
+use worth_relational_branch::internal_port::validation::candidate_source::image::publication::ManagedIndexBranchImageOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellFixturePort as _;
 mod retained_affinity;
 struct Probe {
     core: Arc<Mutex<Weak<CompanionBranchCellCore>>>,
@@ -20,7 +23,7 @@ impl Drop for Probe {
     fn drop(&mut self) {
         let core = self.core.lock().unwrap().upgrade().unwrap();
         assert!(
-            core.try_lock_unpoisoned_image().is_some(),
+            core.try_lock_unpoisoned_image_for_test().is_some(),
             "opaque Drop is outside current-image coordination"
         );
         let _new_registration = self
@@ -107,7 +110,7 @@ fn managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards() {
         .unwrap();
     create_entity(&execution, &runtime, "real-publication");
     let cell = owner.slots.lock().unwrap()[0].admitted().unwrap();
-    *core.lock().unwrap() = Arc::downgrade(&cell.core);
+    *core.lock().unwrap() = Arc::downgrade(cell.companion_core_for_test());
     let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
     let retired = runtime
         .read_truth()
@@ -161,7 +164,7 @@ fn managed_cache_rebuild_stale_entry_refuses_without_dropping_candidate_under_gu
         .unwrap();
     create_entity(&execution, &runtime, "real-publication");
     let cell = owner.slots.lock().unwrap()[0].admitted().unwrap();
-    *core.lock().unwrap() = Arc::downgrade(&cell.core);
+    *core.lock().unwrap() = Arc::downgrade(cell.companion_core_for_test());
     let snapshot = snapshot_for_owner_identity(&runtime, &runtime.main_branch_identity());
     let loan = runtime
         .read_truth()

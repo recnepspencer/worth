@@ -1,0 +1,137 @@
+use crate::contracts::publication::patch::data::aspect_key_ordering::ordered_aspect_keys;
+use crate::contracts::publication::patch::data::record_structural_change::RecordStructuralChange;
+use crate::contracts::transactions::data::primitives::RecordRef;
+
+use super::super::field_changes::changed_fields;
+use crate::authority::mutation::canonical_deltas::data::{
+    BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
+};
+use crate::authority::mutation::canonical_deltas::patch_authority::{
+    authoritative_patch_binding_evidence, evaluate_authoritative_patch_delta,
+};
+use crate::contracts::schema::aspect_plan_source::AspectPlanSource;
+
+use super::delta_assembly::{assemble_delta, evaluate_bindings};
+use super::state_views::EntityAuthoritativeState;
+
+pub(crate) fn evaluate_entity_lifecycle_delta(
+    plans: &impl AspectPlanSource,
+    entity_id: crate::contracts::identity::data::record_ids::EntityId,
+    kind_id: crate::contracts::identity::data::primitives::KindId,
+    authoritative_patch: Option<&worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    structural_change: RecordStructuralChange,
+) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
+    match authoritative_patch {
+        Some(authoritative_patch) => {
+            let plan = plans
+                .entity_aspect_plan(kind_id)
+                .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
+            Ok(evaluate_authoritative_patch_delta(
+                RecordRef::Entity(entity_id),
+                kind_id,
+                plan,
+                structural_change,
+                authoritative_patch,
+            ))
+        }
+        None => evaluate_entity_delta(
+            plans,
+            entity_id,
+            kind_id,
+            EntityAuthoritativeState {
+                authoritative_state: None,
+            },
+            EntityAuthoritativeState {
+                authoritative_state: None,
+            },
+            structural_change,
+        ),
+    }
+}
+
+pub(in crate::internal_port::authority::mutation) fn evaluate_entity_update_delta(
+    plans: &impl AspectPlanSource,
+    entity_id: crate::contracts::identity::data::record_ids::EntityId,
+    kind_id: crate::contracts::identity::data::primitives::KindId,
+    old_state: EntityAuthoritativeState<'_>,
+    new_state: EntityAuthoritativeState<'_>,
+    authoritative_patch: Option<&worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
+    match authoritative_patch {
+        Some(authoritative_patch) => {
+            let plan = plans
+                .entity_aspect_plan(kind_id)
+                .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
+            let mut delta = evaluate_entity_delta(
+                plans,
+                entity_id,
+                kind_id,
+                old_state,
+                new_state,
+                RecordStructuralChange::Updated,
+            )?;
+            for binding in &mut delta.evaluated_bindings {
+                let Some(lowered_binding) = plan
+                    .executable_bindings
+                    .iter()
+                    .find(|candidate| candidate.aspect_key() == &binding.aspect_key)
+                else {
+                    continue;
+                };
+                if let Some(evidence) = authoritative_patch_binding_evidence(
+                    lowered_binding,
+                    RecordStructuralChange::Updated,
+                    authoritative_patch,
+                ) {
+                    binding.field_revision_changes =
+                        Some(changed_fields(binding, RecordStructuralChange::Updated));
+                    binding.evidence = evidence;
+                }
+            }
+            delta.changed_aspects = ordered_aspect_keys(
+                delta
+                    .evaluated_bindings
+                    .iter()
+                    .filter(|binding| binding.changed)
+                    .map(|binding| binding.aspect_key.clone()),
+            );
+            Ok(delta)
+        }
+        None => evaluate_entity_delta(
+            plans,
+            entity_id,
+            kind_id,
+            old_state,
+            new_state,
+            RecordStructuralChange::Updated,
+        ),
+    }
+}
+
+pub(in crate::internal_port::authority::mutation) fn evaluate_entity_delta(
+    plans: &impl AspectPlanSource,
+    entity_id: crate::contracts::identity::data::record_ids::EntityId,
+    kind_id: crate::contracts::identity::data::primitives::KindId,
+    old_state: EntityAuthoritativeState<'_>,
+    new_state: EntityAuthoritativeState<'_>,
+    structural_change: RecordStructuralChange,
+) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
+    let plan = plans
+        .entity_aspect_plan(kind_id)
+        .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
+    let evaluated_bindings = evaluate_bindings(
+        plan,
+        BindingEvaluationContext::Entity {
+            structural_change,
+            old_authoritative_state: old_state.authoritative_state,
+            new_authoritative_state: new_state.authoritative_state,
+        },
+    )?;
+    Ok(assemble_delta(
+        RecordRef::Entity(entity_id),
+        kind_id,
+        plan,
+        structural_change,
+        evaluated_bindings,
+    ))
+}

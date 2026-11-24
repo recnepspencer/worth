@@ -231,8 +231,8 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
             .visibility_authority()
             .snapshot()
             .expect("current snapshot fixture is admitted")
-            .version_id,
-        snapshot.version_id
+            .version_id(),
+        snapshot.version_id()
     );
 }
 
@@ -251,7 +251,7 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
     let reconstructed = fixture
         .runtime
         .read_truth()
-        .try_project_historical_version(snapshot.version_id)
+        .try_project_historical_version(snapshot.version_id())
         .unwrap();
     let mut called = false;
     let result = reconstructed.read_exact_entity_state(execution, fixture.principal, |_, _| {

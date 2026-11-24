@@ -1,6 +1,6 @@
 //! Runtime census runner for the declared inline owner budgets.
-pub(crate) mod census;
 pub(crate) use census::Census;
+pub(crate) use worth_relational_contracts::internal_port::inline_type_sizes::census;
 
 #[test]
 fn owned_carriers_stay_within_declared_inline_ceilings() {

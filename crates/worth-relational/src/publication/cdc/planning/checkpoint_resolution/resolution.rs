@@ -6,6 +6,7 @@ use crate::publication::cdc::data::{
 use crate::publication::cdc::diagnostics::{checkpoint_resolution_artifact, rejection_artifact};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_failure::SubscriberStreamFailureOwnerPort as _;
 
 use super::basis::latest_available_checkpoint;
 use super::durable::{durable_checkpoint_envelope, durable_envelopes};

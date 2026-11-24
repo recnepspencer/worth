@@ -37,11 +37,11 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(
         let prepared = runtime
             .prepare_merge_execution(
                 execution,
-                MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                },
+                MergeExecutionRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("feature".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ),
             )
             .expect("prepared merge");
 

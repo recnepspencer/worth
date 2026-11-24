@@ -1,0 +1,90 @@
+pub mod endpoint_admission;
+pub mod endpoint_update_admission;
+pub mod relation_creation_admission;
+pub mod relation_identity_scan;
+pub mod relation_target_admission;
+pub mod schema_relation_admission;
+
+use std::collections::BTreeSet;
+
+use crate::contracts::schema::data::RelationalSchemaRegistry;
+use crate::contracts::transactions::data::intents::mutation_intent::{
+    CreateIntent, MutationIntent, RelationMutationIntent,
+};
+use crate::contracts::transactions::data::primitives::CreatedEntityRef;
+use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
+
+pub(super) fn validate_relation_intent(
+    state: &impl CurrentPartitionAccess,
+    schema: &RelationalSchemaRegistry,
+    default_cross_context_policy: crate::contracts::config::data::policies::CrossContextPolicy,
+    candidates_scanned: &mut usize,
+    created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::contracts::identity::data::record_ids::RelationId>,
+    intent: &MutationIntent,
+) -> Result<(), crate::contracts::transactions::data::outcomes::commit_conflict::CommitConflict> {
+    match intent {
+        MutationIntent::Create(CreateIntent::Relation(spec)) => {
+            relation_creation_admission::validate_relation_creation_intent(
+                state,
+                schema,
+                default_cross_context_policy,
+                candidates_scanned,
+                created_entities,
+                deleted_relations,
+                spec,
+            )
+        }
+        MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
+            relation_creation_admission::validate_relation_creation(
+                state,
+                schema,
+                default_cross_context_policy,
+                candidates_scanned,
+                created_entities,
+                deleted_relations,
+                spec.partition_id,
+                spec.kind_id,
+                &spec.source,
+                &spec.target,
+            )
+        }
+        MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
+            relation_creation_admission::validate_bulk_relation_creation_intent(
+                state,
+                schema,
+                default_cross_context_policy,
+                candidates_scanned,
+                created_entities,
+                deleted_relations,
+                spec.partition_id,
+                spec.kind_id,
+                &spec.endpoints,
+            )
+        }
+        MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
+            endpoint_update_admission::validate_relation_endpoint_update_intent(
+                state,
+                schema,
+                default_cross_context_policy,
+                candidates_scanned,
+                created_entities,
+                spec,
+            )
+        }
+        MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
+            relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
+        }
+        MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
+            relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
+        }
+        MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
+            relation_target_admission::validate_existing_relation_target(state, spec.relation_id)
+        }
+        MutationIntent::Create(CreateIntent::Entity(_))
+        | MutationIntent::Create(CreateIntent::EntityAspects(_))
+        | MutationIntent::Create(CreateIntent::BulkEntities(_))
+        | MutationIntent::Entity(_)
+        | MutationIntent::Materialization(_) => Ok(()),
+    }
+}

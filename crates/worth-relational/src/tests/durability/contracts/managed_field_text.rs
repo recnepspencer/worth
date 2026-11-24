@@ -6,6 +6,8 @@ use crate::mvcc::RelationalTransactionIntent;
 use std::sync::Arc;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 const JSON: &str = r#"{"actor":"native","request":{"input":"exact logical content"}}"#;
 
@@ -110,8 +112,8 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     let execution = &ExecutionRequest::leased(&recovery_lease);
     let mut restored = crate::runtime::RelationalRuntime::new(recovery_config)
         .expect("valid native runtime configuration");
-    assert_eq!(plan.checkpoint.as_ref().unwrap().envelopes.len(), 1);
-    assert_eq!(plan.tail_log.len(), 1);
+    assert_eq!(plan.checkpoint.as_ref().unwrap().envelopes().len(), 1);
+    assert_eq!(plan.tail_log().len(), 1);
     let outcome = restored
         .durability_recovery()
         .recover(execution, plan)
@@ -137,7 +139,9 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     drop(restored);
     let symbols = pinned.symbols();
     assert_eq!(
-        symbols.symbol(JSON).and_then(|symbol| symbols.resolve(symbol)),
+        symbols
+            .symbol(JSON)
+            .and_then(|symbol| symbols.resolve(symbol)),
         Some(JSON)
     );
 }

@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 // Fixture adaptation (C2.5): restores f9f15bf8c8 schema-carrier deduplication
 // over Memory durability_authority().checkpoint (no retired test medium).
@@ -24,8 +25,8 @@ fn branch_roots_with_one_schema_deduplicate_the_durable_carrier() {
         .checkpoint(execution)
         .expect("production checkpoint succeeds");
 
-    assert!(checkpoint.branch_roots.len() >= 2);
-    assert_eq!(checkpoint.branch_root_schema_images.len(), 1);
+    assert!(checkpoint.branch_roots_for_test().len() >= 2);
+    assert_eq!(checkpoint.branch_root_schema_images_for_test().len(), 1);
 }
 
 #[test]
@@ -37,7 +38,7 @@ fn recovery_rejects_a_missing_branch_root_schema_carrier() {
     plan.checkpoint
         .as_mut()
         .expect("checkpoint exists")
-        .branch_root_schema_images
+        .branch_root_schema_images_mut_for_test()
         .clear();
 
     assert_corrupt_schema_recovery(execution, plan, "missing schema carrier");
@@ -51,7 +52,11 @@ fn recovery_rejects_a_tampered_branch_root_schema_carrier() {
     let mut plan = checkpoint_plan_with_one_root(execution, "tampered-schema-carrier");
     plan.checkpoint
         .as_mut()
-        .and_then(|checkpoint| checkpoint.branch_root_schema_images.first_mut())
+        .and_then(|checkpoint| {
+            checkpoint
+                .branch_root_schema_images_mut_for_test()
+                .first_mut()
+        })
         .expect("checkpoint carries a schema carrier")
         .corrupt_schema_root_for_test();
 
@@ -118,9 +123,9 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
         )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint exists");
-    assert_eq!(checkpoint.branch_root_schema_images.len(), 2);
-    let replacement = checkpoint.branch_roots[1].schema_carrier_digest;
-    let root = &mut checkpoint.branch_roots[0];
+    assert_eq!(checkpoint.branch_root_schema_images_for_test().len(), 2);
+    let replacement = checkpoint.branch_roots_for_test()[1].schema_carrier_digest;
+    let root = &mut checkpoint.branch_roots_mut_for_test()[0];
     assert_ne!(root.schema_carrier_digest, replacement);
     root.schema_carrier_digest = replacement;
     crate::durability::authority::recompute_branch_root_image_digest_for_test(root);

@@ -1,6 +1,5 @@
 //! A successor round re-derives from its chain's own-output view; any other
 //! read of a key an earlier round wrote is that round's effect, not C (§1.5).
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::fact::touch_key;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as ObservedFact;
@@ -9,6 +8,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationD
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::mvcc::ValidatedMutationTouch as Touch;
 
 impl super::super::WorthQueryPrimaryGraphProvider {
@@ -77,30 +77,48 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     }
                     // Native's exclusive set holds every entity the chain wrote
                     // (`IntervenedOutput` otherwise), so an entity-local touch
-                    // only ever changed a covered record: a read of another
+                    // only ever changed a covered record (a delete's cascade
+                    // writes relation records only): a read of another
                     // single record, or a selection the overlay merged, cannot
                     // see it. A read of a covered record the view did not serve
                     // is judged by the touch and the head/current comparison.
                     let overlaid = (record.is_some() && !covered)
                         || matches!(observed, ObservedFact::IndexedEntitySelection { .. });
+                    // A served relation list (#277) already excludes the
+                    // chain's own links and unlinks, and the relations a
+                    // chain delete retires are recorded too. A delete is
+                    // judged on what Native did not record (below). Every
+                    // other touch still gates by the raw comparison
+                    // (relation field initialisation and unrepresentable
+                    // mutation stay conservative).
+                    let relation_served = touch_key::relation_served(observed);
                     let touched = prior.iter().any(|touch| {
-                        !(overlaid && entity_local(touch)) && touch_key::touch_changes(touch, observed)
+                        !(overlaid && entity_local(touch))
+                            && !(relation_served && (relation_link(touch) || deletes(touch)))
+                            && touch_key::touch_changes(touch, observed)
                     });
                     // A read that is the same before the chain as now cannot
-                    // have observed the chain's effect.
-                    if touched {
-                        let equal = match fact.support_equal_after_own_effect(
+                    // have observed the chain's effect: the whole read when a
+                    // touch could change it, or the uncovered part of a served
+                    // relation list when the chain only deleted.
+                    let compared = if touched {
+                        fact.support_equal_after_own_effect(
                             execution, runtime, &snapshot, own.head(), current,
-                        ) {
-                            Ok(equal) => equal,
-                            // Unavailable at this image: independence is not
-                            // proved, so the round stops typed (`PriorEffectRead`).
-                            Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => false,
-                            Err(cause) => return Err(cause),
-                        };
-                        if !equal {
-                            return Ok(Some(record));
-                        }
+                        )
+                    } else if relation_served && prior.iter().any(deletes) {
+                        own.uncovered_residue_equal(runtime, execution, &snapshot, current, observed)
+                    } else {
+                        continue;
+                    };
+                    let equal = match compared {
+                        Ok(equal) => equal,
+                        // Unavailable at this image: independence is not
+                        // proved, so the round stops typed (`PriorEffectRead`).
+                        Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => false,
+                        Err(cause) => return Err(cause),
+                    };
+                    if !equal {
+                        return Ok(Some(record));
                     }
                 }
                 Ok(None)
@@ -135,10 +153,24 @@ fn charge(
         })
 }
 
-/// A touch that writes only the entity it creates or changes.
+/// A touch that links or unlinks a relation: the served relation list
+/// already excludes the chain's own.
+fn relation_link(touch: &Touch) -> bool {
+    matches!(
+        touch,
+        Touch::LinkRelation { .. } | Touch::UnlinkRelation { .. }
+    )
+}
+
+/// A touch that deletes an entity, and with it that entity's relations.
+fn deletes(touch: &Touch) -> bool {
+    matches!(touch, Touch::DeleteEntity { .. })
+}
+
+/// A touch that writes only the entity it creates, changes or deletes.
 fn entity_local(touch: &Touch) -> bool {
     matches!(
         touch,
-        Touch::CreateEntity { .. } | Touch::WriteEntityField { .. }
+        Touch::CreateEntity { .. } | Touch::WriteEntityField { .. } | Touch::DeleteEntity { .. }
     )
 }

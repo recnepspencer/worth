@@ -31,6 +31,7 @@ impl RelationalRuntime {
             self.runtime_instance_id(),
             &self.history,
             self.durability.checkpoint_selection(),
+            |id| self.history.performed_envelope_residency(id),
         )
     }
 }

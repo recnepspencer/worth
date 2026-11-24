@@ -1,0 +1,208 @@
+//! Audit retention leaves canonical lifecycle coverage with stable adjacency support.
+use super::*;
+use crate::relational::durable_publication::branch_history_publications::fork;
+use worth_relational::facade::{
+    config::CascadeDeletePolicy,
+    durability::RecoveryVerificationMode,
+    runtime::{RelationalAdjacencyDirection as ReadDirection, RelationalAdjacencySupportDenial},
+};
+use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
+use RelationalDescriptiveTouch as Touch;
+
+fn audit_runtime() -> RelationalRuntime {
+    AspectSchemaFixture::with_default_declared_aspects(CascadeDeletePolicy::RetainDanglingForAudit)
+        .build_runtime()
+}
+
+#[test]
+fn audit_lifecycle_coverage_survives_unrelated_history_discard_and_durable_recovery() {
+    let host = serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let runtime = audit_runtime();
+    let a = create_entity(&execution, &runtime, "audit-source");
+    let b = create_entity(&execution, &runtime, "audit-target");
+    let c = create_entity(&execution, &runtime, "unaffected-source");
+    let d = create_entity(&execution, &runtime, "unaffected-target");
+    let relation = create_relation(&execution, &runtime, a, b, "audit-edge");
+    let stable = create_relation_outcome(&execution, &runtime, c, d, "stable-edge");
+    fork(&execution, &runtime, "audit-source");
+    let source = admit_main(&runtime).unwrap();
+    let before = runtime
+        .read_truth()
+        .project_snapshot(&stable.snapshot)
+        .unwrap();
+    let retired = delete_entity(&execution, &runtime, b);
+    let after = runtime
+        .read_truth()
+        .project_snapshot(&retired.snapshot)
+        .unwrap();
+    assert!(
+        before
+            .compare_adjacency_support(&execution, &after, c, KindId(2), ReadDirection::Outgoing)
+            .unwrap(),
+        "unrelated audit retention preserves the exact live relation population"
+    );
+    assert_eq!(before.compare_adjacency_support(&execution, &after, a, KindId(2), ReadDirection::Outgoing),
+        Err(RelationalAdjacencySupportDenial::UnsupportedVisibility),
+        "complete authored history does not turn retained audit visibility into a readable live list");
+    assert!(
+        !before
+            .compare_live_source_adjacency_support(
+                &execution,
+                &after,
+                a,
+                KindId(2),
+                ReadDirection::Outgoing,
+            )
+            .unwrap(),
+        "retiring the endpoint removes the live Source member"
+    );
+    assert!(
+        after
+            .compare_live_source_adjacency_support(
+                &execution,
+                &after,
+                a,
+                KindId(2),
+                ReadDirection::Outgoing,
+            )
+            .unwrap(),
+        "retained audit links do not obstruct exact live Source equality"
+    );
+    let canonical = runtime
+        .replay()
+        .canonical_commit_envelope(&execution, retired.commit.commit_id)
+        .unwrap()
+        .unwrap();
+    let touches = canonical.descriptive_touches().exact_touches().unwrap();
+    assert!(touches.contains(&Touch::RelationLifecycle {
+        relation,
+        kind: KindId(2)
+    }));
+    assert!(touches.contains(&Touch::RelationMembership {
+        relation,
+        kind: KindId(2),
+        source: a,
+        target: b
+    }));
+    assert!(
+        !touches
+            .iter()
+            .any(|touch| matches!(touch, Touch::AdjacencyRevision { .. })),
+        "retention must not fabricate a physical adjacency delta/revision"
+    );
+    // Grow genuinely unrelated history behind the same fixed selector. Neither
+    // its completeness nor its exact occurrence identity may change.
+    for index in 0..3 {
+        let other = create_entity(&execution, &runtime, &format!("unrelated-{index}"));
+        let unrelated = create_relation_outcome(&execution, &runtime, other, d, "outside-selector");
+        let grown = runtime
+            .read_truth()
+            .project_snapshot(&unrelated.snapshot)
+            .unwrap();
+        assert!(
+            before
+                .compare_adjacency_support(
+                    &execution,
+                    &grown,
+                    c,
+                    KindId(2),
+                    ReadDirection::Outgoing
+                )
+                .unwrap(),
+            "unrelated relation population must not change this exact live support"
+        );
+        release_test_commit_snapshot(&runtime, &unrelated);
+    }
+    let target = admit_main(&runtime).unwrap();
+    for (anchor, direction) in [(a, Direction::Outgoing), (b, Direction::Incoming)] {
+        assert_eq!(
+            scan(&runtime, execution, &source, &target, anchor, direction),
+            [retired.commit.commit_id]
+        );
+    }
+    assert!(scan(
+        &runtime,
+        execution,
+        &source,
+        &target,
+        c,
+        Direction::Outgoing
+    )
+    .is_empty());
+    runtime
+        .discard_authored_write_generation(execution, selected(&runtime, &target))
+        .unwrap();
+    runtime
+        .rebuild_authored_write_generation(execution, selected(&runtime, &target))
+        .unwrap();
+    assert_eq!(
+        scan(
+            &runtime,
+            execution,
+            &source,
+            &target,
+            a,
+            Direction::Outgoing
+        ),
+        [retired.commit.commit_id]
+    );
+    runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            &execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = audit_runtime();
+    recovered
+        .durability_recovery()
+        .recover(&execution, plan)
+        .unwrap();
+    let recovered_source = recovered
+        .admit_branch_basis(
+            &recovered
+                .branch_identity(&BranchId("audit-source".into()))
+                .unwrap(),
+        )
+        .unwrap();
+    let recovered_target = admit_main(&recovered).unwrap();
+    recovered
+        .rebuild_authored_write_generation(execution, selected(&recovered, &recovered_target))
+        .unwrap();
+    for (anchor, direction) in [(a, Direction::Outgoing), (b, Direction::Incoming)] {
+        assert_eq!(
+            scan(
+                &recovered,
+                execution,
+                &recovered_source,
+                &recovered_target,
+                anchor,
+                direction
+            ),
+            [retired.commit.commit_id]
+        );
+    }
+    assert!(scan(
+        &recovered,
+        execution,
+        &recovered_source,
+        &recovered_target,
+        c,
+        Direction::Outgoing
+    )
+    .is_empty());
+    let cold = recovered
+        .replay()
+        .canonical_commit_envelope(&execution, retired.commit.commit_id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(cold.descriptive_touches(), canonical.descriptive_touches());
+    for outcome in [&stable, &retired] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+}

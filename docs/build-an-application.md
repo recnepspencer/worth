@@ -419,6 +419,31 @@ commit basis into one Relational naming plan, and Relational's commit
 finalization validates every one against the performed effects and mints.
 An unnamed program carries no naming plan at all.
 
+- **Naming scope (recommended).** `let mut names = writer.naming_scope(occurrence)`
+  binds one `OccurrencePath` for every declaration under it;
+  `names.sub_scope("hole")?` and `names.index("instance", 2)?` open child
+  occurrences on the same writer. `names.birth(Role::Piece)` is a birth under
+  a typed role in that occurrence (chain `.with_discriminator(&d)`), and the
+  scope declares through the writer exactly what the manual calls below
+  declare, so both mint byte-identical names: `create_entity` /
+  `create_entity_in_context` and `link_named` create and name in one call;
+  `name_entity` / `name_relation`, `preserve_entity` / `preserve_relation`,
+  `split_entity` / `split_relation`, `retire_entity` / `retire_relation`,
+  `merge_entity` / `merge_relation`, and `same_commit_entity_name` /
+  `same_commit_relation_name` (a `NameRef<K>` via `.into()`) forward to them.
+  `names.writer()` reaches the writer for other effects.
+- **Least-member merge.** `names.merge_least_entity(&parents, keeper)` (or
+  `merge_least_relation`) keeps the parent whose name sorts least
+  (`WorthQueryName`'s order), in place (`WorthQueryLeastMergeKeeper::InPlace`)
+  or carried onto a created record (`Onto(&target)`), whatever order
+  `parents` lists them in. No parents refuses
+  `WorthQueryOutputNameDenial::EmptyMergeParents` while authoring; one parent
+  refuses at commit like any merge of fewer than two (`LineagePostureMismatch`).
+- **Completeness.** Every installed scheme requires all births named
+  (`require_all_births_named` is the fixed posture, not an option): a commit
+  creating any record of a schemed entity or relation kind without a birth or
+  posture covering it, even beside named siblings, refuses `MissingBirth`
+  naming that record and scheme, with zero effects.
 - **Birth.** `writer.name_created_entity(&created, WorthQueryOutputBirth::new(occurrence, role))`
   names an entity the candidate created; `name_created_relation` names a
   relation linked with `link_for_initialization`. The occurrence key comes
@@ -500,15 +525,13 @@ An unnamed program carries no naming plan at all.
 
 Limits: coupled synchronous producers and authored-edit stages cannot yet
 declare output names; a part that does refuses (`ProviderUnsupported`) rather
-than commit its names unnamed. A merge keeping a parent in place refuses
-`LineagePostureMismatch` (`Merge parent must exist at commit basis`) when
-the operation changes no other record stored with the kept one (records one
-operation created are stored together); `KeepParentOnto` and `MintNew` have
-no such limit. An installed operation splits, merges and
+than commit its names unnamed. An installed operation splits, merges and
 retires a relation by the name its decision reader read
 ([holding and resolving names](#holding-and-resolving-names)); unlinking a
 named relation with no declared posture still retires its name. Courts:
 [installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs),
+[naming scopes and least-member merges](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scope.rs),
+[completeness](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/completeness.rs),
 [relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs)
 and [same-commit references](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_same_commit_names.rs).
 

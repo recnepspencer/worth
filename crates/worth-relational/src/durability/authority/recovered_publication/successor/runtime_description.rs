@@ -4,6 +4,10 @@ use crate::durability::authority::associated_effects::discovery::current_settlem
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::authority::associated_effects::{
+    ReadmittedRelationalAssociatedEffectOwnerPort as _,
+    RelationalAssociatedEffectSubjectOwnerPort as _,
+};
 
 impl RecoveredRelationalRuntimeAuthority {
     /// Describe the exact original successor from owner-recovered observations.

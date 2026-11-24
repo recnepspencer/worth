@@ -72,7 +72,7 @@ impl RelationalRuntime {
                     .immutable_commit_receipt(commit)
                     .is_some()
             },
-            |history, commit| history.authored_write_generation(commit),
+            |_, commit| self.history.authored_write_generation(commit),
             || {
                 let catalog = self.indexes.catalog_binding().snapshot();
                 move |definition: &super::super::RelationalAuthoredEntityIndexDefinition,

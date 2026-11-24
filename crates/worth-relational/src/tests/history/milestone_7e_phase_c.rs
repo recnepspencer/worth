@@ -10,6 +10,7 @@ use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
     runtime_with_test_schema,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 
 #[test]
 fn unsupported_request_posture_denies_before_history_or_planning_work() {

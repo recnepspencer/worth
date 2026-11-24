@@ -1,7 +1,9 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
+pub use super::super::handler::{
+    CandidateWriter, DecisionReader, HandlerInterruption, NamingScope,
+};
 pub use worth_query_execution_lineage::facade::primary_graph::application_entry::mutation::{
     decision_plan, durable_capability, execution_report, failure, home_retirement,
     HandlerExecutionDenial, HandlerFailure, HandlerResult, WorthQueryDecisionPlan,

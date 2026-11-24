@@ -1,6 +1,7 @@
 //! Eager manifest definition inventories preserve installed numeric identities.
 use super::*;
 use crate::indexes::data::DerivedIndexDefinition;
+use worth_relational_indexes::internal_port::indexes::access::definition_lookup::DerivedIndexDefinitionLookupOwnerPort as _;
 impl IndexAccess<'_> {
     /// Finds the installed definition with the same semantic identity.
     ///

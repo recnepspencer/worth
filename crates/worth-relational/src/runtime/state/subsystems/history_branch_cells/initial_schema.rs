@@ -4,7 +4,7 @@ use super::*;
 use crate::branch::transition::original_inputs::OriginalEmptySchemaObservation;
 
 pub(crate) fn transition_empty_branches_to_initial_schema(
-    history: &HistorySubsystem,
+    history: &crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     prepare: impl FnOnce(
         &OriginalEmptySchemaObservation,

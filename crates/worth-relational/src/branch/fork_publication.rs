@@ -7,6 +7,7 @@ use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchTransitionDurableStep, RelationalForkPort,
     RelationalForkTargetReservation,
 };
+use worth_relational_branch::internal_port::branch::fork::association::RelationalAssociatedForkOwnerPort as _;
 type ForkFailure<S> = BranchTransitionRecordError<RelationalForkDenial, S>;
 
 pub(super) struct ForkInstallationOutcome {

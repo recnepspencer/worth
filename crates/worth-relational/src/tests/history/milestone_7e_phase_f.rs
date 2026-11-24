@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeProofPacketOwnerPort as _;
 
 use crate::facade::history::BranchId;
 use crate::facade::merge::{

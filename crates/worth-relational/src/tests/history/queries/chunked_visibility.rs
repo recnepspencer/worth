@@ -18,7 +18,7 @@ fn chunked_storage_summary_tracks_visibility_boundaries() {
 
     let summary_before_update = runtime
         .storage_access()
-        .chunked_storage_summary(execution, snapshot.version_id)
+        .chunked_storage_summary(execution, snapshot.version_id())
         .unwrap();
     let summary_current = runtime
         .storage_access()
@@ -62,7 +62,7 @@ fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
         .unwrap();
     let diagnostics = runtime
         .storage_access()
-        .chunk_diagnostics(execution, snapshot.version_id)
+        .chunk_diagnostics(execution, snapshot.version_id())
         .unwrap();
 
     assert_eq!(plan.target_count, 2);

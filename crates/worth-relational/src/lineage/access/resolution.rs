@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 use super::historical_walk::BranchScopedHistoricalResolutionRequest;
 use crate::history::data::BranchId;
@@ -143,7 +144,7 @@ impl<'runtime> LineageAccess<'runtime> {
             execution,
             HistoricalResolutionRequest {
                 branch_id: request.branch_id,
-                lineage_id: lineage.lineage_id,
+                lineage_id: (*lineage.owner_lineage_id()),
                 boundedness_basis: request.boundedness_basis,
             },
         )?))

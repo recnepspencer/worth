@@ -6,6 +6,7 @@ use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenial as Denial,
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Re-admit the COMPLETE original native publication on the recovered SOURCE

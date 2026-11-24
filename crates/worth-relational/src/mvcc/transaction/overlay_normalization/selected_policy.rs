@@ -1,4 +1,5 @@
 //! Actual native normalization and validation-dependency replacement use selected custody.
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
 use crate::transactions::data::{CreateIntent, MutationIntent};
 use crate::{facade::mvcc::RelationalTransactionIntent, tests::support::*};
 use std::num::NonZeroUsize;
@@ -10,6 +11,7 @@ use worth_execution::{
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 
 const CHILD: &str = "WORTH_NATIVE_NORMALIZATION_POLICY_CHILD";
 const BUDGET: u64 = 128 * 1024; // deliberate test lease, no ordinary input eligibility rule

@@ -1,12 +1,13 @@
 //! Later authored stages apply over the candidate under the authored writer.
+
 use super::*;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
-use crate::transactions::data::WorkerIntentBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// The source Native admitted for the next authored stage, if one remains.
     pub fn next_authored_stage(&self) -> Option<crate::identity::data::EntityId> {
-        self.binding.owners.stages.get(self.stages.len()).copied()
+        self.binding.owners.stages().get(self.stages.len()).copied()
     }
 
     /// Apply the next admitted authored stage's own commands over the current
@@ -58,7 +59,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             applied.plan.plan(),
             &applied.records,
         )?;
-        let output_ids = ordinary_roles::resolve_applied_roles(
+        let output_ids = producer_posture::resolve_applied_roles(
             execution,
             &roles,
             &self.mutation.outcome.created_entities,

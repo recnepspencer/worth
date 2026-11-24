@@ -3,6 +3,7 @@
 //! the flat edge list. It shares no code or data structure with the index.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::aggregate_identity::AggregateGroupLineageEvent as Group;
 use crate::facade::history::CommitId;
@@ -65,13 +66,13 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
     let mut names: BTreeMap<LineageId, PersistentNameKey> = BTreeMap::new();
     for batch in log.iter().filter(|batch| batch.commit().0 <= basis) {
         let at = batch.commit().0;
-        for (lineage, entity) in &batch.entity_holders {
+        for (lineage, entity) in batch.entity_holders_for_test() {
             holders.insert(*lineage, Holder::Entity(*entity));
         }
-        for (lineage, relation) in &batch.relation_holders {
+        for (lineage, relation) in batch.relation_holders_for_test() {
             holders.insert(*lineage, Holder::Relation(*relation));
         }
-        for event in &batch.lineage_events {
+        for event in batch.lineage_events_for_test() {
             match event.kind() {
                 LineageEventKind::Create => {
                     let lineage = event.targets()[0];
@@ -105,7 +106,7 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
                 _ => {}
             }
         }
-        for event in &batch.lineage_events {
+        for event in batch.lineage_events_for_test() {
             if matches!(
                 event.kind(),
                 LineageEventKind::Create | LineageEventKind::Restore
@@ -131,7 +132,7 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
                     .extend(successors.iter().map(|next| (at, held, *next)));
             }
         }
-        let groups = &batch.group_events;
+        let groups = batch.group_events_for_test();
         for event in groups {
             if let Group::Born { group } | Group::Revived { group } = *event {
                 let k = PersistentNameKey::Group(group);
@@ -162,7 +163,7 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
                 _ => {}
             }
         }
-        for (k, carriers) in &batch.carriers {
+        for (k, carriers) in batch.carriers_for_test() {
             view.live.get_mut(k).expect("carriers name a live name").1 = carriers.clone();
         }
     }

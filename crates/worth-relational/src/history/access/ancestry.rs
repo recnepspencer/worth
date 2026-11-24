@@ -1,5 +1,8 @@
 pub(crate) use super::ancestry_walk::CommitAncestryInspection;
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+#[cfg(test)]
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use crate::branch::AdmittedRelationalBranchBasis;
 #[cfg(test)]

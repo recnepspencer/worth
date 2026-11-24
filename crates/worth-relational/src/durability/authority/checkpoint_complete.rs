@@ -1,71 +1,10 @@
-//! Original-source reconstruction is DATA processing under one admitted operation.
-pub(in crate::durability) mod admission_projection;
-mod branches;
 pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
-mod canonical;
-mod capture;
-mod contracts;
-mod covered_prefix;
-mod current_metadata;
-mod destination_members;
-mod draft;
-pub(crate) mod interim;
-mod metadata;
-mod original_image;
-mod prepare;
-mod regions;
-mod roots;
-mod schemas;
-mod source;
-mod symbols;
-mod verified_originals;
-use crate::durability::data::{
-    RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial as Denial,
-};
+use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 pub use interim::{
     CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
 };
-
-/// The all-root producer's strong result, retaining its original read and ACK custody.
-/// Descriptive bytes and ordinary captures have no conversion into this result.
-#[derive(Debug)]
-pub struct CompleteRelationalNativeCheckpoint {
-    checkpoint: RelationalNativeCheckpoint,
-    initial_predecessor: Option<[u8; 32]>,
-    source_artifact: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
-    admission_image: CapturedRelationalCheckpointAdmissionImage,
-}
-impl CompleteRelationalNativeCheckpoint {
-    pub fn admission_image(&self) -> &CapturedRelationalCheckpointAdmissionImage {
-        &self.admission_image
-    }
-    /// The recorded predecessor of this producer's accepted initialization.
-    pub fn initial_predecessor(&self) -> Option<[u8; 32]> {
-        self.initial_predecessor
-    }
-    pub fn checkpoint(&self) -> &RelationalNativeCheckpoint {
-        &self.checkpoint
-    }
-    pub fn source_artifact(
-        &self,
-    ) -> &crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact {
-        &self.source_artifact
-    }
-}
-
-fn root_stop(
-    cause: crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial,
-) -> Denial {
-    match cause {
-        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(cause) => Denial::Request(cause),
-        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
-        cause => Denial::Durability(crate::durability::data::DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
-            format!("original all-root reconstruction disagrees: {cause:?}"),
-        )),
-    }
-}
-
+pub use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::CompleteRelationalNativeCheckpoint;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::{admission_projection, current_metadata, prepare, source};
+mod capture;
+pub(crate) mod interim;
 mod runtime_capture;
-#[cfg(test)]
-mod tests;

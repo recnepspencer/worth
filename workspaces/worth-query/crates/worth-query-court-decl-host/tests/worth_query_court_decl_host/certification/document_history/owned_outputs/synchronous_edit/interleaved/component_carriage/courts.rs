@@ -299,11 +299,14 @@ fn a_consumed_child_selects_its_parents_again_and_commits_the_sequential_world()
 
 /// The observation stage's barrier prepares `first:a`; the later authored link
 /// then changes the discovery that selected its incoming parents. Qualified
-/// use reopens `first:a`, but its successor round's source reads the incoming
-/// lineage edge its own chain linked: relations are outside the own-output
-/// view (PR C §1.5, entities only), so the round stops before append with
-/// #119 `PriorEffectRead` and the edit refuses atomically. The absent
-/// supplier is never forced at the barrier.
+/// use reopens `first:a`, but its successor round's source query records a
+/// `SourceAdjacencyRevision` of the incoming lineage list its own chain
+/// linked. #277 serves relation and adjacency reads through the own-output
+/// view, but a source query's revision is read at the current image and
+/// stays unserved (#277 §2.1), so successor independence finds the chain's
+/// effect and the round stops before append with #119 `PriorEffectRead`;
+/// the edit refuses atomically. The absent supplier is never forced at the
+/// barrier.
 #[test]
 fn an_absent_supplier_does_not_force_its_prerequisite_at_an_authored_barrier() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();

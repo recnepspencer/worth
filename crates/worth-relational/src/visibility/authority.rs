@@ -1,9 +1,13 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::record_projections::VisibilityProjectionViewOwnerPort as _;
 use crate::runtime::RelationalRuntime;
 use crate::visibility::exact_commit_snapshot::{
     open_retained_commit_snapshot, projection_binding_denial,
     RelationalRetainedCommitEntityProjection, RelationalRetainedCommitSnapshot,
     RelationalRetainedCommitSnapshotDenial, RelationalRetainedCommitSnapshotDenialKind,
 };
+use worth_relational_branch::internal_port::visibility::exact_commit_snapshot::RelationalRetainedCommitEntityProjectionOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::exact_commit_snapshot::RelationalRetainedCommitProjectionWorkOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::exact_commit_snapshot::RelationalRetainedCommitSnapshotDenialOwnerPort as _;
 
 pub struct VisibilityAuthority<'runtime> {
     pub(super) runtime: &'runtime RelationalRuntime,
@@ -32,7 +36,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         commit: &crate::history::data::RelationalCommitReceipt,
     ) -> Result<RelationalRetainedCommitSnapshot, RelationalRetainedCommitSnapshotDenial> {
         open_retained_commit_snapshot(
-            &self.runtime.history,
+            self.runtime.history.canonical_read(),
             &self.runtime.visibility,
             self.runtime.runtime_instance_id(),
             expected_runtime_instance_id,

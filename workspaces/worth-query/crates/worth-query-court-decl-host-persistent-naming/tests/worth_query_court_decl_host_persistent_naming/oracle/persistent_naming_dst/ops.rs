@@ -42,6 +42,12 @@ pub enum Op {
     Duplicate {
         name: usize,
     },
+    /// Creates a record of the schemed kind without naming it (beside a
+    /// named sibling when `pair`): must refuse `MissingBirth`, zero effects.
+    Unnamed {
+        at: Placement,
+        pair: bool,
+    },
     Preserve {
         name: usize,
         at: Placement,
@@ -53,9 +59,16 @@ pub enum Op {
         pieces: [usize; 2],
         at: [Placement; 2],
     },
+    /// Keeps `keeper` in place. `listed` merges through `merge_least` with
+    /// the parents in that seeded order; the keeper is then the least name.
     MergeKeep {
         keeper: usize,
         other: usize,
+        listed: Option<[usize; 2]>,
+    },
+    /// A least-keeper merge before the harness settles its keeper.
+    MergeLeast {
+        parents: [usize; 2],
     },
     MergeMint {
         parents: [usize; 2],
@@ -110,9 +123,11 @@ impl Rng {
 enum Kind {
     Create,
     Duplicate,
+    Unnamed,
     Preserve,
     Split,
     MergeKeep,
+    MergeLeast,
     MergeMint,
     Retire,
     Restore,
@@ -149,9 +164,11 @@ pub fn next_op(
     };
     enable(Kind::Create, if live.len() < 2 { 8 } else { 3 }, room >= 1);
     enable(Kind::Duplicate, 1, !live_authored.is_empty());
+    enable(Kind::Unnamed, 1, true);
     enable(Kind::Preserve, 2, !live_authored.is_empty());
     enable(Kind::Split, 3, !live.is_empty() && room >= 2);
-    enable(Kind::MergeKeep, 3, live.len() >= 2);
+    enable(Kind::MergeKeep, 2, live.len() >= 2);
+    enable(Kind::MergeLeast, 2, live.len() >= 2);
     enable(Kind::MergeMint, 2, live.len() >= 2 && room >= 1);
     enable(Kind::Retire, 2, !live.is_empty());
     enable(Kind::Restore, 2, !restorable.is_empty());
@@ -168,6 +185,10 @@ pub fn next_op(
         },
         Kind::Duplicate => Op::Duplicate {
             name: rng.pick(&live_authored),
+        },
+        Kind::Unnamed => Op::Unnamed {
+            at: rng.placement(),
+            pair: rng.below(2) == 0,
         },
         Kind::Preserve => Op::Preserve {
             name: rng.pick(&live_authored),
@@ -196,8 +217,13 @@ pub fn next_op(
         }
         Kind::MergeKeep => {
             let [keeper, other] = two(rng);
-            Op::MergeKeep { keeper, other }
+            Op::MergeKeep {
+                keeper,
+                other,
+                listed: None,
+            }
         }
+        Kind::MergeLeast => Op::MergeLeast { parents: two(rng) },
         Kind::MergeMint => Op::MergeMint {
             parents: two(rng),
             minted,

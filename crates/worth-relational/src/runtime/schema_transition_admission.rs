@@ -3,6 +3,8 @@ use crate::schema::data::{
     ProposedSchemaTransition, RelationalSchemaRegistry, SchemaId, SchemaReconciliationPolicy,
     SchemaVersionId,
 };
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
@@ -39,7 +41,7 @@ impl RelationalRuntime {
         crate::mvcc::BranchBoundRelationalTransaction,
         RelationalSchemaTransitionAdmissionDenial,
     > {
-        let source_authority = basis.inner.root.schema_authority();
+        let source_authority = basis.owner_inner().root.schema_authority();
         let source = registry_basis(source_authority.registry()).map_err(|detail| {
             RelationalSchemaTransitionAdmissionDenial::new(
                 RelationalSchemaTransitionAdmissionDenialKind::SourceBasisMismatch,

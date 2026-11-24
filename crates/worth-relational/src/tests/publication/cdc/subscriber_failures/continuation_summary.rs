@@ -1,6 +1,7 @@
 use crate::publication::cdc::data::SubscriberContinuationSummary;
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaContinuationClassification};
 use crate::tests::support::*;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointFixturePort as _;
 
 #[test]
 fn subscriber_stream_rejects_checkpoint_with_inconsistent_continuation_summary() {

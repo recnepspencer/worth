@@ -1,6 +1,3 @@
 pub(crate) mod commit;
-#[cfg(test)]
-#[path = "mod_inline_type_budget.rs"]
-pub(crate) mod inline_type_budget;
-pub(crate) mod intent_merge;
-pub(crate) mod mutation;
+pub(crate) use worth_relational_merge::internal_port::authority::intent_merge;
+pub(crate) use worth_relational_mutation::internal_port::authority::mutation;

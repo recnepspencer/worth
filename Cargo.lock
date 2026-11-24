@@ -1133,6 +1133,8 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "worth-execution",
+ "worth-foundational",
 ]
 
 [[package]]
@@ -1160,7 +1162,184 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-durability",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
+ "worth-relational-publication",
+ "worth-relational-storage",
  "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-relational-branch"
+version = "0.1.0"
+dependencies = [
+ "crossbeam-queue",
+ "dashmap",
+ "im",
+ "indexmap",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-contracts"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "smallvec",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+]
+
+[[package]]
+name = "worth-relational-durability"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-indexes"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "proptest",
+ "sized-chunks",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-lineage"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rmp-serde",
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-merge"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "sha2 0.10.9",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-mutation"
+version = "0.1.0"
+dependencies = [
+ "dashmap",
+ "im",
+ "proptest",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "smallvec",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-publication"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "dashmap",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "smallvec",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-durability",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
+ "worth-relational-storage",
+]
+
+[[package]]
+name = "worth-relational-storage"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "proptest",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-proof",
+ "worth-relational-contracts",
 ]
 
 [[package]]

@@ -1,9 +1,10 @@
 //! Consuming execution of one prepared merge.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 
-use crate::authority::commit::pipeline::{
-    execute_authoritative_commit, AuthoritativeCommitContext,
-};
+use crate::authority::commit::pipeline::execution::execute_authoritative_commit;
+use crate::authority::commit::pipeline::AuthoritativeCommitContext;
 use crate::merge::data::{MergeExecutionError, PreparedMergeExecution};
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{

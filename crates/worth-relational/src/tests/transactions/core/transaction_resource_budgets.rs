@@ -1,6 +1,7 @@
 use crate::facade::config::PublicationConfig;
 use crate::facade::mvcc::RelationalTransactionStagingDenial;
 use crate::tests::support::*;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 #[test]
 fn savepoint_exhaustion_rejects_without_transaction_or_footprint_residue() {

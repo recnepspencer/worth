@@ -3,6 +3,7 @@ use crate::schema::codec_field_comparison::{
     codec_field_changes_in_context, CodecFieldComparisonStop, OwnedCodecFieldChanges,
 };
 use crate::schema::data::RelationalSchemaRegistry;
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 /// This comparison grants no retirement permission. Actual present records
 /// separately require complete native producer-publication provenance.

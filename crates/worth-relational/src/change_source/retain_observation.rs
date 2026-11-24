@@ -2,6 +2,7 @@
 use super::retained_observation::RelationalRetainedObservation;
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::change_source::retained_observation::RelationalRetainedObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// Retain `basis` and allocate its snapshot id, in that order, as one

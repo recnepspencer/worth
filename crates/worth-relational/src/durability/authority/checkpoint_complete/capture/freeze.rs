@@ -3,6 +3,8 @@ use super::super::current_metadata::FrozenCurrentCheckpointMetadata;
 use super::{Denial, FrozenCompleteMetadata, FrozenOriginalInputs};
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_member::RelationalCheckpointArtifactPolicyOwnerPort as _;
 
 pub(in super::super) fn capture(
     runtime: &RelationalRuntime,
@@ -16,6 +18,11 @@ pub(in super::super) fn capture(
         .with_checkpoint_selection(|selection| {
             let original = FrozenOriginalInputs::capture(
                 &runtime.history,
+                || {
+                    runtime
+                        .history
+                        .capture_original_branch_schema_inputs(request)
+                },
                 runtime.durability.checkpoint_selection(),
                 runtime.durability.cold_source(),
                 &runtime.services.symbols,

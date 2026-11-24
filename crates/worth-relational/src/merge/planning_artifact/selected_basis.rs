@@ -42,7 +42,7 @@ pub(in crate::merge) fn materialize_planning_observation(
     let schema_snapshot = merge_schema_snapshot_for_execution_ready(
         execution,
         runtime,
-        plan.basis.target_head.version_id,
+        plan.basis.target_head().version_id,
         &plan.source_records,
         &plan.target_delta.touched_records,
     )?;

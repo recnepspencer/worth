@@ -1,4 +1,5 @@
 //! Installed index registration and schema routing.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::RelationalIndexDefinitionPreparationOwnerPort as _;
 use crate::indexes::data::DerivedIndexDefinition;
 use crate::runtime::RelationalRuntime;
 

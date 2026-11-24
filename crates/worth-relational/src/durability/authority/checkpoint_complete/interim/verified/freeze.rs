@@ -1,6 +1,7 @@
 //! Freeze one actual cut; no requestless standalone checkpoint intermediate.
 use super::*;
 use sha2::{Digest, Sha256};
+use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
 pub(in crate::durability::authority::checkpoint_complete::interim) fn freeze(
     runtime: &crate::runtime::RelationalRuntime,
     request: &ExecutionRequest<'_, '_>,

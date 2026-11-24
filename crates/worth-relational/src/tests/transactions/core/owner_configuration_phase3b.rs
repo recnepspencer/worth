@@ -1,5 +1,6 @@
 use crate::runtime::RelationalPreparationOwnerBinding;
 use crate::tests::support::*;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 /// Installing the initial schema is owner authority, and a live settlement
 /// service does not withdraw it.
@@ -23,12 +24,7 @@ fn phase3b_initial_schema_installs_while_a_settlement_port_is_live() {
 
     assert_eq!(receipt.retained_entity_kind_count(), 1);
     assert_eq!(receipt.retained_relation_kind_count(), 1);
-    assert!(runtime
-        .config()
-        .schema
-        .registry
-        .entity_kinds
-        .contains_key(&KindId(1)));
+    assert!((*runtime.config().schema.registry.owner_entity_kinds()).contains_key(&KindId(1)));
     assert!(
         runtime.entity_aspect_plan_trace(KindId(1)).is_some(),
         "the contract runtime is lowered from the registry that was installed",
@@ -47,7 +43,7 @@ fn phase3b_installed_schema_is_the_only_configuration_authority() {
         .expect("valid native runtime configuration");
     let preparation = RelationalPreparationOwnerBinding::from_runtime(&runtime);
     let empty = preparation.runtime_snapshot();
-    assert!(empty.config.schema.registry.entity_kinds.is_empty());
+    assert!((*empty.config.schema.registry.owner_entity_kinds()).is_empty());
     assert!(empty
         .schema_contract_runtime
         .aspect_contract_plans
@@ -63,12 +59,7 @@ fn phase3b_installed_schema_is_the_only_configuration_authority() {
         .expect("the owner installs its initial schema");
 
     let installed = preparation.runtime_snapshot();
-    assert!(installed
-        .config
-        .schema
-        .registry
-        .entity_kinds
-        .contains_key(&KindId(1)));
+    assert!((*installed.config.schema.registry.owner_entity_kinds()).contains_key(&KindId(1)));
     assert!(
         installed
             .schema_contract_runtime

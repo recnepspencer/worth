@@ -1,4 +1,8 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
 use super::*;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 pub(crate) fn assert_stable_aspect_truth_bundle_eq(
     expected: &AspectTruthBundle,
@@ -78,7 +82,7 @@ fn durable_commit_data(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &crate::history::data::CanonicalCommitEnvelope,
 ) -> crate::history::data::CanonicalCommitEnvelope {
-    let mut copied = source.copy_original_for_test(execution);
+    let mut copied = copy_original_for_test(source, execution);
     let body = copied.body_mut_for_test();
     body.diagnostics_summary.entries.clear();
     body.derived_index_artifacts = Default::default();

@@ -1,3 +1,4 @@
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use crate::facade::transactions::{AspectTraceEvidence, MutationIntent};
 use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation, PublishedAuthoritativePatchValue,

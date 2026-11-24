@@ -4,17 +4,20 @@
 //! Memory runtime (Embedded checkpoint plus tail recovery plan), since these
 //! claims exercise record-identity allocator frontiers and tail replay without
 //! physical-medium content.
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_contracts::internal_port::history::data::canonical_record_allocation::CanonicalRecordAllocationFixturePort as _;
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use super::*;
+use crate::facade::config::RelationalRuntimeProfile;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 fn tail_replay_consumes_canonical_reused_record_allocation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema_profile(
-        crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
-    );
+    let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
     let created = create_entity_outcome(execution, &runtime, "allocation-before");
     let original = changed_entities(&created)[0];
     assert!(runtime
@@ -46,20 +49,16 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
         .durability_authority()
         .checkpoint(execution)
         .unwrap();
-
     let replacement = create_entity(execution, &runtime, "allocation-after");
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
         .unwrap();
-    let mut recovered = runtime_with_test_schema_profile(
-        crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
-    );
+    let mut recovered = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
     recovered
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
-
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
     let current = recovered
@@ -147,7 +146,10 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
         .recover(execution, plan)
         .unwrap();
 
-    assert!(recovered.record_identity.pending_snapshot().is_empty());
+    assert!(recovered
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let after_recovery = create_entity(execution, &recovered, "orphan-append-after");
     assert_eq!(after_recovery.local_slot.0, original.local_slot.0 + 2);
 }
@@ -157,9 +159,7 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema_profile(
-        crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
-    );
+    let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
     let created = create_entity_outcome(execution, &runtime, "orphan-reclaimed-root");
     let original = changed_entities(&created)[0];
     assert!(runtime
@@ -190,15 +190,16 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
         .unwrap();
     drop(pending);
 
-    let mut recovered = runtime_with_test_schema_profile(
-        crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
-    );
+    let mut recovered = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
     recovered
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
 
-    assert!(recovered.record_identity.pending_snapshot().is_empty());
+    assert!(recovered
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let replacement = create_entity(execution, &recovered, "orphan-reclaimed-after");
     assert_eq!(replacement.local_slot, original.local_slot);
     assert!(replacement.generation.0 > original.generation.0);
@@ -222,7 +223,7 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
         )
         .unwrap();
     let tail = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .last_mut()
         .expect("tail commit is selected")
         .readmitted_envelope_mut_for_test(execution);
@@ -270,7 +271,7 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    plan.tail_log
+    plan.tail_log_mut_for_test()
         .last_mut()
         .expect("tail commit is selected")
         .readmitted_envelope_mut_for_test(execution)
@@ -310,7 +311,7 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
         checkpoint_entity.local_slot.0 + 4,
         tail_entity.generation.0,
     );
-    plan.tail_log
+    plan.tail_log_mut_for_test()
         .last_mut()
         .expect("tail commit")
         .readmitted_envelope_mut_for_test(execution)
@@ -355,11 +356,11 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_owned()),
-                source_branch: BranchId("allocation-feature".to_owned()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_owned()),
+                BranchId("allocation-feature".to_owned()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .unwrap();
     runtime.execute_prepared_merge(execution, prepared).unwrap();
@@ -371,14 +372,16 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         )
         .unwrap();
     let tail = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .last_mut()
         .expect("merge tail is selected")
         .readmitted_envelope_mut_for_test(execution);
-    tail.install_record_allocations(vec![crate::history::data::CanonicalRecordAllocation::new(
-        0,
-        crate::transactions::data::RecordRef::Entity(entity),
-    )]);
+    tail.install_record_allocations(vec![
+        crate::history::data::CanonicalRecordAllocation::canonical_allocation_for_test(
+            0,
+            crate::transactions::data::RecordRef::Entity(entity),
+        ),
+    ]);
 
     let mut recovered = durable_runtime_for_medium(&medium);
     let error = recovered
@@ -386,7 +389,6 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         .recover(execution, plan)
         .expect_err("a metadata-only merge cannot carry allocation evidence");
     let error = crate::tests::support::expect_durability_failure(error);
-
     assert_eq!(error.class, RecoveryFailureClass::ReplayFailure);
     assert!(error.detail.contains("without a mutation replay path"));
     assert_eq!(recovered.history().immutable_commit_count(), 0);

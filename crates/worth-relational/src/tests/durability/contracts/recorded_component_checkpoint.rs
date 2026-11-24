@@ -6,6 +6,10 @@ use crate::facade::mvcc::RelationalCallerAssociation as Association;
 use crate::tests::support::*;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 fn current(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) -> Recorded {
     let port = runtime.owner_component_services().basis_port();
@@ -177,7 +181,7 @@ fn original_custody(empty: bool, retire: bool) {
             recorded.descriptor()
         );
         basis
-            .inner
+            .owner_inner()
             .root
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();
@@ -211,7 +215,7 @@ fn original_custody(empty: bool, retire: bool) {
             .external_retention_terminal_accounting();
         let before = terminal.snapshot();
         let mut task = proof.consume(|original| original.into_retirement());
-        crate::history::retention::assert_recovered_cut_and_lane_busy(&basis, || {
+        crate::history::retention::assert_recovered_cut_and_lane_busy_for_test(&basis, || {
             task.advance(execution)
         });
         drop(basis);
@@ -282,7 +286,10 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
         Some(source),
     )
     .unwrap();
-    let directory = decoded.checkpoint.directory.unwrap();
+    let directory = decoded
+        .checkpoint
+        .into_selected_directory_for_test()
+        .unwrap();
     assert_eq!(directory.manifest.roots.len(), 1);
     assert!(directory.manifest.retained_empty_components.is_empty());
     assert!(!directory.manifest.roots.iter().any(|root| {
@@ -312,7 +319,13 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     )
     .unwrap();
     assert_eq!(
-        decoded.checkpoint.directory.unwrap().manifest.roots.len(),
+        decoded
+            .checkpoint
+            .into_selected_directory_for_test()
+            .unwrap()
+            .manifest
+            .roots
+            .len(),
         1
     );
     drop(observed);

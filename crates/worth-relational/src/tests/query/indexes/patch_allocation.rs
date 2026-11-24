@@ -85,7 +85,10 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         transaction
             .push_batch(edits, setup.allocation_policy())
             .unwrap();
-        let prepared = runtime.prepare_branch_transaction(&execution, transaction);
+        use worth_relational_indexes::internal_port::indexes::authority::maintenance::request_payment::allocation_observation::record_allocation_for_test;
+        let (prepared, prepared_bytes) = record_allocation_for_test(|| {
+            runtime.prepare_branch_transaction(&execution, transaction)
+        });
         if memory == REFUSED_MEMORY {
             let denied = prepared.unwrap_err();
             assert!(matches!(
@@ -108,7 +111,6 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         // Candidate ownership also reserves deferred catalog insertions. The
         // independently priced field paths are only part of that full bill;
         // all of it must fit the original sub-population memory allowance.
-        let prepared_bytes = crate::indexes::last_allocation_bytes();
         assert!(prepared_bytes <= MEMORY);
         assert_eq!(work.patch_records, 2);
         assert_eq!(work.entry_edits, 2);

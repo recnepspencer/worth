@@ -1,0 +1,194 @@
+//! One iterative endpoint evaluator for physical and projected member domains.
+use crate::contracts::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
+    DerivedRelationHandleFieldsPort as _,
+};
+use crate::contracts::graph_member::key::{
+    NativeMemberKey as Member, NativeMemberKeyOwnerPort as _,
+};
+use crate::contracts::schema::data::{
+    RelationalSchemaRegistry, RelationalSchemaRegistryFieldsPort as _,
+};
+pub mod memo;
+pub mod navigation;
+pub mod ordered_events;
+pub mod physical;
+
+use crate::contracts::derived_relation::read::{
+    DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data, DerivedRelationReads,
+};
+use crate::contracts::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
+use crate::contracts::identity::data::primitives::KindId;
+use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
+use crate::contracts::validation::data::structural_read::StructuralRelationRecord;
+use memo::{Key, MemoValues};
+use navigation::Frame;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub(crate) trait SourceRead {
+    fn admit_definition(
+        &mut self,
+        registry: &RelationalSchemaRegistry,
+        handle: &Handle,
+    ) -> Result<(), Denial>
+    where
+        Self: Sized,
+    {
+        admit_definition(registry, handle, self)
+    }
+    fn checkpoint(&mut self, units: usize) -> Result<(), Denial>;
+    fn retain(&mut self, bytes: usize) -> Result<(), Denial>;
+    fn check_scratch_peak(&mut self, bytes: usize) -> Result<(), Denial>;
+    fn entity_kind(&mut self, id: EntityId) -> Result<KindId, Denial>;
+    fn adjacency(&mut self, probe: Adjacency) -> Result<Vec<StructuralRelationRecord>, Denial>;
+    fn reads(&self) -> DerivedRelationReads;
+}
+
+struct Evaluation<'a, Port> {
+    registry: &'a RelationalSchemaRegistry,
+    root_definition: Handle,
+    read: &'a mut Port,
+    pending: Vec<Frame>,
+    values: MemoValues,
+    entities: BTreeMap<EntityId, KindId>,
+    relations: BTreeMap<RelationId, StructuralRelationRecord>,
+    adjacency: BTreeSet<Adjacency>,
+}
+
+/// The actual registry lookup is paid before any source acquisition.
+pub(super) fn admit_definition(
+    registry: &RelationalSchemaRegistry,
+    handle: &Handle,
+    read: &mut impl SourceRead,
+) -> Result<(), Denial> {
+    // This exact catalog lookup is also reached by canonical affectedness,
+    // without the custom-view admission lookup's separate checkpoint.
+    let names = handle
+        .parts()
+        .identity
+        .schema
+        .0
+        .len()
+        .checked_add(handle.parts().identity.name.len())
+        .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
+    let levels = (usize::BITS
+        - (*registry.owner_derived_relations())
+            .len()
+            .max(1)
+            .leading_zeros()) as usize;
+    read.checkpoint(
+        names
+            .checked_mul(11)
+            .and_then(|units| units.checked_mul(levels))
+            .ok_or(DefinitionDenial::WorkBudgetExceeded)?,
+    )?;
+    if !registry.admits_derived_relation(handle) {
+        return Err(DefinitionDenial::ForeignDefinition.into());
+    }
+    Ok(())
+}
+
+/// Native canonical affectedness pulls back an exact registered subexpression;
+/// it never constructs a new recipe or stored relation ID for the prefix.
+pub(crate) fn evaluate_position(
+    registry: &RelationalSchemaRegistry,
+    handle: &Handle,
+    node: usize,
+    reverse: bool,
+    root: Member,
+    read: &mut impl SourceRead,
+) -> Result<Data, Denial> {
+    read.admit_definition(registry, handle)?;
+    let key = Key::root(handle.clone(), node, root, reverse);
+    let mut evaluation = Evaluation {
+        registry,
+        root_definition: handle.clone(),
+        read,
+        pending: Vec::new(),
+        values: MemoValues::default(),
+        entities: BTreeMap::new(),
+        relations: BTreeMap::new(),
+        adjacency: BTreeSet::new(),
+    };
+    let endpoints = handle
+        .owner_entry()
+        .endpoints
+        .get(node)
+        .ok_or(DefinitionDenial::InvalidExpression)?;
+    evaluation.member(
+        &key.anchor,
+        if reverse { &endpoints.1 } else { &endpoints.0 },
+    )?;
+    evaluation.push(Frame::Enter(key.clone()))?;
+    while let Some(frame) = evaluation.pending.pop() {
+        evaluation.read.checkpoint(1)?;
+        evaluation.step(frame)?;
+    }
+    let endpoints = evaluation
+        .values
+        .remove(&key, evaluation.read)?
+        .expect("complete root evaluation");
+    let output_bytes = endpoints
+        .len()
+        .checked_mul(size_of::<Member>())
+        .and_then(|n| {
+            n.checked_add(
+                evaluation
+                    .entities
+                    .len()
+                    .checked_mul(size_of::<(EntityId, KindId)>())?,
+            )
+        })
+        .and_then(|n| {
+            n.checked_add(
+                evaluation
+                    .relations
+                    .len()
+                    .checked_mul(size_of::<StructuralRelationRecord>())?,
+            )
+        })
+        .and_then(|n| {
+            n.checked_add(
+                evaluation
+                    .adjacency
+                    .len()
+                    .checked_mul(size_of::<Adjacency>())?,
+            )
+        })
+        .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
+    evaluation.read.retain(output_bytes)?;
+    Ok(crate::contracts::derived_relation::read::complete_data(
+        endpoints.into_iter().collect(),
+        evaluation.entities.into_iter().collect(),
+        evaluation.relations.into_values().collect(),
+        evaluation.adjacency.into_iter().collect(),
+        evaluation.read.reads(),
+    ))
+}
+
+/// Fixed-width physical keys retain their one-unit insertion cost. Semantic
+/// names add actual comparison bytes at the existing source checkpoint.
+pub(in crate::internal_port::derived_relation) fn member_work(
+    read: &mut impl SourceRead,
+    member: &Member,
+    count: usize,
+) -> Result<(), Denial> {
+    let work = member
+        .comparison_work(count)
+        .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
+    read.checkpoint(work)
+}
+
+pub(in crate::internal_port::derived_relation) fn insert_member(
+    read: &mut impl SourceRead,
+    targets: &mut BTreeSet<Member>,
+    member: Member,
+) -> Result<(), Denial> {
+    member_work(read, &member, targets.len())?;
+    if !targets.contains(&member) {
+        read.retain(size_of::<Member>() + 4 * size_of::<usize>())?;
+        member_work(read, &member, targets.len())?;
+        targets.insert(member);
+    }
+    Ok(())
+}

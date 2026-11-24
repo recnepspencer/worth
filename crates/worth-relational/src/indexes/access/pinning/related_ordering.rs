@@ -1,4 +1,5 @@
 //! Installed entry pins its exact ordering generation, then delegates.
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::index_lookups::RelationalPinnedReadOwnerPort as _;
 use super::super::bounded_related_entity_ordered_lookup::denial;
 use super::IndexAccess;
 use crate::indexes::data::{

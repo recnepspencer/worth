@@ -1,0 +1,176 @@
+use std::sync::Arc;
+
+use crate::branch::root::projection::SnapshotProjectionRoot;
+use crate::history::data::BranchId;
+use crate::identity::data::VersionId;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::visibility::branch_scope::HistoricalBasisInputs;
+
+use super::historical_denial::HistoricalVisibilityDenial;
+
+#[path = "historical_basis_custody.rs"]
+pub mod custody;
+
+#[derive(Clone, Debug)]
+pub struct HistoricalVisibilityBasis {
+    branch_id: BranchId,
+    version_id: VersionId,
+    root: Option<Arc<crate::history::retention::RelationalRetainedHistoricalRoot>>,
+    coverage: HistoricalVisibilityCoverage,
+}
+
+#[derive(Clone, Debug)]
+enum HistoricalVisibilityCoverage {
+    EmptyGenesis,
+    RetainedInterval {
+        source_root_id: u64,
+        source_version: VersionId,
+    },
+}
+
+impl HistoricalVisibilityBasis {
+    pub(super) fn take_retirement(
+        &mut self,
+    ) -> Option<crate::history::retention::RelationalHistoricalObservationRetirement> {
+        self.root
+            .take()
+            .map(crate::history::retention::RelationalHistoricalObservationRetirement::new)
+    }
+    pub fn resolve_retained_commit(
+        history: &HistorySubsystem,
+        commit_id: crate::history::data::CommitId,
+        branch_id: BranchId,
+        version_id: VersionId,
+    ) -> Result<Self, HistoricalVisibilityDenial> {
+        let retained = history
+            .retain_historical_root(commit_id)
+            .map_err(historical_retention_denial)?
+            .ok_or(HistoricalVisibilityDenial::CertificationReconstructionRequired)?;
+        if retained.root().commit_id() != Some(commit_id) {
+            return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable);
+        }
+        Ok(Self::from_retained_interval(
+            branch_id, version_id, version_id, retained,
+        ))
+    }
+
+    pub fn resolve<'a>(
+        inputs: impl Into<HistoricalBasisInputs<'a>>,
+        version_id: VersionId,
+    ) -> Result<Self, HistoricalVisibilityDenial> {
+        let inputs = inputs.into();
+        let history = inputs.history.branch;
+        let branch_id = crate::visibility::branch_scope::branch_for_version(inputs, version_id)
+            .ok_or(HistoricalVisibilityDenial::UnknownVersion)?;
+        let commit_id = history
+            .commit_artifact_for_version(version_id)
+            .map(|artifact| artifact.commit_id());
+        if let Some(root) = commit_id
+            .map(|commit_id| history.retain_historical_root(commit_id))
+            .transpose()
+            .map_err(historical_retention_denial)?
+            .flatten()
+        {
+            return Ok(Self::from_retained_interval(
+                branch_id, version_id, version_id, root,
+            ));
+        }
+        let cell = history
+            .branch_cell(&branch_id)
+            .ok_or(HistoricalVisibilityDenial::AuthoringBranchUnavailable)?;
+        let Some(root) = cell.root() else {
+            if version_id.is_zero() && inputs.history.latest_receipt().is_none() {
+                return Ok(Self {
+                    branch_id,
+                    version_id,
+                    root: None,
+                    coverage: HistoricalVisibilityCoverage::EmptyGenesis,
+                });
+            }
+            return Err(HistoricalVisibilityDenial::CertificationReconstructionRequired);
+        };
+        let mut source_version = match root.axes() {
+            Some(axes) => VersionId(axes.storage_version),
+            None if version_id.is_zero() && root.id() == 0 && root.descriptor().is_none() => {
+                VersionId(0)
+            }
+            None => return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable),
+        };
+        if source_version.as_u64() < version_id.as_u64() {
+            let metadata_aliases_root = history
+                .commit_artifact_for_version(version_id)
+                .is_some_and(|artifact| root.descriptor() == Some(artifact.roots()));
+            if !metadata_aliases_root {
+                return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable);
+            }
+            source_version = version_id;
+        }
+        let binding = cell
+            .head_retention()
+            .binding()
+            .map_err(historical_retention_denial)?;
+        let root =
+            crate::history::retention::RelationalRetainedHistoricalRoot::acquire(&binding, root)
+                .map_err(historical_retention_denial)?;
+        Ok(Self::from_retained_interval(
+            branch_id,
+            version_id,
+            source_version,
+            root,
+        ))
+    }
+
+    pub fn branch_id(&self) -> &BranchId {
+        &self.branch_id
+    }
+
+    pub const fn version_id(&self) -> VersionId {
+        self.version_id
+    }
+
+    pub fn root(&self) -> Option<SnapshotProjectionRoot<'_>> {
+        self.root
+            .as_deref()
+            .map(crate::history::retention::RelationalRetainedHistoricalRoot::projection_root)
+    }
+
+    pub fn source_root_id(&self) -> Option<u64> {
+        match self.coverage {
+            HistoricalVisibilityCoverage::EmptyGenesis => None,
+            HistoricalVisibilityCoverage::RetainedInterval { source_root_id, .. } => {
+                Some(source_root_id)
+            }
+        }
+    }
+
+    pub fn schema_commitment(&self) -> Option<[u8; 32]> {
+        self.root
+            .as_ref()
+            .map(|retained| retained.root().schema_authority().authority_digest())
+    }
+
+    pub fn source_version(&self) -> VersionId {
+        match self.coverage {
+            HistoricalVisibilityCoverage::EmptyGenesis => VersionId(0),
+            HistoricalVisibilityCoverage::RetainedInterval { source_version, .. } => source_version,
+        }
+    }
+}
+
+fn historical_retention_denial(
+    denial: crate::history::retention::RelationalRetentionAcquisitionDenial,
+) -> HistoricalVisibilityDenial {
+    match denial {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
+            HistoricalVisibilityDenial::RetentionCapacityExhausted
+        }
+        crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
+            HistoricalVisibilityDenial::RetentionIdentityExhausted
+        }
+        crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
+            HistoricalVisibilityDenial::RetentionUnavailable
+        }
+    }
+}

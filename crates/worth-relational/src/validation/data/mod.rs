@@ -1,35 +1,28 @@
-pub(crate) mod catalog;
-pub(crate) mod compilation_denial;
-pub(crate) mod contracts;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::catalog;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::contracts;
 pub(crate) mod custom_rule;
-pub(crate) mod descriptor;
-pub(crate) mod execution;
-pub(crate) mod groups;
-pub(crate) mod observation_kind;
-pub(crate) mod registration_conflict;
-pub(crate) mod results;
-pub(crate) mod rule_id;
-pub(crate) mod rules;
-pub(crate) mod structural_read;
-pub(crate) mod structural_walk_denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::descriptor;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::execution;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::groups;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::results;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::rule_id;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::rules;
 
-pub(crate) use catalog::append_relation_integrity_registrations;
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
+#[cfg(test)]
+pub(crate) use custom_rule::TouchedStructuralSet;
 pub use custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantExecutionError,
     CustomInvariantInterruption, CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
-    CustomInvariantNonApplicability, CustomInvariantPreparationError, CustomInvariantProvenance,
-    CustomInvariantReadBudget, CustomInvariantRefusal, CustomInvariantRegistration,
-    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
-    CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
-    InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
-    StructuralAspectStateView, StructuralCountView, StructuralReadError, StructuralRelationRecord,
+    CustomInvariantNonApplicability, CustomInvariantPreparationError, CustomInvariantReadBudget,
+    CustomInvariantRefusal, CustomInvariantRegistration, CustomInvariantRegistrationError,
+    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantVerdict, InvariantEntityIds,
+    InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };
-pub(crate) use custom_rule::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
-pub(crate) use custom_rule::{PreparedCustomInvariantExecution, PreparedCustomInvariantScope};
 pub use descriptor::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
 };
@@ -37,14 +30,13 @@ pub use descriptor::{
 pub use execution::InvariantWitnessBasis;
 pub use execution::{
     InvariantClass, InvariantDecisionKind, InvariantDecisionRecord, InvariantExecutionPoint,
-    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict, InvariantWitnessKey,
+    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict,
 };
 pub use groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet};
 pub use results::{
     CustomInvariantFailureIdentity, CustomInvariantFailureKind as ResultCustomInvariantFailureKind,
     CustomInvariantFailurePhase, InvariantViolation, InvariantViolationFields,
-    RelationCardinalityBoundary, RelationEndpointBoundary, StorageInconsistencyFailure,
-    StorageInconsistencyLookup, StorageInconsistencyScan,
+    RelationCardinalityBoundary,
 };
 pub use rule_id::{
     CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
@@ -55,6 +47,9 @@ pub use custom_rule::{
     CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
 };
 
-pub(crate) mod execution_posture;
-pub(crate) mod non_applicability;
 pub use crate::validation::engine::result::InvariantCheckResult;
+
+#[cfg(test)]
+pub(crate) use custom_rule::{
+    CustomInvariantProvenance, CustomInvariantTraversalSummary, StructuralCountView,
+};

@@ -1,6 +1,7 @@
 //! Target-only whole-candidate execution payload under an admitted Home step.
 use super::*;
 use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 #[derive(Debug)]
 pub(crate) struct AdmittedRelationalHomeProgramTarget {
@@ -38,7 +39,11 @@ impl RelationalRuntime {
         if let Some((transition, policy)) = transition {
             require_bases(basis, &target, &transition)?;
             intent = intent.with_schema_transition(transition, policy);
-        } else if basis.inner.root.schema_authority().authority_digest()
+        } else if basis
+            .owner_inner()
+            .root
+            .schema_authority()
+            .authority_digest()
             != target.schema.authority_digest()
         {
             return Err(Denial::SchemaCapture);
@@ -91,8 +96,8 @@ fn require_bases(
         RelationalSchemaTransitionAdmissionDenial as Cause,
         RelationalSchemaTransitionAdmissionDenialKind as Kind,
     };
-    let actual_source =
-        registry_basis(source.inner.root.schema_authority().registry()).map_err(|detail| {
+    let actual_source = registry_basis(source.owner_inner().root.schema_authority().registry())
+        .map_err(|detail| {
             RelationalHomeProgramContractDenial::SchemaTransition(Cause::new(
                 Kind::SourceBasisMismatch,
                 detail,

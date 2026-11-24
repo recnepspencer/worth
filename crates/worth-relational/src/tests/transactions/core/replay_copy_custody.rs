@@ -196,11 +196,11 @@ fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
     let prepared = runtime
         .prepare_merge_execution(
             &source_request,
-            crate::merge::data::MergeExecutionRequest {
-                target_branch: BranchId("main".into()),
-                source_branch: BranchId("feature".into()),
-                merge_intent: crate::merge::data::MergeIntent::ReconcileIntoTarget,
-            },
+            crate::merge::data::MergeExecutionRequest::new(
+                BranchId("main".into()),
+                BranchId("feature".into()),
+                crate::merge::data::MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .unwrap();
     let outcome = runtime
@@ -215,9 +215,12 @@ fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
     let serial =
         SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&serial);
-    let copied = OwnedMergePlan::copy_recovered(&original, &request)
-        .unwrap()
+    let source =
+        crate::mvcc::transaction::reconstructed_merge_plan::RecordedMergePlanSource::from_envelope(
+            &original,
+        )
         .expect("actual governed merge authority");
+    let copied = OwnedMergePlan::copy_recovered(source, &request).unwrap();
     let source = &original
         .merge_execution_authority
         .as_ref()

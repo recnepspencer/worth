@@ -9,16 +9,16 @@
 //! the recorded prior generation and truth version. Anything else refuses
 //! before any effect.
 
-use std::fmt::Debug;
-
-use crate::branch::{
-    PositionedBranchTransition, RelationalBranchDeletionKind, RelationalBranchTransition,
-    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
+use crate::branch::lifecycle::RelationalBranchDeletionKind;
+use crate::branch::transition::{
+    PositionedBranchTransition, RelationalBranchTransition, ReplayedBranchTransitionStep,
 };
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
-use crate::runtime::{BranchTransitionRecordError, RelationalRuntime};
+use crate::runtime::RelationalRuntime;
 
 use super::root_inventory::RecoveredRootInventory;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::runtime_rebuild::transition_replay::refusal;
+use refusal::{refused, replay_stop};
 
 /// Apply `recorded` to `restored`.
 ///
@@ -51,7 +51,11 @@ pub(super) fn replay_branch_transition(
                 .fork_port()
                 .fork_branch_with(execution, &step, target.clone(), source)
                 .map_err(|failure| replay_stop(recorded, failure))?;
-            recovered_roots.retain_current(restored, target)?;
+            recovered_roots.retain_current(
+                &restored.history,
+                &restored.config.schema.registry,
+                target,
+            )?;
         }
         RelationalBranchTransition::Archive { branch, .. } => {
             let identity = recorded_branch_identity(restored, recorded, branch)?;
@@ -89,7 +93,7 @@ fn recorded_branch_identity(
     restored: &RelationalRuntime,
     recorded: &PositionedBranchTransition,
     branch: &crate::history::data::BranchId,
-) -> Result<crate::branch::RelationalBranchIdentity, RelationalRecoveryStop> {
+) -> Result<crate::branch::identity::RelationalBranchIdentity, RelationalRecoveryStop> {
     restored.branch_identity(branch).map_err(|denial| {
         refused(
             recorded,
@@ -99,53 +103,4 @@ fn recorded_branch_identity(
             ),
         )
     })
-}
-
-/// A replay that did not apply is a recovery refusal; a stopped request
-/// stays a request stop.
-fn replay_stop<D: Debug>(
-    recorded: &PositionedBranchTransition,
-    failure: BranchTransitionRecordError<D, ReplayedBranchTransitionDivergence>,
-) -> RelationalRecoveryStop {
-    match failure {
-        BranchTransitionRecordError::OriginalInputsStopped(stop) => stop,
-        BranchTransitionRecordError::ReservationWaitStopped(stop) => {
-            RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::from(
-                stop,
-            ))
-        }
-        BranchTransitionRecordError::Denied(denial) => {
-            refused(recorded, format!("does not apply: {denial:?}"))
-        }
-        BranchTransitionRecordError::OriginalPrefixMismatch => refused(
-            recorded,
-            "branch transition original prefix mismatch".to_owned(),
-        ),
-        BranchTransitionRecordError::StorageCapacityExhausted => refused(
-            recorded,
-            "branch transition storage capacity exhausted".to_owned(),
-        ),
-        BranchTransitionRecordError::SequenceCapacityExhausted => {
-            refused(recorded, "exhausts the transition sequence".to_owned())
-        }
-        BranchTransitionRecordError::Step(divergence) => refused(
-            recorded,
-            format!(
-                "would replay as {:?} rather than as recorded",
-                divergence.performed
-            ),
-        ),
-    }
-}
-
-fn refused(recorded: &PositionedBranchTransition, detail: String) -> RelationalRecoveryStop {
-    DurabilityError::new(
-        RecoveryFailureClass::ReplayFailure,
-        format!(
-            "durable branch transition {} ({:?}) {detail}",
-            recorded.sequence().0,
-            recorded.transition()
-        ),
-    )
-    .into()
 }

@@ -80,11 +80,20 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
+worth-relational-branch.opt-level = 0
+worth-relational-publication.opt-level = 0
+worth-relational-durability.opt-level = 0
+worth-relational-indexes.opt-level = 0
+worth-relational-lineage.opt-level = 0
+worth-relational-merge.opt-level = 0
+worth-relational-mutation.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.test.package]
 "*".opt-level = 2
-# Optimize the five root path dependencies (overriding [profile.dev.package]'s
+# Optimize the root path dependencies (overriding [profile.dev.package]'s
 # inherited opt-level = 0 entries), all 42 inner Store production crates, and
 # all 6 Store testkits/support crates in test builds. All 26 court crates and
 # store-test-runner stay on [profile.test] opt-level = 0 so editing a court test
@@ -94,6 +103,15 @@ worth-proof.opt-level = 2
 worth-foundational.opt-level = 2
 worth-execution.opt-level = 2
 worth-relational.opt-level = 2
+worth-relational-contracts.opt-level = 2
+worth-relational-storage.opt-level = 2
+worth-relational-branch.opt-level = 2
+worth-relational-publication.opt-level = 2
+worth-relational-durability.opt-level = 2
+worth-relational-indexes.opt-level = 2
+worth-relational-lineage.opt-level = 2
+worth-relational-merge.opt-level = 2
+worth-relational-mutation.opt-level = 2
 worth-signal.opt-level = 2
 worth-store.opt-level = 2
 worth-store-analysis.opt-level = 2

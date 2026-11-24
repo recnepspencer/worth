@@ -7,6 +7,7 @@
 //! `Restore`, split-child birth restore, and every group transition kind.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 
@@ -234,7 +235,7 @@ fn assert_lifecycle_coverage(history: &DurableNamingHistory) {
     let events: Vec<_> = history
         .commits
         .iter()
-        .flat_map(|(batch, _)| batch.lineage_events.iter())
+        .flat_map(|(batch, _)| batch.lineage_events_for_test().iter())
         .collect();
     let has = |predicate: &dyn Fn(&&crate::facade::lineage::LineageEventRecord) -> bool| {
         events.iter().any(predicate)
@@ -259,14 +260,18 @@ fn assert_lifecycle_coverage(history: &DurableNamingHistory) {
         ));
     }
     let restores_in_split_commit = history.commits.iter().any(|(batch, _)| {
-        let kinds: Vec<_> = batch.lineage_events.iter().map(|e| e.kind()).collect();
+        let kinds: Vec<_> = batch
+            .lineage_events_for_test()
+            .iter()
+            .map(|e| e.kind())
+            .collect();
         kinds.contains(&LineageEventKind::Split) && kinds.contains(&LineageEventKind::Restore)
     });
     assert!(restores_in_split_commit, "split-child birth restore");
     let group_kinds: BTreeSet<&str> = history
         .commits
         .iter()
-        .flat_map(|(batch, _)| batch.group_events.iter())
+        .flat_map(|(batch, _)| batch.group_events_for_test().iter())
         .map(|event| match event {
             AggregateGroupLineageEvent::Born { .. } => "born",
             AggregateGroupLineageEvent::Revived { .. } => "revived",

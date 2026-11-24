@@ -1,4 +1,5 @@
 //! Issue one runtime-bound candidate through preparation and registration.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::authority_context::AuthoritativeCommitContext;
 use super::candidate_preparation::stages;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -7,7 +8,7 @@ use worth_execution::ExecutionRequest;
 pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut context: AuthoritativeCommitContext,
+    mut context: AuthoritativeCommitContext<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     if matches!(&context.authority_input,
         super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())

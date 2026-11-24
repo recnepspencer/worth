@@ -2,6 +2,7 @@ use crate::capabilities::PublicationDiagnosticsSource;
 use crate::publication::data::{
     PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationObservationSnapshot,
 };
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 use super::{PublicationArtifactsAccess, PublicationDiagnosticsAccess};
 
@@ -14,7 +15,8 @@ impl<'runtime> PublicationArtifactsAccess<'runtime> {
 
         PublicationObservationSnapshot {
             latest_commit_id: latest_bundle.map(|bundle| bundle.commit.commit_id),
-            publication_snapshot_id: latest_bundle.map(|bundle| bundle.snapshot.snapshot_id),
+            publication_snapshot_id: latest_bundle
+                .map(|bundle| *bundle.snapshot.owner_snapshot_id()),
             publication_status: latest_bundle.map(|bundle| bundle.status.clone()),
             latest_patch_position: latest_patch.map(|patch| patch.position),
             latest_patch_record_count: latest_patch

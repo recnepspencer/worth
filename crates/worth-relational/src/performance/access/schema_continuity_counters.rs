@@ -1,5 +1,6 @@
 use super::PerformanceAccess;
 use crate::schema::data::SchemaContinuationClassification;
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_schema_normalized_descriptor_composition(&self, count: usize) {
@@ -33,6 +34,7 @@ impl PerformanceAccess<'_> {
                 SchemaContinuationClassification::Rejected => {
                     counters.subscriber_rejected_count += 1;
                 }
+                _ => unreachable!("unhandled Relational contract variant"),
             }
         });
     }

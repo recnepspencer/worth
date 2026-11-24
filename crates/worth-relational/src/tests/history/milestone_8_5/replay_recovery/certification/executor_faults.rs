@@ -1,12 +1,14 @@
 use super::*;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 pub(super) fn certify(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     recovery_plan: &crate::durability::data::RecoveryPlan,
     commit_id: crate::facade::history::CommitId,
 ) -> (bool, bool) {
-    let mut missing_executor_plan = recovery_plan.clone();
-    missing_executor_plan.commit_strategy_executors = Default::default();
+    let missing_executor_plan = recovery_plan.clone();
+    let missing_executor_plan =
+        missing_executor_plan.with_commit_strategy_executors(Default::default());
     let mut missing_executor_runtime = strategy_runtime_without_executors();
     missing_executor_runtime
         .durability_recovery()
@@ -35,10 +37,12 @@ pub(super) fn certify(
         });
 
     let mut failing_executor_runtime = strategy_runtime_with_failing_intent_executor();
-    let mut failing_executor_plan = recovery_plan.clone();
-    failing_executor_plan.commit_strategy_executors = failing_executor_runtime
-        .commit_strategy_executor_registry()
-        .clone();
+    let failing_executor_plan = recovery_plan.clone();
+    let failing_executor_plan = failing_executor_plan.with_commit_strategy_executors(
+        failing_executor_runtime
+            .commit_strategy_executor_registry()
+            .clone(),
+    );
     failing_executor_runtime
         .durability_recovery()
         .recover(execution, failing_executor_plan)

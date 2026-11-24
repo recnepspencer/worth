@@ -8,6 +8,7 @@ use crate::mvcc::RelationalPublicationDenial;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 /// Everything a commit could move, observed from outside the medium.
 #[derive(Debug, PartialEq, Eq)]
@@ -121,12 +122,12 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     assert_eq!(
         accepted
             .envelope()
-            .index_definition_delta
+            .owner_index_definition_delta()
             .base_next_index_id,
         1
     );
     assert_eq!(
-        accepted.envelope().index_definition_delta.definitions(),
+        (*accepted.envelope().owner_index_definition_delta()).definitions(),
         &[definition]
     );
     release_test_commit_snapshot(&runtime, &accepted);

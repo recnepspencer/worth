@@ -1,6 +1,7 @@
 use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use std::sync::Arc;
 use std::time::Duration;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 use crate::facade::inspection::RelationalMvccCostScope;
 use crate::facade::mvcc::{
@@ -97,10 +98,12 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let winner_waits_at_pause = winner_cell.coordination().wait_count();
     let loser_contacts_at_pause = loser_cell.coordination().contact_count();
     let loser_waits_at_pause = loser_cell.coordination().wait_count();
-    let settlements_at_pause = runtime.publication_binding().pending_settlement_count();
+    let settlements_at_pause = runtime
+        .publication_binding()
+        .pending_settlement_count_for_test();
     let settlement_contacts_at_pause = runtime
         .publication_binding()
-        .pending_settlement_contact_count();
+        .pending_settlement_contact_count_for_test();
 
     let loser_outcome = runtime
         .publication_port()
@@ -113,10 +116,12 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     let winner_waits_after_deferral = winner_cell.coordination().wait_count();
     let loser_contacts_after_deferral = loser_cell.coordination().contact_count();
     let loser_waits_after_deferral = loser_cell.coordination().wait_count();
-    let settlements_after_deferral = runtime.publication_binding().pending_settlement_count();
+    let settlements_after_deferral = runtime
+        .publication_binding()
+        .pending_settlement_count_for_test();
     let settlement_contacts_after_deferral = runtime
         .publication_binding()
-        .pending_settlement_contact_count();
+        .pending_settlement_contact_count_for_test();
     let loser_reference_at_deferral = runtime
         .branch_reference_state(&BranchId("loser".to_owned()))
         .expect("the deferred branch stays registered");
@@ -224,7 +229,9 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     assert_eq!(loser_retention.head_transfers, 0);
     assert_eq!(loser_cost.branch_population_scans(), 0);
     assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
+        runtime
+            .publication_binding()
+            .pending_settlement_count_for_test(),
         0,
         "the settled winner leaves no record and the loser never installed one"
     );

@@ -84,8 +84,8 @@ pub(super) fn certify_branch_rollback_compile_step_window(
         let savepoint = txn.create_savepoint().unwrap();
         let mut transient_batch = WorkerIntentBatch::new("chip-transient-fanout");
         for (index, target) in transient_targets.iter().enumerate() {
-            transient_batch = transient_batch.push(MutationIntent::Create(
-                CreateIntent::Relation(crate::transactions::data::RelationSpec {
+            transient_batch = transient_batch.push(MutationIntent::Create(CreateIntent::Relation(
+                crate::transactions::data::RelationSpec {
                     partition_id: PartitionId(43),
                     kind_id: KindId(2),
                     client_key: crate::symbols::data::ClientKey::raw(format!(
@@ -94,8 +94,8 @@ pub(super) fn certify_branch_rollback_compile_step_window(
                     source: crate::transactions::data::EntityReference::Existing(source),
                     target: crate::transactions::data::EntityReference::Existing(*target),
                     fields: crate::transactions::data::AspectFieldPatch::default(),
-                }),
-            ));
+                },
+            )));
         }
         txn.push_batch(
             transient_batch,

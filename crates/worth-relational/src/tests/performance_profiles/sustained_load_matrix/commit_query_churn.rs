@@ -1,11 +1,11 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use super::*;
 
 pub(super) fn certify_commit_query_churn_stability(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let commit_query_churn_samples = capture_counted_samples(|| {
-        let runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::CertificationCore);
+        let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::CertificationCore);
         const ITERATIONS: usize = 128;
         let mut total_commit_work = 0u64;
         let mut total_query_work = 0u64;
@@ -66,7 +66,7 @@ pub(super) fn certify_commit_query_churn_stability(
             .read_truth()
             .try_project_historical_version(latest_version)
             .unwrap()
-            .all_authoritative_entity_records(execution)
+            .all_authoritative_entity_records_for_test(execution)
             .expect("read request remains live")
             .len();
         let counters = runtime.performance_access().counters();

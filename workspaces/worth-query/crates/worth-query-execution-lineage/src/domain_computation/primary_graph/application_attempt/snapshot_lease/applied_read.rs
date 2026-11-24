@@ -1,82 +1,79 @@
 //! A successor round's applied completion read through its own-output view
-//! (PR C §1.5, #277 typed limit): a covered entity absent at the head, read
-//! as a field or reached as a relation endpoint, marks the view incoherent.
+//! (PR C §1.5, #277): field, aspect-presence and presence reads of a covered
+//! record are read at the chain head's pre-pin; relation and adjacency reads are served
+//! (`OwnOutputOverlay::serve_fact`). A covered entity absent at the head,
+//! read directly or reached through a link the chain did not make, marks the
+//! view incoherent.
+use super::super::{
+    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
+    WorthQueryApplicationFactKey as Key, WorthQueryApplicationObservedFact as Fact,
+};
 use super::WorthQueryApplicationSnapshotLease;
+use worth_relational::facade::identity::EntityId;
 
 impl WorthQueryApplicationSnapshotLease {
-    /// Observe `key` at the applied image, when the lease has one. Only a
-    /// field read is served by a successor's own-output view; a covered
-    /// record absent there was created by the chain, and the view is
-    /// incoherent (#277).
+    /// Observe `key` at the applied image, when the lease has one, through a
+    /// successor's own-output view.
     pub fn observe_applied(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        key: &super::super::WorthQueryApplicationFactKey,
-    ) -> Option<Result<super::super::WorthQueryApplicationObservedFact, super::super::WorthQueryApplicationAttemptDenial>>
-    {
-        let entity = match key {
-            super::super::WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
-            _ => None,
-        };
+        key: &Key,
+    ) -> Option<Result<Fact, Denial>> {
+        use super::super::read_set::fact_observation::observe_applied_fact;
+        let entity = super::super::fact::touch_key::head_served_record(key);
         let pin = self.applied_projection_of(entity)?;
-        let observed =
-            super::super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, key, pin);
-        // A relation read at the current image whose endpoint the chain
-        // created (absent at the head pre-pin) reads a key the chain wrote
-        // outside the entity-only view (#277): mark it and fail, so the
-        // round stops typed. Covered endpoints that exist at the head pass.
-        if let (Ok(fact), Some(own)) = (&observed, &self.own_outputs) {
-            let endpoints: Vec<worth_relational::facade::identity::EntityId> = match fact {
-                super::super::WorthQueryApplicationObservedFact::Relation {
-                    from,
-                    to,
-                    matching_relations,
-                    ..
-                } if !matching_relations.is_empty() => vec![*from, *to],
-                super::super::WorthQueryApplicationObservedFact::Adjacency { relations, .. } => {
-                    relations.iter().flat_map(|relation| [relation.from, relation.to]).collect()
-                }
-                _ => Vec::new(),
-            };
-            for endpoint in endpoints {
-                match own.created_by_chain(execution, endpoint) {
-                    Ok(false) => {}
-                    Ok(true) => {
-                        own.mark_incoherent(endpoint);
-                        return Some(Err(super::super::WorthQueryApplicationAttemptDenial::new(
-                            super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                            "own-output relation endpoint",
-                        )));
-                    }
-                    Err(cause) => {
-                        return Some(Err(super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
-                            cause,
-                            "own-output relation endpoint",
-                        )));
-                    }
-                }
-            }
+        let mut observed = observe_applied_fact(execution, &self.layout, key, pin);
+        let Some(own) = &self.own_outputs else {
+            return Some(observed);
+        };
+        if let Ok(fact) = observed {
+            observed = own.serve_fact(execution, fact, || {
+                observe_applied_fact(execution, &self.layout, key, own.head())
+            });
         }
         // Incoherent only when the entity itself is absent at the head pre-pin,
         // never for an absent aspect or field of an entity that exists there.
-        if let (Err(denial), Some(entity), Some(own)) = (&observed, entity, &self.own_outputs)
-            && denial.kind() == super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+        if let (Err(denial), Some(entity)) = (&observed, entity)
+            && denial.kind() == Kind::MissingAuthoritativeFact
             && own.covers(entity)
-            && let super::super::WorthQueryApplicationFactKey::Field { entity: name, .. } = key
+            && self.absent_at_head(execution, key, entity, pin, denial)
         {
-            let presence = super::super::WorthQueryApplicationFactKey::Entity {
-                entity: name.clone(),
-                entity_id: entity,
-            };
-            if super::super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, &presence, pin)
-                .is_err_and(|denial| {
-                    denial.kind() == super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
-                        && denial.relational_execution_cause().is_none()
-                })
-            {
-                own.mark_incoherent(entity);
-            }
+            own.mark_incoherent(entity);
         }
         Some(observed)
+    }
+
+    /// Whether `entity` is absent at the head pre-pin: judged by `denial`
+    /// when the key is the presence read itself, otherwise by the entity read
+    /// the field or aspect key names.
+    fn absent_at_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        key: &Key,
+        entity: EntityId,
+        pin: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        denial: &Denial,
+    ) -> bool {
+        let name = match key {
+            Key::Entity { .. } => return denial.relational_execution_cause().is_none(),
+            Key::Field { entity: name, .. } | Key::AspectPresence { entity: name, .. } => name,
+            _ => return false,
+        };
+        let presence = Key::Entity {
+            entity: name.clone(),
+            entity_id: entity,
+        };
+        super::super::read_set::fact_observation::observe_applied_fact(
+            execution,
+            &self.layout,
+            &presence,
+            pin,
+        )
+        .is_err_and(|denial| {
+            denial.kind() == Kind::MissingAuthoritativeFact
+                && denial.relational_execution_cause().is_none()
+        })
     }
 }

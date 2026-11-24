@@ -2,6 +2,7 @@ use crate::durability::initial_schema_installation_denial::{
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
 };
 use crate::schema::data::SchemaRegistryError;
+use worth_relational_durability::internal_port::durability::initial_schema_installation_denial::RelationalInitialSchemaInstallationDenialOwnerPort as _;
 pub(super) fn inventory_compilation_denial(
     cause: crate::validation::CustomInvariantCompilationDenial,
 ) -> RelationalInitialSchemaInstallationDenial {

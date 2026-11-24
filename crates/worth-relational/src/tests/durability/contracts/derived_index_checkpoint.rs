@@ -8,6 +8,8 @@ use super::*;
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 fn name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexDefinition {
     runtime
@@ -62,10 +64,9 @@ fn repeated_edits_checkpoint_only_the_live_index_payload() {
         .durability_authority()
         .checkpoint(execution)
         .unwrap();
-    let retained_bytes =
-        rmp_serde::to_vec_named(checkpoint.derived_index_checkpoint.as_ref().unwrap())
-            .unwrap()
-            .len();
+    let retained_bytes = rmp_serde::to_vec_named(checkpoint.derived_index_checkpoint().unwrap())
+        .unwrap()
+        .len();
     assert!(retained_bytes * 4 < legacy_bytes);
     assert!(runtime.index_access().generations_snapshot().len() < 24);
 }
@@ -83,7 +84,7 @@ fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
         .unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
     assert_eq!(
-        checkpoint.derived_index_checkpoint_format,
+        checkpoint.derived_index_checkpoint_format_for_test(),
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION
     );
     let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");

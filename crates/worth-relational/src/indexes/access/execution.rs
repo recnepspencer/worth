@@ -6,7 +6,7 @@ use crate::indexes::data::{DerivedIndexEntries, DerivedIndexGenerationId};
 use crate::query::data::query_outcome::QueryExecutionOutcome;
 use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::query::data::{
-    reduce_query_fragments, QueryFragmentCounters, QueryScope, QueryWorkerFragment,
+    reduce_query_fragments_for_test, QueryFragmentCounters, QueryScope, QueryWorkerFragment,
 };
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
@@ -298,7 +298,7 @@ fn build_index_query_execution(
     authoritative_relation_records_emitted: usize,
     touched_partitions: usize,
 ) -> QueryExecutionOutcome {
-    let result = reduce_query_fragments(
+    let result = reduce_query_fragments_for_test(
         plan.packet.execution_shape,
         plan.packet.ordering,
         vec![QueryWorkerFragment {

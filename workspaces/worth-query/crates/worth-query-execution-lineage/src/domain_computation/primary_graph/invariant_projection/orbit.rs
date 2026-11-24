@@ -44,7 +44,18 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 member.entity_id,
                 relation.name(),
                 None,
-            )?;
+            );
+            // Native read the aggregate at the round's current image. A failure
+            // its own chain caused is marked, so the round stops typed (#277).
+            let aggregate = aggregate.map_err(|denial| {
+                self.native_read().failed_orbit(
+                    denial,
+                    relation.name(),
+                    relation.from(),
+                    member.native_identity(),
+                    layout.kind,
+                )
+            })?;
             let anchor = WorthQueryInvariantEntityIdentity {
                 entity_id: aggregate.native().anchor(),
                 kind: layout.from,

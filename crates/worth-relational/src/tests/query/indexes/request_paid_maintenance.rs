@@ -185,18 +185,23 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
         .read_latest_generation(execution, index, &BranchId("main".into()))
         .unwrap()
         .is_none());
-    let mut charges = 0;
-    let rendezvous = crate::indexes::at_next_charges(move || {
-        charges += 1;
-        if charges == 2 {
+    use worth_relational_indexes::internal_port::indexes::authority::maintenance::charge_rendezvous::ChargeRendezvous;
+    let charges = std::cell::Cell::new(0);
+    let cancel_at_second_charge = || {
+        charges.set(charges.get() + 1);
+        if charges.get() == 2 {
             source.cancel();
         }
-    });
-    let cancelled =
-        runtime
-            .index_authority()
-            .reconstruct_for_basis(execution, request, &basis, cold_budget());
-    drop(rendezvous);
+    };
+    let cancelled = runtime.index_authority().reconstruct_for_basis_observed(
+        execution,
+        request,
+        &basis,
+        cold_budget(),
+        Some(ChargeRendezvous::observe_charges_for_test(
+            &cancel_at_second_charge,
+        )),
+    );
     let cancelled_kind = cancelled
         .map(|_| None)
         .unwrap_or_else(|denied| Some(denied.kind));
