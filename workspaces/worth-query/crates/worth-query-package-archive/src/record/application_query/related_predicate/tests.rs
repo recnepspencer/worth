@@ -315,4 +315,56 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     );
     forged_orbit_with_related.extend_from_slice(&bytes[plain.len()..]);
     assert_eq!(kind(&forged_orbit_with_related), Kind::InvalidRecordShape);
+
+    // 3. Raw forged WQRP trailer with contradictory Absent + Exists on identical matcher.
+    let mut forged_absent_exists = plain.clone();
+    {
+        let mut raw = BinaryOutput::with_capacity(128);
+        raw.raw_bytes(b"WQRP");
+        raw.u16(1);
+        raw.u32(2);
+        for pol in [0_u8, 1_u8] {
+            raw.text("BlockedBy");
+            raw.text("Task");
+            raw.text("Task");
+            raw.raw_bytes(&[0, pol]); // Forward, Absent then Exists
+            raw.u32(0); // 0 target predicates
+            raw.raw_bytes(&[0]); // no target filter
+        }
+        forged_absent_exists.extend_from_slice(&raw.into_bytes());
+    }
+    assert_eq!(kind(&forged_absent_exists), Kind::InvalidRecordShape);
+
+    // 4. Raw forged WQRP trailer with unequal literal equalities on same target field.
+    let mut forged_unequal_literals = plain.clone();
+    {
+        let mut raw = BinaryOutput::with_capacity(256);
+        raw.raw_bytes(b"WQRP");
+        raw.u16(1);
+        raw.u32(1);
+        raw.text("BlockedBy");
+        raw.text("Task");
+        raw.text("Task");
+        raw.raw_bytes(&[0, 0]); // Forward, Absent
+        raw.u32(2); // 2 target predicates on Task.TaskFacts.Status in canonical order
+        for literal in ["done", "open"] {
+            raw.text("Task");
+            raw.text("TaskFacts");
+            raw.text("Status");
+            crate::record::foundational_aspect::write_scalar_type(
+                &mut raw,
+                ScalarAspectType::String,
+            )
+            .unwrap();
+            raw.raw_bytes(&[0, 1]); // Required, Value
+            crate::record::foundational_value::write_aspect_value(
+                &mut raw,
+                &AspectValue::String(InternedString::Raw(literal.into())),
+            )
+            .unwrap();
+        }
+        raw.raw_bytes(&[0]); // no target filter
+        forged_unequal_literals.extend_from_slice(&raw.into_bytes());
+    }
+    assert_eq!(kind(&forged_unequal_literals), Kind::InvalidRecordShape);
 }

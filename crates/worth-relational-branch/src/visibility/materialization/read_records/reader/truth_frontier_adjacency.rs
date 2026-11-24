@@ -23,7 +23,7 @@ pub struct FrontierAdjacencyTruthReadLimitExceeded {
 }
 
 impl BoundedFrontierAdjacencyTruthRead {
-    pub(crate) fn owned_bytes(&self) -> u64 {
+    pub fn owned_bytes(&self) -> u64 {
         super::super::read_footprint::relations(&self.records)
     }
 

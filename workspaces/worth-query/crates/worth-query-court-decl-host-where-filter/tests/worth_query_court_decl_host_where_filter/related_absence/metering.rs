@@ -1,7 +1,7 @@
 //! Work metering, memory exhaustion, and bounded early-refusal fanout courts
 //! for related-record absence/existence predicates.
 use super::task;
-use super::world::{funded_ready, install};
+use super::world::{funded_ready, funded_unlinked, install};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -50,7 +50,7 @@ fn related_absence_is_metered_for_work_and_memory_exhaustion() {
             Err(_) => lo = mid + 1,
         }
     }
-    match funded_ready(&host, &scope, 64 * 1024 * 1024, lo - 1, 1) {
+    match funded_ready(&host, &scope, 64 * 1024 * 1024, lo - 1, 1).map_err(|e| *e) {
         Err(WorthQueryApplicationRequestQueryDenial::Execution(denial)) => {
             assert!(
                 matches!(
@@ -94,22 +94,61 @@ fn related_absence_is_metered_for_work_and_memory_exhaustion() {
         mem_lo > 24 * 1024,
         "related narrowing over 875 edges must reserve measurable memory: {mem_lo}"
     );
-    match funded_ready(&wide_host, &scope, mem_lo - 1, 1 << 24, 1) {
+    match funded_ready(&wide_host, &scope, mem_lo - 1, 1 << 24, 1).map_err(|e| *e) {
         Err(WorthQueryApplicationRequestQueryDenial::Execution(_)) => {}
         other => panic!("one byte short of minimal memory must refuse inside execution: {other:?}"),
     }
 }
 
-fn minimal_work_budget(host: &super::world::Host, scope: &WorthQueryRequestScope) -> u64 {
+fn minimal_unlinked_work_budget(host: &super::world::Host, scope: &WorthQueryRequestScope) -> u64 {
     let (mut lo, mut hi) = (1_u64, 1 << 22);
     while lo < hi {
         let mid = lo + (hi - lo) / 2;
-        match funded_ready(host, scope, 64 * 1024 * 1024, mid, 1) {
+        match funded_unlinked(host, scope, 64 * 1024 * 1024, mid, 1) {
             Ok(_) => hi = mid,
             Err(_) => lo = mid + 1,
         }
     }
     lo
+}
+
+fn minimal_unlinked_memory_budget(
+    host: &super::world::Host,
+    scope: &WorthQueryRequestScope,
+) -> u64 {
+    let (mut lo, mut hi) = (4096_u64, 64 * 1024 * 1024);
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        match funded_unlinked(host, scope, mid, 1 << 22, 1) {
+            Ok(_) => hi = mid,
+            Err(_) => lo = mid + 1,
+        }
+    }
+    lo
+}
+
+fn assert_blocked_by_refusal(
+    label: &str,
+    result: Result<(Vec<u64>, usize), Box<WorthQueryApplicationRequestQueryDenial>>,
+) {
+    match result.map_err(|e| *e) {
+        Err(WorthQueryApplicationRequestQueryDenial::Execution(denial)) => {
+            assert!(
+                matches!(
+                    denial.kind(),
+                    WorthQueryApplicationOneShotDenialKind::ExecutionRequest(_)
+                        | WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded
+                ),
+                "{label}: unexpected denial kind: {denial:?}"
+            );
+            assert_eq!(
+                denial.subject(),
+                "BlockedBy",
+                "{label}: early refusal must occur during BlockedBy frontier traversal: {denial:?}"
+            );
+        }
+        other => panic!("{label}: must refuse early inside BlockedBy: {other:?}"),
+    }
 }
 
 fn fanout_host(fanout: u64) -> super::world::Host {
@@ -126,55 +165,70 @@ fn fanout_host(fanout: u64) -> super::world::Host {
 #[test]
 fn high_fanout_single_root_stops_native_frontier_scan_early_when_budget_exhausts() {
     // 1 open root task in project 1 with 400 (and 800) `BlockedBy` edges to
-    // out-of-scope closed tasks in project 2. A tight budget `base + 150`
-    // (enough for principal + scope + root selection, far below scanning all
-    // 400 or 800 edges) must refuse INSIDE native `BlockedBy` frontier
-    // traversal before reading, materializing, or sorting the full adjacency!
+    // out-of-scope tasks in project 2, queried via unfiltered `UnlinkedTasksQuery`
+    // (ZERO target field reads, so 100% of fanout work and memory belongs to
+    // `BlockedBy` discovery + native collector + sort + endpoint conversion).
+    // We prove BOTH:
+    //   1. Discovery/early-scan work refusal (`base_budget + 150`),
+    //   2. Collector-specific memory refusal: discovery allocates O(1) iterator
+    //      bytes and ZERO record clones, so with generous work (`1 << 22`) and
+    //      `mid_collector_mem = base_mem + (mem_400 - base_mem) / 3`, discovery
+    //      succeeds completely and the collector itself stops early before
+    //      materializing/sorting the full fanout!
+    //   3. Collector-specific mid-work refusal (`base_budget + delta_400 / 2`,
+    //      past discovery's work cost and far below full collector + sort).
     let (_source, scope) = fresh_scope();
     let empty_host = fanout_host(0);
-    let base_budget = minimal_work_budget(&empty_host, &scope);
-    let (_, base_read_work) = funded_ready(&empty_host, &scope, 64 * 1024 * 1024, 1 << 22, 1)
-        .expect("0-edge baseline succeeds");
+    let base_budget = minimal_unlinked_work_budget(&empty_host, &scope);
+    let base_mem = minimal_unlinked_memory_budget(&empty_host, &scope);
+    let (empty_rows, base_read_work) =
+        funded_unlinked(&empty_host, &scope, 64 * 1024 * 1024, 1 << 22, 1)
+            .expect("0-edge baseline succeeds");
+    assert_eq!(empty_rows, [1]);
 
     let host_400 = fanout_host(400);
-    let budget_400 = minimal_work_budget(&host_400, &scope);
-    let (rows_400, read_work_400) = funded_ready(&host_400, &scope, 64 * 1024 * 1024, 1 << 22, 1)
-        .expect("400-edge fanout succeeds under generous budget");
-    assert_eq!(rows_400, [1]);
+    let host_800 = fanout_host(800);
+    let budget_400 = minimal_unlinked_work_budget(&host_400, &scope);
+    let mem_400 = minimal_unlinked_memory_budget(&host_400, &scope);
+    let (rows_400, read_work_400) =
+        funded_unlinked(&host_400, &scope, 64 * 1024 * 1024, 1 << 22, 1)
+            .expect("400-edge fanout succeeds under generous budget");
+    assert!(rows_400.is_empty());
     assert!(
         read_work_400 > base_read_work + 400 * 2,
         "400-edge read_work must scale with fanout: base={base_read_work}, full={read_work_400}"
     );
     assert!(
         budget_400 > base_budget + 400 * 3,
-        "400-edge total execution work budget must reflect demand + scan + materialize + sort: base={base_budget}, full={budget_400}"
+        "400-edge total work budget must scale with discovery + collector + sort: base={base_budget}, full={budget_400}"
+    );
+    assert!(
+        mem_400 > base_mem + 32 * 1024,
+        "400-edge collector + conversion memory must scale with fanout: base={base_mem}, full={mem_400}"
     );
 
-    // At `tight_budget = base_budget + 150` (far below scanning 400 or 800 edges),
-    // native frontier traversal must stop early and refuse with subject `BlockedBy`
-    // before touching the remaining fanout!
-    let tight_budget = base_budget + 150;
-    assert!(tight_budget < budget_400);
-    for (label, host) in [("400-edge", &host_400), ("800-edge", &fanout_host(800))] {
-        match funded_ready(host, &scope, 64 * 1024 * 1024, tight_budget, 1) {
-            Err(WorthQueryApplicationRequestQueryDenial::Execution(denial)) => {
-                assert!(
-                    matches!(
-                        denial.kind(),
-                        WorthQueryApplicationOneShotDenialKind::ExecutionRequest(_)
-                            | WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded
-                    ),
-                    "{label}: unexpected denial kind: {denial:?}"
-                );
-                assert_eq!(
-                    denial.subject(),
-                    "BlockedBy",
-                    "{label}: early refusal must occur during BlockedBy frontier traversal: {denial:?}"
-                );
-            }
-            other => panic!(
-                "{label}: tight budget ({tight_budget} vs base {base_budget}) must refuse early: {other:?}"
-            ),
-        }
+    let tight_work = base_budget + 150;
+    // `budget_400 - base_budget` spans discovery (~800), native collector + sort
+    // (~4800), and post-collector edge conversion/sort (~4000). A 1/4 slice
+    // (~2500 above base) clears discovery completely and stops inside the native
+    // collector pass itself with subject `BlockedBy`.
+    let mid_collector_work = base_budget + (budget_400 - base_budget) / 4;
+    let mid_collector_mem = base_mem + (mem_400 - base_mem) / 3;
+    assert!(tight_work < mid_collector_work && mid_collector_work < budget_400);
+    assert!(base_mem < mid_collector_mem && mid_collector_mem < mem_400);
+
+    for (label, host) in [("400-edge", &host_400), ("800-edge", &host_800)] {
+        assert_blocked_by_refusal(
+            &format!("{label} early-work"),
+            funded_unlinked(host, &scope, 64 * 1024 * 1024, tight_work, 1),
+        );
+        assert_blocked_by_refusal(
+            &format!("{label} collector-mid-work"),
+            funded_unlinked(host, &scope, 64 * 1024 * 1024, mid_collector_work, 1),
+        );
+        assert_blocked_by_refusal(
+            &format!("{label} collector-memory"),
+            funded_unlinked(host, &scope, mid_collector_mem, 1 << 22, 1),
+        );
     }
 }

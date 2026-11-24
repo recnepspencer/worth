@@ -145,10 +145,13 @@ fn admit_target_fields<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
     predicate: &WorthQueryInstalledRelatedPredicate,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    let check = |field: (&str, &str, &str), key| {
+    let check = |field: (&str, &str, &str),
+                 key|
+     -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         read.plan
             .governance
             .admit_internal_projection(field, key, ApplicationQueryObservableInfluence::RowPresence)
+            .map(|_| ())
             .ok_or_else(|| {
                 read_execution_denial(
                     WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
@@ -257,12 +260,21 @@ fn load_sorted_edges<ReadIdentity>(
         adjacency.endpoint_records_reserved(),
         subject,
     )?;
+    let records_bytes = adjacency.owned_bytes();
     let records = adjacency.into_records();
     let edge_count = records.len();
     let edge_work = (edge_count as u64)
         .checked_mul(log2_ceil(edge_count).saturating_add(1))
         .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
     charge_work(read.execution, work, edge_work)?;
+    // Keep the returned native record backing paid while converting into
+    // compact endpoint pairs so peak coexisting memory never exceeds budget.
+    let records_alloc = SourceFactsAllocation::open(read.execution).map_err(stop)?;
+    if records_bytes > 0 {
+        records_alloc
+            .claim(read.execution, records_bytes)
+            .map_err(stop)?;
+    }
     allocation
         .claim_slice::<(EntityId, EntityId)>(read.execution, edge_count)
         .map_err(stop)?;
@@ -274,6 +286,7 @@ fn load_sorted_edges<ReadIdentity>(
         };
         edges.push(pair);
     }
+    drop(records_alloc);
     edges.sort_unstable();
     edges.dedup();
     Ok((edges, adj_dir))

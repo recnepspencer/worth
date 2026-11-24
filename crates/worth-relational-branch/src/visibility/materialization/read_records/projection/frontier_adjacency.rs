@@ -139,42 +139,94 @@ impl VisibilityProjectionView {
                             .map_err(NativeScanStop::request)?;
                         lists += 1;
                         let relation_ids = if self.is_exact_basis() {
-                            ledger.lease_current(
-                                self.admitted_head_region(entity_id.partition_id).and_then(
-                                    |head| head.adjacency(direction).get(entity_id.slot_index()),
-                                ),
-                                kind_id,
-                            )
+                            let set = if let Some(head) =
+                                self.admitted_head_region(entity_id.partition_id)
+                            {
+                                let table = head.adjacency(direction);
+                                context
+                                    .checkpoint(table.navigation_work_bound() as u64)
+                                    .map_err(NativeScanStop::request)?;
+                                let set = table.get(entity_id.slot_index());
+                                if let Some(set) = set {
+                                    context
+                                        .checkpoint(set.navigation_work_bound() as u64)
+                                        .map_err(NativeScanStop::request)?;
+                                }
+                                set
+                            } else {
+                                None
+                            };
+                            ledger.lease_current(set, kind_id)
                         } else {
-                            ledger.lease(
+                            let set = if let Some(partition) =
                                 root.get_partition(entity_id.partition_id)
-                                    .and_then(|partition| {
-                                        direction.table(partition).get(entity_id.slot_index())
-                                    }),
-                                adjacency_basis,
-                                kind_id,
-                            )
+                            {
+                                let table = direction.table(partition);
+                                context
+                                    .checkpoint(table.navigation_work_bound() as u64)
+                                    .map_err(NativeScanStop::request)?;
+                                let set = table.get(entity_id.slot_index());
+                                if let Some(set) = set {
+                                    context
+                                        .checkpoint(
+                                            set.selected_kind_navigation_work_bound(adjacency_basis)
+                                                as u64,
+                                        )
+                                        .map_err(NativeScanStop::request)?;
+                                }
+                                set
+                            } else {
+                                None
+                            };
+                            ledger.lease(set, adjacency_basis, kind_id)
                         };
                         let mut iterator_bytes = 0_u64;
-                        let iterator = relation_ids.try_iter(|_navigation, bytes| {
-                            record_memory::claim(memory, bytes).map_err(NativeScanStop::Request)?;
-                            iterator_bytes = bytes;
-                            Ok(())
+                        let mut iterator = relation_ids.try_iter(|navigation, bytes| {
+                            charge_iter_step(
+                                context,
+                                memory,
+                                &mut iterator_bytes,
+                                navigation,
+                                bytes,
+                            )
                         })?;
-                        for relation_id in iterator.copied() {
+                        while let Some(&relation_id) = iterator.try_next(|navigation, bytes| {
+                            charge_iter_step(
+                                context,
+                                memory,
+                                &mut iterator_bytes,
+                                navigation,
+                                bytes,
+                            )
+                        })? {
                             charge(maximum_work_units, lists, examined, records.len())
                                 .map_err(NativeScanStop::Limit)?;
                             context
                                 .checkpoint(EXAMINE_SLOT)
                                 .map_err(NativeScanStop::request)?;
                             examined += 1;
+                            if !self.relation_matches_frontier(
+                                &root,
+                                relation_id,
+                                *entity_id,
+                                kind_id,
+                                direction,
+                                include_audit,
+                            ) {
+                                continue;
+                            }
+                            charge(maximum_work_units, lists, examined, records.len())
+                                .map_err(NativeScanStop::Limit)?;
+                            context
+                                .checkpoint(RESERVE_RECORD)
+                                .map_err(NativeScanStop::request)?;
                             let clone_bytes =
                                 super::ProjectionRecordSource::candidate_relation_heap_for_id(
                                     self,
                                     relation_id,
                                 )
                                 .map_err(NativeScanStop::Request)?;
-                            record_memory::claim(memory, clone_bytes)
+                            record_memory::prepare_push(memory, &mut records, clone_bytes)
                                 .map_err(NativeScanStop::Request)?;
                             let Some(record) = self.project_relation_record(relation_id) else {
                                 record_memory::release(memory, clone_bytes)
@@ -183,26 +235,6 @@ impl VisibilityProjectionView {
                             };
                             let actual = super::super::read_footprint::relation(&record);
                             record_memory::settle_clone(memory, clone_bytes, actual)
-                                .map_err(NativeScanStop::Request)?;
-                            if record.kind.kind_id != kind_id
-                                || !(record.lifecycle
-                                    == crate::storage::data::RecordLifecycleState::Live
-                                    || (include_audit
-                                        && record.lifecycle
-                                            == crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit))
-                                || !direction.matches_endpoint(&record, *entity_id)
-                            {
-                                drop(record);
-                                record_memory::release(memory, actual)
-                                    .map_err(NativeScanStop::Request)?;
-                                continue;
-                            }
-                            charge(maximum_work_units, lists, examined, records.len())
-                                .map_err(NativeScanStop::Limit)?;
-                            context
-                                .checkpoint(RESERVE_RECORD)
-                                .map_err(NativeScanStop::request)?;
-                            record_memory::prepare_push(memory, &mut records, 0)
                                 .map_err(NativeScanStop::Request)?;
                             records.push(record);
                         }
@@ -231,6 +263,67 @@ impl VisibilityProjectionView {
             |read| read.owned_bytes(),
         )
     }
+    fn relation_matches_frontier(
+        &self,
+        root: &crate::branch::root::projection::SnapshotProjectionRoot<'_>,
+        relation_id: crate::identity::data::RelationId,
+        anchor: EntityId,
+        kind_id: KindId,
+        direction: AdjacencyDirection,
+        include_audit: bool,
+    ) -> bool {
+        let demand = super::adjacency_demand::AdjacencyDemand {
+            kind: kind_id,
+            direction,
+            maximum: None,
+            frontier: true,
+            include_audit,
+        };
+        let schema = root.schema_authority().registry();
+        if self.is_exact_basis() {
+            self.admitted_head_region(relation_id.partition_id)
+                .is_some_and(|head| demand.current_matches(schema, head, relation_id, anchor))
+        } else {
+            root.get_partition(relation_id.partition_id)
+                .is_some_and(|partition| {
+                    demand.historical_matches(
+                        schema,
+                        partition,
+                        relation_id,
+                        anchor,
+                        self.version_id(),
+                    )
+                })
+        }
+    }
+}
+
+fn charge_iter_step(
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    iterator_bytes: &mut u64,
+    navigation: u64,
+    bytes: u64,
+) -> Result<
+    (),
+    super::super::native_scan_stop::NativeScanStop<FrontierAdjacencyTruthReadLimitExceeded>,
+> {
+    use super::super::native_scan_stop::NativeScanStop;
+    if navigation > 0 {
+        context
+            .checkpoint(navigation)
+            .map_err(NativeScanStop::request)?;
+    }
+    if bytes > 0 {
+        super::super::read_work::record_memory::claim(memory, bytes)
+            .map_err(NativeScanStop::Request)?;
+        *iterator_bytes = iterator_bytes
+            .checked_add(bytes)
+            .ok_or(NativeScanStop::Request(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        ))?;
+    }
+    Ok(())
 }
 
 fn sort_work_units(len: usize) -> Option<u64> {

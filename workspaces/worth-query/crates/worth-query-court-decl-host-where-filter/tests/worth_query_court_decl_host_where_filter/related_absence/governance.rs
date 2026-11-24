@@ -148,7 +148,23 @@ fn install_governed() -> WorthQueryProgramApplicationRuntime<GovSchema, GovProgr
     .expect("governed board installs")
 }
 
-/// Runs real governed denial probes against the Host runtime for TLA+ traces.
+fn is_internal_computation_denied<T>(
+    result: Result<T, WorthQueryApplicationRequestQueryDenial>,
+) -> bool {
+    match result {
+        Err(WorthQueryApplicationRequestQueryDenial::Admission(ref cause))
+            if cause.kind()
+                == WorthQueryApplicationQueryAdmissionDenialKind::InternalComputationDenied =>
+        {
+            true
+        }
+        Err(other) => panic!("expected Admission(InternalComputationDenied), got: {other:?}"),
+        Ok(_) => panic!("expected Admission(InternalComputationDenied), got Ok"),
+    }
+}
+
+/// Runs real governed denial probes against the Host runtime for TLA+ traces,
+/// asserting exact typed `InternalComputationDenied` refusals.
 pub(super) fn governed_trace_denial_probes() -> (bool, bool) {
     let host = install_governed();
     let scope = request_scope();
@@ -156,26 +172,26 @@ pub(super) fn governed_trace_denial_probes() -> (bool, bool) {
     let access = ReadBoardAccess {
         project: "p1".to_owned(),
     };
-    let rel_denied = host
-        .runtime()
-        .request(&principal, &scope)
-        .query(GovDeniedRelIntent {
-            project: "p1".into(),
-        })
-        .execute_governed(
-            ReadBoard::reference(),
-            InspectBoard::reference(),
-            access.clone(),
-        )
-        .is_err();
-    let field_denied = host
-        .runtime()
-        .request(&principal, &scope)
-        .query(GovDeniedFieldIntent {
-            project: "p1".into(),
-        })
-        .execute_governed(ReadBoard::reference(), InspectBoard::reference(), access)
-        .is_err();
+    let rel_denied = is_internal_computation_denied(
+        host.runtime()
+            .request(&principal, &scope)
+            .query(GovDeniedRelIntent {
+                project: "p1".into(),
+            })
+            .execute_governed(
+                ReadBoard::reference(),
+                InspectBoard::reference(),
+                access.clone(),
+            ),
+    );
+    let field_denied = is_internal_computation_denied(
+        host.runtime()
+            .request(&principal, &scope)
+            .query(GovDeniedFieldIntent {
+                project: "p1".into(),
+            })
+            .execute_governed(ReadBoard::reference(), InspectBoard::reference(), access),
+    );
     (rel_denied, field_denied)
 }
 
@@ -227,37 +243,13 @@ fn governed_related_absence_enforces_relation_and_target_only_field_disclosure()
     );
 
     // 3. Omitting `use_field_by(Gate)` (a field NEVER used on the root!) refuses
-    //    at disclosure contract compilation with subject "Gate".
-    let missing_tfld = host
-        .runtime()
-        .request(&principal, &scope)
-        .query(GovMissingTargetFieldIntent {
-            project: "p1".into(),
-        })
-        .execute_governed(
-            ReadBoard::reference(),
-            InspectBoard::reference(),
-            access("p1"),
-        )
-        .err()
-        .expect("missing target-only field disclosure rule must refuse");
-    assert!(
-        matches!(
-            missing_tfld,
-            WorthQueryApplicationRequestQueryDenial::Admission(ref cause)
-                if cause.kind() == WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-                    && cause.subject() == "Gate"
-        ),
-        "unexpected denial: {missing_tfld:?}"
-    );
-
-    // 4. Unauthorized relation disclosure (tag 2) refuses fail-closed on BOTH
-    //    populated AND empty project (before touching rows or edges!).
+    //    at disclosure contract compilation with subject "Gate" on BOTH populated
+    //    AND empty projects.
     for proj in ["p1", "empty"] {
-        let denied_rel = host
+        let missing_tfld = host
             .runtime()
             .request(&principal, &scope)
-            .query(GovDeniedRelIntent {
+            .query(GovMissingTargetFieldIntent {
                 project: proj.into(),
             })
             .execute_governed(
@@ -266,41 +258,50 @@ fn governed_related_absence_enforces_relation_and_target_only_field_disclosure()
                 access(proj),
             )
             .err()
-            .expect("unauthorized relation disclosure must refuse");
+            .expect("missing target-only field disclosure rule must refuse");
         assert!(
             matches!(
-                denied_rel,
-                WorthQueryApplicationRequestQueryDenial::Execution(_)
-                    | WorthQueryApplicationRequestQueryDenial::Admission(_)
+                missing_tfld,
+                WorthQueryApplicationRequestQueryDenial::Admission(ref cause)
+                    if cause.kind() == WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+                        && cause.subject() == "Gate"
             ),
-            "unexpected denial on {proj}: {denied_rel:?}"
+            "unexpected denial on {proj}: {missing_tfld:?}"
         );
     }
 
-    // 5. Unauthorized target-only field `Gate` (root fields & BlockedBy are ALL
-    //    tag 1; ONLY target-only `Gate` requires tag 2!) refuses fail-closed on
-    //    BOTH populated AND empty project!
+    // 4. Unauthorized relation disclosure (tag 2) refuses fail-closed with exact
+    //    `InternalComputationDenied` on BOTH populated AND empty projects!
     for proj in ["p1", "empty"] {
-        let denied_fld = host
-            .runtime()
-            .request(&principal, &scope)
-            .query(GovDeniedFieldIntent {
-                project: proj.into(),
-            })
-            .execute_governed(
-                ReadBoard::reference(),
-                InspectBoard::reference(),
-                access(proj),
-            )
-            .err()
-            .expect("unauthorized target-only field disclosure must refuse");
-        assert!(
-            matches!(
-                denied_fld,
-                WorthQueryApplicationRequestQueryDenial::Execution(_)
-                    | WorthQueryApplicationRequestQueryDenial::Admission(_)
-            ),
-            "unexpected denial on {proj}: {denied_fld:?}"
-        );
+        assert!(is_internal_computation_denied(
+            host.runtime()
+                .request(&principal, &scope)
+                .query(GovDeniedRelIntent {
+                    project: proj.into(),
+                })
+                .execute_governed(
+                    ReadBoard::reference(),
+                    InspectBoard::reference(),
+                    access(proj),
+                ),
+        ));
+    }
+
+    // 5. Unauthorized target-only field `Gate` (root fields & BlockedBy are ALL
+    //    tag 1; ONLY target-only `Gate` requires tag 2!) refuses fail-closed with
+    //    exact `InternalComputationDenied` on BOTH populated AND empty projects!
+    for proj in ["p1", "empty"] {
+        assert!(is_internal_computation_denied(
+            host.runtime()
+                .request(&principal, &scope)
+                .query(GovDeniedFieldIntent {
+                    project: proj.into(),
+                })
+                .execute_governed(
+                    ReadBoard::reference(),
+                    InspectBoard::reference(),
+                    access(proj),
+                ),
+        ));
     }
 }

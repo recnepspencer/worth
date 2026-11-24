@@ -14,12 +14,7 @@ mod world;
 use mutations::MutateBoard;
 use queries::*;
 use world::{install, observe_ready_source, ready_with_source, run_mutate, Host, TaskSeed};
-use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationRequestExt, WorthQueryApplicationRequestMutationDenial,
-};
-use worth_query_host::facade::primary_graph::{
-    MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
@@ -56,20 +51,6 @@ fn daymark_board() -> Host {
     install(&tasks, &[(2, 3), (4, 5)])
 }
 
-#[track_caller]
-fn assert_stale(result: Result<(), WorthQueryApplicationRequestMutationDenial>) {
-    let Err(WorthQueryApplicationRequestMutationDenial::Handler(
-        MutationHandlerExecutionDenial::Attempt(cause),
-    )) = result
-    else {
-        panic!("expected SourceChanged invalidation, got: {result:?}");
-    };
-    assert_eq!(
-        cause.kind(),
-        WorthQueryApplicationAttemptDenialKind::SourceChanged
-    );
-}
-
 #[test]
 fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_blockers() {
     let host = daymark_board();
@@ -79,7 +60,10 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
     // Initial: 1, 3, 4 are ready; 2 is blocked by open task 3.
     let (ready, source0) = ready_with_source(&host, 1);
     assert_eq!(ready, [1, 3, 4]);
-    observe_ready_source(&host, 1, &source0, "unchanged").expect("unchanged source stays current");
+    assert!(
+        observe_ready_source(&host, 1, &source0, "unchanged").unwrap(),
+        "unchanged source must stay current"
+    );
 
     // Unrelated project 2 mutation (not linked to any project 1 task) leaves source0 current!
     run_mutate(
@@ -93,8 +77,10 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
         },
         1,
     );
-    observe_ready_source(&host, 1, &source0, "unrelated-proj")
-        .expect("unlinked project 2 edit leaves project 1 Ready source current");
+    assert!(
+        observe_ready_source(&host, 1, &source0, "unrelated-proj").unwrap(),
+        "unlinked project 2 edit must leave project 1 Ready source current"
+    );
 
     // Complete blocker 3 -> task 2 becomes READY, task 3 leaves READY, and source0 stales!
     run_mutate(
@@ -108,12 +94,10 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
         },
         2,
     );
-    assert_stale(observe_ready_source(
-        &host,
-        1,
-        &source0,
-        "stale-blocker-done",
-    ));
+    assert!(
+        !observe_ready_source(&host, 1, &source0, "stale-blocker-done").unwrap(),
+        "completing blocker 3 must stale source0 with SourceChanged"
+    );
     let (ready1, source1) = ready_with_source(&host, 1);
     assert_eq!(ready1, [1, 2, 4]);
 
@@ -131,12 +115,10 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
         },
         3,
     );
-    assert_stale(observe_ready_source(
-        &host,
-        1,
-        &source1,
-        "stale-cross-edge-add",
-    ));
+    assert!(
+        !observe_ready_source(&host, 1, &source1, "stale-cross-edge-add").unwrap(),
+        "adding cross-project BlockedBy edge must stale source1 with SourceChanged"
+    );
     let (ready_cross, source_cross) = ready_with_source(&host, 1);
     assert_eq!(ready_cross, [1, 2, 4]);
 
@@ -152,12 +134,11 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
         },
         4,
     );
-    assert_stale(observe_ready_source(
-        &host,
-        1,
-        &source_cross,
-        "stale-out-of-scope-blocker-reopen",
-    ));
+    assert!(
+        !observe_ready_source(&host, 1, &source_cross, "stale-out-of-scope-blocker-reopen")
+            .unwrap(),
+        "reopening out-of-scope blocker 6 must stale source_cross with SourceChanged"
+    );
     let (ready2, source2) = ready_with_source(&host, 1);
     assert_eq!(ready2, [2, 4]);
 
@@ -173,12 +154,10 @@ fn daymark_ready_view_tracks_blocker_completion_reopen_edges_and_out_of_scope_bl
         },
         5,
     );
-    assert_stale(observe_ready_source(
-        &host,
-        1,
-        &source2,
-        "stale-edge-remove",
-    ));
+    assert!(
+        !observe_ready_source(&host, 1, &source2, "stale-edge-remove").unwrap(),
+        "removing BlockedBy edge must stale source2 with SourceChanged"
+    );
     assert_eq!(ready_with_source(&host, 1).0, [1, 2, 4]);
 
     // Reopen blocker 5 (which blocks task 4) -> task 4 becomes BLOCKED, 5 enters READY!

@@ -230,8 +230,7 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
             history.push((retain_basis(&host), oracle.clone()));
             let (ref prev_rows, ref prev_source) = last_ready;
             let still_current =
-                observe_ready_source(&host, 1, prev_source, &format!("dst-cur-{seed}-{step}"))
-                    .is_ok();
+                observe_ready_source(&host, 1, prev_source, &format!("dst-cur-{seed}-{step}"))?;
             trace.check_currentness(still_current);
             cov.currentness_checks += 1;
             if still_current && oracle.ready_tasks(1) != *prev_rows {

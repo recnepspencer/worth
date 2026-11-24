@@ -122,13 +122,13 @@ impl WorthQueryApplicationQueryGovernance {
                         (e.as_str(), a.as_str(), f.as_str()).cmp(&field)
                     })
                     .ok()?;
-                let (key, rules) = &computation.internal_field_rules[index];
-                let admitted = rules.iter().all(|rule| rule.influence().permits(surface));
-                let field = rules
-                    .first()?
+                let (key, group) = &computation.internal_field_rules[index];
+                if !group.permits(surface) {
+                    return None;
+                }
+                let field = group
                     .field()
                     .filter(|field| field.matches(field_tuple(key)))?;
-                admitted.then_some(())?;
                 WorthQueryApplicationInternalProjectionAdmission::governed(field, field_key)
             }
         }
@@ -153,8 +153,9 @@ impl WorthQueryApplicationQueryGovernance {
                 else {
                     return false;
                 };
-                let rules = &computation.internal_relation_rules[index].1;
-                !rules.is_empty() && rules.iter().all(|rule| rule.influence().permits(surface))
+                computation.internal_relation_rules[index]
+                    .1
+                    .permits(surface)
             }
         }
     }

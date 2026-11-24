@@ -64,8 +64,8 @@ fn compile(
                     .to_owned(),
                 result_rules,
                 internal_rules: Vec::new(),
-                internal_field_rules: BTreeMap::new(),
-                internal_relation_rules: BTreeMap::new(),
+                internal_field_rules: Vec::new(),
+                internal_relation_rules: Vec::new(),
             }
         }
         ApplicationQueryDisclosurePosture::InstalledPolicyRequired => {

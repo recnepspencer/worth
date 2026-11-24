@@ -1,12 +1,18 @@
 //! Definition-level validation for related-record absence/existence predicates,
 //! shared by declaration validation, package-archive encoding, and
 //! package-archive decoding.
-use super::{ApplicationQueryRelatedPredicateMeaning, ApplicationQueryRelatedTargetPredicate};
+use super::{
+    ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicateMeaning,
+    ApplicationQueryRelatedTargetPredicate,
+};
 use crate::application_query::{
     predicate_literal_is_valid, where_filter, ApplicationQueryDefinitionDenial as Denial,
     ApplicationQueryParameterDefinition, ApplicationQueryPredicateExpected,
-    ApplicationQueryWhereFilterSource as Source, WorthQueryPortableApplicationQueryParts,
+    ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource as Source,
+    WorthQueryPortableApplicationQueryParts,
 };
+use std::cmp::Ordering;
+use worth_foundational::facade::AspectValue;
 
 pub fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> Result<(), Denial> {
     let predicates = definition.related_predicates();
@@ -38,45 +44,69 @@ pub fn validate(definition: &WorthQueryPortableApplicationQueryParts) -> Result<
 }
 
 /// Rejects `Absent` + `Exists` over the identical matcher (same relation,
-/// endpoints, direction, target predicates, and target filter) while allowing
-/// distinct filters on the same relation.
+/// endpoints, direction, target predicates, and target filter) in O(N) time
+/// using the already-verified canonical sort order (`Absent` precedes `Exists`
+/// within each contiguous `(relation, from, to, direction)` group).
 fn reject_contradictory_related_clauses(
     predicates: &[ApplicationQueryRelatedPredicateMeaning],
 ) -> Result<(), Denial> {
-    for (idx, left) in predicates.iter().enumerate() {
-        for right in &predicates[idx + 1..] {
-            if left.relation() == right.relation()
-                && left.from() == right.from()
-                && left.to() == right.to()
-                && left.direction() == right.direction()
-                && left.polarity() != right.polarity()
-                && left.target_predicates() == right.target_predicates()
-                && left.target_where_filter() == right.target_where_filter()
-            {
-                return Err(Denial::RelatedPredicateContradictory);
+    let same_edge = |a: &ApplicationQueryRelatedPredicateMeaning,
+                     b: &ApplicationQueryRelatedPredicateMeaning| {
+        a.relation() == b.relation()
+            && a.from() == b.from()
+            && a.to() == b.to()
+            && a.direction() == b.direction()
+    };
+    fn matcher(
+        p: &ApplicationQueryRelatedPredicateMeaning,
+    ) -> (
+        &[ApplicationQueryRelatedTargetPredicate],
+        Option<&ApplicationQueryWhereFilterProgram>,
+    ) {
+        (p.target_predicates(), p.target_where_filter())
+    }
+    let mut start = 0;
+    while start < predicates.len() {
+        let mut end = start + 1;
+        while end < predicates.len() && same_edge(&predicates[start], &predicates[end]) {
+            end += 1;
+        }
+        let group = &predicates[start..end];
+        let split =
+            group.partition_point(|p| p.polarity() == ApplicationQueryRelatedPolarity::Absent);
+        let (absent, exists) = group.split_at(split);
+        let (mut a, mut e) = (0, 0);
+        while a < absent.len() && e < exists.len() {
+            match matcher(&absent[a]).cmp(&matcher(&exists[e])) {
+                Ordering::Equal => return Err(Denial::RelatedPredicateContradictory),
+                Ordering::Less => a += 1,
+                Ordering::Greater => e += 1,
             }
         }
+        start = end;
     }
     Ok(())
 }
 
 /// Rejects contradictory literal equalities (two distinct values on the same
-/// target field) within a single related predicate.
+/// target field) in O(M) time using the already-verified canonical sort order
+/// where predicates on the same `(entity, aspect, field)` are contiguous.
 fn reject_contradictory_target_literals(
     targets: &[ApplicationQueryRelatedTargetPredicate],
 ) -> Result<(), Denial> {
-    for (idx, left) in targets.iter().enumerate() {
-        let ApplicationQueryPredicateExpected::Value(left_val) = left.expected() else {
+    let mut last: Option<((&str, &str, &str), &AspectValue)> = None;
+    for target in targets {
+        let ApplicationQueryPredicateExpected::Value(val) = target.expected() else {
             continue;
         };
-        for right in &targets[idx + 1..] {
-            if left.field() == right.field()
-                && let ApplicationQueryPredicateExpected::Value(right_val) = right.expected()
-                && left_val != right_val
-            {
-                return Err(Denial::RelatedPredicateContradictory);
-            }
+        let field = target.field();
+        if let Some((prev_field, prev_val)) = last
+            && prev_field == field
+            && prev_val != val
+        {
+            return Err(Denial::RelatedPredicateContradictory);
         }
+        last = Some((field, val));
     }
     Ok(())
 }
