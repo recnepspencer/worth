@@ -1,8 +1,12 @@
 //! One producer phase's installed binding: its input (the source model's
 //! row), mutation binding, producer binding and provider. Each phase adds its
-//! own operation, output roles, decision and handler.
+//! own operation, output roles, decision and handler. Publications are
+//! independent unless the phase names another ownership.
 macro_rules! producer_binding {
     ($identity:literal, $posture:ident, $role:ident) => {
+        producer_binding!($identity, $posture, $role, Independent);
+    };
+    ($identity:literal, $posture:ident, $role:ident, $ownership:ident) => {
         #[derive(Clone, Debug, WorthValue)]
         #[worth_value(crate = "worth_query_decl::facade::application_schema")]
         pub struct Input {
@@ -77,7 +81,7 @@ macro_rules! producer_binding {
                 )];
             const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
             const OWNERSHIP: ProducerPublicationOwnership =
-                ProducerPublicationOwnership::Independent;
+                ProducerPublicationOwnership::$ownership;
             const REUSE_POLICY: &'static str = "exact-source";
         }
         impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {

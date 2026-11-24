@@ -5,6 +5,7 @@ use crate::application_schema::fragment::RecordSelection;
 use crate::application_schema::{
     ApplicationEntityMarkerIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationPrincipalBindingRef, ApplicationSchema, ApplicationStructuredValueBinding,
+    ApplicationValueEncodeDenial, ApplicationValueValidationDenial,
 };
 
 use super::{
@@ -90,6 +91,39 @@ where
     }
 }
 
+/// Why an application query request could not be validated or have its scalar
+/// parameters encoded before admission.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ApplicationQueryInputPreparationDenial {
+    InputValidation(ApplicationValueValidationDenial),
+    ParameterEncoding(ApplicationValueEncodeDenial),
+}
+
+impl std::fmt::Display for ApplicationQueryInputPreparationDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InputValidation(cause) => write!(formatter, "query input rejected: {cause:?}"),
+            Self::ParameterEncoding(cause) => {
+                write!(formatter, "query parameter encoding rejected: {cause:?}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ApplicationQueryInputPreparationDenial {}
+
+impl From<ApplicationValueValidationDenial> for ApplicationQueryInputPreparationDenial {
+    fn from(cause: ApplicationValueValidationDenial) -> Self {
+        Self::InputValidation(cause)
+    }
+}
+
+impl From<ApplicationValueEncodeDenial> for ApplicationQueryInputPreparationDenial {
+    fn from(cause: ApplicationValueEncodeDenial) -> Self {
+        Self::ParameterEncoding(cause)
+    }
+}
+
 /// Request value whose construction and scope lowering are owned by a binding.
 pub trait ApplicationQueryIntent<Schema>: Sized + 'static
 where
@@ -104,6 +138,19 @@ where
     fn parameters(
         &self,
     ) -> ApplicationQueryParameterSet<<Self::Binding as ApplicationQueryBinding<Schema>>::Query>;
+
+    /// Validates the structured request input (`InputBinding::validate`) and
+    /// prepares bound scalar parameters without panicking on validation or
+    /// codec refusals.
+    fn prepare_parameters(
+        &self,
+    ) -> Result<
+        ApplicationQueryParameterSet<<Self::Binding as ApplicationQueryBinding<Schema>>::Query>,
+        ApplicationQueryInputPreparationDenial,
+    > {
+        <<Self::Binding as ApplicationQueryBinding<Schema>>::InputBinding as ApplicationStructuredValueBinding>::validate(self)?;
+        Ok(self.parameters())
+    }
 
     fn into_scope(self) -> <Self::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding;
 }

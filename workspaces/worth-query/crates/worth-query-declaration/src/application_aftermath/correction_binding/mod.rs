@@ -10,7 +10,9 @@ pub(crate) use declaration::{ComposedCorrectionBinding, CorrectionBindingDeclara
 mod dispatch;
 mod inverse;
 mod preimage;
-pub use preimage::{ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage};
+pub use preimage::{
+    decode_preimage_field, ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
+};
 mod reapplication;
 pub use reapplication::{
     dispatch_application_reapplication, ApplicationReapplicationDispatch,

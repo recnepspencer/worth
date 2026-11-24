@@ -15,6 +15,7 @@ use worth_relational_branch::internal_port::branch::reference::world_selection::
 use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port as contracts;
+mod heads;
 pub mod sources;
 pub mod transitions;
 
@@ -104,9 +105,7 @@ impl WorldSelectionReplay {
         plan: &RecoveryPlan,
         roots: &mut RecoveredRootInventory,
     ) -> Result<Arc<VerifiedHomeWorldSelection<Arc<RelationalWorldSourceCatalog>>>, Stop> {
-        for source in self.admitted.source().heads() {
-            self.select(request, inputs, plan, roots, source, true)?;
-        }
+        self.select_live_heads(request, inputs, plan, roots)?;
         // Every non-disposed original product predecessor is needed by later
         // full World reconciliation, even when it stopped being a Native head.
         // Predecessors explicitly marked disposed in World's authoritative

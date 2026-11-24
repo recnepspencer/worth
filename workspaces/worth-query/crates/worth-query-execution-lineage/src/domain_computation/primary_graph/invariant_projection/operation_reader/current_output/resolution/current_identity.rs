@@ -19,10 +19,41 @@ where
     where
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
     {
-        let projected = self
-            .reader
-            .native
-            .projection(self.reader.snapshot)
+        self.live_identity_in::<Entity>(execution, role, entity_id, false)
+    }
+
+    /// As `live_current_identity`, but a record a successor round's own
+    /// chain wrote is admitted as it was at the chain head (§1.5), where
+    /// every other read of that record is served.
+    pub(crate) fn live_own_view_identity<Entity>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        role: &str,
+        entity_id: worth_relational::facade::identity::EntityId,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryCurrentOutputDenial>
+    where
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+    {
+        self.live_identity_in::<Entity>(execution, role, entity_id, true)
+    }
+
+    fn live_identity_in<Entity>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        role: &str,
+        entity_id: worth_relational::facade::identity::EntityId,
+        own_view: bool,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryCurrentOutputDenial>
+    where
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+    {
+        let native = &self.reader.native;
+        let view = if own_view {
+            native.projection_of(self.reader.snapshot, entity_id)
+        } else {
+            native.projection(self.reader.snapshot)
+        };
+        let projected = view
             .map(|view| {
                 view.entity_record_with_projection_scope(
                     execution,

@@ -1,8 +1,10 @@
 //! The derived board runs through the public Host: a local-process principal,
 //! bounded serial limits, parameterized reads and source custody across frames.
 use super::actions::*;
-use super::program::{day, install, owner, scope, BoardFeature, Host, Program, TASKS};
-use super::reads::{DueBy, Search, TaskRow};
+use super::program::{
+    day, install, owner, scope, BoardFeature, Host, Program, RetitleFirstAction, TASKS,
+};
+use super::reads::{DueBy, Search, TaskRow, TitleSearch};
 use super::relations::{Outline, ProjectKeyOnly};
 use super::schema::Schema;
 use std::fmt::Debug;
@@ -116,6 +118,17 @@ fn a_derived_board_reads_case_insensitively_and_by_native_due_date() {
     assert_eq!(keys(read(&request, search("FLANGE"))), [1, 2]);
     assert_eq!(keys(read(&request, search("matte"))), [3]);
     assert_eq!(keys(read(&request, search("absent"))), Vec::<u64>::new());
+    // Derived `#[derive(WorthQuery)]` parameterized read matches the same title.
+    assert_eq!(
+        keys(read(
+            &request,
+            TitleSearch {
+                project: 1,
+                q: "housing".to_owned(),
+            }
+        )),
+        [1]
+    );
     let due = read(
         &request,
         DueBy {
@@ -181,7 +194,21 @@ fn derived_and_written_actions_commit_through_source_custody_across_frames() {
         done: true,
     };
     committed::<_, Action<CompleteBinding, Completed>>(submit(&host, &request, done, 4));
+    let fixed = RetitleFirst {
+        title: "Mill housing rev2".to_owned(),
+    };
+    committed::<_, RetitleFirstAction>(submit(&host, &request, fixed, 5));
 
+    assert_eq!(
+        keys(read(
+            &request,
+            TitleSearch {
+                project: 1,
+                q: "rev2".to_owned(),
+            }
+        )),
+        [1]
+    );
     assert_eq!(keys(read(&request, search("bore"))), [2]);
     let due = read(
         &request,

@@ -16,6 +16,41 @@ pub const RESCHEDULE: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.reschedule.v1");
 pub const COMPLETE: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.complete.v1");
+pub const RETITLE_FIRST: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("macros.tasks.retitle-first.v1");
+
+fn first_task_scope(_: &RetitleFirst) -> u64 {
+    1
+}
+
+/// Fixed-scope action using `scope_value` + smart `body` defaults.
+#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
+#[worth_query(
+    schema = Schema,
+    context = BoardContext,
+    namespace = RETITLE_FIRST,
+    input = RetitleFirstInput,
+    operation = RetitleFirstTask,
+    binding = RetitleFirstBinding,
+    delivery = RetitledFirst,
+    scope = TaskKey,
+    scope_value = first_task_scope,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct RetitleFirst {
+    pub title: String,
+}
+
+pub fn retitle_first_definition(
+) -> ApplicationOperationDefinition<Schema, RetitleFirstTask, RetitleFirst> {
+    RetitleFirstTask::reference()
+        .typed_body()
+        .assign_input(TaskFacts::title(), RetitleFirst::title_input())
+        .finish_pure_definition()
+        .expect("retitle_first body admits")
+}
 
 #[derive(Clone, Debug, WorthValue, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
@@ -37,13 +72,12 @@ pub fn titled(rename: &Rename) -> Result<(), &'static str> {
 }
 
 /// A native optional date: `Some` sets the due date, `None` clears it.
-/// `CanonicalDate` is captured through its `Serialize` carrier.
+/// `CanonicalDate` is captured through its `Serialize` carrier, and `body`
+/// supplies the default unit result, scoped body decision, and scope read access.
 #[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RESCHEDULE,
     input = RescheduleInput, operation = RescheduleTask, binding = RescheduleBinding,
-    delivery = Rescheduled, result = BodyResultBinding,
-    decision = WorthQueryOperationBodyDecision<Schema, Task>, body, program,
-    access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    delivery = Rescheduled, body, program, reads(Task))]
 pub struct Reschedule {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
@@ -51,7 +85,7 @@ pub struct Reschedule {
 }
 
 /// The same declaration written out with the declaration macros.
-#[derive(Clone, Debug, WorthValue)]
+#[derive(Clone, Debug, WorthValue, serde::Deserialize)]
 pub struct Complete {
     pub task: u64,
     pub done: bool,
@@ -82,50 +116,27 @@ impl ApplicationActionDelivery<Schema, CompleteBinding> for Completed {
 }
 
 pub fn rename_definition() -> ApplicationOperationDefinition<Schema, RenameTask, Rename> {
-    let body = RenameTask::reference()
-        .body()
-        .assign_input(Title::at("Title"), "title")
-        .expect("the column is writable")
-        .finish()
-        .expect("the rename body is complete");
     RenameTask::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .expect("the body belongs to its operation")
+        .typed_body()
+        .assign_input(TaskFacts::title(), Rename::title_input())
+        .finish_pure_definition()
+        .expect("the rename body belongs to its operation")
 }
 
 pub fn reschedule_definition() -> ApplicationOperationDefinition<Schema, RescheduleTask, Reschedule>
 {
-    let body = RescheduleTask::reference()
-        .body()
-        .assign_optional_input(Due::at("Due"), "due")
-        .expect("the column is writable")
-        .finish()
-        .expect("the reschedule body is complete");
     RescheduleTask::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .expect("the body belongs to its operation")
+        .typed_body()
+        .assign_optional_input(TaskFactsValue::select_due(), Reschedule::due_input())
+        .finish_pure_definition()
+        .expect("the reschedule body belongs to its operation")
 }
 
-pub fn complete_definition() -> ApplicationOperationDefinition<Schema, CompleteTask, Complete> {
-    let body = CompleteTask::reference()
+pub fn complete_body() -> ApplicationOperationBody<Schema, CompleteTask, Complete> {
+    CompleteTask::reference()
         .body()
         .assign_input(Done::at("Done"), "done")
         .expect("the column is writable")
         .finish()
-        .expect("the complete body is complete");
-    CompleteTask::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .expect("the body belongs to its operation")
+        .expect("the complete body is complete")
 }

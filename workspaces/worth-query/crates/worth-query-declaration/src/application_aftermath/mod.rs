@@ -11,7 +11,7 @@ mod relation_material;
 pub use relation_material::ApplicationCorrectionRelationMaterial;
 mod correction_binding;
 pub use correction_binding::{
-    dispatch_application_correction, ApplicationCorrectionBinding,
+    decode_preimage_field, dispatch_application_correction, ApplicationCorrectionBinding,
     ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
     ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
     ApplicationCorrectionSourceMaterial, ApplicationCorrectionVisitor, ApplicationInverseBinding,

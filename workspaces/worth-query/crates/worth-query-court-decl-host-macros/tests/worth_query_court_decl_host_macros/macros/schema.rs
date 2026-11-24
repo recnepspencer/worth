@@ -5,7 +5,7 @@ use worth_query_decl::facade::application_schema::fragment::*;
 use worth_query_decl::facade::{application_schema::*, authentication::*};
 use worth_query_decl::facade::{
     worth_query_identity, worth_query_identity_namespace, worth_query_native_scalar_bindings,
-    worth_query_structured_value_binding, WorthQueryRecord, WorthQuerySchema,
+    worth_query_structured_value_binding, WorthQueryRecord, WorthQueryRelation, WorthQuerySchema,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOperationBodyDenial;
 
@@ -52,8 +52,15 @@ pub struct Task;
 #[derive(WorthQuerySchema)]
 #[worth_query(relation, to = Principal, from = ExternalMapping, reference(Schema, Board))]
 pub struct MappingTarget;
-#[derive(WorthQuerySchema)]
-#[worth_query(relation, to = Task, from = Project, reference(Schema, Board))]
+#[derive(WorthQueryRelation)]
+#[worth_query(
+    to = Task,
+    from = Project,
+    reference(Schema, Board),
+    acyclic,
+    self_edges = false,
+    unique = ApplicationRelationUniquenessScope::DirectedSemanticEdge,
+)]
 pub struct Contains;
 
 #[derive(WorthQueryRecord)]

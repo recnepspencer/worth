@@ -78,6 +78,16 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         true,
         false,
     >;
+    /// The executable body owned by this correction's source declaration, if any.
+    fn source_body() -> Option<
+        crate::application_schema::ApplicationOperationBody<
+            Schema,
+            <Self::Source as ApplicationMutationBinding<Schema>>::Operation,
+            <Self::Source as ApplicationMutationBinding<Schema>>::Input,
+        >,
+    > {
+        None
+    }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema>;
     /// Declares compensation of business state after the original external owner
     /// has completed. The completed external result and its terminal are preserved;

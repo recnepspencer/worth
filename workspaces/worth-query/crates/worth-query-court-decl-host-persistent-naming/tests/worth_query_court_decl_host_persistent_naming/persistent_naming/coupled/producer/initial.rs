@@ -42,6 +42,8 @@ impl ApplicationMutationOutputContract<Schema> for Outputs {
 }
 pub struct Decision {
     source: WorthQueryInvariantMutationTarget<Schema, Model>,
+    /// Committed names the decision read on the candidate (`reads`).
+    cut: Option<super::reads::Cut>,
 }
 producer_binding!("persistent-naming.pieces.initial", Initial, Primary);
 
@@ -62,8 +64,10 @@ impl OperationHandler<Schema, Binding> for Handler {
             if prior.is_some() {
                 return Ok(Err(edit::Denial::ModelMismatch));
             }
+            let cut = super::reads::decide(reader, input.value)?;
             Ok(Ok(Decision {
                 source: reader.mutation_target(&source)?,
+                cut,
             }))
         })();
         match result {
@@ -107,10 +111,19 @@ impl OperationHandler<Schema, Binding> for Handler {
             let birth = names.birth(MemberRole::Authored);
             names.name_entity(primary, birth)?;
             if super::naming(&input.key) == super::Naming::Complete {
-                let cut = outputs::SidedCut::By {
-                    cutter: names.same_commit_entity_name(primary)?.into(),
-                    side: outputs::CutSide::Positive,
-                    along: None::<NameRef<Seam>>,
+                // Cut by the member and along the seam the decision read, or
+                // else by the primary born beside it.
+                let cut = match &decision.cut {
+                    Some(read) => outputs::SidedCut::By {
+                        cutter: read.member.into(),
+                        side: outputs::CutSide::Positive,
+                        along: Some(read.seam.into()),
+                    },
+                    None => outputs::SidedCut::By {
+                        cutter: names.same_commit_entity_name(primary)?.into(),
+                        side: outputs::CutSide::Positive,
+                        along: None::<NameRef<Seam>>,
+                    },
                 };
                 let birth = names.birth(MemberRole::Piece).with_discriminator(&cut);
                 names.name_entity(secondary, birth)?;

@@ -12,6 +12,8 @@ use crate::domain_computation::execution_runtime::product_world::{
 
 mod continuation;
 pub use continuation::WorthQueryProductBranchCreationContinuation;
+mod expected_source;
+pub use expected_source::ProductBranchCreationRecoveryInternalPort;
 mod inspection;
 use inspection::inspection;
 pub use inspection::{
@@ -59,6 +61,7 @@ impl WorthQueryProductBranchCreationRecoveryRelease {
 
 #[must_use = "creation recovery custody must be inspected, settled, or explicitly released"]
 pub struct WorthQueryProductBranchCreationRecovery {
+    expected_source: Option<Box<super::WorthQueryProductBranchLease>>,
     effects: Option<ProductUnpublishedOwnerEffects>,
     handle: ProductUnpublishedRecoveryHandle,
     recovery: RuntimeWorldRecoveryPort,
@@ -73,11 +76,20 @@ impl WorthQueryProductBranchCreationRecovery {
     ) -> Self {
         let handle = effects.recovery_handle();
         Self {
+            expected_source: None,
             effects: Some(effects),
             handle,
             recovery,
             runtime,
         }
+    }
+
+    pub(super) fn retain_expected_source(
+        mut self,
+        source: super::WorthQueryProductBranchLease,
+    ) -> Self {
+        self.expected_source = Some(Box::new(source));
+        self
     }
 
     pub fn inspect(

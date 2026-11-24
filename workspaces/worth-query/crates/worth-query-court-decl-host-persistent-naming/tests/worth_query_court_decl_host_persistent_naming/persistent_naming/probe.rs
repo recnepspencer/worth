@@ -184,6 +184,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
             reader.field(&model, ModelValue::at("ModelValue"))?;
             let mut observed = Vec::new();
+            let mut refused = None;
             let mut live = Vec::new();
             for key in &input.keys {
                 let member =
@@ -263,8 +264,20 @@ impl OperationHandler<Schema, Binding> for Handler {
                     Scope::Anywhere | Scope::AnywhereOwned => {
                         reader.reader().resolve(&name, &selection)
                     }
-                }
-                .map_err(HandlerExecutionDenial::new)?;
+                };
+                // A refused admission is observed, and the run still ends
+                // denied by the first one once every read is recorded.
+                let resolved = match resolved {
+                    Ok(resolved) => resolved,
+                    Err(denial) => {
+                        observed.push(Observation::ResolveRefused {
+                            label,
+                            refusal: format!("{denial:?}"),
+                        });
+                        refused.get_or_insert(HandlerExecutionDenial::new(denial));
+                        continue;
+                    }
+                };
                 observed.push(match resolved {
                     Ok(ResolvedName::Exact(identity)) => {
                         live.iter().find(|(_, member)| *member == identity).map_or(
@@ -320,6 +333,9 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .or_default()
                 .observed = observed;
             seams::observe(reader, &input.token, &live)?;
+            if let Some(refused) = refused {
+                return Err(refused);
+            }
             reader.mutation_target(&model)
         })();
         match result {

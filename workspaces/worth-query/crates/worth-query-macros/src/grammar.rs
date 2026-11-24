@@ -102,6 +102,17 @@ pub(crate) fn type_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<Type>> {
         .collect())
 }
 
+/// `key(e1, e2, ..)`: a parenthesized, comma-separated list of expressions.
+pub(crate) fn expr_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<syn::Expr>> {
+    let content;
+    syn::parenthesized!(content in meta.input);
+    Ok(
+        Punctuated::<syn::Expr, Token![,]>::parse_terminated(&content)?
+            .into_iter()
+            .collect(),
+    )
+}
+
 /// `key(..)`: parenthesized tokens forwarded verbatim to a declaration macro.
 pub(crate) fn token_group(meta: &ParseNestedMeta<'_>) -> syn::Result<TokenStream> {
     let content;
@@ -138,6 +149,27 @@ pub(crate) fn named_fields<'a>(
             _ => Err(syn::Error::new(
                 input.ident.span(),
                 format!("#[derive({derive})] requires a struct with named fields"),
+            )),
+        },
+        Data::Enum(data) => Err(not_a_struct(data.enum_token.span, derive)),
+        Data::Union(data) => Err(not_a_struct(data.union_token.span, derive)),
+    }
+}
+
+/// The struct's named fields, or `None` for a unit struct; tuple structs,
+/// enums and unions are refused at their defining token.
+pub(crate) fn named_or_unit_fields<'a>(
+    input: &'a DeriveInput,
+    derive: &str,
+) -> syn::Result<Option<&'a FieldsNamed>> {
+    no_generics(input, derive)?;
+    match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => Ok(Some(fields)),
+            Fields::Unit => Ok(None),
+            Fields::Unnamed(_) => Err(syn::Error::new(
+                input.ident.span(),
+                format!("#[derive({derive})] requires a struct with named fields or a unit struct"),
             )),
         },
         Data::Enum(data) => Err(not_a_struct(data.enum_token.span, derive)),

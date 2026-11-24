@@ -13,6 +13,7 @@ use worth_query_host::facade::application_naming::{
     LineageNameDenial, OccurrencePath, WorthQueryName,
 };
 
+pub(crate) mod candidate;
 mod composition;
 mod endpoints;
 mod history;

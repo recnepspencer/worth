@@ -359,13 +359,10 @@ pub use crate::application_home::{
     WorthQueryWorkflowHomeClosed,
 };
 /// Read-only observations for facade-only certification; these reports grant no authority.
-pub use worth_query_execution::facade::certification;
-pub use worth_query_execution::facade::convergence_epoch;
-pub use worth_query_execution::facade::installed;
-pub use worth_query_execution::facade::primary_graph;
-pub use worth_query_execution::facade::product;
-pub use worth_query_execution::facade::runtime;
-pub use worth_query_execution::facade::worth_query_application_contribution;
+pub use worth_query_execution::facade::{
+    certification, convergence_epoch, installed, primary_graph, product, runtime,
+    worth_query_application_contribution, worth_query_application_program,
+};
 pub use worth_query_installation::facade as domain;
 pub use worth_query_installation::facade::{
     inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,

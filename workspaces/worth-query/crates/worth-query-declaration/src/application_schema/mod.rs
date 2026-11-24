@@ -130,6 +130,7 @@ pub use signing_supersession::{
     ApplicationSigningSupersessionParts,
 };
 mod value_binding;
+pub use value_binding::UnitApplicationValueBinding;
 mod values;
 
 #[cfg(test)]
@@ -177,6 +178,7 @@ pub use authorization_policy::{
     WorthQueryPortableApplicationAuthorizationPredicateParts,
     WorthQueryPortableApplicationAuthorizationTraversalParts,
 };
+pub use binding_context::ApplicationBindingContext;
 pub use binding_identity::ApplicationSchemaBindingIdentity;
 pub use capabilities::{
     ApplicationFieldUnit, ApplicationUnitMarker, CreatableBy, DeclaredApplicationUnit,
@@ -234,7 +236,7 @@ pub use operation_component_read::{
     WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
-    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -257,8 +259,9 @@ pub use operation_definition::{
     ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
     ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
     ApplicationOperationBodyValueSnapshot, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationDefinitionBuilder, ApplicationOptionalInputField,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
 };
 pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
@@ -275,7 +278,6 @@ pub use principal_binding_authoring::{
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
     ApplicationPrincipalTargetRequirement,
 };
-pub use binding_context::ApplicationBindingContext;
 pub use principal_binding_reference::ApplicationPrincipalBindingRef;
 pub use read_authoring::{
     TypedEqualityPredicate, TypedProjection, TypedReadDeclaration, TypedReadDeclarationBuilder,
@@ -308,9 +310,9 @@ pub use value_binding::{
     encode_application_binary_value, encode_application_document, encode_canonical_value,
     encode_delegated_canonical_value, encode_stored_canonical_value, value_decode_error,
     ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
-    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
-    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    ApplicationCanonicalValueReferenceParts, ApplicationDeclaredInputMember,
+    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
+    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
     ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
     ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,

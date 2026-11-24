@@ -96,6 +96,11 @@ fn action(op: &Op) -> String {
         Op::CoupledDuplicate { name: n, .. } => {
             format!("\"action\":\"RefuseCoupledDuplicateBirth\",\"name\":{}", name(*n))
         }
+        Op::Candidate {
+            first,
+            read,
+            expected,
+        } => super::candidate::trace_fields(first, *read, expected),
     }
 }
 

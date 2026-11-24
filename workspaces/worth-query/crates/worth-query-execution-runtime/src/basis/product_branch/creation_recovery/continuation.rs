@@ -44,9 +44,16 @@ impl WorthQueryProductBranchCreationRecovery {
                     effects,
                 ),
             ) => {
+                let denial = if effects.next_actions().contains(
+                    &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+                ) {
+                    WorthQueryProductBranchRecoveryDenial::ReopenRequired
+                } else {
+                    WorthQueryProductBranchRecoveryDenial::Busy
+                };
                 self.effects = Some(effects);
                 Err(WorthQueryProductBranchCreationRecoveryFailure {
-                    denial: WorthQueryProductBranchRecoveryDenial::Busy,
+                    denial,
                     recovery: self,
                 })
             }
