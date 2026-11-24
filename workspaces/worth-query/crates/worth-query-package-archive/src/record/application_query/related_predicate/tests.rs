@@ -224,7 +224,19 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
         Kind::InvalidRecordShape
     );
 
-    // Forged wrong-endpoint relation refuses on decode.
+    // Authoring/archive encode parity: wrong-endpoint, wrong-target-field,
+    // optional-equality parameter, contradictory clauses, and orbit shapes
+    // all refuse at encode before emitting wire bytes.
+    let encode_err = |parts: WorthQueryPortableApplicationQueryParts| {
+        let mut out = BinaryOutput::with_capacity(256);
+        write(
+            &mut out,
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts),
+        )
+        .unwrap_err()
+        .kind()
+    };
+
     let mut wrong_endpoint = plain_query().into_parts();
     wrong_endpoint.related_predicates = vec![
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
@@ -239,8 +251,68 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
             },
         ),
     ];
-    let wrong_bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
-        wrong_endpoint,
+    assert_eq!(encode_err(wrong_endpoint), Kind::InvalidRecordShape);
+
+    let mut contra = plain_query().into_parts();
+    let absent_one = ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryRelatedPredicateParts {
+            relation: "BlockedBy".into(),
+            from: "Task".into(),
+            to: "Task".into(),
+            direction: RelationDirection::Forward,
+            polarity: ApplicationQueryRelatedPolarity::Absent,
+            target_predicates: vec![],
+            target_where_filter: None,
+        },
+    );
+    let exists_one = ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryRelatedPredicateParts {
+            relation: "BlockedBy".into(),
+            from: "Task".into(),
+            to: "Task".into(),
+            direction: RelationDirection::Forward,
+            polarity: ApplicationQueryRelatedPolarity::Exists,
+            target_predicates: vec![],
+            target_where_filter: None,
+        },
+    );
+    contra.related_predicates = vec![absent_one, exists_one];
+    assert_eq!(encode_err(contra), Kind::InvalidRecordShape);
+
+    // Raw wire forgery tests proving decode parity independently of encode:
+    // 1. Splice a raw WQRP trailer with wrong root endpoint onto plain query bytes.
+    let mut forged_wrong_endpoint = plain.clone();
+    {
+        let mut raw = BinaryOutput::with_capacity(128);
+        raw.raw_bytes(b"WQRP");
+        raw.u16(1);
+        raw.u32(1);
+        raw.text("Contains");
+        raw.text("Project");
+        raw.text("Task");
+        raw.raw_bytes(&[0, 0]); // Forward, Absent
+        raw.u32(0); // 0 target predicates
+        raw.raw_bytes(&[0]); // no target filter
+        forged_wrong_endpoint.extend_from_slice(&raw.into_bytes());
+    }
+    assert_eq!(kind(&forged_wrong_endpoint), Kind::InvalidRecordShape);
+
+    // 2. Splice a valid WQRP trailer onto an orbit-selected query's wire bytes:
+    //    decode must refuse definition-level unsupported shape!
+    let mut orbit_parts = plain_query().into_parts();
+    orbit_parts.orbit = Some(ApplicationQueryOrbitMeaning::from_untrusted_parts(
+        WorthQueryPortableApplicationQueryOrbitParts {
+            query: orbit_parts.query_type.clone(),
+            slot: WorthQueryPortableTypeIdentity::declared("worth.tests.archive.orbit.v1"),
+            output_name: "orbit".into(),
+            relation: "BlockedBy".into(),
+            from: "Task".into(),
+            to: "Task".into(),
+        },
     ));
-    assert_eq!(kind(&wrong_bytes), Kind::InvalidRecordShape);
+    let mut forged_orbit_with_related = encode(
+        &ErasedApplicationQueryDefinition::from_untrusted_parts(orbit_parts),
+    );
+    forged_orbit_with_related.extend_from_slice(&bytes[plain.len()..]);
+    assert_eq!(kind(&forged_orbit_with_related), Kind::InvalidRecordShape);
 }

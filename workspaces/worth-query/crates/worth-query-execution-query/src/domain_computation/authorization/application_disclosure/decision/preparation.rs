@@ -100,8 +100,8 @@ impl WorthQueryPreparedApplicationGovernance {
                 authorization_canonical_work: pending.authorization_canonical_work,
                 computation: WorthQueryApplicationInternalComputationAuthority {
                     binding,
-                    internal_field_rules,
-                    internal_relation_rules,
+                    internal_field_rules: internal_field_rules.into_iter().collect(),
+                    internal_relation_rules: internal_relation_rules.into_iter().collect(),
                     disclosure_value: pending.disclosure_value,
                 },
                 disclosure,

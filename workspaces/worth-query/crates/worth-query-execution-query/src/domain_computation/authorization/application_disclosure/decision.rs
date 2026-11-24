@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectValue, CanonicalDigestId};
-use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryResultSlotKey, RelationDirection,
+};
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 use worth_relational::facade::{history::BranchId, identity::EntityId};
@@ -70,10 +72,16 @@ impl WorthQueryPendingApplicationQueryGovernance {
     }
 }
 
+pub type SortedInternalFieldRules = Vec<((String, String, String), Vec<AdmittedDisclosureRule>)>;
+pub type SortedInternalRelationRules = Vec<(
+    (String, String, String, RelationDirection),
+    Vec<AdmittedDisclosureRule>,
+)>;
+
 pub struct WorthQueryApplicationInternalComputationAuthority {
     binding: WorthQueryApplicationGovernanceBinding,
-    internal_field_rules: GovernedInternalFieldRules,
-    internal_relation_rules: GovernedInternalRelationRules,
+    internal_field_rules: SortedInternalFieldRules,
+    internal_relation_rules: SortedInternalRelationRules,
     disclosure_value: AspectValue,
 }
 

@@ -159,17 +159,19 @@ impl Record<ProjectRow> for GovBindings {
 pub struct TaskFacts;
 impl Aspect for TaskFacts {
     const NAME: &'static str = "TaskFacts";
-    type Row = (u64, String);
+    type Row = (u64, String, String);
 }
-impl Record<(u64, String)> for GovBindings {
-    fn record() -> impl Shape<(u64, String), Self> {
-        field("TaskKey", |r: &(u64, String)| r.0)
+impl Record<(u64, String, String)> for GovBindings {
+    fn record() -> impl Shape<(u64, String, String), Self> {
+        field("TaskKey", |r: &(u64, String, String)| r.0)
             .equality_queryable(true)
             .read_only()
-            .and("Status", |r: &(u64, String)| r.1.clone())
+            .and("Status", |r: &(u64, String, String)| r.1.clone())
             .equality_queryable(true)
-            .build(|a, b, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>((a, b))
+            .and("Gate", |r: &(u64, String, String)| r.2.clone())
+            .equality_queryable(true)
+            .build(|a, b, c, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>((a, b, c))
             })
     }
 }
@@ -225,6 +227,7 @@ pub type PrinId = FieldSelection<GovModel, Principal, PrincipalFacts, u64>;
 pub type ProjectKey = FieldSelection<GovModel, Project, ProjectFacts, String>;
 pub type TaskKey = FieldSelection<GovModel, Task, TaskFacts, u64>;
 pub type Status = FieldSelection<GovModel, Task, TaskFacts, String>;
+pub type Gate = FieldSelection<GovModel, Task, TaskFacts, String>;
 pub type GrantIdentity = FieldSelection<GovModel, BoardGrant, BoardGrantFacts, String>;
 pub type GrantAction = FieldSelection<GovModel, BoardGrant, BoardGrantFacts, u64>;
 pub type GrantPurpose = FieldSelection<GovModel, BoardGrant, BoardGrantFacts, u64>;

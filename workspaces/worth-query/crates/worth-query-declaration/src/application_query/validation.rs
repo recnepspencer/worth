@@ -63,6 +63,7 @@ pub enum ApplicationQueryDefinitionDenial {
     RelatedPredicateEndpointMismatch,
     RelatedPredicateTargetFieldMismatch,
     RelatedPredicateUnsupportedShape,
+    RelatedPredicateContradictory,
 }
 
 pub(crate) fn validate_portable_application_query_freshly(

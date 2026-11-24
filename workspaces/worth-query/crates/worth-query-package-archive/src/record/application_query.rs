@@ -76,7 +76,7 @@ pub(super) fn write(
     controls::write_basis_support(output, parts.basis_support())?;
     controls::write_lanes(output, parts.lanes())?;
     where_filter::write(output, parts.where_filter())?;
-    related_predicate::write(output, parts.related_predicates())
+    related_predicate::write(output, parts)
 }
 
 pub(super) fn decode(
@@ -124,34 +124,36 @@ fn decode_with_shape_depth(
             .validate_against_parameters(&parameters)
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     }
-    let related_predicates = related_predicate::decode(input, budget, &root_entity, &parameters)?;
+    let related_predicates = related_predicate::decode(input, budget)?;
+    let parts = WorthQueryPortableApplicationQueryParts {
+        name,
+        query_type,
+        parameter_type,
+        result_type,
+        scope_type,
+        root_entity,
+        scope_entity,
+        parameters,
+        result_shape,
+        root_paths,
+        orbit,
+        component_selection,
+        managed_index,
+        cardinality,
+        predicates,
+        where_filter,
+        related_predicates,
+        ordering,
+        continuation,
+        live_cause,
+        disclosure,
+        authorization,
+        basis_support,
+        lanes,
+    };
+    related_predicate::validate(&parts)?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
-        WorthQueryPortableApplicationQueryParts {
-            name,
-            query_type,
-            parameter_type,
-            result_type,
-            scope_type,
-            root_entity,
-            scope_entity,
-            parameters,
-            result_shape,
-            root_paths,
-            orbit,
-            component_selection,
-            managed_index,
-            cardinality,
-            predicates,
-            where_filter,
-            related_predicates,
-            ordering,
-            continuation,
-            live_cause,
-            disclosure,
-            authorization,
-            basis_support,
-            lanes,
-        },
+        parts,
     ))
 }
 

@@ -115,7 +115,7 @@ impl VisibilityProjectionView {
     ) -> Result<(), Cause> {
         super::super::read_work::metered_with_memory(
             execution,
-            |_, memory| {
+            |context, memory| {
                 let mut consumed = 0_usize;
                 for anchor in entities.clone() {
                     crate::execution::request_custody::check_request(execution)?;
@@ -123,6 +123,9 @@ impl VisibilityProjectionView {
                         if demand.exhausted(consumed) {
                             return Ok(());
                         }
+                        context
+                            .checkpoint(super::super::read_prices::EXAMINE_SLOT)
+                            .map_err(crate::execution::denial::kernel_stop)?;
                         consumed = consumed.saturating_add(1);
                     }
                     let mut iterator_bytes = 0;
@@ -136,6 +139,9 @@ impl VisibilityProjectionView {
                         if demand.exhausted(consumed) {
                             break;
                         }
+                        context
+                            .checkpoint(super::super::read_prices::EXAMINE_SLOT)
+                            .map_err(crate::execution::denial::kernel_stop)?;
                         consumed = consumed.saturating_add(1);
                         let keep = accepted(id, anchor);
                         if has_misses() {

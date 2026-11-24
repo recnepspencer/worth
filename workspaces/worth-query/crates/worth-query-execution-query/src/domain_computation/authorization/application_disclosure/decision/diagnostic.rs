@@ -102,7 +102,7 @@ impl WorthQueryApplicationQueryGovernance {
                 }
             }
         }
-        for rules in computation.internal_relation_rules.values() {
+        for (_, rules) in &computation.internal_relation_rules {
             for rule in rules {
                 if !rule
                     .influence()

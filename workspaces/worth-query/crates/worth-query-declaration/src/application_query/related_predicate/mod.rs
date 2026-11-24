@@ -16,6 +16,7 @@ pub(in crate::application_query) mod validation;
 mod tests;
 
 pub use authoring::ApplicationQueryRelatedPredicate;
+pub use validation::validate as validate_related_predicates;
 
 /// Whether a root candidate passes when zero (`Absent` / `NOT EXISTS`) or at
 /// least one (`Exists` / `EXISTS`) related target record matches.

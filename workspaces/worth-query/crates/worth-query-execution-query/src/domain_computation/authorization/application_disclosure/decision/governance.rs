@@ -95,6 +95,16 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
+    pub fn internal_rule_count(&self) -> usize {
+        match self {
+            Self::Public => 0,
+            Self::Governed { computation, .. } => computation
+                .internal_field_rules
+                .len()
+                .saturating_add(computation.internal_relation_rules.len()),
+        }
+    }
+
     pub fn admit_internal_projection<'a>(
         &'a self,
         field: (&str, &str, &str),
@@ -106,17 +116,18 @@ impl WorthQueryApplicationQueryGovernance {
                 field_key,
             )),
             Self::Governed { computation, .. } => {
-                let key = (
-                    field.0.to_string(),
-                    field.1.to_string(),
-                    field.2.to_string(),
-                );
-                let rules = computation.internal_field_rules.get(&key)?;
+                let index = computation
+                    .internal_field_rules
+                    .binary_search_by(|((e, a, f), _)| {
+                        (e.as_str(), a.as_str(), f.as_str()).cmp(&field)
+                    })
+                    .ok()?;
+                let (key, rules) = &computation.internal_field_rules[index];
                 let admitted = rules.iter().all(|rule| rule.influence().permits(surface));
                 let field = rules
                     .first()?
                     .field()
-                    .filter(|field| field.matches(field_tuple(&key)))?;
+                    .filter(|field| field.matches(field_tuple(key)))?;
                 admitted.then_some(())?;
                 WorthQueryApplicationInternalProjectionAdmission::governed(field, field_key)
             }
@@ -131,18 +142,20 @@ impl WorthQueryApplicationQueryGovernance {
     ) -> bool {
         match self {
             Self::Public => true,
-            Self::Governed { computation, .. } => computation
-                .internal_relation_rules
-                .iter()
-                .find(|((r, f, t, d), _)| {
-                    r.as_str() == relation.0
-                        && f.as_str() == relation.1
-                        && t.as_str() == relation.2
-                        && *d == direction
-                })
-                .is_some_and(|(_, rules)| {
-                    !rules.is_empty() && rules.iter().all(|rule| rule.influence().permits(surface))
-                }),
+            Self::Governed { computation, .. } => {
+                let target = (relation.0, relation.1, relation.2, direction);
+                let Ok(index) =
+                    computation
+                        .internal_relation_rules
+                        .binary_search_by(|((r, f, t, d), _)| {
+                            (r.as_str(), f.as_str(), t.as_str(), *d).cmp(&target)
+                        })
+                else {
+                    return false;
+                };
+                let rules = &computation.internal_relation_rules[index].1;
+                !rules.is_empty() && rules.iter().all(|rule| rule.influence().permits(surface))
+            }
         }
     }
 

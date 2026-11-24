@@ -1,5 +1,6 @@
-//! Governed query declarations exercising `use_relation_by` and `use_field_by`
-//! on `where_no_related` queries.
+//! Governed query declarations exercising `use_relation_by` and target-only
+//! `use_field_by` (`Gate` is NEVER used on the root, only in the related target
+//! predicate!) on `where_no_related` queries.
 use super::*;
 use worth_query_decl::facade::application_query::*;
 use worth_query_decl::facade::application_schema::fragment::Registration;
@@ -19,8 +20,8 @@ pub fn key<Q>() -> ApplicationQueryResultFieldRef<Q, KeySlot, GovSchema, TaskKey
     ApplicationQueryResultFieldRef::new("key", TaskKey::at("TaskKey"))
 }
 
-fn open_str() -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
-    ApplicationEncodedScalarValue::try_new("open".into()).unwrap()
+fn str_val(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValueBinding> {
+    ApplicationEncodedScalarValue::try_new(value.to_owned()).unwrap()
 }
 
 macro_rules! gov_query {
@@ -64,6 +65,16 @@ gov_query!(
     "related-absence.gov.no-rule-b.v1"
 );
 gov_query!(
+    GovMissingTargetFieldRuleQuery,
+    "related-absence.gov.no-tfld.v1",
+    "gov_no_tfld",
+    GovMissingTargetFieldIntent,
+    gov_no_tfld_scope,
+    GovMissingTargetFieldIn,
+    GovMissingTargetFieldBind,
+    "related-absence.gov.no-tfld-b.v1"
+);
+gov_query!(
     GovDeniedRelQuery,
     "related-absence.gov.deny-rel.v1",
     "gov_deny_rel",
@@ -90,6 +101,9 @@ fn gov_def<
     reference: ApplicationQueryReference<GovSchema, Q, GovParams, GovRow, Project>,
     disclosure: ApplicationQueryDisclosureContract,
 ) -> ApplicationQueryDefinitionBuilder<GovSchema, Q, GovParams, GovRow, Project> {
+    // Root uses ONLY `TaskKey` and `Status`. `Gate` is referenced EXCLUSIVELY
+    // inside the related-predicate target matcher so target-field governance
+    // is tested completely independently of root guards.
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Task::reference())
         .scope(Project::reference())
@@ -108,10 +122,10 @@ fn gov_def<
         .root_path(
             ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()),
         )
-        .where_equal_value(Status::at("Status"), open_str())
+        .where_equal_value(Status::at("Status"), str_val("open"))
         .where_no_related(
             ApplicationQueryRelatedPredicate::forward(BlockedBy::reference())
-                .where_equal_value(Status::at("Status"), open_str()),
+                .where_equal_value(Gate::at("Gate"), str_val("blocking")),
         )
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
 }
@@ -123,56 +137,67 @@ impl Registration<GovSchema> for GovQueries {
     ) -> Result<ApplicationSchemaDeclarationBuilder<GovSchema>, ApplicationSchemaDeclarationDenial>
     {
         let all = ApplicationQueryInfluenceContract::permit_all();
-        let ok_disc = ApplicationQueryDisclosureContract::governed_by("ok", ReadBoard::reference())
-            .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
-            .unwrap()
-            .use_field_by(Status::at("Status"), tag(1), all.clone())
-            .unwrap()
+        let root_disc = |name: &'static str| {
+            ApplicationQueryDisclosureContract::governed_by(name, ReadBoard::reference())
+                .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
+                .unwrap()
+                .use_field_by(Status::at("Status"), tag(1), all.clone())
+                .unwrap()
+        };
+        let ok_disc = root_disc("ok")
             .use_relation_by(
                 BlockedBy::reference(),
                 RelationDirection::Forward,
                 tag(1),
                 all.clone(),
             )
+            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+            .unwrap()
             .disclose_field_by(key::<GovAllowedQuery>(), tag(1), all.clone());
-        let no_rel_disc =
-            ApplicationQueryDisclosureContract::governed_by("no-rel", ReadBoard::reference())
-                .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
-                .unwrap()
-                .use_field_by(Status::at("Status"), tag(1), all.clone())
-                .unwrap()
-                .disclose_field_by(key::<GovMissingRelRuleQuery>(), tag(1), all.clone());
-        let deny_rel_disc =
-            ApplicationQueryDisclosureContract::governed_by("deny-rel", ReadBoard::reference())
-                .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
-                .unwrap()
-                .use_field_by(Status::at("Status"), tag(1), all.clone())
-                .unwrap()
-                .use_relation_by(
-                    BlockedBy::reference(),
-                    RelationDirection::Forward,
-                    tag(2),
-                    all.clone(),
-                )
-                .disclose_field_by(key::<GovDeniedRelQuery>(), tag(1), all.clone());
-        let deny_fld_disc =
-            ApplicationQueryDisclosureContract::governed_by("deny-fld", ReadBoard::reference())
-                .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
-                .unwrap()
-                .use_field_by(Status::at("Status"), tag(2), all.clone())
-                .unwrap()
-                .use_relation_by(
-                    BlockedBy::reference(),
-                    RelationDirection::Forward,
-                    tag(1),
-                    all.clone(),
-                )
-                .disclose_field_by(key::<GovDeniedFieldQuery>(), tag(1), all);
+        let no_rel_disc = root_disc("no-rel")
+            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+            .unwrap()
+            .disclose_field_by(key::<GovMissingRelRuleQuery>(), tag(1), all.clone());
+        let no_tfld_disc = root_disc("no-tfld")
+            .use_relation_by(
+                BlockedBy::reference(),
+                RelationDirection::Forward,
+                tag(1),
+                all.clone(),
+            )
+            .disclose_field_by(key::<GovMissingTargetFieldRuleQuery>(), tag(1), all.clone());
+        let deny_rel_disc = root_disc("deny-rel")
+            .use_relation_by(
+                BlockedBy::reference(),
+                RelationDirection::Forward,
+                tag(2),
+                all.clone(),
+            )
+            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+            .unwrap()
+            .disclose_field_by(key::<GovDeniedRelQuery>(), tag(1), all.clone());
+        // Root fields (`TaskKey`, `Status`) and `BlockedBy` relation are ALL tag 1 (authorized).
+        // ONLY target-only field `Gate` requires tag 2 (unauthorized).
+        let deny_fld_disc = root_disc("deny-fld")
+            .use_relation_by(
+                BlockedBy::reference(),
+                RelationDirection::Forward,
+                tag(1),
+                all.clone(),
+            )
+            .use_field_by(Gate::at("Gate"), tag(2), all.clone())
+            .unwrap()
+            .disclose_field_by(key::<GovDeniedFieldQuery>(), tag(1), all);
         Ok(builder
             .application_query(gov_def(GovAllowedQuery::reference(), ok_disc))
             .application_query_binding::<GovAllowedBind>()
             .application_query(gov_def(GovMissingRelRuleQuery::reference(), no_rel_disc))
             .application_query_binding::<GovMissingRelBind>()
+            .application_query(gov_def(
+                GovMissingTargetFieldRuleQuery::reference(),
+                no_tfld_disc,
+            ))
+            .application_query_binding::<GovMissingTargetFieldBind>()
             .application_query(gov_def(GovDeniedRelQuery::reference(), deny_rel_disc))
             .application_query_binding::<GovDeniedRelBind>()
             .application_query(gov_def(GovDeniedFieldQuery::reference(), deny_fld_disc))
