@@ -46,11 +46,12 @@ CONSTANTS
     Keys,           \* idempotency keys
     MaxNodes,       \* root = 0, up to MaxNodes - 1 recorded steps
     MaxStops,       \* stopped requests explored per behaviour
+    MaxHeads,       \* queued past heads the document's release queue holds
     WedgeBug,       \* TRUE re-introduces Phase 1's stale-forest wedge
     FactBug         \* TRUE re-introduces r1's facts that ignore navigation
 
 ASSUME Entities = {"e1", "e2"}
-ASSUME MaxNodes >= 2 /\ MaxStops >= 0
+ASSUME MaxNodes >= 2 /\ MaxStops >= 0 /\ MaxHeads >= 1
 ASSUME WedgeBug \in BOOLEAN
 ASSUME FactBug \in BOOLEAN
 ASSUME Values \subseteq (Nat \ {0})
@@ -106,22 +107,38 @@ VARIABLES
     outA, outB,      \* generated output trees on the branch
     facts,           \* active reversal facts on the branch:
                      \*   [step |-> c, src |-> s, ent |-> e]
-    idem,            \* [Keys -> journal record]
+    idem,            \* [JournalKeys -> journal record]
     headDiverged,    \* the branch moved outside the document
     closed,          \* the document was closed
     nextCand,        \* next stopped candidate to allocate
     parked,          \* stopped candidates awaiting the document's disposal
     forestOrigin,    \* candidate the recording trees are bound to, 0 if none
     forestDisposing, \* a release of those trees was itself stopped
-    writer           \* an open .edit / .gesture holding the move-only document
+    writer,          \* an open .edit / .gesture holding the move-only document
+    forked,          \* the document stands on a fork a navigation made, not
+                     \* on its current step's own branch
+    heads            \* past heads queued for maintain_history to release
 
 treeVars == <<nextNode, parent, snapshots, ops, current>>
 branchVars == <<live, gen, val, outA, outB, facts>>
 stopVars == <<nextCand, parked, forestOrigin, forestDisposing>>
+headVars == <<forked, heads>>
 vars == <<treeVars, nextGen, branchVars, idem, headDiverged, closed, stopVars,
-          writer>>
+          writer, headVars>>
 
 WriterClasses == {"edit", "gesture"}
+
+\* Idempotency keys are scoped by who records them (refinement (v), ruled
+\* option (2), 2026-11-24). An envelope's key is hashed under its own tag
+\* (envelope_recording/admission.rs); a gesture writer is keyed by its group
+\* id and an .edit by its operation's mutation key. The two never meet: an
+\* envelope under a writer's key records a new step (Rust DST seeds
+\* 0x7b020035, gesture, and 0x7b020108, .edit). Replay, drift and the
+\* envelope refusals read only the "envelope" namespace.
+Namespaces == {"envelope", "writer"}
+JournalKeys == Namespaces \X Keys
+Env(k) == <<"envelope", k>>
+Wr(k) == <<"writer", k>>
 
 NoIntent == [kind |-> "none", st |-> NoStages, src |-> 0, ent |-> "none"]
 EditIntent(st) == [kind |-> "edit", st |-> st, src |-> 0, ent |-> "none"]
@@ -145,7 +162,7 @@ Init ==
     /\ outA = EmptySnapshot.outA
     /\ outB = EmptySnapshot.outB
     /\ facts = {}
-    /\ idem = [k \in Keys |-> Unseen]
+    /\ idem = [j \in JournalKeys |-> Unseen]
     /\ headDiverged = FALSE
     /\ closed = FALSE
     /\ nextCand = 1
@@ -153,6 +170,13 @@ Init ==
     /\ forestOrigin = 0
     /\ forestDisposing = FALSE
     /\ writer = "none"
+    /\ forked = FALSE
+    /\ heads = 0
+
+\* The head a recording or a move leaves behind (Rust DST, S1 probe): a fork
+\* a navigation made is queued for maintain_history when the document leaves
+\* it; the step's own branch is not.
+LeaveHead == heads' = heads + (IF forked THEN 1 ELSE 0)
 
 ApplySnapshot(s) ==
     /\ live' = s.live
@@ -179,8 +203,8 @@ Fact(c, s, e) == [step |-> c, src |-> s, ent |-> e]
 
 \* Every fact a recorded correction step posted, active or not.
 PostedFacts ==
-    {Fact(idem[k].node, idem[k].intent.src, idem[k].intent.ent) :
-        k \in {x \in Keys : idem[x].status = "recorded"
+    {Fact(idem[j].node, idem[j].intent.src, idem[j].intent.ent) :
+        j \in {x \in JournalKeys : idem[x].status = "recorded"
                             /\ idem[x].intent.kind = "correction"}}
 
 \* reverse_lineage: an active fact says the source is already reversed.
@@ -228,7 +252,7 @@ StepOpsOf(st, restored) ==
 \* The one recording owner. Every recorded step, edit or correction, goes
 \* through it: one new node, one adoption, one journal record. A forest that a
 \* stopped request left bound is released by this writer.
-RecordStep(st, restored, k, intent) ==
+RecordStep(st, restored, j, intent) ==
     LET snap == MakeSnapshot(NewLive(st), StepGen(st), StepVal(st)) IN
     /\ nextNode' = nextNode + 1
     /\ nextGen' = nextGen + Cardinality(Births(st))
@@ -240,11 +264,13 @@ RecordStep(st, restored, k, intent) ==
     /\ facts' = IF intent.kind = "correction"
                 THEN facts \cup {Fact(nextNode, intent.src, intent.ent)}
                 ELSE facts
-    /\ idem' = [idem EXCEPT ![k] =
+    /\ idem' = [idem EXCEPT ![j] =
                     [status |-> "recorded", intent |-> intent, node |-> nextNode]]
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
     /\ writer' = "none"
+    /\ LeaveHead
+    /\ forked' = FALSE
     /\ UNCHANGED <<headDiverged, closed, nextCand, parked>>
 
 \* ---------------------------------------------------------------------------
@@ -253,10 +279,10 @@ RecordStep(st, restored, k, intent) ==
 EditEnvelope(st, k) ==
     /\ Writable
     /\ st \in StageMaps /\ k \in Keys
-    /\ idem[k].status = "unseen"
+    /\ idem[Env(k)].status = "unseen"
     /\ nextNode < MaxNodes
     /\ StagesAdmissible(st)
-    /\ RecordStep(st, {}, k, EditIntent(st))
+    /\ RecordStep(st, {}, Env(k), EditIntent(st))
 
 \* ---------------------------------------------------------------------------
 \* Phase 2: correction envelope (document.correction_envelope ...)
@@ -317,12 +343,12 @@ CorrectionEnvelope(src, e, st, k) ==
     /\ Writable
     /\ src \in 1..(nextNode - 1) /\ e \in Entities
     /\ st \in StageMaps /\ st[e] = Skip /\ k \in Keys
-    /\ idem[k].status = "unseen"
+    /\ idem[Env(k)].status = "unseen"
     /\ nextNode < MaxNodes
     /\ SourceReversible(src, e)
     /\ ~ReversedByFact(src, e)
     /\ StagesAdmissible(WithCorrective(src, e, st))
-    /\ RecordStep(WithCorrective(src, e, st), RestoredBy(src, e), k,
+    /\ RecordStep(WithCorrective(src, e, st), RestoredBy(src, e), Env(k),
                   CorrectionIntent(src, e, st))
 
 \* ---------------------------------------------------------------------------
@@ -334,22 +360,22 @@ CorrectionEnvelope(src, e, st, k) ==
 \* the source is still reversible is not consulted (it is not, once the
 \* correction is recorded on the line).
 ReplayDisclosed(k) ==
-    LET i == idem[k].intent IN
+    LET i == idem[Env(k)].intent IN
     i.kind = "edit" \/ MeaningDerivable(i.src, i.ent)
 
-\* AlreadyRecorded { document, step }: the step is idem[k].node.
+\* AlreadyRecorded { document, step }: the step is idem[Env(k)].node.
 AlreadyRecorded(k, intent) ==
     /\ Writable
-    /\ idem[k].status = "recorded"
-    /\ idem[k].intent = intent
+    /\ idem[Env(k)].status = "recorded"
+    /\ idem[Env(k)].intent = intent
     /\ ReplayDisclosed(k)
     /\ UNCHANGED vars
 
 \* The key is recorded with another intent.
 RefuseIntentDrift(k, intent) ==
     /\ Writable
-    /\ idem[k].status = "recorded"
-    /\ idem[k].intent /= intent
+    /\ idem[Env(k)].status = "recorded"
+    /\ idem[Env(k)].intent /= intent
     /\ (intent.kind = "correction" => MeaningDerivable(intent.src, intent.ent))
     /\ UNCHANGED vars
 
@@ -357,7 +383,7 @@ RefuseIntentDrift(k, intent) ==
 \* child live (Stage { ordinal, denial }).
 RefuseStages(st, k) ==
     /\ Writable
-    /\ idem[k].status = "unseen"
+    /\ idem[Env(k)].status = "unseen"
     /\ ~StagesAdmissible(st)
     /\ UNCHANGED vars
 
@@ -369,7 +395,7 @@ RefuseCorrectionSource(src, e, k) ==
     /\ Writable
     /\ k \in Keys
     /\ \/ ~MeaningDerivable(src, e)
-       \/ /\ idem[k].status = "unseen"
+       \/ /\ idem[Env(k)].status = "unseen"
           /\ \/ ~SourceReversible(src, e)
              \/ ReversedByFact(src, e)
     /\ UNCHANGED vars
@@ -378,7 +404,7 @@ RefuseCorrectionSource(src, e, k) ==
 \* refused partial retirement, or a restore whose owner is not live.
 RefuseCorrectionStages(src, e, st, k) ==
     /\ Writable
-    /\ idem[k].status = "unseen"
+    /\ idem[Env(k)].status = "unseen"
     /\ SourceReversible(src, e)
     /\ ~ReversedByFact(src, e)
     /\ ~StagesAdmissible(WithCorrective(src, e, st))
@@ -423,6 +449,11 @@ Select(target) ==
         entering == Line(target) \ Line(current)
     IN
     /\ current' = target
+    \* A move forks a new branch. It keeps room in the release queue for the
+    \* head it leaves and the one the next recording leaves.
+    /\ heads + (IF forked THEN 1 ELSE 0) < MaxHeads
+    /\ LeaveHead
+    /\ forked' = TRUE
     /\ ApplySnapshot(snapshots[target])
     /\ facts' = IF FactBug THEN facts
                 ELSE {f \in facts : f.step \notin leaving}
@@ -450,7 +481,9 @@ Checkout(target) ==
 \* Any admissible change, through request.mutation(..) or
 \* request.corrections(..): create, update, retire, or restore (a fresh
 \* occurrence, as a recorded restore makes). It needs no document, so it can
-\* happen while a writer holds the document.
+\* happen while a writer holds the document. The write and the settle of
+\* its program outputs are one step: the model has no output wave or marks,
+\* so that the settle ends is outside it (README; public #353).
 OutOfBandMutation(st) ==
     /\ ~closed /\ ~headDiverged
     /\ st \in StageMaps
@@ -458,35 +491,47 @@ OutOfBandMutation(st) ==
     /\ headDiverged' = TRUE
     /\ nextGen' = nextGen + Cardinality(Births(st))
     /\ ApplySnapshot(MakeSnapshot(NewLive(st), StepGen(st), StepVal(st)))
-    /\ UNCHANGED <<treeVars, idem, closed, stopVars, writer, facts>>
+    /\ UNCHANGED <<treeVars, idem, closed, stopVars, writer, facts, headVars>>
 
 \* ---------------------------------------------------------------------------
 \* Stopped requests, parked candidates and the recording trees
 \* ---------------------------------------------------------------------------
 
-\* An admitted envelope whose request stops before adoption. Nothing is
-\* recorded and the key stays free. `point` is how far it got:
+\* An envelope whose request stops before adoption. Nothing is recorded and
+\* the key stays free. `point` is how far it got:
+\*   "Admission" stopped before its candidate forked: nothing is parked and
+\*               nothing changes (Rust DST seed 0x7b020000: a stop at the
+\*               history read's admission). It lands before the head is
+\*               read, so it needs only a held document, diverged or not
+\*               (same seed, k7: a stop in the history read on a diverged
+\*               head);
 \*   "Stages"    stopped while its stages ran;
 \*   "Recording" stopped while its output trees recorded, after releasing any
 \*               trees an earlier stop left bound;
 \*   "Release"   stopped while releasing trees an earlier stop left bound.
+StopPoints == {"Admission", "Stages", "Recording", "Release"}
+
 WriterStopped(point) ==
-    /\ Writable
-    /\ nextCand <= MaxStops
-    /\ \E k \in Keys : idem[k].status = "unseen"
-    /\ parked' = parked \cup {nextCand}
-    /\ nextCand' = nextCand + 1
-    /\ \/ /\ point = "Stages"
-          /\ UNCHANGED <<forestOrigin, forestDisposing>>
-       \/ /\ point = "Recording"
-          /\ forestOrigin' = nextCand
-          /\ forestDisposing' = FALSE
-       \/ /\ point = "Release"
-          /\ forestOrigin /= 0
-          /\ forestDisposing' = TRUE
-          /\ UNCHANGED forestOrigin
+    /\ \E k \in Keys : idem[Env(k)].status = "unseen"
+    /\ \/ /\ point = "Admission"
+          /\ Held
+          /\ UNCHANGED <<parked, nextCand, forestOrigin, forestDisposing>>
+       \/ /\ point \in {"Stages", "Recording", "Release"}
+          /\ Writable
+          /\ nextCand <= MaxStops
+          /\ parked' = parked \cup {nextCand}
+          /\ nextCand' = nextCand + 1
+          /\ \/ /\ point = "Stages"
+                /\ UNCHANGED <<forestOrigin, forestDisposing>>
+             \/ /\ point = "Recording"
+                /\ forestOrigin' = nextCand
+                /\ forestDisposing' = FALSE
+             \/ /\ point = "Release"
+                /\ forestOrigin /= 0
+                /\ forestDisposing' = TRUE
+                /\ UNCHANGED forestOrigin
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
-                   writer>>
+                   writer, headVars>>
 
 \* ---------------------------------------------------------------------------
 \* Writers that hold the move-only document across advances: .edit and
@@ -505,7 +550,7 @@ WriterBegin(class) ==
        THEN UNCHANGED <<forestOrigin, forestDisposing>>
        ELSE forestOrigin' = 0 /\ forestDisposing' = FALSE
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
-                   nextCand, parked>>
+                   nextCand, parked, headVars>>
 
 \* The writer records its step. Trees bound to another candidate refuse
 \* (ForeignDocument / NeedsDisposal) and the writer can only be discarded.
@@ -513,11 +558,11 @@ WriterCommit(st, k) ==
     /\ writer \in WriterClasses
     /\ ~closed /\ ~headDiverged
     /\ st \in StageMaps /\ k \in Keys
-    /\ idem[k].status = "unseen"
+    /\ idem[Wr(k)].status = "unseen"
     /\ nextNode < MaxNodes
     /\ StagesAdmissible(st)
     /\ forestOrigin = 0 /\ ~forestDisposing
-    /\ RecordStep(st, {}, k, EditIntent(st))
+    /\ RecordStep(st, {}, Wr(k), EditIntent(st))
 
 \* discard / abort return the document, releasing any trees.
 WriterDiscard ==
@@ -528,7 +573,7 @@ WriterDiscard ==
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
-                   nextCand, parked>>
+                   nextCand, parked, headVars>>
 
 \* maintain_history: one parked candidate per call, trees first.
 MaintainHistory(c) ==
@@ -539,10 +584,18 @@ MaintainHistory(c) ==
        THEN forestOrigin' = 0 /\ forestDisposing' = FALSE
        ELSE UNCHANGED <<forestOrigin, forestDisposing>>
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
-                   nextCand, writer>>
+                   nextCand, writer, headVars>>
 
-\* maintain_history with nothing parked reports NoPendingRelease.
-MaintainIdle == Held /\ parked = {} /\ UNCHANGED vars
+\* maintain_history: one queued past head per call.
+MaintainHead ==
+    /\ Held
+    /\ heads > 0
+    /\ heads' = heads - 1
+    /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, closed,
+                   stopVars, writer, forked>>
+
+\* maintain_history with nothing parked or queued reports NoPendingRelease.
+MaintainIdle == Held /\ parked = {} /\ heads = 0 /\ UNCHANGED vars
 
 \* close: drains every parked candidate and the trees. It also succeeds on a
 \* diverged head, and is the only document entry that does.
@@ -552,8 +605,9 @@ Close ==
     /\ parked' = {}
     /\ forestOrigin' = 0
     /\ forestDisposing' = FALSE
+    /\ heads' = 0
     /\ UNCHANGED <<treeVars, nextGen, branchVars, idem, headDiverged, nextCand,
-                   writer>>
+                   writer, forked>>
 
 ClosedStutter == closed /\ UNCHANGED vars
 
@@ -583,11 +637,12 @@ Next ==
     \/ \E c \in NodeIds : RedoTo(c)
     \/ \E n \in NodeIds : Checkout(n)
     \/ \E st \in StageMaps : OutOfBandMutation(st)
-    \/ \E p \in {"Stages", "Recording", "Release"} : WriterStopped(p)
+    \/ \E p \in StopPoints : WriterStopped(p)
     \/ \E c \in WriterClasses : WriterBegin(c)
     \/ \E st \in StageMaps, k \in Keys : WriterCommit(st, k)
     \/ WriterDiscard
     \/ \E c \in Candidates : MaintainHistory(c)
+    \/ MaintainHead
     \/ MaintainIdle
     \/ Close
     \/ ClosedStutter
@@ -609,13 +664,16 @@ TypeOK ==
     /\ val \in [Entities -> ValOrNone]
     /\ facts \subseteq [step : NodeIds, src : NodeIds, ent : Entities]
     /\ \A n \in NodeIds : ops[n] \in [Entities -> StepOps]
-    /\ \A k \in Keys : idem[k].status \in {"unseen", "recorded"}
+    /\ DOMAIN idem = JournalKeys
+    /\ \A j \in JournalKeys : idem[j].status \in {"unseen", "recorded"}
     /\ headDiverged \in BOOLEAN /\ closed \in BOOLEAN
     /\ nextCand \in 1..(MaxStops + 1)
     /\ parked \subseteq Candidates
     /\ forestOrigin \in 0..MaxStops
     /\ forestDisposing \in BOOLEAN
     /\ writer \in {"none"} \cup WriterClasses
+    /\ forked \in BOOLEAN
+    /\ heads \in 0..MaxHeads
 
 \* 1. While the document owns the head, the branch is exactly the selected
 \*    step's snapshot: entities, generations, values and both output trees.
@@ -645,15 +703,19 @@ TreeStructureValid ==
     /\ \A n \in Recorded : parent[n] \in 0..(n - 1)
     /\ \A n \in nextNode..(MaxNodes - 1) : parent[n] = NullNode
 
-\* 4. The journal and the tree agree: one key per recorded step.
+\* 4. The journal and the tree agree: one key per recorded step, in each
+\*    namespace, and no step under two keys of either. A writer records only
+\*    edits: corrections are envelopes.
 IdempotencyValid ==
-    /\ \A k \in Keys :
-        idem[k].status = "recorded" => idem[k].node \in Recorded
-    /\ \A k1, k2 \in Keys :
-        (idem[k1].status = "recorded" /\ idem[k2].status = "recorded"
-            /\ k1 /= k2) => idem[k1].node /= idem[k2].node
+    /\ \A j \in JournalKeys :
+        idem[j].status = "recorded" => idem[j].node \in Recorded
+    /\ \A j1, j2 \in JournalKeys :
+        (idem[j1].status = "recorded" /\ idem[j2].status = "recorded"
+            /\ j1 /= j2) => idem[j1].node /= idem[j2].node
     /\ \A n \in Recorded :
-        \E k \in Keys : idem[k].status = "recorded" /\ idem[k].node = n
+        \E j \in JournalKeys : idem[j].status = "recorded" /\ idem[j].node = n
+    /\ \A k \in Keys :
+        idem[Wr(k)].status = "recorded" => idem[Wr(k)].intent.kind = "edit"
 
 \* 5. Generation custody. A generation names one occurrence of one entity.
 \*    It is stable while the entity stays live, a birth or a recorded restore
@@ -689,6 +751,13 @@ StoppedCustody ==
     /\ forestDisposing => forestOrigin /= 0
     /\ closed => (parked = {} /\ forestOrigin = 0 /\ writer = "none")
 
+\* 6b. Every past head a move or recording leaves is queued for release: the
+\*     queue keeps room for the one the document stands on, and close
+\*     drains it.
+QueuedHeads ==
+    /\ forked => heads < MaxHeads
+    /\ closed => heads = 0
+
 \* 7. Nothing a stopped request leaves behind wedges the document. A writer
 \*    that holds it can always give it back, and, on a head the document
 \*    still owns with a free key and room for a step, can record. With
@@ -697,7 +766,7 @@ StoppedCustody ==
 NoWedge ==
     /\ (writer \in WriterClasses /\ ~closed) => ENABLED WriterDiscard
     /\ (writer \in WriterClasses /\ ~closed /\ ~headDiverged
-            /\ nextNode < MaxNodes /\ \E k \in Keys : idem[k].status = "unseen")
+            /\ nextNode < MaxNodes /\ \E k \in Keys : idem[Wr(k)].status = "unseen")
         => ENABLED (\E st \in StageMaps, k \in Keys : WriterCommit(st, k))
 
 \* 8. Reversal facts follow navigation (spec-owner ruling (u)). A reversal's

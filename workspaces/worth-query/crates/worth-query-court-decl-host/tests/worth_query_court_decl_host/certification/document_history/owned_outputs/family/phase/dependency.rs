@@ -72,6 +72,17 @@ macro_rules! producer_decision_dependency {
         let supplier = $reader.resolve_entity(FirstKey::at("FirstKey"), format!("cross:{}", $input.0.key))?;
         $reader.field(&supplier, FirstValue::at("FirstValue"))?.expect("derived cross reader has its value")
     }};
+    (DstUseInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@root_current $reader, $source) };
+    (DstUsePreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@root_current $reader, $source) };
+    // The value of the DST root's current output for `$source` (`upstream:<model>`).
+    (@root_current $reader:ident, $source:ident) => {{
+        match $reader.current_output::<super::super::super::upstream::Family, Model>(&$source)? {
+            WorthQueryCurrentOutputSelection::Unique(output) => $reader
+                .field(&output, MemberValue::at("MemberValue"))?
+                .expect("the root's current output has its value"),
+            _ => 0,
+        }
+    }};
     // Every other family reads no demand key.
     ($operation:ident, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!($operation, $reader, $source) };
     (ConvergentPreserve, $reader:ident, $source:ident) => {{

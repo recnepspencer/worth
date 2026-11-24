@@ -210,4 +210,4 @@ fn worker_only_recording_a_stale_historical_parent_runs_its_real_producer_and_di
 }
 mod permission;
 
-mod new_member;
+pub(in super::super) mod new_member;

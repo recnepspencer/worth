@@ -2,6 +2,7 @@
 //! the model's actual members, so a member change leaves the parent healthy.
 use super::super::super::program::{Child, ChildInput, Input, Output, Parent};
 use super::*;
+use self::family::dst::DstOperations as _;
 pub struct Start;
 impl ApplicationConnectionIdentity for Start {
     const IDENTITY: &'static str = "owned-outputs.new-member.start";
@@ -97,6 +98,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<downstream::preserve::Operation>()
                 .conditional_operation::<restricted_owned::initial::Operation>()
                 .conditional_operation::<restricted_owned::preserve::Operation>()
+                .dst_operations()
                 .finish(),
         ];
         features.extend(family::feature_specs(

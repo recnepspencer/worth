@@ -65,6 +65,8 @@ macro_rules! producer_operation {
     (GuardedCurrentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedCurrentPreserve, $entity, $key, $value, $of); };
     (SaturatedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerInitial, $entity, $key, $value, $of); };
     (SaturatedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerPreserve, $entity, $key, $value, $of); };
+    (DstUseInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DstUseInitial, $entity, $key, $value, $of); };
+    (DstUsePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DstUsePreserve, $entity, $key, $value, $of); };
     (CappedReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderInitial, $entity, $key, $value, $of); };
     (CappedReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderPreserve, $entity, $key, $value, $of); };
     (CappedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerInitial, $entity, $key, $value, $of); };

@@ -20,7 +20,9 @@ EXTENDS TreeBasedUndo, TraceData
              key, and for outcome "AlreadyRecorded" the returned step, for
              outcome "Stopped" the point when the harness can tell it.
     Redo, Checkout: node.   OutOfBand: stages (as an edit's).
-    Begin: class ("edit" | "gesture").   Commit: stages, key.
+    Begin: class ("edit" | "gesture").   Commit: stages, key (a writer's
+             key, in the "writer" namespace; an Envelope's key is in
+             "envelope").
     Post-state: postCurrent, postNextNode, postLive, postGen, postVal,
              postOutA, postOutB, postClosed, and optionally
              postHeadDiverged (left out while a writer holds the document,
@@ -53,7 +55,7 @@ EnvelopeStep(step) ==
             ELSE CorrectionEnvelope(step.src, step.ent, step.stages, step.key)
       [] step.outcome = "AlreadyRecorded" ->
             /\ AlreadyRecorded(step.key, IntentOf(step))
-            /\ step.step = idem[step.key].node
+            /\ step.step = idem[Env(step.key)].node
       [] step.outcome = "IntentDrift" ->
             RefuseIntentDrift(step.key, IntentOf(step))
       [] step.outcome = "StageRefused" ->
@@ -68,7 +70,7 @@ EnvelopeStep(step) ==
       [] step.outcome = "Stopped" ->
             IF "point" \in DOMAIN step
             THEN WriterStopped(step.point)
-            ELSE \E p \in {"Stages", "Recording", "Release"} : WriterStopped(p)
+            ELSE \E p \in StopPoints : WriterStopped(p)
       [] OTHER -> RefuseEnvironment(step.outcome)
 
 NavigationStep(step) ==
@@ -90,18 +92,22 @@ StepAction(step) ==
       [] step.action = "Maintain" ->
             IF step.outcome = "NoPendingRelease"
             THEN MaintainIdle
-            ELSE \E c \in Candidates : MaintainHistory(c)
+            ELSE \/ \E c \in Candidates : MaintainHistory(c)
+                 \/ MaintainHead
       [] step.action = "Discard" -> WriterDiscard
       [] step.action = "Close" -> Close
 
 MatchesPost(step) ==
     /\ current' = step.postCurrent
     /\ nextNode' = step.postNextNode
-    /\ live' = step.postLive
-    /\ gen' = step.postGen
-    /\ val' = step.postVal
-    /\ outA' = step.postOutA
-    /\ outB' = step.postOutB
+    \* Close retires the document branch: only a closed document may leave
+    \* its rows and outputs out.
+    /\ ("postLive" \in DOMAIN step => /\ live' = step.postLive
+                                       /\ gen' = step.postGen
+                                       /\ val' = step.postVal
+                                       /\ outA' = step.postOutA
+                                       /\ outB' = step.postOutB)
+    /\ ~closed' => "postLive" \in DOMAIN step
     /\ ("postHeadDiverged" \in DOMAIN step => headDiverged' = step.postHeadDiverged)
     \* Only a held document may leave it out (review r2, note 4).
     /\ (writer' = "none" /\ ~closed') => "postHeadDiverged" \in DOMAIN step
