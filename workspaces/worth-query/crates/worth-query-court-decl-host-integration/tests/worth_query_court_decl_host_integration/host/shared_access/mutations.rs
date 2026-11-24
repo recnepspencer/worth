@@ -7,16 +7,15 @@ use worth_query_decl::facade::{
     worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
     worth_query_structured_value_binding,
 };
-use worth_query_host::facade::{
-    primary_graph::WorthQueryInvariantMutationTarget, shared_access::SharedAccessDenial,
-};
+use worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget;
 
 use super::capabilities::SharedPrincipalBinding;
 use super::query::ProjectUpdatedEffect;
 use super::schema::{
-    ExternalMapping, GrantActiveField, GrantIdField, GrantNotBeforeField, GrantResource, Grantee,
-    Grantor, Principal, PrincipalIdField, Project, ProjectGrant, ProjectKeyField,
-    ProjectVersionField, SharedProjectSchema,
+    ExternalIdentityField, ExternalMapping, GrantActiveField, GrantIdField, GrantNotBeforeField,
+    GrantResource, Grantee, Grantor, MappingStatusField, MappingTarget, Principal,
+    PrincipalIdField, Project, ProjectGrant, ProjectKeyField, ProjectVersionField,
+    SharedProjectSchema,
 };
 
 pub const ISSUER: &str = "https://daymark.local";
@@ -37,19 +36,6 @@ pub fn alice_identity() -> WorthQueryExternalPrincipalIdentity {
 
 pub fn bob_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(ISSUER, BOB_SUBJECT).unwrap()
-}
-
-pub fn principal_id_for(
-    identity: &WorthQueryExternalPrincipalIdentity,
-) -> Result<u64, SharedAccessDenial> {
-    match identity.subject() {
-        OWNER_SUBJECT => Ok(OWNER_PRINCIPAL_ID),
-        ALICE_SUBJECT => Ok(ALICE_PRINCIPAL_ID),
-        BOB_SUBJECT => Ok(BOB_PRINCIPAL_ID),
-        _ => Err(SharedAccessDenial::GrantMutationRefused(
-            "unknown collaborator principal".to_owned(),
-        )),
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -153,7 +139,8 @@ impl ApplicationMutationIntent<SharedProjectSchema> for WriteProjectIntent {
 pub struct GrantProjectInput {
     pub grant_id: String,
     pub project_key: String,
-    pub grantee_principal_id: u64,
+    pub grantee_issuer: String,
+    pub grantee_subject: String,
     pub mode: String,
 }
 worth_query_portable_type!(GrantProjectInput => "worth.query.court.shared_access.grant_input.v1");
@@ -161,7 +148,13 @@ worth_query_structured_value_binding!(pub GrantProjectInputBinding for GrantProj
     identity: "worth.query.court.shared_access.grant_input_binding.v1"
 });
 worth_query_operation!(pub GrantProjectAccess for SharedProjectSchema, input GrantProjectInputBinding);
-worth_query_operation_reads!(GrantProjectAccess => [ProjectKeyField, PrincipalIdField]);
+worth_query_operation_reads!(GrantProjectAccess => [
+    ProjectKeyField,
+    PrincipalIdField,
+    ExternalIdentityField,
+    MappingStatusField,
+    MappingTarget
+]);
 worth_query_operation_creates!(GrantProjectAccess => [ProjectGrant]);
 worth_query_operation_writes!(GrantProjectAccess => [
     GrantIdField,

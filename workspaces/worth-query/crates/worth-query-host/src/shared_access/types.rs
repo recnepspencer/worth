@@ -9,6 +9,7 @@ use super::denial::SharedAccessDenial;
 
 pub const MAX_GRANT_ID_BYTES: usize = 128;
 pub const MAX_SCOPE_KEY_BYTES: usize = 256;
+pub const MIN_MAX_FRAME_BYTES: u32 = 64;
 pub const DEFAULT_MAX_FRAME_BYTES: u32 = 256 * 1024;
 pub const HARD_MAX_FRAME_BYTES: u32 = 1024 * 1024;
 pub const DEFAULT_MAX_ROWS_PER_RESPONSE: u32 = 1024;
@@ -16,6 +17,7 @@ pub const DEFAULT_MAX_ACTIVE_WATCHES: u32 = 64;
 pub const DEFAULT_MAX_WATCHES_PER_PRINCIPAL: u32 = 16;
 pub const DEFAULT_LIVE_BUFFER_CAPACITY: usize = 64;
 pub const DEFAULT_REQUEST_TIMEOUT_SECS: u64 = 15;
+pub const DEFAULT_IDLE_TIMEOUT_SECS: u64 = 300;
 
 /// Access level granted to a collaborator on a single application scope.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -92,8 +94,10 @@ impl std::fmt::Display for ScopeGrantId {
 
 /// Owner-issued receipt for a committed durable scope-access grant.
 ///
-/// Only `WorthQueryApplicationHome::grant_scope_access` constructs this value;
-/// holding it carries metadata for revocation and grants no runtime authority.
+/// Only `WorthQueryApplicationHome::grant_scope_access` constructs this value,
+/// strictly after WORTH's own mutation runtime returns a published commit receipt
+/// with non-zero durable record changes. Holding it carries metadata for
+/// revocation and grants no runtime authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScopeAccessGrant {
     id: ScopeGrantId,
@@ -102,6 +106,7 @@ pub struct ScopeAccessGrant {
     access: ScopeAccess,
     home_identity: Option<HomeIdentity>,
     home_incarnation: Option<HomeIncarnation>,
+    committed_record_changes: usize,
 }
 
 pub(super) struct CommittedGrantReceipt {
@@ -111,6 +116,7 @@ pub(super) struct CommittedGrantReceipt {
     pub(super) access: ScopeAccess,
     pub(super) home_identity: Option<HomeIdentity>,
     pub(super) home_incarnation: Option<HomeIncarnation>,
+    pub(super) committed_record_changes: usize,
 }
 
 impl ScopeAccessGrant {
@@ -122,6 +128,7 @@ impl ScopeAccessGrant {
             access: receipt.access,
             home_identity: receipt.home_identity,
             home_incarnation: receipt.home_incarnation,
+            committed_record_changes: receipt.committed_record_changes,
         }
     }
 
@@ -147,6 +154,10 @@ impl ScopeAccessGrant {
 
     pub const fn home_incarnation(&self) -> Option<HomeIncarnation> {
         self.home_incarnation
+    }
+
+    pub const fn committed_record_changes(&self) -> usize {
+        self.committed_record_changes
     }
 }
 
@@ -180,6 +191,7 @@ pub struct RemoteServerLimits {
     max_watches_per_principal: u32,
     live_buffer_capacity: usize,
     request_timeout: Duration,
+    idle_timeout: Duration,
 }
 
 impl Default for RemoteServerLimits {
@@ -191,13 +203,14 @@ impl Default for RemoteServerLimits {
             max_watches_per_principal: DEFAULT_MAX_WATCHES_PER_PRINCIPAL,
             live_buffer_capacity: DEFAULT_LIVE_BUFFER_CAPACITY,
             request_timeout: Duration::from_secs(DEFAULT_REQUEST_TIMEOUT_SECS),
+            idle_timeout: Duration::from_secs(DEFAULT_IDLE_TIMEOUT_SECS),
         }
     }
 }
 
 impl RemoteServerLimits {
     pub const fn with_max_frame_bytes(mut self, max_frame_bytes: u32) -> Option<Self> {
-        if max_frame_bytes == 0 || max_frame_bytes > HARD_MAX_FRAME_BYTES {
+        if max_frame_bytes < MIN_MAX_FRAME_BYTES || max_frame_bytes > HARD_MAX_FRAME_BYTES {
             return None;
         }
         self.max_frame_bytes = max_frame_bytes;
@@ -241,6 +254,14 @@ impl RemoteServerLimits {
         Some(self)
     }
 
+    pub const fn with_idle_timeout(mut self, timeout: Duration) -> Option<Self> {
+        if timeout.is_zero() {
+            return None;
+        }
+        self.idle_timeout = timeout;
+        Some(self)
+    }
+
     pub const fn max_frame_bytes(self) -> u32 {
         self.max_frame_bytes
     }
@@ -264,6 +285,10 @@ impl RemoteServerLimits {
     pub const fn request_timeout(self) -> Duration {
         self.request_timeout
     }
+
+    pub const fn idle_timeout(self) -> Duration {
+        self.idle_timeout
+    }
 }
 
 /// Client-side bounded framing and I/O deadline configuration.
@@ -284,7 +309,7 @@ impl Default for RemoteClientLimits {
 
 impl RemoteClientLimits {
     pub const fn with_max_frame_bytes(mut self, max_frame_bytes: u32) -> Option<Self> {
-        if max_frame_bytes == 0 || max_frame_bytes > HARD_MAX_FRAME_BYTES {
+        if max_frame_bytes < MIN_MAX_FRAME_BYTES || max_frame_bytes > HARD_MAX_FRAME_BYTES {
             return None;
         }
         self.max_frame_bytes = max_frame_bytes;

@@ -1,4 +1,4 @@
-//! Authenticated remote collaborator client and governed live watch handle.
+//! Authenticated loopback remote collaborator client and connection-owned live watch handle.
 
 use std::io::Write;
 use std::marker::PhantomData;
@@ -8,17 +8,23 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::auth::RemoteAuthToken;
 use super::binding::{RemoteBinaryCodec, WorthQuerySharedAccessProgram};
-use super::denial::{ProtocolRefusalReason, SharedAccessDenial};
-use super::framing::{
+use super::capped_writer::{
     decode_refusal_payload, decode_rows_payload, encode_scope_request, encode_watch_id_request,
-    read_bounded_frame, write_bounded_frame, BinaryReader, FrameKind,
 };
+use super::denial::{ProtocolRefusalReason, SharedAccessDenial};
+use super::framing::{read_bounded_frame, write_bounded_frame, BinaryReader, FrameKind};
 use super::types::{RemoteClientLimits, RemoteWatchId, RemoteWatchPollOutcome};
 
-/// Authenticated collaborator client connected to a single-owner remote Directory Home.
+/// Authenticated collaborator client connected to a single-owner loopback remote Home.
+///
+/// Direct TCP connections are strictly loopback-only (`127.0.0.1` / `::1`) because
+/// frames carry reusable bearer tokens and row payloads without transport encryption.
+/// For cross-host access, tunnel loopback over an authenticated encrypted channel
+/// (TLS/mTLS, Tailscale, or SSH).
 pub struct WorthQueryRemoteClient {
     addr: SocketAddr,
     stream: TcpStream,
+    pending_watch_stream: Option<TcpStream>,
     auth_token: RemoteAuthToken,
     limits: RemoteClientLimits,
 }
@@ -36,12 +42,14 @@ impl WorthQueryRemoteClient {
         auth_token: RemoteAuthToken,
         limits: RemoteClientLimits,
     ) -> Result<Self, SharedAccessDenial> {
-        let stream = TcpStream::connect_timeout(&addr, limits.io_timeout())
-            .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))?;
-        configure_stream(&stream, limits)?;
+        if !addr.ip().is_loopback() {
+            return Err(SharedAccessDenial::NonLoopbackAddressRefused);
+        }
+        let stream = connect_loopback_stream(addr, limits)?;
         Ok(Self {
             addr,
             stream,
+            pending_watch_stream: None,
             auth_token,
             limits,
         })
@@ -114,7 +122,8 @@ impl WorthQueryRemoteClient {
         }
     }
 
-    /// Opens an authenticated, WORTH-governed live watch on `scope`.
+    /// Opens an authenticated, WORTH-governed live watch on `scope` over its own
+    /// connection so dropping the watch immediately reclaims its server-side slot.
     pub fn watch<Schema, Program>(
         &mut self,
         scope: &Program::ScopeId,
@@ -128,7 +137,7 @@ impl WorthQueryRemoteClient {
         self.recv_watch_open::<Schema, Program>()
     }
 
-    /// Sends a watch-open request over this client's stream without waiting yet.
+    /// Opens a dedicated watch connection and sends `WatchOpenRequest` on it.
     pub fn send_watch_open<Schema, Program>(
         &mut self,
         scope: &Program::ScopeId,
@@ -138,17 +147,21 @@ impl WorthQueryRemoteClient {
         Schema: ApplicationSchema + 'static,
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
+        let mut watch_stream = connect_loopback_stream(self.addr, self.limits)?;
         let scope_key = Program::scope_key(scope);
         let payload = encode_scope_request(&self.auth_token, &scope_key, &query.encode_remote());
         write_bounded_frame(
-            &mut self.stream,
+            &mut watch_stream,
             FrameKind::WatchOpenRequest,
             &payload,
             self.limits.max_frame_bytes(),
-        )
+        )?;
+        self.pending_watch_stream = Some(watch_stream);
+        Ok(())
     }
 
-    /// Receives the watch-open response and returns a self-contained remote watch handle.
+    /// Receives the watch-open response on the dedicated watch connection and returns
+    /// a self-contained watch handle owning that exact connection.
     pub fn recv_watch_open<Schema, Program>(
         &mut self,
     ) -> Result<WorthQueryRemoteWatch<Schema, Program>, SharedAccessDenial>
@@ -156,7 +169,13 @@ impl WorthQueryRemoteClient {
         Schema: ApplicationSchema + 'static,
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
-        let (kind, payload) = read_bounded_frame(&mut self.stream, self.limits.max_frame_bytes())?;
+        let mut watch_stream =
+            self.pending_watch_stream
+                .take()
+                .ok_or(SharedAccessDenial::ProtocolRefused(
+                    ProtocolRefusalReason::MalformedPayload,
+                ))?;
+        let (kind, payload) = read_bounded_frame(&mut watch_stream, self.limits.max_frame_bytes())?;
         match kind {
             FrameKind::WatchOpenResponse => {
                 let mut reader = BinaryReader::new(&payload);
@@ -164,9 +183,6 @@ impl WorthQueryRemoteClient {
                 let raw_rows = decode_rows_payload(&mut reader, self.limits.max_frame_bytes())?;
                 reader.finish()?;
                 let initial_rows = decode_typed_rows::<Program::Row>(&raw_rows)?;
-                let watch_stream = TcpStream::connect_timeout(&self.addr, self.limits.io_timeout())
-                    .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))?;
-                configure_stream(&watch_stream, self.limits)?;
                 Ok(WorthQueryRemoteWatch {
                     id: watch_id,
                     stream: watch_stream,
@@ -232,8 +248,9 @@ impl WorthQueryRemoteClient {
 
 /// Self-contained handle for an open remote governed live watch.
 ///
-/// Fails closed immediately on the very next `poll` if the owner revokes the
-/// backing capability grant or closes the Directory Home.
+/// Owns its dedicated loopback connection so dropping it triggers automatic
+/// server-side watch reclamation, and fails closed on the very next `poll` if
+/// the owner revokes the backing capability grant or closes the Directory Home.
 pub struct WorthQueryRemoteWatch<Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
@@ -319,6 +336,16 @@ where
     }
 }
 
+fn connect_loopback_stream(
+    addr: SocketAddr,
+    limits: RemoteClientLimits,
+) -> Result<TcpStream, SharedAccessDenial> {
+    let stream = TcpStream::connect_timeout(&addr, limits.io_timeout())
+        .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))?;
+    configure_stream(&stream, limits)?;
+    Ok(stream)
+}
+
 fn decode_watch_poll_response<Schema, Program>(
     stream: &mut TcpStream,
     limits: RemoteClientLimits,
@@ -355,27 +382,15 @@ where
     }
 }
 
-fn configure_stream(
-    stream: &TcpStream,
-    limits: RemoteClientLimits,
-) -> Result<(), SharedAccessDenial> {
-    stream
-        .set_nodelay(true)
-        .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))?;
-    stream
-        .set_read_timeout(Some(limits.io_timeout()))
-        .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))?;
-    stream
-        .set_write_timeout(Some(limits.io_timeout()))
-        .map_err(|err| SharedAccessDenial::TransportIo(err.to_string()))
+fn configure_stream(s: &TcpStream, limits: RemoteClientLimits) -> Result<(), SharedAccessDenial> {
+    let io = |err: std::io::Error| SharedAccessDenial::TransportIo(err.to_string());
+    s.set_nodelay(true).map_err(io)?;
+    s.set_read_timeout(Some(limits.io_timeout())).map_err(io)?;
+    s.set_write_timeout(Some(limits.io_timeout())).map_err(io)
 }
 
 fn decode_typed_rows<Row: RemoteBinaryCodec>(
-    raw_rows: &[Vec<u8>],
+    raw: &[Vec<u8>],
 ) -> Result<Vec<Row>, SharedAccessDenial> {
-    let mut rows = Vec::with_capacity(raw_rows.len());
-    for raw in raw_rows {
-        rows.push(Row::decode_remote(raw)?);
-    }
-    Ok(rows)
+    raw.iter().map(|b| Row::decode_remote(b)).collect()
 }

@@ -8,11 +8,12 @@ EXTENDS Integers, Sequences, FiniteSets
   sessions, immediate revocation, and Directory Home close/reopen durability.
 
   Safety invariants & action properties:
-    - NeverLeakUngrantedScope (state invariant + step property)
-    - NeverServeAfterRevoke (step property + state witness)
-    - NeverServeUnauthenticated (step property + state witness)
+    - NeverLeakUngrantedScope (standalone invariant with per-(p,s) delivery witness)
+    - NeverServeAfterRevoke (state invariant + universal step property)
+    - NeverServeUnauthenticatedProp (universal step property across all (p,s))
     - GrantsDurableAcrossReopen (state invariant)
-    - NoConcurrentWriters (state invariant + step property)
+    - NoConcurrentWriters (state invariant)
+    - NoMutationWhileClosedProp (step property)
 
   Liveness properties:
     - CollaboratorEventuallyObservesProject1Write
@@ -32,16 +33,16 @@ VARIABLES
     scopeValue,         \* [Scopes -> 0..MaxVersion]: durable authoritative value per scope
     durableGrants,      \* [Principals \X Scopes -> GrantStates]: durable WORTH grants
     authStatus,         \* [Principals -> {"AuthValid", "AuthInvalid"}]: token validity
-    watches,            \* [Principals \X Scopes -> {"Closed", "Open"}]: active remote watches
-    watchSeen,          \* [Principals \X Scopes -> 0..MaxVersion]: last version delivered on open watch (0 when closed)
-    aliceP1Observed,    \* 0..MaxVersion: latest Project1 version observed by Alice (for liveness)
+    watches,            \* [Principals \X Scopes -> {"Closed", "Open"}]: server-owned watches
+    watchSeen,          \* [Principals \X Scopes -> 0..MaxVersion]: last version delivered on open watch
+    lastDelivered,      \* [Principals \X Scopes -> 0..MaxVersion]: independent per-(p,s) delivery witness
     closedGrants,       \* durableGrants snapshot while closed (EmptyGrants while open)
     closedValues,       \* scopeValue snapshot while closed (ZeroValues while open)
-    reopenPreserved     \* BOOLEAN: TRUE iff latest ReopenHome preserved durableGrants and scopeValue exactly
+    reopenPreserved     \* BOOLEAN: TRUE iff latest ReopenHome preserved durableGrants and scopeValue
 
 vars == <<
     homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
-    authStatus, watches, watchSeen, aliceP1Observed, closedGrants,
+    authStatus, watches, watchSeen, lastDelivered, closedGrants,
     closedValues, reopenPreserved
 >>
 
@@ -53,23 +54,31 @@ WatchStates == {"Closed", "Open"}
 EmptyGrants == [ps \in Principals \X Scopes |-> "None"]
 ZeroValues == [s \in Scopes |-> 0]
 ClosedWatches == [ps \in Principals \X Scopes |-> "Closed"]
-ZeroWatchSeen == [ps \in Principals \X Scopes |-> 0]
+ZeroPairVersions == [ps \in Principals \X Scopes |-> 0]
 
 OutcomeKinds == {
     "Ok",
     "Delivered",
     "Pending",
-    "AuthenticationRefused",
-    "AuthorizationRefused",
-    "WatchRefused",
+    "AuthInvalidSignature",
+    "AuthzCapabilityDenied",
+    "AuthzWatchCapabilityRevoked",
+    "WatchNotFound",
     "HomeClosed"
 }
+
+RowRecords == [scope : Scopes, version : 0..MaxVersion]
+SingletonRow(s, v) == <<[scope |-> s, version |-> v]>>
+EmptyRows == <<>>
 
 HasReadGrant(g) == g \in {"ActiveReadOnly", "ActiveReadAndWatch"}
 HasWatchGrant(g) == g = "ActiveReadAndWatch"
 
 GrantStateForAccess(access) ==
     IF access = "ReadOnly" THEN "ActiveReadOnly" ELSE "ActiveReadAndWatch"
+
+RecordDelivery(p, s, v) ==
+    [lastDelivered EXCEPT ![<<p, s>>] = IF v > @ THEN v ELSE @]
 
 TypeOK ==
     /\ homeOpen \in BOOLEAN
@@ -80,7 +89,7 @@ TypeOK ==
     /\ authStatus \in [Principals -> AuthStates]
     /\ watches \in [Principals \X Scopes -> WatchStates]
     /\ watchSeen \in [Principals \X Scopes -> 0..MaxVersion]
-    /\ aliceP1Observed \in 0..MaxVersion
+    /\ lastDelivered \in [Principals \X Scopes -> 0..MaxVersion]
     /\ closedGrants \in [Principals \X Scopes -> GrantStates]
     /\ closedValues \in [Scopes -> 0..MaxVersion]
     /\ reopenPreserved \in BOOLEAN
@@ -93,8 +102,8 @@ Init ==
     /\ durableGrants = EmptyGrants
     /\ authStatus = [p \in Principals |-> "AuthValid"]
     /\ watches = ClosedWatches
-    /\ watchSeen = ZeroWatchSeen
-    /\ aliceP1Observed = 0
+    /\ watchSeen = ZeroPairVersions
+    /\ lastDelivered = ZeroPairVersions
     /\ closedGrants = EmptyGrants
     /\ closedValues = ZeroValues
     /\ reopenPreserved = TRUE
@@ -108,7 +117,7 @@ OwnerWrite(s) ==
     /\ scopeValue' = [scopeValue EXCEPT ![s] = @ + 1]
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, durableGrants,
-           authStatus, watches, watchSeen, aliceP1Observed,
+           authStatus, watches, watchSeen, lastDelivered,
            closedGrants, closedValues, reopenPreserved
        >>
 
@@ -120,7 +129,7 @@ GrantScopeAccess(p, s, access) ==
     /\ durableGrants' = [durableGrants EXCEPT ![<<p, s>>] = GrantStateForAccess(access)]
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue,
-           authStatus, watches, watchSeen, aliceP1Observed,
+           authStatus, watches, watchSeen, lastDelivered,
            closedGrants, closedValues, reopenPreserved
        >>
 
@@ -131,119 +140,113 @@ RevokeScopeAccess(p, s) ==
     /\ durableGrants' = [durableGrants EXCEPT ![<<p, s>>] = "Revoked"]
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue,
-           authStatus, watches, watchSeen, aliceP1Observed,
+           authStatus, watches, watchSeen, lastDelivered,
            closedGrants, closedValues, reopenPreserved
        >>
 
-\* --- Collaborator remote operations (always authenticated + WORTH-governed) ---
+\* --- Collaborator remote operations (exact denial reasons + complete scoped rows) ---
 
-RemoteReadOutcome(p, s, out, val) ==
+RemoteReadOutcome(p, s, out, rows) ==
     LET grant == durableGrants[<<p, s>>]
         valid == authStatus[p] = "AuthValid"
     IN
     /\ IF ~homeOpen THEN
            /\ out = "HomeClosed"
-           /\ val = 0
-           /\ UNCHANGED aliceP1Observed
+           /\ rows = EmptyRows
+           /\ UNCHANGED lastDelivered
        ELSE IF ~valid THEN
-           /\ out = "AuthenticationRefused"
-           /\ val = 0
-           /\ UNCHANGED aliceP1Observed
+           /\ out = "AuthInvalidSignature"
+           /\ rows = EmptyRows
+           /\ UNCHANGED lastDelivered
        ELSE IF ~HasReadGrant(grant) THEN
-           /\ out = "AuthorizationRefused"
-           /\ val = 0
-           /\ UNCHANGED aliceP1Observed
+           /\ out = "AuthzCapabilityDenied"
+           /\ rows = EmptyRows
+           /\ UNCHANGED lastDelivered
        ELSE
            /\ out = "Delivered"
-           /\ val = scopeValue[s]
-           /\ aliceP1Observed' =
-                  IF p = "Alice" /\ s = "Project1" /\ scopeValue[s] > aliceP1Observed
-                  THEN scopeValue[s]
-                  ELSE aliceP1Observed
+           /\ rows = SingletonRow(s, scopeValue[s])
+           /\ lastDelivered' = RecordDelivery(p, s, scopeValue[s])
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
            authStatus, watches, watchSeen, closedGrants, closedValues, reopenPreserved
        >>
 
 RemoteRead(p, s) ==
-    \E out \in OutcomeKinds, val \in 0..MaxVersion : RemoteReadOutcome(p, s, out, val)
+    \E out \in OutcomeKinds, rows \in {EmptyRows, SingletonRow(s, scopeValue[s])} :
+        RemoteReadOutcome(p, s, out, rows)
 
-RemoteWatchOpenOutcome(p, s, out, val) ==
+RemoteWatchOpenOutcome(p, s, out, rows) ==
     LET grant == durableGrants[<<p, s>>]
         valid == authStatus[p] = "AuthValid"
     IN
     /\ IF ~homeOpen THEN
            /\ out = "HomeClosed"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE IF ~valid THEN
-           /\ out = "AuthenticationRefused"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ out = "AuthInvalidSignature"
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE IF ~HasWatchGrant(grant) THEN
-           /\ out = "AuthorizationRefused"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ out = "AuthzCapabilityDenied"
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE
            /\ out = "Ok"
-           /\ val = scopeValue[s]
+           /\ rows = SingletonRow(s, scopeValue[s])
            /\ watches' = [watches EXCEPT ![<<p, s>>] = "Open"]
            /\ watchSeen' = [watchSeen EXCEPT ![<<p, s>>] = scopeValue[s]]
-           /\ aliceP1Observed' =
-                  IF p = "Alice" /\ s = "Project1" /\ scopeValue[s] > aliceP1Observed
-                  THEN scopeValue[s]
-                  ELSE aliceP1Observed
+           /\ lastDelivered' = RecordDelivery(p, s, scopeValue[s])
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
            authStatus, closedGrants, closedValues, reopenPreserved
        >>
 
 RemoteWatchOpen(p, s) ==
-    \E out \in OutcomeKinds, val \in 0..MaxVersion : RemoteWatchOpenOutcome(p, s, out, val)
+    \E out \in OutcomeKinds, rows \in {EmptyRows, SingletonRow(s, scopeValue[s])} :
+        RemoteWatchOpenOutcome(p, s, out, rows)
 
-RemoteWatchPollOutcome(p, s, out, val) ==
+RemoteWatchPollOutcome(p, s, out, rows) ==
     LET grant == durableGrants[<<p, s>>]
         valid == authStatus[p] = "AuthValid"
     IN
     /\ IF ~homeOpen THEN
            /\ out = "HomeClosed"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE IF ~valid THEN
-           /\ out = "AuthenticationRefused"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ out = "AuthInvalidSignature"
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE IF watches[<<p, s>>] /= "Open" THEN
-           /\ out = "WatchRefused"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ out = "WatchNotFound"
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
        ELSE IF ~HasWatchGrant(grant) THEN
-           \* Fail closed immediately on revocation and terminate the watch handle.
-           /\ out = "AuthorizationRefused"
-           /\ val = 0
+           \* Fail closed immediately on revocation with exact WatchCapabilityRevoked reason.
+           /\ out = "AuthzWatchCapabilityRevoked"
+           /\ rows = EmptyRows
            /\ watches' = [watches EXCEPT ![<<p, s>>] = "Closed"]
            /\ watchSeen' = [watchSeen EXCEPT ![<<p, s>>] = 0]
-           /\ UNCHANGED aliceP1Observed
+           /\ UNCHANGED lastDelivered
        ELSE IF scopeValue[s] > watchSeen[<<p, s>>] THEN
            /\ out = "Delivered"
-           /\ val = scopeValue[s]
+           /\ rows = SingletonRow(s, scopeValue[s])
            /\ watchSeen' = [watchSeen EXCEPT ![<<p, s>>] = scopeValue[s]]
-           /\ aliceP1Observed' =
-                  IF p = "Alice" /\ s = "Project1" /\ scopeValue[s] > aliceP1Observed
-                  THEN scopeValue[s]
-                  ELSE aliceP1Observed
+           /\ lastDelivered' = RecordDelivery(p, s, scopeValue[s])
            /\ UNCHANGED watches
        ELSE
            /\ out = "Pending"
-           /\ val = 0
-           /\ UNCHANGED <<watches, watchSeen, aliceP1Observed>>
+           /\ rows = EmptyRows
+           /\ UNCHANGED <<watches, watchSeen, lastDelivered>>
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
            authStatus, closedGrants, closedValues, reopenPreserved
        >>
 
 RemoteWatchPoll(p, s) ==
-    \E out \in OutcomeKinds, val \in 0..MaxVersion : RemoteWatchPollOutcome(p, s, out, val)
+    \E out \in OutcomeKinds, rows \in {EmptyRows, SingletonRow(s, scopeValue[s])} :
+        RemoteWatchPollOutcome(p, s, out, rows)
 
 \* --- Directory Home lifecycle (single-owner close and reopen) ---
 
@@ -253,10 +256,10 @@ CloseHome ==
     /\ homeOpen' = FALSE
     /\ ownerWriter' = "None"
     /\ watches' = ClosedWatches
-    /\ watchSeen' = ZeroWatchSeen
+    /\ watchSeen' = ZeroPairVersions
     /\ closedGrants' = durableGrants
     /\ closedValues' = scopeValue
-    /\ UNCHANGED <<incarnation, scopeValue, durableGrants, authStatus, aliceP1Observed, reopenPreserved>>
+    /\ UNCHANGED <<incarnation, scopeValue, durableGrants, authStatus, lastDelivered, reopenPreserved>>
 
 ReopenHome ==
     /\ ~homeOpen
@@ -270,8 +273,8 @@ ReopenHome ==
     /\ closedGrants' = EmptyGrants
     /\ closedValues' = ZeroValues
     /\ watches' = ClosedWatches
-    /\ watchSeen' = ZeroWatchSeen
-    /\ UNCHANGED <<authStatus, aliceP1Observed>>
+    /\ watchSeen' = ZeroPairVersions
+    /\ UNCHANGED <<authStatus, lastDelivered>>
 
 \* --- Adversarial token tampering and legitimate credential restoration ---
 
@@ -280,7 +283,7 @@ TamperAuthToken(p) ==
     /\ authStatus' = [authStatus EXCEPT ![p] = "AuthInvalid"]
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
-           watches, watchSeen, aliceP1Observed, closedGrants, closedValues, reopenPreserved
+           watches, watchSeen, lastDelivered, closedGrants, closedValues, reopenPreserved
        >>
 
 RestoreAuthToken(p) ==
@@ -288,7 +291,7 @@ RestoreAuthToken(p) ==
     /\ authStatus' = [authStatus EXCEPT ![p] = "AuthValid"]
     /\ UNCHANGED <<
            homeOpen, incarnation, ownerWriter, scopeValue, durableGrants,
-           watches, watchSeen, aliceP1Observed, closedGrants, closedValues, reopenPreserved
+           watches, watchSeen, lastDelivered, closedGrants, closedValues, reopenPreserved
        >>
 
 Next ==
@@ -313,8 +316,10 @@ Spec ==
 
 NeverLeakUngrantedScope ==
     \A p \in Principals, s \in Scopes :
-        (durableGrants[<<p, s>>] \in {"None", "ActiveReadOnly"}) =>
-            (watches[<<p, s>>] = "Closed" /\ watchSeen[<<p, s>>] = 0)
+        /\ (durableGrants[<<p, s>>] = "None") =>
+               (lastDelivered[<<p, s>>] = 0)
+        /\ (durableGrants[<<p, s>>] \in {"None", "ActiveReadOnly"}) =>
+               (watches[<<p, s>>] = "Closed" /\ watchSeen[<<p, s>>] = 0)
 
 NeverServeAfterRevoke ==
     \A p \in Principals, s \in Scopes :
@@ -324,16 +329,16 @@ NeverServeAfterRevoke ==
 NeverServeAfterRevokeStep ==
     \A p \in Principals, s \in Scopes :
         (durableGrants[<<p, s>>] = "Revoked") =>
+            /\ lastDelivered'[<<p, s>>] = lastDelivered[<<p, s>>]
             /\ watchSeen'[<<p, s>>] <= watchSeen[<<p, s>>]
             /\ (watches[<<p, s>>] = "Closed" => watches'[<<p, s>>] = "Closed")
-            /\ ((p = "Alice" /\ s = "Project1") => aliceP1Observed' = aliceP1Observed)
 
 NeverServeUnauthenticatedStep ==
     \A p \in Principals, s \in Scopes :
         (authStatus[p] = "AuthInvalid") =>
-            /\ (watches[<<p, s>>] = "Closed" => watches'[<<p, s>>] = "Closed")
+            /\ lastDelivered'[<<p, s>>] = lastDelivered[<<p, s>>]
             /\ watchSeen'[<<p, s>>] <= watchSeen[<<p, s>>]
-            /\ ((p = "Alice" /\ s = "Project1") => aliceP1Observed' = aliceP1Observed)
+            /\ (watches[<<p, s>>] = "Closed" => watches'[<<p, s>>] = "Closed")
 
 GrantsDurableAcrossReopen ==
     /\ (~homeOpen) => (durableGrants = closedGrants /\ scopeValue = closedValues)
@@ -361,7 +366,7 @@ CollaboratorEventuallyObservesProject1Write ==
              /\ scopeValue["Project1"] = v
              /\ authStatus["Alice"] = "AuthValid"
              /\ HasReadGrant(durableGrants[<<"Alice", "Project1">>]))
-            => <>( aliceP1Observed >= v
+            => <>( lastDelivered[<<"Alice", "Project1">>] >= v
                    \/ ~homeOpen
                    \/ authStatus["Alice"] /= "AuthValid"
                    \/ ~HasReadGrant(durableGrants[<<"Alice", "Project1">>]) ) )

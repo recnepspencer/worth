@@ -19,6 +19,9 @@ use super::mutations::{
     GrantProjectAccess, GrantProjectAccessBinding, RevokeProjectAccess, RevokeProjectAccessBinding,
     WriteProjectVersion, WriteProjectVersionBinding,
 };
+use super::owner_observe::{
+    OwnerGrantQuery, OwnerGrantReadBinding, OwnerProjectQuery, OwnerProjectReadBinding,
+};
 use super::query::{ProjectStateQuery, ProjectStateReadBinding, ProjectUpdatedEffect};
 
 pub struct SharedProjectSchema;
@@ -72,6 +75,10 @@ impl ApplicationSchemaContribution<SharedProjectSchema> for SharedProjectSurface
             ProjectUpdatedEffect,
             ProjectStateQuery,
             ProjectStateReadBinding,
+            OwnerProjectQuery,
+            OwnerProjectReadBinding,
+            OwnerGrantQuery,
+            OwnerGrantReadBinding,
         ),
         (
             WriteProjectVersion,

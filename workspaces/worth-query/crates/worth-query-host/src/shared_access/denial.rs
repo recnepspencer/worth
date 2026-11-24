@@ -64,6 +64,7 @@ pub enum SharedAccessDenial {
     BudgetRefused(BudgetRefusalReason),
     WatchRefused(WatchRefusalReason),
     DirectoryHomeRequired,
+    NonLoopbackAddressRefused,
     InvalidGrantIdentifier,
     InvalidAuthConfiguration,
     GrantMutationRefused(String),
@@ -120,6 +121,7 @@ impl SharedAccessDenial {
             Self::GrantMutationRefused(_) => (604, 0, 0),
             Self::HostUnavailable => (605, 0, 0),
             Self::TransportIo(_) => (606, 0, 0),
+            Self::NonLoopbackAddressRefused => (607, 0, 0),
         }
     }
 
@@ -173,6 +175,7 @@ impl SharedAccessDenial {
             604 => Self::GrantMutationRefused("remote grant mutation refused".to_owned()),
             605 => Self::HostUnavailable,
             606 => Self::TransportIo("remote transport error".to_owned()),
+            607 => Self::NonLoopbackAddressRefused,
             _ => Self::ProtocolRefused(Proto::MalformedPayload),
         }
     }

@@ -1,10 +1,12 @@
 //! Reference oracle transcribed directly from `specs/tla/shared_access/SharedAccess.tla`
-//! and passive NDJSON trace recorder for `tools/tla/run_tlc.py trace`.
+//! and strictly passive seed+observation scheduler (ZERO oracle feedback).
 
 use worth_query_host::facade::shared_access::ScopeAccess;
 
 pub const PRINCIPALS: [&str; 2] = ["Alice", "Bob"];
 pub const SCOPES: [&str; 2] = ["Project1", "Project2"];
+
+pub type DeliveredRow = (String, u64);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GrantState {
@@ -69,21 +71,39 @@ pub enum DstOp {
     },
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExpectedStep {
     pub outcome: &'static str,
-    pub value: u64,
+    pub rows: Vec<DeliveredRow>,
 }
 
 impl ExpectedStep {
-    const fn ok(value: u64) -> Self {
+    fn ok() -> Self {
         Self {
             outcome: "Ok",
-            value,
+            rows: Vec::new(),
         }
     }
-    const fn refused(outcome: &'static str) -> Self {
-        Self { outcome, value: 0 }
+
+    fn ok_row(scope: usize, version: u64) -> Self {
+        Self {
+            outcome: "Ok",
+            rows: vec![(SCOPES[scope].to_owned(), version)],
+        }
+    }
+
+    fn delivered_row(scope: usize, version: u64) -> Self {
+        Self {
+            outcome: "Delivered",
+            rows: vec![(SCOPES[scope].to_owned(), version)],
+        }
+    }
+
+    fn refused(outcome: &'static str) -> Self {
+        Self {
+            outcome,
+            rows: Vec::new(),
+        }
     }
 }
 
@@ -117,7 +137,7 @@ impl SharedAccessOracle {
         match op {
             DstOp::OwnerWrite { scope } => {
                 self.scope_value[scope] += 1;
-                ExpectedStep::ok(self.scope_value[scope])
+                ExpectedStep::ok_row(scope, self.scope_value[scope])
             }
             DstOp::GrantScopeAccess {
                 principal,
@@ -128,11 +148,11 @@ impl SharedAccessOracle {
                     ScopeAccess::ReadOnly => GrantState::ActiveReadOnly,
                     ScopeAccess::ReadAndWatch => GrantState::ActiveReadAndWatch,
                 };
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
             DstOp::RevokeScopeAccess { principal, scope } => {
                 self.durable_grants[principal][scope] = GrantState::Revoked;
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
             DstOp::RemoteRead { principal, scope } => self.apply_remote_read(principal, scope),
             DstOp::RemoteWatchOpen { principal, scope } => {
@@ -145,22 +165,22 @@ impl SharedAccessOracle {
                 self.home_open = false;
                 self.watches_open = [[false; 2]; 2];
                 self.watch_seen = [[0; 2]; 2];
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
             DstOp::ReopenHome => {
                 self.home_open = true;
                 self.incarnation += 1;
                 self.watches_open = [[false; 2]; 2];
                 self.watch_seen = [[0; 2]; 2];
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
             DstOp::TamperAuthToken { principal } => {
                 self.auth_valid[principal] = false;
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
             DstOp::RestoreAuthToken { principal } => {
                 self.auth_valid[principal] = true;
-                ExpectedStep::ok(0)
+                ExpectedStep::ok()
             }
         }
     }
@@ -170,15 +190,12 @@ impl SharedAccessOracle {
             return ExpectedStep::refused("HomeClosed");
         }
         if !self.auth_valid[p] {
-            return ExpectedStep::refused("AuthenticationRefused");
+            return ExpectedStep::refused("AuthInvalidSignature");
         }
         if !self.durable_grants[p][s].has_read() {
-            return ExpectedStep::refused("AuthorizationRefused");
+            return ExpectedStep::refused("AuthzCapabilityDenied");
         }
-        ExpectedStep {
-            outcome: "Delivered",
-            value: self.scope_value[s],
-        }
+        ExpectedStep::delivered_row(s, self.scope_value[s])
     }
 
     fn apply_remote_watch_open(&mut self, p: usize, s: usize) -> ExpectedStep {
@@ -186,14 +203,14 @@ impl SharedAccessOracle {
             return ExpectedStep::refused("HomeClosed");
         }
         if !self.auth_valid[p] {
-            return ExpectedStep::refused("AuthenticationRefused");
+            return ExpectedStep::refused("AuthInvalidSignature");
         }
         if !self.durable_grants[p][s].has_watch() {
-            return ExpectedStep::refused("AuthorizationRefused");
+            return ExpectedStep::refused("AuthzCapabilityDenied");
         }
         self.watches_open[p][s] = true;
         self.watch_seen[p][s] = self.scope_value[s];
-        ExpectedStep::ok(self.scope_value[s])
+        ExpectedStep::ok_row(s, self.scope_value[s])
     }
 
     fn apply_remote_watch_poll(&mut self, p: usize, s: usize) -> ExpectedStep {
@@ -201,22 +218,19 @@ impl SharedAccessOracle {
             return ExpectedStep::refused("HomeClosed");
         }
         if !self.auth_valid[p] {
-            return ExpectedStep::refused("AuthenticationRefused");
+            return ExpectedStep::refused("AuthInvalidSignature");
         }
         if !self.watches_open[p][s] {
-            return ExpectedStep::refused("WatchRefused");
+            return ExpectedStep::refused("WatchNotFound");
         }
         if !self.durable_grants[p][s].has_watch() {
             self.watches_open[p][s] = false;
             self.watch_seen[p][s] = 0;
-            return ExpectedStep::refused("AuthorizationRefused");
+            return ExpectedStep::refused("AuthzWatchCapabilityRevoked");
         }
         if self.scope_value[s] > self.watch_seen[p][s] {
             self.watch_seen[p][s] = self.scope_value[s];
-            ExpectedStep {
-                outcome: "Delivered",
-                value: self.scope_value[s],
-            }
+            ExpectedStep::delivered_row(s, self.scope_value[s])
         } else {
             ExpectedStep::refused("Pending")
         }
@@ -231,6 +245,36 @@ pub struct PassivePostState {
     pub project_values: [u64; 2],
     pub grants: [[GrantState; 2]; 2],
     pub watches_open: [[bool; 2]; 2],
+}
+
+/// Strictly passive scheduling inputs observed from the real runtime (NEVER the oracle).
+#[derive(Clone, Debug)]
+pub struct PassiveScheduleInput {
+    pub home_open: bool,
+    pub incarnation: u64,
+    pub project_values: [u64; 2],
+    pub durable_grants: [[GrantState; 2]; 2],
+    pub server_watches_open: [[bool; 2]; 2],
+    pub watch_last_delivered: [[u64; 2]; 2],
+    pub token_tampered: [bool; 2],
+}
+
+impl PassiveScheduleInput {
+    pub fn initial(
+        incarnation: u64,
+        project_values: [u64; 2],
+        grants: [[GrantState; 2]; 2],
+    ) -> Self {
+        Self {
+            home_open: true,
+            incarnation,
+            project_values,
+            durable_grants: grants,
+            server_watches_open: [[false; 2]; 2],
+            watch_last_delivered: [[0; 2]; 2],
+            token_tampered: [false; 2],
+        }
+    }
 }
 
 /// Deterministic xorshift64 PRNG for seeded simulation walks.
@@ -255,8 +299,9 @@ impl Rng {
     }
 }
 
-pub fn pick_next_op(rng: &mut Rng, oracle: &SharedAccessOracle, step: usize) -> DstOp {
-    if !oracle.home_open {
+/// Picks the next action strictly from `rng` + passive runtime observations.
+pub fn pick_next_op(rng: &mut Rng, observed: &PassiveScheduleInput, step: usize) -> DstOp {
+    if !observed.home_open {
         return match rng.index(5) {
             0 => DstOp::RemoteRead {
                 principal: rng.index(2),
@@ -275,15 +320,15 @@ pub fn pick_next_op(rng: &mut Rng, oracle: &SharedAccessOracle, step: usize) -> 
     }
     for p in 0..2 {
         for s in 0..2 {
-            push_pair_candidates(rng, oracle, (p, s), &mut candidates);
+            push_pair_candidates(rng, observed, (p, s), &mut candidates);
         }
-        candidates.push(if oracle.auth_valid[p] {
-            DstOp::TamperAuthToken { principal: p }
-        } else {
+        candidates.push(if observed.token_tampered[p] {
             DstOp::RestoreAuthToken { principal: p }
+        } else {
+            DstOp::TamperAuthToken { principal: p }
         });
     }
-    if step >= 10 && oracle.incarnation < 2 {
+    if step >= 10 && observed.incarnation < 2 {
         candidates.push(DstOp::CloseHome);
         candidates.push(DstOp::CloseHome);
     }
@@ -292,13 +337,13 @@ pub fn pick_next_op(rng: &mut Rng, oracle: &SharedAccessOracle, step: usize) -> 
 
 fn push_pair_candidates(
     rng: &mut Rng,
-    oracle: &SharedAccessOracle,
+    observed: &PassiveScheduleInput,
     pair: (usize, usize),
     out: &mut Vec<DstOp>,
 ) {
     let (principal, scope) = pair;
-    let grant = oracle.durable_grants[principal][scope];
-    let watch_open = oracle.watches_open[principal][scope];
+    let grant = observed.durable_grants[principal][scope];
+    let watch_open = observed.server_watches_open[principal][scope];
     out.push(DstOp::RemoteRead { principal, scope });
     out.push(DstOp::RemoteWatchOpen { principal, scope });
     out.push(DstOp::RemoteWatchPoll { principal, scope });
@@ -322,7 +367,9 @@ fn push_pair_candidates(
         push_repeated(out, DstOp::RemoteWatchOpen { principal, scope }, 3);
     }
     if watch_open {
-        if oracle.scope_value[scope] > oracle.watch_seen[principal][scope] || !grant.has_watch() {
+        if observed.project_values[scope] > observed.watch_last_delivered[principal][scope]
+            || !grant.has_watch()
+        {
             push_repeated(out, DstOp::RemoteWatchPoll { principal, scope }, 5);
         } else {
             push_repeated(out, DstOp::OwnerWrite { scope }, 2);

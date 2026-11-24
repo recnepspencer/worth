@@ -1,8 +1,9 @@
-//! Authenticated remote session credentials and WORTH principal admission.
+//! Authenticated remote session credentials and single-pass WORTH principal admission.
 
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Mutex;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -230,62 +231,13 @@ impl std::fmt::Debug for RemoteAuthToken {
     }
 }
 
-struct RemoteTokenAuthenticationAdapter {
-    audience: WorthQueryAuthenticationAudience,
-    method: WorthQueryAuthenticationMethod,
-    keys: BTreeMap<String, RemoteAuthKey>,
-    expected_home: [u8; 16],
-    current_incarnation: u64,
-    require_incarnation_pin: bool,
+/// Single-use WORTH admission adapter carrying a pre-verified principal with zero key cloning.
+struct PreValidatedTokenAdapter {
+    validated: Mutex<Option<WorthQueryValidatedExternalPrincipal>>,
 }
 
-impl RemoteTokenAuthenticationAdapter {
-    fn verify_token(
-        &self,
-        token: &RemoteAuthToken,
-    ) -> Result<WorthQueryValidatedExternalPrincipal, AuthenticationRefusalReason> {
-        let key = self
-            .keys
-            .get(&token.body.key_id)
-            .ok_or(AuthenticationRefusalReason::UnknownKey)?;
-        let expected_mac = compute_token_mac(&key.secret, &token.body);
-        if !constant_time_eq_32(&expected_mac, &token.mac) {
-            return Err(AuthenticationRefusalReason::InvalidSignature);
-        }
-        if token.body.home_identity != self.expected_home {
-            return Err(AuthenticationRefusalReason::HomeIdentityMismatch);
-        }
-        match token.body.pinned_incarnation {
-            Some(pin) if pin != self.current_incarnation => {
-                return Err(AuthenticationRefusalReason::StaleIncarnation);
-            }
-            None if self.require_incarnation_pin => {
-                return Err(AuthenticationRefusalReason::IncarnationPinRequired);
-            }
-            _ => {}
-        }
-        let now_secs =
-            current_unix_secs().map_err(|_| AuthenticationRefusalReason::TokenExpired)?;
-        if token.body.issued_at_unix_secs > now_secs || token.body.expires_at_unix_secs <= now_secs
-        {
-            return Err(AuthenticationRefusalReason::TokenExpired);
-        }
-        let validated_at = UNIX_EPOCH + Duration::from_secs(token.body.issued_at_unix_secs);
-        let expires_at = UNIX_EPOCH + Duration::from_secs(token.body.expires_at_unix_secs);
-        WorthQueryValidatedExternalPrincipal::new(
-            token.body.principal.clone(),
-            self.audience.clone(),
-            self.method.clone(),
-            validated_at,
-            expires_at,
-            Vec::new(),
-        )
-        .map_err(|_| AuthenticationRefusalReason::MalformedToken)
-    }
-}
-
-impl WorthQueryAuthenticationAdapter for RemoteTokenAuthenticationAdapter {
-    type Credential = RemoteAuthToken;
+impl WorthQueryAuthenticationAdapter for PreValidatedTokenAdapter {
+    type Credential = ();
 
     fn configuration_identity(&self) -> &str {
         "worth.query.host.shared_access.hmac_sha256.v1"
@@ -293,23 +245,19 @@ impl WorthQueryAuthenticationAdapter for RemoteTokenAuthenticationAdapter {
 
     fn validate<'a>(
         &'a self,
-        credential: Self::Credential,
+        _credential: Self::Credential,
         _scope: &'a WorthQueryRequestScope,
     ) -> WorthQueryAuthenticationFuture<'a> {
-        let result = self.verify_token(&credential).map_err(|reason| {
-            let kind = match reason {
-                AuthenticationRefusalReason::TokenExpired => {
-                    WorthQueryAuthenticationAdapterFailureKind::CredentialExpired
-                }
-                AuthenticationRefusalReason::HomeIdentityMismatch
-                | AuthenticationRefusalReason::StaleIncarnation
-                | AuthenticationRefusalReason::IncarnationPinRequired => {
-                    WorthQueryAuthenticationAdapterFailureKind::BindingMismatch
-                }
-                _ => WorthQueryAuthenticationAdapterFailureKind::CredentialRejected,
-            };
-            WorthQueryAuthenticationAdapterFailure::new(kind)
-        });
+        let result = self
+            .validated
+            .lock()
+            .ok()
+            .and_then(|mut guard| guard.take())
+            .ok_or_else(|| {
+                WorthQueryAuthenticationAdapterFailure::new(
+                    WorthQueryAuthenticationAdapterFailureKind::CredentialRejected,
+                )
+            });
         Box::pin(std::future::ready(result))
     }
 }
@@ -320,24 +268,24 @@ pub(super) struct RemoteAuthTarget<'a> {
     pub(super) incarnation: HomeIncarnation,
 }
 
-/// Verifies `token` in constant time and mints a genuine WORTH external principal proof.
+pub(super) struct AuthenticatedRemotePrincipal<Schema: ApplicationSchema> {
+    pub(super) external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    pub(super) expires_at_unix_secs: u64,
+}
+
+/// Verifies `token` strictly once by borrowing key material without cloning,
+/// then mints a genuine WORTH external principal proof.
 pub(super) fn authenticate_remote_token<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     target: &RemoteAuthTarget<'_>,
     token: &RemoteAuthToken,
     request_scope: &WorthQueryRequestScope,
-) -> Result<WorthQueryAuthenticatedExternalPrincipal<Schema>, SharedAccessDenial> {
-    let adapter = RemoteTokenAuthenticationAdapter {
-        audience: target.config.audience.clone(),
-        method: target.config.method.clone(),
-        keys: target.config.keys.clone(),
-        expected_home: target.home_identity.bytes(),
-        current_incarnation: target.incarnation.get(),
-        require_incarnation_pin: target.config.require_incarnation_pin,
-    };
-    adapter
-        .verify_token(token)
+) -> Result<AuthenticatedRemotePrincipal<Schema>, SharedAccessDenial> {
+    let (validated, expires_at_unix_secs) = verify_token_single_pass(target, token)
         .map_err(SharedAccessDenial::AuthenticationRefused)?;
+    let adapter = PreValidatedTokenAdapter {
+        validated: Mutex::new(Some(validated)),
+    };
     let admitted = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
@@ -350,9 +298,56 @@ pub(super) fn authenticate_remote_token<Schema: ApplicationSchema>(
     .map_err(|_| {
         SharedAccessDenial::AuthenticationRefused(AuthenticationRefusalReason::AdapterDenied)
     })?;
-    poll_ready_once(admitted.authenticate(token.clone(), request_scope)).map_err(|_| {
+    let external = poll_ready_once(admitted.authenticate((), request_scope)).map_err(|_| {
         SharedAccessDenial::AuthenticationRefused(AuthenticationRefusalReason::AdapterDenied)
+    })?;
+    Ok(AuthenticatedRemotePrincipal {
+        external,
+        expires_at_unix_secs,
     })
+}
+
+fn verify_token_single_pass(
+    target: &RemoteAuthTarget<'_>,
+    token: &RemoteAuthToken,
+) -> Result<(WorthQueryValidatedExternalPrincipal, u64), AuthenticationRefusalReason> {
+    let key = target
+        .config
+        .keys
+        .get(&token.body.key_id)
+        .ok_or(AuthenticationRefusalReason::UnknownKey)?;
+    let expected_mac = compute_token_mac(&key.secret, &token.body);
+    if !constant_time_eq_32(&expected_mac, &token.mac) {
+        return Err(AuthenticationRefusalReason::InvalidSignature);
+    }
+    if token.body.home_identity != target.home_identity.bytes() {
+        return Err(AuthenticationRefusalReason::HomeIdentityMismatch);
+    }
+    match token.body.pinned_incarnation {
+        Some(pin) if pin != target.incarnation.get() => {
+            return Err(AuthenticationRefusalReason::StaleIncarnation);
+        }
+        None if target.config.require_incarnation_pin => {
+            return Err(AuthenticationRefusalReason::IncarnationPinRequired);
+        }
+        _ => {}
+    }
+    let now_secs = current_unix_secs().map_err(|_| AuthenticationRefusalReason::TokenExpired)?;
+    if token.body.issued_at_unix_secs > now_secs || token.body.expires_at_unix_secs <= now_secs {
+        return Err(AuthenticationRefusalReason::TokenExpired);
+    }
+    let validated_at = UNIX_EPOCH + Duration::from_secs(token.body.issued_at_unix_secs);
+    let expires_at = UNIX_EPOCH + Duration::from_secs(token.body.expires_at_unix_secs);
+    let validated = WorthQueryValidatedExternalPrincipal::new(
+        token.body.principal.clone(),
+        target.config.audience.clone(),
+        target.config.method.clone(),
+        validated_at,
+        expires_at,
+        Vec::new(),
+    )
+    .map_err(|_| AuthenticationRefusalReason::MalformedToken)?;
+    Ok((validated, token.body.expires_at_unix_secs))
 }
 
 fn poll_ready_once<F: Future>(future: F) -> F::Output {
@@ -361,11 +356,11 @@ fn poll_ready_once<F: Future>(future: F) -> F::Output {
     let mut context = Context::from_waker(waker);
     match Pin::as_mut(&mut future).poll(&mut context) {
         Poll::Ready(output) => output,
-        Poll::Pending => unreachable!("RemoteTokenAuthenticationAdapter resolves immediately"),
+        Poll::Pending => unreachable!("PreValidatedTokenAdapter resolves immediately"),
     }
 }
 
-fn current_unix_secs() -> Result<u64, SharedAccessDenial> {
+pub(super) fn current_unix_secs() -> Result<u64, SharedAccessDenial> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())

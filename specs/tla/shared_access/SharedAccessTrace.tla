@@ -5,12 +5,13 @@ EXTENDS SharedAccess, TraceData
   Trace-validation refinement wrapper for SharedAccess.tla.
 
   The seeded Rust DST in `worth-query-court-decl-host-integration`
-  (`host::shared_access`) emits one NDJSON record per step from passive
-  observations on the real Directory Home and authenticated remote server.
-  `tools/tla/run_tlc.py trace` compiles them into TraceData.tla and runs TLC
-  on this spec. TLC accepts iff every observed Rust step matches the exact
-  SharedAccess.tla transition, exact typed refusal/delivery outcome, exact
-  delivered value, and exact post-state while preserving every safety invariant.
+  (`host::shared_access`) emits one NDJSON record per step from strictly
+  passive observations on the real Directory Home and authenticated loopback
+  remote server. `tools/tla/run_tlc.py trace` compiles them into TraceData.tla
+  and runs TLC on this spec. TLC accepts iff every observed Rust step matches
+  the exact SharedAccess.tla transition, exact denial reason or delivery
+  outcome, exact complete ordered scoped row sequence, and exact passive
+  post-state while preserving every safety invariant.
 *)
 
 VARIABLE pc
@@ -25,37 +26,37 @@ StepAction(step) ==
     CASE step.action = "OwnerWrite" ->
             /\ OwnerWrite(step.scope)
             /\ step.outcome = "Ok"
-            /\ step.value = scopeValue'[step.scope]
+            /\ step.rows = SingletonRow(step.scope, scopeValue'[step.scope])
       [] step.action = "GrantScopeAccess" ->
             /\ GrantScopeAccess(step.principal, step.scope, step.access)
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
       [] step.action = "RevokeScopeAccess" ->
             /\ RevokeScopeAccess(step.principal, step.scope)
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
       [] step.action = "RemoteRead" ->
-            RemoteReadOutcome(step.principal, step.scope, step.outcome, step.value)
+            RemoteReadOutcome(step.principal, step.scope, step.outcome, step.rows)
       [] step.action = "RemoteWatchOpen" ->
-            RemoteWatchOpenOutcome(step.principal, step.scope, step.outcome, step.value)
+            RemoteWatchOpenOutcome(step.principal, step.scope, step.outcome, step.rows)
       [] step.action = "RemoteWatchPoll" ->
-            RemoteWatchPollOutcome(step.principal, step.scope, step.outcome, step.value)
+            RemoteWatchPollOutcome(step.principal, step.scope, step.outcome, step.rows)
       [] step.action = "CloseHome" ->
             /\ CloseHome
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
       [] step.action = "ReopenHome" ->
             /\ ReopenHome
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
       [] step.action = "TamperAuthToken" ->
             /\ TamperAuthToken(step.principal)
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
       [] step.action = "RestoreAuthToken" ->
             /\ RestoreAuthToken(step.principal)
             /\ step.outcome = "Ok"
-            /\ step.value = 0
+            /\ step.rows = EmptyRows
 
 MatchesPostState(step) ==
     /\ homeOpen' = step.postHomeOpen

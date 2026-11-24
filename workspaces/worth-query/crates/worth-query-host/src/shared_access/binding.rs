@@ -7,6 +7,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
+    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::ApplicationProgramDefinition,
     application_query::{
         ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryScopeBinding,
@@ -17,9 +18,9 @@ use worth_query_declaration::facade::{
     },
     authentication::WorthQueryExternalPrincipalIdentity,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
+use super::capped_writer::RemoteByteWriter;
 use super::denial::SharedAccessDenial;
 use super::types::{ScopeAccess, ScopeGrantId};
 
@@ -27,20 +28,15 @@ use super::types::{ScopeAccess, ScopeGrantId};
 pub trait RemoteBinaryCodec: Sized {
     fn encode_remote(&self) -> Vec<u8>;
     fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial>;
+
+    /// Streams encoded bytes directly into a pre-capped frame writer.
+    fn encode_remote_into(&self, writer: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
+        let bytes = self.encode_remote();
+        writer.write_fixed(&bytes)
+    }
 }
 
-/// Parameters for committing a durable scope-access grant on the owner's Home.
-pub struct RemoteQueryContext<
-    'a,
-    Schema: ApplicationSchema,
-    Program: WorthQuerySharedAccessProgram<Schema>,
-> {
-    pub runtime: &'a WorthQueryProgramApplicationRuntime<Schema, Program>,
-    pub owner: &'a WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    pub request_scope: &'a WorthQueryRequestScope,
-}
-
-/// Parameters for opening or revoking one scope grant on the owner's Home.
+/// Parameters for building a durable scope-access grant mutation on the owner's Home.
 pub struct RemoteWatchContext<'a, ScopeId> {
     pub grant_id: &'a ScopeGrantId,
     pub scope: &'a ScopeId,
@@ -51,9 +47,12 @@ pub struct RemoteWatchContext<'a, ScopeId> {
 /// Application-program contract that wires a WORTH schema's real capability grants,
 /// governed read query, and governed live watch query into `WorthQueryApplicationHome`.
 ///
-/// The application never performs ad-hoc authorization checks here: `worth-query-host`
-/// executes WORTH's real `execute_governed`, `admit_capability_access`, and
-/// `open_governed_application_query_live` directly using the declared capabilities.
+/// The application never commits or authorizes on its own behalf: `worth-query-host`
+/// executes the declared grant and revoke mutation intents directly through WORTH's
+/// program runtime (requiring a genuine published commit receipt with non-zero record
+/// changes before issuing a `ScopeAccessGrant`), and executes WORTH's real
+/// `execute_governed`, `admit_capability_access`, and `open_governed_application_query_live`
+/// directly on every remote request.
 pub trait WorthQuerySharedAccessProgram<Schema>:
     ApplicationProgramDefinition<Schema> + Sized + 'static
 where
@@ -62,6 +61,9 @@ where
     type ScopeId: Clone + Eq + Ord + Debug + Send + Sync + 'static;
     type QueryPayload: RemoteBinaryCodec + Clone + Debug + Send + Sync + 'static;
     type Row: RemoteBinaryCodec + Clone + Debug + Eq + Send + Sync + 'static;
+
+    type GrantMutationIntent: ApplicationMutationIntent<Schema> + Clone + Send + Sync + 'static;
+    type RevokeMutationIntent: ApplicationMutationIntent<Schema> + Clone + Send + Sync + 'static;
 
     type QueryIntent: ApplicationLiveQueryIntent<Schema>;
     type ReadCapability: 'static;
@@ -91,17 +93,27 @@ where
         request_scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryAuthenticatedExternalPrincipal<Schema>, SharedAccessDenial>;
 
-    /// Commits a durable WORTH capability grant record in the owner's primary graph.
-    fn commit_grant_scope_access(
-        ctx: &RemoteQueryContext<'_, Schema, Self>,
+    /// Builds the WORTH mutation intent that durably records a capability grant.
+    fn build_grant_mutation_intent(
         grant: &RemoteWatchContext<'_, Self::ScopeId>,
-    ) -> Result<(), SharedAccessDenial>;
+    ) -> Result<Self::GrantMutationIntent, SharedAccessDenial>;
 
-    /// Commits a durable WORTH capability revocation in the owner's primary graph.
-    fn commit_revoke_scope_access(
-        ctx: &RemoteQueryContext<'_, Schema, Self>,
+    /// Builds the deterministic idempotency key for a durable grant mutation.
+    fn grant_idempotency_key(
         grant_id: &ScopeGrantId,
-    ) -> Result<(), SharedAccessDenial>;
+        sequence: u64,
+    ) -> <<Self::GrantMutationIntent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey;
+
+    /// Builds the WORTH mutation intent that durably revokes a capability grant.
+    fn build_revoke_mutation_intent(
+        grant_id: &ScopeGrantId,
+    ) -> Result<Self::RevokeMutationIntent, SharedAccessDenial>;
+
+    /// Builds the deterministic idempotency key for a durable revocation mutation.
+    fn revoke_idempotency_key(
+        grant_id: &ScopeGrantId,
+        sequence: u64,
+    ) -> <<Self::RevokeMutationIntent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey;
 
     fn build_query_intent(
         scope: &Self::ScopeId,

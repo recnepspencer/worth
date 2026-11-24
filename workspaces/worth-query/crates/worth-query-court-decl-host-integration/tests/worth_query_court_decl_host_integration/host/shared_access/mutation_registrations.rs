@@ -10,10 +10,11 @@ use super::mutations::{
 };
 use super::query::ProjectUpdatedEffect;
 use super::schema::{
-    GrantActionField, GrantActiveField, GrantDelegationLimitField, GrantDisclosureField,
-    GrantIdField, GrantModeField, GrantNotAfterField, GrantNotBeforeField, GrantPurposeField,
-    GrantResource, GrantWorkflowField, Grantee, Grantor, PrincipalIdField, ProjectGrant,
-    ProjectKeyField, ProjectVersionField, SharedProjectSchema,
+    ExternalIdentityField, GrantActionField, GrantActiveField, GrantDelegationLimitField,
+    GrantDisclosureField, GrantIdField, GrantModeField, GrantNotAfterField, GrantNotBeforeField,
+    GrantPurposeField, GrantResource, GrantWorkflowField, Grantee, Grantor, MappingStatusField,
+    MappingTarget, PrincipalIdField, ProjectGrant, ProjectKeyField, ProjectVersionField,
+    SharedProjectSchema,
 };
 
 impl Registration<SharedProjectSchema> for WriteProjectVersion {
@@ -66,6 +67,15 @@ impl Registration<SharedProjectSchema> for GrantProjectAccess {
         .operation_projection_work_budget(Self::reference(), 64)
         .operation_read_field(Self::reference(), ProjectKeyField::at("ProjectKey"))
         .operation_read_field(Self::reference(), PrincipalIdField::at("PrincipalIdField"))
+        .operation_read_field(
+            Self::reference(),
+            ExternalIdentityField::at("ExternalIdentityField"),
+        )
+        .operation_read_field(
+            Self::reference(),
+            MappingStatusField::at("MappingStatusField"),
+        )
+        .operation_read_relation(Self::reference(), MappingTarget::reference())
         .operation_create(Self::reference(), ProjectGrant::reference())
         .operation_write(Self::reference(), GrantIdField::at("GrantId"))
         .operation_write(Self::reference(), GrantActionField::at("GrantAction"))

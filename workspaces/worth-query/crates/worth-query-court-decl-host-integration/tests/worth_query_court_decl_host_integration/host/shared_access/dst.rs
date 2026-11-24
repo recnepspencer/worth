@@ -11,9 +11,9 @@ use worth_query_host::facade::{
         WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
     },
     shared_access::{
-        AuthenticationRefusalReason, AuthorizationRefusalReason, RemoteAuthConfig, RemoteAuthKey,
-        RemoteAuthToken, RemoteTokenIssueRequest, ScopeAccess, SharedAccessDenial,
-        WatchRefusalReason,
+        AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
+        ProtocolRefusalReason, RemoteAuthConfig, RemoteAuthKey, RemoteAuthToken,
+        RemoteTokenIssueRequest, ScopeAccess, SharedAccessDenial, WatchRefusalReason,
     },
     WorthQueryApplicationHome,
 };
@@ -33,14 +33,14 @@ pub struct DstCoverage {
     pub grants_read_watch: usize,
     pub revokes: usize,
     pub remote_reads_delivered: usize,
-    pub remote_reads_authz_refused: usize,
-    pub remote_reads_authn_refused: usize,
+    pub remote_reads_capability_denied: usize,
+    pub remote_reads_invalid_sig: usize,
     pub watch_opens_ok: usize,
-    pub watch_opens_read_only_refused: usize,
+    pub watch_opens_read_only_denied: usize,
     pub watch_polls_delivered: usize,
     pub watch_polls_pending: usize,
-    pub watch_polls_revoked_refused: usize,
-    pub watch_polls_closed_watch_refused: usize,
+    pub watch_polls_revoked_denied: usize,
+    pub watch_polls_not_found: usize,
     pub home_reopens: usize,
     pub home_closed_refusals: usize,
 }
@@ -52,14 +52,14 @@ impl DstCoverage {
         self.grants_read_watch += other.grants_read_watch;
         self.revokes += other.revokes;
         self.remote_reads_delivered += other.remote_reads_delivered;
-        self.remote_reads_authz_refused += other.remote_reads_authz_refused;
-        self.remote_reads_authn_refused += other.remote_reads_authn_refused;
+        self.remote_reads_capability_denied += other.remote_reads_capability_denied;
+        self.remote_reads_invalid_sig += other.remote_reads_invalid_sig;
         self.watch_opens_ok += other.watch_opens_ok;
-        self.watch_opens_read_only_refused += other.watch_opens_read_only_refused;
+        self.watch_opens_read_only_denied += other.watch_opens_read_only_denied;
         self.watch_polls_delivered += other.watch_polls_delivered;
         self.watch_polls_pending += other.watch_polls_pending;
-        self.watch_polls_revoked_refused += other.watch_polls_revoked_refused;
-        self.watch_polls_closed_watch_refused += other.watch_polls_closed_watch_refused;
+        self.watch_polls_revoked_denied += other.watch_polls_revoked_denied;
+        self.watch_polls_not_found += other.watch_polls_not_found;
         self.home_reopens += other.home_reopens;
         self.home_closed_refusals += other.home_closed_refusals;
     }
@@ -70,28 +70,24 @@ impl DstCoverage {
             DstOp::GrantScopeAccess {
                 access: ScopeAccess::ReadOnly,
                 ..
-            } => {
-                self.grants_read_only += 1;
-            }
+            } => self.grants_read_only += 1,
             DstOp::GrantScopeAccess {
                 access: ScopeAccess::ReadAndWatch,
                 ..
-            } => {
-                self.grants_read_watch += 1;
-            }
+            } => self.grants_read_watch += 1,
             DstOp::RevokeScopeAccess { .. } => self.revokes += 1,
             DstOp::ReopenHome => self.home_reopens += 1,
             DstOp::RemoteRead { .. } => match outcome {
                 "Delivered" => self.remote_reads_delivered += 1,
-                "AuthorizationRefused" => self.remote_reads_authz_refused += 1,
-                "AuthenticationRefused" => self.remote_reads_authn_refused += 1,
+                "AuthzCapabilityDenied" => self.remote_reads_capability_denied += 1,
+                "AuthInvalidSignature" => self.remote_reads_invalid_sig += 1,
                 "HomeClosed" => self.home_closed_refusals += 1,
                 _ => {}
             },
             DstOp::RemoteWatchOpen { .. } => match outcome {
                 "Ok" => self.watch_opens_ok += 1,
-                "AuthorizationRefused" if grant_before == GrantState::ActiveReadOnly => {
-                    self.watch_opens_read_only_refused += 1;
+                "AuthzCapabilityDenied" if grant_before == GrantState::ActiveReadOnly => {
+                    self.watch_opens_read_only_denied += 1;
                 }
                 "HomeClosed" => self.home_closed_refusals += 1,
                 _ => {}
@@ -99,8 +95,8 @@ impl DstCoverage {
             DstOp::RemoteWatchPoll { .. } => match outcome {
                 "Delivered" => self.watch_polls_delivered += 1,
                 "Pending" => self.watch_polls_pending += 1,
-                "AuthorizationRefused" => self.watch_polls_revoked_refused += 1,
-                "WatchRefused" => self.watch_polls_closed_watch_refused += 1,
+                "AuthzWatchCapabilityRevoked" => self.watch_polls_revoked_denied += 1,
+                "WatchNotFound" => self.watch_polls_not_found += 1,
                 "HomeClosed" => self.home_closed_refusals += 1,
                 _ => {}
             },
@@ -151,31 +147,56 @@ pub fn tamper_token(valid: &RemoteAuthToken) -> RemoteAuthToken {
     RemoteAuthToken::from_bytes(&bytes).unwrap()
 }
 
-/// Maps ONLY exact typed refusal variants — NEVER collapses unknown errors!
+/// Strictly 1-to-1 exact denial reason mapping — NEVER collapses distinct reasons!
 pub fn classify_exact_denial(denial: &SharedAccessDenial) -> Result<&'static str, String> {
+    use AuthenticationRefusalReason as Auth;
+    use AuthorizationRefusalReason as Authz;
+    use BudgetRefusalReason as Budget;
+    use ProtocolRefusalReason as Proto;
+    use WatchRefusalReason as Watch;
     match denial {
-        SharedAccessDenial::AuthenticationRefused(
-            AuthenticationRefusalReason::InvalidSignature
-            | AuthenticationRefusalReason::UnknownKey
-            | AuthenticationRefusalReason::HomeIdentityMismatch
-            | AuthenticationRefusalReason::StaleIncarnation
-            | AuthenticationRefusalReason::IncarnationPinRequired
-            | AuthenticationRefusalReason::TokenExpired
-            | AuthenticationRefusalReason::MalformedToken,
-        ) => Ok("AuthenticationRefused"),
-        SharedAccessDenial::AuthorizationRefused(
-            AuthorizationRefusalReason::CapabilityDenied
-            | AuthorizationRefusalReason::WatchCapabilityRevoked
-            | AuthorizationRefusalReason::PrincipalResolutionDenied
-            | AuthorizationRefusalReason::ScopeNotFound
-            | AuthorizationRefusalReason::StalePrincipal
-            | AuthorizationRefusalReason::StaleScope,
-        ) => Ok("AuthorizationRefused"),
-        SharedAccessDenial::WatchRefused(
-            WatchRefusalReason::WatchNotFound
-            | WatchRefusalReason::WatchClosed
-            | WatchRefusalReason::WatchOverflow,
-        ) => Ok("WatchRefused"),
+        SharedAccessDenial::AuthenticationRefused(Auth::MalformedToken) => Ok("AuthMalformedToken"),
+        SharedAccessDenial::AuthenticationRefused(Auth::UnknownKey) => Ok("AuthUnknownKey"),
+        SharedAccessDenial::AuthenticationRefused(Auth::InvalidSignature) => {
+            Ok("AuthInvalidSignature")
+        }
+        SharedAccessDenial::AuthenticationRefused(Auth::HomeIdentityMismatch) => {
+            Ok("AuthHomeIdentityMismatch")
+        }
+        SharedAccessDenial::AuthenticationRefused(Auth::StaleIncarnation) => {
+            Ok("AuthStaleIncarnation")
+        }
+        SharedAccessDenial::AuthenticationRefused(Auth::IncarnationPinRequired) => {
+            Ok("AuthIncarnationPinRequired")
+        }
+        SharedAccessDenial::AuthenticationRefused(Auth::TokenExpired) => Ok("AuthTokenExpired"),
+        SharedAccessDenial::AuthenticationRefused(Auth::AdapterDenied) => Ok("AuthAdapterDenied"),
+        SharedAccessDenial::AuthorizationRefused(Authz::CapabilityDenied) => {
+            Ok("AuthzCapabilityDenied")
+        }
+        SharedAccessDenial::AuthorizationRefused(Authz::PrincipalResolutionDenied) => {
+            Ok("AuthzPrincipalResolutionDenied")
+        }
+        SharedAccessDenial::AuthorizationRefused(Authz::ScopeNotFound) => Ok("AuthzScopeNotFound"),
+        SharedAccessDenial::AuthorizationRefused(Authz::WatchCapabilityRevoked) => {
+            Ok("AuthzWatchCapabilityRevoked")
+        }
+        SharedAccessDenial::AuthorizationRefused(Authz::StalePrincipal) => {
+            Ok("AuthzStalePrincipal")
+        }
+        SharedAccessDenial::AuthorizationRefused(Authz::StaleScope) => Ok("AuthzStaleScope"),
+        SharedAccessDenial::WatchRefused(Watch::WatchNotFound) => Ok("WatchNotFound"),
+        SharedAccessDenial::WatchRefused(Watch::WatchClosed) => Ok("WatchClosed"),
+        SharedAccessDenial::WatchRefused(Watch::WatchOverflow) => Ok("WatchOverflow"),
+        SharedAccessDenial::ProtocolRefused(Proto::FrameTooLarge { .. }) => {
+            Ok("ProtoFrameTooLarge")
+        }
+        SharedAccessDenial::BudgetRefused(Budget::WatchCapacityExhausted { .. }) => {
+            Ok("BudgetWatchCapacityExhausted")
+        }
+        SharedAccessDenial::BudgetRefused(Budget::ResponseTooLarge { .. }) => {
+            Ok("BudgetResponseTooLarge")
+        }
         other => Err(format!("unexpected denial variant: {other:?}")),
     }
 }
@@ -243,28 +264,25 @@ fn assert_full_coverage(total: &DstCoverage) {
         ("revokes", total.revokes),
         ("remote reads delivered", total.remote_reads_delivered),
         (
-            "remote reads authz refused",
-            total.remote_reads_authz_refused,
+            "remote reads capability denied",
+            total.remote_reads_capability_denied,
         ),
         (
-            "remote reads authn refused",
-            total.remote_reads_authn_refused,
+            "remote reads invalid signature",
+            total.remote_reads_invalid_sig,
         ),
         ("watch opens ok", total.watch_opens_ok),
         (
-            "read-only watch open refused",
-            total.watch_opens_read_only_refused,
+            "read-only watch open denied",
+            total.watch_opens_read_only_denied,
         ),
         ("watch polls delivered", total.watch_polls_delivered),
         ("watch polls pending", total.watch_polls_pending),
         (
-            "watch polls revoked refused",
-            total.watch_polls_revoked_refused,
+            "watch polls revoked denied",
+            total.watch_polls_revoked_denied,
         ),
-        (
-            "watch polls closed refused",
-            total.watch_polls_closed_watch_refused,
-        ),
+        ("watch polls not found", total.watch_polls_not_found),
         ("home reopens", total.home_reopens),
         ("home closed refusals", total.home_closed_refusals),
     ] {

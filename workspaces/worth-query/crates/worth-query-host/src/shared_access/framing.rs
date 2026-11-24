@@ -2,13 +2,13 @@
 
 use std::io::{Read, Write};
 
-use super::auth::RemoteAuthToken;
 use super::denial::{ProtocolRefusalReason, SharedAccessDenial};
-use super::types::{RemoteWatchId, MAX_SCOPE_KEY_BYTES};
 
 pub(super) const FRAME_MAGIC: [u8; 4] = *b"WQS1";
 pub(super) const FRAME_VERSION: u8 = 1;
 pub(super) const FRAME_HEADER_LEN: usize = 12;
+pub(super) const REFUSAL_PAYLOAD_LEN: usize = 10;
+pub(super) const REFUSAL_FRAME_LEN: usize = FRAME_HEADER_LEN + REFUSAL_PAYLOAD_LEN;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -77,6 +77,21 @@ pub(super) fn parse_header(
     Ok((kind, payload_len))
 }
 
+/// Stack-encodes a refusal frame with zero heap allocation and zero panic paths.
+pub(super) fn encode_refusal_frame(denial: &SharedAccessDenial) -> [u8; REFUSAL_FRAME_LEN] {
+    let (code, a, b) = denial.to_wire_triple();
+    let mut frame = [0_u8; REFUSAL_FRAME_LEN];
+    frame[0..4].copy_from_slice(&FRAME_MAGIC);
+    frame[4] = FRAME_VERSION;
+    frame[5] = FrameKind::RefusalResponse as u8;
+    frame[6..8].copy_from_slice(&0_u16.to_be_bytes());
+    frame[8..12].copy_from_slice(&(REFUSAL_PAYLOAD_LEN as u32).to_be_bytes());
+    frame[12..14].copy_from_slice(&code.to_be_bytes());
+    frame[14..18].copy_from_slice(&a.to_be_bytes());
+    frame[18..22].copy_from_slice(&b.to_be_bytes());
+    frame
+}
+
 pub(super) fn encode_frame(
     kind: FrameKind,
     payload: &[u8],
@@ -142,7 +157,6 @@ pub(super) fn read_bounded_frame(
         .read_exact(&mut header)
         .map_err(|err| SharedAccessDenial::TransportIo(err.kind().to_string()))?;
     let (kind, payload_len) = parse_header(&header, max_frame_bytes)?;
-    // Allocation happens strictly AFTER header and length-bound validation.
     let mut payload = vec![0_u8; payload_len as usize];
     reader
         .read_exact(&mut payload)
@@ -178,10 +192,6 @@ impl BinaryWriter {
 
     pub(super) fn write_u8(&mut self, v: u8) {
         self.buf.push(v);
-    }
-
-    pub(super) fn write_u16(&mut self, v: u16) {
-        self.buf.extend_from_slice(&v.to_be_bytes());
     }
 
     pub(super) fn write_u32(&mut self, v: u32) {
@@ -293,108 +303,20 @@ impl<'a> BinaryReader<'a> {
         Ok(slice)
     }
 
+    pub(super) fn read_str_ref_bounded(
+        &mut self,
+        max_len: usize,
+    ) -> Result<&'a str, SharedAccessDenial> {
+        let slice = self.read_bytes_bounded(max_len)?;
+        std::str::from_utf8(slice).map_err(|_| {
+            SharedAccessDenial::ProtocolRefused(ProtocolRefusalReason::MalformedPayload)
+        })
+    }
+
     pub(super) fn read_str_bounded(
         &mut self,
         max_len: usize,
     ) -> Result<String, SharedAccessDenial> {
-        let slice = self.read_bytes_bounded(max_len)?;
-        std::str::from_utf8(slice).map(str::to_owned).map_err(|_| {
-            SharedAccessDenial::ProtocolRefused(ProtocolRefusalReason::MalformedPayload)
-        })
+        self.read_str_ref_bounded(max_len).map(str::to_owned)
     }
-}
-
-pub(super) fn encode_scope_request(
-    token: &RemoteAuthToken,
-    scope_key: &str,
-    query_bytes: &[u8],
-) -> Vec<u8> {
-    let mut w = BinaryWriter::with_capacity(256 + scope_key.len() + query_bytes.len());
-    token.encode_into(&mut w);
-    w.write_str(scope_key);
-    w.write_bytes(query_bytes);
-    w.into_bytes()
-}
-
-pub(super) fn decode_scope_request(
-    payload: &[u8],
-    max_frame_bytes: u32,
-) -> Result<(RemoteAuthToken, String, Vec<u8>), SharedAccessDenial> {
-    let mut r = BinaryReader::new(payload);
-    let token = RemoteAuthToken::decode_from(&mut r)?;
-    let scope_key = r.read_str_bounded(MAX_SCOPE_KEY_BYTES)?;
-    let query_bytes = r.read_bytes_bounded(max_frame_bytes as usize)?.to_vec();
-    r.finish()?;
-    Ok((token, scope_key, query_bytes))
-}
-
-pub(super) fn encode_watch_id_request(token: &RemoteAuthToken, watch_id: RemoteWatchId) -> Vec<u8> {
-    let mut w = BinaryWriter::with_capacity(256);
-    token.encode_into(&mut w);
-    w.write_u64(watch_id.as_u64());
-    w.into_bytes()
-}
-
-pub(super) fn decode_watch_id_request(
-    payload: &[u8],
-) -> Result<(RemoteAuthToken, RemoteWatchId), SharedAccessDenial> {
-    let mut r = BinaryReader::new(payload);
-    let token = RemoteAuthToken::decode_from(&mut r)?;
-    let watch_id = RemoteWatchId::new(r.read_u64()?);
-    r.finish()?;
-    Ok((token, watch_id))
-}
-
-pub(super) fn encode_rows_payload(rows: &[Vec<u8>]) -> Vec<u8> {
-    let approx = rows
-        .iter()
-        .fold(4_usize, |acc, r| acc.saturating_add(4 + r.len()));
-    let mut w = BinaryWriter::with_capacity(approx);
-    let count = u32::try_from(rows.len()).expect("row count bounded below u32::MAX");
-    w.write_u32(count);
-    for row in rows {
-        w.write_bytes(row);
-    }
-    w.into_bytes()
-}
-
-pub(super) fn decode_rows_payload(
-    reader: &mut BinaryReader<'_>,
-    max_frame_bytes: u32,
-) -> Result<Vec<Vec<u8>>, SharedAccessDenial> {
-    let count = reader.read_u32()? as usize;
-    // Preflight minimum possible byte footprint (4 bytes per row length prefix) before allocating.
-    if count.saturating_mul(4) > reader.remaining() {
-        return Err(SharedAccessDenial::ProtocolRefused(
-            ProtocolRefusalReason::MalformedPayload,
-        ));
-    }
-    let mut rows = Vec::with_capacity(count);
-    for _ in 0..count {
-        let row = reader
-            .read_bytes_bounded(max_frame_bytes as usize)?
-            .to_vec();
-        rows.push(row);
-    }
-    Ok(rows)
-}
-
-pub(super) fn encode_refusal_payload(denial: &SharedAccessDenial) -> Vec<u8> {
-    let (code, a, b) = denial.to_wire_triple();
-    let mut w = BinaryWriter::with_capacity(10);
-    w.write_u16(code);
-    w.write_u32(a);
-    w.write_u32(b);
-    w.into_bytes()
-}
-
-pub(super) fn decode_refusal_payload(
-    payload: &[u8],
-) -> Result<SharedAccessDenial, SharedAccessDenial> {
-    let mut r = BinaryReader::new(payload);
-    let code = r.read_u16()?;
-    let a = r.read_u32()?;
-    let b = r.read_u32()?;
-    r.finish()?;
-    Ok(SharedAccessDenial::from_wire_triple(code, a, b))
 }

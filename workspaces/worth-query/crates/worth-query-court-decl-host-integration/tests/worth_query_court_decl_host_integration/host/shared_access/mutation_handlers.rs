@@ -1,6 +1,9 @@
 //! Operation handlers and application program declaration for the shared-access court.
 
-use worth_query_decl::facade::application_program::*;
+use worth_query_decl::facade::{
+    application_program::*,
+    authentication::{WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus},
+};
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
@@ -18,10 +21,11 @@ use super::mutations::{
 };
 use super::query::{ProjectUpdatedEffect, ProjectUpdatedNotice};
 use super::schema::{
-    GrantActionField, GrantActiveField, GrantDelegationLimitField, GrantDisclosureField,
-    GrantIdField, GrantModeField, GrantNotAfterField, GrantNotBeforeField, GrantPurposeField,
-    GrantResource, GrantWorkflowField, Grantee, Grantor, PrincipalIdField, Project, ProjectGrant,
-    ProjectKeyField, ProjectVersionField, SharedProjectSchema, SharedProjectSurface,
+    ExternalIdentityField, GrantActionField, GrantActiveField, GrantDelegationLimitField,
+    GrantDisclosureField, GrantIdField, GrantModeField, GrantNotAfterField, GrantNotBeforeField,
+    GrantPurposeField, GrantResource, GrantWorkflowField, Grantee, Grantor, MappingStatusField,
+    MappingTarget, PrincipalIdField, Project, ProjectGrant, ProjectKeyField, ProjectVersionField,
+    SharedProjectSchema, SharedProjectSurface,
 };
 
 pub struct WriteProjectHandler;
@@ -95,12 +99,9 @@ impl OperationHandler<SharedProjectSchema, GrantProjectAccessBinding> for GrantP
             Ok(p) => p,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
-        let grantee = match reader.resolve_entity(
-            PrincipalIdField::at("PrincipalIdField"),
-            input.grantee_principal_id,
-        ) {
+        let grantee = match resolve_enabled_grantee(reader, input) {
             Ok(p) => p,
-            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+            Err(res) => return res,
         };
         let project = match reader
             .resolve_entity(ProjectKeyField::at("ProjectKey"), input.project_key.clone())
@@ -177,6 +178,39 @@ impl OperationHandler<SharedProjectSchema, GrantProjectAccessBinding> for GrantP
             Err(c) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(c)),
         }
     }
+}
+
+fn resolve_enabled_grantee(
+    reader: &mut DecisionReader<'_, '_, '_, SharedProjectSchema, GrantProjectAccessBinding>,
+    input: &GrantProjectInput,
+) -> Result<
+    worth_query_host::facade::primary_graph::WorthQueryInvariantEntityIdentity<
+        SharedProjectSchema,
+        super::schema::Principal,
+    >,
+    HandlerResult<GrantProjectDecision, ()>,
+> {
+    let ext = WorthQueryExternalPrincipalIdentity::new(
+        input.grantee_issuer.clone(),
+        input.grantee_subject.clone(),
+    )
+    .map_err(|_| HandlerResult::DomainDenied(()))?;
+    let mapping = reader
+        .resolve_entity(ExternalIdentityField::at("ExternalIdentityField"), ext)
+        .map_err(|_| HandlerResult::DomainDenied(()))?;
+    let status = reader
+        .field(&mapping, MappingStatusField::at("MappingStatusField"))
+        .map_err(HandlerResult::ExecutionDenied)?;
+    if status != Some(WorthQueryPrincipalMappingStatus::Enabled) {
+        return Err(HandlerResult::DomainDenied(()));
+    }
+    let mut targets = reader
+        .relations_from(MappingTarget::reference(), &mapping)
+        .map_err(|_| HandlerResult::DomainDenied(()))?;
+    if targets.len() != 1 {
+        return Err(HandlerResult::DomainDenied(()));
+    }
+    Ok(targets.pop().unwrap().into_to())
 }
 
 fn init_grant_fields(

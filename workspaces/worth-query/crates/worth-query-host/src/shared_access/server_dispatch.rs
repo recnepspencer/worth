@@ -1,6 +1,7 @@
 //! Authenticated remote request dispatch over a single-owner Directory Home.
 
 use std::collections::BTreeMap;
+use std::marker::PhantomData;
 use std::time::Instant;
 
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
@@ -23,20 +24,22 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::WorthQueryApplicationHome;
 
-use super::auth::{authenticate_remote_token, RemoteAuthConfig, RemoteAuthTarget};
+use super::auth::{
+    authenticate_remote_token, current_unix_secs, RemoteAuthConfig, RemoteAuthTarget,
+};
 use super::binding::{RemoteBinaryCodec, WorthQuerySharedAccessProgram};
+use super::capped_writer::{
+    decode_scope_request, decode_watch_id_request, write_encoded_rows, RemoteByteWriter,
+};
 use super::denial::{
     AuthorizationRefusalReason, BudgetRefusalReason, ProtocolRefusalReason, SharedAccessDenial,
     WatchRefusalReason,
 };
-use super::framing::{
-    decode_scope_request, decode_watch_id_request, encode_rows_payload, BinaryWriter, FrameKind,
-};
-use super::server_watch::ActiveRemoteWatch;
-use super::types::{RemoteWatchId, RemoteWatchPollOutcome};
-use super::watch_drain::{
-    clamped_query_row_limit, IntentBinding, QueryMarker, QueryPrincipalId, QueryResult,
-};
+use super::framing::FrameKind;
+use super::scope_binding::clamped_query_row_limit;
+use super::server_watch::{ActiveRemoteWatch, WatchOpenArgs};
+use super::types::RemoteWatchId;
+use super::watch_drain::{IntentBinding, QueryMarker, QueryPrincipalId, QueryResult};
 
 pub(super) struct RemoteDispatcher<'a, 'home, Schema, Program>
 where
@@ -68,18 +71,24 @@ where
 {
     pub(super) fn dispatch(
         &mut self,
+        conn_id: Option<u64>,
         kind: FrameKind,
         payload: &[u8],
     ) -> Result<(FrameKind, Vec<u8>), SharedAccessDenial> {
+        reap_expired_watches(self.watches);
         match kind {
             FrameKind::QueryRequest => self.handle_query(payload),
-            FrameKind::WatchOpenRequest => self.handle_watch_open(payload),
+            FrameKind::WatchOpenRequest => self.handle_watch_open(conn_id, payload),
             FrameKind::WatchPollRequest => self.handle_watch_poll(payload),
             FrameKind::WatchCloseRequest => self.handle_watch_close(payload),
             _ => Err(SharedAccessDenial::ProtocolRefused(
                 ProtocolRefusalReason::UnknownMessageKind,
             )),
         }
+    }
+
+    pub(super) fn reclaim_connection(&mut self, conn_id: u64) {
+        reclaim_connection_watches(self.watches, conn_id);
     }
 
     fn auth_target(&self) -> RemoteAuthTarget<'_> {
@@ -106,18 +115,18 @@ where
             decode_scope_request(payload, limits.max_frame_bytes())?;
         let (_cancel, request_scope) = self.request_scope();
         let app = self.home.runtime().runtime();
-        let principal = authenticate_remote_token(
+        let auth = authenticate_remote_token(
             app.installed_schema(),
             &self.auth_target(),
             &token,
             &request_scope,
         )?;
-        let scope = Program::parse_scope_key(&scope_key)?;
-        let query_payload = Program::QueryPayload::decode_remote(&query_bytes)?;
+        let scope = Program::parse_scope_key(scope_key)?;
+        let query_payload = Program::QueryPayload::decode_remote(query_bytes)?;
         let intent = Program::build_query_intent(&scope, &query_payload)?;
         let max_rows = clamped_query_row_limit::<Schema, Program>(app, limits)?;
         let published = app
-            .request(&principal, &request_scope)
+            .request(&auth.external, &request_scope)
             .query(intent)
             .limit_results(max_rows)
             .execute_governed(
@@ -126,17 +135,19 @@ where
                 Program::build_read_capability_input(&scope),
             )
             .map_err(map_query_denial)?;
-        let rows: Vec<Vec<u8>> = published
-            .rows()
-            .iter()
-            .cloned()
-            .map(|value| Program::project_row(value).encode_remote())
-            .collect();
-        Ok((FrameKind::QueryResponse, encode_rows_payload(&rows)))
+        let mut writer = RemoteByteWriter::new(limits.max_frame_bytes());
+        let rows = published.rows();
+        write_encoded_rows(
+            &mut writer,
+            rows.len(),
+            rows.iter().cloned().map(Program::project_row),
+        )?;
+        Ok((FrameKind::QueryResponse, writer.into_bytes()))
     }
 
     fn handle_watch_open(
         &mut self,
+        conn_id: Option<u64>,
         payload: &[u8],
     ) -> Result<(FrameKind, Vec<u8>), SharedAccessDenial> {
         let limits = self.auth_config.limits();
@@ -144,30 +155,37 @@ where
             decode_scope_request(payload, limits.max_frame_bytes())?;
         let (_cancel, request_scope) = self.request_scope();
         let app = self.home.runtime().runtime();
-        let principal = authenticate_remote_token(
+        let auth = authenticate_remote_token(
             app.installed_schema(),
             &self.auth_target(),
             &token,
             &request_scope,
         )?;
-        self.check_watch_capacity(principal.identity())?;
-        let scope = Program::parse_scope_key(&scope_key)?;
-        let query_payload = Program::QueryPayload::decode_remote(&query_bytes)?;
+        self.check_watch_capacity(auth.external.identity())?;
+        let scope = Program::parse_scope_key(scope_key)?;
+        let query_payload = Program::QueryPayload::decode_remote(query_bytes)?;
         let live_intent = Program::build_query_intent(&scope, &query_payload)?;
         let initial_intent = Program::build_query_intent(&scope, &query_payload)?;
-        let (active, initial_rows) = ActiveRemoteWatch::open(
-            app,
-            &principal,
-            &request_scope,
-            (scope, live_intent, initial_intent, limits),
-        )?;
         let watch_id = RemoteWatchId::new(*self.next_watch_id);
+        let (active, response_payload) = ActiveRemoteWatch::open(
+            app,
+            &auth.external,
+            &request_scope,
+            WatchOpenArgs {
+                watch_id,
+                connection_id: conn_id,
+                token_expires_at_unix_secs: auth.expires_at_unix_secs,
+                scope,
+                query_payload,
+                live_intent,
+                initial_intent,
+                limits,
+                _schema: PhantomData,
+            },
+        )?;
         *self.next_watch_id = self.next_watch_id.saturating_add(1);
         self.watches.insert(watch_id, active);
-        let mut writer = BinaryWriter::with_capacity(64);
-        writer.write_u64(watch_id.as_u64());
-        writer.write_fixed(&encode_rows_payload(&initial_rows));
-        Ok((FrameKind::WatchOpenResponse, writer.into_bytes()))
+        Ok((FrameKind::WatchOpenResponse, response_payload))
     }
 
     fn handle_watch_poll(
@@ -178,24 +196,18 @@ where
         let (token, watch_id) = decode_watch_id_request(payload)?;
         let (_cancel, request_scope) = self.request_scope();
         let app = self.home.runtime().runtime();
-        let principal = authenticate_remote_token(
+        let auth = authenticate_remote_token(
             app.installed_schema(),
             &self.auth_target(),
             &token,
             &request_scope,
         )?;
-        let mut watch = self.take_owned_watch(watch_id, principal.identity())?;
-        match watch.poll(app, &principal, &request_scope, limits) {
-            Ok(RemoteWatchPollOutcome::Delivered(rows)) => {
+        let mut watch = self.take_owned_watch(watch_id, auth.external.identity())?;
+        watch.token_expires_at_unix_secs = auth.expires_at_unix_secs;
+        match watch.poll(app, &auth.external, &request_scope, limits) {
+            Ok(response_payload) => {
                 self.watches.insert(watch_id, watch);
-                let mut writer = BinaryWriter::with_capacity(64);
-                writer.write_u8(1);
-                writer.write_fixed(&encode_rows_payload(&rows));
-                Ok((FrameKind::WatchPollResponse, writer.into_bytes()))
-            }
-            Ok(RemoteWatchPollOutcome::Pending) => {
-                self.watches.insert(watch_id, watch);
-                Ok((FrameKind::WatchPollResponse, vec![0_u8]))
+                Ok((FrameKind::WatchPollResponse, response_payload))
             }
             Err(denial) => {
                 watch.close();
@@ -211,13 +223,13 @@ where
         let (token, watch_id) = decode_watch_id_request(payload)?;
         let (_cancel, request_scope) = self.request_scope();
         let app = self.home.runtime().runtime();
-        let principal = authenticate_remote_token(
+        let auth = authenticate_remote_token(
             app.installed_schema(),
             &self.auth_target(),
             &token,
             &request_scope,
         )?;
-        let watch = self.take_owned_watch(watch_id, principal.identity())?;
+        let watch = self.take_owned_watch(watch_id, auth.external.identity())?;
         watch.close();
         Ok((FrameKind::WatchCloseResponse, Vec::new()))
     }
@@ -271,6 +283,50 @@ where
             ));
         }
         Ok(())
+    }
+}
+
+pub(super) fn reap_expired_watches<Schema, Program>(
+    watches: &mut BTreeMap<RemoteWatchId, ActiveRemoteWatch<'_, Schema, Program>>,
+) where
+    Schema: ApplicationSchemaComposition + 'static,
+    Program: WorthQuerySharedAccessProgram<Schema>,
+    QueryResult<Schema, Program>:
+        WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>>,
+{
+    let Ok(now_secs) = current_unix_secs() else {
+        return;
+    };
+    let expired: Vec<RemoteWatchId> = watches
+        .iter()
+        .filter(|(_, watch)| watch.is_expired_at(now_secs))
+        .map(|(&id, _)| id)
+        .collect();
+    for id in expired {
+        if let Some(watch) = watches.remove(&id) {
+            watch.close();
+        }
+    }
+}
+
+pub(super) fn reclaim_connection_watches<Schema, Program>(
+    watches: &mut BTreeMap<RemoteWatchId, ActiveRemoteWatch<'_, Schema, Program>>,
+    conn_id: u64,
+) where
+    Schema: ApplicationSchemaComposition + 'static,
+    Program: WorthQuerySharedAccessProgram<Schema>,
+    QueryResult<Schema, Program>:
+        WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>>,
+{
+    let owned: Vec<RemoteWatchId> = watches
+        .iter()
+        .filter(|(_, watch)| watch.connection_id == Some(conn_id))
+        .map(|(&id, _)| id)
+        .collect();
+    for id in owned {
+        if let Some(watch) = watches.remove(&id) {
+            watch.close();
+        }
     }
 }
 

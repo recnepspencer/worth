@@ -2,6 +2,8 @@
 //! adversarial framing/auth/budget boundaries, 64-seed DST, and TLC trace probes.
 
 mod adversarial;
+mod adversarial_controls;
+mod adversarial_mismatch;
 mod capabilities;
 mod dst;
 mod dst_open_session;
@@ -11,6 +13,7 @@ mod dst_trace;
 mod mutation_handlers;
 mod mutation_registrations;
 mod mutations;
+mod owner_observe;
 mod program;
 mod query;
 mod relations;

@@ -350,6 +350,39 @@ recomputes derived state only on demand.
 internal certification door scheduled for deletion. Applications reopen their
 Directory instead.
 
+## Shared Scope Access
+
+A single-owner Directory Home can delegate governed read (or read+watch) access
+for one application scope to authenticated remote collaborators without ever
+opening a second writer on the Directory:
+
+- Implement `host::shared_access::WorthQuerySharedAccessProgram<Schema>` with
+  your declared grant/revoke mutation intents, read/watch capabilities, and
+  governed live query.
+- **Native commit-backed grants and revocations:**
+  `home.grant_scope_access(scope, collaborator_principal, ScopeAccess::read_and_watch())?`
+  and `home.revoke_scope_access(grant.id())?` execute your declared mutation
+  intents directly through WORTH's own mutation runtime and refuse unless a
+  published commit receipt with non-zero durable record changes is produced.
+  Grants and revocations survive graceful close and reopen.
+- **Loopback-only TCP trust boundary:** `home.serve_remote(bind_addr, auth_config)?`
+  and `WorthQueryRemoteClient::connect(addr, token)?` both fail closed with
+  `SharedAccessDenial::NonLoopbackAddressRefused` for any non-loopback address,
+  because direct frames carry reusable HMAC-SHA256 bearer tokens and row
+  payloads without transport encryption. For cross-host deployments, tunnel
+  loopback over an authenticated encrypted transport (TLS/mTLS, Tailscale, or
+  SSH) or drive `WorthQueryRemoteServer::handle_frame` over an encrypted
+  channel.
+- **Bounded, nonblocking hosting and watch reclamation:** `RemoteServerLimits`
+  and `RemoteClientLimits` enforce `MIN_MAX_FRAME_BYTES` (64 bytes, strictly
+  above the stack-encoded refusal frame), intersect remote row limits with both
+  graph cardinality and the installed query binding cap, stream rows through a
+  pre-allocation-capped `RemoteByteWriter`, keep accepted TCP sockets strictly
+  nonblocking with absolute per-frame/idle deadlines, bind watch authority to
+  the exact resolved scope entity at both open and every poll, roll back failed
+  watch opens before slot insertion, and automatically reclaim watches on
+  disconnect or token expiry.
+
 ## Examples
 
 | Example | What it shows |

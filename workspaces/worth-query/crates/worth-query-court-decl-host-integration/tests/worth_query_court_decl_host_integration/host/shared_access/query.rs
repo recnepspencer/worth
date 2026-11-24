@@ -11,7 +11,9 @@ use worth_query_host::facade::{
         WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
         WorthQueryApplicationProjectionRow,
     },
-    shared_access::{ProtocolRefusalReason, RemoteBinaryCodec, SharedAccessDenial},
+    shared_access::{
+        ProtocolRefusalReason, RemoteBinaryCodec, RemoteByteWriter, SharedAccessDenial,
+    },
 };
 
 use super::capabilities::{text, ReadProjectCapability, SharedPrincipalBinding};
@@ -84,6 +86,11 @@ impl RemoteBinaryCodec for ProjectStateRow {
         out.extend_from_slice(key);
         out.extend_from_slice(&self.version.to_be_bytes());
         out
+    }
+
+    fn encode_remote_into(&self, writer: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
+        writer.write_str(&self.project_key)?;
+        writer.write_u64(self.version)
     }
 
     fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial> {

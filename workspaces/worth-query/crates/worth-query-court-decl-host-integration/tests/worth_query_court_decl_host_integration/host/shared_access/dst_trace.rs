@@ -1,8 +1,8 @@
-//! Passive NDJSON trace recorder for `tools/tla/run_tlc.py trace`.
+//! Passive NDJSON trace recorder emitting exact outcomes and complete scoped rows.
 
 use worth_query_host::facade::shared_access::ScopeAccess;
 
-use super::dst_oracle::{DstOp, PassivePostState, PRINCIPALS, SCOPES};
+use super::dst_oracle::{DeliveredRow, DstOp, PassivePostState, PRINCIPALS, SCOPES};
 
 #[derive(Default)]
 pub struct TraceRecorder {
@@ -10,11 +10,18 @@ pub struct TraceRecorder {
 }
 
 impl TraceRecorder {
-    pub fn record(&mut self, op: DstOp, outcome: &str, value: u64, post: &PassivePostState) {
+    pub fn record(
+        &mut self,
+        op: DstOp,
+        outcome: &str,
+        rows: &[DeliveredRow],
+        post: &PassivePostState,
+    ) {
         let action_fields = format_action_fields(op);
+        let rows_json = format_rows(rows);
         let w = |open: bool| if open { "Open" } else { "Closed" };
         let line = format!(
-            "{{{action_fields},\"outcome\":\"{outcome}\",\"value\":{value},\
+            "{{{action_fields},\"outcome\":\"{outcome}\",\"rows\":{rows_json},\
 \"postHomeOpen\":{},\"postIncarnation\":{},\
 \"postProject1Value\":{},\"postProject2Value\":{},\
 \"postGrantAliceProject1\":\"{}\",\"postGrantAliceProject2\":\"{}\",\
@@ -40,6 +47,18 @@ impl TraceRecorder {
     pub fn to_ndjson(&self) -> String {
         self.lines.join("\n") + "\n"
     }
+}
+
+fn format_rows(rows: &[DeliveredRow]) -> String {
+    let mut out = String::from("[");
+    for (idx, (scope, version)) in rows.iter().enumerate() {
+        if idx > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!("{{\"scope\":\"{scope}\",\"version\":{version}}}"));
+    }
+    out.push(']');
+    out
 }
 
 fn format_action_fields(op: DstOp) -> String {

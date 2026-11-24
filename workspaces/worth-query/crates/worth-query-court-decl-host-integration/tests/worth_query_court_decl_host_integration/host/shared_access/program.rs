@@ -28,8 +28,8 @@ use worth_query_host::facade::{
         ExecutionRequestPolicy, WorthQueryApplicationQueryResourceProfile,
     },
     shared_access::{
-        ProtocolRefusalReason, RemoteQueryContext, RemoteWatchContext, ScopeAccess, ScopeGrantId,
-        SharedAccessDenial, WorthQuerySharedAccessProgram,
+        ProtocolRefusalReason, RemoteWatchContext, ScopeAccess, ScopeGrantId, SharedAccessDenial,
+        WorthQuerySharedAccessProgram,
     },
     WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
@@ -41,9 +41,9 @@ use super::capabilities::{
 };
 use super::mutation_handlers::SharedProjectProgram;
 use super::mutations::{
-    alice_identity, bob_identity, owner_identity, principal_id_for, GrantProjectInput,
-    GrantProjectIntent, ProjectId, RevokeProjectInput, RevokeProjectIntent, WriteProjectInput,
-    WriteProjectIntent, ALICE_PRINCIPAL_ID, BOB_PRINCIPAL_ID, OWNER_PRINCIPAL_ID,
+    alice_identity, bob_identity, owner_identity, GrantProjectInput, GrantProjectIntent, ProjectId,
+    RevokeProjectInput, RevokeProjectIntent, WriteProjectInput, WriteProjectIntent,
+    ALICE_PRINCIPAL_ID, BOB_PRINCIPAL_ID, OWNER_PRINCIPAL_ID,
 };
 use super::query::{ProjectQueryParams, ProjectStateRead, ProjectStateRow};
 use super::schema::{
@@ -56,6 +56,8 @@ impl WorthQuerySharedAccessProgram<SharedProjectSchema> for SharedProjectProgram
     type ScopeId = ProjectId;
     type QueryPayload = ProjectQueryParams;
     type Row = ProjectStateRow;
+    type GrantMutationIntent = GrantProjectIntent;
+    type RevokeMutationIntent = RevokeProjectIntent;
     type QueryIntent = ProjectStateRead;
     type ReadCapability = ReadProjectCapability;
     type ReadOperation = ReadProjectOperation;
@@ -85,60 +87,36 @@ impl WorthQuerySharedAccessProgram<SharedProjectSchema> for SharedProjectProgram
         authenticate_local_owner(schema, request_scope)
     }
 
-    fn commit_grant_scope_access(
-        ctx: &RemoteQueryContext<'_, SharedProjectSchema, Self>,
+    fn build_grant_mutation_intent(
         grant: &RemoteWatchContext<'_, ProjectId>,
-    ) -> Result<(), SharedAccessDenial> {
-        let grantee_id = principal_id_for(grant.collaborator)?;
+    ) -> Result<GrantProjectIntent, SharedAccessDenial> {
         let mode = match grant.access {
             ScopeAccess::ReadOnly => "read_only",
             ScopeAccess::ReadAndWatch => "read_and_watch",
         };
-        let key = NEXT_IDEMPOTENCY_KEY.fetch_add(1, Ordering::Relaxed);
-        let outcome = ctx
-            .runtime
-            .request(ctx.owner, ctx.request_scope)
-            .advanced()
-            .mutate(GrantProjectIntent(GrantProjectInput {
-                grant_id: grant.grant_id.as_str().to_owned(),
-                project_key: grant.scope.0.clone(),
-                grantee_principal_id: grantee_id,
-                mode: mode.to_owned(),
-            }))
-            .without_source()
-            .idempotency(&key)
-            .execute_in_program(ctx.runtime, ExecutionAllocationPolicy::SystemAllocation)
-            .map_err(|err| SharedAccessDenial::GrantMutationRefused(format!("{err:?}")))?;
-        match outcome {
-            WorthQueryApplicationMutationOutcome::Committed { .. } => Ok(()),
-            other => Err(SharedAccessDenial::GrantMutationRefused(format!(
-                "{other:?}"
-            ))),
-        }
+        Ok(GrantProjectIntent(GrantProjectInput {
+            grant_id: grant.grant_id.as_str().to_owned(),
+            project_key: grant.scope.0.clone(),
+            grantee_issuer: grant.collaborator.issuer().to_owned(),
+            grantee_subject: grant.collaborator.subject().to_owned(),
+            mode: mode.to_owned(),
+        }))
     }
 
-    fn commit_revoke_scope_access(
-        ctx: &RemoteQueryContext<'_, SharedProjectSchema, Self>,
+    fn grant_idempotency_key(_grant_id: &ScopeGrantId, sequence: u64) -> u64 {
+        sequence
+    }
+
+    fn build_revoke_mutation_intent(
         grant_id: &ScopeGrantId,
-    ) -> Result<(), SharedAccessDenial> {
-        let key = NEXT_IDEMPOTENCY_KEY.fetch_add(1, Ordering::Relaxed);
-        let outcome = ctx
-            .runtime
-            .request(ctx.owner, ctx.request_scope)
-            .advanced()
-            .mutate(RevokeProjectIntent(RevokeProjectInput {
-                grant_id: grant_id.as_str().to_owned(),
-            }))
-            .without_source()
-            .idempotency(&key)
-            .execute_in_program(ctx.runtime, ExecutionAllocationPolicy::SystemAllocation)
-            .map_err(|err| SharedAccessDenial::GrantMutationRefused(format!("{err:?}")))?;
-        match outcome {
-            WorthQueryApplicationMutationOutcome::Committed { .. } => Ok(()),
-            other => Err(SharedAccessDenial::GrantMutationRefused(format!(
-                "{other:?}"
-            ))),
-        }
+    ) -> Result<RevokeProjectIntent, SharedAccessDenial> {
+        Ok(RevokeProjectIntent(RevokeProjectInput {
+            grant_id: grant_id.as_str().to_owned(),
+        }))
+    }
+
+    fn revoke_idempotency_key(_grant_id: &ScopeGrantId, sequence: u64) -> u64 {
+        sequence
     }
 
     fn build_query_intent(
@@ -279,6 +257,13 @@ pub fn open_shared_home(
     );
     with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
         .expect("bootstrap advancement executes")
+}
+
+pub fn seed_shared_home_public(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<SharedProjectSchema>,
+    schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    seed_shared_home(graph, schema)
 }
 
 fn seed_shared_home(

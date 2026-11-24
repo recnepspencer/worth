@@ -1,6 +1,4 @@
-//! Governed live lease draining and initial watch snapshot reads.
-
-use std::num::NonZeroUsize;
+//! Governed live lease draining and capped row streaming.
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -30,12 +28,16 @@ use worth_query_installation::facade::{
 };
 use worth_query_publication::facade::application_entry::WorthQueryApplicationRequestExt;
 
-use super::binding::{RemoteBinaryCodec, WorthQuerySharedAccessProgram};
+use super::binding::WorthQuerySharedAccessProgram;
+use super::capped_writer::{write_encoded_rows, RemoteByteWriter};
 use super::denial::{
     AuthorizationRefusalReason, BudgetRefusalReason, SharedAccessDenial, WatchRefusalReason,
 };
+use super::scope_binding::{
+    clamped_query_row_limit, verify_capability_matches_scope, BoundScopeIdentity,
+};
 use super::server_dispatch::map_query_denial;
-use super::types::{RemoteServerLimits, RemoteWatchPollOutcome};
+use super::types::RemoteServerLimits;
 
 pub(super) type IntentBinding<S, P> =
     <<P as WorthQuerySharedAccessProgram<S>>::QueryIntent as ApplicationQueryIntent<S>>::Binding;
@@ -65,31 +67,16 @@ pub(super) type LiveLease<'home, S, P> = WorthQueryApplicationLiveLease<
     QueryLiveCause<S, P>,
 >;
 
-pub(super) fn clamped_query_row_limit<Schema, Program>(
+/// Executes the initial governed read and streams its rows directly into `writer`.
+pub(super) fn write_initial_watch_rows<Schema, Program>(
     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    limits: RemoteServerLimits,
-) -> Result<NonZeroUsize, SharedAccessDenial>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: WorthQuerySharedAccessProgram<Schema>,
-{
-    let binding = app
-        .installed_schema()
-        .installed_query_binding::<IntentBinding<Schema, Program>>()
-        .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-    let declared_max = binding.query().read_graph().maximum_result_count().max(1);
-    let clamped = (limits.max_rows_per_response() as usize).min(declared_max);
-    NonZeroUsize::new(clamped).ok_or(SharedAccessDenial::BudgetRefused(
-        BudgetRefusalReason::RequestLimitExceeded,
-    ))
-}
-
-pub(super) fn read_initial_watch_rows<Schema, Program>(
-    app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
+    caller: (
+        &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        &WorthQueryRequestScope,
+    ),
     args: (&Program::ScopeId, Program::QueryIntent, RemoteServerLimits),
-) -> Result<Vec<Vec<u8>>, SharedAccessDenial>
+    writer: &mut RemoteByteWriter,
+) -> Result<(), SharedAccessDenial>
 where
     Schema: ApplicationSchema + 'static,
     Program: WorthQuerySharedAccessProgram<Schema>,
@@ -100,6 +87,7 @@ where
     <Program::ReadOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
         ApplicationStructuredValueBinding<Value = Program::ReadCapabilityInput>,
 {
+    let (external, request_scope) = caller;
     let (scope_id, intent, limits) = args;
     let max_rows = clamped_query_row_limit::<Schema, Program>(app, limits)?;
     let result = app
@@ -112,15 +100,16 @@ where
             Program::build_read_capability_input(scope_id),
         )
         .map_err(map_query_denial)?;
-    Ok(result
-        .rows()
-        .iter()
-        .cloned()
-        .map(|v| Program::project_row(v).encode_remote())
-        .collect())
+    let rows = result.rows();
+    write_encoded_rows(
+        writer,
+        rows.len(),
+        rows.iter().cloned().map(Program::project_row),
+    )
 }
 
-pub(super) fn drain_lease_updates<Schema, Program>(
+/// Drains live lease updates and encodes the response directly into a pre-capped writer.
+pub(super) fn drain_lease_into_payload<Schema, Program>(
     lease: &mut LiveLease<'_, Schema, Program>,
     phase: &WorthQueryAdvancementPhase<'_>,
     principal: &WorthQueryAuthenticatedPrincipal<
@@ -128,30 +117,36 @@ pub(super) fn drain_lease_updates<Schema, Program>(
         QueryPrincipal<Schema, Program>,
         QueryPrincipalId<Schema, Program>,
     >,
-    scope_and_cap: (&WorthQueryRequestScope, usize),
-) -> Result<RemoteWatchPollOutcome<Vec<u8>>, SharedAccessDenial>
+    args: (&WorthQueryRequestScope, usize, u32),
+) -> Result<Vec<u8>, SharedAccessDenial>
 where
     Schema: ApplicationSchema + 'static,
     Program: WorthQuerySharedAccessProgram<Schema>,
     QueryResult<Schema, Program>:
         WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>> + Clone,
 {
-    let (request_scope, max_drain) = scope_and_cap;
-    let mut latest: Option<Vec<Vec<u8>>> = None;
+    let (request_scope, max_drain, max_frame_bytes) = args;
+    let mut latest: Option<QueryResult<Schema, Program>> = None;
     for _ in 0..max_drain {
         match lease.next(phase, principal, request_scope) {
             WorthQueryApplicationLiveOutcome::Delivered(update) => {
-                let row = Program::project_row(update.result().clone()).encode_remote();
-                latest = Some(vec![row]);
+                latest = Some(update.result().clone());
             }
             WorthQueryApplicationLiveOutcome::Pending => break,
             other => return Err(map_terminal_live_outcome(other)),
         }
     }
-    Ok(match latest {
-        Some(rows) => RemoteWatchPollOutcome::Delivered(rows),
-        None => RemoteWatchPollOutcome::Pending,
-    })
+    let mut writer = RemoteByteWriter::new(max_frame_bytes);
+    match latest {
+        Some(value) => {
+            writer.write_u8(1)?;
+            write_encoded_rows(&mut writer, 1, std::iter::once(Program::project_row(value)))?;
+        }
+        None => {
+            writer.write_u8(0)?;
+        }
+    }
+    Ok(writer.into_bytes())
 }
 
 fn map_terminal_live_outcome<Q, R>(
@@ -215,6 +210,7 @@ pub(super) fn admit_watch_and_read_caps<Schema, Program>(
             QueryPrincipalId<Schema, Program>,
         >,
         &WorthQueryRequestScope,
+        &BoundScopeIdentity,
     ),
     caps: WatchCaps<'_, Schema, Program>,
 ) -> Result<
@@ -234,9 +230,21 @@ where
     <Program::WatchOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
         ApplicationStructuredValueBinding<Value = Program::WatchCapabilityInput>,
 {
-    let (principal, request_scope) = caller;
+    let (principal, request_scope, bound_scope) = caller;
     let (watch_cap, read_cap, watch_input, read_input) = caps;
-    selected
+    verify_capability_matches_scope::<
+        Schema,
+        Program::WatchCapability,
+        Program::WatchCapabilityInput,
+        QueryScope<Schema, Program>,
+    >(&watch_input, bound_scope)?;
+    verify_capability_matches_scope::<
+        Schema,
+        Program::ReadCapability,
+        Program::ReadCapabilityInput,
+        QueryScope<Schema, Program>,
+    >(&read_input, bound_scope)?;
+    let _watch_admitted = selected
         .admit_capability_access(phase, principal, watch_cap, watch_input, request_scope)
         .map_err(|_| {
             SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied)

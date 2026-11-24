@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
         ApplicationOperationMarkerIdentity, ApplicationSchemaComposition,
         ApplicationStructuredValueBinding,
     },
+    authentication::WorthQueryExternalPrincipalIdentity,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationProjection;
 
@@ -18,19 +19,22 @@ use crate::application_home::WorthQueryApplicationHome;
 
 use super::auth::RemoteAuthConfig;
 use super::binding::WorthQuerySharedAccessProgram;
-use super::denial::{BudgetRefusalReason, SharedAccessDenial};
-use super::framing::{decode_frame_slice, encode_frame, encode_refusal_payload, FrameKind};
-use super::server_dispatch::RemoteDispatcher;
-use super::server_transport::RemoteTcpPool;
+use super::denial::SharedAccessDenial;
+use super::framing::{decode_frame_slice, FrameKind};
+use super::server_dispatch::{reap_expired_watches, RemoteDispatcher};
+use super::server_transport::{encode_dispatch_outcome, RemoteTcpPool};
 use super::server_watch::ActiveRemoteWatch;
 use super::types::RemoteWatchId;
 use super::watch_drain::{IntentBinding, QueryMarker, QueryPrincipalId, QueryResult};
 
 /// Single-owner authenticated remote server bound exclusively to one Directory Home.
 ///
-/// Never spawns background threads or opens a second Directory Home. All live
-/// governed watches stay on the owner's thread and are closed deterministically
-/// when `close` or `Drop` runs.
+/// Never spawns background threads or opens a second Directory Home. Direct TCP
+/// binding is restricted strictly to loopback addresses (`127.0.0.1` / `::1`);
+/// cross-host deployments must tunnel loopback over an authenticated encrypted
+/// transport (TLS/mTLS, Tailscale, or SSH) or drive `handle_frame` over an
+/// encrypted channel. All live governed watches stay on the owner's thread and
+/// are reclaimed on disconnect, token expiry, `close`, or `Drop`.
 pub struct WorthQueryRemoteServer<'home, Schema, Program>
 where
     Schema: ApplicationSchemaComposition + 'static,
@@ -95,20 +99,42 @@ where
         self.home_incarnation
     }
 
-    pub fn active_watch_count(&self) -> usize {
+    pub fn active_connection_count(&self) -> usize {
+        self.tcp.connection_count()
+    }
+
+    pub fn active_watch_count(&mut self) -> usize {
+        reap_expired_watches(&mut self.watches);
         self.watches.len()
+    }
+
+    /// Read-only snapshot of live server-owned watches `(id, principal, scope)`.
+    pub fn active_watches(
+        &mut self,
+    ) -> Vec<(
+        RemoteWatchId,
+        WorthQueryExternalPrincipalIdentity,
+        Program::ScopeId,
+    )> {
+        reap_expired_watches(&mut self.watches);
+        self.watches
+            .iter()
+            .map(|(&id, watch)| (id, watch.owner_principal.clone(), watch.scope.clone()))
+            .collect()
     }
 
     /// Processes one complete framed binary request and returns the framed binary response.
     pub fn handle_frame(&mut self, request_frame: &[u8]) -> Vec<u8> {
         let max_bytes = self.auth_config.limits().max_frame_bytes();
         let outcome = decode_frame_slice(request_frame, max_bytes)
-            .and_then(|(kind, payload)| self.dispatch_payload(kind, payload));
-        self.encode_outcome(outcome)
+            .and_then(|(kind, payload)| self.dispatch_payload(None, kind, payload));
+        encode_dispatch_outcome(outcome, max_bytes)
     }
 
-    /// Accepts ready connections and services all immediately readable framed requests.
+    /// Accepts bounded ready connections, reaps expired watches and stalled peers,
+    /// and services immediately available framed requests without blocking.
     pub fn serve_pending(&mut self) -> Result<usize, SharedAccessDenial> {
+        reap_expired_watches(&mut self.watches);
         let limits = self.auth_config.limits();
         let mut dispatcher = RemoteDispatcher {
             home: self.home,
@@ -118,21 +144,29 @@ where
             watches: &mut self.watches,
             next_watch_id: &mut self.next_watch_id,
         };
-        self.tcp
-            .serve_pending(limits, |kind, payload| dispatcher.dispatch(kind, payload))
+        let (served, dropped) = self.tcp.serve_pending(limits, |conn_id, kind, payload| {
+            dispatcher.dispatch(Some(conn_id), kind, payload)
+        })?;
+        for conn_id in dropped {
+            dispatcher.reclaim_connection(conn_id);
+        }
+        Ok(served)
     }
 
-    /// Polls until at least one request is serviced or `timeout` elapses.
+    /// Polls until at least one request is serviced or `timeout` elapses, never blocking
+    /// on partial/trickle frames past `timeout`.
     pub fn serve_once(&mut self, timeout: Duration) -> Result<bool, SharedAccessDenial> {
         let deadline = Instant::now() + timeout;
         loop {
             if self.serve_pending()? > 0 {
                 return Ok(true);
             }
-            if Instant::now() >= deadline {
+            let now = Instant::now();
+            if now >= deadline {
                 return Ok(false);
             }
-            std::thread::sleep(Duration::from_millis(1));
+            let remaining = deadline.saturating_duration_since(now);
+            std::thread::sleep(Duration::from_millis(1).min(remaining));
         }
     }
 
@@ -146,6 +180,7 @@ where
 
     fn dispatch_payload(
         &mut self,
+        conn_id: Option<u64>,
         kind: FrameKind,
         payload: &[u8],
     ) -> Result<(FrameKind, Vec<u8>), SharedAccessDenial> {
@@ -157,35 +192,7 @@ where
             watches: &mut self.watches,
             next_watch_id: &mut self.next_watch_id,
         };
-        dispatcher.dispatch(kind, payload)
-    }
-
-    fn encode_outcome(&self, outcome: Result<(FrameKind, Vec<u8>), SharedAccessDenial>) -> Vec<u8> {
-        let max_bytes = self.auth_config.limits().max_frame_bytes();
-        match outcome {
-            Ok((kind, payload)) => match encode_frame(kind, &payload, max_bytes) {
-                Ok(frame) => frame,
-                Err(_) => {
-                    let refusal =
-                        SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ResponseTooLarge {
-                            bytes: u32::try_from(payload.len()).unwrap_or(u32::MAX),
-                            maximum: max_bytes,
-                        });
-                    encode_frame(
-                        FrameKind::RefusalResponse,
-                        &encode_refusal_payload(&refusal),
-                        max_bytes,
-                    )
-                    .expect("refusal frame fits within configured bound")
-                }
-            },
-            Err(denial) => encode_frame(
-                FrameKind::RefusalResponse,
-                &encode_refusal_payload(&denial),
-                max_bytes,
-            )
-            .expect("refusal frame fits within configured bound"),
-        }
+        dispatcher.dispatch(conn_id, kind, payload)
     }
 }
 

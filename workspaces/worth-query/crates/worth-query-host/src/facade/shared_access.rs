@@ -1,5 +1,11 @@
 //! Public facade for single-owner Directory Home shared scope access and
-//! authenticated remote read/watch delegation.
+//! authenticated loopback remote read/watch delegation.
+//!
+//! Direct TCP transport is strictly loopback-only (`127.0.0.1` / `::1`) because
+//! frames carry reusable bearer tokens and row payloads without transport
+//! encryption; cross-host deployments must tunnel over an authenticated
+//! encrypted transport (TLS/mTLS, Tailscale, or SSH) or drive
+//! `WorthQueryRemoteServer::handle_frame` over an encrypted channel.
 //!
 //! Only the owner's `WorthQueryApplicationHome` may issue or revoke durable
 //! scope-access grants and host remote requests. `ScopeAccessGrant` cannot be
@@ -15,6 +21,7 @@
 //!         access: todo!(),
 //!         home_identity: None,
 //!         home_incarnation: None,
+//!         committed_record_changes: 1,
 //!     }
 //! }
 //! ```
@@ -45,8 +52,9 @@
 pub use crate::shared_access::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     ProtocolRefusalReason, RemoteAuthConfig, RemoteAuthKey, RemoteAuthToken, RemoteBinaryCodec,
-    RemoteClientLimits, RemoteQueryContext, RemoteServerLimits, RemoteTokenIssueRequest,
+    RemoteByteWriter, RemoteClientLimits, RemoteServerLimits, RemoteTokenIssueRequest,
     RemoteWatchContext, RemoteWatchId, RemoteWatchPollOutcome, ScopeAccess, ScopeAccessGrant,
     ScopeGrantId, SharedAccessDenial, WatchRefusalReason, WorthQueryRemoteClient,
     WorthQueryRemoteServer, WorthQueryRemoteWatch, WorthQuerySharedAccessProgram,
+    MIN_MAX_FRAME_BYTES,
 };

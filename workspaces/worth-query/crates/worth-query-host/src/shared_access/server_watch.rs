@@ -1,12 +1,11 @@
-//! WORTH-governed live watch opening, revocation verification, and teardown.
+//! WORTH-governed live watch lifecycle, scope-bound renewal, and teardown.
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryParameterSet,
-        ApplicationQueryScopeResolution,
+        ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
     },
     application_schema::{
         ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationStructuredValueBinding,
@@ -15,23 +14,26 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::{
     application_contribution::WorthQueryAdvancementPhase,
-    primary_graph::{
-        WorthQueryApplicationLiveControls, WorthQueryApplicationProjection,
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
+    primary_graph::{WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime},
 };
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationQueryBinding,
 };
 
+use super::auth::current_unix_secs;
 use super::binding::WorthQuerySharedAccessProgram;
-use super::denial::{AuthorizationRefusalReason, BudgetRefusalReason, SharedAccessDenial};
-use super::types::{RemoteServerLimits, RemoteWatchPollOutcome};
-use super::watch_drain::{
-    admit_watch_and_read_caps, drain_lease_updates, open_live_lease_with_disclosure,
-    read_initial_watch_rows, resolve_principal, resolve_scope_entity, IntentBinding, LiveLease,
-    QueryMarker, QueryPrincipalId, QueryResult,
+use super::capped_writer::RemoteByteWriter;
+use super::denial::{
+    AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
+    SharedAccessDenial,
 };
+use super::scope_binding::{verify_capability_matches_scope, BoundScopeIdentity};
+use super::types::{RemoteServerLimits, RemoteWatchId};
+use super::watch_drain::{
+    drain_lease_into_payload, resolve_principal, resolve_scope_entity, write_initial_watch_rows,
+    IntentBinding, LiveLease, QueryMarker, QueryPrincipalId, QueryResult, QueryScope,
+};
+use super::watch_open::open_governed_live_lease;
 
 pub(super) struct ActiveRemoteWatch<'home, Schema, Program>
 where
@@ -42,6 +44,10 @@ where
 {
     pub(super) owner_principal: WorthQueryExternalPrincipalIdentity,
     pub(super) scope: Program::ScopeId,
+    pub(super) connection_id: Option<u64>,
+    pub(super) token_expires_at_unix_secs: u64,
+    bound_scope: BoundScopeIdentity,
+    query_payload: Program::QueryPayload,
     lease: LiveLease<'home, Schema, Program>,
 }
 
@@ -55,6 +61,26 @@ where
     pub(super) fn close(self) {
         let _ = self.lease.close();
     }
+
+    pub(super) const fn is_expired_at(&self, now_unix_secs: u64) -> bool {
+        self.token_expires_at_unix_secs <= now_unix_secs
+    }
+}
+
+pub(super) struct WatchOpenArgs<Schema, Program>
+where
+    Schema: ApplicationSchema + 'static,
+    Program: WorthQuerySharedAccessProgram<Schema>,
+{
+    pub(super) watch_id: RemoteWatchId,
+    pub(super) connection_id: Option<u64>,
+    pub(super) token_expires_at_unix_secs: u64,
+    pub(super) scope: Program::ScopeId,
+    pub(super) query_payload: Program::QueryPayload,
+    pub(super) live_intent: Program::QueryIntent,
+    pub(super) initial_intent: Program::QueryIntent,
+    pub(super) limits: RemoteServerLimits,
+    pub(super) _schema: std::marker::PhantomData<Schema>,
 }
 
 impl<'home, Schema, Program> ActiveRemoteWatch<'home, Schema, Program>
@@ -70,48 +96,72 @@ where
     <Program::WatchOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
         ApplicationStructuredValueBinding<Value = Program::WatchCapabilityInput>,
 {
+    /// Opens a scope-bound governed live lease and streams the WatchOpenResponse payload
+    /// into a pre-capped writer. Rolls back the lease immediately if response encoding fails.
     pub(super) fn open(
         app: &'home WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
-        args: (
-            Program::ScopeId,
-            Program::QueryIntent,
-            Program::QueryIntent,
-            RemoteServerLimits,
-        ),
-    ) -> Result<(Self, Vec<Vec<u8>>), SharedAccessDenial> {
-        let (scope, live_intent, initial_intent, limits) = args;
-        let lease = open_governed_live_lease::<Schema, Program>(
+        args: WatchOpenArgs<Schema, Program>,
+    ) -> Result<(Self, Vec<u8>), SharedAccessDenial> {
+        let (lease, bound_scope) = open_governed_live_lease::<Schema, Program>(
             app,
             external,
             request_scope,
-            (&scope, live_intent, limits),
+            (&args.scope, args.live_intent, args.limits),
         )?;
-        let initial_rows = read_initial_watch_rows::<Schema, Program>(
-            app,
-            external,
-            request_scope,
-            (&scope, initial_intent, limits),
-        )?;
-        Ok((
-            Self {
-                owner_principal: external.identity().clone(),
-                scope,
-                lease,
-            },
-            initial_rows,
-        ))
+        let mut writer = RemoteByteWriter::new(args.limits.max_frame_bytes());
+        let encoded = writer.write_u64(args.watch_id.as_u64()).and_then(|()| {
+            write_initial_watch_rows::<Schema, Program>(
+                app,
+                (external, request_scope),
+                (&args.scope, args.initial_intent, args.limits),
+                &mut writer,
+            )
+        });
+        if let Err(denial) = encoded {
+            let _ = lease.close();
+            return Err(denial);
+        }
+        let active = Self {
+            owner_principal: external.identity().clone(),
+            scope: args.scope,
+            connection_id: args.connection_id,
+            token_expires_at_unix_secs: args.token_expires_at_unix_secs,
+            bound_scope,
+            query_payload: args.query_payload,
+            lease,
+        };
+        Ok((active, writer.into_bytes()))
     }
 
-    /// Re-verifies current WORTH watch capability before draining queued deliveries.
+    /// Re-verifies token expiry, bound scope entity identity, and current WORTH watch
+    /// capability before draining queued deliveries directly into a pre-capped payload.
     pub(super) fn poll(
         &mut self,
         app: &'home WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         limits: RemoteServerLimits,
-    ) -> Result<RemoteWatchPollOutcome<Vec<u8>>, SharedAccessDenial> {
+    ) -> Result<Vec<u8>, SharedAccessDenial> {
+        if self.is_expired_at(current_unix_secs()?) {
+            return Err(SharedAccessDenial::AuthenticationRefused(
+                AuthenticationRefusalReason::TokenExpired,
+            ));
+        }
+        let prepared = self.prepare_poll(app)?;
+        app.with_application_advancement(request_scope, |phase| {
+            self.poll_in_phase(app, &phase, (external, request_scope, limits), prepared)
+        })
+        .map_err(|_| {
+            SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ExecutionResourceDenied)
+        })?
+    }
+
+    fn prepare_poll(
+        &self,
+        app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<PreparedWatchPoll<Schema, Program>, SharedAccessDenial> {
         let binding = app
             .installed_schema()
             .installed_query_binding::<IntentBinding<Schema, Program>>()
@@ -121,194 +171,93 @@ where
             .capability(Program::watch_capability(), Program::watch_operation())
             .map_err(|_| SharedAccessDenial::HostUnavailable)?;
         let watch_input = Program::build_watch_capability_input(&self.scope);
-        let max_drain = limits.live_buffer_capacity().saturating_add(1);
-        app.with_application_advancement(request_scope, |phase| {
-            let selected = app
-                .on_branch(app.current_world())
-                .select(&phase)
-                .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-            let principal = resolve_principal::<Schema, Program>(
-                &selected,
-                &phase,
-                (&binding, external, request_scope),
-            )?;
-            selected
-                .admit_capability_access(
-                    &phase,
-                    &principal,
-                    &installed_cap,
-                    watch_input,
-                    request_scope,
-                )
-                .map_err(|_| {
-                    SharedAccessDenial::AuthorizationRefused(
-                        AuthorizationRefusalReason::WatchCapabilityRevoked,
-                    )
-                })?;
-            drain_lease_updates::<Schema, Program>(
-                &mut self.lease,
-                &phase,
-                &principal,
-                (request_scope, max_drain),
-            )
+        verify_capability_matches_scope::<
+            Schema,
+            Program::WatchCapability,
+            Program::WatchCapabilityInput,
+            QueryScope<Schema, Program>,
+        >(&watch_input, &self.bound_scope)?;
+        let scope_binding =
+            Program::build_query_intent(&self.scope, &self.query_payload)?.into_scope();
+        Ok(PreparedWatchPoll {
+            binding,
+            installed_cap,
+            watch_input,
+            scope_binding,
         })
-        .map_err(|_| {
-            SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ExecutionResourceDenied)
-        })?
+    }
+
+    fn poll_in_phase(
+        &mut self,
+        app: &'home WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        caller: (
+            &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+            &WorthQueryRequestScope,
+            RemoteServerLimits,
+        ),
+        prepared: PreparedWatchPoll<Schema, Program>,
+    ) -> Result<Vec<u8>, SharedAccessDenial> {
+        let (external, request_scope, limits) = caller;
+        let selected = app
+            .on_branch(app.current_world())
+            .select(phase)
+            .map_err(|_| SharedAccessDenial::HostUnavailable)?;
+        let principal = resolve_principal::<Schema, Program>(
+            &selected,
+            phase,
+            (&prepared.binding, external, request_scope),
+        )?;
+        let current_scope = resolve_scope_entity::<Schema, Program>(
+            &selected,
+            phase,
+            (&principal, request_scope),
+            prepared.scope_binding,
+        )?;
+        if current_scope.entity_id() != self.bound_scope.entity_id() {
+            return Err(SharedAccessDenial::AuthorizationRefused(
+                AuthorizationRefusalReason::StaleScope,
+            ));
+        }
+        selected
+            .admit_capability_access(
+                phase,
+                &principal,
+                &prepared.installed_cap,
+                prepared.watch_input,
+                request_scope,
+            )
+            .map_err(|_| {
+                SharedAccessDenial::AuthorizationRefused(
+                    AuthorizationRefusalReason::WatchCapabilityRevoked,
+                )
+            })?;
+        drain_lease_into_payload::<Schema, Program>(
+            &mut self.lease,
+            phase,
+            &principal,
+            (
+                request_scope,
+                limits.live_buffer_capacity().saturating_add(1),
+                limits.max_frame_bytes(),
+            ),
+        )
     }
 }
 
-struct PreparedLiveOpen<Schema, Program>
+struct PreparedWatchPoll<Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
     Program: WorthQuerySharedAccessProgram<Schema>,
 {
     binding: WorthQueryInstalledApplicationQueryBinding<Schema, IntentBinding<Schema, Program>>,
-    watch_cap: WorthQueryInstalledApplicationCapability<
+    installed_cap: WorthQueryInstalledApplicationCapability<
         Schema,
         Program::WatchCapability,
         Program::WatchOperation,
         Program::WatchCapabilityInput,
     >,
-    read_cap: WorthQueryInstalledApplicationCapability<
-        Schema,
-        Program::ReadCapability,
-        Program::ReadOperation,
-        Program::ReadCapabilityInput,
-    >,
     watch_input: Program::WatchCapabilityInput,
-    read_input: Program::ReadCapabilityInput,
     scope_binding:
         <IntentBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding,
-    parameters: ApplicationQueryParameterSet<QueryMarker<Schema, Program>>,
-    controls: WorthQueryApplicationLiveControls,
-}
-
-fn prepare_live_open<Schema, Program>(
-    app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    args: (&Program::ScopeId, Program::QueryIntent, RemoteServerLimits),
-) -> Result<PreparedLiveOpen<Schema, Program>, SharedAccessDenial>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: WorthQuerySharedAccessProgram<Schema>,
-    <Program::ReadOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::ReadCapabilityInput>,
-    <Program::WatchOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::WatchCapabilityInput>,
-{
-    let (scope_id, intent, limits) = args;
-    let parameters = intent.parameters();
-    let scope_binding = intent.into_scope();
-    let binding = app
-        .installed_schema()
-        .installed_query_binding::<IntentBinding<Schema, Program>>()
-        .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-    let watch_cap = app
-        .installed_schema()
-        .capability(Program::watch_capability(), Program::watch_operation())
-        .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-    let read_cap = app
-        .installed_schema()
-        .capability(Program::read_capability(), Program::read_operation())
-        .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-    let max_rows = (limits.max_rows_per_response() as usize)
-        .min(binding.query().read_graph().maximum_result_count().max(1));
-    let controls = WorthQueryApplicationLiveControls::bounded(
-        request_scope.clone(),
-        limits.live_buffer_capacity(),
-        max_rows,
-    )
-    .map_err(|_| SharedAccessDenial::BudgetRefused(BudgetRefusalReason::RequestLimitExceeded))?;
-    Ok(PreparedLiveOpen {
-        binding,
-        watch_cap,
-        read_cap,
-        watch_input: Program::build_watch_capability_input(scope_id),
-        read_input: Program::build_read_capability_input(scope_id),
-        scope_binding,
-        parameters,
-        controls,
-    })
-}
-
-fn open_governed_live_lease<'home, Schema, Program>(
-    app: &'home WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    args: (&Program::ScopeId, Program::QueryIntent, RemoteServerLimits),
-) -> Result<LiveLease<'home, Schema, Program>, SharedAccessDenial>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: WorthQuerySharedAccessProgram<Schema>,
-    <IntentBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<Schema, QueryPrincipalId<Schema, Program>>,
-    QueryResult<Schema, Program>:
-        WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>> + Clone,
-    <Program::ReadOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::ReadCapabilityInput>,
-    <Program::WatchOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::WatchCapabilityInput>,
-{
-    let prepared = prepare_live_open::<Schema, Program>(app, request_scope, args)?;
-    app.with_application_advancement(request_scope, |phase| {
-        open_lease_in_phase::<Schema, Program>(app, &phase, (external, request_scope), prepared)
-    })
-    .map_err(|_| SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ExecutionResourceDenied))?
-}
-
-fn open_lease_in_phase<'home, Schema, Program>(
-    app: &'home WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    phase: &WorthQueryAdvancementPhase<'_>,
-    caller: (
-        &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        &WorthQueryRequestScope,
-    ),
-    prepared: PreparedLiveOpen<Schema, Program>,
-) -> Result<LiveLease<'home, Schema, Program>, SharedAccessDenial>
-where
-    Schema: ApplicationSchema + 'static,
-    Program: WorthQuerySharedAccessProgram<Schema>,
-    <IntentBinding<Schema, Program> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-        ApplicationQueryScopeResolution<Schema, QueryPrincipalId<Schema, Program>>,
-    QueryResult<Schema, Program>:
-        WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>> + Clone,
-    <Program::ReadOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::ReadCapabilityInput>,
-    <Program::WatchOperation as ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
-        ApplicationStructuredValueBinding<Value = Program::WatchCapabilityInput>,
-{
-    let (external, request_scope) = caller;
-    let selected = app
-        .on_branch(app.current_world())
-        .select(phase)
-        .map_err(|_| SharedAccessDenial::HostUnavailable)?;
-    let principal = resolve_principal::<Schema, Program>(
-        &selected,
-        phase,
-        (&prepared.binding, external, request_scope),
-    )?;
-    let disclosure = admit_watch_and_read_caps::<Schema, Program>(
-        &selected,
-        phase,
-        (&principal, request_scope),
-        (
-            &prepared.watch_cap,
-            &prepared.read_cap,
-            prepared.watch_input,
-            prepared.read_input,
-        ),
-    )?;
-    let resolved_scope = resolve_scope_entity::<Schema, Program>(
-        &selected,
-        phase,
-        (&principal, request_scope),
-        prepared.scope_binding,
-    )?;
-    open_live_lease_with_disclosure::<Schema, Program>(
-        selected,
-        phase,
-        (&principal, resolved_scope, disclosure),
-        (prepared.binding, prepared.parameters, prepared.controls),
-    )
 }
