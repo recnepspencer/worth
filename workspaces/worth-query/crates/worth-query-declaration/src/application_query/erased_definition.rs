@@ -142,6 +142,16 @@ impl ErasedApplicationQueryDefinition {
         self.parts.live_cause.as_ref()
     }
 
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.parts.live_whole_result
+    }
+
+    pub const fn live_invalidation_mode(
+        &self,
+    ) -> Option<super::ApplicationQueryLiveInvalidationMode> {
+        self.parts.live_invalidation_mode()
+    }
+
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
         self.parts.dependency_equivalence()
     }

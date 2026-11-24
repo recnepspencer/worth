@@ -108,7 +108,8 @@ pub use inspection::{
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveTargetMode, WorthQueryPortableApplicationQueryLiveCauseParts,
+    ApplicationQueryLiveInvalidationMode, ApplicationQueryLiveTargetMode,
+    WorthQueryPortableApplicationQueryLiveCauseParts,
 };
 pub use marker_identity::ApplicationQueryMarkerIdentity;
 pub use ordering::{
@@ -161,5 +162,7 @@ pub use where_filter::{
     ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource,
 };
 
+#[cfg(test)]
+mod live_whole_result_tests;
 #[cfg(test)]
 mod parameter_dimensions_tests;

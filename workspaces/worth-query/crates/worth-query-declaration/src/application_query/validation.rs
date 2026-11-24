@@ -56,6 +56,7 @@ pub enum ApplicationQueryDefinitionDenial {
     LiveCauseRequiresContinuation,
     LiveCauseScopeSelectorMismatch,
     LiveCauseTargetSelectorMismatch,
+    LiveWholeResultUnsupportedShape,
     WhereFilterUnknownParameter,
     WhereFilterParameterMismatch,
     WhereFilterFieldOutsideRoot,
@@ -82,6 +83,7 @@ pub(crate) fn validate_portable_application_query_freshly(
             || !definition.root_paths().is_empty()
             || definition.continuation().is_some()
             || definition.live_cause().is_some()
+            || definition.is_live_whole_result()
             || !definition.parameters().iter().any(|parameter| {
                 parameter.name() == index.parts().probe_parameter && !parameter.is_optional()
             }))
@@ -231,6 +233,20 @@ fn validate_ordering(
 fn validate_live_cause(
     definition: &WorthQueryPortableApplicationQueryParts,
 ) -> Result<(), ApplicationQueryDefinitionDenial> {
+    if definition.is_live_whole_result() {
+        if !definition.lanes().live_enabled() {
+            return Err(ApplicationQueryDefinitionDenial::LiveCauseContractWithoutLane);
+        }
+        if definition.live_cause().is_some()
+            || definition.orbit().is_some()
+            || definition.component_selection().is_some()
+            || definition.managed_index().is_some()
+            || definition.continuation().is_some()
+        {
+            return Err(ApplicationQueryDefinitionDenial::LiveWholeResultUnsupportedShape);
+        }
+        return Ok(());
+    }
     let Some(live) = definition.live_cause() else {
         return if definition.lanes().live_enabled() && definition.managed_index().is_none() {
             Err(ApplicationQueryDefinitionDenial::LiveLaneWithoutCauseContract)

@@ -318,5 +318,6 @@ where
         material_source: allocation,
         source_context,
         authorization: plan.authorization,
+        governance: plan.governance,
     })
 }

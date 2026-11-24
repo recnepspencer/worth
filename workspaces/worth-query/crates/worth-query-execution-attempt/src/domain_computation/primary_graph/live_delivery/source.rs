@@ -100,6 +100,16 @@ pub struct WorthQueryLiveCommitBatch {
     pub(super) predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicateNotices>>,
 }
 
+impl WorthQueryLiveCommitBatch {
+    pub const fn publication(&self) -> &WorthQueryCommittedProductPublication {
+        &self.publication
+    }
+
+    pub const fn product(&self) -> &crate::basis::WorthQueryProductObservationLease {
+        &self.product
+    }
+}
+
 pub struct WorthQueryLiveCommitBatchCell {
     batch: OnceLock<WorthQueryLiveCommitBatch>,
     // Last original payer closes after all retained event and predicate payloads.

@@ -88,6 +88,7 @@ fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
             ordering: Vec::new(),
             continuation: None,
             live_cause: None,
+            live_whole_result: false,
             disclosure: ApplicationQueryDisclosureContract::public(),
             authorization: ApplicationQueryAuthorizationRequirement::Public,
             basis_support: ApplicationQueryBasisSupport::current_and_pinned(),

@@ -11,6 +11,17 @@ pub enum ApplicationQueryLiveTargetMode {
     Collection,
 }
 
+/// How a live-enabled query invalidates and delivers updates.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationQueryLiveInvalidationMode {
+    /// Effect-routed single-target delivery (`live_root_by` / `live_by`).
+    CauseRouted,
+    /// Whole-result delivery driven by exact observed result-set and row
+    /// invalidation evidence (including negative filter and related-record
+    /// evidence).
+    WholeResult,
+}
+
 /// Domain-owned interpretation of one committed effect as a live-query cause.
 ///
 /// The binding type is identity-bearing query meaning. Query invokes these

@@ -27,6 +27,7 @@ mod components;
 pub(in crate::record) mod controls;
 pub(in crate::record) mod disclosure;
 mod field_presence;
+mod live_whole_result;
 mod managed_index;
 mod orbit;
 mod related_predicate;
@@ -76,7 +77,8 @@ pub(super) fn write(
     controls::write_basis_support(output, parts.basis_support())?;
     controls::write_lanes(output, parts.lanes())?;
     where_filter::write(output, parts.where_filter())?;
-    related_predicate::write(output, parts.related_predicates())
+    related_predicate::write(output, parts.related_predicates())?;
+    live_whole_result::write(output, parts)
 }
 
 pub(super) fn decode(
@@ -125,6 +127,15 @@ fn decode_with_shape_depth(
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     }
     let related_predicates = related_predicate::decode(input, budget, &root_entity, &parameters)?;
+    let live_whole_result = live_whole_result::decode(
+        input,
+        lanes.live_enabled(),
+        live_cause.is_some(),
+        orbit.is_some()
+            || component_selection.is_some()
+            || managed_index.is_some()
+            || continuation.is_some(),
+    )?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
         WorthQueryPortableApplicationQueryParts {
             name,
@@ -147,6 +158,7 @@ fn decode_with_shape_depth(
             ordering,
             continuation,
             live_cause,
+            live_whole_result,
             disclosure,
             authorization,
             basis_support,

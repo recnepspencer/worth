@@ -125,6 +125,18 @@ impl WorthQueryCompiledApplicationQuery {
         self.live.as_ref()
     }
 
+    pub(crate) const fn is_live_whole_result(&self) -> bool {
+        self.definition.is_live_whole_result()
+    }
+
+    pub(crate) const fn live_invalidation_mode(
+        &self,
+    ) -> Option<
+        worth_query_declaration::facade::application_query::ApplicationQueryLiveInvalidationMode,
+    > {
+        self.definition.live_invalidation_mode()
+    }
+
     pub(crate) fn disclosure(&self) -> &ApplicationQueryDisclosureContract {
         self.definition.disclosure()
     }

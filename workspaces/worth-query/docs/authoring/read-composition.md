@@ -299,6 +299,54 @@ continuation shapes refuse). The formal model is in
 64-seed differential graph DST live in the
 [related-absence court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/related_absence/mod.rs).
 
+### Whole-result live subscriptions
+
+When a live query's membership depends on residual filters (`where_filter`,
+negative evidence) or related-record predicates (`where_no_related` /
+`where_related_exists`, related-record evidence) rather than single-target
+effect routing (`live_root_by` / `live_by`), declare `.live_whole_result()` on
+a live-enabled `ApplicationQueryDefinitionBuilder`:
+
+```rust
+ApplicationQueryDefinitionBuilder::declare(ReadyLiveQuery::reference())
+    // .root(..).scope(..).result_shape(..) and controls as above
+    .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
+    .live_whole_result()
+    .root_path(ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()))
+    .where_equal_value(Status::at("Status"), open.clone())
+    .where_no_related(
+        ApplicationQueryRelatedPredicate::forward(BlockedBy::reference())
+            .where_equal_value(Status::at("Status"), open),
+    )
+    .order_by(key(), ApplicationQueryOrderingDirection::Ascending);
+```
+
+Open a whole-result live subscription through the ordinary Host request surface
+with `subscribe_whole_result(limits)` (or `subscribe_whole_result_governed(...)`
+/ `subscribe_whole_result_approved(...)` for capability-governed queries, plus
+`*_in_advancement` variants for funded execution phases). Inspect the initial
+snapshot via `sub.initial()` / `sub.take_initial()`, poll for committed updates
+with `sub.next(&fresh_request)` (returning `Delivered(update)`, `Pending`,
+`AuthorizationDenied`, `StalePrincipal`, `ExecutionRequest`, `Overflow`, or
+`Closed`), and close cleanly with `sub.close()`.
+
+Whole-result live subscriptions reuse the same installed canonical read graph
+and preserve the complete deduplicated invalidation footprint across both
+`result_set_observation` (scope paths, candidate filter fields including
+excluded rows, related-record adjacencies, and examined blocker target fields)
+and returned-row `observed_sources` (projected row fields). Every `next` call
+re-admits principal and capability authority against current branch truth
+before polling or delivering any queued commit batch, so revoked grants or
+disabled principals fail closed with zero leaked rows. Unrelated-project edits
+and unexamined aspects leave the footprint current and return `Pending` without
+waking. Queries without `.live_whole_result()` keep their exact prior
+canonical identity and archive bytes. Current bounds: exact-root and root-path
+selections only (combining with `live_cause`, `orbit`, `component_selection`,
+`managed_index`, or `continuation` refuses). The formal model is in
+`specs/tla/live_subscriptions/LiveSubscriptions.tla`, and the end-to-end courts
+and 64-seed differential DST live in the
+[whole-result live court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mod.rs).
+
 When the definition is governed, give the optional slot its own disclosure
 rule and keep policy omission typed in the result:
 

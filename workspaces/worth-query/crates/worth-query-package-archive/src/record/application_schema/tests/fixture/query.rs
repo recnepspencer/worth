@@ -104,6 +104,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 },
             )),
             live_cause: Some(live_cause()),
+            live_whole_result: false,
             disclosure: disclosure(),
             authorization: ApplicationQueryAuthorizationRequirement::Ability {
                 ability: text("Read"),

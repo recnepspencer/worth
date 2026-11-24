@@ -61,6 +61,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 ordering: Vec::new(),
                 continuation: None,
                 live_cause: None,
+                live_whole_result: false,
                 disclosure: parts.disclosure,
                 authorization,
                 basis_support: parts.basis_support,
@@ -317,6 +318,13 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             super::super::ApplicationQueryLiveTargetMode::Root,
             std::marker::PhantomData::<Binding>,
         ));
+        self
+    }
+
+    /// Admits whole-result live subscriptions whose invalidation preserves
+    /// exact result-set, negative-filter, related-record, and row evidence.
+    pub fn live_whole_result(mut self) -> Self {
+        self.definition.live_whole_result = true;
         self
     }
 

@@ -264,6 +264,7 @@ fn query_parts(
         ordering: Vec::new(),
         continuation: None,
         live_cause: None,
+        live_whole_result: false,
         disclosure: ApplicationQueryDisclosureContract::public(),
         authorization: ApplicationQueryAuthorizationRequirement::Public,
         basis_support: ApplicationQueryBasisSupport::current_and_pinned(),

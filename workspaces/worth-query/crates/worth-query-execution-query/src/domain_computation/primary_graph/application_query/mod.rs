@@ -140,6 +140,8 @@ pub use live::{
     WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOpenDenial,
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
+    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
+    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryApplicationWholeResultLiveUpdate,
 };
 pub use observed_source::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,

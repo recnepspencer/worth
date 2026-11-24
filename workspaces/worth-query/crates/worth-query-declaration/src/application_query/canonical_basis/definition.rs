@@ -290,6 +290,9 @@ fn append_live_cause(
 ) {
     let Some(live) = definition.live_cause() else {
         entries.push(null("live-cause"));
+        if definition.is_live_whole_result() {
+            entries.push(text("live-invalidation.mode", "whole-result-v1"));
+        }
         return;
     };
     entries.extend([

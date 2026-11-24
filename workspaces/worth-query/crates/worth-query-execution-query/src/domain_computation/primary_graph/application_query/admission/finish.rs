@@ -252,10 +252,12 @@ where
                 query.name(),
             )
         })?;
-        let inventory = primary_graph_support_inventory(query.read_graph(),
+        let inventory = primary_graph_support_inventory(
+            query.read_graph(),
             graph.layout_ref(),
             query.continuation(),
             query.live(),
+            query.is_live_whole_result(),
             &requirements,
         ).map_err(|_| denial(WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted, query.name()))?;
         let obligations = query.retain_graph_obligations_for_admission();
